@@ -1543,8 +1543,10 @@ def _strip_caption_number_prefix(text: str) -> str:
 
 
 def _normalized_caption_body(text: str) -> str:
-    body = _strip_caption_number_prefix(text)
-    return " ".join(body.lower().split())
+    body = _strip_caption_number_prefix(text).lower().strip()
+    body = re.sub(r"[.!?:;,]+$", "", body)
+    body = " ".join(body.split())
+    return body
 
 
 def _legend_dedup_priority(legend: dict, *, bundle_source_legend_ids: set[str], assets: list[dict]) -> tuple[int, int, int, int, int]:
@@ -3802,6 +3804,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
         best_group = None
         if same_page:
+            scored = []
             for sg in same_page:
                 sg_score = _score_legend_to_group(
                     legend,
@@ -3815,8 +3818,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     page_width=page_width,
                 )
                 if sg_score.get("decision") == "matched" and sg_score.get("score", 0.0) >= 0.5:
-                    best_group = sg
-                    break
+                    scored.append((sg, sg_score.get("score", 0.0)))
+            if scored:
+                scored.sort(key=lambda x: x[1], reverse=True)
+                best_group = scored[0][0]
         if best_group is None and next_page:
             best_group = next_page[0]
         if best_group is None and prev_page:

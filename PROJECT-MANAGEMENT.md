@@ -2062,5 +2062,46 @@ These are NOT convergence-layer issues. The phantom cluster bug (fixed in 12.34)
 - Result: 2UIPV93M now has 19 matched figures (was 17). Page 49 Fig 1 / Fig 2 now correctly retained in `figure_legends` and matched to their X-ray assets. `same_number_distinct_legends` audit surface added to inventory. Bundle-source dedup (DWQQK2YB pattern) unaffected.
 - Tests: updated `test_san9ayvr_fig26c_body_narrative` (Fig 26c narrative now correctly survives dedup as distinct legend). All existing dedup tests pass. 217 tests total, 0 failures.
 
+### 12.38 Reference items sorted by parsed number in tail reordering (2026-06-23)
 
+- Problem: 6FGDBFQN reference section showed order 1, 10, 2, 3, ..., 9 — reference 10 appeared between 1 and 2.
+- Root cause: `fulltext.md` is produced by `render_fulltext_markdown` → `_order_tail_blocks` → `_reorder_tail_run` → `_sort_blocks_by_column`, which sorts by column/y-position (physical page layout). Reference 10's bbox was on the left column with y between ref 1 and ref 2. The existing `sort_reference_blocks` (number-based sort in `ocr.py`) only applies to the per-page OCR rendering path, not the main `fulltext.md` path.
+- Fix: added `_ref_number_sort_key(block)` helper that extracts leading reference number from block text (matches `^\s*(\d+)[\.\)]`). Applied `.sort(key=...)` in three places within `ocr_render.py`: (1) `_reorder_tail_run` main path — on `ref_section["bodies"]` before emission; (2) `_reorder_tail_run` skip_section_grouping path — on `refs` list; (3) `_order_tail_blocks` fallback path — on `ref_items` only (`ref_headings` separated to avoid alphabetic mixing). All heading vs item separation preserved.
+- Result: references now emit in correct numeric order (1, 2, 3, ..., 10). Verified on 6FGDBFQN after rebuild.
+- Tests: 104/104 render tests pass (1 pre-existing failure in backmatter heading style, unaffected).
+- Commit: `d96d803` on `ocr-v2`.
+
+### 12.39 Merge-gate figure guardrail tests (2026-06-24)
+
+- Problem: the branch had landed the 6FGDBFQN sidecar fix and the 2UIPV93M same-number-distinct dedup expansion, but the test surface still left two merge-boundary risks weakly specified: (1) minor OCR drift in duplicate captions can be misinterpreted as a new same-number figure because `_normalized_caption_body` currently does exact string comparison after whitespace collapse only; (2) the strong `table_like` veto protects figure/table separation but had no reverse test proving that OCR table labels cannot suppress a real figure grid when figure evidence is otherwise decisive. The existing suite also did not explicitly prove that retained same-number-distinct legends stay accounted for through completeness + reader surfaces.
+- Root cause: prior tests validated positive 6FGDBFQN-sidecar behavior, bundle-source duplicate losers, and the existence of `same_number_distinct_legends`, but they did not pin the release boundary between acceptable retention and over-retention, nor the boundary between conservative table veto and false-negative figure loss.
+- Fix: added four focused synthetic tests in `tests/test_ocr_figures.py`: (1) `test_same_number_distinct_legends_can_both_match_separate_assets` locks the intended 2UIPV93M-style behavior when two captions share a figure number but own distinct assets; (2) `test_same_number_distinct_legend_is_accounted_not_dropped` verifies the retained distinct caption remains visible to completeness and reader consumption rather than disappearing as a gap; (3) `test_same_number_ocr_minor_caption_variant_still_deduped` is an intentional merge-gate red test documenting that punctuation-only OCR drift should still dedup; (4) `test_table_labeled_img_figure_grids_still_separate_by_caption_when_caption_is_figure` is an intentional merge-gate red test documenting that OCR `table_like` hints must not collapse multiple figure captions onto the same image grid.
+- Result: the suite now separates green regression locks from explicit red merge-gate blockers. No production OCR logic changed in this step.
+- Tests: targeted dedup/accounting tests pass locally; the two new merge-gate red tests are expected to fail until the remaining dedup-similarity and table-veto boundary decisions are implemented.
+
+### 12.40 Merge-gate closeout: dedup normalization + fallback spatial scoring (2026-06-24)
+
+- **Problem:** two merge-gate blocker tests remained red: (1) `test_same_number_ocr_minor_caption_variant_still_deduped` — punctuation-only OCR drift (trailing period) surfaced as a false `same_number_distinct_legends`; (2) `test_table_labeled_img_figure_grids_still_separate_by_caption_when_caption_is_figure` — Figure 5 on a table-like multi-grid page was assigned the top grid instead of its nearer bottom grid.
+- **Root cause (dedup):** `_normalized_caption_body` used `" ".join(body.lower().split())` which preserves punctuation; trailing `.` on one caption made `"the graft." != "the graft"`.
+- **Root cause (grid collapse):** the group-aware sequential fallback (`_score_legend_to_group`) took the **first** same-page group scoring >= 0.5 (`break`), not the best-scoring one. With both caption groups table-vetoed and Figure 5 processed second, the top grid (first in y-order) always won even though Figure 5's spatially nearer group was the bottom grid.
+- **Fix (dedup):** changed `_normalized_caption_body` to `re.sub(r"[\s\W_]+", " ", body).strip()` after lowering, stripping punctuation/whitespace runs so that punctuation-only OCR drift normalizes to the same string.
+- **Fix (grid collapse):** replaced `break`-on-first-match with collecting all qualifying scores into a list, then picking the group with the **highest** score. Since `_score_legend_to_group` already incorporates spatial proximity, the bottom grid scores higher for Figure 5 and is correctly selected.
+- **Result:** both merge-gate blocker tests now pass. All 11 table-like guardrails remain green. All 4 distinct-caption guardrails remain green.
+- **Regressions checked:** SAN9AYVR same-number-narrative + formal-caption surface (2 tests) pass. Full bounded figure stack (225 tests) passes. Real-paper regressions: 7 passed, 5 skipped (fixtures absent), 0 failed.
+- **Tests run:**
+  - `python -m pytest tests/test_ocr_figures.py -k "same_number_distinct_legends_can_both_match_separate_assets or same_number_distinct_legend_is_accounted_not_dropped or same_number_ocr_minor_caption_variant_still_deduped or table_labeled_img_figure_grids_still_separate_by_caption_when_caption_is_figure"` → 4 passed
+  - `python -m pytest tests/test_ocr_figures.py tests/test_ocr_figure_reader.py tests/test_ocr_render.py -q` → 225 passed
+  - `python -m pytest tests/test_ocr_real_paper_regressions.py -k "6FGDBFQN or 2UIPV93M or VFS8CBW2 or RKSLQRIM or DWQQK2YB" -v --tb=short` → 7 passed, 5 skipped (fixtures absent)
+- **Merge recommendation:** merge now at bounded scope. The two blockers are fixed. All guardrails green. 5 real-paper tests skipped due to fixture absence — same as baseline.
+
+### 12.41 Dedup normalization narrowed to terminal punctuation only (2026-06-24)
+
+- **Problem:** the merge-gate closeout changed `_normalized_caption_body` to strip all punctuation/whitespace runs via `re.sub(r"[\s\W_]+", " ", body)`. That fixed trailing-period OCR drift, but it also widened dedup aggressively enough to collapse captions whose internal punctuation can carry meaning.
+- **Root cause:** the normalization treated internal punctuation and terminal punctuation as equivalent noise. This is too broad for same-number distinct-caption arbitration: `IL-1` and `IL 1`, or other hyphenated token boundaries, can become the same normalized body even when they should remain distinct.
+- **Fix:** narrowed `_normalized_caption_body` to the smallest behavior needed by the blocker test: lowercase, trim, strip only terminal punctuation (`[.!?:;,]+$`), then collapse whitespace. This keeps the trailing-period OCR drift fix while preserving meaningful internal punctuation.
+- **Result:** the original merge-gate dedup blocker still passes, and a new synthetic guardrail now proves that internal punctuation differences can still survive as distinct same-number captions.
+- **Tests run:**
+  - `python -m pytest tests/test_ocr_figures.py::test_same_number_internal_punctuation_difference_stays_distinct -q` → 1 passed
+  - `python -m pytest tests/test_ocr_figures.py -k "same_number_ocr_minor_caption_variant_still_deduped or same_number_distinct_legends_can_both_match_separate_assets or same_number_distinct_legend_is_accounted_not_dropped or san9ayvr_fig26c_body_narrative or bundle_source_duplicate_loser_is_accounted_not_gap" -q` → 5 passed
+  - `python -m pytest tests/test_ocr_figures.py -k "same_number_distinct_legends_can_both_match_separate_assets or same_number_distinct_legend_is_accounted_not_dropped or same_number_ocr_minor_caption_variant_still_deduped or table_labeled_img_figure_grids_still_separate_by_caption_when_caption_is_figure or same_number_internal_punctuation_difference_stays_distinct" -q` → 5 passed
 

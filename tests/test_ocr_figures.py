@@ -1560,6 +1560,114 @@ def test_san9ayvr_fig26_fig27_remain_formal() -> None:
         )
 
 
+def test_same_number_distinct_legends_can_both_match_separate_assets() -> None:
+    """Same-number captions with different bodies must both survive when they own distinct assets."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "fig1_pre",
+            "page": 5,
+            "role": "figure_caption",
+            "text": "Figure 1. Preoperative radiograph.",
+            "bbox": [100, 520, 700, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "asset_pre",
+            "page": 5,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 700, 500],
+        },
+        {
+            "block_id": "fig1_post",
+            "page": 17,
+            "role": "figure_caption",
+            "text": "Figure 1. Postoperative radiograph.",
+            "bbox": [100, 520, 700, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "asset_post",
+            "page": 17,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 700, 500],
+        },
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    matched = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
+    assert len(matched) == 2, f"Expected both Figure 1 captions to survive, got {len(matched)}"
+    assert {m.get("legend_block_id") for m in matched} == {"fig1_pre", "fig1_post"}
+    assert {a.get("block_id") for m in matched for a in m.get("matched_assets", [])} == {
+        "asset_pre",
+        "asset_post",
+    }
+
+    distinct = inv.get("same_number_distinct_legends", [])
+    assert any(item.get("block_id") == "fig1_post" for item in distinct), (
+        "One surviving same-number caption should be surfaced via same_number_distinct_legends"
+    )
+
+
+def test_same_number_distinct_legend_is_accounted_not_dropped() -> None:
+    """A retained same-number distinct caption must be accounted for, not vanish as a completeness gap."""
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "fig2_body",
+            "page": 4,
+            "role": "figure_caption",
+            "text": "Figure 2. Body cohort radiograph.",
+            "bbox": [100, 520, 700, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "asset_body",
+            "page": 4,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 700, 500],
+        },
+        {
+            "block_id": "fig2_appendix",
+            "page": 22,
+            "role": "figure_caption",
+            "text": "Figure 2. Appendix hardware overview.",
+            "bbox": [100, 520, 700, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+    ]
+
+    inv = build_figure_inventory(blocks)
+    completeness = inv["figure_legend_completeness"]
+    details = {item["block_id"]: item for item in completeness["details"]}
+    reader = synthesize_reader_figures(inv, blocks)
+
+    assert completeness["gap_count"] == 0
+    assert details["fig2_body"]["status"] == "matched"
+    assert details["fig2_appendix"]["status"] in {"ambiguous", "unmatched"}, (
+        "Distinct appendix caption must remain accounted for even without assets"
+    )
+    consumed_caption_ids = {
+        str(item.get("block_id"))
+        for item in reader.get("consumed_caption_block_ids", [])
+        if isinstance(item, dict)
+    }
+    assert "fig2_appendix" in consumed_caption_ids, (
+        "Reader audit surface must continue to consume retained same-number distinct captions"
+    )
+
+
 def test_figure_inventory_caption_score_evidence() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
@@ -4249,6 +4357,186 @@ def test_ambiguous_region_is_not_hard_forced() -> None:
     assert "amb_img" in matched_assets, (
         "Ambiguous asset must NOT be hard-excluded from figure matching"
     )
+
+
+def test_table_labeled_img_figure_grids_still_separate_by_caption_when_caption_is_figure() -> None:
+    """Table-labeled image grids must not collapse multiple figure captions onto the same asset group."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "fig_grid_cap_1",
+            "page": 44,
+            "role": "figure_caption",
+            "text": "Figure 4. Upper fluoroscopic image grid.",
+            "bbox": [120, 360, 1080, 400],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 4},
+        },
+        {
+            "block_id": "grid_top_left",
+            "page": 44,
+            "role": "figure_asset",
+            "raw_label": "table",
+            "asset_family_hint": "table_like",
+            "asset_family_confidence": 0.92,
+            "asset_family_evidence": ["raw_label:table"],
+            "bbox": [120, 60, 560, 320],
+        },
+        {
+            "block_id": "grid_top_right",
+            "page": 44,
+            "role": "figure_asset",
+            "raw_label": "table",
+            "asset_family_hint": "table_like",
+            "asset_family_confidence": 0.94,
+            "asset_family_evidence": ["raw_label:table"],
+            "bbox": [600, 60, 1040, 320],
+        },
+        {
+            "block_id": "fig_grid_cap_2",
+            "page": 44,
+            "role": "figure_caption",
+            "text": "Figure 5. Lower fluoroscopic image grid.",
+            "bbox": [120, 760, 1080, 800],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 5},
+        },
+        {
+            "block_id": "grid_bottom_left",
+            "page": 44,
+            "role": "figure_asset",
+            "raw_label": "table",
+            "asset_family_hint": "table_like",
+            "asset_family_confidence": 0.93,
+            "asset_family_evidence": ["raw_label:table"],
+            "bbox": [120, 460, 560, 720],
+        },
+        {
+            "block_id": "grid_bottom_right",
+            "page": 44,
+            "role": "figure_asset",
+            "raw_label": "table",
+            "asset_family_hint": "table_like",
+            "asset_family_confidence": 0.95,
+            "asset_family_evidence": ["raw_label:table"],
+            "bbox": [600, 460, 1040, 720],
+        },
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    matched = {m.get("figure_number"): m for m in inv["matched_figures"]}
+    assert 4 in matched and 5 in matched, "Both figure captions should remain matchable"
+    assert {str(a.get("block_id", "")) for a in matched[4].get("matched_assets", [])} == {
+        "grid_top_left",
+        "grid_top_right",
+    }
+    assert {str(a.get("block_id", "")) for a in matched[5].get("matched_assets", [])} == {
+        "grid_bottom_left",
+        "grid_bottom_right",
+    }
+    assert set(matched[4].get("asset_block_ids", [])) != set(matched[5].get("asset_block_ids", [])), (
+        "Separate figure captions must not collapse onto the same table-labeled asset grid"
+    )
+
+
+def test_same_number_ocr_minor_caption_variant_still_deduped() -> None:
+    """Minor OCR text drift should not turn one caption into a distinct same-number figure."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "fig3_minor_variant",
+            "page": 11,
+            "role": "figure_caption",
+            "text": "Figure 3. Histologic analysis of the graft",
+            "bbox": [100, 520, 700, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "block_id": "fig3_winner",
+            "page": 12,
+            "role": "figure_caption",
+            "text": "Figure 3. Histologic analysis of the graft.",
+            "bbox": [100, 520, 700, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "block_id": "asset_fig3",
+            "page": 12,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 700, 500],
+        },
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    matched = [m for m in inv["matched_figures"] if m.get("figure_number") == 3]
+    assert len(matched) == 1, f"Expected one surviving Figure 3 legend, got {len(matched)}"
+    assert matched[0]["legend_block_id"] == "fig3_winner"
+    assert not inv.get("same_number_distinct_legends"), (
+        "Minor OCR punctuation drift should dedup, not surface as same_number_distinct_legends"
+    )
+    assert any(
+        item.get("block_id") == "fig3_minor_variant" and item.get("dedup_reason") == "duplicate_loser"
+        for item in inv.get("deduped_legend_ids", [])
+    ), "Minor OCR variant should be recorded as an ordinary duplicate loser"
+
+
+def test_same_number_internal_punctuation_difference_stays_distinct() -> None:
+    """Meaningful internal punctuation should not be erased by dedup normalization."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "fig7_range",
+            "page": 30,
+            "role": "figure_caption",
+            "text": "Figure 7. IL-1 expression overview.",
+            "bbox": [100, 520, 700, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 7},
+        },
+        {
+            "block_id": "asset_range",
+            "page": 30,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 700, 500],
+        },
+        {
+            "block_id": "fig7_plain",
+            "page": 41,
+            "role": "figure_caption",
+            "text": "Figure 7. IL 1 expression overview.",
+            "bbox": [100, 520, 700, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 7},
+        },
+        {
+            "block_id": "asset_plain",
+            "page": 41,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 700, 500],
+        },
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    matched = [m for m in inv["matched_figures"] if m.get("figure_number") == 7]
+    assert len(matched) == 2, (
+        f"Meaningful internal punctuation difference should keep both Figure 7 captions, got {len(matched)}"
+    )
+    assert {m.get("legend_block_id") for m in matched} == {"fig7_range", "fig7_plain"}
+    assert any(
+        item.get("block_id") in {"fig7_range", "fig7_plain"}
+        for item in inv.get("same_number_distinct_legends", [])
+    ), "One Figure 7 caption should remain surfaced as same_number_distinct"
 
 
 # === P1B: Panel-Title Suppression (Task 3) ===
