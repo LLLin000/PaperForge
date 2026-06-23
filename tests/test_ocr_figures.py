@@ -30,6 +30,49 @@ def test_cluster_bbox_empty() -> None:
     assert result == [0, 0, 0, 0]
 
 
+def test_ownership_decision_metadata_attaches_without_replacing_buckets() -> None:
+    from paperforge.worker.ocr_figures import _ownership_decision_metadata
+
+    meta = _ownership_decision_metadata(
+        "provisional",
+        "same_page_partial",
+        strong=False,
+        reason="dense_page_leftovers",
+    )
+
+    assert meta["ownership_decision"] == "provisional"
+    assert meta["decision_provenance"] == "same_page_partial"
+    assert meta["strong_ownership"] is False
+    assert meta["decision_reason"] == "dense_page_leftovers"
+
+
+def test_ownership_decision_metadata_accepted_strong() -> None:
+    from paperforge.worker.ocr_figures import _ownership_decision_metadata
+
+    meta = _ownership_decision_metadata(
+        "accepted",
+        "same_page",
+        strong=True,
+        reason="clear_direct_match",
+    )
+
+    assert meta["ownership_decision"] == "accepted"
+    assert meta["decision_provenance"] == "same_page"
+    assert meta["strong_ownership"] is True
+    assert meta["decision_reason"] == "clear_direct_match"
+
+
+def test_ownership_decision_metadata_rejected() -> None:
+    from paperforge.worker.ocr_figures import _ownership_decision_metadata
+
+    meta = _ownership_decision_metadata("rejected", "none", strong=False)
+
+    assert meta["ownership_decision"] == "rejected"
+    assert meta["decision_provenance"] == "none"
+    assert meta["strong_ownership"] is False
+    assert meta["decision_reason"] == ""
+
+
 def test_ownership_registry_blocked_asset_requires_reason() -> None:
     from paperforge.worker.ocr_figures import FigureOwnershipRegistry
 
@@ -80,6 +123,69 @@ def test_ownership_registry_mirrors_used_sets_for_group_match() -> None:
     assert used_asset_page_ids == {(3, "asset_1"), (3, "asset_2")}
     assert registry.used_group_ids == used_group_ids
     assert registry.used_asset_page_ids == used_asset_page_ids
+
+
+def test_provisional_reservation_blocks_legacy_fallback() -> None:
+    from paperforge.worker.ocr_figures import FigureOwnershipRegistry
+
+    registry = FigureOwnershipRegistry()
+    registry.soft_reserve_assets([(1, "a1")], owner_id="legend_1", reason="partial_dense_local")
+
+    assert registry.can_consume_assets([(1, "a1")]) is False
+
+
+def test_soft_reservation_does_not_update_final_used_sets_until_finalized() -> None:
+    from paperforge.worker.ocr_figures import FigureOwnershipRegistry
+
+    registry = FigureOwnershipRegistry()
+    registry.soft_reserve_assets([(1, "a1")], owner_id="legend_1", reason="partial_dense_local")
+
+    assert (1, "a1") not in registry.used_asset_page_ids
+
+
+def test_release_soft_reservation_reopens_assets_for_fallback() -> None:
+    from paperforge.worker.ocr_figures import FigureOwnershipRegistry
+
+    registry = FigureOwnershipRegistry()
+    registry.soft_reserve_assets([(1, "a1")], owner_id="legend_1", reason="partial_dense_local")
+    registry.release_soft_reservation([(1, "a1")], owner_id="legend_1")
+
+    assert registry.can_consume_assets([(1, "a1")]) is True
+
+
+def test_stronger_candidate_may_supersede_soft_reservation() -> None:
+    from paperforge.worker.ocr_figures import FigureOwnershipRegistry
+
+    registry = FigureOwnershipRegistry()
+    registry.soft_reserve_assets([(1, "a1")], owner_id="legend_1", reason="partial_dense_local")
+    registry.finalize_soft_reservation([(1, "a1")], owner_id="legend_2", owner_family="figure")
+
+    assert registry.asset_states[(1, "a1")]["owner_id"] == "legend_2"
+
+
+def test_soft_reserve_requires_reason() -> None:
+    from paperforge.worker.ocr_figures import FigureOwnershipRegistry
+
+    registry = FigureOwnershipRegistry()
+    try:
+        registry.soft_reserve_assets([(1, "a1")], owner_id="legend_1", reason="")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Expected ValueError for empty reason")
+
+
+def test_multiple_soft_reserves_do_not_merge() -> None:
+    from paperforge.worker.ocr_figures import FigureOwnershipRegistry
+
+    registry = FigureOwnershipRegistry()
+    registry.soft_reserve_assets([(1, "a1")], owner_id="legend_1", reason="first_try")
+    registry.soft_reserve_assets([(1, "a1")], owner_id="legend_2", reason="second_try")
+
+    state = registry.asset_states[(1, "a1")]
+    assert state["state"] == "soft_reserved"
+    assert state["owner_id"] == "legend_2"
+    assert state["reason"] == "second_try"
 
 
 def test_make_local_pairing_hypothesis_caption_below() -> None:
@@ -2403,6 +2509,90 @@ def test_sequence_match_promoted_entry_carries_full_contract() -> None:
     assert seq["matched_assets"][0]["block_id"] == "asset_2"
     assert seq["asset_block_ids"] == ["asset_2"]
     assert seq["settlement_type"] == "sequence_match"
+
+
+def test_assetless_sequence_shell_gets_hold_reason_not_matched() -> None:
+    """Assetless sequence shells must stay in ambiguous_figures with explicit label."""
+    from paperforge.worker.ocr_figures import _promote_sequence_matches
+
+    inventory = {
+        "matched_figures": [
+            {
+                "figure_number": 1,
+                "legend_block_id": "cap1",
+                "page": 3,
+                "legend_page": 3,
+                "asset_pages": [3],
+                "matched_assets": [{"block_id": "asset_1", "bbox": [0, 0, 10, 10]}],
+                "asset_block_ids": ["asset_1"],
+                "settlement_type": "same_page",
+            }
+        ],
+        "ambiguous_figures": [
+            {
+                "figure_number": 2,
+                "legend_block_id": "cap2",
+                "page": 4,
+                "legend_page": 4,
+                "text": "Figure 2. Assetless shell.",
+                "matched_assets": [],
+                "asset_block_ids": [],
+                "asset_pages": [],
+                "settlement_type": "group_sequential",
+                "caption_score": {"score": 0.4},
+            }
+        ],
+    }
+
+    promoted = _promote_sequence_matches(inventory, blocks=[])
+
+    matched_fig_nums = {m.get("figure_number") for m in promoted["matched_figures"]}
+    assert 2 not in matched_fig_nums, "Assetless shell must NOT be in matched_figures"
+
+    shells = [a for a in promoted["ambiguous_figures"] if a.get("hold_reason") == "assetless_sequence_shell"]
+    assert len(shells) == 1, "Assetless sequence shell must have explicit hold_reason"
+    assert shells[0]["sequence_skip_empty_assets"] is True
+
+
+def test_assetless_sequence_shell_never_increments_official_count() -> None:
+    """Official figure count must not include assetless shells."""
+    from paperforge.worker.ocr_figures import _promote_sequence_matches
+
+    inventory = {
+        "matched_figures": [
+            {
+                "figure_number": 1,
+                "legend_block_id": "cap1",
+                "page": 3,
+                "legend_page": 3,
+                "asset_pages": [3],
+                "matched_assets": [{"block_id": "asset_1", "bbox": [0, 0, 10, 10]}],
+                "asset_block_ids": ["asset_1"],
+                "settlement_type": "same_page",
+            }
+        ],
+        "ambiguous_figures": [
+            {
+                "figure_number": 2,
+                "legend_block_id": "cap2",
+                "page": 4,
+                "legend_page": 4,
+                "text": "Figure 2. Ghost.",
+                "matched_assets": [],
+                "asset_block_ids": [],
+                "asset_pages": [],
+                "settlement_type": "group_sequential",
+                "caption_score": {"score": 0.4},
+            }
+        ],
+    }
+
+    promoted = _promote_sequence_matches(inventory, blocks=[])
+    matched_count = len(promoted.get("matched_figures", []))
+    official = promoted.get("official_figure_count", matched_count)
+    assert official == 1, (
+        f"Official count must not include assetless sequence shell, got {official}"
+    )
 
 
 def test_bundle_source_duplicate_loser_is_accounted_not_gap() -> None:

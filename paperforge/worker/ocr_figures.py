@@ -1104,7 +1104,50 @@ class FigureOwnershipRegistry:
                 continue
             if normalized in self.used_asset_page_ids:
                 return False
+            state = self.asset_states.get(normalized)
+            if state and state.get("state") == "soft_reserved":
+                return False
         return True
+
+    def soft_reserve_assets(self, asset_ids: list[tuple[int, str]], *, owner_id: str, reason: str) -> None:
+        self._require_reason(reason)
+        normalized_owner_id = str(owner_id)
+        for asset_id in asset_ids:
+            normalized = _asset_page_id(asset_id[0], asset_id[1])
+            if normalized is None:
+                continue
+            self.asset_states[normalized] = {
+                "state": "soft_reserved",
+                "owner_id": normalized_owner_id,
+                "reason": reason,
+            }
+
+    def finalize_soft_reservation(self, asset_ids: list[tuple[int, str]], *, owner_id: str, owner_family: str) -> None:
+        normalized_owner_id = str(owner_id)
+        normalized_owner_family = str(owner_family)
+        for asset_id in asset_ids:
+            normalized = _asset_page_id(asset_id[0], asset_id[1])
+            if normalized is None:
+                continue
+            current = self.asset_states.get(normalized)
+            if current is None or current.get("state") != "soft_reserved":
+                continue
+            self.asset_states[normalized] = {
+                "state": f"owned_by_{normalized_owner_family}",
+                "owner_id": normalized_owner_id,
+                "owner_family": normalized_owner_family,
+            }
+            self.used_asset_page_ids.add(normalized)
+
+    def release_soft_reservation(self, asset_ids: list[tuple[int, str]], *, owner_id: str) -> None:
+        normalized_owner_id = str(owner_id)
+        for asset_id in asset_ids:
+            normalized = _asset_page_id(asset_id[0], asset_id[1])
+            if normalized is None:
+                continue
+            current = self.asset_states.get(normalized)
+            if current and current.get("state") == "soft_reserved" and current.get("owner_id") == normalized_owner_id:
+                del self.asset_states[normalized]
 
     def _group_asset_page_ids(self, group: dict) -> list[tuple[int, str]]:
         media_blocks = group.get("media_blocks", [])
@@ -1125,6 +1168,15 @@ class FigureOwnershipRegistry:
     def _require_reason(self, reason: str) -> None:
         if not str(reason).strip():
             raise ValueError("ownership reason is required")
+
+
+def _ownership_decision_metadata(decision: str, provenance: str, *, strong: bool, reason: str = "") -> dict:
+    return {
+        "ownership_decision": decision,
+        "decision_provenance": provenance,
+        "strong_ownership": strong,
+        "decision_reason": reason,
+    }
 
 
 def _fallback_eligible_asset_page_ids(
@@ -3797,6 +3849,7 @@ def _promote_sequence_matches(figure_inventory: dict, blocks: list[dict]) -> dic
             asset_block_ids = af.get("asset_block_ids", [])
             if not asset_block_ids:
                 af["sequence_skip_empty_assets"] = True
+                af["hold_reason"] = "assetless_sequence_shell"
                 remaining_ambiguous.append(af)
                 continue
             matched_assets = list(af.get("matched_assets", []))
