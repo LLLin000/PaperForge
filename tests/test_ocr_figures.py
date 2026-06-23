@@ -4487,3 +4487,240 @@ def test_dense_parent_candidate_has_required_contract_fields() -> None:
     assert isinstance(p.get("construction_reason"), list)
     assert p.get("ownership_enabled") is False
 
+
+# --- Task 5: construction-time vs arbitration-time separation ---
+
+def test_dense_parent_candidate_can_be_constructed_from_visual_fragment_count_only() -> None:
+    from paperforge.worker.ocr_figures import _build_dense_composite_parent_candidates
+
+    groups = [
+        {
+            "group_id": "g1", "page": 10,
+            "asset_block_ids": ["a1", "a2"],
+            "cluster_bbox": [100, 100, 400, 400],
+        },
+        {
+            "group_id": "g2", "page": 10,
+            "asset_block_ids": ["a3", "a4"],
+            "cluster_bbox": [500, 100, 800, 400],
+        },
+    ]
+    clusters = [
+        {
+            "cluster_id": "uc1", "page": 10,
+            "media_block_ids": ["a5", "a6"],
+            "cluster_bbox": [100, 500, 400, 800],
+        },
+    ]
+
+    parents = _build_dense_composite_parent_candidates(
+        groups, clusters, {10}, page_width=1000,
+    )
+    assert parents, "dense parent must be constructed from visual fragments only"
+    p = parents[0]
+    assert p["group_type"] == "composite_parent"
+    assert p["parent_subtype"] == "dense_composite"
+    assert p["fragment_count"] >= 4
+
+
+def test_dense_parent_arbitration_uses_leftover_mass_to_outrank_partial_same_page() -> None:
+    from paperforge.worker.ocr_figures import _score_dense_parent_candidate_against_local_ownership
+
+    parent = {
+        "group_id": "dp_1",
+        "group_type": "composite_parent",
+        "parent_subtype": "dense_composite",
+        "page": 10,
+        "child_group_ids": ["g1", "g2"],
+        "unresolved_cluster_ids": ["uc1"],
+        "asset_block_ids": ["a1", "a2", "a3", "a4"],
+        "parent_confidence": 0.75,
+        "fragment_count": 6,
+        "atomic_child_count": 2,
+        "unresolved_child_count": 1,
+        "visual_mass": 6.0,
+        "compactness": 0.45,
+        "grid_score": 0.65,
+        "ownership_enabled": False,
+        "construction_reason": ["dense_fragment_page", "6_visual_fragments", "1_unresolved_clusters"],
+    }
+
+    owned = {"a5"}   # one asset already owned on page
+    score_high = _score_dense_parent_candidate_against_local_ownership(
+        parent, owned_asset_ids=owned, unresolved_asset_ids={"a1", "a2", "a3", "a4", "a6", "a7"},
+    )
+    score_low = _score_dense_parent_candidate_against_local_ownership(
+        parent, owned_asset_ids=owned, unresolved_asset_ids={"a1"},
+    )
+
+    assert score_high["coverage_gain"] > score_low["coverage_gain"], (
+        f"more unresolved mass must yield higher coverage gain: "
+        f"high={score_high['coverage_gain']} low={score_low['coverage_gain']}"
+    )
+    assert "leftover_mass_absorbed" in score_high
+    assert "unresolved_reduction_ratio" in score_high
+
+
+# --- Task 7: dense page arbitration regression ---
+
+def test_dense_composite_parent_collects_large_fragment_set() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg", "page": 10, "role": "figure_caption",
+         "text": "Figure 1. Multi-panel expression atlas.", "bbox": [100, 830, 900, 880],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "a1", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 80, 450, 230]},
+        {"block_id": "a2", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 280, 450, 430]},
+        {"block_id": "a3", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 480, 450, 630]},
+        {"block_id": "a4", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [550, 80, 900, 230]},
+        {"block_id": "a5", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [550, 280, 900, 430]},
+        {"block_id": "a6", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [550, 480, 900, 630]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1000)
+
+    matched = inv.get("matched_figures", [])
+    assert len(matched) >= 1, "dense page must produce at least one matched figure"
+
+    matched_asset_ids = set()
+    for mf in matched:
+        for bid in mf.get("asset_block_ids", []):
+            matched_asset_ids.add(str(bid))
+
+    expected = {"a1", "a2", "a3", "a4", "a5", "a6"}
+    missing = expected - matched_asset_ids
+    assert not missing, f"dense parent must collect all fragments; missing: {missing}"
+
+
+def test_dense_parent_does_not_swallow_neighboring_ordinary_figure() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_dense", "page": 10, "role": "figure_caption",
+         "text": "Figure 1. Dense composite with 6 panels.",
+         "bbox": [100, 750, 500, 800],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "d1", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 250, 300]},
+        {"block_id": "d2", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [300, 100, 450, 300]},
+        {"block_id": "d3", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 350, 250, 550]},
+        {"block_id": "d4", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [300, 350, 450, 550]},
+        {"block_id": "leg_ord", "page": 10, "role": "figure_caption",
+         "text": "Figure 2. Independent figure on same page.",
+         "bbox": [600, 750, 1000, 800],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "n1", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [600, 100, 900, 500]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1100)
+
+    matched = inv.get("matched_figures", [])
+    assert len(matched) >= 2, f"page with two figures must emit >=2 matched; got {len(matched)}"
+
+    fig2_assets = set()
+    fig1_assets = set()
+    for mf in matched:
+        fn = mf.get("figure_number")
+        if fn == 2:
+            fig2_assets = {str(b) for b in mf.get("asset_block_ids", [])}
+        elif fn == 1:
+            fig1_assets = {str(b) for b in mf.get("asset_block_ids", [])}
+
+    assert "n1" in fig2_assets, "ordinary figure's asset must NOT be swallowed by dense parent"
+    assert "n1" not in fig1_assets, "dense parent must NOT claim neighboring ordinary figure's asset"
+
+
+def test_partial_same_page_claim_becomes_provisional_when_large_same_zone_leftovers_remain() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg", "page": 10, "role": "figure_caption",
+         "text": "Figure 1. Dense multi-panel composite with orphaned sub-panels.",
+         "bbox": [100, 750, 900, 800],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "ma1", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 300, 300]},
+        {"block_id": "ma2", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [350, 100, 550, 300]},
+        {"block_id": "ma3", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [600, 100, 800, 300]},
+        {"block_id": "ma4", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 350, 300, 550]},
+        {"block_id": "ma5", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [350, 350, 550, 550]},
+        {"block_id": "ma6", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [600, 350, 800, 550]},
+        {"block_id": "ma7", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [850, 350, 950, 400]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1050)
+
+    matched = inv.get("matched_figures", [])
+    assert len(matched) >= 1, "must produce at least one figure on dense page"
+
+    matched_asset_ids = set()
+    for mf in matched:
+        for bid in mf.get("asset_block_ids", []):
+            matched_asset_ids.add(str(bid))
+
+    unresolved = inv.get("unresolved_clusters", [])
+    unresolved_asset_ids = set()
+    for uc in unresolved:
+        for bid in uc.get("media_block_ids", []):
+            unresolved_asset_ids.add(str(bid))
+
+    total_assets = matched_asset_ids | unresolved_asset_ids
+    assert len(total_assets) >= 6, (
+        f"dense page must account for most visual assets; "
+        f"matched={len(matched_asset_ids)} unresolved={len(unresolved_asset_ids)}"
+    )
+
+
+def test_unresolved_clusters_deduped_against_matched_figures() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg1", "page": 10, "role": "figure_caption",
+         "text": "Figure 1. Test figure.", "bbox": [100, 600, 500, 650],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "ast1", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 500, 500]},
+        {"block_id": "ast2", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [550, 100, 900, 500]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1000)
+
+    matched = inv.get("matched_figures", [])
+    ucs = inv.get("unresolved_clusters", [])
+
+    matched_block_ids = set()
+    for mf in matched:
+        for bid in mf.get("asset_block_ids", []):
+            matched_block_ids.add(str(bid))
+
+    for uc in ucs:
+        uc_page = uc.get("page", 0)
+        for bid in uc.get("media_block_ids", []):
+            assert (uc_page, str(bid)) not in {
+                (mf.get("page", 0), b) for mf in matched for b in mf.get("asset_block_ids", [])
+                if str(b) == str(bid)
+            }, f"block {bid} in unresolved_cluster must not also be in matched_figures"
+

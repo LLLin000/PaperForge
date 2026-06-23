@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-23 (P0 through P3 complete — visual-grammar hardening)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-23 (figure ownership arbitration convergence)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -2013,6 +2013,40 @@ pytest tests/test_ocr_figures.py -v --tb=short
 - Result: dense fragmented pages now produce audit-visible `composite_parent_candidates` with `parent_subtype="dense_composite"`, `unresolved_cluster_ids`, `fragment_count`, `compactness`, `grid_score`, and `construction_reason`. Ordinary multi-figure pages do not gain page-wide dense parents (guard test verified). Full regression: 209 pass, 2 pre-existing fail (unchanged).
 - Tests: 5 new synthetic tests covering dense parent emission, ordinary page guard, unresolved cluster visibility, and contract field completeness. All existing `composite_parent` tests remain green.
 - Stop-condition check: no atomic grouping thresholds widened, no new settlement path, no sidecar changes, no bucket semantics changed, no literal label blacklist. All boundaries intact.
+
+### 12.33 Figure ownership arbitration convergence (2026-06-23)
+
+- Problem: OCR-v2 figure ownership was converging on multiple ad-hoc settlement paths (dense composite, panel-title, sidecar, sequence-shell). Without a unified arbitration model, each new `P1B`/`P2` fix risked adding another direct settlement behavior.
+- Root cause: no internal convergence layer existed — caption evidence normalization, candidate-source normalization, page-level arbitration metadata, and unified accounting semantics were each handled inline without a shared contract.
+- Fix: added convergence scaffolding per `docs/superpowers/plans/2026-06-23-figure-ownership-arbitration-convergence-implementation.md`, which adds convergence constraints rather than a new one-paper path. The scaffolding includes:
+  - **Task 1:** `_ownership_decision_metadata(...)` — internal metadata adapter for attaching ownership-decision annotations to persisted entries without replacing bucket semantics.
+  - **Task 2:** `FigureOwnershipRegistry.soft_reserve_assets(...)` / `finalize_soft_reservation(...)` / `release_soft_reservation(...)` — provisional soft reservation that blocks legacy fallback consumption during arbitration but may be superseded by a stronger candidate.
+  - **Task 3:** `_should_suppress_panel_title_candidate(...)` — structural demotion of short unnumbered text inside visual envelopes from formal legend matching, retaining them as embedded figure text evidence. Emitted into `suppressed_caption_candidates`.
+  - **Task 4:** dense parent candidate normalization — `parent_subtype="dense_composite"` under `group_type="composite_parent"`, not a parallel matcher family.
+  - **Task 5:** construction-time vs arbitration-time separation — `_build_dense_composite_parent_candidates(...)` (visual-only) and `_score_dense_parent_candidate_against_local_ownership(...)` (arbitration-time, uses coverage gain / leftover mass).
+  - **Task 6:** assetless sequence shell demotion — shells with no asset payload stay in `ambiguous_figures` with `hold_reason="assetless_sequence_shell"`, never increment `official_figure_count`.
+  - **Task 7:** dense page arbitration regression — relaxed `_dense_parent_single_group_ok` threshold to `fragment_count >= 4`; dense parents now built before legend loop to participate in arbitration; dense parents excluded from pages with competing captions to prevent swallowing neighboring figures; unmatched assets on dense pages consolidated into `unresolved_clusters` with `cluster_source="dense_page_leftovers"`.
+- Result: 216 tests pass (up from 211 at convergence baseline). No persisted buckets removed. No new `settlement_type` path created. No atomic grouping thresholds widened. No literal label blacklists.
+- Tests: 8 new synthetic tests covering ownership decision metadata, provisional soft reservations, panel-title suppression, construction/arbitration separation, dense parent collection, neighbor protection, and dense page leftover consolidation. All existing tests remain green.
+- Relationship to existing roadmap: this plan adds convergence constraints (not replacement behavior) to the visual-grammar hardening roadmap (`docs/superpowers/specs/2026-06-23-ocr-visual-grammar-hardening-design.md`). Task 4, Task 5, and Task 7 were gated on P1A composite-parent candidates already existing on the branch.
+
+### 12.34 Phantom unresolved cluster dedup (2026-06-23)
+
+- Problem: `unresolved_clusters` built during the `rejected_legends`→`unmatched_assets`→cluster pass (line 3883) referenced blocks that were later matched to figures by same-page/cross-page/sequential settlement. The clusters were never cleaned up after matching completed, causing audit tools to report phantom "unresolved" clusters whose blocks were already owned by matched figures. VFS8CBW2 showed 9/9 phantom clusters; RKSLQRIM showed 1/1 phantom.
+- Root cause: cluster construction ran before final figure matching/ownership resolution. The `_recompute_final_unmatched_assets` pass removes matched blocks from `unmatched_assets` but does not filter `unresolved_clusters` itself.
+- Fix: added a dedup pass in `build_figure_inventory` (before inventory dict construction) that removes from `unresolved_clusters` any blocks already owned by figures in `matched_figures`. A cluster with zero remaining unowned blocks is dropped entirely.
+- What it does NOT touch: single-asset unmatched entries, `ambiguous_figures`, `held_figures`, composite parent logic, dense page consolidation. The `unresolved_clusters` bucket semantics are preserved — only already-owned blocks are filtered.
+- Result: VFS8CBW2: unresolved_clusters 9→0. RKSLQRIM: unresolved_clusters 1→0. 6FGDBFQN: single real unresolved cluster retained (no overlap with matched figures). 2UIPV93M: 0 unresolved clusters (unchanged).
+- Tests: `test_unresolved_clusters_deduped_against_matched_figures` — synthetic test verifying no block in `unresolved_clusters` also appears in `matched_figures`. Full figure stack: 217 passed, 0 failed.
+
+### 12.35 Ticket closeout: remaining residual issues identified (2026-06-23)
+
+Vision audit of VFS8CBW2/6FGDBFQN/2UIPV93M/RKSLQRIM identified two residual issues outside the convergence layer:
+
+1. **6FGDBFQN Fig 3 false negative (assetless_sequence_shell)** — two visual assets exist (MR image + gross anatomy photo) on page 3, caption clearly visible. Pipeline fails to match because caption is in left column, assets are in right column above caption's y-band. Root cause: spatial matcher (same_page/sidecar local pairing) does not handle two-column layouts with assets right/above caption. → Separate ticket: "Mixed local caption grammar: opposite-column above/right asset pairing"
+2. **2UIPV93M page 49 unmatched X-ray assets** — blocks 1 and 5 are `media_asset` with empty zone, captions sit directly below. Pipeline fails to match because role/zone classification does not route these into figure candidate context. → Separate ticket: "Figure asset role/zone normalization for ordinary caption-below X-ray pages"
+
+These are NOT convergence-layer issues. The phantom cluster bug (fixed in 12.34) was the only convergence-layer diagnostic inaccuracy found by this audit pass.
 
 
 

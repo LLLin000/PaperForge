@@ -1786,6 +1786,28 @@ def _build_dense_composite_parent_candidates(
     return results
 
 
+def _score_dense_parent_candidate_against_local_ownership(
+    parent: dict,
+    *,
+    owned_asset_ids: set[str],
+    unresolved_asset_ids: set[str],
+) -> dict:
+    asset_block_ids = {str(bid) for bid in parent.get("asset_block_ids", [])}
+    unresolved_absorbed = asset_block_ids & unresolved_asset_ids
+    already_owned = asset_block_ids & owned_asset_ids
+    total_asset_count = max(1, len(asset_block_ids))
+    coverage_gain = len(unresolved_absorbed)
+    leftover_mass_absorbed = len(unresolved_absorbed)
+    unresolved_reduction_ratio = round(len(unresolved_absorbed) / total_asset_count, 4)
+    return {
+        "coverage_gain": coverage_gain,
+        "leftover_mass_absorbed": leftover_mass_absorbed,
+        "unresolved_reduction_ratio": unresolved_reduction_ratio,
+        "already_owned_count": len(already_owned),
+        "total_parent_asset_count": total_asset_count,
+    }
+
+
 def _should_suppress_panel_title_candidate(
     block: dict,
     *,
@@ -2612,6 +2634,30 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         page_width,
     )
 
+    # --- Dense composite parent construction before legend loop so
+    # dense parents participate in arbitration ---
+    _numbered_pages_early = {
+        int(leg.get("page", 0) or 0)
+        for leg in legends
+        if _extract_figure_number(str(leg.get("text") or "")) is not None
+    }
+    _early_dense_parents = _build_dense_composite_parent_candidates(
+        candidate_groups,
+        [],
+        _numbered_pages_early,
+        page_width,
+    )
+    _parent_dict = {
+        str(p.get("group_id", "")): p
+        for p in composite_parent_candidates
+        if str(p.get("group_id", ""))
+    }
+    for p in _early_dense_parents:
+        pid = str(p.get("group_id", ""))
+        if pid:
+            _parent_dict[pid] = p
+    composite_parent_candidates = list(_parent_dict.values())
+
     # --- Panel-title suppression: demote short unnumbered text inside visual
     # envelopes from formal legend matching on pages with numbered captions ---
     _numbered_pages = {
@@ -2741,6 +2787,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 cp for cp in composite_parent_candidates
                 if cp.get("page") == legend_page
                 and not cp.get("ownership_consumed", False)
+                and not (
+                    cp.get("parent_subtype") == "dense_composite"
+                    and len(_page_captions_for_gate.get(legend_page, set())) > 1
+                )
             ]
             if _page_parents:
                 # Prefer the parent with highest confidence
@@ -2764,11 +2814,18 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     )
                     == legend_id
                 ]
-                _effective_child_groups = _matching_child_groups or [
+                _is_dense = _best_parent.get("parent_subtype") == "dense_composite"
+                _all_child_groups = [
                     _candidate_groups_by_id[child_gid]
                     for child_gid in _best_parent.get("child_group_ids", [])
                     if child_gid in _candidate_groups_by_id
                 ]
+                # For dense parents with a single caption, consume all child groups.
+                # With competing captions, keep caption-band scoping.
+                _effective_child_groups = (
+                    _all_child_groups if (_is_dense and not _has_competing_caption)
+                    else (_matching_child_groups or _all_child_groups)
+                )
                 _effective_child_group_ids = [
                     str(group.get("group_id", "")) for group in _effective_child_groups if str(group.get("group_id", ""))
                 ]
@@ -2785,8 +2842,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 _dense_parent_single_group_ok = (
                     _best_parent.get("parent_subtype") == "dense_composite"
                     and len(_effective_child_groups) == 1
-                    and _dense_parent_unresolved_count >= 2
-                    and _dense_parent_fragment_count >= 6
+                    and _dense_parent_fragment_count >= 4
                 )
 
                 if (
@@ -3903,10 +3959,59 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             _composite_parent_by_id[parent_id] = parent
     composite_parent_candidates = list(_composite_parent_by_id.values())
 
+    # --- Dense page unmatched consolidation: on pages where a dense composite
+    # parent candidate exists, leftover unmatched assets are grouped into
+    # unresolved clusters ---
+    _dense_parent_pages = {
+        int(p.get("page", 0) or 0)
+        for p in composite_parent_candidates
+        if p.get("parent_subtype") == "dense_composite"
+    }
+    if unmatched_assets and _dense_parent_pages:
+        for cluster in _media_clusters(unmatched_assets, page_width):
+            if len(cluster) < 2:
+                continue
+            cluster_page = cluster[0].get("page", 0)
+            if cluster_page not in _dense_parent_pages:
+                continue
+            cluster_id = f"unresolved_cluster_dense_{len(unresolved_clusters) + 1:03d}"
+            cluster_ids = [b.get("block_id", "") for b in cluster]
+            unresolved_clusters.append(
+                {
+                    "cluster_id": cluster_id,
+                    "media_block_ids": cluster_ids,
+                    "cluster_bbox": _cluster_bbox([b.get("bbox", [0, 0, 0, 0]) for b in cluster]),
+                    "page": cluster_page,
+                    "cluster_source": "dense_page_leftovers",
+                }
+            )
+        if unresolved_clusters:
+            consumed_dense = {bid for uc in unresolved_clusters for bid in uc["media_block_ids"]}
+            unmatched_assets = [a for a in unmatched_assets if a.get("block_id", "") not in consumed_dense]
+
     # --- P2: page-local caption grammar validation ---
     local_pairing_hypotheses = _validate_page_local_caption_grammar(
         local_pairing_hypotheses, ordered_legends
     )
+
+    # --- Remove blocks already matched to figures from unresolved clusters
+    # (clusters are built before matching completes; dedup afterward) ---
+    _owned_block_ids: set[tuple[int, str]] = set()
+    for mf in matched_figures:
+        mf_page = int(mf.get("page", 0) or 0)
+        for bid in mf.get("asset_block_ids", []):
+            _owned_block_ids.add((mf_page, str(bid)))
+    if _owned_block_ids and unresolved_clusters:
+        _clean_clusters: list[dict] = []
+        for uc in unresolved_clusters:
+            uc_page = int(uc.get("page", 0) or 0)
+            mids = [str(bid) for bid in uc.get("media_block_ids", [])]
+            kept = [bid for bid in mids if (uc_page, bid) not in _owned_block_ids]
+            if not kept:
+                continue
+            uc["media_block_ids"] = kept
+            _clean_clusters.append(uc)
+        unresolved_clusters = _clean_clusters
 
     inventory = {
         "figure_legends": deduped_legends,
