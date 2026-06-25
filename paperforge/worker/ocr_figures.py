@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import itertools
 import re
 from pathlib import Path
 from typing import Any
@@ -181,6 +182,89 @@ def _page_assets_strict_ok(page_legends: list[dict], page_assets_count: int, ful
     if len(page_legends) == 1:
         return True
     return not full_captions_on_page
+
+
+TABLE_LIKE_RAW = frozenset({"table", "table_image"})
+
+
+def _is_safe_page_assets_group(
+    group: dict,
+    legend: dict,
+    page_blocks: list[dict],
+    page_numbered_legend_count: int,
+    page_width: float,
+    page_height: float,
+) -> tuple[bool, list[str]]:
+    evidence: list[str] = []
+
+    # 1. Legend must have a formal figure number
+    if _extract_figure_number(str(legend.get("text") or "")) is None:
+        return False, ["legend_not_numbered"]
+
+    # 2. Single deduped numbered legend on page
+    if page_numbered_legend_count != 1:
+        return False, ["multiple_numbered_legends"]
+
+    # 3. Page context
+    if not page_blocks or page_height <= 0:
+        return False, ["missing_page_context"]
+
+    media_blocks = group.get("media_blocks", [])
+    cluster_bbox = group.get("cluster_bbox")
+    if not cluster_bbox or len(cluster_bbox) < 4:
+        return False, ["invalid_cluster_bbox"]
+
+    # 4. Require at least 3 media blocks
+    if len(media_blocks) < 3:
+        return False, ["insufficient_media_count"]
+
+    # 5. Page coverage
+    cw = cluster_bbox[2] - cluster_bbox[0]
+    ch = cluster_bbox[3] - cluster_bbox[1]
+    page_area = max(1.0, page_width * page_height)
+    cluster_area = max(1.0, cw * ch)
+    coverage_ratio = cluster_area / page_area
+    asset_area_sum = 0.0
+    for mb in media_blocks:
+        bb = mb.get("bbox") or [0, 0, 0, 0]
+        if len(bb) >= 4:
+            asset_area_sum += max(0.0, (bb[2] - bb[0]) * (bb[3] - bb[1]))
+    fill_ratio = asset_area_sum / cluster_area if cluster_area > 0 else 0.0
+    if coverage_ratio > 0.75:
+        return False, ["excessive_page_coverage"]
+    if coverage_ratio > 0.65 and fill_ratio < 0.25:
+        return False, ["excessive_coverage_low_fill"]
+
+    # 6. Compact geometry: media_blocks must form ONE semantic cluster
+    semantic_clusters = _cluster_semantic_page_assets(
+        media_blocks, page_blocks, page_width, page_height,
+    )
+    group_block_ids = {str(b.get("block_id")) for b in media_blocks if b.get("block_id")}
+    cluster_member_ids = [
+        {str(b.get("block_id")) for b in cluster if b.get("block_id")}
+        for cluster in semantic_clusters
+    ]
+    if group_block_ids not in cluster_member_ids:
+        return False, ["media_not_compact"]
+
+    # 7. No text separator between any paired media blocks
+    for a, b in itertools.combinations(media_blocks, 2):
+        if _has_text_separator(a, b, page_blocks):
+            return False, ["text_separator_between_assets"]
+
+    # 8. No table-like assets
+    for mb in media_blocks:
+        raw_label = str(mb.get("raw_label") or "").lower()
+        text = str(mb.get("text") or "").lower()
+        if raw_label in TABLE_LIKE_RAW and "<img" not in text:
+            return False, ["group_contains_table_like_asset"]
+        hint = str(mb.get("asset_family_hint") or "")
+        if hint == "table_like":
+            conf = float(mb.get("asset_family_confidence", 0) or 0)
+            if conf >= 0.70:
+                return False, ["group_contains_table_like_asset"]
+
+    return True, evidence
 
 
 def _compute_overlap_score(a_bbox: list[float], b_bbox: list[float]) -> float:
