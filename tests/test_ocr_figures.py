@@ -5130,3 +5130,184 @@ def test_sidecar_raw_band_still_excludes_protected_assets() -> None:
     fig2_assets = {str(b) for b in matched.get(2, {}).get("asset_block_ids", [])}
     assert "aA" not in fig2_assets, "Sidecar Fig 2 must not steal Fig 1 protected asset"
 
+
+# === page_assets safety gate regressions (Task 4) ===
+
+
+def test_page_assets_missing_page_context_rejected() -> None:
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    result = _score_legend_to_group(
+        {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
+        {"group_type": "page_assets", "page": 5, "media_blocks": [],
+         "cluster_bbox": [0, 0, 500, 500]},
+        caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
+        page_width=1200,
+    )
+
+    assert result["decision"] == "rejected"
+    assert "page_assets_missing_page_context" in result.get("evidence", [])
+
+
+def test_page_assets_single_legend_compact_group_matched() -> None:
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    media_blocks = [
+        {"block_id": "a1", "bbox": [100, 100, 300, 260]},
+        {"block_id": "a2", "bbox": [320, 100, 520, 260]},
+        {"block_id": "a3", "bbox": [100, 280, 300, 440]},
+    ]
+    page_blocks = [
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
+         "text": "Dummy body block for context."},
+    ]
+
+    result = _score_legend_to_group(
+        {"text": "Figure 1. Compact.", "block_id": "c1", "page": 5},
+        {"group_type": "page_assets", "page": 5,
+         "media_blocks": media_blocks,
+         "cluster_bbox": [100, 100, 520, 440]},
+        caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
+        page_width=1200, page_height=1000,
+        page_blocks=page_blocks, page_numbered_legend_count=1,
+    )
+
+    assert result["decision"] == "matched"
+    assert result["score"] >= 0.72
+    assert "page_assets_safe_gate" in result.get("evidence", [])
+
+
+def test_page_assets_multiple_numbered_legends_rejected() -> None:
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    media_blocks = [
+        {"block_id": "a1", "bbox": [100, 100, 300, 260]},
+        {"block_id": "a2", "bbox": [320, 100, 520, 260]},
+        {"block_id": "a3", "bbox": [100, 280, 300, 440]},
+    ]
+    page_blocks = [
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
+         "text": "Dummy body block for context."},
+    ]
+
+    result = _score_legend_to_group(
+        {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
+        {"group_type": "page_assets", "page": 5,
+         "media_blocks": media_blocks,
+         "cluster_bbox": [100, 100, 520, 440]},
+        caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
+        page_width=1200, page_height=1000,
+        page_blocks=page_blocks, page_numbered_legend_count=2,
+    )
+
+    assert result["decision"] == "rejected"
+    assert "multiple_numbered_legends" in result.get("evidence", [])
+
+
+def test_page_assets_text_separator_rejected() -> None:
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    media_blocks = [
+        {"block_id": "a1", "bbox": [100, 100, 300, 200], "page": 5},
+        {"block_id": "a2", "bbox": [330, 100, 530, 200], "page": 5},
+        {"block_id": "a3", "bbox": [100, 240, 300, 340], "page": 5},
+        {"block_id": "a4", "bbox": [330, 240, 530, 340], "page": 5},
+    ]
+    page_blocks = [
+        {"page": 5, "role": "body_paragraph",
+         "bbox": [300, 130, 335, 170],
+         "text": "Body text in horizontal gap."},
+    ]
+
+    result = _score_legend_to_group(
+        {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
+        {"group_type": "page_assets", "page": 5,
+         "media_blocks": media_blocks,
+         "cluster_bbox": [100, 100, 530, 340]},
+        caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
+        page_width=1200, page_height=1000,
+        page_blocks=page_blocks, page_numbered_legend_count=1,
+    )
+
+    assert result["decision"] == "rejected"
+    assert "text_separator_between_assets" in result.get("evidence", [])
+
+
+def test_page_assets_large_coverage_rejected() -> None:
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    media_blocks = [
+        {"block_id": "a1", "bbox": [0, 0, 600, 900]},
+        {"block_id": "a2", "bbox": [600, 0, 1100, 900]},
+        {"block_id": "a3", "bbox": [0, 900, 600, 1000]},
+    ]
+    page_blocks = [
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
+         "text": "Dummy body block for context."},
+    ]
+
+    result = _score_legend_to_group(
+        {"text": "Figure 1. Large.", "block_id": "c1", "page": 5},
+        {"group_type": "page_assets", "page": 5,
+         "media_blocks": media_blocks,
+         "cluster_bbox": [0, 0, 1100, 1000]},
+        caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
+        page_width=1200, page_height=1000,
+        page_blocks=page_blocks, page_numbered_legend_count=1,
+    )
+
+    assert result["decision"] == "rejected"
+    assert "excessive_page_coverage" in result.get("evidence", [])
+
+
+def test_page_assets_table_like_asset_rejected() -> None:
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    media_blocks = [
+        {"block_id": "a1", "bbox": [100, 100, 300, 260]},
+        {"block_id": "a2", "bbox": [320, 100, 520, 260]},
+        {"block_id": "t1", "bbox": [100, 280, 600, 500],
+         "raw_label": "table", "text": "<table><tr><td>data</td></tr></table>"},
+    ]
+    page_blocks = [
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
+         "text": "Dummy body block for context."},
+    ]
+
+    result = _score_legend_to_group(
+        {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
+        {"group_type": "page_assets", "page": 5,
+         "media_blocks": media_blocks,
+         "cluster_bbox": [100, 100, 600, 500]},
+        caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
+        page_width=1200, page_height=1000,
+        page_blocks=page_blocks, page_numbered_legend_count=1,
+    )
+
+    assert result["decision"] == "rejected"
+    assert "group_contains_table_like_asset" in result.get("evidence", [])
+
+
+def test_build_figure_inventory_no_page_assets_on_multi_legend_page() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {"page": 5, "block_id": "a1", "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 300, 260], "text": ""},
+        {"page": 5, "block_id": "a2", "role": "figure_asset", "raw_label": "image",
+         "bbox": [320, 100, 520, 260], "text": ""},
+        {"page": 5, "block_id": "a3", "role": "figure_asset", "raw_label": "image",
+         "bbox": [540, 100, 740, 260], "text": ""},
+        {"page": 5, "block_id": "c1", "role": "figure_caption",
+         "text": "Figure 1. Left.", "bbox": [100, 280, 320, 320],
+         "zone": "display_zone", "style_family": "legend_like"},
+        {"page": 5, "block_id": "c2", "role": "figure_caption",
+         "text": "Figure 2. Right.", "bbox": [420, 280, 740, 320],
+         "zone": "display_zone", "style_family": "legend_like"},
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+    for fig in inventory["matched_figures"]:
+        evidence = fig.get("match_score", {}).get("evidence", [])
+        assert "page_assets_safe_gate" not in evidence
+
