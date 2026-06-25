@@ -79,6 +79,15 @@ def _merge_adjacent_headings(rows: list[dict]) -> None:
             return 0
         return m.group(1).count(".") + 1
 
+    def _case_style(b: dict) -> str:
+        t = str(b.get("text", "") or "")
+        if not t:
+            return "empty"
+        upper = sum(1 for c in t if c.isupper())
+        # ponytail: threshold 0.7 matches _infer_heading_level's legacy heuristic;
+        # all-caps headings vs title-case subsections should stay separate
+        return "upper" if upper / max(len(t), 1) > 0.7 else "mixed"
+
     i = 0
     while i < len(rows) - 1:
         cur = rows[i]
@@ -90,6 +99,7 @@ def _merge_adjacent_headings(rows: list[dict]) -> None:
             and _col(cur) == _col(nxt)
             and _vertical_gap(cur, nxt) <= 30  # OCR line-wrap within same heading
             and _heading_depth(cur) >= _heading_depth(nxt)  # don't swallow deeper subsections
+            and _case_style(cur) == _case_style(nxt)  # same case style = same heading
         ):
             cur["text"] = (str(cur.get("text", "")) + " " + str(nxt.get("text", ""))).strip()
             cur["bbox"] = _union_bbox(cur.get("bbox"), nxt.get("bbox"))
