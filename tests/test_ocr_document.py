@@ -1013,6 +1013,124 @@ def test_infer_zones_allows_body_blocks_on_first_surviving_page() -> None:
     assert "p2_b1" not in zones["frontmatter_main_zone"]["block_ids"]
 
 
+def test_infer_zones_does_not_route_page2_heading_with_body_continuation_to_frontmatter_side() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_title",
+            "page": 1,
+            "role": "paper_title",
+            "seed_role": "paper_title",
+            "text": "Real Paper Title",
+            "bbox": [80, 120, 900, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_body_1",
+            "page": 2,
+            "role": "body_paragraph",
+            "seed_role": "body_paragraph",
+            "text": "Lead body paragraph that establishes the left-column body family on the first surviving page for this synthetic case.",
+            "bbox": [80, 120, 585, 260],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "MinionPro-Regular", "font_size_median": 9.5},
+        },
+        {
+            "block_id": "p2_h1",
+            "page": 2,
+            "role": "section_heading",
+            "seed_role": "section_heading",
+            "text": "THE MOLECULAR IDENTITY AND REGULATION OF THE MCU COMPLEX",
+            "bbox": [80, 560, 535, 630],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "HelveticaNeueLTStd-Bd", "font_size_median": 12.0},
+        },
+        {
+            "block_id": "p2_b2",
+            "page": 2,
+            "role": "body_paragraph",
+            "seed_role": "body_paragraph",
+            "text": "To date, three different mitochondrial membrane proteins have been characterized as components of the uniporter.",
+            "bbox": [80, 678, 586, 748],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "MinionPro-Regular", "font_size_median": 9.5},
+        },
+    ]
+
+    zones = infer_zones(
+        blocks,
+        {"body_family_anchor": {"status": "ACCEPT", "sample_pages": [2], "width_bucket": 500, "font_family_norm": "MinionPro-Regular"},
+         "reference_family_anchor": {"status": "HOLD"}},
+    )
+
+    assert "p2_h1" in zones["body_zone"]["block_ids"]
+    assert "p2_h1" not in zones["frontmatter_side_zone"]["block_ids"]
+    assert "p2_b2" in zones["body_zone"]["block_ids"]
+
+
+def test_infer_zones_keeps_page2_highlights_in_frontmatter_side_when_support_geometry_matches() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_title",
+            "page": 1,
+            "role": "paper_title",
+            "seed_role": "paper_title",
+            "text": "Paper Title",
+            "bbox": [80, 120, 900, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_highlights",
+            "page": 2,
+            "role": "section_heading",
+            "seed_role": "section_heading",
+            "text": "Highlights",
+            "bbox": [930, 170, 1110, 220],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "HelveticaNeueLTStd-Bd", "font_size_median": 10.0},
+        },
+    ]
+
+    zones = infer_zones(
+        blocks,
+        {"body_family_anchor": {"status": "ACCEPT", "sample_pages": [2], "width_bucket": 500, "font_family_norm": "MinionPro-Regular"},
+         "reference_family_anchor": {"status": "HOLD"}},
+    )
+
+    assert "p2_highlights" in zones["frontmatter_side_zone"]["block_ids"]
+    assert "p2_highlights" not in zones["body_zone"]["block_ids"]
+
+
+def test_demote_early_frontmatter_body_leaks_stops_after_heading_on_first_surviving_page() -> None:
+    from paperforge.worker.ocr_document import _demote_early_frontmatter_body_leaks
+
+    blocks = [
+        {"page": 2, "role": "section_heading", "seed_role": "section_heading", "text": "REAL SECTION"},
+        {"page": 2, "role": "body_paragraph", "seed_role": "body_paragraph", "text": "Real body paragraph after heading should stay body."},
+        {"page": 3, "role": "body_paragraph", "seed_role": "body_paragraph", "text": "Later page body stays untouched too."},
+    ]
+
+    _demote_early_frontmatter_body_leaks(blocks)
+
+    assert blocks[1]["role"] == "body_paragraph"
+    assert blocks[2]["role"] == "body_paragraph"
+
+
 def test_assign_block_role_marks_margin_band_as_noise() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
 
@@ -4407,6 +4525,20 @@ def test_gate_context_adapters_do_not_accept_from_seed_roles_only() -> None:
     assert _build_accepted_heading_block_ids(blocks, None) == set()
     assert _build_accepted_caption_block_ids({}, {"reader_figures": []}, blocks) == set()
     assert _build_accepted_table_block_ids({}, blocks) == set()
+
+
+def test_build_accepted_heading_block_ids_uses_page_safe_ids_for_duplicates() -> None:
+    from paperforge.worker.ocr_document import _build_accepted_heading_block_ids
+
+    blocks = [
+        {"page": 2, "block_id": 4, "seed_role": "section_heading", "role": "section_heading", "zone": "body_zone"},
+        {"page": 7, "block_id": 4, "seed_role": "section_heading", "role": "section_heading", "zone": "body_zone"},
+    ]
+
+    accepted = _build_accepted_heading_block_ids(blocks, None)
+
+    assert accepted == {"p2:4", "p7:4"}
+    assert 4 not in accepted
 
 
 def test_gate_accepts_frontmatter_only_from_source_anchors() -> None:

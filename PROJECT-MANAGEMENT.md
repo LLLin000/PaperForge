@@ -2096,6 +2096,18 @@ These are NOT convergence-layer issues. The phantom cluster bug (fixed in 12.34)
 
 ### 12.41 Dedup normalization narrowed to terminal punctuation only (2026-06-24)
 
+### 12.42 OCR frontmatter-side zone hardening (2026-06-25)
+
+**Problem:** Real page-2 body headings and body continuations could be swallowed into `frontmatter_side_zone`, then suppressed by the structural gate.
+
+**Root cause:** `_is_frontmatter_side_candidate()` over-trusted early-page narrow/side-column geometry, `_demote_early_frontmatter_body_leaks()` still used broad `page <= 2` assumptions, and accepted heading membership used page-local ids that could collide across pages.
+
+**Fix:** Narrowed frontmatter-side entry to explicit furniture plus supporting geometry, added heading/body-continuation vetoes, restricted early demotion to the first surviving page before body-start, and normalized accepted heading membership ids to artifact-safe identities.
+
+**Result:** `49PY5UCJ` page-2 section heading survives as body heading; preproof-drop frontmatter behavior remains intact; heading verification no longer varies because of cross-page id reuse.
+
+**Tests:** `python -m pytest tests/test_ocr_document.py tests/test_ocr_real_paper_regressions.py tests/test_ocr_render.py -k "frontmatter_side or first_surviving_page or dwqqk2yb" -v --tb=short`
+
 - **Problem:** the merge-gate closeout changed `_normalized_caption_body` to strip all punctuation/whitespace runs via `re.sub(r"[\s\W_]+", " ", body)`. That fixed trailing-period OCR drift, but it also widened dedup aggressively enough to collapse captions whose internal punctuation can carry meaning.
 - **Root cause:** the normalization treated internal punctuation and terminal punctuation as equivalent noise. This is too broad for same-number distinct-caption arbitration: `IL-1` and `IL 1`, or other hyphenated token boundaries, can become the same normalized body even when they should remain distinct.
 - **Fix:** narrowed `_normalized_caption_body` to the smallest behavior needed by the blocker test: lowercase, trim, strip only terminal punctuation (`[.!?:;,]+$`), then collapse whitespace. This keeps the trailing-period OCR drift fix while preserving meaningful internal punctuation.

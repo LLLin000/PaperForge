@@ -1096,6 +1096,17 @@ def test_dwqqk2yb_first_surviving_page_support_blocks_stay_frontmatter_support(t
     assert corr_block.get("role") == "frontmatter_support"
 
 
+# NOTE:
+# `49PY5UCJ` is the motivating live-paper failure, but it is not currently
+# fixture-backed under `tests/fixtures/ocr_real_papers/49PY5UCJ/`.
+# Keep merge-gate coverage on synthetic tests plus existing replay fixtures.
+# Once the fixture lands, add a replay test that asserts:
+# - page-2 main heading reaches `body_zone`
+# - final role is `section_heading`
+# - rendered markdown contains:
+#   "## THE MOLECULAR IDENTITY AND REGULATION OF THE MCU COMPLEX"
+
+
 def test_caqnw9q2_page1_correspondence_is_not_frontmatter_noise(tmp_path: Path) -> None:
     result = replay_production_pipeline("CAQNW9Q2", tmp_path)
     blocks = result["structured_blocks"]

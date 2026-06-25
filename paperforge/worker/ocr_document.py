@@ -796,35 +796,17 @@ def _duplicate_block_ids_from_blocks(blocks: list[dict]) -> set[str]:
     return {key for key, count in counts.items() if count > 1}
 
 
-def _is_frontmatter_side_candidate(block: dict, body_anchor: dict | None = None) -> bool:
-    page = int(block.get("page", 0) or 0)
-    if page <= 0:
+def _is_explicit_frontmatter_support_furniture(text: str) -> bool:
+    lower = text.strip().lower()
+    if not lower:
         return False
-
-    marker_type = (block.get("marker_signature") or {}).get("type") or "none"
-    if marker_type == "preproof_marker" or _is_reference_item_candidate(block):
-        return False
-
-    text = str(block.get("text") or block.get("block_content") or "").strip()
-    if not text:
-        return False
-
-    lower = text.lower()
-    bbox = _block_bbox(block)
-    page_width = float(block.get("page_width") or 0)
-    page_height = float(block.get("page_height") or 0)
-    block_width = (bbox[2] - bbox[0]) if bbox else 0.0
-    x_center = ((bbox[0] + bbox[2]) / 2.0) if bbox else 0.0
-    narrow = page_width > 0 and block_width > 0 and block_width <= page_width * 0.38
-    side_column = (
-        page_width > 0 and bbox is not None and (x_center <= page_width * 0.28 or x_center >= page_width * 0.72)
-    )
-    top_half = page_height > 0 and bbox is not None and bbox[1] <= page_height * 0.55
-
-    furniture_phrases = (
+    if lower in {"highlights", "key points"} or lower.startswith(("highlights", "key points")):
+        return True
+    phrases = (
         "correspondence",
         "corresponding author",
         "highlights",
+        "key points",
         "received:",
         "accepted:",
         "published online",
@@ -840,23 +822,127 @@ def _is_frontmatter_side_candidate(block: dict, body_anchor: dict | None = None)
         "these authors contributed equally",
         "orcid",
     )
-    if any(phrase in lower for phrase in furniture_phrases):
-        if page == 1:
-            return True
-        if (
-            page <= 2
-            and top_half
-            and any(phrase in lower for phrase in ("correspondence", "corresponding author", "highlights"))
-        ):
-            return True
+    return any(phrase in lower for phrase in phrases)
+
+
+def _is_heading_like_block(block: dict) -> bool:
+    role = str(block.get("role") or "")
+    seed_role = str(block.get("seed_role") or "")
+    if role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+        return True
+    if seed_role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+        return True
+    marker_type = str(((block.get("marker_signature") or {}).get("type")) or "")
+    return marker_type in {"canonical_section_name", "heading_arabic", "heading_decimal"}
+
+
+def _nearest_meaningful_same_column_block(block: dict, page_blocks: list[dict]) -> dict | None:
+    bbox = _block_bbox(block)
+    if bbox is None:
+        return None
+    page = int(block.get("page", 0) or 0)
+    right_of = bbox[3]
+    current_col = _get_column(block, float(block.get("page_width") or 1200))
+    best: tuple[float, dict] | None = None
+    boundary_roles = {"structured_insert", "non_body_insert", "reference_heading", "reference_item", "table_html", "table_caption", "figure_caption"}
+    for other in page_blocks:
+        if other is block or int(other.get("page", 0) or 0) != page:
+            continue
+        other_text = str(other.get("text") or other.get("block_content") or "").strip()
+        if not other_text:
+            continue
+        other_role = str(other.get("role") or "")
+        if other_role in {"noise", "page_header", "page_footer", "number", "frontmatter_noise"}:
+            continue
+        obox = _block_bbox(other)
+        if obox is None or obox[1] < right_of:
+            continue
+        if _get_column(other, float(other.get("page_width") or 1200)) != current_col:
+            continue
+        gap = float(obox[1]) - float(right_of)
+        if best is None or gap < best[0]:
+            best = (gap, other)
+    if best is None:
+        return None
+    candidate = best[1]
+    if str(candidate.get("role") or "") in boundary_roles:
+        return candidate
+    return candidate
+
+
+def _is_frontmatter_side_candidate(
+    block: dict,
+    body_anchor: dict | None = None,
+    *,
+    first_surviving_page: int | None = None,
+    page_blocks: list[dict] | None = None,
+) -> bool:
+    page = int(block.get("page", 0) or 0)
+    if page <= 0:
+        return False
+
+    marker_type = (block.get("marker_signature") or {}).get("type") or "none"
+    if marker_type == "preproof_marker" or _is_reference_item_candidate(block):
+        return False
+
+    text = str(block.get("text") or block.get("block_content") or "").strip()
+    if not text:
+        return False
+
+    lower = text.lower()
+    explicit_furniture = _is_explicit_frontmatter_support_furniture(text)
+    bbox = _block_bbox(block)
+    page_width = float(block.get("page_width") or 0)
+    page_height = float(block.get("page_height") or 0)
+    block_width = (bbox[2] - bbox[0]) if bbox else 0.0
+    x_center = ((bbox[0] + bbox[2]) / 2.0) if bbox else 0.0
+    narrow = page_width > 0 and block_width > 0 and block_width <= page_width * 0.38
+    side_column = page_width > 0 and bbox is not None and (x_center <= page_width * 0.28 or x_center >= page_width * 0.72)
+    top_half = page_height > 0 and bbox is not None and bbox[1] <= page_height * 0.55
+
+    if explicit_furniture:
+        if first_surviving_page is None or page == first_surviving_page:
+            return top_half or narrow or side_column
+        if "highlights" in lower or "key points" in lower:
+            return top_half and (narrow or side_column)
         return top_half and (narrow or side_column)
+
+    if page != first_surviving_page:
+        return False
+
+    if _is_heading_like_block(block):
+        return False
+
+    nearest = _nearest_meaningful_same_column_block(block, page_blocks or [])
+    if nearest is not None:
+        nearest_role = str(nearest.get("role") or nearest.get("seed_role") or "")
+        nearest_bbox = _block_bbox(nearest)
+        gap = None if bbox is None or nearest_bbox is None else float(nearest_bbox[1]) - float(bbox[3])
+        if nearest_role == "body_paragraph" and gap is not None and gap <= page_height * 0.12:
+            return False
+        if nearest_role in {
+            "structured_insert",
+            "structured_insert_candidate",
+            "non_body_insert",
+            "reference_heading",
+            "reference_item",
+            "table_html",
+            "table_html_candidate",
+            "table_caption",
+            "table_caption_candidate",
+            "figure_caption",
+            "figure_caption_candidate",
+            "figure_asset",
+            "media_asset",
+        }:
+            return False
 
     body_anchor = body_anchor or {}
     body_width = body_anchor.get("width_bucket")
     body_font_family = body_anchor.get("font_family_norm")
     span_signature = block.get("span_signature") or {}
     block_font_family = span_signature.get("font_family_norm")
-    if page <= 2 and top_half and (narrow or side_column):
+    if page == first_surviving_page and top_half and (narrow or side_column):
         if body_width is not None and block_width and block_width <= float(body_width) - 100:
             return True
         if body_font_family and block_font_family and block_font_family != body_font_family:
@@ -1047,10 +1133,21 @@ def infer_zones(
     frontmatter_main_composite_ids = [_zone_block_key(block) for block in frontmatter_main_blocks]
 
     frontmatter_main_id_set = set(frontmatter_main_ids)
+    blocks_by_page: dict[int, list[dict]] = {}
+    for block in blocks:
+        p = int(block.get("page", 0) or 0)
+        if p > 0:
+            blocks_by_page.setdefault(p, []).append(block)
+
     frontmatter_side_blocks = [
         block
         for block in blocks
-        if _is_frontmatter_side_candidate(block, body_anchor=body_anchor)
+        if _is_frontmatter_side_candidate(
+            block,
+            body_anchor=body_anchor,
+            first_surviving_page=first_surviving_page,
+            page_blocks=blocks_by_page.get(int(block.get("page", 0) or 0), []),
+        )
         and _artifact_block_id(block, duplicate_block_ids) not in frontmatter_main_id_set
         and block.get("block_id") is not None
         and not (
@@ -4732,11 +4829,17 @@ def _assert_verified_required_roles(blocks: list[dict]) -> None:
 
 def _build_accepted_heading_block_ids(blocks: list[dict], doc_structure) -> set:
     heading_artifact = _doc_get(doc_structure, "accepted_heading_block_ids", set()) or set()
-    result = set(heading_artifact)
-    _HEADING_SEED_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading"}
+    duplicate_block_ids = _duplicate_block_ids_from_blocks(blocks)
+    result = set()
+    for item in heading_artifact:
+        if isinstance(item, str) and item.startswith("p") and ":" in item:
+            result.add(item)
+        elif isinstance(item, int) and str(item) not in duplicate_block_ids:
+            result.add(item)
+    heading_seed_roles = {"section_heading", "subsection_heading", "sub_subsection_heading"}
     for block in blocks:
-        if block.get("seed_role") in _HEADING_SEED_ROLES and block.get("zone") in {"body_zone", "tail_body_zone"}:
-            bid = block.get("block_id")
+        if block.get("seed_role") in heading_seed_roles and block.get("zone") in {"body_zone", "tail_body_zone"}:
+            bid = _artifact_block_id(block, duplicate_block_ids)
             if bid is not None:
                 result.add(bid)
     return result
@@ -4801,19 +4904,29 @@ def _should_keep_formal_caption_seed(block: dict) -> bool:
 
 
 def _demote_early_frontmatter_body_leaks(blocks: list[dict]) -> None:
-    heading_seen_by_page: dict[int, bool] = {}
+    pages = sorted({int(block.get("page", 0) or 0) for block in blocks if int(block.get("page", 0) or 0) > 0})
+    if not pages:
+        return
+    first_surviving_page = pages[0]
+    body_started = False
     for block in blocks:
         page = int(block.get("page", 0) or 0)
-        if block.get("role") in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
-            heading_seen_by_page[page] = True
+        if page != first_surviving_page:
             continue
-        if block.get("role") != "body_paragraph":
+        role = str(block.get("role") or "")
+        seed_role = str(block.get("seed_role") or "")
+        if role in {"section_heading", "subsection_heading", "sub_subsection_heading"} or seed_role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+            body_started = True
             continue
-        if page <= 0 or page > 2:
+        if role == "body_paragraph":
+            text = _block_text(block).strip()
+            if len(text.split()) >= 20:
+                body_started = True
+        if body_started:
             continue
-        if heading_seen_by_page.get(page):
+        if role != "body_paragraph":
             continue
-        if block.get("seed_role") == "abstract_body":
+        if seed_role == "abstract_body":
             continue
         text = _block_text(block).strip()
         text_plain = _strip_inline_html(text)
