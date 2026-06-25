@@ -461,8 +461,12 @@ def _has_text_separator(a: dict, b: dict, page_blocks: list[dict]) -> bool:
             "body_paragraph",
             "section_heading",
             "subsection_heading",
+            "sub_subsection_heading",
             "backmatter_heading",
             "backmatter_body",
+            "tail_candidate_body",
+            "reference_heading",
+            "reference_item",
         ):
             continue
         txt = str(block.get("text", "") or "").strip()
