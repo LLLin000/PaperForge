@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-23 (sidecar outlier tolerance + raw band)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-25 (heading merge + level normalization)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -2116,4 +2116,21 @@ These are NOT convergence-layer issues. The phantom cluster bug (fixed in 12.34)
   - `python -m pytest tests/test_ocr_figures.py::test_same_number_internal_punctuation_difference_stays_distinct -q` → 1 passed
   - `python -m pytest tests/test_ocr_figures.py -k "same_number_ocr_minor_caption_variant_still_deduped or same_number_distinct_legends_can_both_match_separate_assets or same_number_distinct_legend_is_accounted_not_dropped or san9ayvr_fig26c_body_narrative or bundle_source_duplicate_loser_is_accounted_not_gap" -q` → 5 passed
   - `python -m pytest tests/test_ocr_figures.py -k "same_number_distinct_legends_can_both_match_separate_assets or same_number_distinct_legend_is_accounted_not_dropped or same_number_ocr_minor_caption_variant_still_deduped or table_labeled_img_figure_grids_still_separate_by_caption_when_caption_is_figure or same_number_internal_punctuation_difference_stays_distinct" -q` → 5 passed
+
+### 12.43 OCR adjacent heading merge + heading level normalization (2026-06-25)
+
+**Problem:** Two separate `paragraph_title` blocks with a close vertical gap were merged into one, garbling "THE MOLECULAR IDENTITY AND REGULATION OF THE MCU COMPLEX" with "The Pore Forming Subunits". Additionally, the merged heading got wrong level, single-word all-caps headings like "MCUb" and "EMRE" were assigned `section_heading` (H2) instead of `sub_subsection_heading` (H4), and OCR-internal newlines within a single heading block remained unnormalized.
+
+**Root cause:** `_merge_adjacent_headings` had no case-consistency guard (all-caps vs title-case = different headings). `_infer_heading_level`'s all-caps check used `word_count >= 1`, catching single-word sub-subsection headings. No normalization of OCR `\n` within block text.
+
+**Fix:** Added case-consistency check to `_merge_adjacent_headings` (all-caps heading followed by title-case heading = separate, not wrap). Changed `word_count >= 1` to `word_count >= 2` in all-caps `section_heading` rule so single-word headings fall through to `sub_subsection_heading`. Added `\n` → ` ` normalization for all `paragraph_title` blocks at merge entry.
+
+**Result:** Heading hierarchy now correct:
+- `## THE MOLECULAR IDENTITY AND REGULATION OF THE MCU COMPLEX`
+- `### The Pore Forming Subunits`
+- `### Mitochondrial Calcium Uniporter`
+- `#### MCUb`
+- `#### EMRE`
+
+**Tests:** `python -m pytest tests/test_ocr_blocks.py tests/test_ocr_document.py tests/test_ocr_real_paper_regressions.py -k "merge_adjacent or frontmatter_side or accepted_heading_block_ids or dwqqk2yb_first_surviving_page" -v --tb=short -q` → 7 passed. Live paper rebuild verified: `49PY5UCJ` heading hierarchy matches expected.
 
