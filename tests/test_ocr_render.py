@@ -209,3 +209,246 @@ def test_table_caption_fallback_uses_blockquote_not_heading() -> None:
 
     assert "### Table 1. Results summary." not in md
     assert "> **Table Caption:** Table 1. Results summary." in md
+
+
+def test_weak_match_caption_fallback_not_lost() -> None:
+    """Weak-matched table caption uses blockquote, not heading — not silently lost."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {
+            "page": 5,
+            "role": "table_caption",
+            "text": "Table 1. Results summary.",
+            "block_id": "p5_b1",
+        },
+    ]
+
+    table_inventory = {
+        "tables": [
+            {
+                "page": 5,
+                "caption_block_id": "p5_b1",
+                "caption_text": "Table 1. Results summary.",
+                "has_asset": False,
+                "consumed_block_ids": [],
+                "match_status": "unmatched_caption",
+            }
+        ],
+        "unmatched_assets": [],
+    }
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory=table_inventory,
+        page_count=5,
+        document_structure=None,
+        reader_payload={},
+    )
+
+    assert "### Table 1. Results summary." not in md
+    assert "> **Table Caption:** Table 1. Results summary." in md
+
+
+def test_consumed_table_note_skipped_before_role_skip() -> None:
+    """Non-footnote-role table note removed by ownership skip, not role skip."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Main body text.",
+            "block_id": "p5_body",
+            "bbox": [100, 100, 500, 130],
+        },
+        {
+            "page": 5,
+            "role": "table_asset",
+            "raw_label": "table",
+            "text": "",
+            "block_id": "p5_asset",
+            "bbox": [100, 200, 600, 500],
+        },
+        {
+            "page": 5,
+            "role": "table_caption",
+            "text": "Table 1. Results.",
+            "block_id": "p5_caption",
+            "bbox": [100, 510, 600, 550],
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Note: all values are mean +/- SD.",
+            "block_id": "p5_note",
+            "bbox": [100, 555, 600, 580],
+        },
+    ]
+
+    table_inventory = {
+        "tables": [
+            {
+                "caption_block_id": "p5_caption",
+                "page": 5,
+                "caption_text": "Table 1. Results.",
+                "asset_block_id": "p5_asset",
+                "has_asset": True,
+                "consumed_block_ids": ["p5_caption", "p5_asset", "p5_note"],
+                "segments": [{"page": 5, "asset_block_id": "p5_asset", "asset_bbox": [100, 200, 600, 500]}],
+                "note_block_ids": ["p5_note"],
+                "note_texts": ["Note: all values are mean +/- SD."],
+                "match_status": "matched",
+            }
+        ],
+        "unmatched_assets": [],
+    }
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory=table_inventory,
+        page_count=5,
+        document_structure=None,
+        reader_payload={},
+    )
+
+    assert "Note: all values are mean +/- SD." not in md
+    assert "Table 1. Results." not in md
+    assert "![[render/tables/table_001.md]]" in md
+    assert "> **Table Caption:**" not in md
+
+
+def test_table_object_renderer_includes_footnote_note() -> None:
+    """Table object renderer includes ## Notes; fulltext skips footnote-role note via ownership."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+    from paperforge.worker.ocr_objects import render_table_object_markdown
+
+    note_text = "* p < 0.05 vs baseline."
+
+    obj_md = render_table_object_markdown({
+        "table_id": "table_001",
+        "page": 5,
+        "caption": "Table 1. Results.",
+        "image_relpath": "assets/tables/table_001.jpg",
+        "confidence": 0.85,
+        "formal_table_number": 1,
+        "note_texts": [note_text],
+        "note_match_reason": "note_band_geometry_match",
+    })
+
+    assert "## Notes" in obj_md
+    assert note_text in obj_md
+
+    structured = [
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Main body text.",
+            "block_id": "p5_body",
+            "bbox": [100, 100, 500, 130],
+        },
+        {
+            "page": 5,
+            "role": "footnote",
+            "text": note_text,
+            "block_id": "p5_note",
+            "bbox": [100, 905, 600, 930],
+        },
+        {
+            "page": 5,
+            "role": "table_asset",
+            "raw_label": "table", "text": "",
+            "block_id": "p5_asset",
+            "bbox": [100, 200, 600, 500],
+        },
+        {
+            "page": 5,
+            "role": "table_caption",
+            "text": "Table 1. Results.",
+            "block_id": "p5_caption",
+            "bbox": [100, 510, 600, 550],
+        },
+    ]
+
+    table_inventory = {
+        "tables": [
+            {
+                "caption_block_id": "p5_caption",
+                "page": 5,
+                "caption_text": "Table 1. Results.",
+                "asset_block_id": "p5_asset",
+                "has_asset": True,
+                "consumed_block_ids": ["p5_caption", "p5_asset", "p5_note"],
+                "segments": [{"page": 5, "asset_block_id": "p5_asset", "asset_bbox": [100, 200, 600, 500]}],
+                "note_block_ids": ["p5_note"],
+                "note_texts": [note_text],
+                "match_status": "matched",
+            }
+        ],
+        "unmatched_assets": [],
+    }
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory=table_inventory,
+        page_count=5,
+        document_structure=None,
+        reader_payload={},
+    )
+
+    assert note_text not in md
+    assert "![[render/tables/table_001.md]]" in md
+    assert "> **Table Caption:**" not in md
+
+
+def test_consumed_table_note_uses_actual_block_page_not_table_page() -> None:
+    """Consumed key uses each block's real page, not table['page']."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {
+            "page": 6,
+            "role": "table_caption",
+            "text": "Table 1. Results.",
+            "block_id": "p6_caption",
+        },
+        {
+            "page": 7,
+            "role": "body_paragraph",
+            "text": "Note: cross-page table note.",
+            "block_id": "p7_note",
+        },
+    ]
+
+    table_inventory = {
+        "tables": [
+            {
+                "page": 6,
+                "caption_text": "Table 1. Results.",
+                "has_asset": True,
+                "consumed_block_ids": ["p6_caption", "p7_note"],
+                "note_block_ids": ["p7_note"],
+                "note_texts": ["Note: cross-page table note."],
+                "match_status": "matched",
+            }
+        ],
+        "unmatched_assets": [],
+    }
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory=table_inventory,
+        page_count=7,
+        document_structure=None,
+        reader_payload={},
+    )
+
+    assert "Note: cross-page table note." not in md
