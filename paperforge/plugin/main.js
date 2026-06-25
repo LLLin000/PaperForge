@@ -2743,8 +2743,11 @@ class PaperForgeStatusView extends ItemView {
             var rowEl = listContainer.createEl('div', { cls: 'paperforge-annotation-row' });
             if (isExpanded) rowEl.addClass('expanded');
 
-            // Page badge
+            // Page badge — click opens the PDF at the annotation's page
             var pageBadge = rowEl.createEl('span', { cls: 'paperforge-annotation-page-badge', text: String(display.pageLabel || display.page || '?') });
+            pageBadge.addEventListener('click', function (r) {
+                return function () { this._openAnnotationPdf(r); };
+            }(row).bind(this));
 
             // Color swatch
             var swatch = rowEl.createEl('span', { cls: 'paperforge-annotation-swatch' });
@@ -2901,6 +2904,29 @@ class PaperForgeStatusView extends ItemView {
                 this._rerenderAnnotationSection();
             }
         }.bind(this));
+    }
+
+    /**
+     * Open the PDF for an annotation at the correct page.
+     * Per D-09 through D-15: read-only navigation — never mutates UI state
+     * or annotation state, never calls _renderPaperMode() or filesystem writers.
+     */
+    _openAnnotationPdf(row) {
+        var result = resolveAnnotationPdfTarget(row, this._currentPaperEntry);
+        if (!result.ok) {
+            new Notice(result.reason || 'Could not open PDF for this annotation.', 5000);
+            return;
+        }
+
+        // Verify the PDF file exists in the vault before attempting to open
+        var abstractFile = this.app.vault.getAbstractFileByPath(result.path);
+        if (!abstractFile) {
+            new Notice('PDF file not found in vault: ' + result.path, 5000);
+            return;
+        }
+
+        // Open the PDF via Obsidian's openLinkText (read-only navigation)
+        this.app.workspace.openLinkText(result.linkText, '');
     }
 
     /* ── Paper Overview Card: read from formal note body ── */
