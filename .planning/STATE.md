@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: annotation v0.2
 milestone_name: milestone
-status: completed
-stopped_at: Annotation Phase 7 context gathered
-last_updated: "2026-06-20T03:03:30.123Z"
-last_activity: 2026-06-20 - Annotation Phase 6 Plan 04 executed (bounded compact CSS + 15 DOM regression tests, 214 pass / 3 known baseline)
+status: planned
+stopped_at: Annotation Phase 7 planned
+last_updated: "2026-06-25T00:00:00.000Z"
+last_activity: 2026-06-25 - Annotation Phase 7 planned with 4 serial plans; plan-checker PASS, ready for execute-phase.
 progress:
   total_phases: 69
   completed_phases: 50
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-18)
 
 ## Current Position
 
-Phase: Annotation Phase 6 of 9 (Annotation Sidebar and List View) ✅ completed
-Plan: annotation-06-04-PLAN.md ✅ completed — all 4 plans finished
-Status: Complete
-Last activity: 2026-06-20 - Annotation Phase 6 Plan 04 executed (bounded compact CSS + 15 DOM regression tests, 214 pass / 3 known baseline)
+Phase: Annotation Phase 7 of 9 (PDF Jump Navigation) planned
+Plan: annotation-07-01-PLAN.md -> annotation-07-04-PLAN.md planned as 4 serial waves
+Status: Ready for execute-phase
+Last activity: 2026-06-25 - Annotation Phase 7 planned with 4 serial plans; plan-checker PASS, ready for execute-phase.
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Last activity: 2026-06-20 - Annotation Phase 6 Plan 04 executed (bounded compact
 - Annotation Phase 5 executed: plugin runtime now stores active-paper annotation bridge state for Phase 6 UI consumption.
 - Annotation Phase 6 Plan 01 executed: Phase 5 bridge hard preflight passed — all required exports confirmed, plugin test environment ready.
 - Annotation Phase 6 Plan 02 executed: 11 pure annotation list view-model helpers with 78 Vitest tests.
+- Annotation Phase 7 planned: PDF jump navigation split into resolver, Obsidian runtime open/fallback, page-badge UI, and final automated/manual verification plans.
 
 *Updated after each plan completion*
 | Phase annotation-06 P01 | 2min | 2 tasks | 0 files |
@@ -110,7 +111,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-20T03:03:30.114Z
-Stopped at: Annotation Phase 7 context gathered
-Resume file: .planning/phases/annotation-07-pdf-jump-navigation/annotation-07-CONTEXT.md
-Next phase: Annotation Phase 7 (PDF Jump Navigation) — ready for planning
+Last session: 2026-06-25T00:00:00.000Z
+Stopped at: Annotation Phase 7 planned
+Resume file: .planning/phases/annotation-07-pdf-jump-navigation/annotation-07-01-PLAN.md
+Next phase: Annotation Phase 7 (PDF Jump Navigation) - ready for execute-phase
