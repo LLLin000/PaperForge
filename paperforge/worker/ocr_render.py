@@ -1296,10 +1296,7 @@ def render_fulltext_markdown(
                 block["role"] = new_role
                 block["role_confidence"] = new_blocks[i].get("role_confidence", block.get("role_confidence", 0.5))
 
-    before = sum(1 for b in structured_blocks if b.get("role") == "footnote")
     structured_blocks = _convert_footnotes_to_callouts(structured_blocks)
-    after = sum(1 for b in structured_blocks if b.get("role") == "footnote")
-    import sys; print(f"[DEBUG] callout footnotes: {before} -> {after}", file=sys.stderr)
 
     style_profiles = _build_heading_style_profiles(structured_blocks)
 

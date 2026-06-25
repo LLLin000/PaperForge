@@ -136,3 +136,76 @@ def test_render_fulltext_markdown_does_not_double_emit_cross_page_figure_embed()
     )
 
     assert md.count("![[render/figures/figure_024.md]]") == 1
+
+
+def test_residual_footnote_skipped_while_converted_callout_renders() -> None:
+    """Footnotes surviving _convert_footnotes_to_callouts must not leak into body;
+    converted footnote-derived structured_insert blocks must still render."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Main body text provides font reference.",
+            "block_id": "p5_b1",
+            "span_metadata": {"size": 11},
+            "bbox": [100, 100, 500, 130],
+        },
+        {
+            "page": 5,
+            "role": "footnote",
+            "text": "Plain footnote without symbols or markers.",
+            "block_id": "p5_b2",
+            "span_metadata": {"size": 9},
+            "bbox": [100, 150, 500, 175],
+        },
+        {
+            "page": 5,
+            "role": "footnote",
+            "text": "* Correspondence: author@example.com",
+            "block_id": "p5_b3",
+            "span_metadata": {"size": 9},
+            "bbox": [100, 180, 500, 205],
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=5,
+        document_structure=None,
+        reader_payload={},
+    )
+
+    assert "Plain footnote without symbols or markers." not in md
+    assert "* Correspondence: author@example.com" in md
+
+
+def test_table_caption_fallback_uses_blockquote_not_heading() -> None:
+    """table_caption with no table embed falls back to blockquote, never a heading."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {
+            "page": 5,
+            "role": "table_caption",
+            "text": "Table 1. Results summary.",
+            "block_id": "p5_b1",
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=5,
+        document_structure=None,
+        reader_payload={},
+    )
+
+    assert "### Table 1. Results summary." not in md
+    assert "> **Table Caption:** Table 1. Results summary." in md

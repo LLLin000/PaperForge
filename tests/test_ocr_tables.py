@@ -1139,3 +1139,34 @@ def test_table_inventory_keeps_bridge_gap_inside_sparse_display_cluster() -> Non
     table = inventory["tables"][0]
     assert table["asset_block_id"] == "table_asset"
     assert table.get("bridge_block_ids") == ["gap_block"]
+
+
+def test_bare_table_number_caption_matches_with_strong_geometry() -> None:
+    """Bare 'Table N.' captions with same-page, x_overlap, asset-below evidence
+    should match a table asset, not be left as unmatched/ambiguous."""
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "page": 5,
+            "block_id": "p5_asset",
+            "role": "table_asset",
+            "raw_label": "table",
+            "bbox": [100, 540, 600, 900],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "p5_caption",
+            "role": "table_caption",
+            "text": "Table 1.",
+            "bbox": [100, 500, 600, 540],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    assert inventory["official_table_count"] == 1
+    table = inventory["tables"][0]
+    assert table["has_asset"] is True
+    assert table["match_status"] in {"matched", "matched_low_confidence"}
+    assert table["asset_block_id"] == "p5_asset"
