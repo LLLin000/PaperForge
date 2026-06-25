@@ -2152,6 +2152,24 @@ These are NOT convergence-layer issues. The phantom cluster bug (fixed in 12.34)
 
 **Tests:** `python -m pytest tests/test_ocr_render.py -v --tb=short -q` → 8/8 passed. `python -m pytest tests/test_ocr_document.py tests/test_ocr_real_paper_regressions.py -x --tb=short -q` → all passed.
 
+### 12.45 page_assets safety gate regression tests (2026-06-26)
+
+**Problem:** The `page_assets` group type in `_score_legend_to_group` had no dedicated regression coverage for its six internal gates: missing page context, compact geometry, multiple numbered legends, text separators, excessive coverage, and table-like assets.
+
+**Fix:** Added 7 tests to `tests/test_ocr_figures.py`:
+- 6 unit tests directly invoking `_score_legend_to_group` covering each gate:
+  - `test_page_assets_missing_page_context_rejected` — no page_blocks → rejected
+  - `test_page_assets_single_legend_compact_group_matched` — single legend, compact 3-block cluster → matched
+  - `test_page_assets_multiple_numbered_legends_rejected` — `page_numbered_legend_count=2` → rejected
+  - `test_page_assets_text_separator_rejected` — body text between 2x2 grid blocks → rejected
+  - `test_page_assets_large_coverage_rejected` — cluster covers >75% page → rejected
+  - `test_page_assets_table_like_asset_rejected` — media group contains table-labeled block → rejected
+- 1 integration test: `test_build_figure_inventory_no_page_assets_on_multi_legend_page` — verifies `build_figure_inventory` does not emit `page_assets_safe_gate` evidence when a page has competing captions
+
+**Result:** All 216 tests in `test_ocr_figures.py` pass (209 pre-existing + 7 new).
+
+**Tests:** `python -m pytest tests/test_ocr_figures.py -v --tb=short` → 216 passed.
+
 ## Remaining Known Issues
 
 Three P0 gaps identified during the heading-level architectural analysis (not yet fixed):
