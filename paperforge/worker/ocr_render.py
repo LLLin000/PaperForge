@@ -1422,7 +1422,10 @@ def render_fulltext_markdown(
 
         # Ownership skip first — table note removal by contract, not by role
         block_id = block.get("block_id")
-        if block_id is not None and (block_page, block_id) in consumed_table_block_keys:
+        if block_id is not None and (
+            (block_page, block_id) in consumed_table_block_keys
+            or (block_page, str(block_id)) in consumed_table_block_keys
+        ):
             continue
 
         _SKIPPED_BODY_ROLES = {

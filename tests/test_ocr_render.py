@@ -452,3 +452,55 @@ def test_consumed_table_note_uses_actual_block_page_not_table_page() -> None:
     )
 
     assert "Note: cross-page table note." not in md
+
+
+def test_consumed_stringified_int_note_id_matches_block_int_id() -> None:
+    """consumed_block_ids may contain stringified int IDs; ownership skip must match
+    against the structured block's int block_id via str() alias."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Main text.",
+            "block_id": "p5_body",
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Table note with int block_id.",
+            "block_id": 123,
+        },
+        {
+            "page": 5,
+            "role": "table_caption",
+            "text": "Table 1. Caption.",
+            "block_id": "p5_caption",
+        },
+    ]
+
+    table_inventory = {
+        "tables": [
+            {
+                "page": 5,
+                "caption_text": "Table 1. Caption.",
+                "has_asset": True,
+                "consumed_block_ids": ["p5_caption", "123"],
+                "match_status": "matched",
+            }
+        ],
+        "unmatched_assets": [],
+    }
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory=table_inventory,
+        page_count=5,
+        document_structure=None,
+        reader_payload={},
+    )
+
+    assert "Table note with int block_id." not in md
