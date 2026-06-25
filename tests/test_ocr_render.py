@@ -31,7 +31,8 @@ def test_render_fulltext_markdown_preserves_role_heading_prefixes() -> None:
         reader_payload={},
     )
 
-    assert "### Methods" in md
+    # With font-size-based level, a single 12pt bold subsection_heading gets ##
+    assert "## Methods" in md
 
 
 def test_render_fulltext_markdown_suppresses_cross_page_caption_on_legend_page() -> None:
