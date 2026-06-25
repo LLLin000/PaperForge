@@ -427,7 +427,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 note_match_reason = "note_band_geometry_match"
                 note_confidence = 0.85
 
-        consumed_block_ids = [caption.get("block_id", "")]
+        consumed_block_ids = [caption.get("block_id", "")] if matched_asset else []
         if matched_asset:
             consumed_block_ids.append(matched_asset.get("block_id", ""))
         consumed_block_ids.extend(note_block_ids)
