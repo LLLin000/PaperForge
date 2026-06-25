@@ -1419,6 +1419,12 @@ def render_fulltext_markdown(
                 continue
         if role in CONSUMED_FRONTMATTER_ROLES and int(block.get("page", 0) or 0) <= 2:
             continue
+
+        # Ownership skip first — table note removal by contract, not by role
+        block_id = block.get("block_id")
+        if block_id is not None and (block_page, block_id) in consumed_table_block_keys:
+            continue
+
         _SKIPPED_BODY_ROLES = {
             "abstract_heading",
             "abstract_body",
@@ -1437,11 +1443,8 @@ def render_fulltext_markdown(
             else:
                 continue
 
-        block_id = block.get("block_id")
         block_key = _page_block_key(block_page, block_id)
         if block_id is not None and (block_key in consumed_caption_keys or block_id in consumed_caption_ids_unkeyed):
-            continue
-        if block_id is not None and (block_page, block_id) in consumed_table_block_keys:
             continue
         if block_key in abstract_member_keys or block_id in abstract_member_ids_unkeyed:
             continue
