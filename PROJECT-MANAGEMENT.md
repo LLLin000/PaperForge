@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-25 (heading merge + level normalization)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-25 (font-size heading level + P0 gaps recorded)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -2133,4 +2133,32 @@ These are NOT convergence-layer issues. The phantom cluster bug (fixed in 12.34)
 - `#### EMRE`
 
 **Tests:** `python -m pytest tests/test_ocr_blocks.py tests/test_ocr_document.py tests/test_ocr_real_paper_regressions.py -k "merge_adjacent or frontmatter_side or accepted_heading_block_ids or dwqqk2yb_first_surviving_page" -v --tb=short -q` → 7 passed. Live paper rebuild verified: `49PY5UCJ` heading hierarchy matches expected.
+
+### 12.44 Render-time heading level from font size, bold, and case style (2026-06-25)
+
+**Problem:** Heading level assignment relied on text heuristics (uppercase ratio, word count) in `_infer_heading_level` because `role_input` didn't include `span_signature`, causing fallback to text-based level inference. The render-time `block_heading_prefix` was overridden by role-based prefix (`section_heading` → `##` regardless of visual size). This gave `## MCUb` / `## EMRE` and could never infer `#### Mitochondrial Calcium Uniporter` correctly.
+
+**Root cause:** Two layers of disconnected logic: `_infer_heading_level` had no access to font data; render-time had font data but used role-based override, not font-based prefix. Also `bold` signal in `span_signature.bold` was always `False` for many papers (field not populated by span extraction), so the real bold signal came from font-face name containing `-Bd`/`-Bold` suffix.
+
+**Fix:** Replaced the entire heading prefix computation in `render_fulltext_markdown` to:
+1. Group heading blocks by font size bucket (`span_metadata.size`, rounded to nearest 0.5)
+2. Within each size bucket, subdivide by bold (detected via font-face suffix `-Bd`/`-Bold`)
+3. Within each size+bold group, subdivide by uppercase ratio > 0.7
+4. Assign prefixes sequentially (`##` → `###` → `####` → ...)
+5. Removed the role-based override entirely — all heading roles use the same prefix map
+6. Used stable `(page, block_id)` keyed prefix map instead of `id(block)` to survive `ordered_blocks` reordering
+
+**Result:** Heading hierarchy is now determined by actual visual signals. For `49PY5UCJ`: `## THE MOLECULAR IDENTITY...`, `### The Pore Forming Subunits`, `#### Mitochondrial Calcium Uniporter`, `#### MCUb`, `#### EMRE`, `### The Regulatory Subunits`.
+
+**Tests:** `python -m pytest tests/test_ocr_render.py -v --tb=short -q` → 8/8 passed. `python -m pytest tests/test_ocr_document.py tests/test_ocr_real_paper_regressions.py -x --tb=short -q` → all passed.
+
+## Remaining Known Issues
+
+Three P0 gaps identified during the heading-level architectural analysis (not yet fixed):
+
+1. **Footnote missing from `_SKIPPED_BODY_ROLES`** — footnotes on body pages are not filtered from render output. Should add `"footnote"` to the skipped set so footnotes only appear when the render code explicitly handles them.
+
+2. **Short "Table N" caption matching absent** — very short caption text like `"Table 1."` has no dedicated matching path in the table ownership pipeline, causing some bare table labels to miss their table_asset.
+
+3. **Table caption fallback `###` should be `**`** — when a `table_caption` block has no table id and no table asset to embed, the render code currently emits `### {text}`, which creates a spurious heading-level entry in the reading hierarchy. Should use `**{text}**` (bold) instead, matching the structured_insert pattern for text-level emphasis.
 
