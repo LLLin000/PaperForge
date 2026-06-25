@@ -1187,13 +1187,8 @@ def render_fulltext_markdown(
             if sz:
                 heading_font_sizes[id(block)] = float(sz)
     block_heading_prefix: dict[int, str] = {}
+    _heading_prefix_map: dict[tuple, str] = {}
     if heading_font_sizes:
-        _ROLE_HEADING_PREFIX = {
-            "section_heading": "##",
-            "subsection_heading": "###",
-            "sub_subsection_heading": "####",
-        }
-        # Group by size for the fallback, but prefer role-based assignment
         size_groups: dict[float, list[int]] = {}
         bid_to_block: dict[int, dict] = {}
         for bid, sz in heading_font_sizes.items():
@@ -1201,30 +1196,42 @@ def render_fulltext_markdown(
             size_groups.setdefault(bucket, []).append(bid)
         for blk in structured_blocks:
             bid_to_block[id(blk)] = blk
-        sorted_sizes = sorted(size_groups.keys(), reverse=True)
-        for level_idx, bucket in enumerate(sorted_sizes):
-            if level_idx == 0:
-                prefix = "##"
-            else:
-                # Within same font size, bold → ###, regular → ####
-                bolds = [bid for bid in size_groups[bucket]
-                         if (bid_to_block.get(bid, {}).get("span_signature") or {}).get("bold")]
-                regulars = [bid for bid in size_groups[bucket] if bid not in bolds]
-                for bid in bolds:
-                    block_heading_prefix[bid] = "###"
-                for bid in regulars:
-                    block_heading_prefix[bid] = "####"
-                continue
-            for bid in size_groups[bucket]:
-                block_heading_prefix[bid] = prefix  # size-based fallback
 
-        # Override with role-based prefix where role is explicit
-        for bid in block_heading_prefix:
-            b = bid_to_block.get(bid)
-            if b:
-                role = str(b.get("role") or "")
-                if role in _ROLE_HEADING_PREFIX:
-                    block_heading_prefix[bid] = _ROLE_HEADING_PREFIX[role]
+        def _bold_font_block(block: dict) -> bool:
+            ff = str(((block.get("span_signature") or {}).get("font_family_norm") or ""))
+            bd = block.get("span_signature", {}).get("bold")
+            bd = bd if bd else ("-Bd" in ff or "-Bold" in ff)
+            return bd
+
+        _heading_prefix_map: dict[tuple, str] = {}
+        sorted_sizes = sorted(size_groups.keys(), reverse=True)
+        prefixes = ["##", "###", "####", "#####", "######"]
+        prefix_idx = 0
+        for bucket in sorted_sizes:
+            bids = size_groups[bucket]
+            bolds = [bid for bid in bids if _bold_font_block(bid_to_block.get(bid, {}))]
+            regulars = [bid for bid in bids if bid not in bolds]
+            for group in (bolds, regulars):
+                if not group:
+                    continue
+                upper = set()
+                lower = set()
+                for bid in group:
+                    blk = bid_to_block.get(bid)
+                    t = str(blk.get("text") or "") if blk else ""
+                    if t and sum(1 for c in t if c.isupper()) / max(len(t), 1) > 0.7:
+                        upper.add(bid)
+                    else:
+                        lower.add(bid)
+                for subgroup in (upper, lower):
+                    if not subgroup:
+                        continue
+                    p = prefixes[min(prefix_idx, len(prefixes) - 1)]
+                    for bid in subgroup:
+                        blk = bid_to_block.get(bid)
+                        if blk:
+                            _heading_prefix_map[(int(blk.get("page", 0) or 0), blk.get("block_id"))] = p
+                    prefix_idx += 1
 
     # --- body with anchored figures/tables ---
     # Find the min and max page across ALL blocks (including suppressed)
@@ -1485,13 +1492,12 @@ def render_fulltext_markdown(
                         lines.append(text)
                         lines.append("")
                     continue
-                lines.append(f"## {text}")
-            else:
-                prefix = block_heading_prefix.get(id(block))
-                if prefix is None:
-                    depth = _heading_number_depth_text(text)
-                    prefix = "##" if depth <= 1 else "###"
-                lines.append(f"{prefix} {text}")
+            key = (int(block.get("page", 0) or 0), block.get("block_id"))
+            prefix = _heading_prefix_map.get(key)
+            if prefix is None:
+                depth = _heading_number_depth_text(text)
+                prefix = "##" if depth <= 1 else "###"
+            lines.append(f"{prefix} {text}")
             lines.append("")
         elif role == "structured_insert":
             container_text = block.get("_container_text")
