@@ -933,6 +933,9 @@ def _score_legend_to_group(
     *,
     caption_score: dict,
     page_width: float = 1200,
+    page_height: float = 0,
+    page_blocks: list[dict] | None = None,
+    page_numbered_legend_count: int = 0,
     anchor_supported: bool = False,
     caption_text_supported: bool = False,
     family_supported: bool = False,
@@ -968,10 +971,26 @@ def _score_legend_to_group(
         return match_score
 
     if gt == "page_assets":
+        if not page_blocks or page_height <= 0:
+            return {
+                "score": 0.0,
+                "decision": "rejected",
+                "evidence": ["page_assets_missing_page_context"],
+            }
+        safe, gate_evidence = _is_safe_page_assets_group(
+            group, legend, page_blocks, page_numbered_legend_count,
+            page_width=page_width, page_height=page_height,
+        )
+        if not safe:
+            return {
+                "score": 0.0,
+                "decision": "rejected",
+                "evidence": ["page_assets_requires_gate"] + gate_evidence,
+            }
         basic = {
-            "score": 0.55,
+            "score": 0.72,
             "decision": "matched",
-            "evidence": ["same_page", "page_assets_group"],
+            "evidence": ["same_page", "page_assets_safe_gate"] + gate_evidence,
         }
         if family_supported:
             basic["score"] = min(1.0, basic["score"] + 0.1)
@@ -2911,6 +2930,25 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     )
     # --- end Stage 1 reservation ---
 
+    # Pre-compute page context for page_assets safety gate
+    _page_blocks_by_page: dict[int, list[dict]] = {}
+    for block in structured_blocks:
+        bp = int(block.get("page", 0) or 0)
+        _page_blocks_by_page.setdefault(bp, []).append(block)
+
+    _page_height_by_page: dict[int, float] = {}
+    for page, page_blocks_on_page in _page_blocks_by_page.items():
+        explicit = max(
+            (float(b.get("page_height") or 0)) for b in page_blocks_on_page
+        )
+        _page_height_by_page[page] = explicit if explicit > 0 else _estimate_page_height(page_blocks_on_page)
+
+    _numbered_legend_count_by_page: dict[int, int] = {}
+    for leg in deduped_legends:
+        lp = int(leg.get("page", 0) or 0)
+        if _extract_figure_number(str(leg.get("text") or "")) is not None:
+            _numbered_legend_count_by_page[lp] = _numbered_legend_count_by_page.get(lp, 0) + 1
+
     page_caption_index = _formal_figure_caption_blocks(structured_blocks)
     for legend in ordered_legends:
         legend_id = str(legend.get("block_id", ""))
@@ -3109,6 +3147,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 group,
                 caption_score=caption_score,
                 page_width=page_width,
+                page_blocks=_page_blocks_by_page.get(legend_page, []),
+                page_height=_page_height_by_page.get(legend_page, 0.0),
+                page_numbered_legend_count=_numbered_legend_count_by_page.get(legend_page, 0),
                 anchor_supported=anchor_supported,
                 caption_text_supported=caption_text_supported,
                 family_supported=family_supported,
@@ -3904,6 +3945,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                         body_prose_likelihood=False,
                     ),
                     page_width=page_width,
+                    page_blocks=_page_blocks_by_page.get(lg_page, []),
+                    page_height=_page_height_by_page.get(lg_page, 0.0),
+                    page_numbered_legend_count=_numbered_legend_count_by_page.get(lg_page, 0),
                 )
                 if sg_score.get("decision") == "matched" and sg_score.get("score", 0.0) >= 0.5:
                     scored.append((sg, sg_score.get("score", 0.0)))
