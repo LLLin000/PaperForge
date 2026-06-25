@@ -995,11 +995,22 @@ def render_fulltext_markdown(
     consumed_caption_keys: set[tuple[int | None, int | str]] = set()
     consumed_caption_ids_unkeyed: set[int | str] = set()
     consumed_table_block_keys: set[tuple[int | None, str | int]] = set()
+    # Map both raw id and str(id) because note_block_ids are stringified in
+    # build_table_inventory while structured_blocks may carry int block_ids.
+    block_page_by_id: dict[str | int, int | None] = {}
+    for block in structured_blocks:
+        bid = block.get("block_id")
+        if bid is None:
+            continue
+        page = block.get("page")
+        block_page_by_id[bid] = page
+        block_page_by_id[str(bid)] = page
     for table in table_inventory.get("tables", []):
-        table_page = table.get("page")
         for block_id in table.get("consumed_block_ids", []):
-            if block_id:
-                consumed_table_block_keys.add((table_page, block_id))
+            if not block_id:
+                continue
+            page = block_page_by_id.get(block_id, table.get("page"))
+            consumed_table_block_keys.add((page, block_id))
     for item in (reader_payload or {}).get("consumed_caption_block_ids", []):
         if isinstance(item, dict):
             page = item.get("page")
