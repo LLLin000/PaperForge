@@ -79,6 +79,11 @@ def _merge_adjacent_headings(rows: list[dict]) -> None:
             return 0
         return m.group(1).count(".") + 1
 
+    # Normalize OCR line breaks within paragraph_title blocks
+    for row in rows:
+        if row.get("raw_label") == "paragraph_title":
+            row["text"] = (row.get("text") or "").replace("\n", " ")
+
     def _case_style(b: dict) -> str:
         t = str(b.get("text", "") or "")
         if not t:

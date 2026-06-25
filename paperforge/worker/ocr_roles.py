@@ -461,7 +461,9 @@ def _infer_heading_level(
     sentence_verbs = {" is ", " are ", " was ", " were ", " have ", " has ", " been "}
     has_sentence_verb = any(v in text.lower() for v in sentence_verbs)
     word_count = len(text.split())
-    if is_mostly_upper and word_count >= 1 and not has_sentence_verb:
+    # ponytail: all-caps single-word headings (e.g. "MCUb", "EMRE") are
+    # sub-subsection headings, not top-level section headings
+    if is_mostly_upper and word_count >= 2 and not has_sentence_verb:
         return "section_heading"
     if word_count >= 2 and not has_sentence_verb:
         return "subsection_heading"
