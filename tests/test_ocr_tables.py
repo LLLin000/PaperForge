@@ -1170,3 +1170,63 @@ def test_bare_table_number_caption_matches_with_strong_geometry() -> None:
     assert table["has_asset"] is True
     assert table["match_status"] in {"matched", "matched_low_confidence"}
     assert table["asset_block_id"] == "p5_asset"
+
+
+def test_strong_table_match_collects_note_block_ids_and_texts() -> None:
+    """Strong match collects note_block_ids, note_texts, and consumed_block_ids."""
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "page": 5, "block_id": "p5_asset",
+            "role": "table_asset", "raw_label": "table",
+            "bbox": [100, 540, 600, 900], "text": "",
+        },
+        {
+            "page": 5, "block_id": "p5_caption",
+            "role": "table_caption",
+            "text": "Table 1. Results.", "bbox": [100, 500, 600, 540],
+        },
+        {
+            "page": 5, "block_id": "p5_note",
+            "role": "footnote",
+            "text": "* p < 0.05.", "bbox": [100, 905, 600, 930],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+    assert table["has_asset"] is True
+    assert "p5_note" in table.get("note_block_ids", [])
+    assert table.get("note_texts") == ["* p < 0.05."]
+    consumed = table.get("consumed_block_ids", [])
+    assert "p5_caption" in consumed
+    assert "p5_asset" in consumed
+    assert "p5_note" in consumed
+
+
+def test_weak_match_caption_has_empty_consumed_block_ids() -> None:
+    """Weak-matched caption should not be consumed — falls through to blockquote."""
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    # Asset on page 8, caption on page 5 — outside candidate_pages range
+    # (caption_page - 1, caption_page, caption_page + 1), so never matched.
+    structured_blocks = [
+        {
+            "page": 8, "block_id": "p8_asset",
+            "role": "table_asset", "raw_label": "table",
+            "bbox": [100, 540, 600, 900], "text": "",
+        },
+        {
+            "page": 5, "block_id": "p5_caption",
+            "role": "table_caption",
+            "text": "Table 1.", "bbox": [100, 50, 600, 90],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    assert inventory["tables"]
+    table = inventory["tables"][0]
+    assert table["has_asset"] is False
+    assert table["match_status"] in {"unmatched_caption", "ambiguous"}
+    assert "p5_caption" not in table.get("consumed_block_ids", [])
