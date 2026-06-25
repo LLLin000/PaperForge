@@ -217,6 +217,8 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             # to weak-explicit matching (same as figure's truncated
             # legend now matching to nearby assets).
             pass
+        all_candidates: list[tuple[int, dict, dict]] = []
+
         if is_weak_explicit_caption:
             candidate_pages = [caption_page - 1, caption_page, caption_page + 1]
             pre_candidates: list[tuple[int, dict, dict]] = []
@@ -264,7 +266,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                     should_proceed = True
 
             if should_proceed:
-                pass
+                all_candidates = pre_candidates
             else:
                 unmatched_captions.append(caption)
                 tables.append(
@@ -296,16 +298,16 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
 
         candidate_pages = [caption_page - 1, caption_page, caption_page + 1]
 
-        all_candidates: list[tuple[int, dict, dict]] = []
-        for page in candidate_pages:
-            if page < 1:
-                continue
-            page_assets = [
-                (i, asset)
-                for i, asset in enumerate(assets)
-                if i not in used_asset_indices and asset.get("page", 0) == page
-            ]
-            all_candidates.extend(_score_candidate_assets(page_assets, caption, is_continuation=is_cont))
+        if not all_candidates:
+            for page in candidate_pages:
+                if page < 1:
+                    continue
+                page_assets = [
+                    (i, asset)
+                    for i, asset in enumerate(assets)
+                    if i not in used_asset_indices and asset.get("page", 0) == page
+                ]
+                all_candidates.extend(_score_candidate_assets(page_assets, caption, is_continuation=is_cont))
 
         all_candidates.sort(key=lambda item: item[2].get("score", 0.0), reverse=True)
         match_status = "unmatched_caption"

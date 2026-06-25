@@ -1198,7 +1198,7 @@ def render_fulltext_markdown(
             bid_to_block[id(blk)] = blk
 
         def _bold_font_block(block: dict) -> bool:
-            ff = str(((block.get("span_signature") or {}).get("font_family_norm") or ""))
+            ff = str((block.get("span_signature") or {}).get("font_family_norm") or "")
             bd = block.get("span_signature", {}).get("bold")
             bd = bd if bd else ("-Bd" in ff or "-Bold" in ff)
             return bd
@@ -1414,6 +1414,7 @@ def render_fulltext_markdown(
         _SKIPPED_BODY_ROLES = {
             "abstract_heading",
             "abstract_body",
+            "footnote",
             "frontmatter_noise",
             "frontmatter_support",
             "table_html",
@@ -1550,7 +1551,7 @@ def render_fulltext_markdown(
                 lines.append(f"![[render/tables/{tbl_id}.md]]")
                 lines.append("")
             elif text:
-                lines.append(f"### {text}")
+                lines.append(f"> **Table Caption:** {text}")
                 lines.append("")
         elif role == "figure_caption":
             if text:
