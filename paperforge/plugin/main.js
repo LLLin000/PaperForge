@@ -1386,6 +1386,219 @@ function patchEntryWorkflowState(entry, patch) {
     return entry ? { ...entry, ...patch } : entry;
 }
 
+/* ── PDF jump-target navigation helpers (mirror of src/testable.js, Plan 01) ── */
+
+/**
+ * Extract the vault-relative PDF path from a wikilink value.
+ * Mirrored from src/testable.js for runtime access in Obsidian context.
+ *
+ * @param {*} value - Input value (expected: a wikilink string like "[[path/to/file.pdf]]").
+ * @returns {{ ok: boolean, path: string|null, reason: string|null }}
+ */
+function extractVaultPdfPath(value) {
+    if (value == null || typeof value !== 'string') {
+        return { ok: false, path: null, reason: 'PDF path must be a string.' };
+    }
+
+    var input = value;
+
+    // Reject non-wikilink patterns first
+    if (/^[A-Za-z]:\\/.test(input)) {
+        return { ok: false, path: null, reason: 'Absolute paths are not supported.' };
+    }
+    if (/^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(input)) {
+        return { ok: false, path: null, reason: 'URI scheme paths are not supported.' };
+    }
+    if (/^storage:/i.test(input)) {
+        return { ok: false, path: null, reason: 'Storage paths must be wrapped in a wikilink.' };
+    }
+    if ((input.includes('/') || input.includes('\\')) && !input.includes('[[')) {
+        return { ok: false, path: null, reason: 'Path must be wrapped in a wikilink.' };
+    }
+
+    // Extract wikilink content
+    var match = input.match(/^\[\[([^\]]+)\]\]$/);
+    if (!match) {
+        return { ok: false, path: null, reason: 'Malformed wikilink.' };
+    }
+
+    var inner = match[1];
+
+    // Security checks on inner path
+    if (inner.includes('..')) {
+        return { ok: false, path: null, reason: 'Directory traversal is not allowed.' };
+    }
+    var ext = inner.split('.').pop().toLowerCase();
+    if (ext !== 'pdf') {
+        return { ok: false, path: null, reason: 'Only PDF files are supported.' };
+    }
+
+    // Normalise backslashes to forward slashes
+    var normalised = inner.replace(/\\/g, '/');
+
+    return { ok: true, path: normalised, reason: null };
+}
+
+/**
+ * Build the set of canonical PDF candidates from a paper entry.
+ * Mirrored from src/testable.js for runtime access in Obsidian context.
+ *
+ * Reads pdf_path (main PDF wikilink) and supplementary (array of wikilinks)
+ * from the entry. Candidates are deduplicated by path.
+ *
+ * @param {object|null|undefined} entry - Paper entry with pdf_path, zotero_storage_key, supplementary.
+ * @returns {Array<{ path: string, attachmentKey: string }>}
+ */
+function buildPaperPdfCandidates(entry) {
+    if (!entry) return [];
+
+    var seen = new Set();
+    var candidates = [];
+
+    function tryAddCandidate(rawValue, fallbackStorageKey) {
+        var extracted = extractVaultPdfPath(rawValue);
+        if (!extracted.ok) return false;
+
+        var path = extracted.path;
+        if (seen.has(path)) return false;
+        seen.add(path);
+
+        var attachmentKey = null;
+        if (fallbackStorageKey && path.indexOf('/storage/' + fallbackStorageKey + '/') !== -1) {
+            attachmentKey = fallbackStorageKey;
+        }
+        if (!attachmentKey) {
+            var storageMatch = path.match(/\/storage\/([A-Za-z0-9_]+)\//);
+            if (storageMatch) {
+                attachmentKey = storageMatch[1];
+            }
+        }
+
+        candidates.push({ path: path, attachmentKey: attachmentKey || path });
+        return true;
+    }
+
+    var storageKey = entry.zotero_storage_key || null;
+
+    // Main PDF
+    if (entry.pdf_path != null) {
+        tryAddCandidate(entry.pdf_path, storageKey);
+    }
+
+    // Supplementary PDFs
+    if (Array.isArray(entry.supplementary)) {
+        for (var si = 0; si < entry.supplementary.length; si++) {
+            tryAddCandidate(entry.supplementary[si], storageKey);
+        }
+    }
+
+    return candidates;
+}
+
+/**
+ * Resolve the PDF jump target for a normalized annotation row against a paper entry.
+ * Mirrored from src/testable.js for runtime access in Obsidian context.
+ *
+ * Resolution order per D-04 through D-07:
+ *   1. If pdfLocation.sourceAttachmentKey exists and exactly matches a
+ *      candidate's attachmentKey, use that candidate.
+ *   2. If no sourceAttachmentKey exists and entry has exactly one candidate,
+ *      use that candidate (D-06 identity-free single-candidate rule).
+ *   3. Otherwise fail closed.
+ *
+ * Page conversion per D-08: only a non-negative integer pageIndex is accepted;
+ * page = pageIndex + 1, linkText = "{path}#page={page}".
+ *
+ * @param {object|null|undefined} row - Normalized annotation row with pdfLocation.
+ * @param {object|null|undefined} entry - Paper entry with pdf_path etc.
+ * @returns {{ ok: boolean, path: string|null, page: number|null, linkText: string, reason: string|null }}
+ */
+function resolveAnnotationPdfTarget(row, entry) {
+    // Guard: missing or invalid inputs
+    if (!row) {
+        return { ok: false, path: null, page: null, linkText: '', reason: 'No annotation row provided.' };
+    }
+    if (!entry) {
+        return { ok: false, path: null, page: null, linkText: '', reason: 'No paper entry provided.' };
+    }
+
+    var pdfLoc = row.pdfLocation;
+    if (!pdfLoc) {
+        return { ok: false, path: null, page: null, linkText: '', reason: 'Annotation row has no PDF location data.' };
+    }
+
+    // Build candidates
+    var candidates = buildPaperPdfCandidates(entry);
+    if (candidates.length === 0) {
+        return { ok: false, path: null, page: null, linkText: '', reason: 'No valid PDF candidates found in paper entry.' };
+    }
+
+    // Resolve candidate
+    var resolvedCandidate = null;
+    var identity = pdfLoc.sourceAttachmentKey;
+
+    if (identity != null && identity !== '') {
+        // Exact identity match (D-04)
+        resolvedCandidate = null;
+        for (var ci = 0; ci < candidates.length; ci++) {
+            if (candidates[ci].attachmentKey === identity) {
+                resolvedCandidate = candidates[ci];
+                break;
+            }
+        }
+        if (!resolvedCandidate) {
+            return {
+                ok: false,
+                path: null,
+                page: null,
+                linkText: '',
+                reason: 'Could not resolve the annotation to a PDF in the paper entry.',
+            };
+        }
+    } else {
+        // No identity — single-candidate fallback (D-06)
+        if (candidates.length === 1) {
+            resolvedCandidate = candidates[0];
+        } else {
+            // Zero or multiple candidates — fail closed (D-07)
+            return {
+                ok: false,
+                path: null,
+                page: null,
+                linkText: '',
+                reason: candidates.length === 0
+                    ? 'No PDF candidates found.'
+                    : 'Multiple PDF candidates found; cannot choose without attachment identity.',
+            };
+        }
+    }
+
+    // Page conversion (D-08)
+    var pageIndex = pdfLoc.pageIndex;
+    var page = null;
+    var pageDegraded = false;
+
+    if (typeof pageIndex === 'number' && isFinite(pageIndex) && pageIndex >= 0 && Math.floor(pageIndex) === pageIndex) {
+        page = pageIndex + 1;
+    } else {
+        pageDegraded = true;
+    }
+
+    var path = resolvedCandidate.path;
+    var linkText;
+    var reason;
+
+    if (page !== null) {
+        linkText = path + '#page=' + page;
+        reason = null;
+    } else {
+        linkText = path;
+        reason = 'Page location is not available.';
+    }
+
+    return { ok: true, path: path, page: page, linkText: linkText, reason: reason };
+}
+
 class PaperForgeStatusView extends ItemView {
     constructor(leaf) {
         super(leaf);
@@ -5786,7 +5999,12 @@ module.exports = class PaperForgePlugin extends Plugin {
 
 // BRDG: Test hook for integration tests (non-rendering, side-effect free)
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports.__test = { PaperForgeStatusView };
+    module.exports.__test = {
+        PaperForgeStatusView,
+        extractVaultPdfPath,
+        buildPaperPdfCandidates,
+        resolveAnnotationPdfTarget,
+    };
 }
 
 
