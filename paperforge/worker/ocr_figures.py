@@ -2944,7 +2944,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         _page_height_by_page[page] = explicit if explicit > 0 else _estimate_page_height(page_blocks_on_page)
 
     _numbered_legend_count_by_page: dict[int, int] = {}
-    for leg in deduped_legends:
+    for leg in ordered_legends:
         lp = int(leg.get("page", 0) or 0)
         if _extract_figure_number(str(leg.get("text") or "")) is not None:
             _numbered_legend_count_by_page[lp] = _numbered_legend_count_by_page.get(lp, 0) + 1

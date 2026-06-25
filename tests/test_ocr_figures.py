@@ -5311,3 +5311,45 @@ def test_build_figure_inventory_no_page_assets_on_multi_legend_page() -> None:
         evidence = fig.get("match_score", {}).get("evidence", [])
         assert "page_assets_safe_gate" not in evidence
 
+
+def test_page_assets_count_uses_ordered_legends_not_stale_deduped() -> None:
+    """page_numbered_legend_count must use ordered_legends (post-suppression),
+    not deduped_legends (pre-suppression), to avoid counting panel titles
+    that were filtered out before the matching loop."""
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    media_blocks = [
+        {"block_id": "a1", "bbox": [100, 100, 300, 260]},
+        {"block_id": "a2", "bbox": [320, 100, 520, 260]},
+        {"block_id": "a3", "bbox": [100, 280, 300, 440]},
+    ]
+    page_blocks = [
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
+         "text": "Dummy."},
+    ]
+
+    # With count=1 (correct — post-suppression), compact group must match.
+    result = _score_legend_to_group(
+        {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
+        {"group_type": "page_assets", "page": 5,
+         "media_blocks": media_blocks,
+         "cluster_bbox": [100, 100, 520, 440]},
+        caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
+        page_width=1200, page_height=1000,
+        page_blocks=page_blocks, page_numbered_legend_count=1,
+    )
+    assert result["decision"] == "matched"
+
+    # With count=2 (stale deduped_count), same group must reject.
+    result2 = _score_legend_to_group(
+        {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
+        {"group_type": "page_assets", "page": 5,
+         "media_blocks": media_blocks,
+         "cluster_bbox": [100, 100, 520, 440]},
+        caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
+        page_width=1200, page_height=1000,
+        page_blocks=page_blocks, page_numbered_legend_count=2,
+    )
+    assert result2["decision"] == "rejected"
+    assert "multiple_numbered_legends" in result2.get("evidence", [])
+
