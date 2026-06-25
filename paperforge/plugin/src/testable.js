@@ -1125,6 +1125,232 @@ function mergeAnnotationRefreshResult(previousRenderable, nextState) {
     return nextState;
 }
 
+// ── PDF jump-target navigation helpers (Phase 7, Plan 01) ──
+
+/**
+ * Extract a vault-relative canonical PDF path from a value that should be an
+ * Obsidian wikilink.  Rejects absolute paths, URI schemes, directory traversal,
+ * non-PDF extensions, raw storage: values, bare relative paths, malformed
+ * wikilinks, and non-string input per D-05.
+ *
+ * @param {*} value - Input value (expected: a wikilink string like "[[path/to/file.pdf]]").
+ * @returns {{ ok: boolean, path: string|null, reason: string|null }}
+ */
+function extractVaultPdfPath(value) {
+    // Non-string and null reject
+    if (value == null || typeof value !== 'string') {
+        return { ok: false, path: null, reason: 'PDF path must be a string.' };
+    }
+
+    const input = value;
+
+    // ── Reject non-wikilink patterns first ──
+    // Absolute Windows paths (e.g. D:\...)
+    if (/^[A-Za-z]:\\/.test(input)) {
+        return { ok: false, path: null, reason: 'Absolute paths are not supported.' };
+    }
+    // URI scheme (e.g. file://, https://)
+    if (/^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(input)) {
+        return { ok: false, path: null, reason: 'URI scheme paths are not supported.' };
+    }
+    // Raw storage: prefix without wikilink
+    if (/^storage:/i.test(input)) {
+        return { ok: false, path: null, reason: 'Storage paths must be wrapped in a wikilink.' };
+    }
+    // Bare relative path without wikilink brackets (contains / or \ but no [[)
+    if ((input.includes('/') || input.includes('\\')) && !input.includes('[[')) {
+        return { ok: false, path: null, reason: 'Path must be wrapped in a wikilink.' };
+    }
+
+    // ── Extract wikilink content ──
+    const match = input.match(/^\[\[([^\]]+)\]\]$/);
+    if (!match) {
+        return { ok: false, path: null, reason: 'Malformed wikilink.' };
+    }
+
+    const inner = match[1];
+
+    // ── Security checks on inner path ──
+    // Directory traversal
+    if (inner.includes('..')) {
+        return { ok: false, path: null, reason: 'Directory traversal is not allowed.' };
+    }
+    // Non-PDF extension
+    const ext = inner.split('.').pop().toLowerCase();
+    if (ext !== 'pdf') {
+        return { ok: false, path: null, reason: 'Only PDF files are supported.' };
+    }
+
+    // Normalise backslashes to forward slashes
+    const normalised = inner.replace(/\\/g, '/');
+
+    return { ok: true, path: normalised, reason: null };
+}
+
+/**
+ * Build the set of canonical PDF candidates from a paper entry.
+ *
+ * Reads `pdf_path` (the main PDF wikilink) and `supplementary` (array of
+ * wikilinks) from the entry.  Each candidate gets an `attachmentKey` derived
+ * from `zotero_storage_key` or from the canonical `/storage/{key}/` path
+ * segment.  Candidates are deduplicated by path.
+ *
+ * @param {object|null|undefined} entry - Paper entry with pdf_path, zotero_storage_key, supplementary.
+ * @returns {Array<{ path: string, attachmentKey: string }>}
+ */
+function buildPaperPdfCandidates(entry) {
+    if (!entry) return [];
+
+    const seen = new Set();
+    const candidates = [];
+
+    /**
+     * Try to add a candidate from a raw value.
+     * Returns true if added, false if skipped (invalid or duplicate).
+     */
+    function tryAddCandidate(rawValue, fallbackStorageKey) {
+        const extracted = extractVaultPdfPath(rawValue);
+        if (!extracted.ok) return false;
+
+        const path = extracted.path;
+        if (seen.has(path)) return false;
+        seen.add(path);
+
+        // Derive attachmentKey: use zotero_storage_key if path contains it,
+        // otherwise try to extract from /storage/{key}/ segment
+        let attachmentKey = null;
+        if (fallbackStorageKey && path.includes('/storage/' + fallbackStorageKey + '/')) {
+            attachmentKey = fallbackStorageKey;
+        }
+        if (!attachmentKey) {
+            // Try to extract from /storage/{KEY}/
+            const storageMatch = path.match(/\/storage\/([A-Za-z0-9_]+)\//);
+            if (storageMatch) {
+                attachmentKey = storageMatch[1];
+            }
+        }
+
+        candidates.push({ path, attachmentKey: attachmentKey || path });
+        return true;
+    }
+
+    const storageKey = entry.zotero_storage_key || null;
+
+    // Main PDF
+    if (entry.pdf_path != null) {
+        tryAddCandidate(entry.pdf_path, storageKey);
+    }
+
+    // Supplementary PDFs
+    if (Array.isArray(entry.supplementary)) {
+        for (const supp of entry.supplementary) {
+            tryAddCandidate(supp, storageKey);
+        }
+    }
+
+    return candidates;
+}
+
+/**
+ * Resolve the PDF jump target for a normalized annotation row against a paper
+ * entry.
+ *
+ * Resolution order per D-04 through D-07:
+ *   1. If `pdfLocation.sourceAttachmentKey` exists and exactly matches a
+ *      candidate's attachmentKey, use that candidate.
+ *   2. If no sourceAttachmentKey exists and entry has exactly one candidate,
+ *      use that candidate (D-06 identity-free single-candidate rule).
+ *   3. Otherwise fail closed with ok:false and a stable non-sensitive reason.
+ *
+ * Page conversion per D-08: only a non-negative integer pageIndex is accepted;
+ * page = pageIndex + 1, linkText = "{path}#page={page}".
+ * Invalid/missing page data preserves the PDF target (D-11) with a degraded
+ * reason and linkText = path.
+ *
+ * @param {object|null|undefined} row - Normalized annotation row with pdfLocation.
+ * @param {object|null|undefined} entry - Paper entry with pdf_path etc.
+ * @returns {{ ok: boolean, path: string|null, page: number|null, linkText: string, reason: string|null }}
+ */
+function resolveAnnotationPdfTarget(row, entry) {
+    // ── Guard: missing or invalid inputs ──
+    if (!row) {
+        return { ok: false, path: null, page: null, linkText: '', reason: 'No annotation row provided.' };
+    }
+    if (!entry) {
+        return { ok: false, path: null, page: null, linkText: '', reason: 'No paper entry provided.' };
+    }
+
+    const pdfLoc = row.pdfLocation;
+    if (!pdfLoc) {
+        return { ok: false, path: null, page: null, linkText: '', reason: 'Annotation row has no PDF location data.' };
+    }
+
+    // ── Build candidates ──
+    const candidates = buildPaperPdfCandidates(entry);
+    if (candidates.length === 0) {
+        return { ok: false, path: null, page: null, linkText: '', reason: 'No valid PDF candidates found in paper entry.' };
+    }
+
+    // ── Resolve candidate ──
+    let resolvedCandidate = null;
+    const identity = pdfLoc.sourceAttachmentKey;
+
+    if (identity != null && identity !== '') {
+        // Exact identity match (D-04)
+        resolvedCandidate = candidates.find(c => c.attachmentKey === identity) || null;
+        if (!resolvedCandidate) {
+            return {
+                ok: false,
+                path: null,
+                page: null,
+                linkText: '',
+                reason: 'Could not resolve the annotation to a PDF in the paper entry.',
+            };
+        }
+    } else {
+        // No identity — single-candidate fallback (D-06)
+        if (candidates.length === 1) {
+            resolvedCandidate = candidates[0];
+        } else {
+            // Zero or multiple candidates — fail closed (D-07)
+            return {
+                ok: false,
+                path: null,
+                page: null,
+                linkText: '',
+                reason: candidates.length === 0
+                    ? 'No PDF candidates found.'
+                    : 'Multiple PDF candidates found; cannot choose without attachment identity.',
+            };
+        }
+    }
+
+    // ── Page conversion (D-08) ──
+    const pageIndex = pdfLoc.pageIndex;
+    let page = null;
+    let pageDegraded = false;
+
+    if (typeof pageIndex === 'number' && Number.isFinite(pageIndex) && pageIndex >= 0 && Number.isInteger(pageIndex)) {
+        page = pageIndex + 1;
+    } else {
+        pageDegraded = true;
+    }
+
+    const path = resolvedCandidate.path;
+    let linkText;
+    let reason;
+
+    if (page !== null) {
+        linkText = path + '#page=' + page;
+        reason = null;
+    } else {
+        linkText = path;
+        reason = 'Page location is not available.';
+    }
+
+    return { ok: true, path, page, linkText, reason };
+}
+
 module.exports = {
     resolvePythonExecutable,
     getPluginVersion,
@@ -1157,4 +1383,8 @@ module.exports = {
     toggleAnnotationExpansion,
     buildAnnotationListViewModel,
     mergeAnnotationRefreshResult,
+    // PDF jump-target navigation helpers (Phase 7, Plan 01)
+    extractVaultPdfPath,
+    buildPaperPdfCandidates,
+    resolveAnnotationPdfTarget,
 };

@@ -18,8 +18,8 @@ const {
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const ATTACH_KEY_A = 'ATTACH_A';
-const ATTACH_KEY_B = 'ATTACH_B';
+const ATTACH_KEY_A = 'STORAGE_ABC';
+const ATTACH_KEY_B = 'STORAGE_DEF';
 const STORAGE_KEY = 'STORAGE_ABC';
 
 /** A minimal paper entry with pdf_path in wikilink form. */
