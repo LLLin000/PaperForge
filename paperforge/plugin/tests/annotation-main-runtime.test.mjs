@@ -1,6 +1,6 @@
 /**
  * Runtime harness for PaperForgeStatusView annotation bridge wiring and
- * Phase 6 annotation list section rendering.
+ * Phase 6 annotation list section rendering and Phase 7 PDF navigation.
  *
  * These tests exercise the real main.js view methods while stubbing the
  * Obsidian runtime and the annotation loader so no Python subprocess runs.
@@ -8,6 +8,7 @@
  * Tests cover:
  *   Task 1 — Test hook, DOM insertion point, default expanded controls, state consumption
  *   Task 2 — Controls rendering, refresh, stale-state, distinct states, forbidden controls
+ *   Task 3 — _openAnnotationPdf navigation (Phase 7, Plan 02)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRequire } from 'node:module';
@@ -22,6 +23,13 @@ const {
 
 let originalLoad;
 let PaperForgeStatusView;
+let resolveAnnotationPdfTarget;
+
+/**
+ * Global capture for Notice calls during tests.
+ * Cleared before each test via beforeEach.
+ */
+const noticeCalls = [];
 
 function installObsidianStub() {
     originalLoad = Module._load;
@@ -29,7 +37,13 @@ function installObsidianStub() {
         if (request === 'obsidian') {
             return {
                 Plugin: class Plugin {},
-                Notice: class Notice {},
+                Notice: class Notice {
+                    constructor(msg, duration) {
+                        this.msg = msg;
+                        this.duration = duration;
+                        noticeCalls.push(this);
+                    }
+                },
                 ItemView: class ItemView {
                     constructor(leaf) {
                         this.leaf = leaf;
@@ -50,6 +64,7 @@ function installObsidianStub() {
     delete require.cache[mainPath];
     const pluginModule = require('../main.js');
     PaperForgeStatusView = pluginModule.__test.PaperForgeStatusView;
+    resolveAnnotationPdfTarget = pluginModule.__test.resolveAnnotationPdfTarget;
 }
 
 function uninstallObsidianStub() {
@@ -248,6 +263,7 @@ function makeRuntimeView(opts = {}) {
 }
 
 beforeEach(() => {
+    noticeCalls.length = 0;
     installObsidianStub();
 });
 
@@ -255,6 +271,7 @@ afterEach(() => {
     uninstallObsidianStub();
     vi.restoreAllMocks();
     document.body.innerHTML = '';
+    noticeCalls.length = 0;
 });
 
 // ── Task 1: Test hook accessibility ──
@@ -636,5 +653,167 @@ describe('Task 2 — Forbidden controls are absent (D-24, D-25)', () => {
 
         expect(html).not.toContain('evidence');
         expect(html).not.toContain('concept card');
+    });
+});
+
+// ── Plan 02: PDF navigation (Phase 7) ──
+
+describe('Plan 02 — _openAnnotationPdf direct tests', () => {
+    function makePdfRow(opts) {
+        return {
+            pdfLocation: {
+                sourceAttachmentKey: opts.sourceAttachmentKey || 'ABCDEFGH',
+                pageIndex: opts.pageIndex != null ? opts.pageIndex : null,
+                pageLabel: String((opts.pageIndex != null ? opts.pageIndex : 0) + 1),
+            },
+            display: {
+                pageLabel: String((opts.pageIndex != null ? opts.pageIndex : 0) + 1),
+                page: (opts.pageIndex != null ? opts.pageIndex : 0) + 1,
+            },
+        };
+    }
+
+    /**
+     * Entry with a realistic Zotero storage path containing /storage/{KEY}/
+     * so buildPaperPdfCandidates derives attachmentKey = 'ABCDEFGH'.
+     */
+    function makePdfEntry() {
+        return {
+            title: 'Test Paper',
+            authors: ['Author A'],
+            year: 2024,
+            has_pdf: true,
+            zotero_key: 'PAPER_A',
+            pdf_path: '[[99_System/Zotero/storage/ABCDEFGH/test.pdf]]',
+            zotero_storage_key: 'ABCDEFGH',
+            fulltext_path: 'test.md',
+            note_path: 'notes/test.md',
+            do_ocr: false,
+            analyze: false,
+            health: {},
+        };
+    }
+
+    it('confirmed identity + pageIndex opens PDF at correct page', () => {
+        const app = makeStubApp();
+        app.vault.getAbstractFileByPath = vi.fn(() => ({ path: '99_System/Zotero/storage/ABCDEFGH/test.pdf', name: 'test.pdf' }));
+        const view = makeRuntimeView({
+            app,
+            paperEntry: makePdfEntry(),
+        });
+        const row = makePdfRow({ sourceAttachmentKey: 'ABCDEFGH', pageIndex: 2 });
+
+        view._openAnnotationPdf(row);
+
+        expect(app.workspace.openLinkText).toHaveBeenCalledTimes(1);
+        expect(app.workspace.openLinkText).toHaveBeenCalledWith('99_System/Zotero/storage/ABCDEFGH/test.pdf#page=3', '');
+    });
+
+    it('unmatched identity shows Notice and does not navigate', () => {
+        const app = makeStubApp();
+        app.vault.getAbstractFileByPath = vi.fn(() => ({ path: '99_System/Zotero/storage/ABCDEFGH/test.pdf', name: 'test.pdf' }));
+        const view = makeRuntimeView({
+            app,
+            paperEntry: makePdfEntry(),
+        });
+        const row = makePdfRow({ sourceAttachmentKey: 'UNKNOWN', pageIndex: 0 });
+
+        view._openAnnotationPdf(row);
+
+        expect(noticeCalls.length).toBeGreaterThanOrEqual(1);
+        expect(app.workspace.openLinkText).not.toHaveBeenCalled();
+    });
+
+    it('missing vault file shows Notice and does not navigate', () => {
+        const app = makeStubApp();
+        app.vault.getAbstractFileByPath = vi.fn(() => null);
+        const view = makeRuntimeView({
+            app,
+            paperEntry: makePdfEntry(),
+        });
+        const row = makePdfRow({ sourceAttachmentKey: 'ABCDEFGH', pageIndex: 2 });
+
+        view._openAnnotationPdf(row);
+
+        expect(noticeCalls.length).toBeGreaterThanOrEqual(1);
+        expect(app.workspace.openLinkText).not.toHaveBeenCalled();
+    });
+
+    it('null pageIndex opens PDF without page fragment', () => {
+        const app = makeStubApp();
+        app.vault.getAbstractFileByPath = vi.fn(() => ({ path: '99_System/Zotero/storage/ABCDEFGH/test.pdf', name: 'test.pdf' }));
+        const view = makeRuntimeView({
+            app,
+            paperEntry: makePdfEntry(),
+        });
+        const row = makePdfRow({ sourceAttachmentKey: 'ABCDEFGH', pageIndex: null });
+
+        view._openAnnotationPdf(row);
+
+        expect(app.workspace.openLinkText).toHaveBeenCalledTimes(1);
+        expect(app.workspace.openLinkText).toHaveBeenCalledWith('99_System/Zotero/storage/ABCDEFGH/test.pdf', '');
+    });
+
+    it('negative pageIndex opens PDF without page fragment', () => {
+        const app = makeStubApp();
+        app.vault.getAbstractFileByPath = vi.fn(() => ({ path: '99_System/Zotero/storage/ABCDEFGH/test.pdf', name: 'test.pdf' }));
+        const view = makeRuntimeView({
+            app,
+            paperEntry: makePdfEntry(),
+        });
+        const row = makePdfRow({ sourceAttachmentKey: 'ABCDEFGH', pageIndex: -1 });
+
+        view._openAnnotationPdf(row);
+
+        expect(app.workspace.openLinkText).toHaveBeenCalledTimes(1);
+        expect(app.workspace.openLinkText).toHaveBeenCalledWith('99_System/Zotero/storage/ABCDEFGH/test.pdf', '');
+    });
+});
+
+describe('Plan 02 — UI state preservation', () => {
+    it('page-badge click does not alter _annotationUiState', () => {
+        const view = makeRuntimeView({
+            paperKey: 'PAPER_A',
+            annotationState: readyState('PAPER_A', 2),
+        });
+
+        view._renderPaperMode();
+
+        // Set a distinct UI state after render (not filtering out rows)
+        view._annotationUiState = {
+            query: '',
+            groupMode: 'page',
+            typeColorFilter: 'all',
+            expandedIds: [],
+        };
+
+        // Click the first page badge
+        const badge = view._contentEl.querySelector('.paperforge-annotation-page-badge');
+        expect(badge).toBeTruthy();
+        badge.click();
+
+        // UI state must be unchanged
+        expect(view._annotationUiState.query).toBe('');
+        expect(view._annotationUiState.groupMode).toBe('page');
+        expect(view._annotationUiState.typeColorFilter).toBe('all');
+    });
+
+    it('expand button does not call openLinkText', () => {
+        const app = makeStubApp();
+        const view = makeRuntimeView({
+            app,
+            paperKey: 'PAPER_A',
+            annotationState: readyState('PAPER_A', 2),
+        });
+
+        view._renderPaperMode();
+
+        // Click the expand button on the first row
+        const expandBtn = view._contentEl.querySelector('.paperforge-annotation-expand-btn');
+        expect(expandBtn).toBeTruthy();
+        expandBtn.click();
+
+        // Verify openLinkText was never called
+        expect(app.workspace.openLinkText).not.toHaveBeenCalled();
     });
 });
