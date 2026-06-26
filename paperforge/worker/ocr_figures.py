@@ -2702,14 +2702,14 @@ def _resolve_legend_bbox(
     legend_bbox = matched_item.get("legend_bbox")
     if legend_bbox:
         return legend_bbox
-    legend_block_id = matched_item.get("legend_block_id")
+    legend_block_id = str(matched_item.get("legend_block_id") or "")
     if legend_block_id:
         legend_page = matched_item.get("legend_page")
         for block in structured_blocks:
-            if block.get("block_id") == legend_block_id and block.get("page") == legend_page:
+            if str(block.get("block_id") or "") == legend_block_id and block.get("page") == legend_page:
                 return block.get("bbox")
         for entry in inventory.get("figure_legends", []):
-            if entry.get("block_id") == legend_block_id:
+            if str(entry.get("block_id") or "") == legend_block_id:
                 return entry.get("bbox")
     return None
 
@@ -2747,8 +2747,8 @@ def _infer_missing_main_figure_numbers(
         marker = _extract_figure_marker(str(item.get("text", "")))
         if marker["namespace"] != "main" or marker["has_s_prefix"]:
             continue
-        legend_block_id = item.get("legend_block_id")
-        if not legend_block_id or not isinstance(legend_block_id, str) or not legend_block_id.strip():
+        legend_block_id = str(item.get("legend_block_id") or "")
+        if not legend_block_id.strip():
             continue
         asset_block_ids = item.get("asset_block_ids", [])
         if not isinstance(asset_block_ids, list) or not asset_block_ids:
