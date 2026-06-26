@@ -5353,3 +5353,112 @@ def test_page_assets_count_uses_ordered_legends_not_stale_deduped() -> None:
     assert result2["decision"] == "rejected"
     assert "multiple_numbered_legends" in result2.get("evidence", [])
 
+
+class TestResolveFigureIdCollisions:
+    """_resolve_figure_id_collisions must never produce duplicate figure_ids."""
+
+    def _make_fig(self, figure_id: str, **kw: object) -> dict:
+        return {"figure_id": figure_id, "page": 1, **kw}
+
+    def _run(self, figs: list[dict]) -> list[dict]:
+        from paperforge.worker.ocr_figures import _resolve_figure_id_collisions
+        inventory = {"matched_figures": list(figs), "held_figures": [], "ambiguous_figures": []}
+        _resolve_figure_id_collisions(inventory)
+        return inventory["matched_figures"]
+
+    def _ids(self, figs: list[dict]) -> list[str]:
+        return [f["figure_id"] for f in figs]
+
+    def test_no_collision(self) -> None:
+        figs = [self._make_fig("figure_001"), self._make_fig("figure_002"), self._make_fig("figure_003")]
+        result = self._run(figs)
+        assert self._ids(result) == ["figure_001", "figure_002", "figure_003"]
+
+    def test_single_collision(self) -> None:
+        figs = [self._make_fig("figure_001"), self._make_fig("figure_001")]
+        result = self._run(figs)
+        assert self._ids(result) == ["figure_001", "figure_s001"]
+
+    def test_triple_collision(self) -> None:
+        figs = [self._make_fig("figure_001"), self._make_fig("figure_001"), self._make_fig("figure_001")]
+        result = self._run(figs)
+        assert self._ids(result) == ["figure_001", "figure_s001", "figure_ss001"]
+
+    def test_multiple_independent_collisions(self) -> None:
+        figs = [
+            self._make_fig("figure_001"),
+            self._make_fig("figure_002"),
+            self._make_fig("figure_001"),
+            self._make_fig("figure_003"),
+            self._make_fig("figure_002"),
+        ]
+        result = self._run(figs)
+        assert self._ids(result) == ["figure_001", "figure_002", "figure_s001", "figure_003", "figure_s002"]
+
+    def test_mixed_buckets_deduplicated(self) -> None:
+        from paperforge.worker.ocr_figures import _resolve_figure_id_collisions
+
+        mf = [self._make_fig("figure_001")]
+        hf = [self._make_fig("figure_001")]
+        af = [self._make_fig("figure_001")]
+        inventory = {"matched_figures": mf, "held_figures": hf, "ambiguous_figures": af}
+        _resolve_figure_id_collisions(inventory)
+        assert inventory["matched_figures"][0]["figure_id"] == "figure_001"
+        assert inventory["held_figures"][0]["figure_id"] == "figure_s001"
+        assert inventory["ambiguous_figures"][0]["figure_id"] == "figure_ss001"
+
+    def test_empty_figure_id(self) -> None:
+        figs = [self._make_fig(""), self._make_fig("")]
+        result = self._run(figs)
+        assert self._ids(result) == ["", ""]
+
+    def test_no_figure_id_field(self) -> None:
+        figs: list[dict] = [{"page": 1}, {"page": 2}]
+        result = self._run(figs)
+        assert all(f.get("figure_id", "") == "" for f in result)
+
+    def test_non_figure_prefixes_untouched(self) -> None:
+        figs = [
+            self._make_fig("held_figure_001"),
+            self._make_fig("held_figure_002"),
+            self._make_fig("cluster_001"),
+        ]
+        result = self._run(figs)
+        assert self._ids(result) == ["held_figure_001", "held_figure_002", "cluster_001"]
+
+    def test_held_figure_prefix_collision(self) -> None:
+        figs = [
+            self._make_fig("held_figure_001"),
+            self._make_fig("held_figure_001"),
+        ]
+        result = self._run(figs)
+        assert self._ids(result) == ["held_figure_001", "figure_sheld_figure_001"]
+
+    def test_realistic_body_plus_supplementary(self) -> None:
+        figs = [
+            self._make_fig("figure_001", page=6, caption="Figure 1: Main body figure"),
+            self._make_fig("figure_002", page=9, caption="Figure 2: Another body figure"),
+            self._make_fig("figure_003", page=11, caption="Figure 3: Histology results"),
+            self._make_fig("figure_004", page=15, caption="Figure 4: Osteogenesis results"),
+            self._make_fig("figure_001", page=37, caption="Figure S.1: Supplementary confocal"),
+            self._make_fig("figure_002", page=38, caption="Figure S.2: Cell number data"),
+            self._make_fig("figure_003", page=39, caption="Figure S.3: Osteogenesis confocal"),
+            self._make_fig("figure_004", page=40, caption="Figure S.4: Cell number data"),
+        ]
+        result = self._run(figs)
+        assert self._ids(result) == [
+            "figure_001", "figure_002", "figure_003", "figure_004",
+            "figure_s001", "figure_s002", "figure_s003", "figure_s004",
+        ]
+        # Verify originals are untouched
+        assert len({f["figure_id"] for f in result}) == 8  # all unique
+
+    def test_promoted_sequence_matches_also_resolved(self) -> None:
+        # Sequence-promoted figures use _format_figure_id(ns, fn) which can collide
+        figs = [
+            self._make_fig("figure_001", strict_status="sequence_match"),
+            self._make_fig("figure_001", strict_status="matched"),
+        ]
+        result = self._run(figs)
+        assert self._ids(result) == ["figure_001", "figure_s001"]
+

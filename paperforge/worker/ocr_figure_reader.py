@@ -128,6 +128,7 @@ def _normalize_bucket(
 
         normalized.append(
             {
+                "figure_id": source_item.get("figure_id", ""),
                 "figure_number": source_item.get("figure_number")
                 or source_marker.get("number")
                 or _inferred_figure_number,
@@ -272,6 +273,7 @@ def _materialize_reader_figure(
                 first_asset_block_id=asset_ids[0] if asset_ids else None,
                 ordinal=ordinal,
             ),
+            "figure_id": normalized_item.get("figure_id", ""),
             "figure_number": figure_number,
             "reader_status": reader_status,
             "strict_status": strict_status,

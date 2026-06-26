@@ -880,9 +880,12 @@ def _render_reader_figure_card(figure: dict) -> list[str]:
 
 def _reader_figure_embed_target(figure: dict) -> str | None:
     status = str(figure.get("reader_status") or "")
-    figure_number = figure.get("figure_number")
     if status not in {"EXACT_MATCH", "SEQUENCE_MATCH"}:
         return None
+    figure_id = figure.get("figure_id", "")
+    if figure_id:
+        return figure_id
+    figure_number = figure.get("figure_number")
     if figure_number is None:
         return None
     return f"figure_{int(figure_number):03d}"

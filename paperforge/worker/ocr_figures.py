@@ -2601,6 +2601,23 @@ def _settle_cross_page_reserved_objects(
         )
 
 
+def _resolve_figure_id_collisions(figure_inventory: dict) -> None:
+    _collision_seen: dict[str, int] = {}
+    for _fig in (
+        *figure_inventory.get("matched_figures", []),
+        *figure_inventory.get("held_figures", []),
+        *figure_inventory.get("ambiguous_figures", []),
+    ):
+        _fig_id = _fig.get("figure_id", "")
+        if not _fig_id:
+            continue
+        if _fig_id in _collision_seen:
+            _collision_seen[_fig_id] += 1
+            _fig["figure_id"] = f"figure_{'s' * _collision_seen[_fig_id]}{_fig_id.removeprefix('figure_')}"
+        else:
+            _collision_seen[_fig_id] = 0
+
+
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
     legends: list[dict] = []
     held_figures: list[dict] = []
@@ -4258,6 +4275,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         structured_blocks,
         inventory,
     )
+
+    _resolve_figure_id_collisions(inventory)
 
     return inventory
 
