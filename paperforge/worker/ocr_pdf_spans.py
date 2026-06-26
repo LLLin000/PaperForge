@@ -125,7 +125,6 @@ def _extract_visual_container_rects(page: Any) -> list:
     except Exception:
         return rects
 
-    page_area = (page.rect.width or 1) * (page.rect.height or 1)
     for drawing in drawings:
         fill = drawing.get("fill")
         color = drawing.get("color")
@@ -145,12 +144,18 @@ def _extract_visual_container_rects(page: Any) -> list:
 
         has_border = bool(color) and (isinstance(color, (list, tuple))) and stroke_width > 0
 
-        # Skip thin-bordered, unfilled rectangles that cover >50% of page —
-        # these are page decoration lines (e.g. text area frame), not callout containers.
+        # Skip thin-bordered, unfilled rectangles in dark near-gray color —
+        # these are PDF layout/drawing frame lines (text area borders, figure
+        # borders, clipping paths returned as drawings by PyMuPDF), not callout
+        # containers. Real callout boxes have a colored fill, a thick/colored
+        # border (>1pt), or a true black border (pure RGB 0,0,0).
         if has_border and not is_filled and stroke_width <= 1.0:
-            coverage = (rect.width * rect.height) / page_area
-            if coverage > 0.5:
-                continue
+            if color and len(color) >= 3:
+                r, g, b = color[0], color[1], color[2]
+                is_gray = max(r, g, b) - min(r, g, b) < 0.05
+                brightness = (r + g + b) / 3
+                if is_gray and 0.02 < brightness < 0.3:
+                    continue
 
         if is_filled or has_border:
             rects.append(rect)

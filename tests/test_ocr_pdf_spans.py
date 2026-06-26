@@ -188,6 +188,44 @@ def test_extract_visual_container_detects_thick_border_box() -> None:
     assert len(rects) == 1, "Thick border box should be detected"
 
 
+def test_extract_visual_container_keeps_colored_thin_border() -> None:
+    """A colored (non-gray) thin-border rectangle should still be detected."""
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    shape = page.new_shape()
+    shape.draw_rect(fitz.Rect(400, 600, 550, 650))  # magenta colored thin border
+    shape.finish(fill=None, color=(0.6, 0.2, 0.6), width=0.6)
+    shape.commit()
+
+    rects = _extract_visual_container_rects(page)
+    doc.close()
+
+    assert len(rects) == 1, "Colored thin border should be detected"
+
+
+def test_extract_visual_container_keeps_black_thin_border() -> None:
+    """A pure black thin-border rectangle should still be detected."""
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    shape = page.new_shape()
+    shape.draw_rect(fitz.Rect(400, 600, 550, 650))
+    shape.finish(fill=None, color=(0, 0, 0), width=0.5)
+    shape.commit()
+
+    rects = _extract_visual_container_rects(page)
+    doc.close()
+
+    assert len(rects) == 1, "Black thin border should be detected"
+
+
 def test_extract_visual_container_skips_small_thin_border() -> None:
     """A small thin-border rectangle below min size should be skipped."""
     import fitz
