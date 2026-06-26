@@ -242,6 +242,7 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild_parser.add_argument("--all", action="store_true", help="Rebuild all papers with existing OCR raw data")
     rebuild_parser.add_argument("--status", metavar="STATUS", help="Filter by OCR status (done, done_degraded, failed)")
     rebuild_parser.add_argument("--dry-run", action="store_true", help="List papers that would be rebuilt without executing")
+    rebuild_parser.add_argument("--resume", action="store_true", help="Skip papers already in checkpoint")
 
     # context (Phase 26: traceable AI context packs)
     p_context = sub.add_parser("context", help="Generate traceable AI context pack for paper(s)")

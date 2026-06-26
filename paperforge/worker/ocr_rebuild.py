@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 from pathlib import Path
 
 from paperforge.core.io import read_json, write_json
@@ -115,11 +116,14 @@ def select_papers_for_derived_rebuild(papers: list[dict]) -> list[str]:
     return [p["zotero_key"] for p in papers if p.get("derived_stale") and not p.get("raw_upgradable")]
 
 
-def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
+def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None, checkpoint: Path | None = None) -> dict:
     """Run derived-layer rebuild for the given paper keys without raw OCR rerun.
 
     Rebuilds: structured blocks, metadata, figure/table inventories, objects,
     render outputs, and health — from stored raw blocks only.
+
+    If checkpoint is provided, appends each rebuilt key so interrupted runs
+    can skip completed work via --resume.
     """
     from paperforge.worker._utils import pipeline_paths, read_jsonl
     from paperforge.worker.ocr import validate_ocr_meta
@@ -128,7 +132,8 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
     ocr_root = pipeline_paths(vault)["ocr"]
     rebuilt_count = 0
 
-    for key in keys:
+    keys_iter = progress_bar(keys, desc="OCR rebuild") if progress_bar else keys
+    for key in keys_iter:
         artifacts = artifact_paths_for_root(ocr_root, key)
         paper_root = artifacts.paper_root
         if not paper_root.exists():
@@ -378,6 +383,12 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         write_json(artifacts.meta_json, meta)
 
         rebuilt_count += 1
+        if checkpoint:
+            done = []
+            if checkpoint.exists():
+                done = json.loads(checkpoint.read_text(encoding="utf-8"))
+            done.append(key)
+            checkpoint.write_text(json.dumps(done, ensure_ascii=False), encoding="utf-8")
 
     return {"rebuild_count": rebuilt_count}
 

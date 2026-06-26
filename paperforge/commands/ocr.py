@@ -265,6 +265,7 @@ def _run_ocr_rebuild(
     all_papers: bool = False,
     status_filter: str | None = None,
     dry_run: bool = False,
+    resume: bool = False,
 ) -> int:
     """Rebuild OCR-derived artifacts from existing raw blocks."""
     from paperforge.worker.ocr_maintenance import collect_maintenance_rows
@@ -287,14 +288,28 @@ def _run_ocr_rebuild(
         print("No papers matched for rebuild.")
         return 0
 
+    # Resume: skip keys already in checkpoint
+    cp = vault / "System" / "PaperForge" / ".ocr_rebuild_checkpoint.json"
+    if resume and cp.exists():
+        import json
+        done = set(json.loads(cp.read_text(encoding="utf-8")))
+        skipped = [k for k in keys if k in done]
+        keys = [k for k in keys if k not in done]
+        if skipped:
+            print(f"Skipped {len(skipped)} paper(s) already in checkpoint.")
+
+    if not keys:
+        print("No papers to rebuild (all done).")
+        return 0
+
     if dry_run:
         print(f"Would rebuild {len(keys)} paper(s):")
         for k in keys:
             print(f"  - {k}")
         return 0
 
-    print(f"Rebuilding {len(keys)} paper(s)...")
-    result = run_derived_rebuild_for_keys(vault, keys)
+    from paperforge.worker._progress import progress_bar
+    result = run_derived_rebuild_for_keys(vault, keys, progress_bar=progress_bar, checkpoint=cp)
     count = result.get("rebuild_count", 0)
     print(f"Done. Rebuilt {count} paper(s).")
     return 0
@@ -348,6 +363,7 @@ def run(args: argparse.Namespace) -> int:
             all_papers=getattr(args, "all", False),
             status_filter=getattr(args, "status", None),
             dry_run=getattr(args, "dry_run", False),
+            resume=getattr(args, "resume", False),
         )
 
     if key:

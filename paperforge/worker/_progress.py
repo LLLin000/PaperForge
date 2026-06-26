@@ -12,6 +12,7 @@ def progress_bar(iterable, desc: str = "", total: int | None = None, disable: bo
         desc=desc,
         total=total,
         disable=disable,
+        ascii=True,
         file=sys.stderr,
         unit="item",
         mininterval=1.0,
