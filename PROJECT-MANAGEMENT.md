@@ -2238,20 +2238,110 @@ Pending papers (no PDF / OCR queued): `ocr run` should be executed for JQMRCEXY,
 
 ---
 
-## 14. Remaining Known Issues (updated 2026-06-26)
+## 14. Session 2026-06-26 — Figure Number Inference + Container Admission Rewrite
 
-Three P0 gaps + five new items from post-rebuild audit:
+### 14.1 Figure Number Inference for Leading Gap
+
+**Problem:** OCR lost "Figure 1." text in N6XCZD25 (rendered inside figure image). `figure_inventory` produced `figure_unknown_005`.
+
+**Root cause:** No inference logic to fill `figure_number: None` for matched main-sequence figures when the missing number can be deduced from sequence gaps.
+
+**Fix:** Added `_infer_missing_main_figure_numbers()` in `ocr_figures.py` — 8-step algorithm:
+1. Build known set from matched_figures with int figure_number (main namespace only)
+2. Build eligible unknown set (must have legend/asset block IDs, valid settlement_type, no frontmatter veto, resolvable bbox)
+3. Skip reasons: `no_eligible_unknowns`, `known_min_not_2`, `multiple_eligible_unknowns`, `first_known_not_found`, `first_known_bbox_unresolvable`, `unknown_not_before_first_known`, `intervening_unknown_unorderable`, `intervening_items_between`
+4. Order check via `figure_order_key = (asset_pages_min, legend_page, y0, x0)`
+5. Noise check across matched/held/ambiguous figures
+6. Mutation: `figure_number=1`, `figure_id=figure_001`, `number_inference` metadata on item + `inferred_figure_number` on figure_legends
+
+**Helpers added:** `_FRONTMATTER_VISUAL_VETO`, `_has_frontmatter_visual_veto()`, `_FIGURE_MARKER_PATTERN` regex, `_extract_figure_marker()`, `_coerce_int_figure_number()`, `_resolve_legend_bbox()` (3-tier fallback).
+
+**First release scope:** Single leading `[1]` gap only. Middle gaps, multiple leading gaps, end gaps deferred.
+
+**Bug found during rebuild validation:** `legend_block_id` stored as int (2) in JSON, not string. Eligibility check `isinstance(legend_block_id, str)` rejected it. Fixed by coercing to `str()`.
+
+**Result:** N6XCZD25 rebuild → `figure_number_inference: {status: "accepted"}`, `figure_001` in matched_figures, 0 `figure_unknown` in fulltext.
+
+**Commit:** `45cf65e`
+
+### 14.2 Evidence-Driven Container Admission Rewrite
+
+**Problem:** Blue sidebar box (156x43pt) excluded by old `height<50` gate; page frame rects and thin gray decor rects falsely admitted as containers, causing `[!NOTE]` false positives.
+
+**Root cause:** Size-first gates (width/height thresholds) are not selective enough. Real callout boxes can be short; fake containers can be large.
+
+**Fix:** Replaced absolute size gates with evidence-driven admission in `_extract_visual_container_rects()`:
+1. Feature extraction per drawing (fill, border, gray, line-like, page-sized flags)
+2. Page-sized/crop-like: completely excluded (no standalone, no grouping)
+3. Line-like: grouping pool only, not standalone
+4. Vertical component merge (x_overlap >= 0.8, gap -2..5pt)
+5. Merged rect can replace child candidates (not additive)
+6. Text evidence required (PDF text + OCR raw blocks via `_map_ocr_bbox_to_pdf_rect`)
+7. Accepted rects sorted by area descending
+
+**Call site rewritten:** Per-page three-phase loop (clear flags → compute containers → mark blocks) replaces old lazy-cache approach.
+
+**Spec/plan review round 3:** 4 must-fix changes applied:
+1. `_has_container_text()` gets `pdf_page` param for real coordinate mapping
+2. Three-phase loop (not incremental cache)
+3. Page-sized features excluded from grouping_pool
+4. Merged rects replace children + area-descending sort
+
+**Result:** 27 tests pass (11 new + 16 existing). N6XCZD25 blue box detected as `_in_visual_container=True`.
+
+**Commit:** `bab0167`, spec/plan `ad6099f`
+
+### 14.3 Blue Box Not Rendered as Callout
+
+**Problem:** After container admission, blue box was detected but NOT rendered as `> [!NOTE]` in fulltext.
+
+**Root causes (3 bugs):**
+1. `score_structured_insert` weight for `_in_visual_container` was 0.3 (from old unreliable gates). Blue box scored 0.45 → stuck at `structured_insert_candidate`.
+2. `_container_text` was set to `True` (bool) by the three-phase loop — renderer expected string, crashed.
+3. Version bump was missing for the second backfill code change, so rebuild skipped backfill.
+
+**Fixes:**
+- Bumped `_in_visual_container` weight 0.3→0.45 (evidence-driven is reliable)
+- Added `sidebar_header_phrase` check (+0.2) for "available with this article" etc.
+- Normalize newlines in text before keyword matching
+- `_container_text` set to `block.get("text", "")` instead of `True`
+- Renderer guard: `isinstance(container_text, str)` check
+- Bumped `CURRENT_SPAN_VISUAL_CONTAINER_VERSION` to force backfill re-run
+
+**Result:** Blue box score now 0.80 (visual_container 0.45 + sidebar_header 0.2 + narrow_width 0.15) → `structured_insert`. Fulltext renders:
+```markdown
+> [!NOTE]
+> Available With This Article at ptjournal.apta.org
+> • $ \underline{\text{eFigure:}} $ Photographs of Mouse Bone Marrow...
+```
+
+**Commit:** `5ba1a6d`
+
+### 14.4 Commits (ocr-v2)
+
+| Hash | Message |
+|------|---------|
+| `45cf65e` | Fix legend_block_id str coercion + N6XCZD25 rebuild |
+| `ad6099f` | Apply 4 must-fix review changes to container admission spec+plan |
+| `bab0167` | Evidence-driven container admission rewrite |
+| `27aa4e7` | Bump span_visual_container_version for backfill re-run |
+| `5ba1a6d` | Fix blue sidebar box not rendered as callout (score + renderer) |
+
+---
+
+## 15. Remaining Known Issues (updated 2026-06-26)
+
+Three P0 gaps + five items from post-rebuild audit:
 
 ### P0 (carried forward)
 1. Footnote missing from `_SKIPPED_BODY_ROLES`
 2. Short "Table N" caption matching absent
 3. Table caption fallback `###` should be `**`
 
-### P1 (new — 2026-06-26)
-4. **`score_structured_insert` lacks body-zone guard** — body blocks with `_in_visual_container=True` in `body_zone` should get `body_spine_match=True` to offset the container score. Triggers on two-column PDF layouts.
-5. **`resolve_pdf_path` lacks glob fallback for storage:** URIs** — when BBT-specified filename (correct UTF-8) doesn't match garbled NTFS filename (Chinese Win encoding double-pass), no fallback to `glob("storage/KEY/*.pdf")`. Causes `source_pdf` to store damaged filenames.
+### P1
+4. **`resolve_pdf_path` lacks glob fallback for storage URIs** — when BBT-specified filename (correct UTF-8) doesn't match garbled NTFS filename (Chinese Win encoding double-pass), no fallback to `glob("storage/KEY/*.pdf")`. Causes `source_pdf` to store damaged filenames.
 
-### P2 (new — deferred)
-6. **Health model over-penalizes short-form papers** — `page_count <= 3` papers with no headings/abstract get `red` even when content is correct.
-7. **Pre-proof / Accepted Manuscript layout template missing** — pipeline doesn't handle `Accepted Manuscript` cover pages and non-standard frontmatter.
+### P2 (deferred)
+5. **Health model over-penalizes short-form papers** — `page_count <= 3` papers with no headings/abstract get `red` even when content is correct.
+6. **Pre-proof / Accepted Manuscript layout template missing** — pipeline doesn't handle `Accepted Manuscript` cover pages and non-standard frontmatter.
 
