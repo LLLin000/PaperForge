@@ -125,6 +125,88 @@ def test_backfill_span_metadata_bad_path() -> None:
     assert result[0].get("span_metadata") is None
 
 
+def test_extract_visual_container_detects_filled_box() -> None:
+    """A small filled blue box should be detected as a container."""
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    # Draw a filled blue rectangle (simulating "Available With This Article" box)
+    shape = page.new_shape()
+    shape.draw_rect(fitz.Rect(400, 600, 550, 650))
+    shape.finish(fill=(0, 0.35, 0.6), color=None, width=0)
+    shape.commit()
+
+    rects = _extract_visual_container_rects(page)
+    doc.close()
+
+    assert len(rects) == 1
+    assert rects[0].x0 == 400
+    assert rects[0].y0 == 600
+
+
+def test_extract_visual_container_skips_thin_large_decoration() -> None:
+    """A thin 0.5pt border covering >50% of page (page decoration) should NOT be detected."""
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    # Draw a thin 0.5pt border rectangle covering most of the page
+    # (simulating the N6XCZD25 false positive)
+    shape = page.new_shape()
+    shape.draw_rect(fitz.Rect(50, 70, 543, 738))
+    shape.finish(fill=None, color=(0.13, 0.12, 0.12), width=0.5)
+    shape.commit()
+
+    rects = _extract_visual_container_rects(page)
+    doc.close()
+
+    assert len(rects) == 0, f"Expected 0, got {len(rects)}: page decoration should be filtered"
+
+
+def test_extract_visual_container_detects_thick_border_box() -> None:
+    """A thick-border unfilled rectangle should still be detected."""
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    # Draw a thick 3pt border rectangle (real callout box)
+    shape = page.new_shape()
+    shape.draw_rect(fitz.Rect(400, 600, 550, 650))
+    shape.finish(fill=None, color=(0, 0, 0), width=3.0)
+    shape.commit()
+
+    rects = _extract_visual_container_rects(page)
+    doc.close()
+
+    assert len(rects) == 1, "Thick border box should be detected"
+
+
+def test_extract_visual_container_skips_small_thin_border() -> None:
+    """A small thin-border rectangle below min size should be skipped."""
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    shape = page.new_shape()
+    shape.draw_rect(fitz.Rect(100, 100, 150, 130))  # 50x30 < 100x50 minimum
+    shape.finish(fill=(1, 0, 0), color=None, width=0)
+    shape.commit()
+
+    rects = _extract_visual_container_rects(page)
+    doc.close()
+
+    assert len(rects) == 0, "Sub-minimum rect should be skipped"
+
+
 def test_backfill_span_metadata_with_real_pdf() -> None:
     """Real PDF should produce span_metadata on blocks."""
     import tempfile

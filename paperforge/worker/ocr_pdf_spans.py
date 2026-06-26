@@ -125,6 +125,7 @@ def _extract_visual_container_rects(page: Any) -> list:
     except Exception:
         return rects
 
+    page_area = (page.rect.width or 1) * (page.rect.height or 1)
     for drawing in drawings:
         fill = drawing.get("fill")
         color = drawing.get("color")
@@ -143,6 +144,13 @@ def _extract_visual_container_rects(page: Any) -> list:
             is_filled = brightness < 0.95
 
         has_border = bool(color) and (isinstance(color, (list, tuple))) and stroke_width > 0
+
+        # Skip thin-bordered, unfilled rectangles that cover >50% of page —
+        # these are page decoration lines (e.g. text area frame), not callout containers.
+        if has_border and not is_filled and stroke_width <= 1.0:
+            coverage = (rect.width * rect.height) / page_area
+            if coverage > 0.5:
+                continue
 
         if is_filled or has_border:
             rects.append(rect)
