@@ -171,6 +171,15 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         return []
 
     rows: list[OCRMaintenanceRow] = []
+
+    # Preload canonical index for title fallback
+    lib_index = paths.get("index", ocr_root.parent / "indexes") / "formal-library.json"
+    title_by_key: dict[str, str] = {}
+    if lib_index.exists():
+        lib_data = read_json(lib_index)
+        lib_items = lib_data.get("items", lib_data) if isinstance(lib_data, dict) else lib_data
+        title_by_key = {i.get("zotero_key", ""): str(i.get("title", "") or "") for i in lib_items if i.get("zotero_key")}
+
     for paper_dir in sorted(ocr_root.iterdir()):
         if not paper_dir.is_dir():
             continue
@@ -208,10 +217,18 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         degraded_reasons = [r for r in degraded_reasons if r]
 
         rebuild_ts = meta.get("rebuild_finished_at") or meta.get("ocr_health_rebuild_time") or ""
+
+        # Resolve title: meta.json -> source_metadata -> canonical index -> key
+        title = meta.get("title")
+        if not title and has_source_meta:
+            sm = read_json(artifacts.source_metadata) if artifacts.source_metadata.exists() else {}
+            title = sm.get("title", "")
+        if not title:
+            title = title_by_key.get(key, key)
         row = OCRMaintenanceRow(
             key=key,
-            title=_short_title(meta.get("title") or key),
-            title_full=_safe_str(meta.get("title") or key),
+            title=_short_title(title),
+            title_full=_safe_str(title),
             status=status if status != "-" else "pending",
             health=health_overall or "-",
             version=version,

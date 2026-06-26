@@ -1202,29 +1202,6 @@ export class PaperForgeStatusView extends ItemView {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr");
       if (action) this._runAction(action, globalOcrBtn);
     });
-    const globalDoctorBtn = btnsRow.createEl("button", {
-      cls: "paperforge-contextual-btn",
-    });
-    globalDoctorBtn.createEl("span", {
-      cls: "paperforge-contextual-btn-icon",
-      text: "\u2695",
-    });
-    globalDoctorBtn.createEl("span", { text: "Run Doctor" });
-    globalDoctorBtn.addEventListener("click", () => {
-      const action = ACTIONS.find((a) => a.id === "paperforge-doctor");
-      if (action) this._runAction(action, globalDoctorBtn);
-    });
-    const globalStatusBtn = btnsRow.createEl("button", {
-      cls: "paperforge-contextual-btn",
-    });
-    globalStatusBtn.createEl("span", {
-      cls: "paperforge-contextual-btn-icon",
-      text: "\u2139",
-    });
-    globalStatusBtn.createEl("span", { text: "Refresh Status" });
-    globalStatusBtn.addEventListener("click", () => {
-      this._fetchStats(false);
-    });
     const globalRedoBtn = btnsRow.createEl("button", {
       cls: "paperforge-contextual-btn warn",
     });
@@ -1236,18 +1213,6 @@ export class PaperForgeStatusView extends ItemView {
     globalRedoBtn.addEventListener("click", () => {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr-redo");
       if (action) this._runAction(action, globalRedoBtn);
-    });
-    const globalRepairBtn = btnsRow.createEl("button", {
-      cls: "paperforge-contextual-btn",
-    });
-    globalRepairBtn.createEl("span", {
-      cls: "paperforge-contextual-btn-icon",
-      text: "\u21BA",
-    });
-    globalRepairBtn.createEl("span", { text: "Repair Issues" });
-    globalRepairBtn.addEventListener("click", () => {
-      const action = ACTIONS.find((a) => a.id === "paperforge-repair");
-      if (action) this._runAction(action, globalRepairBtn);
     });
   }
 

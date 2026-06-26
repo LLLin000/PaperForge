@@ -2143,15 +2143,11 @@
 /* Click-to-copy indicator */
 .pf-copy {
   cursor: copy;
-  border-bottom: 1px dashed var(--text-faint);
-  transition:
-    border-color 0.15s,
-    background 0.15s;
   padding: 0 2px;
   border-radius: 2px;
+  transition: background 0.15s;
 }
 .pf-copy:hover {
-  border-color: var(--interactive-accent);
   background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
 }
 .pf-copy:active {
@@ -2392,21 +2388,6 @@
   color: var(--text-faint);
 }
 
-/* Collection header */
-.paperforge-collection-header {
-  padding: 20px;
-  background: var(--background-primary);
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--pf-warm-line) 20%,
-      var(--background-modifier-border)
-    );
-  border-radius: calc(var(--pf-radius, 8px) + 2px);
-  box-shadow:
-    0 1px 2px rgba(20, 18, 14, 0.04),
-    0 10px 24px rgba(20, 18, 14, 0.04);
-}
 .paperforge-collection-title {
   font-size: 16px;
   font-weight: 600;
