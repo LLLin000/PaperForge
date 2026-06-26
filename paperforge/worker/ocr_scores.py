@@ -167,18 +167,22 @@ def score_structured_insert(
     body_spine_match: bool = False,
     cluster_coherent: bool = False,
 ) -> dict:
-    text = str(block.get("text") or block.get("block_content") or "").strip().lower()
+    text = " ".join(str(block.get("text") or block.get("block_content") or "").strip().lower().split())
     bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
     page_width = float(block.get("page_width") or 1200)
     score = 0.0
     evidence: list[str] = []
 
     if block.get("_in_visual_container"):
-        score += 0.3
+        score += 0.45
         evidence.append("visual_container")
     if re.match(r"^box\s*\.?\s*\d+\b", text) or "key point" in text or text.startswith("highlights") or text.startswith("sections"):
         score += 0.3
         evidence.append("box_or_summary_keyword")
+    sidebar_phrases = ["available with this article", "supplementary data", "supporting information"]
+    if any(p in text for p in sidebar_phrases):
+        score += 0.2
+        evidence.append("sidebar_header_phrase")
     if len(bbox) >= 4 and (bbox[2] - bbox[0]) < page_width * 0.45:
         score += 0.15
         evidence.append("narrow_width")

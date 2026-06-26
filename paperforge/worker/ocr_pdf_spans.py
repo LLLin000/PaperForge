@@ -492,7 +492,7 @@ def backfill_span_metadata_from_pdf(
                             container_rect.x1 * scale_x,
                             container_rect.y1 * scale_y,
                         ]
-                        block["_container_text"] = True
+                        block["_container_text"] = block.get("text", "") or ""
                         break
     finally:
         doc.close()

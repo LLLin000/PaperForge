@@ -1519,7 +1519,7 @@ def render_fulltext_markdown(
             lines.append("")
         elif role == "structured_insert":
             container_text = block.get("_container_text")
-            if container_text:
+            if container_text and isinstance(container_text, str):
                 source_text = normalize_ocr_math_text(" ".join(container_text.replace("\n", " ").split()))
             else:
                 source_text = raw_text
