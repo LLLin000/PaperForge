@@ -8,8 +8,11 @@ This is the single source of truth for span_metadata — NOT the OCR engine.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
+
+import fitz
 
 
 def _map_ocr_bbox_to_pdf_rect(
@@ -109,23 +112,217 @@ def extract_pdf_spans_for_block(
     return spans if spans else None
 
 
-def _extract_visual_container_rects(page: Any) -> list:
+def _normalize_rgb(color) -> tuple[float, float, float] | None:
+    if color is None:
+        return None
+    if not isinstance(color, (list, tuple)):
+        return None
+    if len(color) < 3:
+        return None
+    r, g, b = float(color[0]), float(color[1]), float(color[2])
+    if max(r, g, b) > 1.0:
+        r /= 255.0
+        g /= 255.0
+        b /= 255.0
+    return (r, g, b)
+
+
+def _is_gray(rgb: tuple[float, float, float], threshold: float = 0.05) -> bool:
+    return max(rgb) - min(rgb) < threshold
+
+
+def _brightness(rgb: tuple[float, float, float]) -> float:
+    return (rgb[0] + rgb[1] + rgb[2]) / 3.0
+
+
+def _has_visible_fill(fill) -> bool:
+    rgb = _normalize_rgb(fill)
+    if rgb is None:
+        return False
+    if isinstance(fill, (list, tuple)) and len(fill) >= 4 and float(fill[3]) <= 0:
+        return False
+    return _brightness(rgb) < 0.95
+
+
+def _extract_rect_features(
+    drawing: dict,
+    page_width: float,
+    page_height: float,
+    margin: float = 10.0,
+) -> dict:
+    """Extract structured features from a PyMuPDF drawing for container admission."""
+    import fitz
+
+    fill = drawing.get("fill")
+    color = drawing.get("color")
+    stroke_width = drawing.get("width", 0) or 0
+    raw_rect = drawing.get("rect")
+    if not raw_rect:
+        return {"rect": fitz.Rect(0, 0, 0, 0), "width": 0, "height": 0, "area": 0,
+                "page_area_ratio": 0, "fill_rgb": None, "stroke_rgb": None,
+                "stroke_width": 0, "is_filled": False, "has_border": False,
+                "is_low_contrast_gray_border": False, "line_like": False, "near_page_edges": False}
+
+    rect = fitz.Rect(raw_rect)
+    w = rect.width
+    h = rect.height
+    area = w * h
+    page_area = page_width * page_height
+    page_area_ratio = area / page_area if page_area > 0 else 0
+
+    fill_rgb = _normalize_rgb(fill)
+    stroke_rgb = _normalize_rgb(color) if color else None
+    has_border = stroke_rgb is not None and stroke_width > 0
+    is_filled = _has_visible_fill(fill)
+
+    is_low_contrast_gray_border = (
+        not is_filled
+        and has_border
+        and stroke_width <= 1.0
+        and stroke_rgb is not None
+        and _is_gray(stroke_rgb)
+        and 0.02 < _brightness(stroke_rgb) < 0.85
+    )
+
+    line_like = h <= 3.0 or w <= 3.0
+    near_page_edges = (
+        rect.x0 <= margin
+        and rect.y0 <= margin
+        and rect.x1 >= page_width - margin
+        and rect.y1 >= page_height - margin
+    )
+
+    return {
+        "rect": rect,
+        "width": w,
+        "height": h,
+        "area": area,
+        "page_area_ratio": page_area_ratio,
+        "fill_rgb": fill_rgb,
+        "stroke_rgb": stroke_rgb,
+        "stroke_width": stroke_width,
+        "is_filled": is_filled,
+        "has_border": has_border,
+        "is_low_contrast_gray_border": is_low_contrast_gray_border,
+        "line_like": line_like,
+        "near_page_edges": near_page_edges,
+    }
+
+
+def _component_compatible(a: dict, b: dict) -> bool:
+    """One has visible fill, other has fill or border."""
+    return (a["is_filled"] and (b["is_filled"] or b["has_border"])) or (
+        b["is_filled"] and (a["is_filled"] or a["has_border"])
+    )
+
+
+def _merge_vertical_components(features: list[dict], pw: float = 0, ph: float = 0) -> list[dict]:
+    """Group features by x-range overlap >=0.8 and vertical gap -2..5pt.
+    Returns merged feature dicts with component_grouped=True."""
+    import fitz
+
+    if not features:
+        return []
+    sorted_feats = sorted(features, key=lambda f: (f["rect"].x0, f["rect"].y0))
+    merged: list[dict] = []
+    used = [False] * len(sorted_feats)
+
+    for i, a in enumerate(sorted_feats):
+        if used[i]:
+            continue
+        union_rect = fitz.Rect(a["rect"])
+        for j in range(i + 1, len(sorted_feats)):
+            if used[j]:
+                continue
+            b = sorted_feats[j]
+            x_overlap = min(union_rect.x1, b["rect"].x1) - max(union_rect.x0, b["rect"].x0)
+            if x_overlap <= 0:
+                continue
+            x_overlap_ratio = x_overlap / min(union_rect.width, b["rect"].width)
+            if x_overlap_ratio < 0.8:
+                continue
+            gap = b["rect"].y0 - union_rect.y1
+            if gap < -2.0 or gap > 5.0:
+                continue
+            if not _component_compatible(a, b):
+                continue
+            union_rect = fitz.Rect(
+                min(union_rect.x0, b["rect"].x0),
+                min(union_rect.y0, b["rect"].y0),
+                max(union_rect.x1, b["rect"].x1),
+                max(union_rect.y1, b["rect"].y1),
+            )
+            used[j] = True
+        used[i] = True
+        merged.append({
+            "rect": union_rect,
+            "is_filled": a["is_filled"],
+            "has_border": a["has_border"],
+            "is_low_contrast_gray_border": a["is_low_contrast_gray_border"],
+            "component_grouped": True,
+            "page_area_ratio": (union_rect.width * union_rect.height) / (pw * ph) if pw and ph else 0,
+        })
+
+    return merged
+
+
+def _bbox_overlap_ratio(container_rect: Any, block_rect: Any) -> float:
+    """Return overlap / block_area. Returns 0.0 if block_area <= 0 or intersection empty."""
+    area_b = block_rect.width * block_rect.height
+    if area_b <= 0:
+        return 0.0
+    overlap = container_rect & block_rect
+    if overlap.is_empty:
+        return 0.0
+    return (overlap.width * overlap.height) / area_b
+
+
+def _has_container_text(
+    rect: Any,
+    *,
+    pdf_page: Any,
+    pdf_blocks: list[Any] | None = None,
+    raw_blocks_for_page: list[dict] | None = None,
+) -> bool:
+    """Count chars from PDF text blocks + OCR raw blocks inside rect.
+    Threshold: >= 10 chars total.
+    OCR raw block bbox must be mapped to PDF space."""
+    import fitz
+
+    char_count = 0
+    if pdf_blocks:
+        for block in pdf_blocks:
+            pdf_rect = fitz.Rect(block[:4])
+            if _bbox_overlap_ratio(rect, pdf_rect) >= 0.30:
+                char_count += len(str(block[4] or "")) if len(block) > 4 else 0
+
+    if raw_blocks_for_page:
+        for block in raw_blocks_for_page:
+            block_bbox = block.get("bbox") or [0, 0, 0, 0]
+            pw = block.get("page_width") or block.get("ocr_width") or pdf_page.rect.width
+            ph = block.get("page_height") or block.get("ocr_height") or pdf_page.rect.height
+            try:
+                block_rect = _map_ocr_bbox_to_pdf_rect(block_bbox, pw, ph, pdf_page)
+            except Exception:
+                block_rect = fitz.Rect(*block_bbox)
+            if _bbox_overlap_ratio(rect, block_rect) >= 0.30:
+                char_count += len(str(block.get("text", "")))
+
+    return char_count >= 10
+
+
+def _extract_visual_container_rects(
+    page: Any,
+    raw_blocks_for_page: list[dict] | None = None,
+    pdf_blocks: Sequence[Any] | None = None,
+) -> list[fitz.Rect]:
     """Extract visible rectangle regions (filled or bordered) from a PDF page.
 
-    Uses PyMuPDF's ``get_drawings()`` to find rectangles with:
-    - noticeable fill color (not white/transparent), OR
-    - visible border/outline
-
-    Uses evidence-driven admission (not absolute size thresholds):
-    1. Reject line-like noise (≤3pt)
-    2. Reject page-sized clips/crops
-    3. Accept candidates with fill or visual border
-    4. Merge vertically adjacent components sharing same x-range
-
-    Returns list of fitz.Rect objects for each detected container.
+    Args:
+        page: PyMuPDF page object.
+        raw_blocks_for_page: OCR raw blocks for this page, used for text evidence check.
+        pdf_blocks: PDF text blocks for this page, used for text evidence check.
     """
-
-    import fitz
 
     try:
         drawings = page.get_drawings()
@@ -133,84 +330,61 @@ def _extract_visual_container_rects(page: Any) -> list:
         return []
 
     page_rect = page.rect
-    page_w, page_h = page_rect.width, page_rect.height
+    pw, ph = page_rect.width, page_rect.height
 
-    candidates: list = []
+    grouping_pool: list[dict] = []
+    candidates: list[dict] = []
+
     for drawing in drawings:
-        fill = drawing.get("fill")
-        color = drawing.get("color")
-        stroke_width = drawing.get("width", 0) or 0
-        rect = drawing.get("rect")
-        if not rect:
+        feat = _extract_rect_features(drawing, pw, ph)
+
+        # page-sized/crop-like: completely excluded from everything
+        if feat["page_area_ratio"] >= 0.60 and feat["near_page_edges"]:
+            continue
+        if feat["width"] >= 0.90 * pw and feat["height"] >= 0.90 * ph:
             continue
 
-        # 1. Line-like: pure decorative separator, not a container
-        if rect.height <= 3 and rect.width <= 3:
+        grouping_pool.append(feat)
+
+        if feat["line_like"]:
+            continue  # not standalone, but in grouping_pool
+
+        candidates.append(feat)
+
+    # --- Task 4: Component grouping ---
+    merged = _merge_vertical_components(grouping_pool, pw, ph)
+    overlapping_merged: list[dict] = []
+    for m in merged:
+        if any((m["rect"] & c["rect"]).get_area() > 0 for c in candidates):
+            overlapping_merged.append(m)
+
+    # Remove child candidates covered by merged rects
+    child_ids: set[int] = set()
+    for m in overlapping_merged:
+        for c in candidates:
+            cid = id(c["rect"])
+            if cid in child_ids:
+                continue
+            overlap = (m["rect"] & c["rect"]).get_area()
+            if overlap > 0 and overlap >= c["rect"].get_area() * 0.5:
+                child_ids.add(cid)
+    candidates = [c for c in candidates if id(c["rect"]) not in child_ids]
+    candidates.extend(overlapping_merged)
+
+    # --- Task 5: Text evidence admission ---
+    accepted: list[fitz.Rect] = []
+    for feat in candidates:
+        vs = feat["is_filled"] or (feat["has_border"] and not feat["is_low_contrast_gray_border"])
+        if not vs:
             continue
-
-        # 2. Page-sized: background fill / drawing frame / crop clip
-        #    near entire page + thin gray border = layout noise
-        area_ratio = (rect.width * rect.height) / (page_w * page_h)
-        near_full_page = (
-            rect.x0 <= page_w * 0.05
-            and rect.y0 <= page_h * 0.05
-            and rect.x1 >= page_w * 0.95
-            and rect.y1 >= page_h * 0.95
-        )
-        if area_ratio >= 0.6 and near_full_page:
+        if not _has_container_text(
+            feat["rect"], pdf_page=page, pdf_blocks=pdf_blocks, raw_blocks_for_page=raw_blocks_for_page
+        ):
             continue
+        accepted.append(feat["rect"])
 
-        is_filled = False
-        if fill and len(fill) >= 3:
-            r, g, b = fill[0], fill[1], fill[2]
-            brightness = (r + g + b) / 3
-            is_filled = brightness < 0.95
-
-        has_border = bool(color) and isinstance(color, (list, tuple)) and stroke_width > 0
-
-        # Skip thin-bordered, unfilled rectangles in dark near-gray color —
-        # these are PDF layout/drawing frame lines (text area borders, figure
-        # borders, clipping paths returned as drawings by PyMuPDF), not callout
-        # containers. Real callout boxes have a colored fill, a thick/colored
-        # border (>1pt), or a true black border (pure RGB 0,0,0).
-        if has_border and not is_filled and stroke_width <= 1.0:
-            if color and len(color) >= 3:
-                r, g, b = color[0], color[1], color[2]
-                is_gray = max(r, g, b) - min(r, g, b) < 0.05
-                brightness = (r + g + b) / 3
-                if is_gray and 0.02 < brightness < 0.3:
-                    continue
-
-        if is_filled or has_border:
-            candidates.append(rect)
-
-    if not candidates:
-        return []
-
-    # 3. Merge vertically adjacent components sharing x-range.
-    # ponytail: greedy 1-pass, assumes non-overlapping candidates
-    # upgrade: full union-rect if multi-box callouts need deeper layout reconstruction
-    candidates.sort(key=lambda r: (r.y0, r.x0))
-    merged: list = []
-    for rect in candidates:
-        merged_with = False
-        for i, existing in enumerate(merged):
-            x_overlap = min(rect.x1, existing.x1) - max(rect.x0, existing.x0)
-            if x_overlap > 0:
-                gap = rect.y0 - existing.y1
-                if 0 < gap <= 5:
-                    merged[i] = fitz.Rect(
-                        min(rect.x0, existing.x0),
-                        existing.y0,
-                        max(rect.x1, existing.x1),
-                        rect.y1,
-                    )
-                    merged_with = True
-                    break
-        if not merged_with:
-            merged.append(rect)
-
-    return merged
+    accepted.sort(key=lambda r: r.get_area(), reverse=True)
+    return accepted
 
 
 def backfill_span_metadata_from_pdf(
@@ -240,7 +414,6 @@ def backfill_span_metadata_from_pdf(
         return raw_blocks
 
     try:
-        by_page_containers: dict[int, list] = {}
         for block in raw_blocks:
             page_num = block.get("page", 1) - 1
             bbox = block.get("bbox", [])
@@ -256,93 +429,70 @@ def backfill_span_metadata_from_pdf(
             if spans:
                 block["span_metadata"] = spans
 
-        import fitz
+        # Phase A+B+C: per-page container detection
+        from collections import defaultdict
+        raw_blocks_by_page: dict[int, list[dict]] = defaultdict(list)
         for block in raw_blocks:
-            page_num = block.get("page", 1) - 1
-            bbox = block.get("bbox", [])
-            if not bbox or len(bbox) < 4:
-                continue
-            if page_num not in by_page_containers:
-                try:
-                    pdf_page = doc[page_num]
-                    by_page_containers[page_num] = _extract_visual_container_rects(pdf_page)
-                except Exception:
-                    by_page_containers[page_num] = []
-            containers = by_page_containers[page_num]
-            if not containers:
+            raw_blocks_by_page[block.get("page", 1) - 1].append(block)
+
+        for pageno, page_blocks in raw_blocks_by_page.items():
+            # Phase A: clear stale flags
+            for block in page_blocks:
                 block.pop("_in_visual_container", None)
+                block.pop("_container_bbox", None)
+                block.pop("_container_text", None)
+
+            # Phase B: compute containers with text evidence
+            try:
+                pdf_page = doc[pageno]
+                pdf_blocks = pdf_page.get_text("blocks")
+                containers = _extract_visual_container_rects(
+                    pdf_page,
+                    raw_blocks_for_page=page_blocks,
+                    pdf_blocks=pdf_blocks,
+                )
+            except Exception:
                 continue
-            pw = block.get("page_width") or block.get("ocr_width") or 0
-            ph = block.get("page_height") or block.get("ocr_height") or 0
-            if pw <= 0 or ph <= 0:
-                try:
-                    pdf_rect = doc[page_num].rect
-                    pw = int(pdf_rect.width * 2) if pdf_rect.width > 0 else 1200
-                    ph = int(pdf_rect.height * 2) if pdf_rect.height > 0 else 1700
-                except Exception:
-                    pw, ph = 1200, 1700
-            if pw > 0 and ph > 0:
-                try:
-                    pdf_page = doc[page_num]
-                    block_rect = _map_ocr_bbox_to_pdf_rect(bbox, pw, ph, pdf_page)
-                except Exception:
+
+            if not containers:
+                continue
+
+            # Phase C: mark blocks that overlap containers
+            for block in page_blocks:
+                bbox = block.get("bbox", [])
+                if not bbox or len(bbox) < 4:
                     continue
-            else:
-                block_rect = fitz.Rect(*bbox)
-            for container_rect in containers:
-                if block_rect.x0 > container_rect.x1 or block_rect.x1 < container_rect.x0:
-                    continue
-                if block_rect.y0 > container_rect.y1 or block_rect.y1 < container_rect.y0:
-                    continue
-                overlap_w = min(block_rect.x1, container_rect.x1) - max(block_rect.x0, container_rect.x0)
-                overlap_h = min(block_rect.y1, container_rect.y1) - max(block_rect.y0, container_rect.y0)
-                if overlap_w > 0 and overlap_h > 0:
-                    block_w = block_rect.x1 - block_rect.x0
-                    block_h = block_rect.y1 - block_rect.y0
-                    overlap_area = overlap_w * overlap_h
-                    block_area = block_w * block_h if block_w > 0 and block_h > 0 else 0
-                    if block_area > 0 and overlap_area / block_area >= 0.3:
+                pw = block.get("page_width") or block.get("ocr_width") or 0
+                ph = block.get("page_height") or block.get("ocr_height") or 0
+                if pw <= 0 or ph <= 0:
+                    try:
+                        pdf_rect = doc[pageno].rect
+                        pw = int(pdf_rect.width * 2) if pdf_rect.width > 0 else 1200
+                        ph = int(pdf_rect.height * 2) if pdf_rect.height > 0 else 1700
+                    except Exception:
+                        pw, ph = 1200, 1700
+                if pw > 0 and ph > 0:
+                    try:
+                        block_rect = _map_ocr_bbox_to_pdf_rect(bbox, pw, ph, doc[pageno])
+                    except Exception:
+                        continue
+                else:
+                    block_rect = fitz.Rect(*bbox)
+
+                for container_rect in containers:
+                    overlap_ratio = _bbox_overlap_ratio(container_rect, block_rect)
+                    if overlap_ratio >= 0.3:
                         block["_in_visual_container"] = True
-                        container_overlap_ratio = overlap_area / block_area
-                        pw = block.get("page_width") or 0
-                        ph = block.get("page_height") or 0
-                        pdf_page_rect = doc[page_num].rect
-                        scale_x = pw / pdf_page_rect.width if (pw and pdf_page_rect.width) else 1
-                        scale_y = ph / pdf_page_rect.height if (ph and pdf_page_rect.height) else 1
+                        # _container_bbox in OCR space (as existing code does)
+                        scale_x = pw / doc[pageno].rect.width if pw and doc[pageno].rect.width else 1
+                        scale_y = ph / doc[pageno].rect.height if ph and doc[pageno].rect.height else 1
                         block["_container_bbox"] = [
                             container_rect.x0 * scale_x,
                             container_rect.y0 * scale_y,
                             container_rect.x1 * scale_x,
                             container_rect.y1 * scale_y,
                         ]
-
-                        in_container_parts: list[str] = []
-                        pdf_page_for_text = doc[page_num]
-                        block_pdf_rect = _map_ocr_bbox_to_pdf_rect(bbox, pw, ph, pdf_page_for_text) if pw and ph else None
-                        for tblock in pdf_page_for_text.get_text("blocks"):
-                            tx0, ty0, tx1, ty1, ttext, *_ = tblock
-                            ttext = (ttext or "").strip()
-                            if not ttext:
-                                continue
-                            in_container = (
-                                max(tx0, container_rect.x0) < min(tx1, container_rect.x1)
-                                and max(ty0, container_rect.y0) < min(ty1, container_rect.y1)
-                            )
-                            if not in_container:
-                                continue
-                            if block_pdf_rect:
-                                in_block = (
-                                    max(tx0, block_pdf_rect.x0) < min(tx1, block_pdf_rect.x1)
-                                    and max(ty0, block_pdf_rect.y0) < min(ty1, block_pdf_rect.y1)
-                                )
-                                if not in_block:
-                                    continue
-                            in_container_parts.append(ttext)
-                        if in_container_parts and container_overlap_ratio > 0.7:
-                            container_text = "\n".join(in_container_parts)
-                            block_text = str(block.get("text") or "")
-                            if container_text and len(container_text) < len(block_text) * 0.8:
-                                block["_container_text"] = container_text
+                        block["_container_text"] = True
                         break
     finally:
         doc.close()

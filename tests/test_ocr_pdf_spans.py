@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 
 def test_extract_pdf_spans_for_block_returns_spans() -> None:
     """Extract spans from a known PDF block position."""
@@ -139,7 +141,8 @@ def test_extract_visual_container_detects_filled_box() -> None:
     shape.finish(fill=(0, 0.35, 0.6), color=None, width=0)
     shape.commit()
 
-    rects = _extract_visual_container_rects(page)
+    pdf_blocks = [(400, 600, 550, 650, "container text evidence inside box", None, None)]
+    rects = _extract_visual_container_rects(page, pdf_blocks=pdf_blocks)
     doc.close()
 
     assert len(rects) == 1
@@ -182,7 +185,8 @@ def test_extract_visual_container_detects_thick_border_box() -> None:
     shape.finish(fill=None, color=(0, 0, 0), width=3.0)
     shape.commit()
 
-    rects = _extract_visual_container_rects(page)
+    pdf_blocks = [(400, 600, 550, 650, "thick border box text evidence", None, None)]
+    rects = _extract_visual_container_rects(page, pdf_blocks=pdf_blocks)
     doc.close()
 
     assert len(rects) == 1, "Thick border box should be detected"
@@ -201,7 +205,8 @@ def test_extract_visual_container_keeps_colored_thin_border() -> None:
     shape.finish(fill=None, color=(0.6, 0.2, 0.6), width=0.6)
     shape.commit()
 
-    rects = _extract_visual_container_rects(page)
+    pdf_blocks = [(400, 600, 550, 650, "colored thin border text evidence", None, None)]
+    rects = _extract_visual_container_rects(page, pdf_blocks=pdf_blocks)
     doc.close()
 
     assert len(rects) == 1, "Colored thin border should be detected"
@@ -220,7 +225,8 @@ def test_extract_visual_container_keeps_black_thin_border() -> None:
     shape.finish(fill=None, color=(0, 0, 0), width=0.5)
     shape.commit()
 
-    rects = _extract_visual_container_rects(page)
+    pdf_blocks = [(400, 600, 550, 650, "black thin border text evidence", None, None)]
+    rects = _extract_visual_container_rects(page, pdf_blocks=pdf_blocks)
     doc.close()
 
     assert len(rects) == 1, "Black thin border should be detected"
@@ -239,7 +245,8 @@ def test_extract_visual_container_accepts_small_filled() -> None:
     shape.finish(fill=(1, 0, 0), color=None, width=0)
     shape.commit()
 
-    rects = _extract_visual_container_rects(page)
+    pdf_blocks = [(100, 100, 150, 130, "small filled rect text evidence", None, None)]
+    rects = _extract_visual_container_rects(page, pdf_blocks=pdf_blocks)
     doc.close()
 
     assert len(rects) == 1, "Filled rect should be detected regardless of size"
@@ -275,3 +282,210 @@ def test_backfill_span_metadata_with_real_pdf() -> None:
         assert result[2].get("span_metadata") is None
     finally:
         tmp.unlink(missing_ok=True)
+
+
+def _make_mock_page(drawings: list[dict], page_width: float = 612, page_height: float = 792) -> MagicMock:
+    """Build a mock PyMuPDF page returning controlled drawings."""
+    page = MagicMock()
+    page.get_drawings.return_value = drawings
+    rect = MagicMock()
+    rect.width = page_width
+    rect.height = page_height
+    page.rect = rect
+    return page
+
+
+def test_normalize_rgb() -> None:
+    from paperforge.worker.ocr_pdf_spans import _normalize_rgb
+
+    assert _normalize_rgb(None) is None
+    assert _normalize_rgb((0.5, 0.5, 0.5)) == (0.5, 0.5, 0.5)
+    r, g, b = _normalize_rgb((128, 128, 128))
+    assert abs(r - 0.502) < 0.001
+    assert abs(g - 0.502) < 0.001
+    assert abs(b - 0.502) < 0.001
+    assert _normalize_rgb((1, 1, 1, 1)) == (1, 1, 1)
+
+
+def test_is_gray_and_brightness() -> None:
+    from paperforge.worker.ocr_pdf_spans import _is_gray, _brightness
+
+    assert _is_gray((0.5, 0.5, 0.5)) is True
+    assert _is_gray((1, 0, 0)) is False
+    assert abs(_brightness((0.3, 0.6, 0.9)) - 0.6) < 1e-10
+
+
+def test_has_visible_fill() -> None:
+    from paperforge.worker.ocr_pdf_spans import _has_visible_fill
+
+    assert _has_visible_fill(None) is False
+    assert _has_visible_fill((1, 1, 1)) is False
+    assert _has_visible_fill((0.5, 0.5, 0.5)) is True
+    assert _has_visible_fill((0.9, 0.9, 0.9)) is True
+    assert _has_visible_fill((1, 1, 1, 0)) is False
+
+
+def test_small_sidebar_container_with_text_is_admitted() -> None:
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    drawings = [
+        {
+            "rect": (100, 100, 256, 143),
+            "fill": (0, 0.5, 0.8, 1),
+            "color": None,
+            "width": 0,
+        },
+    ]
+    page = _make_mock_page(drawings)
+    pdf_blocks = [(100, 100, 256, 143, "sidebar content with enough text evidence", None, None)]
+    rects = _extract_visual_container_rects(page, pdf_blocks=pdf_blocks)
+    assert len(rects) == 1
+    assert isinstance(rects[0], fitz.Rect)
+    assert abs(rects[0].x0 - 100) < 1
+    assert abs(rects[0].y0 - 100) < 1
+
+
+def test_horizontal_separator_line_is_rejected() -> None:
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    drawings = [
+        {
+            "rect": (50, 100, 450, 101),
+            "fill": None,
+            "color": (0.5, 0.5, 0.5),
+            "width": 0.5,
+        },
+    ]
+    page = _make_mock_page(drawings)
+    rects = _extract_visual_container_rects(page)
+    assert len(rects) == 0
+
+
+def test_vertical_separator_line_is_rejected() -> None:
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    drawings = [
+        {
+            "rect": (100, 50, 101, 500),
+            "fill": None,
+            "color": (0.5, 0.5, 0.5),
+            "width": 0.5,
+        },
+    ]
+    page = _make_mock_page(drawings)
+    rects = _extract_visual_container_rects(page)
+    assert len(rects) == 0
+
+
+def test_page_frame_rect_is_rejected() -> None:
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    drawings = [
+        {
+            "rect": (5, 5, 595, 795),
+            "fill": None,
+            "color": (0.13, 0.12, 0.12),
+            "width": 0.5,
+        },
+    ]
+    page = _make_mock_page(drawings, page_width=600, page_height=800)
+    rects = _extract_visual_container_rects(page)
+    assert len(rects) == 0
+
+
+def test_white_fill_is_not_visual_signal() -> None:
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    drawings = [
+        {
+            "rect": (100, 100, 300, 200),
+            "fill": (1, 1, 1),
+            "color": None,
+            "width": 0,
+        },
+    ]
+    page = _make_mock_page(drawings)
+    rects = _extract_visual_container_rects(page)
+    assert len(rects) == 0
+
+
+def test_line_like_components_can_participate_in_grouping() -> None:
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    drawings = [
+        {
+            "rect": (100, 100, 500, 120),
+            "fill": (0, 0.35, 0.6),
+            "color": None,
+            "width": 0,
+        },
+        {"rect": (100, 120, 500, 122), "fill": None, "color": (0.13, 0.12, 0.12), "width": 0.5},
+        {"rect": (100, 125, 500, 127), "fill": None, "color": (0.13, 0.12, 0.12), "width": 0.5},
+        {"rect": (100, 130, 500, 132), "fill": None, "color": (0.13, 0.12, 0.12), "width": 0.5},
+        {"rect": (100, 135, 500, 137), "fill": None, "color": (0.13, 0.12, 0.12), "width": 0.5},
+    ]
+    page = _make_mock_page(drawings)
+    pdf_blocks = [(100, 100, 500, 140, "header and body callout with sufficient text evidence", None, None)]
+    rects = _extract_visual_container_rects(page, pdf_blocks=pdf_blocks)
+    assert len(rects) >= 1
+    merged = rects[0]
+    assert merged.y1 >= 137
+    assert merged.x0 <= 100
+    assert merged.x1 >= 500
+
+
+def test_component_merge_requires_strong_x_overlap() -> None:
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    drawings = [
+        {
+            "rect": (100, 100, 300, 150),
+            "fill": (0.5, 0.5, 0.5),
+            "color": None,
+            "width": 0,
+        },
+        {
+            "rect": (200, 155, 400, 200),
+            "fill": (0.5, 0.5, 0.5),
+            "color": None,
+            "width": 0,
+        },
+    ]
+    page = _make_mock_page(drawings)
+    pdf_blocks = [
+        (100, 100, 300, 150, "text in first rect enough chars", None, None),
+        (200, 155, 400, 200, "text in second rect enough chars", None, None),
+    ]
+    rects = _extract_visual_container_rects(page, pdf_blocks=pdf_blocks)
+    assert len(rects) == 2
+
+
+def test_admission_maps_ocr_bbox_to_pdf_space() -> None:
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
+
+    drawings = [
+        {
+            "rect": (100, 100, 200, 150),
+            "fill": (0, 0.35, 0.6),
+            "color": None,
+            "width": 0,
+        },
+    ]
+    page = _make_mock_page(drawings, page_width=600, page_height=800)
+    raw_blocks_for_page = [
+        {
+            "bbox": [200, 200, 400, 300],
+            "page_width": 1200,
+            "page_height": 1600,
+            "text": "OCR text content with sufficient evidence",
+        },
+    ]
+    rects = _extract_visual_container_rects(page, raw_blocks_for_page=raw_blocks_for_page)
+    assert len(rects) == 1
+    assert isinstance(rects[0], fitz.Rect)
+    assert abs(rects[0].x0 - 100) < 1
+    assert abs(rects[0].y0 - 100) < 1
