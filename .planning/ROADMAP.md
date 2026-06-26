@@ -9,8 +9,8 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 ## Phases
 
 - [x] **Annotation Phase 5: Plugin Annotation Data Bridge** - Connect the Obsidian plugin to v0.1 annotation CLI JSON and normalize UI-ready state.
-- [x] **Annotation Phase 6: Annotation Sidebar and List View** - Display paper-scoped annotations in Obsidian with scanning, filtering, refresh, and empty/error states. (completed 2026-06-19)
-- [ ] **Annotation Phase 7: PDF Jump Navigation** - Jump from an annotation row to the source PDF/page using existing paper/PDF path resolution.
+- [x] **Annotation Phase 6: Annotation Sidebar and List View** - Display paper-scoped annotations in Obsidian with scanning, filtering, refresh, and empty/error states. (completed 2026-06-20)
+- [ ] **Annotation Phase 7: PDF Jump Navigation** - Jump from an annotation row to the source PDF/page using existing paper/PDF path resolution. (in progress: 2/4 plans complete)
 - [ ] **Annotation Phase 8: PDF Overlay Rendering Spike and Implementation** - Render imported annotations over the native PDF viewer when available, with graceful fallback.
 - [ ] **Annotation Phase 9: Display Layer Verification Gate** - Verify plugin parsing/rendering/navigation/overlay fallback and document known baseline failures separately.
 
@@ -54,9 +54,9 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 
 **Plans:**
 
-- `annotation-06-01-PLAN.md` - Phase 5 bridge hard preflight and dependency gate (Wave 1).
-- `annotation-06-02-PLAN.md` - Pure annotation list view-model helpers and tests (Wave 2, depends on Wave 1).
-- `annotation-06-03-PLAN.md` - Paper-mode annotation section runtime integration (Wave 3, depends on Wave 2).
+- `annotation-06-01-PLAN.md` completed - Phase 5 bridge hard preflight and dependency gate (Wave 1).
+- `annotation-06-02-PLAN.md` completed - Pure annotation list view-model helpers and tests (Wave 2, depends on Wave 1).
+- `annotation-06-03-PLAN.md` completed - Paper-mode annotation section runtime integration (Wave 3, depends on Wave 2).
 - `annotation-06-04-PLAN.md` ✅ completed — Bounded compact styling and DOM/regression coverage (Wave 4, depends on Wave 3).
 
 ### Annotation Phase 7: PDF Jump Navigation
@@ -76,8 +76,8 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 
 **Plans:** 4 plans
 
-- [ ] `annotation-07-01-PLAN.md` - Pure fail-closed attachment/PDF target resolver and helper tests (Wave 1).
-- [ ] `annotation-07-02-PLAN.md` - Obsidian runtime page opening, fallback, state isolation, and read-only tests (Wave 2).
+- [x] `annotation-07-01-PLAN.md` completed - Pure fail-closed attachment/PDF target resolver and helper tests (Wave 1).
+- [x] `annotation-07-02-PLAN.md` completed - Obsidian runtime page opening, fallback, state isolation, and read-only tests (Wave 2).
 - [ ] `annotation-07-03-PLAN.md` - Accessible page-badge jump affordance, styling, and DOM regressions (Wave 3).
 - [ ] `annotation-07-04-PLAN.md` - Focused automated gate and manual Obsidian navigation checkpoint (Wave 4).
 
@@ -124,8 +124,8 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | Annotation Phase 5. Plugin Annotation Data Bridge | 2/2 | Executed | 2026-06-19 |
-| Annotation Phase 6. Annotation Sidebar and List View | 0/4 | Planned | - |
-| Annotation Phase 7. PDF Jump Navigation | 0/4 | Planned | - |
+| Annotation Phase 6. Annotation Sidebar and List View | 4/4 | Executed | 2026-06-20 |
+| Annotation Phase 7. PDF Jump Navigation | 2/4 | In progress | - |
 | Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 0/TBD | Not started | - |
 | Annotation Phase 9. Display Layer Verification Gate | 0/TBD | Not started | - |
 
