@@ -215,6 +215,7 @@ def backfill_span_metadata_from_pdf(
                     by_page_containers[page_num] = []
             containers = by_page_containers[page_num]
             if not containers:
+                block.pop("_in_visual_container", None)
                 continue
             pw = block.get("page_width") or block.get("ocr_width") or 0
             ph = block.get("page_height") or block.get("ocr_height") or 0
