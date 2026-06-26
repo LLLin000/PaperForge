@@ -5462,3 +5462,302 @@ class TestResolveFigureIdCollisions:
         result = self._run(figs)
         assert self._ids(result) == ["figure_001", "figure_s001"]
 
+
+# --- Tests for _infer_missing_main_figure_numbers ---
+
+
+def test_infer_figure1_leading_gap() -> None:
+    from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
+
+    matched_figures = [
+        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
+         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
+         "page": 3, "legend_page": 3, "asset_pages": [3]},
+        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset2"],
+         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
+        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset3"],
+         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
+        {"figure_number": 4, "text": "Figure 4.", "legend_block_id": "leg4",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset4"],
+         "settlement_type": "same_page", "page": 9, "legend_page": 9, "asset_pages": [9]},
+        {"figure_number": 5, "text": "Figure 5.", "legend_block_id": "leg5",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset5"],
+         "settlement_type": "same_page", "page": 11, "legend_page": 11, "asset_pages": [11]},
+        {"figure_number": 6, "text": "Figure 6.", "legend_block_id": "leg6",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset6"],
+         "settlement_type": "same_page", "page": 13, "legend_page": 13, "asset_pages": [13]},
+    ]
+    figure_legends = [
+        {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
+    ]
+    inventory = {
+        "matched_figures": matched_figures,
+        "figure_legends": figure_legends,
+        "held_figures": [],
+        "ambiguous_figures": [],
+    }
+    result = _infer_missing_main_figure_numbers(inventory, [])
+    inf = result["figure_number_inference"]
+    assert inf["status"] == "accepted"
+    assert inf["reason"] == "accepted"
+    assert result["matched_figures"][0]["figure_number"] == 1
+    assert result["matched_figures"][0]["figure_id"] == "figure_001"
+    assert result["matched_figures"][0]["figure_namespace"] == "main"
+    assert figure_legends[0]["inferred_figure_number"] == 1
+    assert figure_legends[0]["figure_number_source"] == "sequence_gap_inference"
+
+
+def test_infer_frontmatter_veto() -> None:
+    from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
+
+    matched_figures = [
+        {"figure_number": None, "text": "Graphical Abstract", "legend_block_id": "leg_veto",
+         "asset_block_ids": ["asset_veto"], "settlement_type": "same_page",
+         "page": 1, "legend_page": 1, "asset_pages": [1], "legend_bbox": [0, 0, 100, 100]},
+        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
+         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
+         "page": 3, "legend_page": 3, "asset_pages": [3]},
+        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset2"],
+         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
+        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset3"],
+         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
+        {"figure_number": 4, "text": "Figure 4.", "legend_block_id": "leg4",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset4"],
+         "settlement_type": "same_page", "page": 9, "legend_page": 9, "asset_pages": [9]},
+    ]
+    figure_legends = [
+        {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
+    ]
+    inventory = {
+        "matched_figures": matched_figures,
+        "figure_legends": figure_legends,
+        "held_figures": [],
+        "ambiguous_figures": [],
+    }
+    result = _infer_missing_main_figure_numbers(inventory, [])
+    inf = result["figure_number_inference"]
+    assert inf["status"] == "accepted"
+    assert inf["reason"] == "accepted"
+    assert result["matched_figures"][1]["figure_number"] == 1
+    assert result["matched_figures"][1]["figure_id"] == "figure_001"
+    assert result["matched_figures"][0]["figure_number"] is None
+    assert "number_inference" not in result["matched_figures"][0]
+
+
+def test_infer_main_supplementary_isolation() -> None:
+    from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
+
+    matched_figures = [
+        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
+         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
+         "page": 3, "legend_page": 3, "asset_pages": [3]},
+        {"figure_number": 1, "text": "Figure S1.", "legend_block_id": "leg_s1",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset_s1"],
+         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
+        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset2"],
+         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
+        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
+         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset3"],
+         "settlement_type": "same_page", "page": 9, "legend_page": 9, "asset_pages": [9]},
+    ]
+    figure_legends = [
+        {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
+    ]
+    inventory = {
+        "matched_figures": matched_figures,
+        "figure_legends": figure_legends,
+        "held_figures": [],
+        "ambiguous_figures": [],
+    }
+    result = _infer_missing_main_figure_numbers(inventory, [])
+    inf = result["figure_number_inference"]
+    assert inf["status"] == "accepted"
+    assert inf["reason"] == "accepted"
+    assert result["matched_figures"][0]["figure_number"] == 1
+    # S1 unchanged with its original number, not in main known set
+    assert result["matched_figures"][1]["figure_number"] == 1
+    assert inf["known_main_numbers"] == [2, 3]
+
+
+def test_infer_no_eligible_unknowns() -> None:
+    from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
+
+    matched_figures = [
+        {"figure_number": 1, "text": "Figure 1.", "legend_block_id": "leg1",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset1"],
+         "settlement_type": "same_page", "page": 1},
+        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2"],
+         "settlement_type": "same_page", "page": 3},
+        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
+         "settlement_type": "same_page", "page": 5},
+    ]
+    inventory = {
+        "matched_figures": matched_figures,
+        "figure_legends": [],
+        "held_figures": [],
+        "ambiguous_figures": [],
+    }
+    result = _infer_missing_main_figure_numbers(inventory, [])
+    inf = result["figure_number_inference"]
+    assert inf["status"] == "skipped"
+    assert inf["reason"] == "no_eligible_unknowns"
+
+
+def test_infer_known_min_not_2() -> None:
+    from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
+
+    matched_figures = [
+        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
+         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
+         "page": 1, "legend_page": 1, "asset_pages": [1]},
+        {"figure_number": 1, "text": "Figure 1.", "legend_block_id": "leg1_known",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset1_known"],
+         "settlement_type": "same_page", "page": 3, "legend_page": 3, "asset_pages": [3]},
+        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
+         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
+        {"figure_number": 4, "text": "Figure 4.", "legend_block_id": "leg4",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset4"],
+         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
+    ]
+    figure_legends = [
+        {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
+    ]
+    inventory = {
+        "matched_figures": matched_figures,
+        "figure_legends": figure_legends,
+        "held_figures": [],
+        "ambiguous_figures": [],
+    }
+    result = _infer_missing_main_figure_numbers(inventory, [])
+    inf = result["figure_number_inference"]
+    assert inf["status"] == "skipped"
+    assert inf["reason"] == "known_min_not_2"
+
+
+def test_infer_multiple_eligible_unknowns() -> None:
+    from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
+
+    matched_figures = [
+        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
+         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
+         "page": 1, "legend_page": 1, "asset_pages": [1]},
+        {"figure_number": None, "text": "Some figure", "legend_block_id": "leg2",
+         "asset_block_ids": ["asset2"], "settlement_type": "same_page",
+         "page": 2, "legend_page": 2, "asset_pages": [2]},
+        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2_known",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2_known"],
+         "settlement_type": "same_page", "page": 3, "legend_page": 3, "asset_pages": [3]},
+        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
+         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
+    ]
+    figure_legends = [
+        {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
+        {"block_id": "leg2", "bbox": [200, 100, 500, 200], "text": "Some caption"},
+    ]
+    inventory = {
+        "matched_figures": matched_figures,
+        "figure_legends": figure_legends,
+        "held_figures": [],
+        "ambiguous_figures": [],
+    }
+    result = _infer_missing_main_figure_numbers(inventory, [])
+    inf = result["figure_number_inference"]
+    assert inf["status"] == "skipped"
+    assert inf["reason"] == "multiple_eligible_unknowns"
+
+
+def test_infer_missing_legend_bbox() -> None:
+    from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
+
+    matched_figures = [
+        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
+         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
+         "page": 3, "legend_page": 3, "asset_pages": [3]},
+        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2"],
+         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
+        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
+         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
+    ]
+    inventory = {
+        "matched_figures": matched_figures,
+        "figure_legends": [],
+        "held_figures": [],
+        "ambiguous_figures": [],
+    }
+    result = _infer_missing_main_figure_numbers(inventory, [])
+    inf = result["figure_number_inference"]
+    assert inf["status"] == "skipped"
+    assert inf["reason"] == "no_eligible_unknowns"
+
+
+def test_infer_unknown_not_before_first_known() -> None:
+    from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
+
+    matched_figures = [
+        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2"],
+         "settlement_type": "same_page", "page": 3, "legend_page": 3, "asset_pages": [3]},
+        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
+         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
+         "page": 5, "legend_page": 5, "asset_pages": [5]},
+        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
+         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
+    ]
+    figure_legends = [
+        {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
+    ]
+    inventory = {
+        "matched_figures": matched_figures,
+        "figure_legends": figure_legends,
+        "held_figures": [],
+        "ambiguous_figures": [],
+    }
+    result = _infer_missing_main_figure_numbers(inventory, [])
+    inf = result["figure_number_inference"]
+    assert inf["status"] == "skipped"
+    assert inf["reason"] == "unknown_not_before_first_known"
+
+
+def test_infer_duplicate_known_numbers_skips() -> None:
+    from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
+
+    matched_figures = [
+        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
+         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
+         "page": 1, "legend_page": 1, "asset_pages": [1]},
+        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2"],
+         "settlement_type": "same_page", "page": 3, "legend_page": 3, "asset_pages": [3]},
+        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2b",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2b"],
+         "settlement_type": "same_page", "page": 4, "legend_page": 4, "asset_pages": [4]},
+        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
+         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
+         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
+    ]
+    figure_legends = [
+        {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
+    ]
+    inventory = {
+        "matched_figures": matched_figures,
+        "figure_legends": figure_legends,
+        "held_figures": [],
+        "ambiguous_figures": [],
+    }
+    result = _infer_missing_main_figure_numbers(inventory, [])
+    inf = result["figure_number_inference"]
+    assert inf["status"] == "skipped"
+    assert inf["reason"] == "duplicate_known_main_numbers"
+

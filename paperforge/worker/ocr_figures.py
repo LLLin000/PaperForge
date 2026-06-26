@@ -17,6 +17,28 @@ _FIGURE_NUMBER_PATTERN = re.compile(
     flags=re.IGNORECASE,
 )
 
+_FRONTMATTER_VISUAL_VETO = (
+    "graphical abstract",
+    "table of contents",
+    "highlights",
+    "available with this article",
+    "supplementary data",
+    "supporting information",
+    "video abstract",
+    "visual abstract",
+)
+
+
+def _has_frontmatter_visual_veto(text: str) -> bool:
+    lower = " ".join(text.lower().split())
+    if re.search(r"\btoc\b", lower):
+        return True
+    return any(
+        phrase in lower
+        for phrase in _FRONTMATTER_VISUAL_VETO
+    )
+
+
 _BODY_MENTION_VERBS = (
     "shows",
     "illustrates",
@@ -103,6 +125,48 @@ def _extract_figure_namespace(text: str) -> str:
     if "extended data" in lower:
         return "extended_data"
     return "main"
+
+
+_FIGURE_MARKER_PATTERN = re.compile(
+    r"(?P<prefix>Supplementary\s+Figure|Supplementary\s+Fig\.?|"
+    r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?|"
+    r"Figure|Fig\.?)\s*"
+    r"(?P<s_prefix>S\.?\s*)?"
+    r"(?P<number>\d+(?:\.\d+)?)",
+    re.I,
+)
+
+
+def _extract_figure_marker(text: str) -> dict:
+    m = _FIGURE_MARKER_PATTERN.search(text)
+    if not m:
+        return {
+            "namespace": "main",
+            "number": None,
+            "raw_prefix": "",
+            "has_s_prefix": False,
+            "marker_text": "",
+        }
+    lower = text.lower()
+    has_s = bool(m.group("s_prefix"))
+    if has_s or "supplementary" in lower or "supporting" in lower or "additional file" in lower or "appendix" in lower:
+        namespace = "supplementary"
+    elif "extended data" in lower or "extended figure" in lower:
+        namespace = "extended_data"
+    else:
+        namespace = "main"
+    number_raw = m.group("number")
+    try:
+        number = int(float(number_raw))
+    except ValueError:
+        number = None
+    return {
+        "namespace": namespace,
+        "number": number,
+        "raw_prefix": m.group("prefix"),
+        "has_s_prefix": has_s,
+        "marker_text": m.group(0),
+    }
 
 
 def _validate_page_local_caption_grammar(
@@ -2618,6 +2682,232 @@ def _resolve_figure_id_collisions(figure_inventory: dict) -> None:
             _collision_seen[_fig_id] = 0
 
 
+def _coerce_int_figure_number(value) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value.strip())
+    return None
+
+
+def _resolve_legend_bbox(
+    matched_item: dict,
+    structured_blocks: list[dict],
+    inventory: dict,
+) -> list[float] | None:
+    legend_bbox = matched_item.get("legend_bbox")
+    if legend_bbox:
+        return legend_bbox
+    legend_block_id = matched_item.get("legend_block_id")
+    if legend_block_id:
+        legend_page = matched_item.get("legend_page")
+        for block in structured_blocks:
+            if block.get("block_id") == legend_block_id and block.get("page") == legend_page:
+                return block.get("bbox")
+        for entry in inventory.get("figure_legends", []):
+            if entry.get("block_id") == legend_block_id:
+                return entry.get("bbox")
+    return None
+
+
+def _infer_missing_main_figure_numbers(
+    inventory: dict,
+    structured_blocks: list[dict],
+) -> dict:
+    matched = inventory.get("matched_figures", [])
+    known_set: set[int] = set()
+    for item in matched:
+        num = _coerce_int_figure_number(item.get("figure_number"))
+        if num is None:
+            continue
+        marker = _extract_figure_marker(str(item.get("text", "")))
+        if marker["namespace"] != "main" or marker["has_s_prefix"]:
+            continue
+        if num in known_set:
+            inventory["figure_number_inference"] = {
+                "status": "skipped",
+                "method": "leading_gap",
+                "reason": "duplicate_known_main_numbers",
+                "eligible_unknown_count": 0,
+                "known_main_numbers": [],
+                "inferred_figure_number": None,
+            }
+            return inventory
+        known_set.add(num)
+
+    eligible: list[tuple[dict, list[float]]] = []
+    for item in matched:
+        num = _coerce_int_figure_number(item.get("figure_number"))
+        if num is not None:
+            continue
+        marker = _extract_figure_marker(str(item.get("text", "")))
+        if marker["namespace"] != "main" or marker["has_s_prefix"]:
+            continue
+        legend_block_id = item.get("legend_block_id")
+        if not legend_block_id or not isinstance(legend_block_id, str) or not legend_block_id.strip():
+            continue
+        asset_block_ids = item.get("asset_block_ids", [])
+        if not isinstance(asset_block_ids, list) or not asset_block_ids:
+            continue
+        settlement_type = item.get("settlement_type", "")
+        if settlement_type not in {"same_page", "group_sequential", "cross_page_forward",
+                                   "cross_page_backward", "composite_parent"}:
+            continue
+        item_text = str(item.get("text", ""))
+        legend_text = ""
+        for entry in inventory.get("figure_legends", []):
+            if str(entry.get("block_id", "")) == str(legend_block_id):
+                legend_text = str(entry.get("text", ""))
+                break
+        combined = item_text + " " + legend_text
+        if _has_frontmatter_visual_veto(combined):
+            continue
+        legend_bbox = _resolve_legend_bbox(item, structured_blocks, inventory)
+        if legend_bbox is None:
+            continue
+        eligible.append((item, legend_bbox))
+
+    if not eligible:
+        inventory["figure_number_inference"] = {
+            "status": "skipped",
+            "method": "leading_gap",
+            "reason": "no_eligible_unknowns",
+            "eligible_unknown_count": 0,
+            "known_main_numbers": sorted(known_set),
+            "inferred_figure_number": None,
+        }
+        return inventory
+
+    if not known_set or min(known_set) != 2:
+        inventory["figure_number_inference"] = {
+            "status": "skipped",
+            "method": "leading_gap",
+            "reason": "known_min_not_2",
+            "eligible_unknown_count": len(eligible),
+            "known_main_numbers": sorted(known_set),
+            "inferred_figure_number": None,
+        }
+        return inventory
+
+    if len(eligible) != 1:
+        inventory["figure_number_inference"] = {
+            "status": "skipped",
+            "method": "leading_gap",
+            "reason": "multiple_eligible_unknowns",
+            "eligible_unknown_count": len(eligible),
+            "known_main_numbers": sorted(known_set),
+            "inferred_figure_number": None,
+        }
+        return inventory
+
+    unknown_item, unknown_bbox = eligible[0]
+    first_known = None
+    for item in matched:
+        num = _coerce_int_figure_number(item.get("figure_number"))
+        if num == min(known_set):
+            first_known = item
+            break
+    if first_known is None:
+        inventory["figure_number_inference"] = {
+            "status": "skipped",
+            "method": "leading_gap",
+            "reason": "first_known_not_found",
+            "eligible_unknown_count": len(eligible),
+            "known_main_numbers": sorted(known_set),
+            "inferred_figure_number": None,
+        }
+        return inventory
+
+    def _fig_order_key(_item, _bbox):
+        return (
+            min(_item.get("asset_pages") or [_item.get("page", 1)]),
+            _item.get("legend_page") or _item.get("page", 1),
+            _bbox[1],
+            _bbox[0],
+        )
+
+    first_known_bbox = _resolve_legend_bbox(first_known, structured_blocks, inventory)
+    if first_known_bbox is None:
+        inventory["figure_number_inference"] = {
+            "status": "skipped",
+            "method": "leading_gap",
+            "reason": "first_known_bbox_unresolvable",
+            "eligible_unknown_count": len(eligible),
+            "known_main_numbers": sorted(known_set),
+            "inferred_figure_number": None,
+        }
+        return inventory
+
+    unknown_key = _fig_order_key(unknown_item, unknown_bbox)
+    first_known_key = _fig_order_key(first_known, first_known_bbox)
+    if unknown_key >= first_known_key:
+        inventory["figure_number_inference"] = {
+            "status": "skipped",
+            "method": "leading_gap",
+            "reason": "unknown_not_before_first_known",
+            "eligible_unknown_count": len(eligible),
+            "known_main_numbers": sorted(known_set),
+            "inferred_figure_number": None,
+        }
+        return inventory
+
+    all_items: list[dict] = list(matched) + inventory.get("held_figures", []) + inventory.get("ambiguous_figures", [])
+    for noise in all_items:
+        if noise is unknown_item or noise is first_known:
+            continue
+        noise_bbox = _resolve_legend_bbox(noise, structured_blocks, inventory)
+        if noise_bbox is None:
+            inventory["figure_number_inference"] = {
+                "status": "skipped",
+                "method": "leading_gap",
+                "reason": "intervening_unknown_unorderable",
+                "eligible_unknown_count": len(eligible),
+                "known_main_numbers": sorted(known_set),
+                "inferred_figure_number": None,
+            }
+            return inventory
+        noise_key = _fig_order_key(noise, noise_bbox)
+        if unknown_key < noise_key < first_known_key:
+            inventory["figure_number_inference"] = {
+                "status": "skipped",
+                "method": "leading_gap",
+                "reason": "intervening_items_between",
+                "eligible_unknown_count": len(eligible),
+                "known_main_numbers": sorted(known_set),
+                "inferred_figure_number": None,
+            }
+            return inventory
+
+    unknown_item["figure_number"] = 1
+    unknown_item["figure_id"] = _format_figure_id("main", 1)
+    unknown_item["figure_namespace"] = "main"
+    unknown_item["number_inference"] = {
+        "status": "accepted",
+        "method": "leading_gap",
+        "inferred_number": 1,
+        "known_numbers": sorted(known_set),
+    }
+    for legend in inventory.get("figure_legends", []):
+        if str(legend.get("block_id", "")) == str(unknown_item.get("legend_block_id", "")):
+            legend["inferred_figure_number"] = 1
+            legend["figure_number_source"] = "sequence_gap_inference"
+            break
+
+    inventory["figure_number_inference"] = {
+        "status": "accepted",
+        "method": "leading_gap",
+        "reason": "accepted",
+        "eligible_unknown_count": len(eligible),
+        "known_main_numbers": sorted(known_set),
+        "inferred_figure_number": 1,
+    }
+    return inventory
+
+
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
     legends: list[dict] = []
     held_figures: list[dict] = []
@@ -4270,6 +4560,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     }
 
     inventory = _promote_sequence_matches(inventory, structured_blocks)
+
+    inventory = _infer_missing_main_figure_numbers(inventory, structured_blocks)
 
     inventory["figure_legend_completeness"] = compute_figure_legend_completeness(
         structured_blocks,
