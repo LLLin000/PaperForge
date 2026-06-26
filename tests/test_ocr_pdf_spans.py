@@ -226,8 +226,8 @@ def test_extract_visual_container_keeps_black_thin_border() -> None:
     assert len(rects) == 1, "Black thin border should be detected"
 
 
-def test_extract_visual_container_skips_small_thin_border() -> None:
-    """A small thin-border rectangle below min size should be skipped."""
+def test_extract_visual_container_accepts_small_filled() -> None:
+    """A small filled rect is a candidate (not line-like, not page-sized)."""
     import fitz
 
     from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
@@ -235,14 +235,14 @@ def test_extract_visual_container_skips_small_thin_border() -> None:
     doc = fitz.open()
     page = doc.new_page(width=612, height=792)
     shape = page.new_shape()
-    shape.draw_rect(fitz.Rect(100, 100, 150, 130))  # 50x30 < 100x50 minimum
+    shape.draw_rect(fitz.Rect(100, 100, 150, 130))  # 50x30, filled red
     shape.finish(fill=(1, 0, 0), color=None, width=0)
     shape.commit()
 
     rects = _extract_visual_container_rects(page)
     doc.close()
 
-    assert len(rects) == 0, "Sub-minimum rect should be skipped"
+    assert len(rects) == 1, "Filled rect should be detected regardless of size"
 
 
 def test_backfill_span_metadata_with_real_pdf() -> None:

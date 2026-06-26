@@ -116,15 +116,26 @@ def _extract_visual_container_rects(page: Any) -> list:
     - noticeable fill color (not white/transparent), OR
     - visible border/outline
 
+    Uses evidence-driven admission (not absolute size thresholds):
+    1. Reject line-like noise (≤3pt)
+    2. Reject page-sized clips/crops
+    3. Accept candidates with fill or visual border
+    4. Merge vertically adjacent components sharing same x-range
+
     Returns list of fitz.Rect objects for each detected container.
     """
 
-    rects: list = []
+    import fitz
+
     try:
         drawings = page.get_drawings()
     except Exception:
-        return rects
+        return []
 
+    page_rect = page.rect
+    page_w, page_h = page_rect.width, page_rect.height
+
+    candidates: list = []
     for drawing in drawings:
         fill = drawing.get("fill")
         color = drawing.get("color")
@@ -133,7 +144,20 @@ def _extract_visual_container_rects(page: Any) -> list:
         if not rect:
             continue
 
-        if rect.width < 100 or rect.height < 50:
+        # 1. Line-like: pure decorative separator, not a container
+        if rect.height <= 3 and rect.width <= 3:
+            continue
+
+        # 2. Page-sized: background fill / drawing frame / crop clip
+        #    near entire page + thin gray border = layout noise
+        area_ratio = (rect.width * rect.height) / (page_w * page_h)
+        near_full_page = (
+            rect.x0 <= page_w * 0.05
+            and rect.y0 <= page_h * 0.05
+            and rect.x1 >= page_w * 0.95
+            and rect.y1 >= page_h * 0.95
+        )
+        if area_ratio >= 0.6 and near_full_page:
             continue
 
         is_filled = False
@@ -142,7 +166,7 @@ def _extract_visual_container_rects(page: Any) -> list:
             brightness = (r + g + b) / 3
             is_filled = brightness < 0.95
 
-        has_border = bool(color) and (isinstance(color, (list, tuple))) and stroke_width > 0
+        has_border = bool(color) and isinstance(color, (list, tuple)) and stroke_width > 0
 
         # Skip thin-bordered, unfilled rectangles in dark near-gray color —
         # these are PDF layout/drawing frame lines (text area borders, figure
@@ -158,9 +182,35 @@ def _extract_visual_container_rects(page: Any) -> list:
                     continue
 
         if is_filled or has_border:
-            rects.append(rect)
+            candidates.append(rect)
 
-    return rects
+    if not candidates:
+        return []
+
+    # 3. Merge vertically adjacent components sharing x-range.
+    # ponytail: greedy 1-pass, assumes non-overlapping candidates
+    # upgrade: full union-rect if multi-box callouts need deeper layout reconstruction
+    candidates.sort(key=lambda r: (r.y0, r.x0))
+    merged: list = []
+    for rect in candidates:
+        merged_with = False
+        for i, existing in enumerate(merged):
+            x_overlap = min(rect.x1, existing.x1) - max(rect.x0, existing.x0)
+            if x_overlap > 0:
+                gap = rect.y0 - existing.y1
+                if 0 < gap <= 5:
+                    merged[i] = fitz.Rect(
+                        min(rect.x0, existing.x0),
+                        existing.y0,
+                        max(rect.x1, existing.x1),
+                        rect.y1,
+                    )
+                    merged_with = True
+                    break
+        if not merged_with:
+            merged.append(rect)
+
+    return merged
 
 
 def backfill_span_metadata_from_pdf(
