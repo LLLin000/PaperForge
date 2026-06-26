@@ -2180,3 +2180,78 @@ Three P0 gaps identified during the heading-level architectural analysis (not ye
 
 3. **Table caption fallback `###` should be `**`** — when a `table_caption` block has no table id and no table asset to embed, the render code currently emits `### {text}`, which creates a spurious heading-level entry in the reading hierarchy. Should use `**{text}**` (bold) instead, matching the structured_insert pattern for text-level emphasis.
 
+---
+
+## 13. 2026-06-26: OCR Rebuild Production Run + Post-Rebuild Audit
+
+### 13.1 What was done
+
+Full `ocr rebuild --all` (699 papers) with `--resume` checkpoint support. Built and committed: progress bar fix (ASCII tqdm for Win), checkpoint persistence, `--resume` flag for interrupted rebuilds. Removed rogue `[DEBUG]` print in `ocr_render.py:1295`.
+
+### 13.2 Audit findings
+
+#### P1 — N6XCZD25: Body paragraphs on pages 3+ misclassified as `structured_insert`
+
+**Root cause:** Physical Therapy journal PDF's two-column body pages have subtle layout boundaries (header/footer rules, column gutters, text column background) that `_extract_visual_container_rects` detects as container fill regions. All 56 body blocks post-page-2 get `_in_visual_container=True`, which feeds into `score_structured_insert` (line 176, `ocr_scores.py`): +0.3 container flag + 0.15 narrow_width = 0.45 ≥ 0.4 threshold → `structured_insert_candidate` → cluster-promoted to `structured_insert`.
+
+The `body_zone` detection is correct. Zone assignment is fine. The bug is solely in `score_structured_insert` not checking `body_spine_match` (which would subtract 0.25 and keep the score below threshold).
+
+**Fix:** When block is in `body_zone` with body-family font match, set `body_spine_match=True` in the structured_insert scoring call. This offsets the container flag.
+
+#### P1 — Chinese Windows encoding: Non-ASCII PDF filenames get garbled in meta.json
+
+**Root cause chain:**
+1. Zotero downloads a PDF with non-ASCII filename (e.g., `Ongaro è - 2014.pdf`) on Chinese Windows (codepage=936/GBK)
+2. The UTF-8 bytes `\xC3\xA8` (è) are interpreted as GBK bytes → produce `U+7B49` (等) instead
+3. This damaged filename is stored on NTFS
+4. `pdf_resolver.py:resolve_pdf_path` constructs a path using the BBT export's correct UTF-8 name, which doesn't match the garbled NTFS filename → `is_valid_pdf()` returns False
+5. No glob fallback exists in `resolve_pdf_path` → PDF path is lost
+6. OCR queue falls back to filesystem glob → finds the garbled filename → writes it to `meta.json`
+
+**Affected papers:** PUP9JRFH (Chinese title garbled), 9EQV3ABQ, AA6P3IE5, N6XCZD25, U746UJ7G (Latin-accented filenames garbled)
+
+**Fix (two layers):**
+1. Add glob fallback in `resolve_pdf_path`: when `storage:KEY/filename` exact match fails, glob `storage/KEY/*.pdf` to find the actual file regardless of filename encoding
+2. For already-corrupted meta.json: `ocr rebuild --all` + the glob fix will auto-correct `source_pdf` paths on rebuild
+
+### 13.3 Issues logged (deferred)
+
+#### 8LZUYXMH — Wrong PDF bound (Supplementary Material instead of main article)
+
+Fixed: `ocr redo` with correct PDF at `storage/HMN8IGBW`. Rebuild completed.
+
+#### SWDN9RHF — Short paper (2-page letter) health falsely `red`
+
+Content and fulltext correct. Health score penalizes for no headings (`heading_total: 0`) and no abstract — standard Letter to the Editor format. Defer to health model enhancement for `page_count <= 3` short papers.
+
+#### VVIT8SVK — Accepted Manuscript / Pre-proof layout
+
+37-page paper with `Accepted Manuscript` cover page. Pipeline has no `preproof_cover_zone` or `non_body_insert` template for this format. Defer to layout template expansion.
+
+### 13.4 Commits
+
+`ocr-v2 b59756d` — ocr rebuild: add --resume checkpoint, fix garbled progress bar, remove debug print
+
+### 13.5 Active queue updates
+
+Pending papers (no PDF / OCR queued): `ocr run` should be executed for JQMRCEXY, PP76T2EY, TXMVULD7. E7AEA4HU and XHIMIRE6 need Zotero sync (no PDF attached in Zotero).
+
+---
+
+## 14. Remaining Known Issues (updated 2026-06-26)
+
+Three P0 gaps + five new items from post-rebuild audit:
+
+### P0 (carried forward)
+1. Footnote missing from `_SKIPPED_BODY_ROLES`
+2. Short "Table N" caption matching absent
+3. Table caption fallback `###` should be `**`
+
+### P1 (new — 2026-06-26)
+4. **`score_structured_insert` lacks body-zone guard** — body blocks with `_in_visual_container=True` in `body_zone` should get `body_spine_match=True` to offset the container score. Triggers on two-column PDF layouts.
+5. **`resolve_pdf_path` lacks glob fallback for storage:** URIs** — when BBT-specified filename (correct UTF-8) doesn't match garbled NTFS filename (Chinese Win encoding double-pass), no fallback to `glob("storage/KEY/*.pdf")`. Causes `source_pdf` to store damaged filenames.
+
+### P2 (new — deferred)
+6. **Health model over-penalizes short-form papers** — `page_count <= 3` papers with no headings/abstract get `red` even when content is correct.
+7. **Pre-proof / Accepted Manuscript layout template missing** — pipeline doesn't handle `Accepted Manuscript` cover pages and non-standard frontmatter.
+
