@@ -7,7 +7,6 @@ from paperforge.worker.ocr_document import (
     _classify_same_page_block,
     _clear_partition_zones,
     _has_verified_reference_zone,
-    _normalize_pre_ref_disclosure_runs,
     _normalize_reference_roles_from_partition,
     _partition_by_reference_zone,
     _resolve_reference_zone_extent,
@@ -168,68 +167,6 @@ class TestNormalizeReferenceRoles:
             [block], {"reference": [block]}
         )
         assert block["role"] == "reference_heading"
-
-
-class TestNormalizePreRefDisclosureRuns:
-    def test_disclosure_exact_match(self):
-        block = {
-            "role": "body_paragraph", "page": 2, "block_id": "b1",
-            "text": "credit authorship contribution statement",
-            "bbox": [0, 0, 100, 100],
-        }
-        partition = {"pre_ref": [block]}
-        _normalize_pre_ref_disclosure_runs(
-            partition, ref_start_page=5, total_pages=10
-        )
-        assert block["role"] == "backmatter_heading"
-
-    def test_disclosure_no_substring_match(self):
-        block = {
-            "role": "body_paragraph", "page": 2, "block_id": "b1",
-            "text": "funding mechanism",
-            "bbox": [0, 0, 100, 100],
-        }
-        partition = {"pre_ref": [block]}
-        _normalize_pre_ref_disclosure_runs(
-            partition, ref_start_page=5, total_pages=10
-        )
-        assert block["role"] == "body_paragraph"
-
-    def test_disclosure_stops_at_next_heading(self):
-        disclosure = {
-            "role": "body_paragraph", "page": 2,
-            "block_id": "b1",
-            "text": "credit authorship contribution statement",
-            "bbox": [0, 0, 100, 100],
-        }
-        heading = {
-            "role": "section_heading", "page": 2,
-            "block_id": "b2", "text": "something else",
-            "bbox": [0, 0, 100, 100],
-        }
-        body = {
-            "role": "body_paragraph", "page": 2,
-            "block_id": "b3", "text": "after heading text",
-            "bbox": [0, 0, 100, 100],
-        }
-        partition = {"pre_ref": [disclosure, heading, body]}
-        _normalize_pre_ref_disclosure_runs(
-            partition, ref_start_page=5, total_pages=10
-        )
-        assert disclosure["role"] == "backmatter_heading"
-        assert body["role"] == "body_paragraph"
-
-    def test_disclosure_no_proximity_gate(self):
-        block = {
-            "role": "body_paragraph", "page": 2, "block_id": "b1",
-            "text": "credit authorship contribution statement",
-            "bbox": [0, 0, 100, 100],
-        }
-        partition = {"pre_ref": [block]}
-        _normalize_pre_ref_disclosure_runs(
-            partition, ref_start_page=12, total_pages=15
-        )
-        assert block["role"] == "backmatter_heading"
 
 
 class TestClearPartitionZones:

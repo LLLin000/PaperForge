@@ -567,21 +567,8 @@ _TAIL_NONREF_HEADING_DENY_TYPES = {
     "preproof_marker",
 }
 
-_KNOWN_PRE_REFERENCE_DISCLOSURE_HEADINGS: dict[str, list[str]] = {
-    "credit authorship contribution statement": [],
-    "ethics approval and consent to participate": ["ethics statement", "ethical approval"],
-    "declaration of competing interest": [],
-    "competing interests": ["conflict of interest"],
-    "data availability": ["data availability statement"],
-    "acknowledgements": ["acknowledgments", "acknowledgement", "acknowledgment"],
-    "author contributions": [],
-}
-
-_STRONG_BODY_HEADINGS: frozenset[str] = frozenset({
-    "discussion", "conclusion", "conclusions", "results", "summary",
-    "limitations", "future perspectives", "materials and methods",
-    "methods", "introduction",
-})
+# Pre-ref disclosure heading detection was removed in commit 3e33e5b.
+# When re-adding, ensure Contract A (reference_zone is the ONLY hard boundary).
 
 _HEADING_ROLES: frozenset[str] = frozenset({
     "section_heading", "subsection_heading", "sub_subsection_heading",
@@ -1004,85 +991,6 @@ def _normalize_reference_roles_from_partition(blocks: list[dict], partition: dic
                     new_role="reference_item",
                     reason="reference partition block defaulted to reference_item",
                 )
-
-
-def _is_known_disclosure(text: str) -> bool:
-    if not text:
-        return False
-    lower = text.strip().lower()
-    if lower in _KNOWN_PRE_REFERENCE_DISCLOSURE_HEADINGS:
-        return True
-    return any(lower in aliases for aliases in _KNOWN_PRE_REFERENCE_DISCLOSURE_HEADINGS.values())
-
-
-def _normalize_pre_ref_disclosure_runs(
-    partition: dict,
-    ref_start_page: int,
-    total_pages: int,
-    page_layouts: dict[int, PageLayoutProfile] | None = None,
-) -> None:
-    pre_ref = partition.get("pre_ref", [])
-    by_page: dict[int, list[dict]] = {}
-    for b in pre_ref:
-        p = int(b.get("page", 0) or 0)
-        if p > 0:
-            by_page.setdefault(p, []).append(b)
-
-    for page, page_blocks in by_page.items():
-        if page >= ref_start_page:
-            continue
-        col_groups: dict[int, list[dict]] = {}
-        for b in page_blocks:
-            role = b.get("role") or b.get("seed_role") or ""
-            if role in _STRONG_BODY_HEADINGS:
-                continue
-            marker_type = (b.get("marker_signature") or {}).get("type") or ""
-            if marker_type in _MARKER_HEADING_TYPES:
-                continue
-            col_boundaries = _col_boundaries_for_page(page, page_layouts)
-            col = _get_column_index(b, col_boundaries) or 0
-            col_groups.setdefault(col, []).append(b)
-
-        for _col, col_blocks in col_groups.items():
-            in_disclosure = False
-            for b in col_blocks:
-                text = str(b.get("text") or "").strip()
-                role = b.get("role") or b.get("seed_role") or ""
-                marker_type = (b.get("marker_signature") or {}).get("type") or ""
-
-                # Break at ANY next heading (including another disclosure heading)
-                if role in _STRONG_BODY_HEADINGS or marker_type in _MARKER_HEADING_TYPES:
-                    in_disclosure = False
-                    continue
-                if role in _HEADING_ROLES or _is_known_disclosure(text):
-                    in_disclosure = False
-
-                if _is_known_disclosure(text):
-                    in_disclosure = True
-                    if role not in _HEADING_ROLES:
-                        old_role = b.get("role")
-                        b["role"] = "backmatter_heading"
-                        if old_role != b["role"]:
-                            record_decision(
-                                b,
-                                stage="pre_ref_disclosure_heading",
-                                old_role=old_role,
-                                new_role="backmatter_heading",
-                                reason=f"known disclosure heading: {text[:50]}",
-                            )
-                    continue
-
-                if in_disclosure and role not in _HEADING_ROLES and role != "reference_item":
-                        old_role = b.get("role")
-                        b["role"] = "backmatter_body"
-                        if old_role != b["role"]:
-                            record_decision(
-                                b,
-                                stage="pre_ref_disclosure_body",
-                                old_role=old_role,
-                                new_role="backmatter_body",
-                                reason=f"body under disclosure heading: {text[:50]}",
-                            )
 
 
 def _build_tail_boundary_from_ref_partition(
@@ -5530,12 +5438,6 @@ def normalize_document_structure(
         )
         if "fallback" not in partition:
             _normalize_reference_roles_from_partition(blocks, partition)
-            _normalize_pre_ref_disclosure_runs(
-                partition,
-                ref_start_page=_resolve_reference_zone_extent(blocks, region_bus)[0],
-                total_pages=len({b.get("page") for b in blocks if b.get("page")}),
-                page_layouts=page_layouts,
-            )
             tail_spread = _build_tail_boundary_from_ref_partition(partition, region_bus)
             ref_partition_active = tail_spread is not None
 
@@ -5553,6 +5455,8 @@ def normalize_document_structure(
             _normalize_backmatter_roles_after_boundary(tail_spread, backmatter_form, blocks)
         else:
             backmatter_form = "flat"
+    elif tail_spread is not None:
+        backmatter_form = "flat"
 
     # Backmatter zone normalization: in post_reference_backmatter_zone,
     # headings become backmatter_heading, everything else becomes backmatter_body.
