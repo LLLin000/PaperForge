@@ -548,13 +548,13 @@ def _block_y_bottom(block: dict) -> float:
     return bbox[3] if bbox else 0.0
 
 
-_REFERENCE_ZONE_MARKER_TYPES = {
+_REFERENCE_ZONE_MARKER_TYPES: frozenset[str] = frozenset({
     "reference_numeric_bracket",
     "reference_numeric_dot",
     "reference_numeric_parenthesis",
     "reference_pattern",
     "citation_line",
-}
+})
 
 _REFERENCE_ZONE_HEADING_TEXTS = {"references", "bibliography"}
 
@@ -566,6 +566,31 @@ _TAIL_NONREF_HEADING_DENY_TYPES = {
     "citation_line",
     "preproof_marker",
 }
+
+_KNOWN_PRE_REFERENCE_DISCLOSURE_HEADINGS: dict[str, list[str]] = {
+    "credit authorship contribution statement": [],
+    "ethics approval and consent to participate": ["ethics statement", "ethical approval"],
+    "declaration of competing interest": [],
+    "competing interests": ["conflict of interest"],
+    "data availability": ["data availability statement"],
+    "acknowledgements": ["acknowledgments", "acknowledgement", "acknowledgment"],
+    "author contributions": [],
+}
+
+_STRONG_BODY_HEADINGS: frozenset[str] = frozenset({
+    "discussion", "conclusion", "conclusions", "results", "summary",
+    "limitations", "future perspectives", "materials and methods",
+    "methods", "introduction",
+})
+
+_HEADING_ROLES: frozenset[str] = frozenset({
+    "section_heading", "subsection_heading", "sub_subsection_heading",
+    "backmatter_heading", "backmatter_boundary_heading", "backmatter_heading_candidate",
+})
+
+_MARKER_HEADING_TYPES: frozenset[str] = frozenset({
+    "heading_numbered", "heading_arabic", "heading_decimal",
+})
 
 
 def _make_zone(
@@ -770,6 +795,362 @@ def _zone_block_key(block: dict) -> str:
     page = int(block.get("page", 0) or 0)
     block_id = str(block.get("block_id") or "")
     return f"p{page}:{block_id}"
+
+
+def _has_verified_reference_zone(region_bus: dict) -> bool:
+    ref_zone = region_bus.get("reference_zone") or {}
+    status = ref_zone.get("status")
+    block_ids = ref_zone.get("block_ids") or []
+    return status in ("ACCEPT", "HOLD") and bool(block_ids)
+
+
+def _block_x_center(block: dict) -> float:
+    bbox = _block_bbox(block)
+    if bbox:
+        return (bbox[0] + bbox[2]) / 2.0
+    return 0.0
+
+
+def _column_x_range(column_index: int, col_boundaries: list[float], page_width: float = 1200.0) -> tuple[float, float]:
+    if not col_boundaries or column_index < 0 or column_index >= len(col_boundaries) - 1:
+        return 0.0, page_width
+    return col_boundaries[column_index], col_boundaries[column_index + 1]
+
+
+def _get_column_index(block: dict, col_boundaries: list[float]) -> int | None:
+    if not col_boundaries or len(col_boundaries) <= 1:
+        return None
+    x_center = _block_x_center(block)
+    for col in range(len(col_boundaries) - 1):
+        if col_boundaries[col] <= x_center <= col_boundaries[col + 1]:
+            return col
+    return None
+
+
+def _derive_effective_end_from_block_ids(blocks: list[dict], block_ids: list[str]) -> int | None:
+    max_page = None
+    zone_keys = set(block_ids)
+    for b in blocks:
+        in_zone = _zone_block_key(b) in zone_keys or str(b.get("block_id")) in zone_keys
+        if in_zone and (int(b.get("page", 0) or 0) > 0):
+            p = int(b.get("page", 0) or 0)
+            if max_page is None or p > max_page:
+                max_page = p
+    return max_page
+
+
+def _resolve_reference_zone_extent(blocks: list[dict], region_bus: dict) -> tuple[int | None, int | None]:
+    ref_zone = region_bus.get("reference_zone") or {}
+    boundary_band = ref_zone.get("boundary_band") or {}
+    start_page = boundary_band.get("start_page")
+    effective_end = ref_zone.get("effective_end_page")
+    if effective_end is None:
+        effective_end = _derive_effective_end_from_block_ids(blocks, ref_zone.get("block_ids") or [])
+    return start_page, effective_end
+
+
+def _classify_same_page_block(
+    block: dict,
+    region_bus: dict,
+    page: int,
+    ref_zones: list[ReferenceZone] | None = None,
+    page_layouts: dict[int, PageLayoutProfile] | None = None,
+) -> str:
+    role = block.get("role") or ""
+    seed_role = block.get("seed_role") or ""
+    if role in {"reference_heading", "reference_item"} or seed_role in {"reference_heading", "reference_item"}:
+        return "reference"
+
+    ref_zone = region_bus.get("reference_zone") or {}
+    block_id = str(block.get("block_id") or "")
+    artifact_key = _zone_block_key(block)
+    if block_id in (ref_zone.get("block_ids") or []) or artifact_key in (ref_zone.get("composite_block_ids") or []):
+        return "reference"
+
+    if ref_zones:
+        for z in ref_zones:
+            if z.page != page:
+                continue
+            col_x_start, col_x_end = _column_x_range(z.column_index, _col_boundaries_for_page(page, page_layouts))
+            x_center = _block_x_center(block)
+            if not (col_x_start <= x_center <= col_x_end):
+                continue
+            if _block_y_top(block) < z.y_start:
+                continue
+            marker_type = (block.get("marker_signature") or {}).get("type") or ""
+            if marker_type in _REFERENCE_ZONE_MARKER_TYPES:
+                return "reference"
+            return "pre_ref"
+
+    return "pre_ref"
+
+
+def _col_boundaries_for_page(page: int, page_layouts: dict[int, PageLayoutProfile] | None) -> list[float]:
+    if page_layouts and page in page_layouts:
+        return page_layouts[page].column_boundaries
+    return []
+
+
+def _partition_by_reference_zone(
+    blocks: list[dict],
+    region_bus: dict,
+    ref_zones: list[ReferenceZone] | None = None,
+    page_layouts: dict[int, PageLayoutProfile] | None = None,
+) -> dict:
+    if not _has_verified_reference_zone(region_bus):
+        return {"fallback": True}
+
+    ref_start_page, ref_end_page = _resolve_reference_zone_extent(blocks, region_bus)
+    if ref_start_page is None:
+        return {"fallback": True}
+
+    ref_zone = region_bus.get("reference_zone") or {}
+    ref_block_ids = set(str(bid) for bid in (ref_zone.get("block_ids") or []))
+    ref_composite_ids = set(ref_zone.get("composite_block_ids") or [])
+
+    pre_ref: list[dict] = []
+    reference: list[dict] = []
+    post_ref: list[dict] = []
+
+    for block in blocks:
+        page = int(block.get("page", 0) or 0)
+        if page < ref_start_page:
+            pre_ref.append(block)
+            continue
+        if ref_end_page is not None and page > ref_end_page:
+            post_ref.append(block)
+            continue
+        if page == ref_start_page:
+            # On the reference start page, classify each block
+            classification = _classify_same_page_block(block, region_bus, page, ref_zones, page_layouts)
+            if classification == "reference":
+                reference.append(block)
+            elif classification == "pre_ref":
+                pre_ref.append(block)
+            else:
+                reference.append(block)
+            continue
+        # Pages strictly between start and end
+        bid = str(block.get("block_id") or "")
+        if bid in ref_block_ids or _zone_block_key(block) in ref_composite_ids:
+            reference.append(block)
+            continue
+        role = block.get("role") or block.get("seed_role") or ""
+        if role in {"reference_heading", "reference_item"}:
+            reference.append(block)
+            continue
+        if ref_zones:
+            in_any_zone = False
+            for z in ref_zones:
+                if z.page != page:
+                    continue
+                bbox = _block_bbox(block)
+                if not bbox:
+                    continue
+                col_x_start, col_x_end = _column_x_range(z.column_index, _col_boundaries_for_page(page, page_layouts))
+                x_center = _block_x_center(block)
+                if not (col_x_start <= x_center <= col_x_end):
+                    continue
+                if bbox[1] < z.y_start:
+                    in_any_zone = False
+                    break
+                marker_type = (block.get("marker_signature") or {}).get("type") or ""
+                if marker_type in _REFERENCE_ZONE_MARKER_TYPES:
+                    reference.append(block)
+                    in_any_zone = True
+                    break
+                pre_ref.append(block)
+                in_any_zone = True
+                break
+            if in_any_zone:
+                continue
+        pre_ref.append(block)
+
+    return {"pre_ref": pre_ref, "reference": reference, "post_ref": post_ref}
+
+
+def _normalize_reference_roles_from_partition(blocks: list[dict], partition: dict) -> None:
+    ref_blocks = partition.get("reference", [])
+    for block in ref_blocks:
+        role = block.get("role") or ""
+        seed_role = block.get("seed_role") or ""
+        if role in {"reference_heading", "reference_item"}:
+            continue
+        if seed_role in {"reference_heading", "reference_item"}:
+            block["role"] = seed_role
+            continue
+        marker_type = (block.get("marker_signature") or {}).get("type") or ""
+        if marker_type in _REFERENCE_ZONE_MARKER_TYPES:
+            old_role = block.get("role")
+            block["role"] = "reference_item"
+            if old_role != block["role"]:
+                record_decision(
+                    block,
+                    stage="ref_partition_normalization",
+                    old_role=old_role,
+                    new_role="reference_item",
+                    reason="reference partition block normalized to reference_item",
+                )
+        elif seed_role in {"backmatter_heading_candidate", "backmatter_heading", "backmatter_boundary_heading"}:
+            continue
+        else:
+            old_role = block.get("role")
+            block["role"] = "reference_item"
+            if old_role != block["role"]:
+                record_decision(
+                    block,
+                    stage="ref_partition_normalization",
+                    old_role=old_role,
+                    new_role="reference_item",
+                    reason="reference partition block defaulted to reference_item",
+                )
+
+
+def _is_known_disclosure(text: str) -> bool:
+    if not text:
+        return False
+    lower = text.strip().lower()
+    if lower in _KNOWN_PRE_REFERENCE_DISCLOSURE_HEADINGS:
+        return True
+    return any(lower in aliases for aliases in _KNOWN_PRE_REFERENCE_DISCLOSURE_HEADINGS.values())
+
+
+def _normalize_pre_ref_disclosure_runs(
+    partition: dict,
+    ref_start_page: int,
+    total_pages: int,
+    page_layouts: dict[int, PageLayoutProfile] | None = None,
+) -> None:
+    pre_ref = partition.get("pre_ref", [])
+    by_page: dict[int, list[dict]] = {}
+    for b in pre_ref:
+        p = int(b.get("page", 0) or 0)
+        if p > 0:
+            by_page.setdefault(p, []).append(b)
+
+    for page, page_blocks in by_page.items():
+        if page >= ref_start_page:
+            continue
+        col_groups: dict[int, list[dict]] = {}
+        for b in page_blocks:
+            role = b.get("role") or b.get("seed_role") or ""
+            if role in _STRONG_BODY_HEADINGS:
+                continue
+            marker_type = (b.get("marker_signature") or {}).get("type") or ""
+            if marker_type in _MARKER_HEADING_TYPES:
+                continue
+            col_boundaries = _col_boundaries_for_page(page, page_layouts)
+            col = _get_column_index(b, col_boundaries) or 0
+            col_groups.setdefault(col, []).append(b)
+
+        for _col, col_blocks in col_groups.items():
+            in_disclosure = False
+            for b in col_blocks:
+                text = str(b.get("text") or "").strip()
+                role = b.get("role") or b.get("seed_role") or ""
+                marker_type = (b.get("marker_signature") or {}).get("type") or ""
+
+                # Break at ANY next heading (including another disclosure heading)
+                if role in _STRONG_BODY_HEADINGS or marker_type in _MARKER_HEADING_TYPES:
+                    in_disclosure = False
+                    continue
+                if role in _HEADING_ROLES or _is_known_disclosure(text):
+                    in_disclosure = False
+
+                if _is_known_disclosure(text):
+                    in_disclosure = True
+                    if role not in _HEADING_ROLES:
+                        old_role = b.get("role")
+                        b["role"] = "backmatter_heading"
+                        if old_role != b["role"]:
+                            record_decision(
+                                b,
+                                stage="pre_ref_disclosure_heading",
+                                old_role=old_role,
+                                new_role="backmatter_heading",
+                                reason=f"known disclosure heading: {text[:50]}",
+                            )
+                    continue
+
+                if in_disclosure and role not in _HEADING_ROLES and role != "reference_item":
+                        old_role = b.get("role")
+                        b["role"] = "backmatter_body"
+                        if old_role != b["role"]:
+                            record_decision(
+                                b,
+                                stage="pre_ref_disclosure_body",
+                                old_role=old_role,
+                                new_role="backmatter_body",
+                                reason=f"body under disclosure heading: {text[:50]}",
+                            )
+
+
+def _build_tail_boundary_from_ref_partition(
+    partition: dict,
+    region_bus: dict,
+) -> TailBoundary | None:
+    pre_ref = partition.get("pre_ref", [])
+    reference = partition.get("reference", [])
+
+    if not reference:
+        return None
+
+    body_end_page = 0
+    for b in pre_ref:
+        p = int(b.get("page", 0) or 0)
+        if p > body_end_page:
+            body_end_page = p
+
+    ref_start_page = None
+    for b in reference:
+        p = int(b.get("page", 0) or 0)
+        if ref_start_page is None or p < ref_start_page:
+            ref_start_page = p
+
+    ref_end_page = None
+    for b in reference:
+        p = int(b.get("page", 0) or 0)
+        if ref_end_page is None or p > ref_end_page:
+            ref_end_page = p
+
+    ref_zone = region_bus.get("reference_zone") or {}
+    boundary_band = ref_zone.get("boundary_band") or {}
+    band_ref_start = boundary_band.get("start_page")
+
+    references_start = band_ref_start or ref_start_page or 0
+    spread_start = references_start
+    spread_end = ref_end_page or references_start
+
+    # Find first backmatter heading in pre_ref for backmatter_start
+    backmatter_start = None
+    for b in pre_ref:
+        role = b.get("role") or ""
+        if role in {"backmatter_heading", "backmatter_boundary_heading", "backmatter_heading_candidate"}:
+            p = int(b.get("page", 0) or 0)
+            if backmatter_start is None or p < backmatter_start:
+                backmatter_start = p
+    if backmatter_start is None:
+        backmatter_start = body_end_page if body_end_page > 0 else 0
+
+    return TailBoundary(
+        body_end_page=body_end_page,
+        backmatter_start=backmatter_start,
+        references_start=references_start,
+        spread_start=spread_start,
+        spread_end=spread_end,
+        is_clean_separated=True,
+        reason="ref_zone_partition",
+    )
+
+
+def _clear_partition_zones(blocks: list[dict]) -> None:
+    stale_zones = {
+        "body_zone", "reference_zone", "tail_nonref_hold_zone",
+        "post_reference_backmatter_zone", "display_zone",
+    }
+    for block in blocks:
+        if block.get("zone") in stale_zones:
+            block["zone"] = ""
 
 
 def _canonical_block_id(block: dict) -> str | int | None:
@@ -1285,7 +1666,7 @@ def infer_zones(
         default=first_reference_page,
     )
 
-    return {
+    result = {
             "frontmatter_main_zone": _make_zone(
                 "ACCEPT" if frontmatter_main_ids else "HOLD",
                 frontmatter_main_ids,
@@ -1348,6 +1729,22 @@ def infer_zones(
             boundary_band=_page_band(preproof_pages[0], preproof_pages[-1]) if preproof_pages else None,
         ),
     }
+
+    # Store effective_end_page on reference_zone for ref-partition consumers
+    if post_ref_backmatter_start is not None:
+        trimmed_pages = [
+            int(b.get("page", 0) or 0) for b in reference_blocks
+            if int(b.get("page", 0) or 0) > 0
+        ]
+        effective_reference_end_page = max(trimmed_pages) if trimmed_pages else first_reference_page
+    else:
+        effective_reference_end_page = reference_end_page
+
+    ref_zone_entry = result.get("reference_zone")
+    if ref_zone_entry and effective_reference_end_page is not None:
+        ref_zone_entry["effective_end_page"] = effective_reference_end_page
+
+    return result
 
 
 def _classify_segment_hint(blocks: list[dict]) -> str:
@@ -5114,13 +5511,48 @@ def normalize_document_structure(
     # are not layout-eligible, whereas resolved roles (reference_item, body_paragraph) are.
     page_layouts = _build_page_layout_profiles(blocks)
 
-    tail_spread = _reconcile_tail_spread(blocks, page_layouts)
-    if tail_spread is not None:
-        backmatter_form = _classify_backmatter_form(tail_spread, blocks)
-        _label_backmatter_regime(tail_spread, backmatter_form, blocks)
-        _normalize_backmatter_roles_after_boundary(tail_spread, backmatter_form, blocks)
-    else:
-        backmatter_form = "flat"
+    # --- Ref-anchored partition (replaces second _reconcile_tail_spread) ---
+    region_bus = infer_zones(
+        blocks,
+        {
+            "body_family_anchor": body_family_anchor,
+            "reference_family_anchor": reference_family_anchor,
+        },
+        tail_spread=None,
+    )
+
+    ref_zones = _detect_reference_zones(blocks, page_layouts)
+
+    ref_partition_active = False
+    if _has_verified_reference_zone(region_bus):
+        partition = _partition_by_reference_zone(
+            blocks, region_bus, ref_zones=ref_zones, page_layouts=page_layouts,
+        )
+        if "fallback" not in partition:
+            _normalize_reference_roles_from_partition(blocks, partition)
+            _normalize_pre_ref_disclosure_runs(
+                partition,
+                ref_start_page=_resolve_reference_zone_extent(blocks, region_bus)[0],
+                total_pages=len({b.get("page") for b in blocks if b.get("page")}),
+                page_layouts=page_layouts,
+            )
+            tail_spread = _build_tail_boundary_from_ref_partition(partition, region_bus)
+            ref_partition_active = tail_spread is not None
+
+            if ref_partition_active:
+                _clear_partition_zones(blocks)
+                _apply_zone_labels(blocks, region_bus)
+                _apply_content_zone_fallback(blocks, region_bus)
+                _sanitize_reference_zone_boundary(blocks)
+
+    if not ref_partition_active:
+        tail_spread = _reconcile_tail_spread(blocks, page_layouts)
+        if tail_spread is not None:
+            backmatter_form = _classify_backmatter_form(tail_spread, blocks)
+            _label_backmatter_regime(tail_spread, backmatter_form, blocks)
+            _normalize_backmatter_roles_after_boundary(tail_spread, backmatter_form, blocks)
+        else:
+            backmatter_form = "flat"
 
     # Backmatter zone normalization: in post_reference_backmatter_zone,
     # headings become backmatter_heading, everything else becomes backmatter_body.
@@ -5225,8 +5657,11 @@ def normalize_document_structure(
     ref_zones = _detect_reference_zones(blocks, page_layouts)
     doc_structure.reference_zones = [dataclasses.asdict(z) for z in ref_zones] if ref_zones else None
 
-    blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
-    blocks = _assign_tail_spread_ownership(blocks, doc_structure)
+    # In ref-partitioned path, role normalization already handled in partition;
+    # skip old promotion to avoid double-normalizing reference blocks.
+    if not ref_partition_active:
+        blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
+        blocks = _assign_tail_spread_ownership(blocks, doc_structure)
 
     # Compute span coverage for degraded mode detection
     doc_structure.span_coverage = _compute_span_coverage(blocks)
