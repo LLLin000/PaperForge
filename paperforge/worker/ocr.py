@@ -69,6 +69,7 @@ from paperforge.worker.ocr_errors import (
 )
 from paperforge.worker.ocr_figures import (
     build_figure_inventory,
+    tag_figure_contained_text,
     write_back_figure_roles,
     write_figure_inventory,
 )
@@ -1888,6 +1889,9 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         artifacts.blocks_structured.parent / "table_inventory.json",
         table_inventory,
     )
+
+    # Figure containment render hygiene: tag text blocks inside figure regions
+    tag_figure_contained_text(structured, figure_inventory.get("matched_figures", []))
 
     # Re-persist structured blocks with writeback roles (table_html, figure_asset)
     # ponytail: writes entire list again; if throughput matters, write only changed blocks

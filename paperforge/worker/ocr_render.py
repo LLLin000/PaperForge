@@ -480,9 +480,13 @@ def _attach_container_bodies(
 
 def _ref_number_sort_key(block: dict) -> tuple:
     text = str(block.get("text") or block.get("block_content") or "")
-    m = re.match(r"^\s*(\d+)[\.\)]", text)
+    # Two capture groups — alternation prevents false matches on plain year numbers
+    # like "2024" that lack a period/bracket suffix.
+    # ponytail: only handles N. / N) / [N] prefix formats.  Unnumbered refs fall
+    # through to lexicographic sort — upgrade to column-major sort if needed.
+    m = re.match(r"^\s*(?:(\d+)[\.\)]|\[(\d+)\])", text)
     if m:
-        return (0, int(m.group(1)))
+        return (0, int(m.group(1) or m.group(2)))
     return (1, text)
 
 

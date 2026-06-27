@@ -3839,11 +3839,14 @@ def _detect_non_body_insert_clusters(
         if page > max_early_page:
             continue
 
-        # body_paragraph, figure_caption, figure_caption_candidate, and
-        # unknown_structural can be non-body inserts — bio/profile blocks that
-        # OCR misclassified as body text or figure titles.  frontmatter_noise
-        # blocks are genuine furniture, not bios, so they are excluded.
-        _INSERT_CANDIDATE_ROLES = {"body_paragraph", "figure_caption", "figure_caption_candidate", "unknown_structural"}
+        # body_paragraph and unknown_structural can be non-body inserts — bio/profile
+        # blocks that OCR misclassified as body text.  figure_caption and
+        # figure_caption_candidate are excluded because a genuine caption is narrower
+        # than body text for geometric reasons (it sits below a single-column figure).
+        # frontmatter_noise blocks are genuine furniture, not bios, so excluded too.
+        # ponytail: narrow bio blocks that OCR mislabels as figure_title/caption slip
+        # through — the family-profile rescue handles them if they land as body_paragraph.
+        _INSERT_CANDIDATE_ROLES = {"body_paragraph", "unknown_structural"}
         if block.get("role") not in _INSERT_CANDIDATE_ROLES:
             continue
 
@@ -4832,9 +4835,7 @@ def _build_accepted_heading_block_ids(blocks: list[dict], doc_structure) -> set:
     duplicate_block_ids = _duplicate_block_ids_from_blocks(blocks)
     result = set()
     for item in heading_artifact:
-        if isinstance(item, str) and item.startswith("p") and ":" in item:
-            result.add(item)
-        elif isinstance(item, int) and str(item) not in duplicate_block_ids:
+        if isinstance(item, str) and item.startswith("p") and ":" in item or isinstance(item, int) and str(item) not in duplicate_block_ids:
             result.add(item)
     heading_seed_roles = {"section_heading", "subsection_heading", "sub_subsection_heading"}
     for block in blocks:

@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-25 (font-size heading level + P0 gaps recorded)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-27 (full rebuild audit + 5-fix spec deep investigation)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -2329,19 +2329,260 @@ Pending papers (no PDF / OCR queued): `ocr run` should be executed for JQMRCEXY,
 
 ---
 
-## 15. Remaining Known Issues (updated 2026-06-26)
+## 15. Remaining Known Issues (updated 2026-06-27)
 
-Three P0 gaps + five items from post-rebuild audit:
+### P0 (ready to commit — fixes designed, 3 independent changes)
+1. ~~Footnote missing from `_SKIPPED_BODY_ROLES`~~ → already handled by code, stale entry
+2. ~~Short "Table N" caption matching absent~~ → existing code handles it, stale entry
+3. ~~Table caption fallback `###` should be `**`~~ → existing code uses `**`, stale entry
+4. **Fix 2: Reference sorting bracket gap** — `_ref_number_sort_key` (ocr_render.py:481) regex `r"^\s*(\d+)[\.\)]"` doesn't match `[N]` bracket format. References like `[10]` fall through to lexicographic sort. Fix: add second capture group for brackets. Covers all 3 call sites (lines 524, 672, 864). **~5 lines total.**
+5. **Fix 4: figure_caption → non_body_insert** — `_detect_non_body_insert_clusters()` (ocr_document.py:3846) lists `figure_caption` and `figure_caption_candidate` in `_INSERT_CANDIDATE_ROLES`, catching genuine narrow figure captions on early pages. YGH7VEX6 Figure 2 (width 442 < 0.9×507 median) was swallowed. **Fix: remove both from the set. ~2 lines.**
+6. **Fix 5: Demoted body_paragraph re-enters figure legends** — `_is_validation_first_legend_candidate` (ocr_figures.py:405) uses `zone="display_zone"` + `style_family="legend_like"` proxy signals, ignoring that pipeline already demoted the block to `body_paragraph`. YGH7VEX6 Figure 11: body p6:7 matched assets via adjacent_x; real caption p6:13 demoted to `figure_s011`. **Fix: filter demoted body_paragraph from legends before validation candidate check. ~10 lines + tests.**
 
-### P0 (carried forward)
-1. Footnote missing from `_SKIPPED_BODY_ROLES`
-2. Short "Table N" caption matching absent
-3. Table caption fallback `###` should be `**`
-
-### P1
-4. **`resolve_pdf_path` lacks glob fallback for storage URIs** — when BBT-specified filename (correct UTF-8) doesn't match garbled NTFS filename (Chinese Win encoding double-pass), no fallback to `glob("storage/KEY/*.pdf")`. Causes `source_pdf` to store damaged filenames.
+### P1 (separate spec/commit needed)
+7. **Fix 1: Figure-internal text containment** — `_bind_inner_text_to_figures()` was proposed in design doc but never implemented. Current detection is regex (`_PANEL_LABEL_PATTERN` matching `A`, `(B)`) + proximity heuristic (80px to image blocks). No containment check exists. XD2BPCMG page 3: 21 text blocks entirely inside composite Figure 1 bbox, all misclassified (16→footnote, rest→heading/body). Needs: `_bbox_contains()` integration + matched_figures cluster_bbox + render-hygiene pass. **Needs separate spec.**
+8. **Fix 3: Backmatter boundary recognition** — CRediT/Ethics headings not recognized because `_is_backmatter_boundary_heading()` (ocr_roles.py:303) requires `is_visually_heading` (11pt threshold, CRediT=7.97pt) OR `has_container_words` (no ADDITIONAL/DECLARATION/INFORMATION in CRediT). `_normalize_backmatter_roles_after_boundary` explicitly skips `subsection_heading`. 25K5KZAQ pages 9-10: CRediT/Ethics/Declaration as body_paragraph. **Needs separate spec.**
 
 ### P2 (deferred)
-5. **Health model over-penalizes short-form papers** — `page_count <= 3` papers with no headings/abstract get `red` even when content is correct.
-6. **Pre-proof / Accepted Manuscript layout template missing** — pipeline doesn't handle `Accepted Manuscript` cover pages and non-standard frontmatter.
+9. **`resolve_pdf_path` lacks glob fallback for storage URIs** — when BBT-specified filename (correct UTF-8) doesn't match garbled NTFS filename (Chinese Win encoding double-pass), no fallback to `glob("storage/KEY/*.pdf")`. Causes `source_pdf` to store damaged filenames.
+10. **Health model over-penalizes short-form papers** — `page_count <= 3` papers with no headings/abstract get `red` even when content is correct.
+11. **Pre-proof / Accepted Manuscript layout template missing** — pipeline doesn't handle `Accepted Manuscript` cover pages and non-standard frontmatter.
+
+---
+
+## 16. UI Polish Session (2026-06-26)
+
+### 16.1 Completed
+
+| Change | Files | Commit |
+|--------|-------|--------|
+| Timezone fix: `_fmt_iso` converts UTC → local via `astimezone()` | `ocr_maintenance.py` | `28536a6` |
+| Rebuild timestamp: `rebuild_finished_at` written on rebuild | `ocr_rebuild.py` | `28536a6` |
+| Title tooltip: `title_full` field in JSON, `setTooltip` API | `ocr_maintenance.py`, `settings.ts` | `28536a6` |
+| Table sorted by time descending | `settings.ts` | `16feeb7` |
+| Vercel CSS polish for Settings tab (description boxes, collapsible headers, status rows, embed section, vector config) | `styles.css`, `settings.ts` | `28536a6`, `8357590` |
+| Dashboard CSS polish (snapshot pills, status grid, issue summary, funnel, technical details) | `styles.css` | `8357590` |
+| Click-to-copy on title (dashed underline removed later) | `dashboard.ts` | `8357590` |
+| Global "Start Working" cleanup: removed Doctor/Repair/Refresh (Doctor/Repair only in Issues section) | `dashboard.ts` | `111e2af` |
+| Run OCR button shows pending count | `dashboard.ts` | (pending commit) |
+| Redo OCR → Maintenance... button (opens settings→maintenance tab) | `dashboard.ts` | (pending commit) |
+| Collection header white box reverted | `styles.css` | (pending commit) |
+| pf-copy dashed underline removed | `styles.css` | (pending commit) |
+| DESIGN.md (Vercel design reference) copied into repo | new file `plugin/docs/design/DESIGN.md` | `28536a6` |
+
+### 16.2 Decisions for Next Session
+
+1. **Collection search bar** — add input below Collection actions, filters current domain papers by title/author/key, click result → Paper page. Not implemented yet.
+2. **Paper page: unfold technical details** — remove the collapsible toggle, show paths and health info directly below header. Agreed but not implemented.
+3. **Paper page: show Key/DOI upfront** — visible without expanding, for easy copy. Agreed but not implemented.
+4. **Redo OCR button removed post ocr-v2 merge** — Redo moves to settings maintenance tab; defer until ocr-v2 merge completes.
+5. **Collection quick action: OCR batch run with pending count** — Done (Run OCR (N)).
+6. **Global Issues section shows Doctor/Repair only when issues exist** — Already designed this way, works.
+
+### 16.3 Parked
+
+- No further UI changes requested by user before building search bar.
+
+---
+
+## 17. Rebuild Audit + Index Repair Session (2026-06-27)
+
+### 17.1 Full Literature-hub Rebuild Audit
+
+Post-rebuild audit of `D:\L\OB\Literature-hub` (839 papers) revealed:
+
+| Issue | Severity | Status |
+|-------|----------|--------|
+| `sync_service.py` — `_time` import scoped inside `if not index_only:`, used outside → UnboundLocalError | HARD BLOCK | FIXED |
+| Workspace fulltext never synced from OCR output (asset_index.py delete stale but no copy) | HIGH | FIXED |
+| `build_index` early-return skips `_build_entry` entirely when export_hash matches — workspace fulltext never copied | HIGH | FIXED |
+| Field registry missing 9 common frontmatter fields (aliases, tags, journal, first_author, pmid, impact_factor, abstract, keywords, ocr_time) — 6000+ WARN noise in doctor | MEDIUM | FIXED |
+| `ocr_health` query: field exists at `entry["health"]["ocr_health"]`, was queried as `entry["ocr_health"]` | FALSE ALARM | N/A |
+| "700 papers missing fulltext.md in workspace" — after fix, all 696 OCR-done papers have workspace fulltext | MISLEADING | FIXED |
+| 3 Base files with legacy has_pdf/do_ocr columns — template itself uses them, user choice to add lifecycle | INFO | DEFERRED |
+| P0/P1/P2 in §15 all stale (footnote in _SKIPPED_BODY_ROLES, "Table N" matching, caption fallback — all addressed in code) | DOC ROT | NOTED |
+
+### 17.2 Changes Made
+
+| File | Change |
+|------|--------|
+| `paperforge/services/sync_service.py` | Moved `import time as _time` from inside `if not index_only:` to function scope |
+| `paperforge/worker/asset_index.py` | Added `shutil.copy2` after deleting stale workspace fulltext; added `_sync_workspace_fulltexts()` call in early-return path |
+| `paperforge/schema/field_registry.yaml` | Added `aliases`, `tags`, `journal`, `first_author`, `pmid`, `impact_factor`, `abstract`, `keywords`, `ocr_time` under `frontmatter` |
+
+### 17.3 Remaining
+
+- 137 pending OCR papers + 2 failed — need `paperforge ocr` queue
+- 4 papers eligible for redo
+- `base-refresh --force` would upgrade Base templates but overwrite user view customizations — deferred to user
+- PROJECT-MANAGEMENT §15 P0/P1/P2 entries stale — should be cleaned up next PM pass
+
+---
+
+## 18. 2026-06-27: Deep Investigation — 5 Fix Spec Root Causes
+
+> **Branch:** `ocr-v2` | **Session:** Full vault rebuild audit + 5-paper vision audit + deep code-path investigations
+> **Active queue:** P0 execution pending (Fix 2, Fix 4, Fix 5)
+
+### 18.1 Vault Survey (80 papers, 1133 pages)
+
+Random audit of Literature-hub OCR output:
+
+| Metric | Value |
+|--------|-------|
+| Single-column papers | 42.9% |
+| Two-column papers | 56.8% |
+| Mixed-tail pages | 0.3% |
+| Avg pages per paper | 14.2 |
+| Avg matched figures | 5.8 |
+| Avg tables per paper | 1.6 |
+| Papers with ≥4× asset/legend gap | 21.5% (false alarm — multi-asset figures render correctly) |
+| Backmatter form | 100% flat (no container/PeerJ-style) |
+
+### 18.2 Vision Truth Audits (5 papers)
+
+**25K5KZAQ** (Bioactive Materials, 11p) — Backmatter boundary failure:
+- CRediT/Ethics headings → `subsection_heading` not `backmatter_heading`
+- All Declaration blocks → `body_zone` because above References heading
+- Figure matching correct
+
+**NC66N4Q3** (Radiographic Atlas, 56p) — Figure-dense + same-page boundary:
+- Pages 4-55: pure figures, body ends page 3
+- Page 56: 2-column with Discussion left + References right → boundary fails
+
+**9TW98JH8** (Acta Orthop Scand, 5p) — Clean audit:
+- Mixed-tail page 5 correctly classified
+- 20/20 blocks correct
+
+**YGH7VEX6** (Macromolecular Research, 8p) — 3 figure caption failure modes:
+- 7 ambiguous figures across 3 failure modes
+- Page 1: 5 frontmatter role errors (author/affiliation swap)
+- Figure 2: caption → `non_body_insert` (width 442 < 0.9×507 threshold)
+- Figure 11: body text matched via adjacent_x, real caption demoted to `figure_s011`
+
+**XD2BPCMG** (Cartilage Review, 26p) — Composite figure text leakage:
+- 33+ figure-internal labels → `footnote`
+- Page 3: 21 text blocks spatially inside Figure 1 bbox, all misclassified
+- Panel labels like `(b) Type of cartilage` → `##` headings
+- `1 | INTRODUCTION` pipe pattern not in `_HEADING_NUMBER_PATTERN`
+
+### 18.3 Fix 1: Figure-Internal Text Containment (P1 → P1 ready)
+
+**Status:** Spec finalized 2026-06-27 — §3.2/§3.3 updated to match §3.7 contracts. Plan-ready.
+**Spec:** `docs/superpowers/specs/2026-06-27-figure-containment-and-backmatter-boundary-design.md` §3
+
+**Key design decisions in spec:**
+- **A:** Call site after `build_figure_inventory`, before `render_fulltext_markdown` — NOT inside `normalize_document_structure`
+- **B:** Fallback asset eligibility includes `media_asset` with figure-like family, not only `figure_asset`
+- **C:** Fallback assets exclude those already covered by `matched_figures.asset_block_ids` + dedup with `_highly_overlaps_any_matched_region`
+- **D:** Proximity clustering (`_cluster_bboxes_by_proximity`, margin=40), not strict overlap
+- **E:** Containment = center-inside + overlap/block_area >= 0.85 + width ≤ region_width*0.95
+
+**Render behavior:** Renderer skips `figure_inner_text` by role. Do not mutate `render_default`/`index_default` in first release.
+
+**Previously recorded:**
+**Location:** `ocr_roles.py:78` (_PANEL_LABEL_PATTERN), `ocr_roles.py:221` (_looks_like_figure_inner_label)
+**Root cause:** Three gaps:
+- Gap A: Figure 1 caption demoted → no matched_figures entry → no cluster_bbox for containment check
+- Gap B: Inner-text detection only fires for `raw_label=="text"` — figure-internal blocks have `vision_footnote`/`paragraph_title`/`figure_title` raw_labels
+- Gap C: No spatial containment logic anywhere (`_bbox_contains` exists in ocr.py but is never used for figure_inner_text)
+- Gap D: `vision_footnote` blocks have no inner-figure pathway
+
+**Existing utilities:**
+- `_PANEL_LABEL_PATTERN` — matches `A`, `(B)`, `C.` (single-letter only)
+- `_looks_like_figure_inner_label` — 12-char limit, 80px proximity to image/chart
+- `_bbox_contains(outer, inner, margin=12)` — in ocr.py:833, unused for this purpose
+- `media_clusters()` / `_cluster_bbox()` — compute union bbox of asset groups
+
+**Fix proposal:** Add render-hygiene pass after `build_figure_inventory`: for each matched_figures entry, use cluster_bbox to check all text blocks inside it. Assign `figure_inner_text` to any non-figure-role block fully contained. Need to handle composite figures with caption demoted upstream.
+
+### 18.4 Fix 2: Reference Sorting Bracket Gap (P0)
+
+**Root cause:** `_ref_number_sort_key` (ocr_render.py:481) regex `r"^\s*(\d+)[\.\)]"` doesn't match `[N]` bracket format. References like `[10]` fall through to `return (1, text)` — full-text lexicographic sort → `[10]...[19][20]...[29][2]...[9]`.
+
+**Why multi-column fix didn't catch it:** That fix targeted page/section ordering, not within-reference numbering. `_ref_number_sort_key` was used as the fallback sort with wrong key function.
+
+**Call chain:**
+1. `render_fulltext_markdown()` → `_order_tail_blocks()` → `_reorder_tail_run()`
+2. `skip_section_grouping` path: `refs.sort(key=_ref_number_sort_key)` (line 524)
+3. Main path: `ref_section["bodies"].sort(key=...)` (line 672)
+4. Fallback: `ref_items.sort(key=...)` (line 864)
+
+**Existing correct function:** `parse_reference_number()` (ocr.py:607) handles both `N.` and `[N]` formats — but `ocr_render.py` never imports from `ocr.py`. They are independent modules.
+
+**Fix:** Add second capture group to regex: `r"^\s*(?:(\d+)[\.\)]|\[(\d+)\])"` — use `m.lastindex` to pick the right group. Two capture groups avoids false matches on plain year numbers.
+
+### 18.5 Fix 3: Backmatter Boundary Recognition (P1 → needs redesign)
+
+**Status:** Spec reviewed 2026-06-27 — NOT ready for implementation. 3 blockers unresolved:
+1. **Multi-page refs:** `reference_heading` ≠ `reference_zone.end`. Algorithm must use verified reference zone extent, not the heading block alone.
+2. **Same-page body+ref:** NC66N4Q3 page 56 column-mixed body/ref needs column-aware partition, not page/y-only.
+3. **Pre-ref known-heading gate:** Exact-match only, document-progress >= 0.50 guard, no substring matching.
+
+**Fix 3 is deferred** until a new spec resolves all 3 blockers. See spec §4.8 for full review.
+
+**Root cause (25K5KZAQ):** Three converging failures:
+
+**A. Pattern gap in heading classification:**
+- `_is_backmatter_boundary_heading()` (ocr_roles.py:303) checks `has_container_words`: `"ADDITIONAL" in upper or "DECLARATION" in upper or "INFORMATION" in upper`
+- "CRediT authorship contribution statement" contains none → returns False
+- `is_visually_heading` requires font_size >= 11pt; CRediT blocks at 7.97pt bold → False
+- Both checks fail → `subsection_heading` instead of `backmatter_boundary_heading`
+
+**B. Multi-column layout masks body-end:**
+- Page 10: left column has Discussion body only, right column has CRediT+Ethics+Declaration
+- `_detect_forward_body_end()` checks per column: left has `any_body_without_tail=True` → scan continues
+- Declaration anchor below CRediT/Ethics → backmatter_start after CRediT
+
+**C. Normalization skips pre-boundary blocks:**
+- `_normalize_backmatter_roles_after_boundary()` line 2062: unconditionally skips `subsection_heading`
+- Line 2103: blocks before `backmatter_started` are skipped
+- `_promote_tail_body_candidates()` requires anchor above or `page > spread_start` — CRediT is above anchor, same page as spread_start
+
+**Affected papers:** All papers with CRediT/Ethics/Declaration backmatter headings that use small font (<11pt) and lack container keywords.
+
+### 18.6 Fix 4: Figure Caption → non_body_insert (P0)
+
+**Root cause (YGH7VEX6 Figure 2):** `_detect_non_body_insert_clusters()` (ocr_document.py:3792) includes `figure_caption` in `_INSERT_CANDIDATE_ROLES`. Figure 2 caption (width 442px) passes the strong-spine-quality check: `font_mismatch=True AND 442 < 0.9×507(median_width)=456.3`. Same page has another candidate (idx 1, width 232) → cluster of 2 → both marked `non_body_insert`.
+
+**Comparison:**
+| Block | Width | <456.3? | Font mismatch? | Caught? |
+|-------|-------|---------|----------------|---------|
+| Figure 1 (p2:5) | 501 | No | Yes | **Escapes** |
+| Figure 2 (p2:15) | 442 | **Yes** | Yes | **Caught** |
+
+**Downstream effect:** Figure 2 caption never enters `figure_legends` → asset (p2:14) consumed by Figure 1 → Figure 2 invisible to entire inventory system.
+
+**Fix:** Remove `figure_caption` and `figure_caption_candidate` from `_INSERT_CANDIDATE_ROLES` (line 3846). Original rationale ("PaddleOCR labels narrow author bios as figure_title/figure_caption") is a corner case handled by existing family-profile rescue.
+
+### 18.7 Fix 5: Demoted Body Paragraph → Figure Legend (P0)
+
+**Root cause (YGH7VEX6 Figure 11):** `_is_validation_first_legend_candidate` (ocr_figures.py:405) checks:
+- `zone == "display_zone"` — True for figure-mention body text
+- `style_family == "legend_like"` — True (contains "Figure N")
+- `marker_type == "figure_number"` — True
+
+These are proxy geometry/style signals that don't reflect the pipeline's role decision. The block was already demoted to `body_paragraph` during candidate resolution. Despite demotion, it re-enters legend matching.
+
+**Figure 11 on page 6:**
+| Block | Role | Text | Matched assets |
+|-------|------|------|----------------|
+| p6:7 | body_paragraph | "Figure 11 shows..." | **Assets 1,3** (via adjacent_x) |
+| p6:13 | figure_caption | "Figure 11. Compressive stress-strain..." | Assets 9,12 |
+
+The body paragraph won the primary slot (`figure_011` at 0.885). Real caption (`figure_s011` at 1.0) was demoted to supplementary. Render uses wrong legend text.
+
+**Matching evidence:** `["same_page", "adjacent_x", "anchor_supported", "caption_text_supported", "family_supported", "multi_asset_coherence_bonus"]` — NOTICE: no `"caption_above_or_below"` or `"nearby_y"`. The match was cross-column via horizontal adjacency, which is plausible geometry but wrong semantics.
+
+**Fix:** Filter demoted `body_paragraph` from `figure_legends` before `_is_validation_first_legend_candidate` check. Do NOT mutate `render_default`/`index_default`. Write full audit trail to `rejected_legends` (page, block_id, text, role, seed_role, rejection_reason).
+
+### 18.8 Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Backmatter: ref is dividing line | Pre-ref=body flow, post-ref=backmatter. CRediT above References → body_zone |
+| Figure containment: render-hygiene pass | Post `build_figure_inventory`, not during legend matching. Containment shouldn't affect matching, only rendering |
+| Reference sort: two capture groups | Prevents false matches on plain year numbers. Optional brackets in single group would match `2024` as `[024]` |
+| Fix 4 before Fix 5 | Fix 4 removes captions from non_body_insert → more captions reach inventory → fewer ambiguous figures |
+| P0 vs P1 split | Fix 2/4/5 are <30 lines total, fully understood. Fix 1/3 need new specs |
 

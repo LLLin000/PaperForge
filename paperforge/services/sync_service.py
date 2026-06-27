@@ -325,9 +325,9 @@ class SyncService:
         }
 
         # ── Phase 1: Select ──
-        if not index_only:
-            import time as _time
+        import time as _time
 
+        if not index_only:
             from paperforge.worker.sync import run_selection_sync
 
             _t0 = _time.time()

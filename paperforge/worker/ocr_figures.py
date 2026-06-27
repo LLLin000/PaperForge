@@ -2946,6 +2946,20 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         # Skip single-letter panel labels (A, B, (C), A.) in figure legends
         if _PANEL_LABEL_PATTERN.match(str(block.get("text", "")).strip()):
             continue
+        # Skip body_paragraph that was demoted from figure_caption_candidate —
+        # candidate resolution already judged it as narrative prose, not a legend.
+        # Re-activating it via geometry/style signals causes body text to leak
+        # into legend matching (e.g. YGH7VEX6 Figure 11).
+        if role == "body_paragraph" and str(block.get("seed_role") or "") in {
+            "figure_caption_candidate", "figure_caption"
+        }:
+            block["_rejected_legend"] = {
+                "reason": "demoted_body_paragraph",
+                "role": role,
+                "seed_role": str(block.get("seed_role") or ""),
+            }
+            rejected_legends.append(block)
+            continue
         is_validation_first_candidate = _is_validation_first_legend_candidate(block)
         if role in ("figure_caption", "figure_caption_candidate") or is_validation_first_candidate:
             if role == "figure_caption_candidate" and (
@@ -4855,6 +4869,175 @@ def write_back_figure_roles(inventory: dict, structured_blocks: list[dict]) -> N
                 if block.get("block_id") == asset_bid and block.get("page") == figure.get("page"):
                     if block.get("role") in {"media_asset", "figure_asset"}:
                         block["role"] = "figure_asset"
+                    break
+
+
+_LEAK_ROLES = {
+    "body_paragraph", "section_heading", "subsection_heading",
+    "sub_subsection_heading", "backmatter_heading", "backmatter_body",
+    "tail_candidate_body", "footnote", "structured_insert",
+    "non_body_insert", "frontmatter_noise",
+}
+
+
+def _cluster_bboxes_by_proximity(
+    bboxes: list[list[float]],
+    margin: float = 40,
+) -> list[list[float]]:
+    if not bboxes:
+        return []
+    if len(bboxes) == 1:
+        return [list(bboxes[0])]
+    n = len(bboxes)
+    parent = list(range(n))
+
+    def _find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def _union(x: int, y: int) -> None:
+        px, py = _find(x), _find(y)
+        if px != py:
+            parent[py] = px
+
+    for i in range(n):
+        ax1, ay1, ax2, ay2 = bboxes[i]
+        for j in range(i + 1, n):
+            bx1, by1, bx2, by2 = bboxes[j]
+            if (max(ax1, bx1) - margin < min(ax2, bx2) + margin
+                    and max(ay1, by1) - margin < min(ay2, by2) + margin):
+                _union(i, j)
+
+    clusters: dict[int, list[list[float]]] = {}
+    for i in range(n):
+        clusters.setdefault(_find(i), []).append(bboxes[i])
+    return [
+        [min(b[0] for b in g), min(b[1] for b in g),
+         max(b[2] for b in g), max(b[3] for b in g)]
+        for g in clusters.values()
+    ]
+
+
+def _is_contained(block_bbox: list[float], region_bbox: list[float]) -> bool:
+    bx1, by1, bx2, by2 = block_bbox
+    rx1, ry1, rx2, ry2 = region_bbox
+    block_w = bx2 - bx1
+    region_w = rx2 - rx1
+    if block_w > region_w * 0.95:
+        return False
+    cx = (bx1 + bx2) / 2
+    cy = (by1 + by2) / 2
+    if not (rx1 <= cx <= rx2 and ry1 <= cy <= ry2):
+        return False
+    ix1 = max(bx1, rx1)
+    iy1 = max(by1, ry1)
+    ix2 = min(bx2, rx2)
+    iy2 = min(by2, ry2)
+    overlap = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+    block_area = max(1.0, block_w * (by2 - by1))
+    return overlap / block_area >= 0.85
+
+
+def _highly_overlaps_any_matched_region(
+    fallback_bbox: list[float],
+    figure_regions: list[tuple[str, list[float]]],
+) -> bool:
+    fx1, fy1, fx2, fy2 = fallback_bbox
+    fallback_area = max(1.0, (fx2 - fx1) * (fy2 - fy1))
+    for tag, region_bbox in figure_regions:
+        if tag != "matched":
+            continue
+        rx1, ry1, rx2, ry2 = region_bbox
+        ix1 = max(fx1, rx1)
+        iy1 = max(fy1, ry1)
+        ix2 = min(fx2, rx2)
+        iy2 = min(fy2, ry2)
+        overlap = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+        if overlap / fallback_area > 0.5:
+            return True
+    return False
+
+
+def _figure_region_bbox(mf: dict) -> list[float] | None:
+    cluster = mf.get("cluster_bbox")
+    if cluster and len(cluster) >= 4:
+        return cluster
+    asset = mf.get("asset_bbox")
+    if asset and len(asset) >= 4:
+        return asset
+    matched = mf.get("matched_assets", [])
+    bboxes = [a["bbox"] for a in matched if len(a.get("bbox") or []) >= 4]
+    if bboxes:
+        return _cluster_bbox(bboxes)
+    return None
+
+
+def _matched_asset_keys(mf: dict) -> set[tuple[int, str]]:
+    keys: set[tuple[int, str]] = set()
+    page = int(mf.get("page", 0) or 0)
+    for asset in mf.get("matched_assets", []):
+        bid = asset.get("block_id")
+        if bid is not None:
+            keys.add((page, str(bid)))
+    for bid in mf.get("asset_block_ids", []):
+        if bid is not None:
+            keys.add((page, str(bid)))
+    return keys
+
+
+def tag_figure_contained_text(
+    blocks: list[dict],
+    matched_figures: list[dict],
+) -> None:
+    pages = {b.get("page") for b in blocks if b.get("page") is not None}
+    matched_by_page: dict[int, list[dict]] = {}
+    for mf in matched_figures:
+        p = mf.get("page")
+        if p is not None:
+            matched_by_page.setdefault(p, []).append(mf)
+    for page in sorted(pages):
+        page_blocks = [b for b in blocks if b.get("page") == page]
+        figure_regions: list[tuple[str, list[float]]] = []
+        covered_asset_keys: set[tuple[int, str]] = set()
+        for mf in matched_by_page.get(page, []):
+            region = _figure_region_bbox(mf)
+            if region:
+                figure_regions.append(("matched", region))
+                covered_asset_keys |= _matched_asset_keys(mf)
+        fallback_assets = [
+            b for b in page_blocks
+            if (int(b.get("page", 0) or 0), str(b.get("block_id", ""))) not in covered_asset_keys
+            and b.get("role") in {"figure_asset", "media_asset"}
+            and b.get("role") not in {"table_html", "table_asset"}
+            and (
+                b.get("asset_family_hint") == "figure_like"
+                or str(b.get("raw_label", "") or "") in {"image", "chart", "figure_title", "figure"}
+            )
+        ]
+        if fallback_assets:
+            fallback_bboxes = [b["bbox"] for b in fallback_assets if len(b.get("bbox") or []) >= 4]
+            for fr in _cluster_bboxes_by_proximity(fallback_bboxes, margin=40):
+                if not _highly_overlaps_any_matched_region(fr, figure_regions):
+                    figure_regions.append(("fallback", fr))
+        if not figure_regions:
+            continue
+        for block in page_blocks:
+            role = str(block.get("role") or "")
+            if role in {"figure_asset", "media_asset", "noise",
+                        "figure_caption", "figure_caption_candidate",
+                        "table_html", "table_asset",
+                        "figure_inner_text"}:
+                continue
+            bbox = block.get("bbox")
+            if not bbox or len(bbox) < 4:
+                continue
+            for _, fr in figure_regions:
+                if _is_contained(bbox, fr):
+                    block["_figure_contained"] = True
+                    if role in _LEAK_ROLES:
+                        block["role"] = "figure_inner_text"
                     break
 
 

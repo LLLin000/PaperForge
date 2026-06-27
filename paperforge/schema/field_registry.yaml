@@ -1,4 +1,67 @@
 frontmatter:
+  aliases:
+    type: list
+    required: false
+    public: true
+    description: "Obsidian wikilink aliases"
+    owner: obsidian
+    introduced_in: "1.5"
+  tags:
+    type: list
+    required: false
+    public: true
+    description: "Obsidian tags"
+    owner: obsidian
+    introduced_in: "1.5"
+  journal:
+    type: str
+    required: false
+    public: true
+    description: "Journal name"
+    owner: sync
+    introduced_in: "1.0"
+  first_author:
+    type: str
+    required: false
+    public: true
+    description: "First author name"
+    owner: sync
+    introduced_in: "1.0"
+  pmid:
+    type: str
+    required: false
+    public: true
+    description: "PubMed ID"
+    owner: sync
+    introduced_in: "1.0"
+  impact_factor:
+    type: str
+    required: false
+    public: true
+    description: "Journal impact factor"
+    owner: sync
+    introduced_in: "1.0"
+  abstract:
+    type: str
+    required: false
+    public: true
+    description: "Paper abstract"
+    owner: sync
+    introduced_in: "1.0"
+  keywords:
+    type: list
+    required: false
+    public: true
+    description: "Paper keywords"
+    owner: sync
+    introduced_in: "1.0"
+  ocr_time:
+    type: str
+    required: false
+    public: false
+    description: "OCR completion timestamp"
+    owner: ocr
+    introduced_in: "2.1"
   zotero_key:
     type: str
     required: true

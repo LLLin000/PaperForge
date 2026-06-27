@@ -347,6 +347,8 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
     if stale_workspace_fulltext.exists():
         stale_workspace_fulltext.unlink()
+    if source_fulltext.exists():
+        shutil.copy2(str(source_fulltext), str(stale_workspace_fulltext))
 
     fulltext_exists = source_fulltext.exists()
 
@@ -526,6 +528,29 @@ def _compute_export_hash(paths: dict) -> str:
     return h.hexdigest()
 
 
+def _sync_workspace_fulltexts(items: list[dict], vault: Path, paths: dict, verbose: bool = False) -> None:
+    for entry in items:
+        if entry.get("ocr_status") not in ("done", "done_degraded"):
+            continue
+        ws_dir_rel = entry.get("paper_root", "")
+        if not ws_dir_rel:
+            continue
+        ws_dir = vault / ws_dir_rel
+        ws_ft = ws_dir / "fulltext.md"
+        if ws_ft.exists():
+            continue
+        ft_rel = entry.get("fulltext_path", "")
+        if not ft_rel:
+            ocr_ft = paths["ocr"] / entry["zotero_key"] / "fulltext.md"
+        else:
+            ocr_ft = vault / ft_rel
+        if ocr_ft.exists():
+            ws_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(str(ocr_ft), str(ws_ft))
+            if verbose:
+                print(f"  synced fulltext to workspace: {entry['zotero_key']}")
+
+
 def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False) -> int:
     """Full rebuild of the canonical asset index for *vault*."""
     from paperforge.config import load_vault_config
@@ -561,6 +586,7 @@ def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False)
                     print("index-refresh: ocr_redo or ocr_time field missing in index, forcing rebuild")
             else:
                 count = len(items)
+                _sync_workspace_fulltexts(items, vault, paths, verbose)
                 if verbose:
                     print(f"index-refresh: {count} entries (unchanged)")
                 return count
