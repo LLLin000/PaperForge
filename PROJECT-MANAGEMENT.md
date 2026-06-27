@@ -2331,17 +2331,17 @@ Pending papers (no PDF / OCR queued): `ocr run` should be executed for JQMRCEXY,
 
 ## 15. Remaining Known Issues (updated 2026-06-27)
 
-### P0 (ready to commit — fixes designed, 3 independent changes)
+### P0 — ALL COMMITTED (972560a)
 1. ~~Footnote missing from `_SKIPPED_BODY_ROLES`~~ → already handled by code, stale entry
 2. ~~Short "Table N" caption matching absent~~ → existing code handles it, stale entry
 3. ~~Table caption fallback `###` should be `**`~~ → existing code uses `**`, stale entry
-4. **Fix 2: Reference sorting bracket gap** — `_ref_number_sort_key` (ocr_render.py:481) regex `r"^\s*(\d+)[\.\)]"` doesn't match `[N]` bracket format. References like `[10]` fall through to lexicographic sort. Fix: add second capture group for brackets. Covers all 3 call sites (lines 524, 672, 864). **~5 lines total.**
-5. **Fix 4: figure_caption → non_body_insert** — `_detect_non_body_insert_clusters()` (ocr_document.py:3846) lists `figure_caption` and `figure_caption_candidate` in `_INSERT_CANDIDATE_ROLES`, catching genuine narrow figure captions on early pages. YGH7VEX6 Figure 2 (width 442 < 0.9×507 median) was swallowed. **Fix: remove both from the set. ~2 lines.**
-6. **Fix 5: Demoted body_paragraph re-enters figure legends** — `_is_validation_first_legend_candidate` (ocr_figures.py:405) uses `zone="display_zone"` + `style_family="legend_like"` proxy signals, ignoring that pipeline already demoted the block to `body_paragraph`. YGH7VEX6 Figure 11: body p6:7 matched assets via adjacent_x; real caption p6:13 demoted to `figure_s011`. **Fix: filter demoted body_paragraph from legends before validation candidate check. ~10 lines + tests.**
+4. ~~Fix 2: Reference sorting bracket gap~~ → committed: `_ref_number_sort_key` regex now handles `[N]`
+5. ~~Fix 4: figure_caption → non_body_insert~~ → committed: removed from `_INSERT_CANDIDATE_ROLES`
+6. ~~Fix 5: Demoted body_paragraph re-enters figure legends~~ → committed: filter before `_is_validation_first_legend_candidate`
 
-### P1 (separate spec/commit needed)
-7. **Fix 1: Figure-internal text containment** — `_bind_inner_text_to_figures()` was proposed in design doc but never implemented. Current detection is regex (`_PANEL_LABEL_PATTERN` matching `A`, `(B)`) + proximity heuristic (80px to image blocks). No containment check exists. XD2BPCMG page 3: 21 text blocks entirely inside composite Figure 1 bbox, all misclassified (16→footnote, rest→heading/body). Needs: `_bbox_contains()` integration + matched_figures cluster_bbox + render-hygiene pass. **Needs separate spec.**
-8. **Fix 3: Backmatter boundary recognition** — CRediT/Ethics headings not recognized because `_is_backmatter_boundary_heading()` (ocr_roles.py:303) requires `is_visually_heading` (11pt threshold, CRediT=7.97pt) OR `has_container_words` (no ADDITIONAL/DECLARATION/INFORMATION in CRediT). `_normalize_backmatter_roles_after_boundary` explicitly skips `subsection_heading`. 25K5KZAQ pages 9-10: CRediT/Ethics/Declaration as body_paragraph. **Needs separate spec.**
+### P1 — Figure containment committed, Backmatter deferred
+7. ~~Fix 1: Figure-internal text containment~~ → **COMMITTED** (972560a): 6 helpers + call site + 19 tests
+8. **Fix 3: Backmatter boundary recognition** — CRediT/Ethics headings not recognized because `_is_backmatter_boundary_heading()` (ocr_roles.py:303) requires `is_visually_heading` (11pt threshold, CRediT=7.97pt) OR `has_container_words` (no ADDITIONAL/DECLARATION/INFORMATION in CRediT). `_normalize_backmatter_roles_after_boundary` explicitly skips `subsection_heading`. 25K5KZAQ pages 9-10: CRediT/Ethics/Declaration as body_paragraph. **Needs separate spec (3 blockers unresolved — see §4.8 of containment spec).**
 
 ### P2 (deferred)
 9. **`resolve_pdf_path` lacks glob fallback for storage URIs** — when BBT-specified filename (correct UTF-8) doesn't match garbled NTFS filename (Chinese Win encoding double-pass), no fallback to `glob("storage/KEY/*.pdf")`. Causes `source_pdf` to store damaged filenames.
@@ -2496,6 +2496,9 @@ Random audit of Literature-hub OCR output:
 
 **Fix proposal:** Add render-hygiene pass after `build_figure_inventory`: for each matched_figures entry, use cluster_bbox to check all text blocks inside it. Assign `figure_inner_text` to any non-figure-role block fully contained. Need to handle composite figures with caption demoted upstream.
 
+**Final design:** `2026-06-27-figure-containment-implementation-plan.md` — 6 helpers + call site + 19 tests
+**Commit:** `972560a`
+
 ### 18.4 Fix 2: Reference Sorting Bracket Gap (P0)
 
 **Root cause:** `_ref_number_sort_key` (ocr_render.py:481) regex `r"^\s*(\d+)[\.\)]"` doesn't match `[N]` bracket format. References like `[10]` fall through to `return (1, text)` — full-text lexicographic sort → `[10]...[19][20]...[29][2]...[9]`.
@@ -2511,6 +2514,7 @@ Random audit of Literature-hub OCR output:
 **Existing correct function:** `parse_reference_number()` (ocr.py:607) handles both `N.` and `[N]` formats — but `ocr_render.py` never imports from `ocr.py`. They are independent modules.
 
 **Fix:** Add second capture group to regex: `r"^\s*(?:(\d+)[\.\)]|\[(\d+)\])"` — use `m.lastindex` to pick the right group. Two capture groups avoids false matches on plain year numbers.
+**Commit:** `972560a`
 
 ### 18.5 Fix 3: Backmatter Boundary Recognition (P1 → needs redesign)
 
@@ -2554,9 +2558,11 @@ Random audit of Literature-hub OCR output:
 **Downstream effect:** Figure 2 caption never enters `figure_legends` → asset (p2:14) consumed by Figure 1 → Figure 2 invisible to entire inventory system.
 
 **Fix:** Remove `figure_caption` and `figure_caption_candidate` from `_INSERT_CANDIDATE_ROLES` (line 3846). Original rationale ("PaddleOCR labels narrow author bios as figure_title/figure_caption") is a corner case handled by existing family-profile rescue.
+**Commit:** `972560a`
 
 ### 18.7 Fix 5: Demoted Body Paragraph → Figure Legend (P0)
 
+**Commit:** `972560a`
 **Root cause (YGH7VEX6 Figure 11):** `_is_validation_first_legend_candidate` (ocr_figures.py:405) checks:
 - `zone == "display_zone"` — True for figure-mention body text
 - `style_family == "legend_like"` — True (contains "Figure N")
