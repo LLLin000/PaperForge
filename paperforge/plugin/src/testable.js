@@ -1351,6 +1351,151 @@ function resolveAnnotationPdfTarget(row, entry) {
     return { ok: true, path, page, linkText, reason };
 }
 
+// ── Overlay rendering helpers (Phase 8, Plan 02) ──
+
+/**
+ * Restrained default highlight color for overlay marks (D-06).
+ * Used when annotation color is missing, invalid, or unrecognized.
+ * @type {string}
+ */
+const DEFAULT_OVERLAY_HIGHLIGHT_COLOR = '#ffd400';
+
+/**
+ * Create a fresh, session-local annotation overlay state object.
+ *
+ * Tracks runtime overlay availability, active PDF identity, and
+ * popover interaction. Must not persist to plugin settings or
+ * localStorage.
+ *
+ * @returns {{ status: string, reason: string, paperKey: string|null, pdfPath: string|null, viewerAttached: boolean, activePopoverId: string|null }}
+ */
+function createDefaultAnnotationOverlayState() {
+    return {
+        status: 'idle',
+        reason: '',
+        paperKey: null,
+        pdfPath: null,
+        viewerAttached: false,
+        activePopoverId: null,
+    };
+}
+
+/**
+ * Parse and validate an annotation `positionJson` string.
+ *
+ * Accepts a JSON object with a `rects` array of rectangles, each
+ * having finite non-negative `x`, `y`, `w`, `h` numeric fields.
+ * Returns `{ ok: true, rects: [...] }` on success or
+ * `{ ok: false, rects: [], reason: '...' }` on failure.
+ * Never throws.
+ *
+ * @param {string|null|undefined} positionJson - Raw JSON string from pdfLocation.positionJson.
+ * @returns {{ ok: boolean, rects: Array<{x: number, y: number, w: number, h: number}>, reason: string|null }}
+ */
+function parseAnnotationPositionJson(positionJson) {
+    // Non-string reject
+    if (positionJson == null || typeof positionJson !== 'string') {
+        return { ok: false, rects: [], reason: 'Position data must be a JSON string.' };
+    }
+
+    // JSON parse
+    var parsed;
+    try {
+        parsed = JSON.parse(positionJson);
+    } catch (_) {
+        return { ok: false, rects: [], reason: 'Position data is not valid JSON.' };
+    }
+
+    // Must be a non-null, non-array object
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        return { ok: false, rects: [], reason: 'Position data must be a JSON object.' };
+    }
+
+    // Must have a rects array
+    if (!Array.isArray(parsed.rects)) {
+        return { ok: false, rects: [], reason: 'Position data has no rectangle coordinates.' };
+    }
+
+    // Empty rects
+    if (parsed.rects.length === 0) {
+        return { ok: false, rects: [], reason: 'Position data has an empty rectangle list.' };
+    }
+
+    // Validate each rect
+    var rects = [];
+    for (var i = 0; i < parsed.rects.length; i++) {
+        var r = parsed.rects[i];
+        if (typeof r !== 'object' || r === null) {
+            return { ok: false, rects: [], reason: 'Position data contains an invalid rectangle entry.' };
+        }
+
+        var x = r.x;
+        var y = r.y;
+        var w = r.w;
+        var h = r.h;
+
+        if (typeof x !== 'number' || typeof y !== 'number' || typeof w !== 'number' || typeof h !== 'number') {
+            return { ok: false, rects: [], reason: 'Position data contains a rectangle with non-numeric values.' };
+        }
+
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !Number.isFinite(h)) {
+            return { ok: false, rects: [], reason: 'Position data contains a rectangle with non-finite values.' };
+        }
+
+        if (x < 0 || y < 0 || w < 0 || h < 0) {
+            return { ok: false, rects: [], reason: 'Position data contains a rectangle with negative values.' };
+        }
+
+        rects.push({ x: x, y: y, w: w, h: h });
+    }
+
+    return { ok: true, rects: rects, reason: null };
+}
+
+/**
+ * Normalize an annotation color to a usable CSS value.
+ *
+ * Accepts hex (#rgb, #rrggbb, #rrggbbaa), rgb/rgba functional notation,
+ * and common named colors. Returns the restrained default yellow (D-06)
+ * when the input is missing, empty, or unrecognized.
+ *
+ * @param {*} color - The annotation color value from display.color.
+ * @returns {string} A CSS-usable color string, never empty.
+ */
+function normalizeAnnotationColor(color) {
+    if (typeof color !== 'string' || color.trim() === '') {
+        return DEFAULT_OVERLAY_HIGHLIGHT_COLOR;
+    }
+
+    var trimmed = color.trim();
+
+    // Hex colors: #rgb, #rrggbb, #rrggbbaa
+    if (/^#[0-9a-fA-F]{3}$/.test(trimmed) ||
+        /^#[0-9a-fA-F]{6}$/.test(trimmed) ||
+        /^#[0-9a-fA-F]{8}$/.test(trimmed)) {
+        return trimmed;
+    }
+
+    // rgb() / rgba() functional notation
+    if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*[\d.]+)?\s*\)$/.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Common named colors
+    var namedColors = new Set([
+        'red', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink',
+        'cyan', 'magenta', 'lime', 'teal', 'navy', 'maroon', 'olive',
+        'aqua', 'fuchsia', 'silver', 'gray', 'black', 'white',
+    ]);
+
+    if (namedColors.has(trimmed.toLowerCase())) {
+        return trimmed.toLowerCase();
+    }
+
+    // Unrecognized → restrained default yellow
+    return DEFAULT_OVERLAY_HIGHLIGHT_COLOR;
+}
+
 module.exports = {
     resolvePythonExecutable,
     getPluginVersion,
@@ -1387,4 +1532,9 @@ module.exports = {
     extractVaultPdfPath,
     buildPaperPdfCandidates,
     resolveAnnotationPdfTarget,
+    // Overlay rendering helpers (Phase 8, Plan 02)
+    DEFAULT_OVERLAY_HIGHLIGHT_COLOR,
+    createDefaultAnnotationOverlayState,
+    parseAnnotationPositionJson,
+    normalizeAnnotationColor,
 };
