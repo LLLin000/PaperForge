@@ -1867,6 +1867,17 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     figure_inventory = build_figure_inventory(structured)
     write_back_figure_roles(figure_inventory, structured)
 
+    # --- Author bio: post-ref bio cleanup (Pass C, P0) ---
+    from paperforge.worker.ocr_bio import (
+        post_ref_bio_cleanup,
+        prune_figure_inventory_after_bio,
+        _resolve_ref_start_page,
+    )
+    ref_start_page = _resolve_ref_start_page(structured)
+    if ref_start_page is not None:
+        post_ref_bio_cleanup(figure_inventory, structured, ref_start_page=ref_start_page)
+        prune_figure_inventory_after_bio(figure_inventory)
+
     # --- Phase 2a: reader figure synthesis ---
     from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
 

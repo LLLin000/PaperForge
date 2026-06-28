@@ -370,13 +370,15 @@ def build_structured_blocks(
                 "frontmatter_noise",
                 "non_body_insert",
                 "structured_insert",
+                "author_bio_asset",
                 "ocr_raw_error",
             }:
                 row["render_default"] = False
             row["index_default"] = role not in _CANDIDATE_ROLES
             if role in {
                 "noise", "frontmatter_noise", "table_html",
-                "non_body_insert", "structured_insert", "ocr_raw_error",
+                "non_body_insert", "structured_insert", "author_bio_asset",
+                "ocr_raw_error",
             }:
                 row["index_default"] = False
 
