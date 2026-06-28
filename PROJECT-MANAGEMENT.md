@@ -1,15 +1,13 @@
 # OCR-v2 Project Management Log
 
 > **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-28
-> **Active work:** Test fix session — 616 OCR tests pass, 0 failures. Stale fixtures resolved, expectations updated.
+> **Active work:** P0+P1 author bio detection — post-ref text-only bios + figure-residual portrait assets correctly classified as backmatter_body/author_bio_asset. 1018 OCR tests pass, 0 failures.
 
 ---
 
 ## 0. Executive Summary
 
-**What ocr-v2 is:** A structural redesign of PaperForge's OCR pipeline. Replaces the original "early role guess → commit → rescue → render" pipeline with **anchor-first parsing**: structural signatures → stable anchors → zone inference → late role resolution → figure/table validation → render + health.
-
-**Current state:** Gate 5 test fix session complete. **616 OCR tests pass, 0 failures.** All stale fixtures and expectations updated to match post-P1 pipeline behavior. Ready for lint and merge.
+**Current state:** P0+P1 bio detection complete. **1018 OCR tests pass, 0 failures.** Pass B (`residual_author_bio_pass`) catches portrait unmatched_assets/unresolved_clusters. Pass C (`post_ref_bio_cleanup`) handles reference_item + figure_caption. Three-pass architecture: P0 (text-only post-ref) ✅, P1 (figure residual) ✅, P2+ (P1 profile card pre-pass) deferred. Next: Run lint and merge ocr-v2 to master.
 
 ---
 
@@ -54,10 +52,10 @@ raw observations → structural signatures → stable anchors/families → zone 
 |-------|--------|
 | Figure stack (figures + reader + containment + backmatter boundary) | **286 passed** ✅ |
 | Document + roles + render + gate + rebuild + state machine + trace | **330 passed, 0 failed** ✅ |
+| Author bio detection (ocr_bio) | **37 passed** ✅ |
 | Spec contracts | All passed ✅ |
 | Real-paper regressions | All passed ✅ |
-| **Total OCR tests** | **616 passed, 51 skipped (fixture unavailable), 0 failed** ✅ |
-
+| **Total OCR tests** | **1018 passed, 275 skipped (fixture unavailable), 0 failed** ✅ |
 ### 2.2 Component Status
 
 | Component | Status |
@@ -74,22 +72,19 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Render (backmatter headings) | ✅ Correct heading rendering |
 | State machine | ✅ Accepts done_degraded as terminal |
 | Rebuild (span backfill skip) | ✅ Version match check fixed |
-| Trace-vs-expectations | ✅ Expectations updated for post-P1 behavior |
+| Author bio detection (Passes B+C) | ✅ P0: post-ref text-only bios as backmatter_body. P1: figure-residual portrait assets as author_bio_asset + figure_caption support |
 
-### 2.3 Fix Status (Test fix session — 2026-06-28)
+### 2.3 Fix Status
 
-| # | Issue | Type | Fix |
-|---|-------|------|-----|
-| 1 | 5 non_body_insert tests: page-1 guard threshold 20%→25% | Pipeline code | `not_extremely_narrow` adjusted to `page_width * 0.25` |
-| 2 | caffard abstract span: "Methods" in main_ids included | Test expectation | Updated to match current structured abstract behavior |
-| 3 | legend_like role override: body_zone excluded | Test zone | Changed test block zone to `display_zone` |
-| 4 | frontmatter_noise safe role preservation | Pipeline code | Removed explicit exclusion for frontmatter_noise with VERIFY_REQUIRED seed |
-| 5 | Backmatter section heading render: bold→heading | Test assertion | Updated to expect `## heading` (correct rendering) |
-| 6 | State machine: done_degraded vs done | Test assertion | Accept both terminal statuses |
-| 7 | body_zone anchor_family None | Test assertion | Relaxed: only check when anchor_family is set |
-| 8 | Rebuild span backfill skip | Test meta version | `span_visual_container_version` → `2026-06-26.6` |
-| 9 | Truth surface docs | Test assertion | Updated active queue + PM phrase checks |
----
+| # | Paper | Issue | Type | Fix | Commit |
+|---|-------|-------|------|-----|--------|
+| 1 | — | P21 zone fix (4AG67PBH "Conflict of Interest" heading) | Pipeline code | `infer_zones()` frontmatter_side_blocks page gate: added `first_reference_page is not None and page >= first_reference_page - 1` | `35aabae` |
+| 2 | 4AG67PBH | Author bio text in post-ref reference_item (b8/b10) | New module | `post_ref_bio_cleanup` reclassifies bios as `backmatter_body`; `_bio_text_score` category-weighted 0-5 scoring | `e2f0c8a` |
+| 3 | — | author_bio_asset role contract | Pipeline code | `author_bio_asset` added to render_default=False, index_default=False skip sets | `7810eb1` |
+| 4 | — | Pass C pipeline wiring | Pipeline code | Insert `post_ref_bio_cleanup` + `prune_figure_inventory_after_bio` after `write_back_figure_roles` | `7810eb1` |
+| 5 | — | P1 residual author bio pass (Pass B) | New function | `residual_author_bio_pass` detects portrait unmatched_assets/unresolved_clusters with nearby bio text | `7a1cc5e` |
+| 6 | — | P1 figure_caption support in Pass C | Role expansion | `post_ref_bio_cleanup` extended for `figure_caption` role | `7a1cc5e` |
+| 7 | — | tag_figure_contained_text author_bio guard | Protection | Skip `author_bio` blocks and `author_bio_asset` role in figure containment | `7a1cc5e` |
 
 ### P2 (Deferred)
 
@@ -97,6 +92,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 2. **Short "Table N" caption matching** — bare `"Table 1."` labels miss table_asset in ownership pipeline. Existing code partially handles it; residual cases remain.
 3. **Page-1 body paragraph width check** — right-column body paragraphs on two-column pages naturally narrower; need column-aware spine width check.
 4. **Body text backfill overlap** — `backfill_missing_text_from_pdf` uses `get_text("words", clip=expanded)` returning words beyond block's bbox; can cause text duplication at render level.
+5. **2HEUD5P9 reference ordering — multi-column page interleave** — References on multi-column pages appear in page-order (top→bottom, left→right), not sorted by number. E.g. [10]→[19]→[1]→[20]→[39]→[3]→[40]→[89]→[8]→[9]→[100]→[188]. Need column-aware ref reorder or post-hoc numeric sort within reference_zone. Observed in 2HEUD5P9 (P23-P26), may affect other papers.
 
 ### P3 (Boundary / Edge Cases)
 
@@ -108,7 +104,6 @@ raw observations → structural signatures → stable anchors/families → zone 
 6. **Figure/table shared-consumption registry** — no shared consumed registry for ambiguous image-like blocks.
 7. **Short papers (<3 pages) health falsely red** — no headings/abstract in Letter/Editor formats.
 
-
 ## 4. Active Queue
 
 1. ✅ P1 backmatter boundary (ref-anchored partition)
@@ -116,12 +111,17 @@ raw observations → structural signatures → stable anchors/families → zone 
 3. ✅ Gate 5 frontmatter fix series (24YKLTHQ)
 4. ✅ Stale trace-vs-expectation fixtures cleared (10 assertion updates)
 5. ✅ All stale test expectations reconciled (non_body_insert, caffard, legend_like, structural gate, render, state machine, rebuild, truth docs)
-6. **NEXT: Run lint, merge ocr-v2 → master**
+6. ✅ P0 author bio detection (post_ref_bio_cleanup for reference_item)
+7. ✅ P1 author bio detection (residual_author_bio_pass + figure_caption support + tag_figure_contained_text protection)
+8. **NEXT: Run lint (ruff) then merge ocr-v2 → master**
 
 ### 4.1 Immediate Next Steps
 
 - [x] 25 fixed tests (10 distinct issues)
-- [x] Full OCR regression sweep: 616 passed, 0 failed
+- [x] Full OCR regression sweep: 1018 passed, 0 failed
+- [x] P0 bio detection: 30 new tests, 0 regressions
+- [x] P1 bio detection: 7 new tests, 0 regressions
+- [x] tag_figure_contained_text author_bio protection
 - [ ] Run lint (ruff)
 - [ ] Merge `ocr-v2` into `master`
 
@@ -146,6 +146,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | `paperforge/worker/ocr_scores.py` | Score functions (spatial, structured_insert, etc.) |
 | `paperforge/worker/ocr_rebuild.py` | Derived rebuild entry point |
 | `paperforge/worker/ocr_pdf_spans.py` | PDF span backfill for OCR-missed blocks |
+| `paperforge/worker/ocr_bio.py` | Author biography detection utilities and passes |
 
 ### 5.2 Test Files
 
@@ -215,6 +216,9 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 2026-06-28 | Author byline: require lowercase letters | `_looks_like_initial_lastname_byline` matched all-caps journal taglines. Fix: require any lowercase letter in matched text. |
 | 2026-06-28 | Page-1 body_start: metadata headings should not trigger | `_is_first_page_body_start` treated ANY section_heading as body start. Fix: only real body section headings (introduction, methods, etc.) trigger body_start on page 1. |
 | 2026-06-28 | Frontmatter heading normalization: no text matching | Metadata sidebar labels rejected by structural gate fell to unknown_structural. Fix: normalize held heading blocks in frontmatter_main_zone to frontmatter_noise using only zone + gate decision + seed_role, no text matching. |
+| 2026-06-28 | Author bio detection: three-pass cascade, P0 first | Strong structure first, residual explanation second. Real figures must never be preempted. P0: post-ref text-only. P1: figure residual. P2+: P1 profile card pre-pass. |
+| 2026-06-28 | Category-weighted bio scoring | career=+3, education=+2, research=+2, institution=+1, publication=+1. Returns (score, categories) tuple. Threshold: score ≥ 4 AND categories ≥ 2. |
+| 2026-06-28 | author_bio_asset role: non-rendered, non-indexed | Bio artifacts removed from figure_inventory entirely, never returned to unmatched_assets. Clean prune before reader. |
 
 ---
 
@@ -300,6 +304,9 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-06-28 | Gate 5 blind audit + pre-ref tail zone fix | Gate 5: 24YKLTHQ (13p) + 4KCHGV2Z (9p) rebuilt post-P1. Found pre-ref body pages misclassified as tail_nonref_hold_zone. Root cause: _apply_zone_labels re-applies stale region_bus after ref partition. Fixed by stripping pre_ref block IDs from tail zone. 4KCHGV2Z P7: tail=20 → body=2+disp=5. All 286 figure/backmatter tests green. | §9.12 |
 | 2026-06-28 | Gate 5 frontmatter fix series (3 fixes) | 24YKLTHQ: author byline lowercase guard, metadata body_start fix, frontmatter heading normalization (no text matching). All 3 fixes verified on real paper, 461 tests pass, 0 new regressions. | §9.13 |
 | 2026-06-28 | Test fix session: 25 tests reconciled | Fixed 10 stale test issues: non_body_insert guard, caffard abstract, legend_like role, structural gate, backmatter heading render, state machine (done_degraded), body_zone anchor, rebuild backfill skip, truth surface docs, trace-vs-expectations (10 assertions). **616 OCR tests, 0 failed.** Expectations updated for post-P1 behavior. | §9.14 |
+| 2026-06-28 | Data-driven truth audit (2 papers) | 2HEUD5P9 (27p) + 4AG67PBH (25p) — no vision (model limit). Found 3 pipeline defect patterns: zone_leak_frontmatter_to_body (2 papers), reference_boundary_body_mix (2 papers), title_repeat_page2 (1 paper). 12 ghost unknown_structural blocks in 2HEUD5P9. Findings saved to audit/2026-06-28-data-audit-findings.json. | §9.15 |
+| 2026-06-28 | P0 author bio detection implementation | Created ocr_bio.py with category-weighted bio scoring, Pass C (post_ref_bio_cleanup), figure match guards. Wired author_bio_asset role contract + pipeline. 30 new tests pass. 1041 total OCR tests, 0 regressions. Commits: `e2f0c8a`, `7810eb1`. | §9.16 |
+| 2026-06-28 | P1 author bio detection implementation | Added residual_author_bio_pass (figure-residual portrait assets), extended post_ref_bio_cleanup for figure_caption, tag_figure_contained_text protection. 7 new P1 tests. 1018 total OCR tests, 0 regressions. Commit: `7a1cc5e`. | §9.17 |
 
 ---
 
