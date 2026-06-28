@@ -1,20 +1,19 @@
 """Tests for author biography detection."""
 
 from paperforge.worker.ocr_bio import (
+    _add_block_keys,
     _bio_text_score,
-    _is_portrait_like,
     _has_formal_figure_number,
+    _is_portrait_like,
+    _is_protected_strong_figure,
+    _is_strongly_figure_matched,
     _looks_like_reference,
     _nearby_blocks,
     _resolve_ref_start_page,
-    _add_block_keys,
-    _is_strongly_figure_matched,
-    _is_protected_strong_figure,
     post_ref_bio_cleanup,
-    residual_author_bio_pass,
     prune_figure_inventory_after_bio,
+    residual_author_bio_pass,
 )
-
 
 # --- _bio_text_score tests ---
 

@@ -155,9 +155,7 @@ def _is_portrait_like(block: dict) -> bool:
     if width > 400 or height > 400:
         return False
     raw_label = str(block.get("raw_label", "") or "")
-    if raw_label in {"line", "chart", "graph"}:
-        return False
-    return True
+    return raw_label not in {"line", "chart", "graph"}
 
 
 def _any_portrait_like(blocks: list[dict]) -> bool:
@@ -181,10 +179,7 @@ def _looks_like_reference(text: str) -> bool:
     has_ref_number = bool(re.match(r"^\[\d+\]\s+", text_stripped))
     if has_ref_number and "et al" in text_stripped.lower():
         return True
-    if has_ref_number and re.search(r"\d{4}[,;:]", text_stripped):
-        return True
-    return False
-
+    return bool(has_ref_number and re.search(r"\d{4}[,;:]", text_stripped))
 
 # --- Block key helpers ---
 
@@ -295,10 +290,7 @@ def _is_protected_strong_figure(fig: dict) -> bool:
     if settlement in {"same_page", "grouped_approximate", "composite_parent", "scoped_composite_parent"}:
         return True
     flags = set(fig.get("flags") or [])
-    if flags & {"composite_parent_match"}:
-        return True
-    return False
-
+    return bool(flags & {"composite_parent_match"})
 
 def _is_reversible_weak_figure_match(fig: dict) -> bool:
     """True if figure match is weak enough to reverse to author_bio (P2+)."""
@@ -312,9 +304,7 @@ def _is_reversible_weak_figure_match(fig: dict) -> bool:
         return True
     if flags & {"sequential_match", "group_sequential_match", "sequence_match"}:
         return True
-    if confidence < 0.45:
-        return True
-    return False
+    return confidence < 0.45
 
 
 # --- Pass B: residual author bio (unmatched_assets + unresolved_clusters) ---
@@ -379,7 +369,7 @@ def residual_author_bio_pass(
             record_decision(
                 b, stage="residual_author_bio_pass",
                 old_role=old_role, new_role=b.get("role", old_role),
-                reason=f"unmatched portrait asset with nearby bio text",
+                reason="unmatched portrait asset with nearby bio text",
             )
 
     figure_inventory["unmatched_assets"] = remaining_assets
