@@ -2743,10 +2743,34 @@ class PaperForgeStatusView extends ItemView {
             var rowEl = listContainer.createEl('div', { cls: 'paperforge-annotation-row' });
             if (isExpanded) rowEl.addClass('expanded');
 
-            // Page badge — click opens the PDF at the annotation's page
-            var pageBadge = rowEl.createEl('span', { cls: 'paperforge-annotation-page-badge', text: String(display.pageLabel || display.page || '?') });
+            // Page badge — semantic button opens the PDF at the annotation's page
+            // Pre-compute availability for title/aria-label and disabled state
+            var badgeResult = resolveAnnotationPdfTarget(row, this._currentPaperEntry);
+            var badgeEnabled = badgeResult && badgeResult.ok;
+            var badgeTitle, badgeAriaLabel;
+            if (badgeEnabled) {
+                var pageInfo = badgeResult.page ? ' at page ' + badgeResult.page : '';
+                badgeTitle = 'Open PDF' + pageInfo;
+                badgeAriaLabel = 'Open PDF' + pageInfo;
+            } else {
+                badgeTitle = 'Annotation source PDF not available';
+                badgeAriaLabel = 'Annotation source PDF not available';
+            }
+            var pageBadge = rowEl.createEl('button', {
+                cls: 'paperforge-annotation-page-badge',
+                text: String(display.pageLabel || display.page || '?'),
+                title: badgeTitle,
+                attr: { 'aria-label': badgeAriaLabel },
+            });
+            if (!badgeEnabled) {
+                pageBadge.disabled = true;
+                pageBadge.setAttribute('aria-disabled', 'true');
+            }
             pageBadge.addEventListener('click', function (r) {
-                return function () { this._openAnnotationPdf(r); };
+                return function (ev) {
+                    ev.stopPropagation();
+                    this._openAnnotationPdf(r);
+                };
             }(row).bind(this));
 
             // Color swatch

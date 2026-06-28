@@ -131,11 +131,15 @@ function createObsidianEl(tag, opts) {
 // ── Fixtures ──
 
 function makeAnnotationRow(overrides) {
+    var pageVal = overrides.page != null ? overrides.page : 1;
+    var pageLabelVal = overrides.pageLabel != null ? overrides.pageLabel : '1';
+    var srcAttachKey = Object.prototype.hasOwnProperty.call(overrides, 'sourceAttachmentKey')
+        ? overrides.sourceAttachmentKey : 'ATTACH_A';
     return {
         id: overrides.id || 'r1',
         display: {
-            page: overrides.page != null ? overrides.page : 1,
-            pageLabel: overrides.pageLabel != null ? overrides.pageLabel : '1',
+            page: pageVal,
+            pageLabel: pageLabelVal,
             color: Object.prototype.hasOwnProperty.call(overrides, 'color') ? overrides.color : '#ffd400',
             type: overrides.type || 'highlight',
             selectedText: overrides.selectedText || 'Some selected text from the paper.',
@@ -144,11 +148,16 @@ function makeAnnotationRow(overrides) {
         provenance: {
             source: overrides.source != null ? overrides.source : 'zotero',
             isReadonly: overrides.isReadonly != null ? overrides.isReadonly : false,
-            sourceAttachmentKey: Object.prototype.hasOwnProperty.call(overrides, 'sourceAttachmentKey') ? overrides.sourceAttachmentKey : 'ATTACH_A',
+            sourceAttachmentKey: srcAttachKey,
             sourceAnnotationKey: Object.prototype.hasOwnProperty.call(overrides, 'sourceAnnotationKey') ? overrides.sourceAnnotationKey : 'ANN_A',
             createdAt: overrides.createdAt || '2024-01-15T10:00:00Z',
             updatedAt: overrides.updatedAt || '2024-01-15T10:00:00Z',
             syncState: overrides.syncState || 'imported',
+        },
+        pdfLocation: {
+            sourceAttachmentKey: srcAttachKey,
+            pageIndex: pageVal - 1,
+            pageLabel: pageLabelVal,
         },
     };
 }
@@ -197,7 +206,8 @@ function makeRuntimeView(opts = {}) {
         deep_reading_status: 'done',
         next_step: 'ready',
         zotero_key: view._currentPaperKey,
-        pdf_path: '[[test.pdf]]',
+        pdf_path: '[[99_System/Zotero/storage/ATTACH_A/test.pdf]]',
+        zotero_storage_key: 'ATTACH_A',
         fulltext_path: 'test.md',
         note_path: 'notes/test.md',
         do_ocr: false,
@@ -306,10 +316,13 @@ describe('D-08 / D-10 — Row contains page, swatch, type, text preview, comment
         const row = view._contentEl.querySelector('.paperforge-annotation-row');
         expect(row).toBeTruthy();
 
-        // Page badge
+        // Page badge — semantic button with tooltip
         const badge = row.querySelector('.paperforge-annotation-page-badge');
         expect(badge).toBeTruthy();
+        expect(badge.tagName).toBe('BUTTON');
         expect(badge.textContent).toBeTruthy();
+        expect(badge.getAttribute('title')).toBeTruthy();
+        expect(badge.getAttribute('aria-label')).toBeTruthy();
 
         // Color swatch
         const swatch = row.querySelector('.paperforge-annotation-swatch');
@@ -358,6 +371,72 @@ describe('D-08 / D-10 — Row contains page, swatch, type, text preview, comment
         const expandBtn = view._contentEl.querySelector('.paperforge-annotation-expand-btn');
         expect(expandBtn).toBeTruthy();
         expect(expandBtn.tagName).toBe('BUTTON');
+    });
+});
+
+// ── Badge semantics: enabled, disabled, tooltip, aria-label (D-01, D-02, D-07, D-08, D-11) ──
+
+describe('D-01 / D-02 / D-07 — Page badge is semantic jump button with accessible labels', () => {
+    it('enabled badge has Open PDF tooltip and aria-label with page number', () => {
+        const annState = makeAnnotationState(ANNOTATION_LOAD_STATES.READY, {
+            paperKey: 'PAPER_A',
+            annotations: [makeAnnotationRow({ id: 'r1', page: 2 })],
+            message: '1 annotation loaded.',
+        });
+        const view = makeRuntimeView({ paperKey: 'PAPER_A', annotationState: annState });
+        view._renderPaperMode();
+
+        const badge = view._contentEl.querySelector('.paperforge-annotation-page-badge');
+        expect(badge).toBeTruthy();
+        expect(badge.tagName).toBe('BUTTON');
+        expect(badge.disabled).toBe(false);
+        expect(badge.getAttribute('aria-disabled')).toBeNull();
+        expect(badge.getAttribute('title')).toContain('Open PDF');
+        expect(badge.getAttribute('title')).toContain('page');
+        expect(badge.getAttribute('aria-label')).toContain('Open PDF');
+        expect(badge.getAttribute('aria-label')).toContain('page');
+    });
+
+    it('unmatched attachment renders disabled badge with unavailable explanation', () => {
+        const annState = makeAnnotationState(ANNOTATION_LOAD_STATES.READY, {
+            paperKey: 'PAPER_A',
+            annotations: [makeAnnotationRow({ id: 'r1', sourceAttachmentKey: 'UNKNOWN' })],
+            message: '1 annotation loaded.',
+        });
+        const view = makeRuntimeView({ paperKey: 'PAPER_A', annotationState: annState });
+        view._renderPaperMode();
+
+        const badge = view._contentEl.querySelector('.paperforge-annotation-page-badge');
+        expect(badge).toBeTruthy();
+        expect(badge.tagName).toBe('BUTTON');
+        expect(badge.disabled).toBe(true);
+        expect(badge.getAttribute('aria-disabled')).toBe('true');
+        const title = badge.getAttribute('title');
+        expect(title).toBeTruthy();
+        // Tooltip explains unavailability without navigation wording
+        expect(title).not.toMatch(/open pdf/i);
+        expect(title.length).toBeGreaterThan(5);
+    });
+
+    it('confirmed PDF with null pageIndex remains enabled (D-11)', () => {
+        const annState = makeAnnotationState(ANNOTATION_LOAD_STATES.READY, {
+            paperKey: 'PAPER_A',
+            annotations: [makeAnnotationRow({ id: 'r1' })],
+            message: '1 annotation loaded.',
+        });
+        // Override pdfLocation.pageIndex to null to simulate missing page data
+        annState.annotations[0].pdfLocation.pageIndex = null;
+        const view = makeRuntimeView({ paperKey: 'PAPER_A', annotationState: annState });
+        view._renderPaperMode();
+
+        // Even with null pageIndex, badge is enabled (D-11: confirmed PDF still opens)
+        const badge = view._contentEl.querySelector('.paperforge-annotation-page-badge');
+        expect(badge).toBeTruthy();
+        expect(badge.tagName).toBe('BUTTON');
+        expect(badge.disabled).toBe(false);
+        const title = badge.getAttribute('title');
+        expect(title).toContain('Open PDF');
+        expect(title).not.toMatch(/at page/i);
     });
 });
 
@@ -476,10 +555,66 @@ describe('D-06 — Preview clamped with CSS classes', () => {
     });
 });
 
-// ── Test 5: Forbidden controls absent (D-24, D-25) ──
+// ── Click isolation: jump and expansion are independent (D-03, D-13) ──
 
-describe('D-24 / D-25 — Forbidden controls absent from annotation section', () => {
-    it('no PDF jump or open-at-page buttons present', () => {
+describe('D-03 / D-13 — Jump and expansion are isolated events', () => {
+    it('clicking page badge does not alter expandedIds', () => {
+        const annState = makeAnnotationState(ANNOTATION_LOAD_STATES.READY, {
+            paperKey: 'PAPER_A',
+            annotations: [makeAnnotationRow({ id: 'r1', sourceAttachmentKey: 'MATCH_A' })],
+            message: '1 annotation loaded.',
+        });
+        const view = makeRuntimeView({
+            paperKey: 'PAPER_A',
+            annotationState: annState,
+            uiState: { query: '', groupMode: 'none', typeColorFilter: 'all', expandedIds: ['ANN_A'] },
+            paperEntry: {
+                title: 'Test Paper',
+                authors: ['Author A'],
+                year: 2024,
+                has_pdf: true,
+                zotero_key: 'PAPER_A',
+                pdf_path: '[[99_System/Zotero/storage/MATCH_A/test.pdf]]',
+                zotero_storage_key: 'MATCH_A',
+                fulltext_path: 'test.md',
+                note_path: 'notes/test.md',
+                do_ocr: false,
+                analyze: false,
+                health: {},
+            },
+        });
+        view._renderPaperMode();
+
+        const badge = view._contentEl.querySelector('.paperforge-annotation-page-badge');
+        expect(badge).toBeTruthy();
+        badge.click();
+
+        // expandedIds must be unchanged after badge click
+        expect(view._annotationUiState.expandedIds).toEqual(['ANN_A']);
+    });
+
+    it('expand button does not invoke _openAnnotationPdf', () => {
+        const annState = makeAnnotationState(ANNOTATION_LOAD_STATES.READY, {
+            paperKey: 'PAPER_A',
+            annotations: [makeAnnotationRow({ id: 'r1' })],
+            message: '1 annotation loaded.',
+        });
+        const view = makeRuntimeView({ paperKey: 'PAPER_A', annotationState: annState });
+        view._renderPaperMode();
+
+        const expandBtn = view._contentEl.querySelector('.paperforge-annotation-expand-btn');
+        expect(expandBtn).toBeTruthy();
+        expandBtn.click();
+
+        // Expand must not invoke PDF navigation
+        expect(view.app.workspace.openLinkText).not.toHaveBeenCalled();
+    });
+});
+
+// ── Forbidden controls absent (T-annotation-07-10, D-15, D-25) ──
+
+describe('T-annotation-07-10 / D-15 / D-25 — Forbidden controls absent from annotation section', () => {
+    it('page badge is the only row-level jump action', () => {
         const annState = makeAnnotationState(ANNOTATION_LOAD_STATES.READY, {
             paperKey: 'PAPER_A',
             annotations: [makeAnnotationRow({ id: 'r1' })],
@@ -489,11 +624,19 @@ describe('D-24 / D-25 — Forbidden controls absent from annotation section', ()
         view._renderPaperMode();
 
         const section = view._contentEl.querySelector('.paperforge-annotations-section');
-        const html = section.innerHTML.toLowerCase();
-        expect(html).not.toContain('open pdf');
-        expect(html).not.toContain('jump to');
-        expect(html).not.toContain('go to page');
-        expect(html).not.toContain('open-at-page');
+
+        // The page badge IS the jump button (replaces Phase 6 forbidden-navigation assertion)
+        const jumpButtons = section.querySelectorAll('.paperforge-annotation-page-badge');
+        expect(jumpButtons.length).toBe(1);
+        expect(jumpButtons[0].tagName).toBe('BUTTON');
+
+        // No extra "jump to" or "go to page" text outside the badge's title/aria-label
+        const sectionHtml = section.innerHTML.toLowerCase();
+        const badgeHtml = jumpButtons[0].outerHTML.toLowerCase();
+        const nonBadgeHtml = sectionHtml.replace(badgeHtml, '');
+        expect(nonBadgeHtml).not.toContain('jump to');
+        expect(nonBadgeHtml).not.toContain('go to page');
+        expect(nonBadgeHtml).not.toContain('open-at-page');
     });
 
     it('no overlay rendering or popover hooks present', () => {
