@@ -233,46 +233,12 @@ _Gate 5 blind audit executed on 2026-06-28: 24YKLTHQ (13p) + 4KCHGV2Z (9p). 5 pi
 
 ### 7.1 Project Folder Management
 
-Project state is split across three layers. Each has a specific role:
+The authoritative prompt for project record management lives in `.omp/AGENTS.md`.
+It is auto-loaded by omp into every session context and defines when and how to
+update `PROJECT-MANAGEMENT.md`, `project/current/*`, and `project/archive/`.
 
-| Layer | File(s) | Role | Updated when |
-|-------|---------|------|-------------|
-| **Narrative ledger** | `PROJECT-MANAGEMENT.md` | Full history: architecture, decisions, status, session log | Every session end |
-| **Active queue** | `project/current/ocr-v2-active-queue.md` | Next-work priorities, current focus scope | When priorities change, after major milestones |
-| **Architecture notes** | `project/current/ocr-v2-*.md` | Boundary docs, evidence surfaces | Only when the architecture or evidence changes |
-| **Archive** | `project/archive/` | Superseded files from `current/` | When a `current/` file no longer reflects active truth |
-
-**Rules:**
-
-1. **PROJECT-MANAGEMENT.md** is updated EVERY session end. It receives:
-   - Executive summary update (section 0)
-   - Current status refresh (section 2) — test counts, component state
-   - Remaining issues changes (section 3) — resolved items removed, new ones added
-   - Active queue checkpoint (section 4) — next steps reflect current reality
-   - One-line decision entry in Decision Log (section 6)
-   - Compressed session entry in Timeline (section 8)
-
-2. **project/current/ocr-v2-active-queue.md** is the authoritative "what to do next" file.
-   Updated AFTER a major fix series, milestone completion, or when priorities shift.
-   NEVER updated mid-session. Always cross-references the evidence source.
-
-3. **project/current/*.md** files are read-only references between major milestones.
-   Move to `project/archive/` when:
-   - The file explicitly declares itself SUPERSEDED or historical
-   - A newer file replaces its role
-   - The analysis/evidence it represents is no longer the active truth
-   - Keep a copy statement in the archive noting why it was archived
-
-4. **Never update `project/current/` mid-session.** Only at a natural breakpoint
-   (end of session, fix series complete, milestone done). PROJECT-MANAGEMENT.md
-   IS the in-session ledger.
-
-5. When archiving a file, prepend a header:
-   ```
-   > **Archived:** YYYY-MM-DD
-   > **Reason:** why it no longer represents active truth
-   > **Replaced by:** path/to/new/file.md
-   ```
+TL;DR: PROJECT-MANAGEMENT.md updated every session end. project/current/ updated
+at milestones only. project/archive/ gets moved-to (not deleted) when stale.
 
 ### 7.2 How to Update PROJECT-MANAGEMENT.md
 
