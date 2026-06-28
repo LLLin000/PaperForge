@@ -1,3 +1,7 @@
+> **Archived:** 2026-06-28
+> **Reason:** superseded by active queue or completed work
+> **Replaced by:** project/current/ocr-v2-active-queue.md
+
 # Phase 2 Root Cause Analysis — Remaining OCR Mismatches
 
 **Date:** 2026-06-17

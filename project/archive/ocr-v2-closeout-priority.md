@@ -1,3 +1,7 @@
+> **Archived:** 2026-06-28
+> **Reason:** superseded by active queue or completed work
+> **Replaced by:** project/current/ocr-v2-active-queue.md
+
 # OCR-v2 Close-Out Priority
 
 > Status: historical closeout queue — superseded by `project/current/ocr-v2-active-queue.md`

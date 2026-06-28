@@ -1,3 +1,7 @@
+> **Archived:** 2026-06-28
+> **Reason:** superseded by active queue or completed work
+> **Replaced by:** project/current/ocr-v2-active-queue.md
+
 # [SUPERSEDED] OCR Error Root Cause Analysis & Fix Queue
 
 > **This file is superseded.** The issues documented here were resolved in Phase 2 / unified close-out (June 17–18). All 5 readiness gates are now DONE. See `ocr-v2-active-queue.md` for the active queue and `ocr-v2-remaining-issues-2026-06-18.md` for remaining low-severity residuals.
