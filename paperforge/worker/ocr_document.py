@@ -1460,6 +1460,10 @@ def infer_zones(
             and first_surviving_page is not None
             and int(block.get("page", 0) or 0) == first_surviving_page
         )
+        and not (
+            first_reference_page is not None
+            and int(block.get("page", 0) or 0) >= first_reference_page - 1
+        )
     ]
     # Blocks on the first surviving page excluded from frontmatter_side_zone
     # because body has started are real body content -- collect their ids so
