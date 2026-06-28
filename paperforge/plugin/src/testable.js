@@ -1496,6 +1496,146 @@ function normalizeAnnotationColor(color) {
     return DEFAULT_OVERLAY_HIGHLIGHT_COLOR;
 }
 
+/**
+ * Build renderable overlay mark view-models from annotation state.
+ *
+ * Requires a confirmed active PDF path and paper entry. Rows are
+ * filtered through `resolveAnnotationPdfTarget()` and matched to
+ * the active PDF path. Only rows with usable pageIndex and
+ * position/rect data produce marks.
+ *
+ * Returns a stable `{ ok, status, marks, skipped, reason }` shape.
+ * Does not mutate inputs.
+ *
+ * @param {{ state: string, annotations: Array }} annotationState - Current annotation load state.
+ * @param {object|null|undefined} entry - Paper entry with pdf_path, supplementary, etc.
+ * @param {string|null|undefined} activePdfPath - The canonical vault-relative path of the currently open PDF.
+ * @param {{}} [options] - Reserved for future options.
+ * @returns {{ ok: boolean, status: string, marks: Array, skipped: number, reason: string|null }}
+ */
+function buildAnnotationOverlayMarks(annotationState, entry, activePdfPath, options) {
+    // Guard: annotation state must be ready
+    if (!annotationState || annotationState.state !== 'ready') {
+        return { ok: false, status: 'disabled', marks: [], skipped: 0, reason: 'Annotation data is not ready.' };
+    }
+
+    // Guard: paper entry required
+    if (!entry) {
+        return { ok: false, status: 'disabled', marks: [], skipped: 0, reason: 'No paper entry provided.' };
+    }
+
+    // Guard: active PDF path required
+    if (!activePdfPath || typeof activePdfPath !== 'string') {
+        return { ok: false, status: 'disabled', marks: [], skipped: 0, reason: 'No active PDF path available.' };
+    }
+
+    var rows = Array.isArray(annotationState.annotations) ? annotationState.annotations : [];
+    if (rows.length === 0) {
+        return { ok: true, status: 'empty', marks: [], skipped: 0, reason: null };
+    }
+
+    var marks = [];
+    var skipped = 0;
+
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+
+        // Step 1: Resolve PDF target — identity guard (T-annotation-08-02-S)
+        var target = resolveAnnotationPdfTarget(row, entry);
+        if (!target.ok || !target.path) {
+            skipped++;
+            continue;
+        }
+
+        // Step 2: Match active PDF path (D-11)
+        if (target.path !== activePdfPath) {
+            skipped++;
+            continue;
+        }
+
+        // Step 3: Require valid pageIndex
+        var pdfLoc = row.pdfLocation || {};
+        var pageIndex = pdfLoc.pageIndex;
+        if (typeof pageIndex !== 'number' || !Number.isFinite(pageIndex) || pageIndex < 0 || !Number.isInteger(pageIndex)) {
+            skipped++;
+            continue;
+        }
+
+        // Step 4: Parse positionJson (D-12)
+        var position = parseAnnotationPositionJson(pdfLoc.positionJson);
+        if (!position.ok || position.rects.length === 0) {
+            skipped++;
+            continue;
+        }
+
+        // Step 5: Build mark view-model
+        var display = row.display || {};
+        var provenance = row.provenance || {};
+        var color = normalizeAnnotationColor(display.color);
+
+        marks.push({
+            id: getAnnotationIdentity(row),
+            pageIndex: pageIndex,
+            rects: position.rects.map(function (r) { return { x: r.x, y: r.y, w: r.w, h: r.h }; }),
+            color: color,
+            selectedText: display.selectedText || '',
+            comment: display.comment || '',
+            pageLabel: pdfLoc.pageLabel || String(pageIndex + 1),
+            source: provenance.source || '',
+            isReadonly: Boolean(provenance.isReadonly),
+            attachmentKey: pdfLoc.sourceAttachmentKey || '',
+            pdfPath: target.path,
+        });
+    }
+
+    return {
+        ok: true,
+        status: marks.length > 0 ? 'rendered' : 'empty',
+        marks: marks,
+        skipped: skipped,
+        reason: null,
+    };
+}
+
+/**
+ * Build a read-only popover view-model from a normalized annotation row.
+ *
+ * Exposes selected text, comment, page label/number, type, color, source,
+ * read-only state, and annotation identity. No edit/delete/create/write-back/
+ * database/evidence actions (D-14 through D-17).
+ *
+ * @param {object|null|undefined} row - A normalized annotation row ({ display, provenance, pdfLocation }).
+ * @returns {{ ok: boolean, data: object|null, reason: string|null }}
+ */
+function buildAnnotationPopoverViewModel(row) {
+    if (!row) {
+        return { ok: false, data: null, reason: 'No annotation row provided.' };
+    }
+
+    var display = row.display || {};
+    var provenance = row.provenance || {};
+    var pdfLoc = row.pdfLocation || {};
+
+    var pageNumber = pdfLoc.pageIndex != null ? pdfLoc.pageIndex + 1 : null;
+
+    return {
+        ok: true,
+        data: {
+            selectedText: display.selectedText || '',
+            comment: display.comment || '',
+            pageLabel: pdfLoc.pageLabel || '',
+            pageNumber: pageNumber,
+            type: display.type || '',
+            color: normalizeAnnotationColor(display.color),
+            source: provenance.source || '',
+            isReadonly: Boolean(provenance.isReadonly),
+            attachmentKey: pdfLoc.sourceAttachmentKey || '',
+            annotationKey: provenance.sourceAnnotationKey || '',
+        },
+        reason: null,
+    };
+}
+
 module.exports = {
     resolvePythonExecutable,
     getPluginVersion,
@@ -1537,4 +1677,6 @@ module.exports = {
     createDefaultAnnotationOverlayState,
     parseAnnotationPositionJson,
     normalizeAnnotationColor,
+    buildAnnotationOverlayMarks,
+    buildAnnotationPopoverViewModel,
 };
