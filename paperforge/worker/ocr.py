@@ -1867,12 +1867,19 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     figure_inventory = build_figure_inventory(structured)
     write_back_figure_roles(figure_inventory, structured)
 
-    # --- Author bio: post-ref bio cleanup (Pass C, P0) ---
+    # --- Author bio: residual figure inventory cleanup (Pass B, P1) ---
     from paperforge.worker.ocr_bio import (
+        residual_author_bio_pass,
         post_ref_bio_cleanup,
         prune_figure_inventory_after_bio,
         _resolve_ref_start_page,
     )
+    residual_author_bio_pass(
+        figure_inventory, structured,
+        include_ambiguous=False, include_weak_matched=False,
+    )
+
+    # --- Author bio: post-ref bio cleanup (Pass C, P0) ---
     ref_start_page = _resolve_ref_start_page(structured)
     if ref_start_page is not None:
         post_ref_bio_cleanup(figure_inventory, structured, ref_start_page=ref_start_page)

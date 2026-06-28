@@ -5024,8 +5024,11 @@ def tag_figure_contained_text(
         if not figure_regions:
             continue
         for block in page_blocks:
+            # Skip author bio blocks
+            if block.get("_object_owner_family") == "author_bio" or block.get("_excluded_from_figure_inventory"):
+                continue
             role = str(block.get("role") or "")
-            if role in {"figure_asset", "media_asset", "noise",
+            if role in {"figure_asset", "media_asset", "noise", "author_bio_asset",
                         "figure_caption", "figure_caption_candidate",
                         "table_html", "table_asset",
                         "figure_inner_text"}:

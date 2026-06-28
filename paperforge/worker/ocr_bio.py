@@ -317,6 +317,132 @@ def _is_reversible_weak_figure_match(fig: dict) -> bool:
     return False
 
 
+# --- Pass B: residual author bio (unmatched_assets + unresolved_clusters) ---
+
+def residual_author_bio_pass(
+    figure_inventory: dict,
+    blocks: list[dict],
+    *,
+    include_ambiguous: bool = False,
+    include_weak_matched: bool = False,
+) -> None:
+    """Residual bio detection for figure inventory leftovers.
+
+    P1 scope: unmatched_assets + unresolved_clusters.
+    Check portrait-like + nearby bio text.
+    Does NOT touch ambiguous_figures or matched_figures (gated by flags).
+    """
+    if "_pruned_author_bio_artifacts" not in figure_inventory:
+        figure_inventory["_pruned_author_bio_artifacts"] = []
+
+    # Build block index by (page, block_id)
+    block_by_page_id: dict[tuple[int, str], dict] = {}
+    for b in blocks:
+        pid = (int(b.get("page", 0) or 0), str(b.get("block_id", "")))
+        block_by_page_id[pid] = b
+
+    # --- unmatched_assets ---
+    remaining_assets: list[dict] = []
+    for asset in figure_inventory.get("unmatched_assets", []):
+        if not _is_portrait_like(asset):
+            remaining_assets.append(asset)
+            continue
+        # Check nearby blocks for bio text
+        nearby = _nearby_blocks(blocks, asset, max_distance=80, same_page=True)
+        if not _any_bio_text(nearby, min_score=3):
+            remaining_assets.append(asset)
+            continue
+
+        # Move to bio artifacts
+        page = int(asset.get("page", 0) or 0)
+        bid = str(asset.get("block_id", ""))
+        figure_inventory["_pruned_author_bio_artifacts"].append({
+            "source": "residual_author_bio_pass",
+            "page": page,
+            "block_id": bid,
+            "old_role": asset.get("role", ""),
+            "text_preview": str(asset.get("text", "") or "")[:80],
+        })
+
+        # Set block role if block exists
+        block_key = (page, bid)
+        if block_key in block_by_page_id:
+            b = block_by_page_id[block_key]
+            b["_object_owner_family"] = "author_bio"
+            b["_excluded_from_figure_inventory"] = True
+            old_role = b.get("role", "")
+            if old_role in {"figure_asset", "media_asset"}:
+                b["role"] = "author_bio_asset"
+                b["render_default"] = False
+                b["index_default"] = False
+            from paperforge.worker.ocr_decisions import record_decision
+            record_decision(
+                b, stage="residual_author_bio_pass",
+                old_role=old_role, new_role=b.get("role", old_role),
+                reason=f"unmatched portrait asset with nearby bio text",
+            )
+
+    figure_inventory["unmatched_assets"] = remaining_assets
+
+    # --- unresolved_clusters ---
+    remaining_clusters: list[dict] = []
+    for cluster in figure_inventory.get("unresolved_clusters", []):
+        cluster_blocks = [
+            block_by_page_id.get((
+                int(cluster.get("page", 0) or 0),
+                str(bid),
+            ))
+            for bid in (cluster.get("media_block_ids") or [])
+            if block_by_page_id.get((
+                int(cluster.get("page", 0) or 0),
+                str(bid),
+            ))
+        ]
+        if not _any_portrait_like(cluster_blocks):
+            remaining_clusters.append(cluster)
+            continue
+        # Check nearby blocks for bio text
+        cluster_page = int(cluster.get("page", 0) or 0)
+        cluster_anchor = {
+            "page": cluster_page,
+            "cluster_bbox": cluster.get("cluster_bbox") or cluster.get("bbox") or [0, 0, 0, 0],
+        }
+        nearby = _nearby_blocks(blocks, cluster_anchor, max_distance=80, same_page=True)
+        if not _any_bio_text(nearby, min_score=3):
+            remaining_clusters.append(cluster)
+            continue
+
+        # Move to bio artifacts
+        cluster_key = cluster.get("key", "")
+        figure_inventory["_pruned_author_bio_artifacts"].append({
+            "source": "residual_author_bio_pass",
+            "page": cluster_page,
+            "block_id": cluster_key or "cluster",
+            "old_role": "unresolved_cluster",
+            "text_preview": str(cluster.get("text", "") or "")[:80],
+        })
+
+        # Tag each portrait block in cluster as author_bio_asset
+        for cb in cluster_blocks:
+            if _is_portrait_like(cb):
+                cb["_object_owner_family"] = "author_bio"
+                cb["_excluded_from_figure_inventory"] = True
+                old_role = cb.get("role", "")
+                if old_role in {"figure_asset", "media_asset"}:
+                    cb["role"] = "author_bio_asset"
+                    cb["render_default"] = False
+                    cb["index_default"] = False
+
+    figure_inventory["unresolved_clusters"] = remaining_clusters
+
+    # --- ambiguous_figures: gated (P2+) ---
+    if not include_ambiguous:
+        pass  # not touched in P1
+
+    # --- matched_figures reversal: gated (P2+) ---
+    if not include_weak_matched:
+        pass  # not touched in P1
+
 # --- Pass C: post-ref bio cleanup ---
 
 def post_ref_bio_cleanup(
@@ -346,7 +472,7 @@ def post_ref_bio_cleanup(
             continue
 
         role = block.get("role", "")
-        if role not in {"reference_item", "reference_heading"}:
+        if role not in {"reference_item", "reference_heading", "figure_caption"}:
             continue
 
         text = str(block.get("text", "") or "")

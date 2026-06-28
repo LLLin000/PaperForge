@@ -11,6 +11,7 @@ from paperforge.worker.ocr_bio import (
     _is_strongly_figure_matched,
     _is_protected_strong_figure,
     post_ref_bio_cleanup,
+    residual_author_bio_pass,
     prune_figure_inventory_after_bio,
 )
 
@@ -325,3 +326,142 @@ def test_prune_figure_inventory_after_bio():
     ]
     assert "amb_1" not in remaining_ids
     assert "amb_2" in remaining_ids
+
+
+# --- residual_author_bio_pass tests ---
+
+def test_residual_bio_detects_portrait_asset_with_bio_text():
+    """Portrait unmatched_asset with nearby bio text -> moved to bio."""
+    blocks = [
+        {"page": 1, "block_id": "portrait", "role": "media_asset",
+         "bbox": [100, 100, 200, 250], "raw_label": "image", "text": ""},
+        {"page": 1, "block_id": "bio_text", "role": "body_paragraph",
+         "bbox": [100, 300, 400, 350],
+         "text": "Dr. Smith is a professor at the University of Tokyo. His research interests include AI."},
+    ]
+    fig_inv = {
+        "unmatched_assets": [dict(blocks[0])],
+        "unresolved_clusters": [],
+        "matched_figures": [],
+        "ambiguous_figures": [],
+        "held_figures": [],
+    }
+    residual_author_bio_pass(fig_inv, blocks)
+    assert len(fig_inv["unmatched_assets"]) == 0
+    assert len(fig_inv["_pruned_author_bio_artifacts"]) == 1
+    assert blocks[0].get("_object_owner_family") == "author_bio"
+    assert blocks[0].get("role") == "author_bio_asset"
+
+
+def test_residual_bio_skips_non_portrait_asset():
+    """Non-portrait asset (chart) must NOT be moved."""
+    blocks = [
+        {"page": 1, "block_id": "chart", "role": "media_asset",
+         "bbox": [100, 100, 600, 250], "raw_label": "chart", "text": ""},
+    ]
+    fig_inv = {
+        "unmatched_assets": [dict(blocks[0])],
+        "unresolved_clusters": [],
+        "matched_figures": [],
+        "ambiguous_figures": [],
+        "held_figures": [],
+    }
+    residual_author_bio_pass(fig_inv, blocks)
+    assert len(fig_inv["unmatched_assets"]) == 1
+    assert len(fig_inv.get("_pruned_author_bio_artifacts", [])) == 0
+
+
+def test_residual_bio_detects_portrait_cluster_with_bio_text():
+    """Portrait unresolved_cluster with nearby bio text -> moved to bio."""
+    blocks = [
+        {"page": 1, "block_id": "portrait1", "role": "media_asset",
+         "bbox": [100, 100, 200, 250], "raw_label": "image", "text": ""},
+        {"page": 1, "block_id": "bio_text", "role": "body_paragraph",
+         "bbox": [100, 300, 400, 350],
+         "text": "Dr. Smith is a professor at the University of Tokyo. His research interests include AI."},
+    ]
+    fig_inv = {
+        "unmatched_assets": [],
+        "unresolved_clusters": [{
+            "page": 1, "key": "cluster_1",
+            "media_block_ids": ["portrait1"],
+            "cluster_bbox": [100, 100, 200, 250],
+        }],
+        "matched_figures": [],
+        "ambiguous_figures": [],
+        "held_figures": [],
+    }
+    residual_author_bio_pass(fig_inv, blocks)
+    assert len(fig_inv["unresolved_clusters"]) == 0
+    assert len(fig_inv["_pruned_author_bio_artifacts"]) == 1
+
+
+def test_residual_bio_skips_cluster_without_bio_text():
+    """Cluster without bio text nearby must NOT be moved."""
+    blocks = [
+        {"page": 1, "block_id": "portrait1", "role": "media_asset",
+         "bbox": [100, 100, 200, 250], "raw_label": "image", "text": ""},
+        {"page": 1, "block_id": "ref_text", "role": "reference_item",
+         "bbox": [100, 300, 400, 350],
+         "text": "[1] Smith et al. Journal 2020;10:100."},
+    ]
+    fig_inv = {
+        "unmatched_assets": [],
+        "unresolved_clusters": [{
+            "page": 1, "key": "cluster_1",
+            "media_block_ids": ["portrait1"],
+            "cluster_bbox": [100, 100, 200, 250],
+        }],
+        "matched_figures": [],
+        "ambiguous_figures": [],
+        "held_figures": [],
+    }
+    residual_author_bio_pass(fig_inv, blocks)
+    assert len(fig_inv["unresolved_clusters"]) == 1
+
+
+def test_residual_bio_ambiguous_figures_not_touched():
+    """ambiguous_figures must NOT be touched in P1 (gated)."""
+    fig_inv = {
+        "unmatched_assets": [],
+        "unresolved_clusters": [],
+        "ambiguous_figures": [{"legend_block_id": "amb_1", "page": 1}],
+        "matched_figures": [],
+        "held_figures": [],
+    }
+    residual_author_bio_pass(fig_inv, [])
+    assert len(fig_inv["ambiguous_figures"]) == 1
+
+
+# --- post_ref_bio_cleanup P1: figure_caption support ---
+
+def test_post_ref_bio_cleanup_figure_caption():
+    """figure_caption in post-ref with bio text -> backmatter_body."""
+    blocks = [
+        {
+            "page": 25, "block_id": "b4", "zone": "reference_zone",
+            "role": "figure_caption", "render_default": True,
+            "text": (
+                "Marco P. Soares dos Santos is assistant professor at the "
+                "Department of Mechanical Engineering of the University of Aveiro."
+            ),
+        },
+    ]
+    fig_inv = {"matched_figures": [], "ambiguous_figures": [], "held_figures": []}
+    post_ref_bio_cleanup(fig_inv, blocks, ref_start_page=21)
+    assert blocks[0]["role"] == "backmatter_body"
+    assert blocks[0].get("_object_owner_family") == "author_bio"
+
+
+def test_post_ref_bio_cleanup_skips_formal_figure_caption():
+    """formal figure_caption (Fig. 1. ...) must NOT be touched."""
+    blocks = [
+        {
+            "page": 25, "block_id": "b4", "zone": "reference_zone",
+            "role": "figure_caption",
+            "text": "Fig. 1. Cell proliferation assay. (A) Control group. (B) Treatment group.",
+        },
+    ]
+    fig_inv = {"matched_figures": [], "ambiguous_figures": [], "held_figures": []}
+    post_ref_bio_cleanup(fig_inv, blocks, ref_start_page=21)
+    assert blocks[0]["role"] == "figure_caption"  # unchanged
