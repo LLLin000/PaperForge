@@ -1,0 +1,3617 @@
+{
+  "mappable_block_count": 361,
+  "found_count": 305,
+  "missing_count": 56,
+  "rows": [
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Contents lists available at ScienceDirect",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Heliyon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 224
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "journal homepage: www.cell.com/heliyon",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Electrical stimulation for cartilage tissue engineering - A critical review from",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Julius Zimmermann $ ^{a} $, Abdul Razzaq Farooqi $ ^{a,b,*} $, Ursula van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{a} $ Institute of General Electrical Engineering, University of Rostock, 180",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{b} $ Department of Electronic Engineering, Faculty of Engineering, The Islam",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{2} $ Department of Ageing of Individuals and Society, Interdisciplinary Facu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{d} $ Department Life, Light & Matter, University of Rostock, 18051 Rostock, ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "ARTICLE INFO",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A B S T R A C T",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1586
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "1. Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1605
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cartilage is found in the human body as hyaline, elastic, and fibrocartilage, ea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1621
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{*} $ Corresponding author at: Institute of General Electrical Engineering, F",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "E-mail addresses: abdul.farooqi@uni-rostock.de (A.R. Farooqi), ursula.van-rienen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3018
+    },
+    {
+      "block_id": "p1:21",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "https://doi.org/10.1016/j.heliyon.2024.e38112 Received 5 April 2024; Received in",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:22",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Available online 23 September 2024 2405-8440/© 2024 The Author(s). Published by ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "At first glance, the engineering of cartilage tissue might appear straightforwar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3147
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electrical stimulation can be applied in two possible scenarios: monolayer or tw",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3502
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Approaches to engineer cartilage have focused on various scaffold materials, cel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3946
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3D cell culture approaches usually make use of scaffolds. Hydrogels as scaffold ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4907
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A challenge for the engineering of hyaline cartilage is that the produced tissue",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5354
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electromagnetic stimulation of cartilage can be divided into two approaches: pul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6130
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electrical stimulation has also been considered for regenerative medicine [27,28",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6863
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The aim of this paper is to explain stimulation approaches for cartilage tissue ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7991
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 244
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "which permit a precise and reliable estimation of the stimulating electric field",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8425
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2. The use of electric fields in cartilage engineering and repair",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8784
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electrical stimulation for cartilage tissue engineering has a long tradition dat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8850
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.1. In vitro stimulation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9324
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Many in vitro studies have focused on the influence of capacitive coupling stimu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9350
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Another goal of electrical stimulation is to induce chondrocyte migration and al",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10854
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.2. In vivo stimulation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11240
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Direct contact electric stimulation was applied for cartilage repair in rats [53",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11265
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Systematic reviews of clinical studies on the application of electrical stimulat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12179
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In short, in vitro experiments target a mechanistic understanding of electrical ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12776
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3. Comparison and characterisation of stimulation devices",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13377
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Well-controlled in vitro experiments are needed to comprehensively investigate t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13435
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This section focuses on the electrical characteristics of the typical stimulatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14405
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3",
+      "found_in_fulltext": true,
+      "fulltext_offset": 284
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "of a thin, dielectric, non-conducting layer between the electrodes and the sampl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14694
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.1. Physiological electric fields and current densities",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15960
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To give the reader a perspective, we will first briefly outline the physiologica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16017
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ E=\\frac{J}{\\sigma}=\\frac{1\\ m A\\ cm^{-2}}{1\\ S m^{-1}}=\\frac{10\\ A m^{-2}}{1\\",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(1)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60857
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 247
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This exemplary calculation based on the literature data shows that the electric ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18053
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.2. Overview of direct contact stimulation approaches",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18637
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Direct contact electrical stimulation is the most comprehensible approach as the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18692
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Among the waveforms under consideration, rectangular pulses have been the subjec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18890
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Another type of stimulation using rectangular signals is nano-second pulsed elec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21077
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Aside from rectangular pulses, sinusoidal waves of low frequency have been consi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22061
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Experimental approaches in tissue engineering also exist that use DC signals [36",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24413
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 703
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "voltage but no active stimulator was used, i.e., the stimulation was passive. In",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25613
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All the aforementioned in vitro and in vivo studies of direct contact electrical",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25802
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.3. Capacitive coupling stimulation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25926
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "At first, capacitive coupling seems conflicting because no direct current flows ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25963
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "For cartilage tissue engineering and regeneration involving capacitive coupling,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26721
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In 2004, a study was reported by Brighton's group using 30 kHz and 120 kHz frequ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27271
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "in recent years, other frequencies such as 1 kHz [15,47,114] or 4150 kHz [115] h",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28294
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To our knowledge, only one study uses capacitive electric stimulation of human c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29028
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All studies of capacitive electrical stimulation are summarised in Table 2.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29777
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.4. Electrochemical analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29857
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the following, all necessary techniques to estimate the electric field streng",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29887
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The impedance is impacted by multiple parameters. For example, a suitable electr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31130
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "6",
+      "found_in_fulltext": true,
+      "fulltext_offset": 266
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Electrical stimulation studies of articular cartilage using direct coupling. Ple",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Study</td><td>Year</td><td>Stimulation protocol</td><td>Electric ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "* MSCs, mesenchymal stem cells; ADSCs, adipose-derived stem cells; BMMSCs, bone ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32454
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 2 Electrical stimulation studies of articular cartilage using capacitive c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32679
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Study</td><td>Year</td><td>Stimulation protocol</td><td>Electric ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "∞",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MSCs, mesenchymal stem cells; ADSCs, adipose-derived stem cells; DC, direct curr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32770
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "be used as an indicator. As an example of this, the transition from capacitive (",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32931
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The measured impedance is described by equivalent circuit models, usually consis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33190
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The electrical stimulation approaches can be linked to electrochemical character",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34400
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Alternating current stimulation using sine or periodic waves resembles measuring",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35188
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In short, a general expected equivalent circuit can be formulated for each stimu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36367
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.5. Towards reliable and controllable electrical stimulation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36705
+    },
+    {
+      "block_id": "p9:12",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The comparison of the existing stimulation approaches does not permit to identif",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36767
+    },
+    {
+      "block_id": "p9:13",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "9",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2997
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A key ingredient is the impedance spectroscopy of the stimulation system. Ideall",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37577
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "An open question is how to numerically model the electrode-tissue interface laye",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38994
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In our opinion, the lack of current and voltage recording data (compare Tables 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40874
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The cellular dielectric properties cover a wide range [144], and their influence",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43479
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "With this information, more advanced biophysical models can be developed. In the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44050
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4. Biophysical theories of the interaction of electric fields and cells",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44528
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Various studies have hypothesised that electric fields can stimulate non-excitab",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44600
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10",
+      "found_in_fulltext": true,
+      "fulltext_offset": 260
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:15",
+      "page": 11,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Integrate cell model",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:20",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4.1. Induced transmembrane potential",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45156
+    },
+    {
+      "block_id": "p11:21",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The cell membrane is a lipid bilayer having a thickness of around 7 nm [133], wh",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45193
+    },
+    {
+      "block_id": "p11:22",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Compared to eukaryotic cells, which have a resting transmembrane potential in th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45562
+    },
+    {
+      "block_id": "p11:23",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Voltage-dependent calcium channels are essential in forming and maintaining heal",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46134
+    },
+    {
+      "block_id": "p11:24",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Xu et al. have reported that blockers of voltage-dependent calcium channels inhi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46897
+    },
+    {
+      "block_id": "p11:25",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "11",
+      "found_in_fulltext": true,
+      "fulltext_offset": 286
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "When even higher membrane potentials are induced (hundreds of mV), it comes to e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47382
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "One can estimate the lower effective range of the induced transmembrane potentia",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47719
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To summarize, the aforementioned observations indicate that very large induced t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48480
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "There exist analytical [157–159] as well as numerical techniques [160] to estima",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49124
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4.2. Electromechanical interaction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50252
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The electromechanical interaction of electrical stimulation can occur at the cel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50287
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4.2.1. Cell migration: dielectrophoresis and galvanotaxis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50431
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell migration due to an external electric field is referred to as electrotaxis ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50489
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In electrotaxis, the electric field functions as a compass for the cells [162]. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50920
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cells can also migrate due to dielectrophoresis upon alternating current electri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51922
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4.2.2. Electro-deformation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52913
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Even though homogeneous electric fields can deform the spherical cells, they can",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52940
+    },
+    {
+      "block_id": "p12:14",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "12",
+      "found_in_fulltext": true,
+      "fulltext_offset": 287
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To explain the electro-deformation phenomenon of cells, giant vesicles (cell-lik",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53854
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4.2.3. Interaction with membrane constituents",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54806
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The effect of oscillating electric fields could be related to electroconformatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54852
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The biological effect of the electroconformational coupling has been linked to H",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55557
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Another open research topic is the motility of membrane constituents. For exampl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55921
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Moreover, chondrocytes also express Piezo channels [188,189] or TRPV4 [190] mech",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56464
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "5. Summary and outlook",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57795
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We discussed electrical stimulation as a biophysical intervention for the repair",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57818
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We believe that improved reporting standards focusing on technical replicability",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59095
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "backmatter_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CRediT authorship contribution statement",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59979
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "backmatter_body",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Julius Zimmermann: Writing – review & editing, Writing – original draft, Visuali",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60022
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "13",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4563
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The authors declare that they have no known competing financial interests or per",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60555
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "backmatter_body",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The authors are grateful to Rainer Bader for pointing out the need for research ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67672
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61154
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[1] M. Sha'ban, Histology and biomechanics of cartilage, in: Cartilage Tissue an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61165
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[2] A.J.S. Fox, A. Bedi, S.A. Rodeo, The basic science of articular cartilage: s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61299
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[3] A.R. Armiento, M. Alini, M.J. Stoddart, Articular fibrocartilage - why does ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61494
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[4] H. Kwon, W.E. Brown, C.A. Lee, D. Wang, N. Paschos, J.C. Hu, K.A. Athanasiou",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61695
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[5] M. Hiligsmann, C. Cooper, N. Arden, M. Boers, J.C. Branco, M. Luisa Brandi, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61952
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[6] D.J. Huey, J.C. Hu, K.A. Athanasiou, Unlike bone, cartilage regeneration rem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62540
+    },
+    {
+      "block_id": "p14:11",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[7] A.R. Farooqi, R. Bader, U. van Rienen, Numerical study on electromechanics i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62710
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[8] Y.D. Yalcin, R. Luttge, Electrical monitoring approaches in 3-dimensional ce",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62944
+    },
+    {
+      "block_id": "p14:13",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[9] E.A. Makris, A.H. Gomoll, K.N. Malizos, J.C. Hu, K.A. Athanasiou, Repair and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63172
+    },
+    {
+      "block_id": "p14:14",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[10] T. Hoffman, A. Khademhosseini, R. Langer, Chasing the paradigm: clinical tr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63387
+    },
+    {
+      "block_id": "p14:15",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[11] J. Gille, P. Behrens, A.P. Schulz, R. Oheim, B. Kienast, Matrix-associated ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63594
+    },
+    {
+      "block_id": "p14:16",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[12] P. Angele, P. Niemeyer, M. Steinwachs, G. Filardo, A.H. Gomoll, E. Kon, J. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63819
+    },
+    {
+      "block_id": "p14:17",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[13] L. de Girolamo, E. Kon, G. Filardo, A.G. Marmotti, F. Soler, G.M. Peretti, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64097
+    },
+    {
+      "block_id": "p14:18",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[14] M.M. Caron, P.J. Emans, M.M. Coolsen, L. Voss, D.A. Surtel, A. Cremers, L.W",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64377
+    },
+    {
+      "block_id": "p14:19",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[15] S. Krueger, S. Achilles, J. Zimmermann, T. Tischer, R. Bader, A. Jonitz-Hei",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64676
+    },
+    {
+      "block_id": "p14:20",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[16] A.R. Armiento, M.J. Stoddart, M. Alini, D. Eglin, Biomaterials for articula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64958
+    },
+    {
+      "block_id": "p14:21",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[17] E.B. Hunziker, K. Lippuner, M.J. Keel, N. Shintani, An educational review o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65170
+    },
+    {
+      "block_id": "p14:22",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[18] J.L. Drury, D.J. Mooney, Hydrogels for tissue engineering: scaffold design ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65426
+    },
+    {
+      "block_id": "p14:23",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[19] T. Distler, A.R. Boccaccini, 3D printing of electrically conductive hydroge",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65620
+    },
+    {
+      "block_id": "p14:24",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[20] E.V. Medvedeva, E.A. Grebenik, S.N. Gornostaeva, V.I. Telpuhov, A.V. Lychag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65831
+    },
+    {
+      "block_id": "p14:25",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[21] H. Jahr, C. Matta, A. Mobasheri, Physicochemical and biomechanical stimuli ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66095
+    },
+    {
+      "block_id": "p14:26",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[22] V.C. Mow, X.E. Guo, Mechano-electrochemical properties of articular cartila",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66297
+    },
+    {
+      "block_id": "p14:27",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[23] P. Poillot, C.L. Le Maitre, J.M. Huyghe, The strain-generated electrical po",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66523
+    },
+    {
+      "block_id": "p14:28",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[24] M. Misakian, A.R. Sheppard, D. Krause, M.E. Frazier, D.L. Miller, Biologica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66746
+    },
+    {
+      "block_id": "p14:29",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[25] L. Massari, F. Benazzo, F. Falez, D. Perugia, L. Pietrogrande, S. Setti, R.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67017
+    },
+    {
+      "block_id": "p14:30",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[26] R.M. Stefani, S. Barbosa, A.R. Tan, S. Setti, A.M. Stoker, G.A. Ateshian, R",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67306
+    },
+    {
+      "block_id": "p14:31",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[27] R. Balint, N.J. Cassidy, S.H. Cartmell, Electrical stimulation: a novel too",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60722
+    },
+    {
+      "block_id": "p14:32",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[28] L.P. da Silva, S.C. Kundu, R.L. Reis, V.M. Correlo, Electric phenomenon: a ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60918
+    },
+    {
+      "block_id": "p14:33",
+      "page": 14,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "14",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4753
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[29] N. Tandon, C. Cannizzaro, P.H.G. Chao, R. Maidhof, A. Marsano, H.T.H. Au, M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68197
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[30] M. Zhao, B. Song, J. Pu, T. Wada, B. Reid, G. Tai, F. Wang, A. Guo, P. Walc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68447
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[31] M. Zhao, Electrical fields in wound healing—an overriding signal that direc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68802
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[32] T.J. Zajdel, G. Shim, D.J. Cohen, Come together: on-chip bioelectric wound ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68993
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[33] S. Meng, M. Rouabhia, Z. Zhang, Electrical stimulation modulates osteoblast",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69174
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[34] S.N. Iwasa, H.H. Shi, S.H. Hong, T. Chen, M. Marquez-Chin, C. Iorio-Morin, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69426
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[35] R.H. Funk, T. Monsees, N. Özkucur, Electromagnetic effects - from cell biol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69734
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[36] G. Thrivikraman, S.K. Boda, B. Basu, Unraveling the mechanistic effects of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69927
+    },
+    {
+      "block_id": "p15:10",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[37] C. Chen, X. Bai, Y. Ding, I.S. Lee, Electrical stimulation as a novel tool ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70198
+    },
+    {
+      "block_id": "p15:11",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[38] C.N.M. Ryan, M.N. Doulgkeroglou, D.I. Zeugolis, Electric field stimulation ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70408
+    },
+    {
+      "block_id": "p15:12",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[39] A.R. Farooqi, Computational modeling of electroactive hydrogels for cartila",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70602
+    },
+    {
+      "block_id": "p15:13",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[40] J. Zimmermann, Numerical modelling of electrical stimulation for cartilage ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68057
+    },
+    {
+      "block_id": "p15:14",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[41] B. Baker, R.O. Becker, J. Spadaro, A study of electrochemical enhancement o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70767
+    },
+    {
+      "block_id": "p15:15",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[42] C.T. Brighton, L. Jensen, S.R. Pollack, B.S. Tolin, C.C. Clark, Proliferati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70973
+    },
+    {
+      "block_id": "p15:16",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[43] C.T. Brighton, E. Okereke, S.R. Pollack, C.C. Clark, In vitro bone-cell res",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71244
+    },
+    {
+      "block_id": "p15:17",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[44] W. Wang, Z. Wang, G. Zhang, C.C. Clark, C.T. Brighton, Up-regulation of cho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71470
+    },
+    {
+      "block_id": "p15:18",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[45] C.T. Brighton, W. Wang, C.C. Clark, The effect of electrical fields on gene",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71705
+    },
+    {
+      "block_id": "p15:19",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[46] J.J. Vaca-González, S. Clara-Trujillo, M. Guillot-Ferriols, J. Ródenas-Roch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71933
+    },
+    {
+      "block_id": "p15:20",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[47] S. Krueger, A. Riess, A. Jonitz-Heincke, A. Weizel, A. Seyfarth, H. Seitz, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72317
+    },
+    {
+      "block_id": "p15:21",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[48] H.J. Kwon, G.S. Lee, H. Chun, Electrical stimulation drives chondrogenesis ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72585
+    },
+    {
+      "block_id": "p15:22",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[49] S. Saghati, H.T. Nasrabadi, A.B. Khoshfetrat, K. Moharamzadeh, A. Hassani, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72803
+    },
+    {
+      "block_id": "p15:23",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[50] P.-H.G. Chao, R. Roy, R.L. Mauck, W. Liu, W.B. Valhmu, C.T. Hung, Chondrocy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73146
+    },
+    {
+      "block_id": "p15:24",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[51] D.R. Albrecht, G.H. Underhill, T.B. Wassermann, R.L. Sah, S.N. Bhatia, Prob",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73362
+    },
+    {
+      "block_id": "p15:25",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[52] A. Schwab, M.A. Wesdorp, J. Xu, F. Abinzano, C. Loebel, M. Falandt, R. Leva",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73594
+    },
+    {
+      "block_id": "p15:26",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[53] D.C. Zuzzi, C.d.C. Ciccone, L.M.G. Neves, J.S. Mendonça, P.P. Joazeiro, M.A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73946
+    },
+    {
+      "block_id": "p15:27",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[54] L. Lippiello, D. Chakkalakal, J.F. Connolly, Puling direct current-induced ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74213
+    },
+    {
+      "block_id": "p15:28",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[55] D. Hungerford, E. Maclaughlin, C. Mines, S. Deveshwar, C. Elliott, J. Tuber",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74434
+    },
+    {
+      "block_id": "p15:29",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[56] D. Garland, P. Holt, J.T. Harrington, J. Caldwell, T. Zizic, J. Cholewczyns",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74745
+    },
+    {
+      "block_id": "p15:30",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[57] T.M. Zizic, K.C. Hoffman, P.A. Holt, D.S. Hungerford, J.R. O'Dell, M.A. Jac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75133
+    },
+    {
+      "block_id": "p15:31",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[58] R.E. Fary, G.J. Carroll, T.G. Briffa, N.K. Briffa, The effectiveness of pul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75406
+    },
+    {
+      "block_id": "p15:32",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[59] P. Vavken, F. Arrich, O. Schuhfried, R. Dorotka, Effectiveness of pulsed el",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75723
+    },
+    {
+      "block_id": "p15:33",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[60] A. Negm, A. Lorbergs, N.J. MacIntyre, Efficacy of low frequency pulsed subs",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76008
+    },
+    {
+      "block_id": "p15:34",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[61] C.A.F. de Paula Gomes, F. Politti, C. de Souza Bacelar Pereira, A.C.B. da S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76332
+    },
+    {
+      "block_id": "p15:35",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[62] A. Rutjes, E. Nüesch, R. Sterchi, L. Kalichman, E. Hendriks, M. Osiri, L. B",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76708
+    },
+    {
+      "block_id": "p15:36",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[63] C. Zeng, H. Li, T. Yang, Z.-h. Deng, Y. Yang, Y. Zhang, G.-h. Lei, Electric",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76982
+    },
+    {
+      "block_id": "p15:37",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "15",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4756
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[64] S. Zhao, A.S. Mehta, M. Zhao, Biomedical applications of electrical stimula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77266
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[65] J.P.A. Ioannidis, S. Greenland, M.A. Hlatky, M.J. Khoury, M.R. Macleod, D. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78211
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[66] L.A. Portelli, K. Falldorf, G. Thuróczy, J. Cuppen, Retrospective estimatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78486
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[67] M. Cemazar, G. Sersa, W. Frey, D. Miklavcic, J. Teissé, Recommendations and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78781
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[68] S. Guette-Marquet, C. Roques, A. Bergel, Theoretical analysis of the electr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79064
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[69] P.J. Nicksic, D.T. Donnelly, M. Hesse, S. Bedi, N. Verma, A.J. Seitz, A.J. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79328
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[70] K. Budde, J. Zimmermann, E. Neuhaus, M. Schroder, A.M. Uhrmacher, U. van Ri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79729
+    },
+    {
+      "block_id": "p16:9",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[71] J. Zimmermann, K. Budde, N. Arbeiter, F. Molina, A. Storch, A.M. Uhrmacher,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80057
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[72] J. Zimmermann, F. Sahm, N. Arbeiter, H. Bathel, Z. Song, R. Bader, A. Jonit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80366
+    },
+    {
+      "block_id": "p16:11",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[73] C.A.L. Bassett, R.J. Pawluk, Electrical behavior of cartilage during loadin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80692
+    },
+    {
+      "block_id": "p16:12",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[74] E.H. Frank, A. Grodzinsky, Cartilage electromechanics-I. Electrokinetic tra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80856
+    },
+    {
+      "block_id": "p16:13",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[75] E.H. Frank, A.J. Grodzinsky, Cartilage electromechanics-II. A continuum mod",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81077
+    },
+    {
+      "block_id": "p16:14",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[76] J.S. Binette, M. Garon, P. Savard, M.D. McKee, M.D. Buschmann, Tetrapolar m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81304
+    },
+    {
+      "block_id": "p16:15",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[77] I. Hasegawa, S. Kuriki, S. Matsuno, G. Matsumoto, Dependence of electrical ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81536
+    },
+    {
+      "block_id": "p16:16",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[78] N. Hiraoka, Y. Arai, K.A. Takahashi, O. Mazda, T. Kishida, K. Honjo, S. Tsu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81773
+    },
+    {
+      "block_id": "p16:17",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[79] J. Chen, Y. Huang, J. Yang, K. Li, Y. Jiang, B.C. Heng, Q. Cai, J. Zhang, Z",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82091
+    },
+    {
+      "block_id": "p16:18",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[80] K. Li, T. Ning, H. Wang, Y. Jiang, J. Zhang, Z. Ge, Nanosecond pulsed elect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82466
+    },
+    {
+      "block_id": "p16:19",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[81] T. Ning, J. Guo, K. Zhang, K. Li, J. Zhang, Z. Yang, Z. Ge, Nanosecond puls",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82737
+    },
+    {
+      "block_id": "p16:20",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[82] K. Zhang, J. Guo, Z. Ge, J. Zhang, Nanosecond pulsed electric fields (nsPEF",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83010
+    },
+    {
+      "block_id": "p16:21",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[83] K. Li, L. Fan, J. Lin, B.C. Heng, Z. Deng, Q. Zheng, J. Zhang, Y. Jiang, Z.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83235
+    },
+    {
+      "block_id": "p16:22",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[84] G.A. Rodan, L.A. Bourret, L.A. Norton, DNA synthesis in cartilage cells is ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83557
+    },
+    {
+      "block_id": "p16:23",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[85] B. Hiemer, M. Krogull, T. Bender, J. Ziebart, S. Krueger, R. Bader, A. Joni",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83748
+    },
+    {
+      "block_id": "p16:24",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[86] H. Raben, P.W. Kämmerer, R. Bader, U. van Rienen, Establishment of a numeri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84023
+    },
+    {
+      "block_id": "p16:25",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[80] Instituto..",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84267
+    },
+    {
+      "block_id": "p16:26",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[89] L.A. MacGinitie, Electrical and thermal modulation of protein synthesis in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84284
+    },
+    {
+      "block_id": "p16:27",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[90] L.A. MacGinitie, Y.A. Gluzband, A.J. Grodzinsky, Electric field stimulation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84483
+    },
+    {
+      "block_id": "p16:28",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[91] N. Szasz, Electric field regulation of chondrocyte proliferation, biosynthe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84703
+    },
+    {
+      "block_id": "p16:29",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[92] T. Akkin, D.P. Davé, J.-I. Youn, S.A. Telenkov, H.G. Rylander, T.E. Milner,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84871
+    },
+    {
+      "block_id": "p16:30",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[93] J.-I. Youn, T. Akkin, T.E. Milner, Electrokinetic measurement of cartilage ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85119
+    },
+    {
+      "block_id": "p16:31",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[4] S.I. Berkenblit, E.H. Frank, E.P. Salant, A.J. Grodzinsky, Nondestructive de",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85330
+    },
+    {
+      "block_id": "p16:32",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[95] D. Khang, G.E. Park, T.J. Webster, Enhanced chondrocyte densities on carbon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85562
+    },
+    {
+      "block_id": "p16:33",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[96] M.L. Hernández-Bule, C.L. Paíno, M.Á. Trillo, A. Úbeda, Electric stimulatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85822
+    },
+    {
+      "block_id": "p16:34",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[97] A.J. Bard, L.R. Faulkner, Electrochemical Methods: Fundamentals and Applica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77425
+    },
+    {
+      "block_id": "p16:35",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[98] H. Nogami, H. Aoki, T. Okagawa, K. Mimatsu, Effects of electric current on ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77548
+    },
+    {
+      "block_id": "p16:36",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[99] B. Baker, J. Spadaro, A. Marino, R.O. Backer, Electrical stimulation of art",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86051
+    },
+    {
+      "block_id": "p16:37",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[100] O.O. Akanji, D.A. Lee, D.A. Bader, The effects of direct current stimulati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77699
+    },
+    {
+      "block_id": "p16:38",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[101] E. Esfandiari, S. Roshankhah, M. Mardani, B. Hashemibeni, E. Naghsh, M. Ka",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77910
+    },
+    {
+      "block_id": "p16:39",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "16",
+      "found_in_fulltext": true,
+      "fulltext_offset": 265
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[102] J.J. Vaca-González, J.M. Guevara, M.A. Moncayo, H. Castro-Abril, Y. Hata, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86272
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[103] J. Xu, W. Wang, C.C. Clark, C.T. Brighton, Signal transduction in electric",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86542
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[104] C.C. Clark, W. Wang, C.T. Brighton, Up-regulation of expression of selecte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86784
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[105] E.L. Carter, E.J. Vresilovic, S.R. Pollack, C.T. Brighton, Field distribut",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87018
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[106] D.G. Lorich, C.T. Brighton, R. Gupta, J.R. Corsetti, S.E. Levine, I.D. Gel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89224
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[107] I.V. Timoshkin, S.J. MacGregor, R.A. Fouracre, B.H. Crichton, J.G. Anderso",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89509
+    },
+    {
+      "block_id": "p17:8",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[108] T. Taghian, D.A. Narmoneva, A.B. Kogan, Modulation of cell function by ele",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87265
+    },
+    {
+      "block_id": "p17:9",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[109] J. Zimmermann, R. Altenkirch, U. van Rienen, Numerical study on the effect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89745
+    },
+    {
+      "block_id": "p17:10",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[110] C.T. Brighton, A.S. Unger, J.L. Stambough, In vitro growth of bovine artic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89996
+    },
+    {
+      "block_id": "p17:11",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[111] C.T. Brighton, W. Wang, C.C. Clark, Up-regulation of matrix in bovine arti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90231
+    },
+    {
+      "block_id": "p17:12",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[112] C.T. Brighton, W. Wang, C.C. Clark, A. Praestgaard, A spectrophotometric a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90455
+    },
+    {
+      "block_id": "p17:13",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[113] J.J. Vaca-González, J.M. Guevara, J.F. Vega, D.A. Garzón-Alvarado, An in v",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90692
+    },
+    {
+      "block_id": "p17:14",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[114] M. Mardani, S. Roshankhah, B. Hashemibeni, M. Salahshoor, E. Naghsh, E. Es",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91022
+    },
+    {
+      "block_id": "p17:15",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[115] R.J. Fitzsimmons, S.L. Gordon, J. Kronberg, T. Ganey, A.A. Pilla, A pulsin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91296
+    },
+    {
+      "block_id": "p17:16",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[116] J.J. Vaca-González, J.F. Escobar, J.M. Guevara, Y.A. Hata, G. Gallego Ferr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91576
+    },
+    {
+      "block_id": "p17:17",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[11], low-h... ...v02/ho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91877
+    },
+    {
+      "block_id": "p17:18",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[118] H. Bathel, L.V. …, J. Zimmermann, A. Weizel, H. Seitz, U. van Rienen, Elec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87433
+    },
+    {
+      "block_id": "p17:19",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[119] J. Farr, M.A. Mont, J.R. Caldwell, D. Garland, T.M. Zizic, Pulsed electric",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87682
+    },
+    {
+      "block_id": "p17:20",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[120] A. Richardot, E.T. McAdams, Harmonic analysis of low-frequency bioelectrod",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87925
+    },
+    {
+      "block_id": "p17:21",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[121] D.R. Merrill, M. Bikson, J.G. Jefferys, Electrical stimulation of excitabl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88106
+    },
+    {
+      "block_id": "p17:22",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[122] C. Boehler, S. Carli, L. Fadiga, T. Stieglitz, M. Asplund, Tutorial: guide",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91902
+    },
+    {
+      "block_id": "p17:23",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[123] M.E. Orazem, B. Tribollet, Electrochemical Impedance Spectroscopy, 2nd edi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92171
+    },
+    {
+      "block_id": "p17:24",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[124] H.P. Schwan, Linear and nonlinear electrode polarization and biological ma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88331
+    },
+    {
+      "block_id": "p17:25",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[125] M. Moussavi, H.P. Schwan, H.H. Sun, Harmonic distortion caused by electrod",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92339
+    },
+    {
+      "block_id": "p17:26",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[126] A. Palanisami, G.T. Mercier, J. FangJie, J.H. Miller, Nonlinear impedance ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92518
+    },
+    {
+      "block_id": "p17:27",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[127] K. Srirussamee, S. Mobini, N.J. Cassidy, S.H. Cartmell, Direct electrical ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92737
+    },
+    {
+      "block_id": "p17:28",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[128] K. Srirussamee, R. Xue, S. Mobini, N.J. Cassidy, S.H. Cartmell, Changes in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93008
+    },
+    {
+      "block_id": "p17:29",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[129] M. Bielfeldt, K. Budde-Sagert, N. Weis, M. Buenning, S. Staehlke, J. Zimme",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93318
+    },
+    {
+      "block_id": "p17:30",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[130] M. Schönleber, D. Klotz, E. Ivers-Tiffée, A method for improving the robus",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88497
+    },
+    {
+      "block_id": "p17:31",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[132] J. Zimmermann, T. Distler, A.R. Boccaccini, U. van Rienen, Numerical simul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93700
+    },
+    {
+      "block_id": "p17:32",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[133] S. Grimnes, Ø.G. Martinsen, Bioimpedance and Bioelectricity Basics, third ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88709
+    },
+    {
+      "block_id": "p17:33",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[134] S. Wang, J. Zhang, O. Gharbi, V. Vivier, M. Gao, M.E. Orazem, Electrochemi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93982
+    },
+    {
+      "block_id": "p17:34",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[135] A.V. Oppenheim, A.S. Willsky, S.H. Nawab, Signals & Systems, 2nd edition, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88848
+    },
+    {
+      "block_id": "p17:35",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[136] U. van Rienen, J. Flehr, U. Schreiber, S. Schulze, U. Gimsa, W. Baumann, D",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94177
+    },
+    {
+      "block_id": "p17:36",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[137] D.R. Cantrell, S. Inayat, A. Taflove, R.S. Ruoff, J.B. Troy, Incorporation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88973
+    },
+    {
+      "block_id": "p17:37",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[138] U. Zimmermann, C. Ebner, Y. Su, T. Bender, Y.D. Bansod, W. Mittelmeier, R.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94455
+    },
+    {
+      "block_id": "p17:38",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[139] L.V. Che, J. Zimmermann, H. Bathel, A. Weizel, H. Seitz, U. van Rienen, Va",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94718
+    },
+    {
+      "block_id": "p17:39",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "17",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5205
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[140] A.P. Mazzoleni, B.F. Sisken, R.L. Kahler, Conductivity values of tissue cu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94958
+    },
+    {
+      "block_id": "p18:3",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[141] J. Zimmermann, U. van Rienen, Ambiguity in the interpretation of the low-f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95150
+    },
+    {
+      "block_id": "p18:4",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[142] J. Zimmermann, L.V. Che, U. van Rienen, Using tissue-specific numerical mo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95373
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[143] W.Y. Gu, M.A. Justiz, Apparatus for measuring the swelling dependent elect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95599
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[144] I. Ermolina, Y. Polevaya, Y. Feldman, Analysis of dielectric spectra of eu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99538
+    },
+    {
+      "block_id": "p18:7",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[145] V.L. Che, J. Zimmermann, Y. Zhou, X.L. Lu, U. van Rienen, Contributions of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95808
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[146] V.L. Che, J. Zimmermann, Y. Zhou, X.L. Lu, U. Van Rienen, Deriving models ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99734
+    },
+    {
+      "block_id": "p18:9",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[147] T. Kotnik, L. Rems, M. Tarek, D. Miklavcic, Membrane electroporation and e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99997
+    },
+    {
+      "block_id": "p18:10",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[148] R. Lewis, C.H. Feetham, R. Barrett-Jolley, Biochemistry cell volume regula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96105
+    },
+    {
+      "block_id": "p18:11",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[149] R. Lewis, K.E. Asplin, G. Bruce, C. Dart, A. Mobasheri, R. Barrett-Jolley,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100216
+    },
+    {
+      "block_id": "p18:12",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[150] C. Matta, R. Zákány, A. Mobasheri, Voltage-dependent calcium channels in c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96252
+    },
+    {
+      "block_id": "p18:13",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[151] C.J. Doering, G.W. Zamponi, Molecular pharmacology of high voltage-activat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100446
+    },
+    {
+      "block_id": "p18:14",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[152] M.A. Brady, S.D. Waldman, C.R. Ethier, The application of multiple biophys",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100645
+    },
+    {
+      "block_id": "p18:15",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[153] M.L. Pall, Electromagnetic fields act via activation of voltage-gated calc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100920
+    },
+    {
+      "block_id": "p18:16",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[154] F.S. Barnes, Interaction of DC and ELF electric fields with biological mat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96454
+    },
+    {
+      "block_id": "p18:17",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[155] L.A. Kadir, M. Stacey, R. Barrett-Jolley, Emerging roles of the membrane p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101097
+    },
+    {
+      "block_id": "p18:18",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[156] H. Matsuoka, K. Hashimoto, S. Horikiri, M. Saito, K. Yamamoto, J. Ando, Si",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101295
+    },
+    {
+      "block_id": "p18:19",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[157] C. Grosse, H.P. Schwan, Cellular membrane potentials induced by alternatin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96687
+    },
+    {
+      "block_id": "p18:20",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[158] T. Kotnik, F. Bobanović, D. Miklavčič, Sensitivity of transmembrane voltag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96861
+    },
+    {
+      "block_id": "p18:21",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[159] T. Kotnik, D. Miklavčič, Analytical description of transmembrane voltage i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97100
+    },
+    {
+      "block_id": "p18:22",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[160] G. Pucihar, T. Kotnik, B. Valič, D. Miklavčič, Numerical determination of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101580
+    },
+    {
+      "block_id": "p18:23",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[161] T. Kotnik, G. Pucihar, D. Miklavcic, The cell in the electric field, in: S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101803
+    },
+    {
+      "block_id": "p18:24",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[162] R. Glaser, Biophysics: An Introduction, vol. 9783642252, 2nd edition, Spri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97309
+    },
+    {
+      "block_id": "p18:25",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[163] T.B. Jones, Electromechanics of Particles, Cambridge University Press, Cam",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97439
+    },
+    {
+      "block_id": "p18:26",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[164] R. Pethig, Dielectrophoresis, John Wiley & Sons, Ltd, Chichester, UK, 2017",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97533
+    },
+    {
+      "block_id": "p18:27",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[165] G.D. O'Connell, A.R. Tan, V. Cui, J.C. Bulinski, J.L. Cook, M. Attur, S.B.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101992
+    },
+    {
+      "block_id": "p18:28",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[166] V.L. Sukhorukov, H. Mussauer, U. Zimmermann, The effect of electrical defo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97615
+    },
+    {
+      "block_id": "p18:29",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[167] L.A. MacQueen, M.D. Buschmann, M.R. Wertheimer, Mechanical properties of m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97883
+    },
+    {
+      "block_id": "p18:30",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[168] M. Hronik-Tupaj, W.L. Rice, M. Cronin-Golomb, D.L. Kaplan, I. Georgakoudi,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102278
+    },
+    {
+      "block_id": "p18:31",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[169] R. Dimova, Giant vesicles and their use in assays for assessing membrane p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98111
+    },
+    {
+      "block_id": "p18:32",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[170] S. Aranda, K.A. Riske, R. Lipowsky, R. Dimova, Morphological transitions o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102561
+    },
+    {
+      "block_id": "p18:33",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[171] P.M. Vlahovska, Electrohydrodynamics of drops and vesicles, Annu. Rev. Flu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102772
+    },
+    {
+      "block_id": "p18:34",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[172] T. Yamamoto, A.E. Said, R. Dimova, R. Lipowsky, Stability of spherical ves",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98344
+    },
+    {
+      "block_id": "p18:35",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[173] P. Peterlin, Frequency-dependent electrodeformation of giant phospholipid ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102933
+    },
+    {
+      "block_id": "p18:36",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[174] Z. Lu, B.Z. Doulabi, C. Huang, R.A. Bank, M.N. Helder, Collagen type II en",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103125
+    },
+    {
+      "block_id": "p18:37",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[175] T.Y. Tsong, D.S. Liu, F. Chauvin, A. Gaigalas, R. Dean Astumian, Electroco",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98522
+    },
+    {
+      "block_id": "p18:38",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[176] A.M. Woodward, D.B. Kell, Confirmation by using mutant strains that the me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98813
+    },
+    {
+      "block_id": "p18:39",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[177] A.M. Woodward, D.B. Kell, On the nonlinear dielectric properties of biolog",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99088
+    },
+    {
+      "block_id": "p18:40",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[178] D. Nawarathna, J.H. Miller, J.R. Claycomb, G. Cardenas, D. Warmflash, Harm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99299
+    },
+    {
+      "block_id": "p18:41",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2993
+    },
+    {
+      "block_id": "p19:0",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "J. Zimmermann, A.R. Farooqi and U. van Rienen",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:1",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Heliyon 10 (2024) e38112",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:2",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[179] D. Nawarathna, J.R. Claycomb, J.H. Miller, M.J. Benedik, Nonlinear dielect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103390
+    },
+    {
+      "block_id": "p19:3",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[180] E.F. Treo, C.J. Felice, Non-linear dielectric spectroscopy of microbiologi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105144
+    },
+    {
+      "block_id": "p19:4",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[181] G.T. Mercier, A. Palanisami, J.H. Miller, Nonlinear dielectric spectroscop",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103625
+    },
+    {
+      "block_id": "p19:5",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[182] D. Nawarathna, J.R. Claycomb, G. Cardenas, J. Gardner, D. Warmflash, J.H. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103863
+    },
+    {
+      "block_id": "p19:6",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[183] A. Mobasheri, E. Trujillo, M.F. Arteaga, P. Martin-Vasallo, Na +, K +-ATPa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105314
+    },
+    {
+      "block_id": "p19:7",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[184] M.M. Maleckar, P. Martin-Vasallo, W.R. Giles, A. Mobasheri, Physiological ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104156
+    },
+    {
+      "block_id": "p19:8",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[185] B.-j. Lin, S.-h. Tsao, A. Chen, S.-K. Hu, L. Chao, P.-h.G. Chao, Lipid raf",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104415
+    },
+    {
+      "block_id": "p19:9",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[186] R.C. Lee, T.R. Gowrishankar, R.M. Basch, P.K. Patel, D.E. Golan, Cell shap",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105637
+    },
+    {
+      "block_id": "p19:10",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[187] R. Ruhlen, K. Marberry, The chondrocyte primary cilium, Osteoarthr. Cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104640
+    },
+    {
+      "block_id": "p19:11",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[188] W. Lee, H.A. Leddy, Y. Chen, S.H. Lee, N.A. Zelenski, A.L. McNulty, J. Wu,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105885
+    },
+    {
+      "block_id": "p19:12",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[189] N. Varady, A. Grodzinsky, Osteoarthritis year in review 2015: mechanics, O",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104791
+    },
+    {
+      "block_id": "p19:13",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[190] C.J. O'Conor, H.A. Leddy, H.C. Benefield, W.B. Liedtke, F. Guilak, TRPV4-m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106251
+    },
+    {
+      "block_id": "p19:14",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[191] M. Weißenberger, M.H. Weißenberger, M. Wagenbrenner, T. Heinz, J. Reboredo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106522
+    },
+    {
+      "block_id": "p19:15",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[192] N. More, G. Kapusetti, Piezoelectric material – a promising approach for b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104954
+    },
+    {
+      "block_id": "p19:16",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[193] J. Jacob, N. More, K. Kalia, G. Kapusetti, Piezoelectric smart biomaterial",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106876
+    },
+    {
+      "block_id": "p19:17",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[194] R. Vaiciuleviciute, I. Uzieliene, P. Bernotas, V. Novickij, A. Alaburda, E",
+      "found_in_fulltext": true,
+      "fulltext_offset": 107073
+    },
+    {
+      "block_id": "p19:18",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "19",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5348
+    }
+  ]
+}

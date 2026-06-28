@@ -1,0 +1,327 @@
+from __future__ import annotations
+
+
+def test_required_seed_without_verifier_holds_not_accepts() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    block = {"block_id": "a1", "seed_role": "authors", "text": "Author One Author Two"}
+
+    decision = resolve_verified_role(block, RoleGateContext())
+
+    assert decision.role == "unknown_structural"
+    assert decision.status == "HOLD"
+    assert decision.seed_role == "authors"
+    assert decision.source == "structural_gate"
+
+
+def test_non_required_seed_can_accept_as_non_structural() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    block = {"block_id": "b1", "seed_role": "body_paragraph", "text": "Regular body paragraph."}
+
+    decision = resolve_verified_role(block, RoleGateContext())
+
+    assert decision.role == "body_paragraph"
+    assert decision.status == "ACCEPT"
+    assert decision.source == "non_structural_seed"
+
+
+def test_hold_preserves_candidate_and_hides_from_render_by_default() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    block = {"block_id": "r1", "seed_role": "reference_item", "text": "[1] Not actually in references."}
+
+    decision = resolve_verified_role(block, RoleGateContext())
+    fields = decision.as_block_fields()
+
+    assert fields["role"] == "unknown_structural"
+    assert fields["role_candidate"] == "reference_item"
+    assert fields["role_verification_status"] == "HOLD"
+    assert fields["render_default"] is False
+
+
+def test_gate_preserves_pre_normalized_non_structural_role() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    block = {"block_id": "i1", "role": "structured_insert", "seed_role": "body_paragraph", "text": "Side note."}
+
+    decision = resolve_verified_role(block, RoleGateContext())
+
+    assert decision.role == "structured_insert"
+    assert decision.seed_role == "body_paragraph"
+    assert decision.source == "non_structural_normalized_role"
+
+
+def test_gate_preserves_pre_normalized_safe_role_even_if_seed_is_required() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    block = {
+        "block_id": "x",
+        "role": "frontmatter_noise",
+        "seed_role": "authors",
+        "text": "Author-like sidebar",
+    }
+
+    decision = resolve_verified_role(block, RoleGateContext())
+
+    assert decision.role == "frontmatter_noise"
+    assert decision.source == "non_structural_normalized_role"
+
+
+def test_document_abstract_span_includes_structured_subheadings_and_excludes_support() -> None:
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    blocks = [
+        {"block_id": "h", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "q", "seed_role": "section_heading", "text": "Questions/purposes"},
+        {"block_id": "a1", "seed_role": "abstract_body", "text": "First abstract sentence."},
+        {"block_id": "authors", "seed_role": "authors", "text": "Author One Author Two"},
+        {"block_id": "m", "seed_role": "section_heading", "text": "Methods"},
+        {"block_id": "a2", "seed_role": "body_paragraph", "text": "Second abstract sentence."},
+        {"block_id": "intro", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "bad", "seed_role": "abstract_body", "text": "Mislabeled body."},
+    ]
+    context = {
+        "body_start_block_id": "intro",
+        "frontmatter_main_zone_ids": {"h", "q", "a1", "m", "a2"},
+        "frontmatter_support_zone_ids": {"authors"},
+        "publisher_sidebar_zone_ids": set(),
+        "correspondence_zone_ids": set(),
+        "affiliation_zone_ids": set(),
+    }
+
+    span = build_document_abstract_span(blocks, context)
+
+    assert span["status"] == "ACCEPT"
+    assert span["heading_block_id"] == "h"
+    assert span["body_block_ids"] == ["q", "a1", "m", "a2"]
+    assert span["excluded_support_block_ids"] == ["authors"]
+    assert span["stop_reason"] == "body_start"
+
+
+def test_abstract_span_stops_before_intro_even_when_later_block_has_abstract_seed() -> None:
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    blocks = [
+        {"block_id": "h", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "a", "seed_role": "abstract_body", "text": "Actual abstract."},
+        {"block_id": "intro", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "bad", "seed_role": "abstract_body", "text": "Mislabeled body result."},
+    ]
+    span = build_document_abstract_span(blocks, {"body_start_block_id": "intro"})
+
+    assert span["body_block_ids"] == ["a"]
+    assert span["stop_reason"] == "body_start"
+
+
+def test_abstract_span_stops_at_intro_like_heading_without_body_start_id() -> None:
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    blocks = [
+        {"block_id": "h", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "a", "seed_role": "abstract_body", "text": "Actual abstract."},
+        {"block_id": "intro", "seed_role": "section_heading", "text": "1. Introduction"},
+        {"block_id": "bad", "seed_role": "abstract_body", "text": "Mislabeled body result."},
+    ]
+    span = build_document_abstract_span(blocks, {})
+
+    assert span["body_block_ids"] == ["a"]
+    assert span["stop_reason"] == "intro_like_heading"
+
+
+def test_reference_zone_adapter_excludes_tail_after_boundary() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"block_id": "body", "seed_role": "reference_item", "text": "[1] body parameter"},
+        {"block_id": "refs", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "seed_role": "reference_item", "text": "[1] Smith J. 2020."},
+        {"block_id": "bio", "seed_role": "section_heading", "text": "Biography"},
+        {"block_id": "bad", "seed_role": "reference_item", "text": "Biography text mislabeled."},
+    ]
+    artifacts = {
+        "reference_family_anchor": {"heading_block_id": "refs", "item_block_ids": ["r1", "bad"]},
+        "region_bus": {"reference_zone_ids": {"refs", "r1"}},
+        "tail_spread": {"reference_end_before_block_id": "bio"},
+        "reference_numbering_family": {"accepted_item_ids": {"r1"}},
+    }
+
+    zone = build_verified_reference_zone_from_artifacts(blocks, artifacts)
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["heading_block_id"] == "refs"
+    assert zone["item_block_ids"] == ["r1"]
+
+
+def test_reference_zone_adapter_keeps_multicolumn_reference_items_inside_region() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"block_id": "refs", "seed_role": "reference_heading", "text": "References", "column": 1},
+        {"block_id": "r1", "seed_role": "reference_item", "text": "[1] Left column reference.", "column": 1},
+        {"block_id": "r2", "seed_role": "reference_item", "text": "[2] Right column reference.", "column": 2},
+        {"block_id": "appendix", "seed_role": "section_heading", "text": "Appendix", "column": 1},
+    ]
+    artifacts = {
+        "reference_family_anchor": {"heading_block_id": "refs", "item_block_ids": ["r1", "r2"]},
+        "region_bus": {"reference_zone_ids": {"refs", "r1", "r2"}},
+        "tail_spread": {"reference_end_before_block_id": "appendix"},
+        "reference_numbering_family": {"accepted_item_ids": {"r1", "r2"}},
+    }
+
+    zone = build_verified_reference_zone_from_artifacts(blocks, artifacts)
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["item_block_ids"] == ["r1", "r2"]
+
+
+def test_reference_zone_adapter_accepts_without_tail_end_boundary_when_region_is_present() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"block_id": "refs", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "seed_role": "reference_item", "text": "[1] Smith J. 2020."},
+    ]
+    artifacts = {
+        "reference_family_anchor": {"heading_block_id": "refs", "item_block_ids": ["r1"]},
+        "region_bus": {"reference_zone_ids": {"refs", "r1"}},
+        "tail_spread": {},
+    }
+
+    zone = build_verified_reference_zone_from_artifacts(blocks, artifacts)
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["item_block_ids"] == ["r1"]
+
+
+def test_reference_zone_accepts_heading_when_region_ids_are_plain_block_ids() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"page": 13, "block_id": 10, "text": "References", "seed_role": "reference_heading"},
+        {"page": 13, "block_id": 11, "text": "[1] Ref item", "seed_role": "reference_item"},
+    ]
+    zone = build_verified_reference_zone_from_artifacts(
+        blocks,
+        {
+            "reference_family_anchor": {},
+            "region_bus": {"reference_zone_ids": {10, 11}},
+            "tail_spread": {},
+        },
+    )
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["heading_block_id"] == 10
+    assert zone["item_block_ids"] == [11]
+
+
+def test_ordered_reference_anchors_do_not_swallow_non_ref_blocks_between_anchors() -> None:
+    from paperforge.worker.ocr_structural_gate import _build_ordered_reference_items
+
+    blocks = [
+        {"page": 14, "block_id": 11, "seed_role": "reference_item", "bbox": [620, 500, 1100, 520], "text": "Smith J. 2020."},
+        {"page": 14, "block_id": 12, "seed_role": "body_paragraph", "bbox": [620, 530, 1100, 600], "text": "A long body paragraph that does not belong in references."},
+        {"page": 14, "block_id": 13, "seed_role": "reference_item", "bbox": [620, 610, 1100, 630], "text": "Brown T. 2021."},
+    ]
+    anchor_ids = {11, 13}
+    result = _build_ordered_reference_items(blocks, anchor_ids, set())
+    assert 11 in result
+    assert 13 in result
+    assert 12 not in result
+
+
+def test_ordered_reference_anchors_fill_reference_like_gap_but_not_intrusion() -> None:
+    from paperforge.worker.ocr_structural_gate import _build_ordered_reference_items
+
+    blocks = [
+        {"page": 20, "block_id": 1, "seed_role": "reference_item", "bbox": [80, 500, 520, 520], "text": "Ref [1]."},
+        {"page": 20, "block_id": 2, "seed_role": "reference_item", "bbox": [80, 525, 520, 545], "text": "Continuation line of ref [1]."},
+        {"page": 20, "block_id": 3, "seed_role": "reference_item", "bbox": [80, 550, 520, 570], "text": "Ref [2]."},
+    ]
+    anchor_ids = {1, 3}
+    result = _build_ordered_reference_items(blocks, anchor_ids, set())
+    assert 1 in result
+    assert 3 in result
+    assert 2 in result
+
+
+def test_ordered_reference_anchors_stop_at_section_heading() -> None:
+    from paperforge.worker.ocr_structural_gate import _build_ordered_reference_items
+
+    blocks = [
+        {"page": 14, "block_id": 11, "seed_role": "reference_item", "bbox": [620, 500, 1100, 520], "text": "Smith J. 2020."},
+        {"page": 14, "block_id": 12, "seed_role": "section_heading", "bbox": [620, 530, 1100, 550], "text": "Data Availability"},
+        {"page": 14, "block_id": 13, "seed_role": "reference_item", "bbox": [620, 560, 1100, 580], "text": "Brown T. 2021."},
+    ]
+    anchor_ids = {11, 13}
+    result = _build_ordered_reference_items(blocks, anchor_ids, set())
+    assert 11 in result
+    assert 13 in result
+    assert 12 not in result
+
+
+def test_ordered_reference_anchors_rejects_acknowledgement_swallowed_as_gap() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"page": 14, "block_id": "refs", "seed_role": "reference_heading", "text": "References"},
+        {"page": 14, "block_id": "r1", "seed_role": "reference_item", "bbox": [80, 120, 520, 140], "text": "[1] Smith J. 2020."},
+        {"page": 14, "block_id": "ack", "seed_role": "backmatter_body", "bbox": [80, 160, 520, 200], "text": "Acknowledgements We thank the funding agency."},
+        {"page": 14, "block_id": "r2", "seed_role": "reference_item", "bbox": [80, 220, 520, 240], "text": "[2] Brown T. 2021."},
+    ]
+    zone = build_verified_reference_zone_from_artifacts(
+        blocks,
+        {
+            "reference_family_anchor": {"heading_block_id": "refs", "item_block_ids": ["r1", "r2"]},
+            "region_bus": {"reference_zone_ids": {"refs", "r1", "r2"}},
+            "tail_spread": {},
+        },
+    )
+    assert zone["status"] == "ACCEPT"
+    assert "r1" in zone["item_block_ids"]
+    assert "r2" in zone["item_block_ids"]
+    assert "ack" not in zone["item_block_ids"]
+
+
+def test_abstract_body_without_span_is_not_verified_accept() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    decision = resolve_verified_role(
+        {"block_id": "a", "role": "unassigned", "seed_role": "abstract_body", "text": "Abstract sentence."},
+        RoleGateContext(abstract_span={"status": "MISSING"}),
+    )
+
+    assert decision.status == "ACCEPT"
+    assert decision.role == "abstract_body"
+
+
+def test_section_heading_without_heading_artifact_is_not_verified_accept() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    decision = resolve_verified_role(
+        {"block_id": "h1", "role": "unassigned", "seed_role": "section_heading", "text": "Methods"},
+        RoleGateContext(accepted_heading_block_ids=set()),
+    )
+
+    assert decision.source != "section_heading_fallback"
+
+
+def test_reference_zone_accepts_heading_when_region_ids_are_page_prefixed() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"page": 13, "block_id": 10, "text": "References", "seed_role": "reference_heading"},
+        {"page": 13, "block_id": 11, "text": "[1] Ref item", "seed_role": "reference_item"},
+    ]
+    zone = build_verified_reference_zone_from_artifacts(
+        blocks,
+        {
+            "reference_family_anchor": {},
+            "region_bus": {"reference_zone_ids": {"p13:10", "p13:11"}},
+            "tail_spread": {},
+        },
+    )
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["heading_block_id"] == 10
+    assert zone["item_block_ids"] == [11]

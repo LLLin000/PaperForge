@@ -54,6 +54,8 @@ class TestFrontmatterFields:
             "collection_path", "collection_tags", "has_pdf", "pdf_path", "supplementary",
             "fulltext_md_path", "recommend_analyze", "analyze",
             "do_ocr", "ocr_status", "ocr_redo", "deep_reading_status", "path_error",
+            "aliases", "tags", "journal", "first_author", "pmid",
+            "impact_factor", "abstract", "keywords", "ocr_time",
         }
         assert set(fm.keys()) == expected
 

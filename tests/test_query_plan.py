@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from paperforge.query_planning import build_query_plan, enrich_query_plan_with_runtime
 from paperforge.commands.query_plan import run as query_plan_run
+from paperforge.query_planning import build_query_plan, enrich_query_plan_with_runtime
 
 
 class _Args:

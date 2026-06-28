@@ -508,6 +508,7 @@ def test_get_paperforge_schema_version_defaults_to_1(tmp_path: Path):
 def test_get_paperforge_schema_version_reads_2(tmp_path: Path):
     """get_paperforge_schema_version returns 2 when schema_version is '2'."""
     import json
+
     from paperforge.config import get_paperforge_schema_version
 
     vault = tmp_path / "schema_v2"
@@ -539,6 +540,7 @@ def test_load_vault_config_excludes_schema_version(tmp_path: Path):
 def test_migrate_legacy_top_level_keys(tmp_path: Path):
     """Legacy top-level path keys are migrated to vault_config block."""
     import json
+
     from paperforge.config import migrate_paperforge_json
 
     vault = tmp_path / "legacy_migrate"
@@ -569,6 +571,7 @@ def test_migrate_legacy_top_level_keys(tmp_path: Path):
 def test_migrate_idempotent(tmp_path: Path):
     """Already-migrated files return False (no-op)."""
     import json
+
     from paperforge.config import migrate_paperforge_json
 
     vault = tmp_path / "already_migrated"
@@ -594,6 +597,7 @@ def test_migrate_no_file(tmp_path: Path):
 def test_migrate_non_path_keys_survive(tmp_path: Path):
     """Non-path top-level keys survive migration in output root."""
     import json
+
     from paperforge.config import migrate_paperforge_json
 
     vault = tmp_path / "non_path_survive"
@@ -619,6 +623,7 @@ def test_migrate_non_path_keys_survive(tmp_path: Path):
 def test_migrate_no_vault_config_block_creates_it(tmp_path: Path):
     """Top-level keys without vault_config block create a new vault_config."""
     import json
+
     from paperforge.config import migrate_paperforge_json
 
     vault = tmp_path / "creates_vc"

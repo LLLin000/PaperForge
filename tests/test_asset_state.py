@@ -6,11 +6,9 @@ Test entries are plain dicts matching the canonical index entry shape.
 
 from __future__ import annotations
 
-import pytest
-
 from paperforge.worker.asset_state import (
-    compute_lifecycle,
     compute_health,
+    compute_lifecycle,
     compute_maturity,
     compute_next_step,
 )

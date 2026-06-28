@@ -16,9 +16,7 @@ from tests.chaos.conftest import (
     corrupt_pdf,
     create_broken_meta_json,
     setup_vault_from_export,
-    strip_frontmatter_fields,
 )
-
 
 pytestmark = pytest.mark.chaos
 

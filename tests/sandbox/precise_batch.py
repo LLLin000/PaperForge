@@ -1,6 +1,5 @@
 """Precise batch defect report."""
 import re
-import json
 import sys
 from pathlib import Path
 
@@ -112,4 +111,4 @@ for key in papers:
     verdict = ", ".join(issues) if issues else "CLEAN"
     print(f"  {key}: {img_num}i/{cap_num}c | {verdict}")
 
-print(f"\nDone.")
+print("\nDone.")

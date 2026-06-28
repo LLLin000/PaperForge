@@ -10,6 +10,10 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+# Pre-import ocr module so lazy imports inside build_index() bind to the
+# real pipeline_paths, not to any mock that may be active during the test.
+from paperforge.worker import ocr as _preimport_ocr  # noqa: F401
+
 
 class TestCanonicalIndexOcrState:
     """Tests for OCR state reporting in canonical index."""
@@ -29,15 +33,17 @@ class TestCanonicalIndexOcrState:
         resources.mkdir()
         (resources / "Literature").mkdir(parents=True)
         (vault / "paperforge.json").write_text(
-            json.dumps({
-                "vault_config": {
-                    "system_dir": "99_System",
-                    "resources_dir": "03_Resources",
-                    "literature_dir": "Literature",
-                    "control_dir": "LiteratureControl",
-                    "base_dir": "05_Bases",
+            json.dumps(
+                {
+                    "vault_config": {
+                        "system_dir": "99_System",
+                        "resources_dir": "03_Resources",
+                        "literature_dir": "Literature",
+                        "control_dir": "LiteratureControl",
+                        "base_dir": "05_Bases",
+                    }
                 }
-            }),
+            ),
             encoding="utf-8",
         )
         return vault
@@ -63,6 +69,7 @@ class TestCanonicalIndexOcrState:
 
     def _base_mock_paths(self, vault: Path) -> dict:
         return {
+            "vault": vault,
             "exports": vault / "99_System" / "PaperForge" / "exports",
             "ocr": vault / "99_System" / "PaperForge" / "ocr",
             "literature": vault / "03_Resources" / "Literature",
@@ -84,6 +91,7 @@ class TestCanonicalIndexOcrState:
             mock_paths.return_value = self._base_mock_paths(vault)
             mock_domain.return_value = {"domains": [{"export_file": "test.json", "domain": "TestDomain"}]}
             from paperforge.worker.asset_index import build_index
+
             build_index(vault)
 
         index_path = vault / "99_System" / "PaperForge" / "indexes" / "formal-library.json"
@@ -109,6 +117,7 @@ class TestCanonicalIndexOcrState:
             mock_paths.return_value = self._base_mock_paths(vault)
             mock_domain.return_value = {"domains": [{"export_file": "test.json", "domain": "TestDomain"}]}
             from paperforge.worker.asset_index import build_index
+
             build_index(vault)
 
         index_path = vault / "99_System" / "PaperForge" / "indexes" / "formal-library.json"
@@ -137,12 +146,14 @@ class TestCanonicalIndexOcrState:
             encoding="utf-8",
         )
         (ocr_dir / "meta.json").write_text(
-            json.dumps({
-                "ocr_status": "done",
-                "zotero_key": "OCR_DONE",
-                "page_count": 2,
-                "markdown_path": str(ocr_dir / "fulltext.md"),
-            }),
+            json.dumps(
+                {
+                    "ocr_status": "done",
+                    "zotero_key": "OCR_DONE",
+                    "page_count": 2,
+                    "markdown_path": str(ocr_dir / "fulltext.md"),
+                }
+            ),
             encoding="utf-8",
         )
         with (
@@ -155,6 +166,7 @@ class TestCanonicalIndexOcrState:
             mock_paths.return_value = self._base_mock_paths(vault)
             mock_domain.return_value = {"domains": [{"export_file": "test.json", "domain": "TestDomain"}]}
             from paperforge.worker.asset_index import build_index
+
             build_index(vault)
 
         index_path = vault / "99_System" / "PaperForge" / "indexes" / "formal-library.json"
@@ -164,3 +176,147 @@ class TestCanonicalIndexOcrState:
         assert entry["has_pdf"] is True
         assert entry["do_ocr"] is True
         assert entry["ocr_status"] == "done"
+
+
+def test_phase2_artifact_dirs_dont_break_index(tmp_path: Path) -> None:
+    """Verify Phase 2 directories don't break build_index()."""
+    import json
+
+    from paperforge.worker.asset_index import build_index
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    system = vault / "99_System"
+    system.mkdir()
+    (system / "PaperForge" / "exports").mkdir(parents=True)
+    (system / "PaperForge" / "exports" / "test.json").write_text("[]", encoding="utf-8")
+    (system / "PaperForge" / "ocr").mkdir(parents=True)
+    (system / "PaperForge" / "indexes").mkdir(parents=True)
+    resources = vault / "03_Resources"
+    resources.mkdir()
+    (resources / "Literature").mkdir(parents=True)
+    (vault / "paperforge.json").write_text(
+        json.dumps(
+            {
+                "vault_config": {
+                    "system_dir": "99_System",
+                    "resources_dir": "03_Resources",
+                    "literature_dir": "Literature",
+                    "control_dir": "LiteratureControl",
+                    "base_dir": "05_Bases",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    # Simulate a paper with Phase 2 artifact dirs
+    ocr_dir = system / "PaperForge" / "ocr" / "PHASE2CK"
+    ocr_dir.mkdir(parents=True)
+    (ocr_dir / "metadata").mkdir()
+    (ocr_dir / "metadata" / "resolved_metadata.json").write_text("{}", encoding="utf-8")
+    (ocr_dir / "structure").mkdir()
+    (ocr_dir / "structure" / "figure_inventory.json").write_text("{}", encoding="utf-8")
+    (ocr_dir / "structure" / "table_inventory.json").write_text("{}", encoding="utf-8")
+    (ocr_dir / "assets" / "figures").mkdir(parents=True)
+    (ocr_dir / "assets" / "tables").mkdir(parents=True)
+    (ocr_dir / "assets" / "orphans").mkdir(parents=True)
+    (ocr_dir / "render" / "figures").mkdir(parents=True)
+    (ocr_dir / "render" / "tables").mkdir(parents=True)
+    (ocr_dir / "meta.json").write_text('{"zotero_key":"PHASE2CK","ocr_status":"done"}', encoding="utf-8")
+
+    # build_index should not raise or fail on Phase 2 directories
+    rc = build_index(vault)
+    assert rc == 0, f"build_index failed with rc={rc}"
+
+
+def test_sync_reads_enriched_meta_without_breaking_ocr_status(tmp_path: Path) -> None:
+    """Ensure sync tolerates enriched meta.json with raw_version + derived_version."""
+    import json
+
+    from paperforge.config import paperforge_paths
+    from paperforge.worker.ocr import validate_ocr_meta
+
+    ocr_root = tmp_path / "System" / "PaperForge" / "ocr" / "TESTKEY"
+    ocr_root.mkdir(parents=True)
+
+    # Write enriched meta.json with Phase 1 version fields
+    meta = {
+        "zotero_key": "TESTKEY",
+        "ocr_status": "done",
+        "ocr_provider": "PaddleOCR-VL-1.6",
+        "page_count": 5,
+        "markdown_path": "System/PaperForge/ocr/TESTKEY/fulltext.md",
+        "json_path": "System/PaperForge/ocr/TESTKEY/json/result.json",
+        "fulltext_md_path": str(ocr_root / "fulltext.md"),
+        "raw_version": {
+            "ocr_provider": "PaddleOCR",
+            "ocr_model": "PaddleOCR-VL-1.6",
+            "ocr_raw_schema_version": "1.0.0",
+            "pdf_fingerprint": "sha256:abc",
+            "result_json_hash": "sha256:def",
+        },
+        "derived_version": {
+            "canonical_block_version": "1.0.0",
+            "structure_version": "1.0.0",
+            "metadata_resolver_version": "0.0.0-phase1",
+            "asset_extractor_version": "0.0.0-phase1",
+            "renderer_version": "1.0.0-compat",
+            "doctor_version": "0.0.0-phase1",
+        },
+    }
+    (ocr_root / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    # Write required compatibility files with valid sizes
+    (ocr_root / "fulltext.md").write_text(
+        "<!-- page 1 -->\n"
+        + "A" * 700
+        + "\n<!-- page 2 -->\n"
+        + "B" * 700
+        + "\n<!-- page 3 -->\n"
+        + "C" * 700
+        + "\n<!-- page 4 -->\n"
+        + "D" * 700
+        + "\n<!-- page 5 -->\n"
+        + "E" * 700,
+        encoding="utf-8",
+    )
+    (ocr_root / "json").mkdir(exist_ok=True)
+    result_data = {"pages": 5, "blocks": [{"id": i, "text": "x" * 100} for i in range(30)]}
+    import json as _json
+
+    (ocr_root / "json" / "result.json").write_text(_json.dumps(result_data), encoding="utf-8")
+
+    paths = paperforge_paths(tmp_path)
+    status, error = validate_ocr_meta(paths, meta)
+    assert status == "done"
+    assert error == ""
+
+
+def test_postprocess_writes_compat_fulltext_at_top_level(tmp_path) -> None:
+    """Phase 3 compatibility: top-level fulltext.md must still exist."""
+    import json as _json
+
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        _json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / "COMP001"
+    ocr_dir.mkdir()
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"COMP001","ocr_status":"done","ocr_model":"PaddleOCR"}',
+        encoding="utf-8",
+    )
+
+    page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, "COMP001", [])
+
+    # Top-level fulltext.md must exist
+    assert (ocr_dir / "fulltext.md").exists(), "top-level fulltext.md missing"
+    # Returned path must resolve to the top-level fulltext.md
+    assert "fulltext.md" in fulltext_md_path, "returned path does not point to fulltext.md"

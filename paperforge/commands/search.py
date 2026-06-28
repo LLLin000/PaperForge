@@ -35,7 +35,8 @@ def run(args: argparse.Namespace) -> int:
     conn = get_connection(db_path, read_only=True)
     try:
         results = search_papers(
-            conn, query,
+            conn,
+            query,
             limit=args.limit,
             domain=args.domain or "",
             year_from=args.year_from or 0,
@@ -71,6 +72,8 @@ def run(args: argparse.Namespace) -> int:
             }
             if plan["query_class"] in {"mixed_query", "author_year"}:
                 warnings.append("Zero results may reflect a noncanonical metadata query rather than library absence.")
+            evidence_plan = enrich_query_plan_with_runtime(build_query_plan(query, "evidence"), vault)
+            data["ocr_evidence_supported"] = evidence_plan.get("runtime", {}).get("ocr_evidence_available", False)
             next_actions.append(
                 {
                     "command": "paperforge query-plan",
@@ -84,10 +87,14 @@ def run(args: argparse.Namespace) -> int:
                         "reason": "The planning layer recommends a different first command for this query.",
                     }
                 )
-        result = PFResult(ok=True, command="search", version=PF_VERSION, data=data, warnings=warnings, next_actions=next_actions)
+        result = PFResult(
+            ok=True, command="search", version=PF_VERSION, data=data, warnings=warnings, next_actions=next_actions
+        )
     except Exception as exc:
         result = PFResult(
-            ok=False, command="search", version=PF_VERSION,
+            ok=False,
+            command="search",
+            version=PF_VERSION,
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
         )
     finally:
@@ -101,7 +108,9 @@ def run(args: argparse.Namespace) -> int:
             print(f"Found {len(matches)} results for: {query}")
             for m in matches:
                 rank_val = m.get("rank", "")
-                print(f"  [{m['lifecycle']:16}] {m['zotero_key']} | {m['year']} | {m['first_author']} | {m['title'][:60]}")
+                print(
+                    f"  [{m['lifecycle']:16}] {m['zotero_key']} | {m['year']} | {m['first_author']} | {m['title'][:60]}"
+                )
         else:
             print(f"Error: {result.error.message}", file=sys.stderr)
     return 0 if result.ok else 1

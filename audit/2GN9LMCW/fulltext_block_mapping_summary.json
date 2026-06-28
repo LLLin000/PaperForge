@@ -1,0 +1,1547 @@
+{
+  "mappable_block_count": 154,
+  "found_count": 117,
+  "missing_count": 37,
+  "rows": [
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "In vitro effect of direct current electrical stimulation on rat mesenchymal stem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Sahba Mobini $ ^{1,2,*} $, Liudmila Leppik $ ^{1,*} $, Vishnu Thottakkattumana P",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $ Frankfurt Initiative for Regenerative Medicine, Experimental Orthopedic",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{2} $School of Materials, Faculty of Engineering and Physical Sciences, Unive",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "These authors contributed equally to this work.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Corresponding author Sahba Mobini, sahba.mobini@manchester.ac.uk, sahba.mobini@g",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "INTRODUCTION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1755
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Large segment bone defects, caused by open fractures, non-unions, infections and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1768
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "How to cite this article Mobini et al. (2017), In vitro effect of direct current",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "hold great potential for achieving optimal bone healing while eliminating the as",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mesenchymal stem cells (MSCs) have been shown to be an attractive cell source fo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2313
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electrical stimulation (ES) has been shown to be effective in nerve and cardiac ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3875
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Recently, various different types of physical stimuli such as static magnetic fi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5730
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "both the proliferative and the differentiation potential of stem cells. Specific",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5919
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the present study we exposed rat BM-MSCs and AT-MSCs to DC ES and compared os",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7389
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MATERIALS AND METHODS Groups",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7526
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We designed our experiments to compare electrically stimulated (ES) versus not s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7555
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell preparation and culture",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7999
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Sprague-Dawley (SD) rat MSC from bone marrow (RASMX-01001) and adipose tissue (R",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8028
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electrical stimulation of cells",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9237
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electrical stimulation was applied by means of a purpose built DC ES cell cultur",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9269
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell viability and activity",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10143
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To confirm that the oxidation–reduction and electrochemical reactions of the met",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10171
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteogenic differentiation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11040
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Alizarin Red stains calcium deposits in the cells, indicating the presence of fu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11067
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Transcription quantitative Polymerase Chain Reaction (RT-qPCR) technique. In bri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11625
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13500
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All experiments were performed in triplicate and statistical significance of dif",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13514
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "5/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "in growth medium at day 0). Standard deviation (SD) was calculated with the $ \\D",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "RESULTS Electrical stimulation optimization",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14292
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In order to optimize the electrical stimulation regime, first we exposed cells i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14336
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "6/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell viability and activity",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10143
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MTT assay was performed to compare viability and activity of electrically stimul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14902
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteogenic differentiation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11040
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The influence of electrical stimulation on osteogenic differentiation of rat AT-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15720
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "7/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(10 and 50 mV/mm) electrical fields, was not significant. However, initial morph",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16353
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteogenic phenotype gene expression was investigated by means of RT-qPCR analys",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16560
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "DISCUSSION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17534
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Early studies exposing bone cells to DC electrical fields were in 1980s when Fer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17545
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "With the aim of better understanding these DC ES induced changes in MSCs osteoge",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18660
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We showed that in the presence of DC ES, BM-MSCs and AT-MSCs behave differently ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19518
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "8/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "No Electrical Stimulation Electrical Stimulation 100 mV/mm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19700
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Days post culture in osteogenic differentiation supplemented medium",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "9/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "the known differences in osteogenic differentiation capacity between BM- and AT-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19810
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Our results indicate that in control groups (osteogenic supplemented medium, wit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20258
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Runx2 is known as a master osteogenic transcription factor. Runx2 activates and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20655
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CONCLUSIONS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21999
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We have demonstrated that DC ES promotes Runx2, Osteopontin and Col1A2 expressio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22011
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ADDITIONAL INFORMATION AND DECLARATIONS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22601
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Funding",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22643
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The work described herein was supported in part by a grant from the AO Foundatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22653
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:10",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Grant Disclosures",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22987
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The following grant information was disclosed by the authors: AO Foundation: #S-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23005
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Competing Interests",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23122
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The authors declare there are no competing interests.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23144
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Author Contributions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23200
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "● Sahba Mobini and Liudmila Leppik conceived and designed the experiments, perfo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23223
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "- Vishnu Thottakkattumana Parameswaran performed the experiments, prepared figur",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23423
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "● John Howard Barker contributed reagents/materials/analysis tools, wrote the pa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23521
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data Availability",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23638
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The following information was supplied regarding data availability:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23658
+    },
+    {
+      "block_id": "p11:11",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The raw data has been supplied as Supplementary Files.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23726
+    },
+    {
+      "block_id": "p11:12",
+      "page": 11,
+      "role": "backmatter_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Supplemental Information",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23783
+    },
+    {
+      "block_id": "p11:13",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Supplemental information for this article can be found online at http://dx.doi.o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23810
+    },
+    {
+      "block_id": "p11:14",
+      "page": 11,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "REFERENCES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23941
+    },
+    {
+      "block_id": "p11:15",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Amini AR, Laurencin CT, Nukavarapu SP. 2012. Bone tissue engineering: recent adv",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23952
+    },
+    {
+      "block_id": "p11:16",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Balint R, Cassidy NJ, Cartmell SH. 2013. Electrical stimulation: a novel tool fo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24149
+    },
+    {
+      "block_id": "p11:17",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Balint R, Cassidy NJ, Hidalgo-Bastida LA, Cartmell S. 2013. Electrical stimulati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24327
+    },
+    {
+      "block_id": "p11:18",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bodamyali T, Bhatt B, Hughes FJ, Winrow VR, Kanczler JM, Simon B, Abbott J, Blak",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24572
+    },
+    {
+      "block_id": "p11:19",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bunnell BA, Flaat M, Gagliardi C, Patel B, Ripoll C. 2008. Adipose-derived stem ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24930
+    },
+    {
+      "block_id": "p11:20",
+      "page": 11,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:21",
+      "page": 11,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "11/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Colnot C. 2011. Cell sources for bone tissue engineering: insights from basic sc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25128
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Cowan CM, Shi YY, Aalami OO, Chou YF, Mari C, Thomas R, Quarto N, Contag CH, Wu ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25292
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Curtis KM, Gomez LA, Rios C, Garbayo E, Raval AP, Perez-Pinzon MA, Schiller PC. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25526
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "De Girolamo L, Sartori MF, Albisetti W, Brini AT. 2007. Osteogenic differentiati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25796
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ferrier J, Ross SM, Kanehisa J, Aubin JE. 1986. Osteoclasts and osteoblasts migr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26048
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Florencio-Silva R, Sasso GRD, Sasso-Cerri E, Simoes MJ, Cerri PS. 2015. Biology ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26270
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Fu YC, Lin CC, Chang JK, Chen CH, Tai IC, Wang GJ, Ho ML. 2014. A novel single p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26502
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Fukada E, Yasuda I. 1957. On the piezoelectric effect of bone. Journal of the Ph",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26740
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Gamie Z, MacFarlane RJ, Tomkinson A, Moniakis A, Tran GT, Gamie Y, Mantalaris A,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26883
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ghasemi-Mobarakeh L, Prabhakaran MP, Morshed M, Nasr-Esfahani MH, Baharvand H, K",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27169
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Griffin M, Bayat A. 2011. Electrical stimulation in bone healing: critical analy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27482
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Grottkau BE, Lin Y. 2013. Osteogenesis of adipose-derived stem cells. Bone Resea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27616
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hammerick KE, James AW, Huang ZB, Prinz FB, Longaker MT. 2010. Pulsed direct cur",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27735
+    },
+    {
+      "block_id": "p12:14",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Haque N, Rahman MT, Abu Kasim NH, Alabsi AM. 2013. Hypoxic culture conditions as",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27959
+    },
+    {
+      "block_id": "p12:15",
+      "page": 12,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:16",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "12/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hardy JG, Villancio-Wolter MK, Sukhavasi RC, Mouser DJ, Aguilar Jr D, Geissler S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28193
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hu WW, Hsu YT, Cheng YC, Li C, Ruaan RC, Chien CC, Chung CA, Tsao CW. 2014. Elec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28521
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Jaiswal N, Haynesworth SE, Caplan AI, Bruder SP. 1997. Osteogenic differentiatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28794
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "James AW. 2013. Review of signaling pathways governing MSC osteogenic and adipog",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29056
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Leppik LP, Froemel D, Slavici A, Ovadia ZN, Hudak L, Henrich D, Marzi I, Barker ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29207
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Levin M. 2009. Bioelectric mechanisms in regeneration: unique aspects and future",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29444
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Liu TM, Martina M, Hutmacher DW, Hui JHP, Lee EH, Lim B. 2007. Identification of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29627
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Livak KJ, Schmittgen TD. 2001. Analysis of relative gene expression data using r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29910
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Marycz K, Lewandowski D, Tomaszewski KA, Henry BM, Golee EB, Maredziak M. 2016. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30101
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "McCullen SD, McQuilling JP, Grossfeld RM, Lubischer JL, Clarke LI, Loboa EG. 201",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30379
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mobini S, Leppik L, Barker JH. 2016. Direct current electrical stimulation chamb",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30757
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Musina RA, Bekchanova ES, Belyavskii AV, Sukhikh GT. 2006. Differentiation poten",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30915
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:14",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "13/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Nakamura A, Dohi Y, Akahane M, Ohgushi H, Nakajima H, Funaoka H, Takakura Y. 200",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31153
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Pelto J, Bjorninen M, Palli A, Talvitie E, Hyttinen J, Mannerstrom B, Suuronen S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31425
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Peng L, Jia Z, Yin X, Zhang X, Liu Y, Chen P, Ma K, Zhou C. 2008. Comparative an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31749
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Petite H, Viateau V, Bensaid W, Meunier A, De Pollak C, Bourguignon M, Oudina K,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31976
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ratanavaraporn J, Kanokpanont S, Tabata Y, Damrongsakkul S. 2009. Growth and ost",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32173
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Robey PG. 2011. Cell sources for bone regeneration: the good, the bad, and the u",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32443
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ross CL, Siriwardane M, Almeida-Porada G, Porada CD, Brink P, Christ GJ, Harriso",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32621
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ryaby JT. 1998. Clinical effects of electromagnetic and electric fields on fract",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32882
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Shamos MH, Lavine LS, Shamos MI. 1963. Piezoelectric effect in bone. Nature 197:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33033
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Sun LY, Hsieh DK, Yu TC, Chiu HT, Lu SF, Luo GH, Kuo TK, Lee OK, Chiou TW. 2009.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33117
+    },
+    {
+      "block_id": "p14:11",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Tandon N, Cannizzaro C, Chao PH, Maidhof R, Marsano A, Au HT, Radisic M, Vunjak-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33387
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Tandon N, Goh B, Marsano A, Chao PH, Montouri-Sorrentino C, Gimble J, Vunjak Nov",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33605
+    },
+    {
+      "block_id": "p14:13",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Tofail SAM, Zhang Y, Gandhi AA. 2011. Piezoelectricity of bone from a new perspe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33937
+    },
+    {
+      "block_id": "p14:14",
+      "page": 14,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:15",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "14/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "PeerJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Tsai MT, Li WJ, Tuan RS, Chang WH. 2009. Modulation of osteogenesis in human mes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34106
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zhao Z, Watt C, Karystinou A, Roelofs AJ, McCaig CD, Gibson IR, De Bari C. 2011.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34328
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zhuang H, Wang W, Seldes RM, Tahernia AD, Fan H, Brighton CT. 1997. Electrical s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34587
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "15/15",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

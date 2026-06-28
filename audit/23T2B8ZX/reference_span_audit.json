@@ -1,0 +1,265 @@
+{
+  "reference_span": {
+    "status": "ACCEPT",
+    "span_id": "refspan_001",
+    "start": {
+      "page": 6,
+      "column": 2,
+      "y": 1214.0,
+      "block_id": "p6:14"
+    },
+    "end": {
+      "page": 7,
+      "column": 2,
+      "y": 730.0,
+      "block_id": "p7:22"
+    },
+    "heading_block_id": "p6:14",
+    "ordered_block_ids": [
+      "p6:14",
+      "p6:15",
+      "p6:16",
+      "p6:17",
+      "p7:3",
+      "p7:4",
+      "p7:5",
+      "p7:6",
+      "p7:7",
+      "p7:8",
+      "p7:9",
+      "p7:10",
+      "p7:11",
+      "p7:12",
+      "p7:13",
+      "p7:14",
+      "p7:15",
+      "p7:16",
+      "p7:17",
+      "p7:18",
+      "p7:19",
+      "p7:20",
+      "p7:21",
+      "p7:22"
+    ],
+    "inside_block_ids": [
+      "p6:14",
+      "p6:15",
+      "p6:16",
+      "p6:17",
+      "p7:3",
+      "p7:4",
+      "p7:5",
+      "p7:6",
+      "p7:7",
+      "p7:8",
+      "p7:9",
+      "p7:10",
+      "p7:11",
+      "p7:12",
+      "p7:13",
+      "p7:14",
+      "p7:15",
+      "p7:16",
+      "p7:17",
+      "p7:18",
+      "p7:19",
+      "p7:20",
+      "p7:21",
+      "p7:22"
+    ],
+    "explicitly_outside_nearby_block_ids": [
+      "p6:13"
+    ],
+    "intrusion_candidates": [
+      {
+        "block_id": "p6:14",
+        "page": 6,
+        "role": "reference_heading",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p6:15",
+        "page": 6,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p6:16",
+        "page": 6,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p6:17",
+        "page": 6,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:0",
+        "page": 7,
+        "role": "noise",
+        "zone": "",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:1",
+        "page": 7,
+        "role": "noise",
+        "zone": "",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:2",
+        "page": 7,
+        "role": "noise",
+        "zone": "",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:3",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:4",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:5",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:6",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:7",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:8",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:9",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:10",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:11",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:12",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:13",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:14",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:15",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:16",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:17",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:18",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:19",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:20",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:21",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p7:22",
+        "page": 7,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      }
+    ]
+  }
+}

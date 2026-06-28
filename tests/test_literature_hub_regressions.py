@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-
 VAULT = Path(r"D:\L\OB\Literature-hub")
 
 

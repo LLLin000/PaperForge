@@ -66,6 +66,10 @@ FORMAL_NOTE_OPTIONAL_KEYS: set[str] = {
     "collection_group",
     "type",
     "pdf_link",
+    "aliases",
+    "ocr_time",
+    "ocr_redo",
+    "citation_key",
 }
 
 OCR_VALID_STATUSES = {"pending", "processing", "done", "failed"}
@@ -193,10 +197,11 @@ class TestStatusJsonConsistency:
         # Basic shape check on the inner data payload
         assert_json_shape(
             data,
-            {"vault", "system_dir", "resources_dir", "total_papers"},
-            {"version", "formal_notes", "exports", "domains", "bases", "path_errors",
-             "env_configured", "ocr", "lifecycle_level_counts",
-             "health_aggregate", "maturity_distribution"},
+             {"vault", "system_dir", "resources_dir", "total_papers"},
+             {"version", "formal_notes", "exports", "domains", "bases", "path_errors",
+              "env_configured", "ocr", "lifecycle_level_counts",
+              "health_aggregate", "maturity_distribution",
+              "structured_ocr_health", "ocr_version_state"},
         )
 
     def test_status_json_counts_match_expected(self, golden_vault):

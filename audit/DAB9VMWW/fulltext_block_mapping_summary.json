@@ -1,0 +1,1227 @@
+{
+  "mappable_block_count": 122,
+  "found_count": 65,
+  "missing_count": 57,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "RESEARCH ARTICLE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "ADVANCED MATERIALS www.advmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Capacitive-Coupling-Responsive Hydrogel Scaffolds Offering Wireless In Situ Elec",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Ping Wu, Chao Xu, Xianghui Zou, Kun Yang, Yanping Xu, Xueyao Li, Xiaokun Li,* Zh",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "1. Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1808
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electrical stimulation (ES) has shown significant benefits in the repair and reg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1824
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "feasible. $ ^{[6]} $ Therefore, there is an urgent need to explore wireless ES w",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "P. Wu, C. Xu, X. Zou, K. Yang, Y. Xu, X. Li, Z. Luo National Engineering Researc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3110
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To avoid invasive percutaneous leads during in vivo ES, implantable mini-sized d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3674
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "DOI: 10.1002/adma.202310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2310483 (1 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "by an external magnetic field, and the ES delivered to the cuff electrodes wrapp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4590
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We speculate that an electroactive biomaterial capable of functioning both as a ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5140
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "gel scaﬀold with capacitive-coupling wireless electrical gener- ation capability",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7218
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "2310483 (2 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "15214095, 2024, 14, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:22",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "enhancing neural regeneration and the regeneration of other tissues.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8588
+    },
+    {
+      "block_id": "p3:23",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2. Results and Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8660
+    },
+    {
+      "block_id": "p3:24",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Biodegradable conductive hydrogels provide a conductive microenvironment that en",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8686
+    },
+    {
+      "block_id": "p3:25",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(BP) nanosheets have been explored as conductive dopants for constructing conduc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9679
+    },
+    {
+      "block_id": "p3:26",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:27",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2310483 (3 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:28",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:29",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "15214095, 2024, 14, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "located at 1156 and 1067 cm⁻¹, which can be assigned to the P=O and P−O oxygen f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12322
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "After mixing the BP@PDA nanosheets evenly in the chitosan/gelatin solution, a st",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12809
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Capacitive coupling technology is a promising near-field coupling approach for w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15367
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "responsive hydrogel scaﬀold with alternating current ﬂow dur- ing high-frequency",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17401
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Before investigating the in vitro NSC behavior on a conductive CS/Gel/BP hydroge",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18971
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To evaluate the effect of electrostatic-induction-driven in situ WES on cell pro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20253
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2310483 (4 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "15214095, 2024, 14, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:28",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:29",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2310483 (5 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:30",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:31",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "15214095, 2024, 14, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "in situ ES on NSC differentiation was also investigated. After 7 d of WES, with ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21309
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "To investigate in vivo therapeutic effect of the wireless ES generated by the ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23114
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "2.75 V. Therefore, the in vivo and in vitro coupling eﬃciency for power transmis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25047
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "The effect of the BCH combined with electrostatic-induction-driven WES in promot",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25155
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Urinary system disorders are serious complications of spinal cord injury that ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26267
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Luxol fast blue (LFB), a copper-phthalocyanine dye, combines with myelin in an e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27703
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2310483 (6 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "15214095, 2024, 14, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED MATERIALS www.advmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:25",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "analysis results are shown in Figure 4g. The LFB staining ratio of the total are",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28669
+    },
+    {
+      "block_id": "p7:26",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "ES-treated groups. These results demonstrate that the BCH com- bined with the in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29164
+    },
+    {
+      "block_id": "p7:27",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "The myelin sheath, the membrane that surrounds the axon, can act as an insulator",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29344
+    },
+    {
+      "block_id": "p7:28",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:29",
+      "page": 7,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2310483 (7 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:30",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:31",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "15214095, 2024, 14, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "impulses from one axon to another. Myelination at the site of a nerve injury pro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29517
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "nerves (Figure 4e). As shown in Figure 4h,i, the mean percentage of MBP/NF200+ s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30531
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2310483 (8 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:17",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:18",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "15214095, 2024, 14, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "medium dose had a strong influence on strengthening remyelination. As shown in F",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31065
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "To assess the differentiation of endogenous NSC differentiation at the injury si",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31587
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "section_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "3. Conclusions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33522
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "In this study, we developed a WES strategy, in which a capacitive-coupling-respo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33537
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "fectively promote functional repair by enhancing remyelination, accelerating axo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34549
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Supporting Information",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9054
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Supporting Information is available from the Wiley Online Library or from the au",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35277
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acknowledgements",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35365
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "P.W., C.X., and X.Z. contributed equally to this work. This work was supported b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35384
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Conflict of Interest",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:13",
+      "page": 9,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data Availability Statement",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35563
+    },
+    {
+      "block_id": "p9:14",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The data that support the findings of this study are available from the correspo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35593
+    },
+    {
+      "block_id": "p9:15",
+      "page": 9,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Keywords",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35716
+    },
+    {
+      "block_id": "p9:16",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "biodegradable hydrogels, conductive hydrogels, neural regeneration, tissue engin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35725
+    },
+    {
+      "block_id": "p9:17",
+      "page": 9,
+      "role": "backmatter_body",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Received: October 9, 2023 Revised: December 28, 2023 Published online: January 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35845
+    },
+    {
+      "block_id": "p9:18",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[1] a) L. Wang, L. Mao, F. Qi, X. Li, M. W. Ullah, M. Zhao, Z. Shi, G. Yang, Che",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35933
+    },
+    {
+      "block_id": "p9:19",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[2] L. He, Z. Sun, J. Li, R. Zhu, B. Niu, K. L. Tam, Q. Xiao, J. Li, W. Wang, C.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36749
+    },
+    {
+      "block_id": "p9:20",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[3] Y. Zhao, Y. Liang, S. Ding, K. Zhang, H.-Q. Mao, Y. Yang, Biomaterials 2020,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36936
+    },
+    {
+      "block_id": "p9:21",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[4] Y. Ping, C. Xu, L. Xu, G. Liao, Y. Zhou, C. Deng, Y. Lan, F. Yu, J. Shi, L. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37030
+    },
+    {
+      "block_id": "p9:22",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[5] S. Xie, J. Huang, A. T. Pereira, L. Xu, D. Luo, Z. Li, BMEMat 2023, 1, 12038",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37173
+    },
+    {
+      "block_id": "p9:23",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:24",
+      "page": 9,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2310483 (9 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:25",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:26",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "15214095, 2024, 14, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencene",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[6] a) Y. S. Choi, Y.-Y. Hsueh, J. Koo, Q. Yang, R. Avila, B. Hu, Z. Xie, G. Lee",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37272
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[7] L. Wang, C. Lu, S. Yang, P. Sun, Y. Wang, Y. Guan, S. Liu, D. Cheng, H. Meng",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37720
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[8] J. Koo, M. R. Macewan, S.-K. Kang, S. M. Won, M. Stephen, P. Gamble, Z. Xie,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37981
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[9] Y. Zhang, S. Chen, Z. Xiao, X. Liu, C. Wu, K. Wu, A. Liu, D. Wei, J. Sun, L.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38314
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[10] T. Kim, H. J. Kim, W. Choi, Y. M. Lee, J. H. Pyo, J. Lee, J. Kim, J. Kim, J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38451
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[11] C. Xu, Y. Chang, P. Wu, K. Liu, X. Dong, A. Nie, C. Mu, Z. Liu, H. Dai, Z. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38592
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[12] a) Q. Zhang, Y. Qiao, C. Li, J. Lin, H. Han, X. Li, J. Mao, F. Wang, L. Wan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38715
+    },
+    {
+      "block_id": "p10:10",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[13] T. Yang, C. Xu, C. Liu, Y. Ye, Z. Sun, B. Wang, Z. Luo, Chem. Eng. J. 2022,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38917
+    },
+    {
+      "block_id": "p10:11",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[14] C. Xu, Y. Xu, M. Yang, Y. Chang, A. Nie, Z. Liu, J. Wang, Z. Luo, Adv. Func",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39011
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[15] M. Luo, T. Fan, Y. Zhou, H. Zhang, L. Mei, Adv. Funct. Mater. 2019, 29, 180",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39120
+    },
+    {
+      "block_id": "p10:13",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[16] L. J. Zou, Q. Zhu, C. W. Van Neste, A. P. Hu, IEEE J. Emerging Sel. Top. Po",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39206
+    },
+    {
+      "block_id": "p10:14",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[17] Y. Qian, W.-E. Yuan, Y. Cheng, Y. Yang, X. Qu, C. Fan, Nano Lett. 2019, 19,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39314
+    },
+    {
+      "block_id": "p10:15",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[18] a) F. Qi, Y. Wang, T. Ma, S. Zhu, W. Zeng, X. Hu, Z. Liu, J. Huang, Z. Luo,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39401
+    },
+    {
+      "block_id": "p10:16",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[19] L. Li, Y. Zhang, J. Mu, J. Chen, C. Zhang, H. Cao, J. Gao, Nano Lett. 2020,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39797
+    },
+    {
+      "block_id": "p10:17",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[20] Y. Bi, W. Duan, J. Chen, T. You, S. Li, W. Jiang, M. Li, G. Wang, X. Pan, J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39888
+    },
+    {
+      "block_id": "p10:18",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[21] W. Tai, W. Wu, L.-L. Wang, H. Ni, C. Chen, J. Yang, T. Zang, Y. Zou, X.-M. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40036
+    },
+    {
+      "block_id": "p10:19",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[22] a) C. Wang, M. Wang, K. Xia, J. Wang, F. Cheng, K. Shi, L. Ying, C. Yu, H. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40163
+    },
+    {
+      "block_id": "p10:20",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[23] X. Zhang, T. Wang, Z. Zhang, H. Liu, L. Li, A. Wang, J. Ouyang, T. Xie, L. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40472
+    },
+    {
+      "block_id": "p10:21",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Mater. 2024, 36, 2310483",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:22",
+      "page": 10,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2310483 (10 of 10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:23",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:24",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "5214095, 2024, 14, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

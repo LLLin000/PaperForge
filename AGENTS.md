@@ -99,7 +99,47 @@ JS 读（同步，不推断）:
 
 ---
 
-## 4. 路由
+## 4. Codebase Memory (Knowledge Graph)
+
+This project has **codebase-memory-mcp** installed — a knowledge graph of the entire repo. Use it instead of grep/glob for structural queries.
+
+### When to Use
+
+| Agent task | Use this tool | Instead of |
+|-----------|--------------|------------|
+| Find definition of X | `search_graph` | grep/glob |
+| Who calls this function | `trace_path` | recursive grep |
+| Architecture overview | `get_architecture` | manual reading |
+| Find all routes/views | `search_graph(label="Route")` | glob guessing |
+| Impact of changing X | `detect_changes` | grep + manual tracing |
+| Complex relationship query | `query_graph` (Cypher) | multiple greps |
+| Search by semantic meaning | `search_graph(semantic_query=[...])` | keyword guessing |
+| Read source code | `get_code_snippet` | reading around |
+
+### Rules
+
+1. **Graph first.** For any structural question (definitions, callers, call chains, routes, imports), use graph tools before grep/glob.
+2. **`search_graph` before `get_code_snippet`.** Discover the `qualified_name` first, then read the source.
+3. **Use `project=<name>` filter.** Check with `list_projects` if unsure.
+4. **`trace_path` replaces recursive grep.** Find all callers: `trace_path(function_name="X", direction="inbound")`. Depth up to 5.
+5. **`detect_changes` for change impact.** Before modifying shared code, check what depends on it.
+
+### Quick Reference
+
+```
+search_graph(query="find all handlers", label="Function")
+search_graph(name_pattern=".*Handler.*", label="Function")
+search_graph(semantic_query=["send", "publish"])
+trace_path(function_name="search", direction="inbound", depth=3)
+trace_path(function_name="search", direction="outbound")
+get_architecture(aspects=["all"])
+detect_changes(since="HEAD~5")
+query_graph(query="MATCH (f:Function) WHERE f.complexity > 10 RETURN f.name, f.complexity")
+```
+
+---
+
+## 5. 路由
 
 | Route | 类型 | 动作 |
 |-------|------|------|
@@ -111,7 +151,7 @@ JS 读（同步，不推断）:
 
 ---
 
-## 5. 版本发布流程
+## 6. 版本发布流程
 
 发布新版前确认测试通过，然后 bump 版本：
 
@@ -140,7 +180,7 @@ GitHub Actions（release.yml / publish.yml）会自动在 tag push 后创建 Rel
 
 ---
 
-## 6. Skill 部署
+## 7. Skill 部署
 
 Skill 文件在 `paperforge/skills/paperforge/` 中。部署到 vault 由 `paperforge/services/skill_deploy.py` 处理：
 - **setup wizard**：首次安装时部署
@@ -149,7 +189,7 @@ Skill 文件在 `paperforge/skills/paperforge/` 中。部署到 vault 由 `paper
 
 ---
 
-## 7. 测试
+## 8. 测试
 
 ```bash
 # Python
@@ -164,6 +204,68 @@ ruff check --fix paperforge/ && ruff format paperforge/
 # Skill Graph contract tests
 python -m pytest tests/test_skill_graph_contracts.py tests/test_skill_graph_layout.py tests/test_pf_bootstrap_capabilities.py -v --tb=short
 ```
+
+---
+
+## 9. Ponytail 模式 — 始终默认激活
+
+> **本 section 是** ***开发纪律*** **，不是可选模式。** 无论用户是否提到 ponytail，每次编写/修改代码前必须先读本节并默认遵守。
+
+### 核心原则
+
+```
+1. 这个东西真的需要写吗？（YAGNI）
+2. 标准库能搞定吗？用标准库。
+3. 平台原生功能覆盖了吗？用平台功能。
+4. 已经装好的依赖能解决吗？用已有依赖。
+5. 能不能一行写完？写一行。
+6. 只有以上都否定，才写最少可行代码。
+```
+
+从未被要求的抽象、可避免的依赖、没人要的样板——删。boring 优于 clever。最少的文件数。
+
+### 三级模式
+
+级别通过以下方式设定：
+- 用户说 `ponytail lite|full|ultra` 切换
+- 用户不指定时默认 **full**
+- 用户说 `stop ponytail` / `normal mode` 退出
+
+| 级别 | 何时用 | 怎么做 |
+|------|--------|--------|
+| **lite** | 添加小功能 | 单文件 + 无依赖，跳过非必要抽象层 |
+| **full** (default) | 修复 bug | 删体积、不加额外防护、延迟校验到异常时 |
+| **ultra** | 探索/原型 | 最少行，用注释声明已知上限不走完整方案 |
+
+### 纪律
+
+- `@ponytail: {limit, upgrade_path}` 注释标注每个 shortcut 的已知上限和升级路径
+- Laziness 不是偷懒——**不动比多写强，删比加好，减一行大于加十行**
+- 从不简化：信任边界输入校验、防数据丢失的错误处理、安全措施、基础设施可访问性、硬件所需的校准、用户要求保留的内容
+- 非平凡的逻辑至少留下一个可运行的自检（assert demo 或一个小测试文件）
+
+### 自动触发规则
+
+即使没有明确听到 "ponytail"，以下场景应自动激活 ponytail full 模式：
+
+| 触发信号 | 说明 |
+|----------|------|
+| 用户上来就给需求，没有说"设计"、"架构"、"考虑" | 默认 full：精准修，不额外抽象 |
+| 对话中已经有很多轮讨论 | 默认 full：删体积，不加新结构 |
+| 用户说"快速"、"简单"、"修一下"、"改一下" | 默认 full |
+| 用户说了自己的修改方案 | 尊重方案，不做过度设计 |
+
+---
+
+## 10. PROJECT-MANAGEMENT 实时更新规则
+
+每个开发会话结束时（或阶段性完成后），必须更新 `PROJECT-MANAGEMENT.md`。规则：
+
+1. **每完成一个 fix，立即记录**：不要攒到会话最后。每个 fix 完成后即追加条目。
+2. **记录格式**：`### N.M 标题 (YYYY-MM-DD)`，包含问题 → 根因 → 修复 → 结果 → 测试状态。
+3. **Remaining known issues 同步**：如果修复解决了某个已知 issue，从列表中删除或注明 resolved。
+4. **Parked Hard Case 同步**：如果发现新的边界情况无法在当前 fix 中处理，追加到 Parked Hard Case。
+5. **会话结束前提交**：PROJECT-MANAGEMENT 的更新必须随最后的 push 一起提交。
 
 ---
 

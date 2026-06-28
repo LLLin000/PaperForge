@@ -7,7 +7,6 @@ import pytest
 
 from paperforge.worker.paper_resolver import PaperResolver, PaperWorkspace
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

@@ -1,0 +1,412 @@
+{
+  "figures": {
+    "matched_count": 31,
+    "ambiguous_count": 0,
+    "unresolved_cluster_count": 0,
+    "unmatched_asset_count": 16,
+    "matched": [
+      {
+        "figure_number": 1,
+        "legend_block_id": 9,
+        "asset_block_ids": [
+          8
+        ],
+        "page": 4,
+        "match_type": null
+      },
+      {
+        "figure_number": 2,
+        "legend_block_id": 5,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 6,
+        "match_type": null
+      },
+      {
+        "figure_number": 3,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 7,
+        "match_type": null
+      },
+      {
+        "figure_number": 4,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 8,
+        "match_type": null
+      },
+      {
+        "figure_number": 5,
+        "legend_block_id": 16,
+        "asset_block_ids": [
+          6,
+          4,
+          8,
+          9,
+          10,
+          11,
+          14,
+          13,
+          15
+        ],
+        "page": 10,
+        "match_type": null
+      },
+      {
+        "figure_number": 6,
+        "legend_block_id": 10,
+        "asset_block_ids": [
+          9
+        ],
+        "page": 14,
+        "match_type": null
+      },
+      {
+        "figure_number": 7,
+        "legend_block_id": 12,
+        "asset_block_ids": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          9,
+          8,
+          10,
+          11
+        ],
+        "page": 16,
+        "match_type": null
+      },
+      {
+        "figure_number": 8,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 17,
+        "match_type": null
+      },
+      {
+        "figure_number": 9,
+        "legend_block_id": 16,
+        "asset_block_ids": [
+          4,
+          6,
+          8,
+          7,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "page": 20,
+        "match_type": null
+      },
+      {
+        "figure_number": 10,
+        "legend_block_id": 6,
+        "asset_block_ids": [
+          3,
+          4,
+          5
+        ],
+        "page": 23,
+        "match_type": null
+      },
+      {
+        "figure_number": 11,
+        "legend_block_id": 13,
+        "asset_block_ids": [
+          3,
+          4,
+          6,
+          5,
+          7,
+          8,
+          9,
+          11,
+          12,
+          10
+        ],
+        "page": 24,
+        "match_type": null
+      },
+      {
+        "figure_number": 12,
+        "legend_block_id": 9,
+        "asset_block_ids": [
+          6,
+          7,
+          8
+        ],
+        "page": 26,
+        "match_type": null
+      },
+      {
+        "figure_number": 13,
+        "legend_block_id": 11,
+        "asset_block_ids": [
+          6,
+          9,
+          8,
+          10
+        ],
+        "page": 28,
+        "match_type": null
+      },
+      {
+        "figure_number": 14,
+        "legend_block_id": 13,
+        "asset_block_ids": [
+          3,
+          4,
+          6,
+          7,
+          5,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "page": 30,
+        "match_type": null
+      },
+      {
+        "figure_number": 15,
+        "legend_block_id": 7,
+        "asset_block_ids": [
+          6
+        ],
+        "page": 33,
+        "match_type": null
+      },
+      {
+        "figure_number": 16,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 35,
+        "match_type": null
+      },
+      {
+        "figure_number": 17,
+        "legend_block_id": 12,
+        "asset_block_ids": [
+          3,
+          5,
+          4,
+          6,
+          7,
+          8,
+          9,
+          11,
+          10
+        ],
+        "page": 37,
+        "match_type": null
+      },
+      {
+        "figure_number": 18,
+        "legend_block_id": 19,
+        "asset_block_ids": [
+          4,
+          6,
+          7,
+          8,
+          9,
+          11,
+          10,
+          12,
+          16,
+          13,
+          15,
+          14,
+          18,
+          17
+        ],
+        "page": 39,
+        "match_type": null
+      },
+      {
+        "figure_number": 19,
+        "legend_block_id": 9,
+        "asset_block_ids": [
+          3,
+          5,
+          6,
+          7,
+          8
+        ],
+        "page": 42,
+        "match_type": null
+      },
+      {
+        "figure_number": 20,
+        "legend_block_id": 12,
+        "asset_block_ids": [
+          4,
+          6,
+          11,
+          10,
+          9
+        ],
+        "page": 44,
+        "match_type": null
+      },
+      {
+        "figure_number": 21,
+        "legend_block_id": 10,
+        "asset_block_ids": [
+          3,
+          4,
+          7,
+          6,
+          8,
+          9
+        ],
+        "page": 45,
+        "match_type": null
+      },
+      {
+        "figure_number": 22,
+        "legend_block_id": 19,
+        "asset_block_ids": [
+          11,
+          9,
+          13,
+          15,
+          17,
+          18
+        ],
+        "page": 47,
+        "match_type": null
+      },
+      {
+        "figure_number": 23,
+        "legend_block_id": 10,
+        "asset_block_ids": [
+          3,
+          4,
+          5,
+          6,
+          9,
+          8,
+          7
+        ],
+        "page": 49,
+        "match_type": null
+      },
+      {
+        "figure_number": 25,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 53,
+        "match_type": null
+      },
+      {
+        "figure_number": 26,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 55,
+        "match_type": null
+      },
+      {
+        "figure_number": 27,
+        "legend_block_id": 17,
+        "asset_block_ids": [
+          7,
+          6,
+          8,
+          12,
+          10,
+          15,
+          13,
+          16
+        ],
+        "page": 56,
+        "match_type": null
+      },
+      {
+        "figure_number": 28,
+        "legend_block_id": 6,
+        "asset_block_ids": [
+          5
+        ],
+        "page": 58,
+        "match_type": null
+      },
+      {
+        "figure_number": 29,
+        "legend_block_id": 9,
+        "asset_block_ids": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "page": 61,
+        "match_type": null
+      },
+      {
+        "figure_number": 30,
+        "legend_block_id": 11,
+        "asset_block_ids": [
+          3,
+          4,
+          5,
+          7,
+          6,
+          10,
+          8,
+          9
+        ],
+        "page": 62,
+        "match_type": null
+      },
+      {
+        "figure_number": 31,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 65,
+        "match_type": null
+      },
+      {
+        "figure_number": 24,
+        "legend_block_id": 3,
+        "asset_block_ids": [
+          25
+        ],
+        "page": 50,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [],
+    "unresolved": []
+  },
+  "tables": {
+    "matched_count": 0,
+    "ambiguous_count": 0,
+    "unmatched_asset_count": 8,
+    "matched": [],
+    "ambiguous": []
+  }
+}

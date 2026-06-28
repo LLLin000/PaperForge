@@ -74,6 +74,10 @@ def run(args: argparse.Namespace) -> int:
 
     _write_orphan_state(vault, result)
 
+    if result.warnings and not json_output:
+        for w in result.warnings:
+            print(f"[WARN] {w}")
+
     if json_output:
         print(result.to_json())
         if result.ok and not dry_run and not index_only and not selection_only:

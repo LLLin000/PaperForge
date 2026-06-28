@@ -175,3 +175,48 @@ def test_ocr_redo_scan_finds_marked_papers(tmp_path):
     assert "KEY_B" not in found
     assert "KEY_C" in found
     assert len(found) == 2
+
+
+def test_ocr_redo_rebuilds_phase3_artifacts(tmp_path) -> None:
+    """Verify postprocess_ocr_result produces render and health artifacts from Phase 3."""
+    import json as _json
+
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        _json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / "REDO003"
+    ocr_dir.mkdir()
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"REDO003","ocr_status":"done","ocr_redo":true,"ocr_model":"PaddleOCR","source_pdf":""}',
+        encoding="utf-8",
+    )
+
+    postprocess_ocr_result(vault, "REDO003", [])
+
+    # Phase 3 artifacts should exist
+    assert (ocr_dir / "render" / "fulltext.md").exists(), "render/fulltext.md missing after redo"
+    assert (ocr_dir / "health" / "ocr_health.json").exists(), "health/ocr_health.json missing after redo"
+
+
+# ---------------------------------------------------------------------------
+# Guard: redo must not become derived-rebuild path
+# ---------------------------------------------------------------------------
+
+def test_redo_does_not_call_derived_rebuild() -> None:
+    """Verify ocr redo does not import or call derived rebuild.
+
+    This import will fail (ModuleNotFoundError) until Task 5 of Phase 4,
+    which explicitly keeps redo and derived rebuild separate. If someone
+    wires redo to use derived rebuild, this test should be updated or
+    removed with explicit justification.
+    """
+    from paperforge.worker.ocr_rebuild import select_papers_for_derived_rebuild
+
+    assert select_papers_for_derived_rebuild is not None

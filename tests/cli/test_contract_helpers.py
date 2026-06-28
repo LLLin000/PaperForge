@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
 
 
 def normalize_snapshot(output: str, vault_path: str | None = None) -> str:

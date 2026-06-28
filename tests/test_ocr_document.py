@@ -1,0 +1,5156 @@
+from __future__ import annotations
+
+
+def test_page_layout_profile_includes_confidence_and_evidence() -> None:
+    from paperforge.worker.ocr_document import _build_page_layout_profiles
+
+    blocks = [
+        {"role": "body_paragraph", "page": 1, "bbox": [100, 100, 500, 280], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [700, 100, 1100, 280], "page_width": 1200, "page_height": 1700},
+    ]
+
+    profile = _build_page_layout_profiles(blocks)[1]
+
+    assert hasattr(profile, "confidence")
+    assert hasattr(profile, "evidence")
+    assert profile.confidence >= 0.5
+    assert "eligible_body_blocks" in profile.evidence
+
+
+def test_layout_profiles_ignore_wide_headings_and_media() -> None:
+    from paperforge.worker.ocr_document import _build_page_layout_profiles
+
+    blocks = [
+        {"role": "section_heading", "page": 1, "bbox": [50, 50, 1150, 90], "page_width": 1200, "page_height": 1700},
+        {"role": "figure_asset", "page": 1, "bbox": [400, 120, 800, 500], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [100, 600, 500, 780], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [700, 600, 1100, 780], "page_width": 1200, "page_height": 1700},
+    ]
+
+    profile = _build_page_layout_profiles(blocks)[1]
+
+    assert profile.column_count == 2
+    assert "excluded_non_body_blocks" in profile.evidence
+
+
+def test_analyze_document_structure_flat_backmatter() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, analyze_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Intro"},
+        {"page": 2, "role": "body_paragraph", "text": "Methods"},
+        {"page": 3, "role": "body_paragraph", "text": "Results"},
+        {"page": 3, "role": "section_heading", "text": "Discussion"},
+        {"page": 4, "role": "body_paragraph", "text": "Discussion text"},
+        {"page": 5, "role": "backmatter_heading", "text": "Acknowledgments"},
+        {"page": 5, "role": "backmatter_body", "text": "Thanks."},
+        {"page": 6, "role": "reference_heading", "text": "References"},
+        {"page": 6, "role": "reference_item", "text": "[1] Ref A"},
+    ]
+
+    doc = analyze_document_structure(blocks)
+
+    assert isinstance(doc, DocumentStructure)
+    assert doc.body_end_page == 4
+    assert doc.spread_start == 5
+    assert doc.spread_end == 6
+    assert doc.backmatter_form == "flat"
+
+
+def test_analyze_document_structure_container_backmatter() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, analyze_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Intro"},
+        {"page": 2, "role": "section_heading", "text": "Methods"},
+        {"page": 3, "role": "body_paragraph", "text": "Results"},
+        {"page": 3, "role": "section_heading", "text": "Discussion"},
+        {"page": 4, "role": "body_paragraph", "text": "Discussion text"},
+        {"page": 5, "role": "backmatter_boundary_heading", "text": "ADDITIONAL INFORMATION AND DECLARATIONS"},
+        {"page": 5, "role": "backmatter_heading", "text": "Funding"},
+        {"page": 5, "role": "backmatter_body", "text": "Funded by NIH."},
+        {"page": 6, "role": "backmatter_heading", "text": "Acknowledgments"},
+        {"page": 6, "role": "backmatter_body", "text": "Thanks."},
+        {"page": 6, "role": "backmatter_heading", "text": "Author Contributions"},
+        {"page": 6, "role": "backmatter_body", "text": "AB did X."},
+        {"page": 7, "role": "reference_heading", "text": "References"},
+        {"page": 7, "role": "reference_item", "text": "[1] Ref A"},
+    ]
+
+    doc = analyze_document_structure(blocks)
+
+    assert isinstance(doc, DocumentStructure)
+    assert doc.backmatter_form == "container"
+
+
+def test_analyze_document_structure_exposes_reference_family_anchor_before_final_reference_roles() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, analyze_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Intro text"},
+        {"page": 2, "role": "body_paragraph", "text": "Methods text"},
+        {
+            "page": 5,
+            "role": "reference_heading",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[2] Another reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+
+    doc = analyze_document_structure(blocks)
+
+    assert isinstance(doc, DocumentStructure)
+    assert doc.reference_family_anchor is not None
+    assert doc.reference_family_anchor["status"] == "ACCEPT"
+    assert doc.reference_family_anchor["item_count"] == 2
+
+
+def test_analyze_document_structure_discovers_reference_family_anchor_before_tail_role_normalization() -> None:
+    from paperforge.worker.ocr_document import analyze_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Intro text"},
+        {"page": 2, "role": "body_paragraph", "text": "Methods text"},
+        {
+            "page": 5,
+            "role": "reference_heading",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[2] Another reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+
+    doc = analyze_document_structure(blocks)
+
+    assert doc.reference_family_anchor is not None
+    assert doc.reference_family_anchor["status"] == "ACCEPT"
+    assert blocks[3]["role"] == "body_paragraph"
+    assert blocks[4]["role"] == "body_paragraph"
+
+
+def test_analyze_document_structure_wires_style_family_artifacts_into_blocks() -> None:
+    from paperforge.worker.ocr_document import analyze_document_structure
+
+    blocks = [
+        {
+            "block_id": "p3_b1",
+            "page": 3,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph with enough text to be treated as core body evidence across the main article flow and stable typography. "
+            * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b1",
+            "page": 4,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph continuing the main article flow with matching typography and substantial prose for body-anchor detection. "
+            * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 262, "width_bucket": 250, "x_center": 242, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b1b",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph extending the article with the same body typography and enough tokens to remain a strong body candidate. "
+            * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 261, "width_bucket": 250, "x_center": 241, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b2",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Figure 2. Compact legend text",
+            "marker_signature": {"type": "figure_number", "number": 2},
+            "span_signature": {"font_size_median": 8.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 220, "x_center": 250},
+        },
+    ]
+
+    analyze_document_structure(blocks)
+
+    assert blocks[0]["style_family"] == "body_like"
+    assert blocks[0]["style_family_authority"] in {"body_family_anchor", "body_zone_with_anchor", "body_zone_candidate"}
+    assert blocks[3]["style_family"] == "legend_like"
+
+
+def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"page": 1, "block_id": "p1", "role": "body_paragraph", "text": "Intro text"},
+        {"page": 2, "block_id": "p2", "role": "body_paragraph", "text": "Methods text"},
+        {
+            "page": 5,
+            "block_id": "p5_h",
+            "role": "reference_heading",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "page": 5,
+            "block_id": "p5_r1",
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "page": 5,
+            "block_id": "p5_r2",
+            "role": "body_paragraph",
+            "text": "[2] Another reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+
+    doc, normalized_blocks = normalize_document_structure(blocks)
+
+    assert doc.reference_family_anchor is not None
+    assert doc.reference_family_anchor["status"] == "ACCEPT"
+    # Family anchor + markers → reference_item (verified by reference zone)
+    idx_item1 = next(i for i, b in enumerate(normalized_blocks) if b.get("block_id") == "p5_r1")
+    idx_item2 = next(i for i, b in enumerate(normalized_blocks) if b.get("block_id") == "p5_r2")
+    assert normalized_blocks[idx_item1]["role"] == "reference_item"
+    assert normalized_blocks[idx_item2]["role"] == "reference_item"
+
+
+def test_normalize_document_structure_wires_style_family_artifacts_into_blocks() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "block_id": "p3_b1",
+            "page": 3,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph with enough text to be treated as core body evidence across the main article flow and stable typography. "
+            * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p4_b1",
+            "page": 4,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph continuing the main article flow with matching typography and substantial prose for body-anchor detection. "
+            * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 262, "width_bucket": 250, "x_center": 242, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b1",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph extending the article with the same body typography and enough tokens to remain a strong body candidate. "
+            * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 261, "width_bucket": 250, "x_center": 241, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b2",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Figure 2. Compact legend text",
+            "marker_signature": {"type": "figure_number", "number": 2},
+            "span_signature": {"font_size_median": 8.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 220, "x_center": 250},
+        },
+    ]
+
+    _, normalized_blocks = normalize_document_structure(blocks)
+
+    assert normalized_blocks[0]["style_family"] == "body_like"
+    assert normalized_blocks[0]["style_family_authority"] in {
+        "body_family_anchor",
+        "body_zone_with_anchor",
+        "body_zone_candidate",
+    }
+    assert normalized_blocks[3]["style_family"] == "legend_like"
+
+
+def test_normalize_document_structure_preserves_reference_zone_integrity_from_anchor_flow() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "block_id": "p2_b1",
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "Stable body paragraph with repeated typography and enough prose to form the body family anchor. "
+            * 2,
+            "bbox": [100, 120, 460, 280],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 230, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b1",
+            "page": 5,
+            "role": "reference_heading",
+            "text": "References",
+            "bbox": [100, 100, 340, 140],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 120, "x_center": 220},
+        },
+        {
+            "block_id": "p5_b2",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[1] Example reference with authors and journal details.",
+            "bbox": [110, 180, 500, 260],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_size_bucket": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        },
+    ]
+
+    doc, normalized_blocks = normalize_document_structure(blocks)
+
+    assert doc.reference_zones
+    ref_row = next(block for block in normalized_blocks if block["block_id"] == "p5_b2")
+    assert ref_row.get("zone") == "reference_zone"
+    assert ref_row.get("style_family") == "reference_like"
+
+
+def test_preproof_cover_page_one_is_dropped_before_document_normalization() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "DWTEST",
+            "block_id": "p1_preproof",
+            "page": 1,
+            "text": "Journal Pre-proof",
+            "block_content": "Journal Pre-proof",
+            "raw_label": "paragraph_title",
+            "block_label": "paragraph_title",
+            "marker_signature": {"type": "preproof_marker"},
+            "bbox": [80, 100, 600, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "DWTEST",
+            "block_id": "p1_pii",
+            "page": 1,
+            "text": "PII: S1234-5678(26)00001-2",
+            "block_content": "PII: S1234-5678(26)00001-2",
+            "raw_label": "doc_title",
+            "block_label": "doc_title",
+            "marker_signature": {"type": "none"},
+            "bbox": [80, 240, 700, 300],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "DWTEST",
+            "block_id": "p2_title",
+            "page": 2,
+            "text": "Real Article Title",
+            "block_content": "Real Article Title",
+            "raw_label": "paragraph_title",
+            "block_label": "paragraph_title",
+            "marker_signature": {"type": "none"},
+            "bbox": [80, 120, 800, 190],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    structured, _doc = build_structured_blocks(raw_blocks, source_metadata={"title": "Real Article Title"})
+    pages = {int(b.get("page", 0) or 0) for b in structured}
+    assert 1 not in pages
+    assert 2 in pages
+
+
+def test_non_preproof_page_one_is_not_dropped() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "OKTEST",
+            "block_id": "p1_title",
+            "page": 1,
+            "text": "A normal paper title",
+            "block_content": "A normal paper title",
+            "raw_label": "paragraph_title",
+            "block_label": "paragraph_title",
+            "marker_signature": {"type": "none"},
+            "bbox": [80, 120, 900, 200],
+            "page_width": 1200,
+            "page_height": 1600,
+        }
+    ]
+
+    structured, _doc = build_structured_blocks(raw_blocks, source_metadata={"title": "A normal paper title"})
+    pages = {int(b.get("page", 0) or 0) for b in structured}
+    assert 1 in pages
+
+
+def test_post_reference_plain_heading_stays_heading_not_backmatter_taxonomy_upgrade() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "refs", "page": 12, "seed_role": "reference_heading", "text": "References", "bbox": [80, 900, 340, 960]},
+        {"block_id": "r1", "page": 12, "seed_role": "reference_item", "text": "[1] First ref", "bbox": [80, 1000, 960, 1080]},
+        {"block_id": "bio_h", "page": 13, "seed_role": "subsection_heading", "text": "Biographies", "bbox": [80, 120, 380, 180]},
+        {
+            "block_id": "bio_b",
+            "page": 13,
+            "seed_role": "body_paragraph",
+            "text": "Author A received the PhD degree in 2015.",
+            "bbox": [80, 220, 980, 320],
+        },
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["bio_h"]["role"] in {"subsection_heading", "backmatter_heading"}
+    assert by_id["bio_b"]["role"] != "unknown_structural"
+
+
+def test_resolve_final_role_consumes_pre_resolved_zones_and_families() -> None:
+    """resolve_final_role must see zone and style_family computed by
+    infer_zones + partition_zone_families, not stale/unset values.
+
+    This catches the pipeline ordering bug where resolve_final_role ran
+    before zones/families were complete, causing blocks in the reference_zone
+    with reference_like style_family to keep body_paragraph instead of
+    being promoted to reference_item.
+    """
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "ORDER01",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "doc_title",
+            "raw_order": 0,
+            "bbox": [80, 40, 700, 90],
+            "text": "Pipeline Order Test",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 18.0, "flags": 16, "color": 0}],
+        },
+        # Body paragraphs on pages 2-3 to establish body anchor
+        *[
+            {
+                "paper_id": "ORDER01",
+                "page": pg,
+                "block_id": f"p{pg}_b{i}",
+                "raw_label": "text",
+                "raw_order": 1 + (pg - 2) * 3 + i,
+                "bbox": [100, 100 + i * 100, 800, 160 + i * 100],
+                "text": f"Stable body paragraph on page {pg} with enough text to form the body anchor.",
+                "page_width": 1200,
+                "page_height": 1600,
+                "span_metadata": [{"font": "Times-Roman", "size": 9.0, "flags": 0, "color": 0}] * 6,
+            }
+            for pg in range(2, 4)
+            for i in range(3)
+        ],
+        # Reference heading on page 4
+        {
+            "paper_id": "ORDER01",
+            "page": 4,
+            "block_id": "p4_ref",
+            "raw_label": "paragraph_title",
+            "raw_order": 10,
+            "bbox": [100, 100, 340, 140],
+            "text": "References",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 10.0, "flags": 16, "color": 0}],
+        },
+        # Reference items on page 4 — these are currently body_paragraph
+        # but should be promoted to reference_item by resolve_final_role
+        # when it sees reference_zone + reference_like style_family
+        {
+            "paper_id": "ORDER01",
+            "page": 4,
+            "block_id": "p4_r1",
+            "raw_label": "text",
+            "raw_order": 11,
+            "bbox": [100, 180, 500, 250],
+            "text": "[1] Example reference with authors and journal details.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 8.5, "flags": 0, "color": 0}] * 6,
+        },
+        {
+            "paper_id": "ORDER01",
+            "page": 4,
+            "block_id": "p4_r2",
+            "raw_label": "text",
+            "raw_order": 12,
+            "bbox": [100, 260, 500, 330],
+            "text": "[2] Another reference entry that should become reference_item.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 8.5, "flags": 0, "color": 0}] * 6,
+        },
+    ]
+
+    rows, doc = build_structured_blocks(raw_blocks)
+
+    assert doc is not None
+
+    # Find the reference items
+    ref_rows = [r for r in rows if r.get("block_id") in {"p4_r1", "p4_r2"}]
+    assert len(ref_rows) == 2, f"Expected 2 reference rows, got {len(ref_rows)}"
+
+    # These blocks should have been promoted to reference_item by resolve_final_role
+    # because they are in the reference_zone with reference_like style_family.
+    # If the pipeline ordering is wrong (resolve_final_role before zones/families),
+    # they would remain body_paragraph.
+    for row in ref_rows:
+        assert row.get("role") == "reference_item", (
+            f"block {row.get('block_id')} should be reference_item "
+            f"(in reference_zone with reference_like style), got role={row.get('role')}"
+        )
+        assert row.get("zone") is not None, (
+            f"block {row.get('block_id')} should have zone assigned before final role resolution"
+        )
+        assert row.get("style_family") is not None, (
+            f"block {row.get('block_id')} should have style_family before final role resolution"
+        )
+
+
+def test_reference_zones_remain_column_scoped_after_authority_refresh() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEYREF01",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "doc_title",
+            "raw_order": 0,
+            "bbox": [80, 40, 700, 90],
+            "text": "Reference Zone Test",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 18.0, "flags": 16, "color": 0}],
+        },
+        {
+            "paper_id": "KEYREF01",
+            "page": 4,
+            "block_id": "p4_b1",
+            "raw_label": "paragraph_title",
+            "raw_order": 1,
+            "bbox": [620, 120, 950, 160],
+            "text": "References",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 10.0, "flags": 16, "color": 0}],
+        },
+        {
+            "paper_id": "KEYREF01",
+            "page": 4,
+            "block_id": "p4_b2",
+            "raw_label": "text",
+            "raw_order": 2,
+            "bbox": [620, 180, 960, 360],
+            "text": "[1] Example reference entry with enough tokens to be reference-like.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 8.5, "flags": 0, "color": 0}] * 6,
+        },
+        {
+            "paper_id": "KEYREF01",
+            "page": 4,
+            "block_id": "p4_b3",
+            "raw_label": "text",
+            "raw_order": 3,
+            "bbox": [80, 180, 420, 360],
+            "text": "Left-column body text that should not be part of the reference zone.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 9.0, "flags": 0, "color": 0}] * 6,
+        },
+    ]
+
+    rows, doc = build_structured_blocks(raw_blocks)
+
+    assert doc is not None
+    assert doc.reference_zones
+    zone = doc.reference_zones[0]
+    assert zone["column_index"] == 1
+    assert zone["y_start"] > 0
+    assert zone["y_end"] < 1600
+    left_body = next(row for row in rows if row["block_id"] == "p4_b3")
+    assert left_body.get("zone") != "reference_zone"
+
+
+def test_candidate_resolution_demotes_body_spine_narrative_figure_mentions() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile, _resolve_ambiguous_candidates
+
+    blocks = [
+        {
+            "page": 4,
+            "bbox": [100, 500, 950, 620],
+            "text": "Figure 2 shows the control response over time in both cohorts.",
+            "role": "figure_caption_candidate",
+        }
+    ]
+    doc_structure = DocumentStructure(body_end_page=4)
+    page_layouts = {
+        4: PageLayoutProfile(column_count=1, column_boundaries=[], layout_type="single_column", confidence=1.0)
+    }
+
+    _resolve_ambiguous_candidates(blocks, doc_structure, page_layouts)
+
+    assert blocks[0]["role"] == "body_paragraph"
+
+
+def test_reference_zone_is_inferred_from_reference_family_anchor_not_preexisting_roles() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_b1",
+            "page": 1,
+            "text": "Abstract",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "block_id": "p4_b1",
+            "page": 4,
+            "text": "Body text",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0},
+            "layout_signature": {"width": 260},
+        },
+        {
+            "block_id": "p8_b1",
+            "page": 8,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "block_id": "p8_b2",
+            "page": 8,
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5},
+            "layout_signature": {"width": 250},
+        },
+    ]
+    anchors = {
+        "body_family_anchor": {"status": "ACCEPT", "family_name": "body_family", "sample_pages": [4]},
+        "reference_family_anchor": {"status": "ACCEPT", "family_name": "reference_family", "item_count": 1},
+    }
+
+    zones = infer_zones(blocks, anchors)
+
+    assert zones["reference_zone"]["status"] == "ACCEPT"
+    assert "p8_b2" in zones["reference_zone"]["block_ids"]
+
+
+def test_analyze_document_structure_persists_region_bus_in_dataclass_serialization() -> None:
+    import dataclasses
+
+    from paperforge.worker.ocr_document import analyze_document_structure
+
+    blocks = [
+        {
+            "block_id": "p1_b1",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Title",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 16.0},
+            "layout_signature": {"width": 420},
+        },
+        {
+            "block_id": "p3_b1",
+            "page": 3,
+            "role": "body_paragraph",
+            "text": "This is a sufficiently long body paragraph with enough tokens to behave like stable body content.",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "x_center": 240},
+        },
+        {
+            "block_id": "p6_b1",
+            "page": 6,
+            "role": "reference_heading",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "block_id": "p6_b2",
+            "page": 6,
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "block_id": "p6_b3",
+            "page": 6,
+            "role": "body_paragraph",
+            "text": "[2] Another example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+
+    doc = analyze_document_structure(blocks)
+    data = dataclasses.asdict(doc)
+
+    assert "region_bus" in data
+    assert data["region_bus"]["reference_zone"]["status"] == "ACCEPT"
+    assert "p6_b2" in data["region_bus"]["reference_zone"]["block_ids"]
+    assert "p6_b3" in data["region_bus"]["reference_zone"]["block_ids"]
+
+
+def test_infer_zones_keeps_pre_reference_tail_out_of_body_zone() -> None:
+    from paperforge.worker.ocr_document import TailBoundary, infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_b1",
+            "page": 1,
+            "text": "Title",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 16.0},
+            "layout_signature": {"width": 420},
+        },
+        {
+            "block_id": "p4_b1",
+            "page": 4,
+            "text": "Body text",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0},
+            "layout_signature": {"width": 260, "x_center": 240},
+        },
+        {
+            "block_id": "p7_b1",
+            "page": 7,
+            "text": "Acknowledgments",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 180, "x_center": 240},
+        },
+        {
+            "block_id": "p7_b2",
+            "page": 7,
+            "text": "We thank the core facility.",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 8.8},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b1",
+            "page": 8,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b2",
+            "page": 8,
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+    ]
+    anchors = {
+        "body_family_anchor": {"status": "ACCEPT", "family_name": "body_family", "sample_pages": [4]},
+        "reference_family_anchor": {"status": "ACCEPT", "family_name": "reference_family", "item_count": 1},
+    }
+    tail_spread = TailBoundary(
+        body_end_page=4,
+        backmatter_start=7,
+        references_start=8,
+        spread_start=7,
+        spread_end=8,
+        is_clean_separated=True,
+        reason="test",
+    )
+
+    zones = infer_zones(blocks, anchors, tail_spread=tail_spread)
+
+    assert "p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
+    assert "p7_b2" not in zones["body_zone"]["block_ids"]
+
+
+def test_infer_zones_inferrs_tail_nonref_hold_without_pre_labeled_tail_roles() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_b1",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Title",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 16.0},
+            "layout_signature": {"width": 420},
+        },
+        {
+            "block_id": "p4_b1",
+            "page": 4,
+            "role": "body_paragraph",
+            "text": "This is a sufficiently long body paragraph with enough tokens to establish body-family evidence.",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "x_center": 240},
+        },
+        {
+            "block_id": "p7_b1",
+            "page": 7,
+            "role": "body_paragraph",
+            "text": "Acknowledgments",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 10.8, "font_family_norm": "Helvetica", "is_bold": True},
+            "layout_signature": {"width": 180, "x_center": 240},
+        },
+        {
+            "block_id": "p7_b2",
+            "page": 7,
+            "role": "body_paragraph",
+            "text": "We thank the core facility.",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 8.8, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b1",
+            "page": 8,
+            "role": "body_paragraph",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0, "font_family_norm": "Helvetica", "is_bold": True},
+            "layout_signature": {"width": 120, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b2",
+            "page": 8,
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b3",
+            "page": 8,
+            "role": "body_paragraph",
+            "text": "[2] Another example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+    anchors = {
+        "body_family_anchor": {"status": "ACCEPT", "family_name": "body_family", "sample_pages": [4]},
+        "reference_family_anchor": {"status": "ACCEPT", "family_name": "reference_family", "item_count": 2},
+    }
+
+    zones = infer_zones(blocks, anchors)
+
+    assert "p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
+    assert "p7_b2" not in zones["body_zone"]["block_ids"]
+
+
+def test_infer_zones_treats_first_surviving_page_as_frontmatter_origin() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p2_title",
+            "page": 2,
+            "text": "Real Article Title",
+            "seed_role": "paper_title",
+            "role": "paper_title",
+            "bbox": [80, 120, 900, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_authors",
+            "page": 2,
+            "text": "A. Author, B. Author",
+            "seed_role": "authors",
+            "role": "authors",
+            "bbox": [80, 220, 920, 280],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_body",
+            "page": 2,
+            "text": "This is the first real body paragraph with enough words to trigger body flow on the first surviving page here.",
+            "seed_role": "body_paragraph",
+            "role": "body_paragraph",
+            "bbox": [80, 520, 1030, 650],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+    ]
+
+    zones = infer_zones(blocks, {"body_family_anchor": {"status": "ACCEPT"}, "reference_family_anchor": {"status": "HOLD"}})
+
+    assert "p2_title" in zones["frontmatter_main_zone"]["block_ids"]
+    assert "p2_authors" in zones["frontmatter_main_zone"]["block_ids"]
+    assert "p2_body" in zones["body_zone"]["block_ids"]
+
+
+def test_infer_zones_allows_body_blocks_on_first_surviving_page() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p2_title",
+            "page": 2,
+            "text": "Real Article Title",
+            "seed_role": "paper_title",
+            "role": "paper_title",
+            "bbox": [80, 120, 900, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_heading",
+            "page": 2,
+            "text": "Highlights",
+            "seed_role": "structured_insert",
+            "role": "structured_insert",
+            "bbox": [80, 980, 260, 1020],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "short_fragment"},
+        },
+        {
+            "block_id": "p2_b1",
+            "page": 2,
+            "text": "Body continuation should remain eligible for body_zone when it begins on the first surviving page rather than literal page one.",
+            "seed_role": "body_paragraph",
+            "role": "body_paragraph",
+            "bbox": [100, 1060, 1020, 1180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+    ]
+
+    zones = infer_zones(blocks, {"body_family_anchor": {"status": "ACCEPT"}, "reference_family_anchor": {"status": "HOLD"}})
+
+    assert "p2_b1" in zones["body_zone"]["block_ids"]
+    assert "p2_b1" not in zones["frontmatter_main_zone"]["block_ids"]
+
+
+def test_infer_zones_does_not_route_page2_heading_with_body_continuation_to_frontmatter_side() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_title",
+            "page": 1,
+            "role": "paper_title",
+            "seed_role": "paper_title",
+            "text": "Real Paper Title",
+            "bbox": [80, 120, 900, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_body_1",
+            "page": 2,
+            "role": "body_paragraph",
+            "seed_role": "body_paragraph",
+            "text": "Lead body paragraph that establishes the left-column body family on the first surviving page for this synthetic case.",
+            "bbox": [80, 120, 585, 260],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "MinionPro-Regular", "font_size_median": 9.5},
+        },
+        {
+            "block_id": "p2_h1",
+            "page": 2,
+            "role": "section_heading",
+            "seed_role": "section_heading",
+            "text": "THE MOLECULAR IDENTITY AND REGULATION OF THE MCU COMPLEX",
+            "bbox": [80, 560, 535, 630],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "HelveticaNeueLTStd-Bd", "font_size_median": 12.0},
+        },
+        {
+            "block_id": "p2_b2",
+            "page": 2,
+            "role": "body_paragraph",
+            "seed_role": "body_paragraph",
+            "text": "To date, three different mitochondrial membrane proteins have been characterized as components of the uniporter.",
+            "bbox": [80, 678, 586, 748],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "MinionPro-Regular", "font_size_median": 9.5},
+        },
+    ]
+
+    zones = infer_zones(
+        blocks,
+        {"body_family_anchor": {"status": "ACCEPT", "sample_pages": [2], "width_bucket": 500, "font_family_norm": "MinionPro-Regular"},
+         "reference_family_anchor": {"status": "HOLD"}},
+    )
+
+    assert "p2_h1" in zones["body_zone"]["block_ids"]
+    assert "p2_h1" not in zones["frontmatter_side_zone"]["block_ids"]
+    assert "p2_b2" in zones["body_zone"]["block_ids"]
+
+
+def test_infer_zones_keeps_page2_highlights_in_frontmatter_side_when_support_geometry_matches() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_title",
+            "page": 1,
+            "role": "paper_title",
+            "seed_role": "paper_title",
+            "text": "Paper Title",
+            "bbox": [80, 120, 900, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_highlights",
+            "page": 2,
+            "role": "section_heading",
+            "seed_role": "section_heading",
+            "text": "Highlights",
+            "bbox": [930, 170, 1110, 220],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "HelveticaNeueLTStd-Bd", "font_size_median": 10.0},
+        },
+    ]
+
+    zones = infer_zones(
+        blocks,
+        {"body_family_anchor": {"status": "ACCEPT", "sample_pages": [2], "width_bucket": 500, "font_family_norm": "MinionPro-Regular"},
+         "reference_family_anchor": {"status": "HOLD"}},
+    )
+
+    assert "p2_highlights" in zones["frontmatter_side_zone"]["block_ids"]
+    assert "p2_highlights" not in zones["body_zone"]["block_ids"]
+
+
+def test_demote_early_frontmatter_body_leaks_stops_after_heading_on_first_surviving_page() -> None:
+    from paperforge.worker.ocr_document import _demote_early_frontmatter_body_leaks
+
+    blocks = [
+        {"page": 2, "role": "section_heading", "seed_role": "section_heading", "text": "REAL SECTION"},
+        {"page": 2, "role": "body_paragraph", "seed_role": "body_paragraph", "text": "Real body paragraph after heading should stay body."},
+        {"page": 3, "role": "body_paragraph", "seed_role": "body_paragraph", "text": "Later page body stays untouched too."},
+    ]
+
+    _demote_early_frontmatter_body_leaks(blocks)
+
+    assert blocks[1]["role"] == "body_paragraph"
+    assert blocks[2]["role"] == "body_paragraph"
+
+
+def test_assign_block_role_marks_margin_band_as_noise() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "page": 4,
+        "block_id": "wm",
+        "raw_label": "aside_text",
+        "block_label": "aside_text",
+        "text": "Downloaded from https://advanced.onlinelibrary.wiley.com by Example Library. For personal use only.",
+        "bbox": [1155, 30, 1210, 1535],
+        "block_bbox": [1155, 30, 1210, 1535],
+        "page_width": 1224,
+        "page_height": 1584,
+    }
+
+    assignment = assign_block_role(block, page_blocks=[block], page_width=1224, page_height=1584)
+
+    assert assignment.role == "noise"
+    assert assignment.confidence >= 0.95
+
+
+def test_assign_block_role_marks_short_figure_adjacent_label_as_inner_text() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    image_block = {
+        "page": 1,
+        "block_id": "img1",
+        "raw_label": "image",
+        "block_label": "image",
+        "bbox": [300, 300, 800, 900],
+        "block_bbox": [300, 300, 800, 900],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+    label_block = {
+        "page": 1,
+        "block_id": "lab1",
+        "raw_label": "text",
+        "block_label": "text",
+        "text": "Day 7",
+        "bbox": [320, 320, 410, 360],
+        "block_bbox": [320, 320, 410, 360],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+
+    assignment = assign_block_role(label_block, page_blocks=[image_block, label_block])
+
+    assert assignment.role == "figure_inner_text"
+
+
+def test_normalize_flat_backmatter_unifies_heading_family() -> None:
+    from paperforge.worker.ocr_document import (
+        TailBoundary,
+        _normalize_backmatter_roles_after_boundary,
+    )
+
+    blocks = [
+        {"page": 70, "role": "body_paragraph", "text": "Conclusion continuation"},
+        {"page": 71, "role": "backmatter_heading", "text": "Data availability"},
+        {"page": 71, "role": "backmatter_body", "text": "No new data."},
+        {"page": 71, "role": "subsection_heading", "text": "Conflicts of interest"},
+        {"page": 71, "role": "body_paragraph", "text": "There are no conflicts to declare."},
+        {"page": 71, "role": "backmatter_heading", "text": "Acknowledgements"},
+        {"page": 71, "role": "backmatter_body", "text": "Supported by grant."},
+        {"page": 71, "role": "reference_heading", "text": "References"},
+        {"page": 71, "role": "reference_item", "text": "1. Ref item"},
+    ]
+
+    tail = TailBoundary(
+        body_end_page=70,
+        backmatter_start=71,
+        references_start=71,
+        spread_start=71,
+        spread_end=71,
+        is_clean_separated=True,
+        reason="test",
+    )
+
+    _normalize_backmatter_roles_after_boundary(tail, "flat", blocks)
+
+    assert blocks[3]["role"] == "subsection_heading"
+    assert blocks[4]["role"] == "body_paragraph"
+    assert blocks[7]["role"] == "reference_heading"
+
+
+def test_analyze_document_structure_no_tail() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, analyze_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Only body"},
+        {"page": 2, "role": "body_paragraph", "text": "Still body"},
+    ]
+
+    doc = analyze_document_structure(blocks)
+
+    assert isinstance(doc, DocumentStructure)
+    assert doc.body_end_page is None
+    assert doc.spread_start is None
+    assert doc.spread_end is None
+    assert doc.backmatter_form == "flat"
+
+
+def test_rescue_frontmatter_noise_to_body_paragraph() -> None:
+    """frontmatter_noise in body section with body-like font → body_paragraph."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        rescue_roles_with_document_context,
+    )
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Intro body paragraph with enough text to establish a profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Methods section describing the experimental setup in full detail.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 3,
+            "role": "frontmatter_noise",
+            "role_confidence": 0.6,
+            "text": "This block was misclassified as frontmatter noise but is actually body text.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {"page": 4, "role": "reference_heading", "role_confidence": 0.9, "text": "References"},
+        {"page": 4, "role": "reference_item", "role_confidence": 0.7, "text": "[1] Author A, Journal, 2025"},
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "frontmatter_noise": {
+            "block_count": 1,
+            "mean_size": 8.0,
+            "max_size": 8.5,
+            "min_size": 7.5,
+            "dispersion": 0.05,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(body_end_page=3)
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    rescued = next(b for b in result if b["text"].startswith("This block was misclassified"))
+    assert rescued["role"] == "body_paragraph", f"Expected body_paragraph, got {rescued['role']}"
+
+
+def test_rescue_body_paragraph_to_reference_item() -> None:
+    """body_paragraph with ref-like font in references section → reference_item."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        PagePosition,
+        rescue_roles_with_document_context,
+    )
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Main body paragraph that is long enough for context.",
+            "span_metadata": {"size": 10.5, "flags": "normal"},
+        },
+        {"page": 5, "role": "reference_heading", "role_confidence": 0.9, "text": "References"},
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "role_confidence": 0.5,
+            "text": "1. Smith J, Johnson K. A study on something. Journal, 2025.",
+            "span_metadata": {"size": 9.0, "flags": "normal"},
+        },
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 1,
+            "mean_size": 10.5,
+            "max_size": 10.5,
+            "min_size": 10.5,
+            "dispersion": 0.0,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "reference_item": {
+            "block_count": 0,
+            "mean_size": 9.0,
+            "max_size": 9.0,
+            "min_size": 9.0,
+            "dispersion": 0.0,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(body_end_page=4, references_start=PagePosition(page=5, y=0))
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    promoted = next(b for b in result if b["text"].startswith("1. Smith"))
+    assert promoted["role"] == "reference_item", f"Expected reference_item, got {promoted['role']}"
+
+
+def test_rescue_weak_heading_demoted_to_body() -> None:
+    """Weak heading (confidence < 0.6) with body-like font → body_paragraph."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        rescue_roles_with_document_context,
+    )
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Some intro body text that provides a long enough context for profiling.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "More body text to strengthen the body profile for better font matching.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "section_heading",
+            "role_confidence": 0.5,
+            "text": "Methods",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "section_heading": {
+            "block_count": 0,
+            "mean_size": 12.0,
+            "max_size": 12.0,
+            "min_size": 12.0,
+            "dispersion": 0.0,
+            "quality": "no_data",
+            "bold_ratio": 1.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(body_end_page=2)
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    demoted = next(b for b in result if b["text"] == "Methods")
+    assert demoted["role"] == "body_paragraph", f"Expected body_paragraph, got {demoted['role']}"
+
+
+def test_restore_tail_hold_body_after_heading_like_tail_section() -> None:
+    from paperforge.worker.ocr_document import _restore_numbered_body_from_tail_hold
+
+    blocks = [
+        {
+            "page": 10,
+            "block_id": "h1",
+            "role": "subsection_heading",
+            "zone": "tail_nonref_hold_zone",
+            "style_family": "heading_like",
+            "text": "Acromial Morphology and Retear Risk",
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "page": 10,
+            "block_id": "b1",
+            "role": "backmatter_body",
+            "zone": "tail_nonref_hold_zone",
+            "style_family": "body_like",
+            "text": "We found that only acromial slope and distance were associated with higher retear risk.",
+        },
+        {
+            "page": 10,
+            "block_id": "cap",
+            "role": "unknown_structural",
+            "zone": "tail_nonref_hold_zone",
+            "style_family": "table_caption_like",
+            "text": "Table 7. Clinical and radiologic outcomes depending on the cutoff.",
+        },
+        {
+            "page": 11,
+            "block_id": "b2",
+            "role": "backmatter_body",
+            "zone": "tail_nonref_hold_zone",
+            "style_family": "body_like",
+            "text": "We found that glenoid orientation was not associated with radiologic outcomes after repair.",
+        },
+        {
+            "page": 12,
+            "block_id": "rh",
+            "role": "reference_heading",
+            "zone": "reference_zone",
+            "style_family": "heading_like",
+            "text": "References",
+        },
+    ]
+
+    _restore_numbered_body_from_tail_hold(blocks)
+
+    assert blocks[1]["role"] == "body_paragraph"
+    assert blocks[3]["role"] == "body_paragraph"
+
+
+def test_rescue_strong_numbered_heading_not_demoted() -> None:
+    """Strong numbered heading (e.g. '5.1 Results') should NOT be demoted."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        rescue_roles_with_document_context,
+    )
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Body paragraph one with enough text to contribute to a font profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "section_heading",
+            "role_confidence": 0.5,
+            "text": "5.1 Results",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 1,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(body_end_page=2)
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    heading = next(b for b in result if b["text"] == "5.1 Results")
+    assert heading["role"] == "section_heading", f"Expected section_heading preserved, got {heading['role']}"
+
+
+def test_rescue_no_document_structure_derived() -> None:
+    """rescue_roles_with_document_context should derive structure when not provided."""
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Body text that is long enough for establishing a font profile here.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "More body text here to help build a solid body paragraph profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "frontmatter_noise",
+            "role_confidence": 0.6,
+            "text": "Misclassified text block that should be rescued to body paragraph.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {"page": 3, "role": "reference_heading", "role_confidence": 0.9, "text": "References"},
+        {"page": 3, "role": "reference_item", "role_confidence": 0.7, "text": "[1] Author A, Journal, 2025"},
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "frontmatter_noise": {
+            "block_count": 1,
+            "mean_size": 8.0,
+            "max_size": 8.5,
+            "min_size": 7.5,
+            "dispersion": 0.05,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+
+    rescued = next(b for b in result if b["text"].startswith("Misclassified"))
+    assert rescued["role"] == "body_paragraph", f"Expected body_paragraph, got {rescued['role']}"
+
+
+def test_rescue_analyze_document_structure_mixed_tail_spread() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, analyze_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Intro"},
+        {"page": 2, "role": "body_paragraph", "text": "Results"},
+        {"page": 3, "role": "body_paragraph", "text": "Continued results"},
+        {"page": 3, "role": "backmatter_heading", "text": "Acknowledgments"},
+        {"page": 3, "role": "backmatter_body", "text": "Thanks."},
+        {"page": 4, "role": "body_paragraph", "text": "More results interleaved"},
+        {"page": 4, "role": "reference_heading", "text": "References"},
+        {"page": 4, "role": "reference_item", "text": "[1] Ref A"},
+    ]
+
+    doc = analyze_document_structure(blocks)
+
+    assert isinstance(doc, DocumentStructure)
+    assert doc.spread_start is not None
+    assert doc.spread_end is not None
+
+
+def _make_block(bid: int, pg: int = 1, role: str = "body_paragraph", text: str = "text", w: int = 500) -> dict:
+    return {
+        "block_id": f"b{bid}",
+        "page": pg,
+        "role": role,
+        "text": text,
+        "bbox": [80, 100, 80 + w, 140],
+        "page_width": 1200,
+        "page_height": 1700,
+    }
+
+
+def test_body_anchor_pages_exclude_page_1() -> None:
+    """When page 1 is contaminated with title/authors, it should not dominate body baseline."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 1: title + authors + furniture — no real body paragraphs
+    blocks += [_make_block(i, pg=1, role="paper_title", text="Title", w=200) for i in range(3)]
+    blocks += [_make_block(i, pg=1, role="authors", text="Authors", w=200) for i in range(3)]
+    blocks += [_make_block(i, pg=1, role="noise", text="Copyright", w=136) for i in range(2)]
+    # Pages 2-8: clean body paragraphs
+    for pg in range(2, 9):
+        blocks += [
+            _make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
+            for i in range(5)
+        ]
+    # Page 9: references
+    blocks += [_make_block(i, pg=9, role="reference_heading", text="References", w=150) for i in range(1)]
+
+    spine = _detect_body_spine(blocks)
+    # Page 1 should have either a reasonable width (not 200) or the anchor
+    # pages list should exclude page 1.  Currently anchor_pages does not
+    # exist → this will be [] → resolves to [1] ≠ [1] → False → fail.
+    anchor_pages: list[int] = spine.get(1, {}).get("anchor_pages", [])  # type: ignore[type-arg]
+    assert anchor_pages or [1] != [1], f"Page 1 anchor pages should exclude page 1, got anchor_pages={anchor_pages!r}"
+
+
+def test_body_anchor_pages_exclude_tail() -> None:
+    """Pages in the tail spread should be excluded from anchor pages."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Pages 1-5: clean body
+    for pg in range(1, 6):
+        blocks += [
+            _make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
+            for i in range(5)
+        ]
+    # Pages 6-8: tail (references, etc.)
+    blocks += [_make_block(i, pg=6, role="reference_heading", text="References", w=150) for i in range(1)]
+    blocks += [_make_block(i, pg=7, role="reference_item", text="Ref item", w=200) for i in range(3)]
+    blocks += [_make_block(i, pg=8, role="backmatter_body", text="Ack", w=300) for i in range(2)]
+
+    spine = _detect_body_spine(blocks)
+    # Anchor pages should be from body section, not tail.
+    # Currently anchor_pages does not exist → [] → fails when we require non-empty.
+    anchor_pages: list[int] = spine.get(2, {}).get("anchor_pages", [])  # type: ignore[type-arg]
+    assert anchor_pages and all(pg < 6 for pg in anchor_pages), (
+        f"Anchor pages should be in body (pages 2-5), got anchor_pages={anchor_pages!r}"
+    )
+
+
+def test_anchor_ranking_prefers_body_dense_pages() -> None:
+    """Pages with more body paragraphs rank higher in anchor selection."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 2: few body paragraphs (should rank lower)
+    blocks += [_make_block(i, pg=2, role="body_paragraph", text="Body para on page 2", w=510) for i in range(2)]
+    # Pages 3-4: many body paragraphs (should rank higher)
+    for pg in range(3, 5):
+        blocks += [
+            _make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
+            for i in range(8)
+        ]
+    # Page 5: moderate body paragraphs
+    blocks += [_make_block(i, pg=5, role="body_paragraph", text="Body para on page 5", w=510) for i in range(4)]
+
+    spine = _detect_body_spine(blocks)
+    anchor_pages: list[int] = spine.get(2, {}).get("anchor_pages", [])  # type: ignore[type-arg]
+    # Pages 3-4 (8 paras each) should rank higher than page 5 (4 paras) and page 2 (2 paras).
+    # Currently no anchor_pages key → [] → fails.
+    assert len(anchor_pages) >= 2, f"Expected at least 2 anchor pages, got {anchor_pages!r}"
+    ranked = [p for p in anchor_pages if p in (3, 4, 5, 2)]
+    assert ranked[0] in (3, 4), f"Highest ranked should be 3 or 4, got {ranked}"
+
+
+def test_middle_page_baseline_excludes_frontmatter() -> None:
+    """Page 1 contaminated with title/authors/noise — body paragraphs on page 1
+    are few relative to total blocks.  Body baseline should come from central
+    pages 4-8, not from contaminated page 1."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 1: contaminated — 2 title, 2 authors, 4 noise, only 2 body_paragraph
+    # body_ratio = 2/10 = 0.2 < 0.4 → should be excluded by new scoring
+    for i in range(2):
+        blocks.append(
+            {
+                "block_id": f"b_title{i}",
+                "page": 1,
+                "role": "paper_title",
+                "text": f"Title {i}",
+                "bbox": [80, 20 + i * 40, 280, 60 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    for i in range(2):
+        blocks.append(
+            {
+                "block_id": f"b_author{i}",
+                "page": 1,
+                "role": "authors",
+                "text": f"Author {i}",
+                "bbox": [80, 120 + i * 40, 300, 160 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    for i in range(4):
+        blocks.append(
+            {
+                "block_id": f"b_noise{i}",
+                "page": 1,
+                "role": "noise",
+                "text": f"Noise {i}",
+                "bbox": [80, 220 + i * 40, 180, 260 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    for i in range(2):
+        blocks.append(
+            {
+                "block_id": f"b_body1_{i}",
+                "page": 1,
+                "role": "body_paragraph",
+                "text": f"Body on page 1 {i}",
+                "bbox": [80, 400 + i * 40, 500, 440 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    # Pages 4-8: clean body (3 body paragraphs each)
+    for pg in range(4, 9):
+        for i in range(3):
+            blocks.append(
+                {
+                    "block_id": f"b{pg}_{i}",
+                    "page": pg,
+                    "role": "body_paragraph",
+                    "text": f"Body on {pg}",
+                    "bbox": [80, 100 + i * 80, 550, 140 + i * 80],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
+    # Pages 10-11: tail
+    blocks.append(
+        {
+            "block_id": "ref_head",
+            "page": 10,
+            "role": "reference_heading",
+            "text": "References",
+            "bbox": [80, 100, 400, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+    for i in range(3):
+        blocks.append(
+            {
+                "block_id": f"ref_{i}",
+                "page": 10,
+                "role": "reference_item",
+                "text": f"Ref {i}",
+                "bbox": [80, 150 + i * 40, 500, 190 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+
+    spine = _detect_body_spine(blocks)
+    anchor_pages: list[int] = spine.get(4, {}).get("anchor_pages", [])
+    # Page 1 has 2 body + 8 non-body = body_ratio 0.2 → excluded
+    assert 1 not in anchor_pages, f"Page 1 should be excluded from anchor pages, got {anchor_pages}"
+    # Tail pages (10+) should be excluded
+    assert all(pg < 10 for pg in anchor_pages), f"Tail pages should be excluded, got {anchor_pages}"
+    # Central pages 4-8 should be included
+    central = [pg for pg in anchor_pages if pg in (4, 5, 6, 7, 8)]
+    assert len(central) >= 2, f"Expected at least 2 central pages (4-8) in anchors, got {anchor_pages}"
+
+
+def test_middle_page_baseline_excludes_tail() -> None:
+    """Tail pages (backmatter/references) should be excluded from anchor pages."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 1: frontmatter only — will be excluded by page==1 guard
+    for i in range(3):
+        blocks.append(
+            {
+                "block_id": f"b_title{i}",
+                "page": 1,
+                "role": "paper_title",
+                "text": f"Title {i}",
+                "bbox": [80, 20 + i * 40, 280, 60 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    # Page 2: contaminated (2 body + 6 non-body)
+    for i in range(2):
+        blocks.append(
+            {
+                "block_id": f"b2_body{i}",
+                "page": 2,
+                "role": "body_paragraph",
+                "text": f"Body on 2 {i}",
+                "bbox": [80, 100 + i * 40, 500, 140 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    for i in range(6):
+        blocks.append(
+            {
+                "block_id": f"b2_noise{i}",
+                "page": 2,
+                "role": "noise",
+                "text": f"Noise {i}",
+                "bbox": [80, 300 + i * 30, 180, 330 + i * 30],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    # Pages 4-8: clean body (4 body paragraphs each)
+    for pg in range(4, 9):
+        for i in range(4):
+            blocks.append(
+                {
+                    "block_id": f"b{pg}_{i}",
+                    "page": pg,
+                    "role": "body_paragraph",
+                    "text": f"Body on {pg}",
+                    "bbox": [80, 100 + i * 60, 550, 140 + i * 60],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
+    # Pages 10+: tail (reference heading + items)
+    blocks.append(
+        {
+            "block_id": "ref_h",
+            "page": 10,
+            "role": "reference_heading",
+            "text": "References",
+            "bbox": [80, 100, 400, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+    for i in range(4):
+        blocks.append(
+            {
+                "block_id": f"ref_{i}",
+                "page": 10,
+                "role": "reference_item",
+                "text": f"Ref {i}",
+                "bbox": [80, 150 + i * 40, 500, 190 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+
+    spine = _detect_body_spine(blocks)
+    anchor_pages: list[int] = spine.get(4, {}).get("anchor_pages", [])
+    # No tail pages should be in anchors
+    assert all(pg < 10 for pg in anchor_pages), f"Tail pages (10+) should be excluded, got {anchor_pages}"
+    # Central pages 4-8 should be included
+    assert any(pg in (4, 5, 6, 7, 8) for pg in anchor_pages), f"Expected central pages in anchors, got {anchor_pages}"
+
+
+def test_detect_body_spine_returns_reasonable_values() -> None:
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = [
+        {"role": "body_paragraph", "bbox": [100, 500, 800, 540], "page": 1},
+        {"role": "body_paragraph", "bbox": [100, 600, 810, 640], "page": 1},
+    ]
+    spine = _detect_body_spine(blocks)
+    assert 1 in spine
+    assert spine[1]["median_width"] == 700  # 800-100
+    assert spine[1]["median_x"] == 100
+
+
+def test_detect_non_body_insert_marks_narrow_blocks() -> None:
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        # Pages 2-4: establish strong body spine
+        *[
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
+                "page": pg,
+                "span_metadata": [{"size": 10, "font": "Times"}],
+            }
+            for pg in range(2, 5)
+            for i in range(3)
+        ],
+        # Two normal body paragraphs (wide)
+        {"role": "body_paragraph", "bbox": [100, 400, 800, 440], "page": 1},
+        {"role": "body_paragraph", "bbox": [100, 500, 810, 540], "page": 1},
+        # A narrow block (author bio type) -- much narrower than 700px
+        {"role": "body_paragraph", "bbox": [50, 200, 300, 250], "page": 1},
+        # Another narrow block on same page
+        {"role": "body_paragraph", "bbox": [50, 300, 310, 350], "page": 1},
+    ]
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine)
+    assert 11 in indices, f"Expected index 11 in {indices}"
+    assert 12 in indices, f"Expected index 12 in {indices}"
+
+
+def test_detect_non_body_insert_marks_narrow_body_paragraphs() -> None:
+    """Narrow body_paragraph blocks (author bios) are detected as non-body inserts."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        # Pages 2-4: establish strong body spine
+        *[
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
+                "page": pg,
+                "span_metadata": [{"size": 10, "font": "Times"}],
+            }
+            for pg in range(2, 5)
+            for i in range(3)
+        ],
+        # wide body paragraphs on page 1
+        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1},
+        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1},
+        # narrow body_paragraph = potential author bio
+        {"role": "body_paragraph", "bbox": [50, 600, 300, 640], "page": 1},
+        {"role": "body_paragraph", "bbox": [50, 680, 310, 720], "page": 1},
+    ]
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
+    assert 11 in indices, f"Expected index 11 (narrow body_paragraph) in {indices}"
+    assert 12 in indices, f"Expected index 12 (narrow body_paragraph) in {indices}"
+
+
+def test_non_body_insert_not_backfilled_to_body() -> None:
+    """Verify that non_body_insert blocks are not rescued to body_paragraph."""
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "TEST001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "text",
+            "raw_order": 0,
+            "bbox": [50, 200, 300, 240],
+            "text": "Short bio line one",
+            "page_width": 1200,
+            "page_height": 1600,
+            "source": "ocr_raw",
+        },
+        {
+            "paper_id": "TEST001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "raw_label": "text",
+            "raw_order": 1,
+            "bbox": [50, 280, 310, 320],
+            "text": "Short bio line two",
+            "page_width": 1200,
+            "page_height": 1600,
+            "source": "ocr_raw",
+        },
+        # A wide body paragraph
+        {
+            "paper_id": "TEST001",
+            "page": 1,
+            "block_id": "p1_b3",
+            "raw_label": "text",
+            "raw_order": 2,
+            "bbox": [100, 600, 800, 640],
+            "text": "The following experimental results demonstrate the effect of the treatment on cell migration and proliferation assays performed in triplicate",
+            "page_width": 1200,
+            "page_height": 1600,
+            "source": "ocr_raw",
+        },
+        # Pages 2-4: establish strong body spine
+        *[
+            {
+                "paper_id": "TEST001",
+                "page": pg,
+                "block_id": f"p{pg}_b{i}",
+                "raw_label": "text",
+                "raw_order": 3 + (pg - 2) * 3 + i,
+                "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
+                "text": f"Standard body paragraph on page {pg} providing enough textual content for processing.",
+                "page_width": 1200,
+                "page_height": 1600,
+                "source": "ocr_raw",
+                "span_metadata": {"size": 10, "font": "Times"},
+            }
+            for pg in range(2, 5)
+            for i in range(3)
+        ],
+    ]
+    rows, _ = build_structured_blocks(raw_blocks)
+    non_body = [r for r in rows if r.get("role") == "non_body_insert"]
+    assert len(non_body) == 2, f"Expected 2 non_body_insert, got {len(non_body)}"
+    for r in non_body:
+        assert r.get("render_default") is False, f"non_body_insert should not render: {r}"
+
+
+# ---------------------------------------------------------------------------
+# Family-level profile tests
+# ---------------------------------------------------------------------------
+
+
+def test_build_family_profiles_body_family() -> None:
+    """body_family aggregates body_paragraph, tail_candidate_body, backmatter_body."""
+    from paperforge.worker.ocr_profiles import build_family_profiles
+
+    blocks = [
+        {"role": "body_paragraph", "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "body_paragraph", "span_metadata": {"size": 10.5, "flags": "normal"}},
+        {"role": "tail_candidate_body", "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "backmatter_body", "span_metadata": {"size": 9.5, "flags": "italic"}},
+        {"role": "section_heading", "span_metadata": {"size": 14, "flags": "bold"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    assert "body_family" in families, f"body_family missing from {list(families.keys())}"
+    bf = families["body_family"]
+    assert bf["block_count"] == 4
+    assert "member_roles" in bf
+    assert "body_paragraph" in bf["member_roles"]
+    assert "tail_candidate_body" in bf["member_roles"]
+    assert "backmatter_body" in bf["member_roles"]
+
+
+def test_build_family_profiles_heading_family() -> None:
+    """heading_family aggregates section_heading, subsection_heading, sub_subsection_heading."""
+    from paperforge.worker.ocr_profiles import build_family_profiles
+
+    blocks = [
+        {"role": "section_heading", "span_metadata": {"size": 14, "flags": "bold"}},
+        {"role": "subsection_heading", "span_metadata": {"size": 12, "flags": "bold"}},
+        {"role": "sub_subsection_heading", "span_metadata": {"size": 11, "flags": "bold"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    assert "heading_family" in families
+    hf = families["heading_family"]
+    assert hf["block_count"] == 3
+    assert "section_heading" in hf["member_roles"]
+    assert "subsection_heading" in hf["member_roles"]
+
+
+def test_build_family_profiles_backmatter_heading_family() -> None:
+    """backmatter_heading_family aggregates backmatter headings and reference_heading."""
+    from paperforge.worker.ocr_profiles import build_family_profiles
+
+    blocks = [
+        {"role": "backmatter_heading", "span_metadata": {"size": 12, "flags": "bold"}},
+        {"role": "backmatter_boundary_heading", "span_metadata": {"size": 11, "flags": "bold"}},
+        {"role": "reference_heading", "span_metadata": {"size": 12, "flags": "bold"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    assert "backmatter_heading_family" in families
+    assert families["backmatter_heading_family"]["block_count"] == 3
+
+
+def test_compare_against_family_matches_body_block() -> None:
+    """A body-size block should match body_family better than non_body_insert_family."""
+    from paperforge.worker.ocr_profiles import (
+        build_family_profiles,
+        compare_against_family,
+        extract_block_span_profile,
+    )
+
+    blocks = [
+        {"role": "body_paragraph", "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "body_paragraph", "span_metadata": {"size": 10.5, "flags": "normal"}},
+        {"role": "non_body_insert", "span_metadata": {"size": 8, "flags": "normal"}},
+        {"role": "non_body_insert", "span_metadata": {"size": 8.5, "flags": "normal"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    body_block = {"span_metadata": {"size": 10.2, "flags": "normal"}}
+    bp = extract_block_span_profile(body_block)
+    assert bp is not None
+
+    body_match = compare_against_family(bp, families["body_family"])
+    ni_match = compare_against_family(bp, families["non_body_insert_family"])
+
+    assert body_match["match_score"] > ni_match["match_score"], (
+        f"Body block should match body_family ({body_match['match_score']}) "
+        f"better than non_body_insert_family ({ni_match['match_score']})"
+    )
+
+
+def test_family_level_non_body_insert_validation() -> None:
+    """Narrow non-body insert should match non_body_insert_family, not body_family."""
+    from paperforge.worker.ocr_profiles import (
+        build_family_profiles,
+        compare_against_family,
+        extract_block_span_profile,
+    )
+
+    blocks = [
+        {"role": "body_paragraph", "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "body_paragraph", "span_metadata": {"size": 10.5, "flags": "normal"}},
+        {"role": "non_body_insert", "span_metadata": {"size": 8, "flags": "italic"}},
+        {"role": "non_body_insert", "span_metadata": {"size": 8.5, "flags": "italic"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    narrow_block = {"span_metadata": {"size": 8.2, "flags": "italic"}}
+    bp = extract_block_span_profile(narrow_block)
+    assert bp is not None
+
+    ni_match = compare_against_family(bp, families["non_body_insert_family"])
+    body_match = compare_against_family(bp, families["body_family"])
+
+    assert ni_match["match_score"] > body_match["match_score"], (
+        f"Narrow italic block should match non_body_insert_family ({ni_match['match_score']}) "
+        f"better than body_family ({body_match['match_score']})"
+    )
+
+
+def test_family_level_rescue_reinstates_false_non_body_insert() -> None:
+    """Non-body insert with body-like style should be reinstated by family rescue
+    only when non_body_insert_family profile is reliable (moderate+ quality)."""
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        # body paragraphs to establish body_family profile
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "role_confidence": 0.8,
+            "text": "Normal body paragraph with enough text for profiling purposes in this test case.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "role_confidence": 0.8,
+            "text": "Another body paragraph to strengthen the body font profile for reliable matching.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        # genuine non_body_insert blocks (4 blocks with consistent small/italic style,
+        # dispersion <= 0.15 = strong quality for non_body_insert_family)
+        {
+            "role": "non_body_insert",
+            "page": 1,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "text": "Short bio text one",
+            "span_metadata": {"size": 9, "flags": "italic"},
+        },
+        {
+            "role": "non_body_insert",
+            "page": 1,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "text": "Short bio text two",
+            "span_metadata": {"size": 9, "flags": "italic"},
+        },
+        {
+            "role": "non_body_insert",
+            "page": 2,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "text": "Short bio text three",
+            "span_metadata": {"size": 9, "flags": "italic"},
+        },
+        {
+            "role": "non_body_insert",
+            "page": 2,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "text": "Short bio text four",
+            "span_metadata": {"size": 9, "flags": "italic"},
+        },
+        # false positive: body-like font in non_body_insert, wide enough to pass geometry guard
+        {
+            "role": "non_body_insert",
+            "page": 2,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "bbox": [100, 400, 700, 440],
+            "page_width": 1200,
+            "text": "This block was incorrectly marked as non_body_insert but has a body-paragraph style.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "non_body_insert": {
+            "block_count": 5,
+            "mean_size": 9.2,
+            "max_size": 10.0,
+            "min_size": 9.0,
+            "dispersion": 0.054,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.8,
+            "font_families": [],
+        },
+    }
+
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+
+    # The body-like block should be reinstated because non_body_insert_family
+    # has strong quality
+    reinstated = [b for b in result if b["text"].startswith("This block was incorrectly")]
+    assert len(reinstated) == 1
+    assert reinstated[0]["role"] == "body_paragraph", (
+        f"Expected false-positive non_body_insert to be reinstated to body_paragraph, got {reinstated[0]['role']}"
+    )
+    assert "_non_body_insert" not in reinstated[0], "non_body_insert flag should be removed"
+
+    still_ni = [b for b in result if "Short bio text" in (b.get("text", ""))]
+    assert len(still_ni) == 4
+    for b in still_ni:
+        assert b["role"] == "non_body_insert", f"Genuine non_body_insert should keep its role, got {b['role']}"
+
+
+def test_family_level_rescue_weak_heading_matches_heading_family() -> None:
+    """Weak heading matching heading_family should NOT be demoted to body_paragraph."""
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        # body paragraphs
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "role_confidence": 0.8,
+            "text": "Normal body paragraph with enough text for profiling purposes in this test case.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "role_confidence": 0.8,
+            "text": "Another body paragraph to strengthen the body profile for more reliable comparisons.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        # heading blocks to establish heading_family (different size, bold)
+        {
+            "role": "section_heading",
+            "page": 1,
+            "role_confidence": 0.8,
+            "text": "Introduction",
+            "span_metadata": {"size": 14, "flags": "bold"},
+        },
+        {
+            "role": "subsection_heading",
+            "page": 2,
+            "role_confidence": 0.8,
+            "text": "Statistical Analysis",
+            "span_metadata": {"size": 12, "flags": "bold"},
+        },
+        # weak heading that matches heading_family (should NOT be demoted)
+        {
+            "role": "section_heading",
+            "page": 3,
+            "role_confidence": 0.55,
+            "text": "Results",
+            "span_metadata": {"size": 14, "flags": "bold"},
+        },
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "section_heading": {
+            "block_count": 1,
+            "mean_size": 14.0,
+            "max_size": 14.5,
+            "min_size": 13.5,
+            "dispersion": 0.04,
+            "quality": "strong",
+            "bold_ratio": 1.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "subsection_heading": {
+            "block_count": 1,
+            "mean_size": 12.0,
+            "max_size": 12.5,
+            "min_size": 11.5,
+            "dispersion": 0.04,
+            "quality": "strong",
+            "bold_ratio": 1.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+
+    heading = next(b for b in result if b["text"] == "Results")
+    assert heading["role"] == "section_heading", (
+        f"Weak heading matching heading_family should keep its role, got {heading['role']}"
+    )
+
+
+def test_family_level_rescue_does_not_backfill_non_body_insert_when_no_family_profile() -> None:
+    """Non-body insert blocks are left alone when no family profiles are available."""
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        {
+            "role": "frontmatter_noise",
+            "text": "Dr Ya Huang is currently a professor at the University",
+            "page": 2,
+            "_non_body_insert": True,
+            "role_confidence": 0.5,
+            "span_metadata": {"size": 11, "flags": "normal"},
+        },
+    ]
+    role_profiles = {
+        "body_paragraph": {"size_min": 10, "size_max": 12, "bold": False, "quality": "strong", "fonts": set()},
+    }
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+    non_body = [b for b in result if b.get("_non_body_insert")]
+    assert len(non_body) == 1
+    assert non_body[0]["role"] == "frontmatter_noise"
+
+
+def test_rescue_does_not_touch_non_body_insert() -> None:
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        {
+            "role": "frontmatter_noise",
+            "text": "Dr Ya Huang is currently a professor at the University",
+            "page": 2,
+            "_non_body_insert": True,
+            "role_confidence": 0.5,
+            "span_metadata": {"size": 11, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "text": "Real body text on page 2.",
+            "page": 2,
+            "_non_body_insert": False,
+            "role_confidence": 0.6,
+            "span_metadata": {"size": 11, "flags": "normal"},
+        },
+    ]
+    role_profiles = {
+        "body_paragraph": {"size_min": 10, "size_max": 12, "bold": False, "quality": "strong", "fonts": set()},
+    }
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+    non_body = [b for b in result if b.get("_non_body_insert")]
+    assert len(non_body) == 1
+    assert non_body[0]["role"] == "frontmatter_noise", "non_body_insert must not be rescued to body_paragraph"
+
+
+def test_non_body_insert_catches_figure_caption_blocks() -> None:
+    """figure_caption blocks not caught by non_body_insert detection (ponytail:
+    family-profile rescue handles them after they land as body_paragraph)."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        # Page 1: wide body paragraphs
+        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1, "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1, "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        # Page 2: wide body paragraphs
+        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 2, "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 2, "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        # Page 2: narrow figure_caption blocks (author bios mislabeled by PaddleOCR)
+        {"role": "figure_caption", "bbox": [50, 600, 300, 640], "page": 2, "span_metadata": {"font": "Arial", "size": 8}},
+        {"role": "figure_caption", "bbox": [50, 680, 310, 720], "page": 2, "span_metadata": {"font": "Arial", "size": 8}},
+    ]
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
+
+    # figure_caption blocks deliberately excluded from cluster detection (ponytail)
+    assert 4 not in indices, f"Figure caption at index 4 should not be in non_body_insert cluster detection: {indices}"
+    assert 5 not in indices, f"Figure caption at index 5 should not be in non_body_insert cluster detection: {indices}"
+
+    # No wide body_paragraph should be falsely detected
+    for i in range(4):
+        assert i not in indices, f"Body paragraph at index {i} should not be in {indices}"
+
+def test_non_body_insert_does_not_promote_real_figure_captions() -> None:
+    """A genuine Figure 1 caption (wide, near media) should NOT be detected as non-body insert."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        # Wide body paragraphs
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 100, 800, 140],
+            "page": 1,
+            "span_metadata": {"font": "TimesNewRoman", "size": 10},
+        },
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 200, 810, 240],
+            "page": 1,
+            "span_metadata": {"font": "TimesNewRoman", "size": 10},
+        },
+        # Real figure caption: wide, near full body width
+        {
+            "role": "figure_caption",
+            "bbox": [100, 500, 780, 530],
+            "page": 1,
+            "span_metadata": {"font": "TimesNewRoman", "size": 9},
+        },
+    ]
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
+
+    # Wide figure caption should NOT be detected (single block, body-width)
+    assert 2 not in indices, f"Real figure caption should not be detected, got indices {indices}"
+
+
+def test_visual_container_alone_does_not_force_structured_insert() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "Ordinary paragraph",
+            "page": 2,
+            "bbox": [100, 100, 900, 160],
+            "page_width": 1200,
+            "_in_visual_container": True,
+            "_container_bbox": [90, 90, 910, 170],
+        },
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+
+    assert normalized[0]["role"] != "structured_insert"
+    assert normalized[0].get("insert_score", {}).get("decision") in {"structured_insert_candidate", "body"}
+
+
+def test_non_body_insert_catches_continuation_fragment() -> None:
+    """A body-width continuation fragment (lowercase start) adjacent to a
+    narrow non-body insert is caught by the expansion pass."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        # Page 2: two wide body paragraphs establishing spine width ~700
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 100, 800, 140],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+        },
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 200, 810, 240],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+        },
+        # Narrow non-body inserts (author bio start + name label)
+        {
+            "role": "body_paragraph",
+            "bbox": [50, 600, 250, 640],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+        },
+        {
+            "role": "body_paragraph",
+            "bbox": [50, 680, 250, 720],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+        },
+        # Continuation fragment: SAME width as body paragraphs,
+        # SAME font as body paragraphs, but starts lowercase and is
+        # adjacent to the narrow inserts — should be caught
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 760, 800, 800],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+            "text": "integrate technologies of tissue engineering and flexible electronics",
+        },
+    ]
+    # Pages 3-5: establish strong body spine (3+ anchor pages)
+    for pg in range(3, 6):
+        blocks.append(
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 100, 800, 140],
+                "page": pg,
+                "span_metadata": {"font": "BodyFont", "size": 10},
+            }
+        )
+        blocks.append(
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 200, 810, 240],
+                "page": pg,
+                "span_metadata": {"font": "BodyFont", "size": 10},
+            }
+        )
+        blocks.append(
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 300, 800, 340],
+                "page": pg,
+                "span_metadata": {"font": "BodyFont", "size": 10},
+            }
+        )
+
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
+
+    assert 2 in indices, f"Narrow insert at index 2 should be detected, got {indices}"
+    assert 3 in indices, f"Narrow insert at index 3 should be detected, got {indices}"
+    assert 4 in indices, (
+        f"Continuation fragment at index 4 should be detected "
+        f"(body-width, lowercase start, adjacent to insert), got {indices}"
+    )
+
+
+def test_non_body_insert_not_on_weak_spine() -> None:
+    """Font mismatch alone should not trigger non_body_insert when spine quality is weak."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = []
+    # Only page 1 body paragraphs -- spine will be weak
+    for i in range(3):
+        blocks.append(
+            {
+                "block_id": f"b{i}",
+                "page": 1,
+                "role": "body_paragraph",
+                "text": f"Body {i}",
+                "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                "page_width": 1200,
+                "page_height": 1700,
+                "span_metadata": [{"size": 10, "font": "Times", "flags": 0, "color": 0}],
+            }
+        )
+    # One narrow block on page 1 with different font
+    blocks.append(
+        {
+            "block_id": "b3",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Narrow body",
+            "bbox": [80, 400, 200, 440],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"size": 10, "font": "Arial", "flags": 0, "color": 0}],
+        }
+    )
+    blocks.append(
+        {
+            "block_id": "b4",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Another narrow",
+            "bbox": [80, 450, 200, 490],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"size": 10, "font": "Arial", "flags": 0, "color": 0}],
+        }
+    )
+
+    spine = _detect_body_spine(blocks)
+    result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
+    # With weak spine, font mismatch alone should NOT trigger
+    assert len(result) == 0, f"Expected 0 non_body_insert indices, got {result}"
+
+
+def test_layout_profile_single_column() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _classify_page_layout,
+        _cluster_page_columns,
+    )
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        {"bbox": [100, 100, 700, 140], "role": "body_paragraph"},
+        {"bbox": [100, 160, 700, 200], "role": "body_paragraph"},
+        {"bbox": [100, 220, 700, 260], "role": "body_paragraph"},
+    ]
+
+    centers = _cluster_page_columns(blocks, page_width)
+    assert len(centers) == 1, f"Expected 1 cluster, got {len(centers)}"
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.column_count == 1
+    assert profile.layout_type == "single_column"
+    assert isinstance(profile, PageLayoutProfile)
+
+
+def test_layout_profile_two_column() -> None:
+    from paperforge.worker.ocr_document import (
+        _classify_page_layout,
+        _cluster_page_columns,
+    )
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        {"bbox": [50, 100, 380, 140], "role": "body_paragraph"},
+        {"bbox": [50, 160, 380, 200], "role": "body_paragraph"},
+        {"bbox": [420, 100, 750, 140], "role": "body_paragraph"},
+        {"bbox": [420, 160, 750, 200], "role": "body_paragraph"},
+    ]
+
+    centers = _cluster_page_columns(blocks, page_width)
+    assert len(centers) == 2, f"Expected 2 clusters, got {len(centers)}"
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.column_count == 2
+    assert profile.layout_type == "two_column"
+
+
+def test_layout_profile_mixed_tail() -> None:
+    from paperforge.worker.ocr_document import (
+        _classify_page_layout,
+        _cluster_page_columns,
+    )
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        # Left column: body continuation
+        {"bbox": [50, 100, 380, 200], "role": "body_paragraph"},
+        {"bbox": [50, 220, 380, 260], "role": "body_paragraph"},
+        # Right column: backmatter/references
+        {"bbox": [420, 100, 750, 140], "role": "backmatter_heading"},
+        {"bbox": [420, 160, 750, 200], "role": "reference_item"},
+    ]
+
+    centers = _cluster_page_columns(blocks, page_width)
+    assert len(centers) == 2, f"Expected 2 clusters, got {len(centers)}"
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.column_count == 2
+    assert profile.layout_type == "mixed_tail"
+
+
+def test_layout_profile_build_profiles() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _build_page_layout_profiles,
+    )
+
+    blocks = [
+        # Page 1: single column body
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 1, "bbox": [100, 160, 700, 200], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        # Page 2: two-column, body left + tail right
+        {"page": 2, "bbox": [50, 100, 380, 210], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 100, 750, 140], "role": "backmatter_heading", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 160, 750, 270], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    profiles = _build_page_layout_profiles(blocks)
+
+    assert 1 in profiles
+    assert 2 in profiles
+    assert isinstance(profiles[1], PageLayoutProfile)
+    assert isinstance(profiles[2], PageLayoutProfile)
+
+    assert profiles[1].layout_type == "single_column", f"Page 1 expected single_column, got {profiles[1].layout_type}"
+    assert profiles[2].layout_type == "mixed_tail", f"Page 2 expected mixed_tail, got {profiles[2].layout_type}"
+
+
+# ---------------------------------------------------------------------------
+# Reading segment tests
+# ---------------------------------------------------------------------------
+
+
+def test_reading_segments_single_column() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _build_page_reading_segments,
+    )
+
+    page_blocks = [
+        {"page": 1, "bbox": [100, 300, 700, 340], "role": "body_paragraph"},
+        {"page": 1, "bbox": [100, 200, 700, 240], "role": "body_paragraph"},
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph"},
+    ]
+    profile = PageLayoutProfile(column_count=1, column_boundaries=[400.0], layout_type="single_column")
+
+    segments = _build_page_reading_segments(page_blocks, profile, page_idx_offset=10)
+
+    assert len(segments) == 1
+    seg = segments[0]
+    assert seg.page == 1
+    assert seg.column_index == 0
+    # blocks sorted by y ascending: index 2 (y=100), 1 (y=200), 0 (y=300)
+    # global indices: 10+2=12, 10+1=11, 10+0=10
+    assert seg.block_indices == [12, 11, 10]
+    assert seg.semantic_hint == "body"
+    assert seg.y_bottom > seg.y_top
+
+
+def test_reading_segments_two_column() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _build_page_reading_segments,
+    )
+
+    # Left col: idx0 (y=300), idx1 (y=100)
+    # Right col: idx2 (y=200), idx3 (y=50)
+    page_blocks = [
+        {"page": 2, "bbox": [50, 300, 380, 340], "role": "body_paragraph"},
+        {"page": 2, "bbox": [50, 100, 380, 140], "role": "body_paragraph"},
+        {"page": 2, "bbox": [420, 200, 750, 240], "role": "body_paragraph"},
+        {"page": 2, "bbox": [420, 50, 750, 90], "role": "body_paragraph"},
+    ]
+    profile = PageLayoutProfile(
+        column_count=2,
+        column_boundaries=[215.0, 585.0],
+        layout_type="two_column",
+    )
+
+    segments = _build_page_reading_segments(page_blocks, profile, page_idx_offset=5)
+
+    assert len(segments) == 2
+    # Left column first
+    assert segments[0].column_index == 0
+    assert segments[0].page == 2
+    # y sorted: local idx1 (y=100, global 6), local idx0 (y=300, global 5)
+    assert segments[0].block_indices == [6, 5]
+    assert segments[0].semantic_hint == "body"
+    # Right column second
+    assert segments[1].column_index == 1
+    assert segments[1].page == 2
+    # y sorted: local idx3 (y=50, global 8), local idx2 (y=200, global 7)
+    assert segments[1].block_indices == [8, 7]
+    assert segments[1].semantic_hint == "body"
+
+
+def test_tail_reading_order_mixed_page() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _build_tail_reading_order,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph"},
+        {"page": 1, "bbox": [100, 160, 700, 200], "role": "body_paragraph"},
+        {"page": 2, "bbox": [100, 100, 700, 140], "role": "body_paragraph"},
+        # Page 3: left body, right backmatter (tail page)
+        {"page": 3, "bbox": [50, 100, 380, 140], "role": "body_paragraph"},
+        {"page": 3, "bbox": [50, 160, 380, 200], "role": "body_paragraph"},
+        {"page": 3, "bbox": [420, 100, 750, 140], "role": "backmatter_heading"},
+        {"page": 3, "bbox": [420, 160, 750, 200], "role": "reference_item"},
+    ]
+
+    page_layouts = {
+        1: PageLayoutProfile(column_count=1, column_boundaries=[400.0], layout_type="single_column"),
+        2: PageLayoutProfile(column_count=1, column_boundaries=[400.0], layout_type="single_column"),
+        3: PageLayoutProfile(
+            column_count=2,
+            column_boundaries=[215.0, 585.0],
+            layout_type="mixed_tail",
+        ),
+    }
+
+    segments = _build_tail_reading_order(blocks, page_layouts)
+
+    assert len(segments) == 2
+    # Left column (body) first
+    assert segments[0].page == 3
+    assert segments[0].column_index == 0
+    assert segments[0].block_indices == [3, 4]
+    # Right column (backmatter + ref) second
+    assert segments[1].page == 3
+    assert segments[1].column_index == 1
+    assert segments[1].block_indices == [5, 6]
+    assert segments[1].semantic_hint == "mixed"
+
+
+# ---------------------------------------------------------------------------
+# Reference zone tests (Task 3)
+# ---------------------------------------------------------------------------
+
+
+def test_reference_zone_single_column() -> None:
+    """Single-column page: zone covers all blocks below ref heading."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_reference_zones,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 1, "bbox": [100, 160, 700, 200], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 100, 700, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 160, 700, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 220, 700, 260], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    zones = _detect_reference_zones(blocks, page_layouts)
+
+    assert len(zones) == 1
+    zone = zones[0]
+    assert zone.page == 2
+    assert zone.column_index == 0
+    # Zone starts at heading bottom y → heading itself excluded
+    assert len(zone.block_indices) == 2
+    for idx in zone.block_indices:
+        assert blocks[idx].get("role") == "reference_item"
+    assert zone.y_end > zone.y_start
+
+
+def test_reference_zone_two_column_mixed() -> None:
+    """Left body + right references: zone only in right column."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_reference_zones,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [50, 100, 380, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [50, 160, 380, 200], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 100, 750, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 220, 750, 260], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    zones = _detect_reference_zones(blocks, page_layouts)
+
+    assert len(zones) == 1
+    zone = zones[0]
+    assert zone.page == 2
+    assert zone.column_index == 1
+    # Zone starts at heading bottom y → heading excluded, only ref items
+    assert len(zone.block_indices) == 2
+    for idx in zone.block_indices:
+        assert blocks[idx].get("role") == "reference_item"
+    # Left-col body blocks should NOT be in zone
+    assert all(idx not in zone.block_indices for idx in [1, 2])
+
+
+def test_block_in_reference_zone() -> None:
+    """Verify block_in_any_reference_zone correctly includes/excludes."""
+    from paperforge.worker.ocr_document import (
+        ReferenceZone,
+        _block_in_any_reference_zone,
+    )
+
+    zones = [
+        ReferenceZone(page=2, column_index=1, y_start=150, y_end=300, block_indices=[3, 4, 5]),
+    ]
+
+    assert _block_in_any_reference_zone({}, zones, 3) is True
+    assert _block_in_any_reference_zone({}, zones, 5) is True
+    assert _block_in_any_reference_zone({}, zones, 0) is False
+    assert _block_in_any_reference_zone({}, zones, 2) is False
+    assert _block_in_any_reference_zone({}, [], 0) is False
+
+
+# ---------------------------------------------------------------------------
+# Layout-aware boundary detection tests (Task 4)
+# ---------------------------------------------------------------------------
+
+
+def test_forward_body_end_mixed_page() -> None:
+    """Two-column page with left body + right tail: body should continue."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_forward_body_end,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        # Page 4: left body (clean column), right tail
+        {"page": 4, "bbox": [50, 100, 380, 210], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [420, 100, 750, 140], "role": "backmatter_heading", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [420, 160, 750, 260], "role": "backmatter_body", "page_width": 800, "page_height": 1000},
+        # Page 5: tail only
+        {"page": 5, "bbox": [420, 100, 750, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    body_end = _detect_forward_body_end(blocks, page_layouts)
+
+    assert body_end == 4, f"Expected body_end=4 (left body continues on page 4), got {body_end}"
+
+
+def test_backward_backmatter_start_mixed_page() -> None:
+    """Two-column page: dense refs in one column should NOT be backmatter_start."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_backward_backmatter_start,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        # Page 5: two-column with dense refs confined to right column
+        {"page": 5, "bbox": [50, 100, 380, 140], "role": "backmatter_body", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 50, 750, 90], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 110, 750, 150], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 170, 750, 210], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 230, 750, 270], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 290, 750, 330], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        # Page 4: left backmatter heading, right reference heading
+        {"page": 4, "bbox": [50, 100, 380, 140], "role": "backmatter_heading", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [420, 100, 750, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    bm_start = _detect_backward_backmatter_start(blocks, page_layouts)
+
+    assert bm_start == 4, f"Expected backmatter_start=4 (backmatter heading on page 4), got {bm_start}"
+
+
+def test_references_start_local_zone() -> None:
+    """references_start picks page 71 but zone scopes it to right column only."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_reference_zones,
+        _detect_references_start,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        # Page 3: left body + right references (SAN9AYVR-like)
+        {"page": 3, "bbox": [50, 100, 380, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [50, 200, 380, 240], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [420, 100, 750, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [420, 220, 750, 260], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    refs_start = _detect_references_start(blocks, body_end_page=2, page_layouts=page_layouts)
+    assert refs_start == 3, f"Expected references_start=3, got {refs_start}"
+
+    zones = _detect_reference_zones(blocks, page_layouts)
+    assert len(zones) == 1
+    zone = zones[0]
+    assert zone.column_index == 1
+    # Left-col body blocks NOT in zone
+    assert 2 not in zone.block_indices
+    assert 3 not in zone.block_indices
+    # Heading starts zone but is excluded (zone starts at heading bottom y)
+    assert 4 not in zone.block_indices
+    # Ref items below heading ARE in zone
+    assert 5 in zone.block_indices
+    assert 6 in zone.block_indices
+
+
+def test_rescue_reference_zone_respects_column() -> None:
+    """Left-column body stays body_paragraph; right-column body becomes
+    reference_item on a two-column mixed page with reference zones."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        PageLayoutProfile,
+        PagePosition,
+        rescue_roles_with_document_context,
+    )
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.8,
+            "text": "Introduction paragraph establishing the research context.",
+            "span_metadata": {"size": 10.5, "flags": "normal"},
+            "bbox": [100, 100, 500, 150],
+        },
+        {
+            "page": 71,
+            "role": "body_paragraph",
+            "role_confidence": 0.5,
+            "text": "These results demonstrate the effectiveness of the approach.",
+            "span_metadata": {"size": 9.0, "flags": "normal"},
+            "bbox": [100, 200, 350, 250],
+        },
+        {
+            "page": 71,
+            "role": "reference_heading",
+            "role_confidence": 0.9,
+            "text": "References",
+            "span_metadata": {"size": 12, "flags": "bold"},
+            "bbox": [550, 100, 750, 130],
+        },
+        {
+            "page": 71,
+            "role": "body_paragraph",
+            "role_confidence": 0.5,
+            "text": "1. Smith J, Johnson K. A comprehensive study. Journal, 2025.",
+            "span_metadata": {"size": 9.0, "flags": "normal"},
+            "bbox": [550, 200, 750, 240],
+        },
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 1,
+            "mean_size": 10.5,
+            "max_size": 10.5,
+            "min_size": 10.5,
+            "dispersion": 0.0,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "reference_item": {
+            "block_count": 0,
+            "mean_size": 9.0,
+            "max_size": 9.0,
+            "min_size": 9.0,
+            "dispersion": 0.0,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(
+        body_end_page=70,
+        references_start=PagePosition(page=71, y=0.0),
+        page_layouts={
+            71: PageLayoutProfile(
+                column_count=2,
+                column_boundaries=[225.0, 650.0],
+                layout_type="mixed_tail",
+            ),
+        },
+        reference_zones=[
+            {
+                "page": 71,
+                "column_index": 1,
+                "y_start": 130.0,
+                "y_end": 240.0,
+                "block_indices": [3],
+            }
+        ],
+    )
+
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    left_body = [b for b in result if "These results" in b.get("text", "")]
+    right_ref = [b for b in result if "Smith J" in b.get("text", "")]
+
+    assert len(left_body) == 1
+    assert left_body[0]["role"] == "body_paragraph", (
+        f"Left-column body should stay body_paragraph, got {left_body[0]['role']}"
+    )
+    assert len(right_ref) == 1
+    assert right_ref[0]["role"] == "reference_item", (
+        f"Right-column reference should become reference_item, got {right_ref[0]['role']}"
+    )
+
+
+def test_rescue_reference_zone_single_column() -> None:
+    """Single-column page without reference zones uses page-level fallback."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        PagePosition,
+        rescue_roles_with_document_context,
+    )
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.8,
+            "text": "Intro body establishing font profile for the paper body.",
+            "span_metadata": {"size": 10.5, "flags": "normal"},
+        },
+        {
+            "page": 5,
+            "role": "reference_heading",
+            "role_confidence": 0.9,
+            "text": "References",
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "role_confidence": 0.5,
+            "text": "1. Author A, B C. A study of things. Journal, 2025.",
+            "span_metadata": {"size": 9.0, "flags": "normal"},
+        },
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 1,
+            "mean_size": 10.5,
+            "max_size": 10.5,
+            "min_size": 10.5,
+            "dispersion": 0.0,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "reference_item": {
+            "block_count": 0,
+            "mean_size": 9.0,
+            "max_size": 9.0,
+            "min_size": 9.0,
+            "dispersion": 0.0,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(
+        body_end_page=4,
+        references_start=PagePosition(page=5, y=0.0),
+        reference_zones=None,
+    )
+
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    promoted = next(b for b in result if b["text"].startswith("1. Author"))
+    assert promoted["role"] == "reference_item", (
+        f"Expected reference_item via page-level fallback, got {promoted['role']}"
+    )
+
+
+def test_document_structure_json_serialization() -> None:
+    """Verify that DocumentStructure with layout profiles serializes to valid JSON."""
+    import dataclasses
+    import json
+
+    from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
+
+    ds = DocumentStructure(
+        body_end_page=70,
+        backmatter_start=None,
+        references_start=None,
+        page_layouts={
+            71: PageLayoutProfile(column_count=2, column_boundaries=[200, 600], layout_type="two_column"),
+        },
+    )
+    data = dataclasses.asdict(ds)
+    js = json.dumps(data, indent=2)
+    parsed = json.loads(js)
+    assert parsed["body_end_page"] == 70
+    assert parsed["page_layouts"]["71"]["column_count"] == 2
+    assert parsed["page_layouts"]["71"]["layout_type"] == "two_column"
+    assert "tail_boundary_score" in parsed
+
+
+def test_document_structure_has_tail_boundary_score() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Body text.", "bbox": [100, 100, 500, 130]},
+        {"page": 2, "role": "section_heading", "text": "Discussion", "bbox": [100, 100, 500, 130]},
+        {"page": 2, "role": "body_paragraph", "text": "More body.", "bbox": [100, 140, 500, 170]},
+        {"page": 10, "role": "reference_heading", "text": "References", "bbox": [100, 100, 500, 130]},
+        {"page": 10, "role": "reference_item", "text": "1. Author. Title. Journal.", "bbox": [100, 140, 500, 170]},
+    ]
+    doc, _ = normalize_document_structure(blocks)
+    assert doc.layout_audit is not None
+    assert doc.tail_boundary_score["score"] >= 0.0
+
+
+def test_figure_caption_candidate_demoted_in_body() -> None:
+    """figure_caption_candidate with subfigure ref + narrative prose in body spine -> body_paragraph."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "figure_caption_candidate",
+            "text": "Fig. 1a This is a narrative description. We observed significant results. "
+            "The data suggests a novel mechanism.",
+            "bbox": [100, 200, 500, 230],
+        },
+    ]
+    ds = DocumentStructure(body_end_page=5)
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "body_paragraph"
+
+
+def test_figure_caption_candidate_promoted_near_media() -> None:
+    """figure_caption_candidate near media -> figure_caption."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "figure_caption_candidate",
+            "text": "Fig. 1 Short caption.",
+            "block_bbox": [100, 240, 500, 260],
+        },
+        {
+            "page": 3,
+            "role": "figure_asset",
+            "block_label": "image",
+            "block_bbox": [100, 50, 500, 220],
+        },
+    ]
+    ds = DocumentStructure(body_end_page=5)
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "figure_caption"
+
+
+def test_backmatter_heading_candidate_before_boundary_demoted() -> None:
+    """backmatter_heading_candidate on page before backmatter -> section_heading."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        PagePosition,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 5,
+            "role": "backmatter_heading_candidate",
+            "text": "Acknowledgments",
+            "bbox": [100, 100, 500, 130],
+        },
+    ]
+    ds = DocumentStructure(
+        body_end_page=4,
+        backmatter_start=PagePosition(page=6, y=0.0),
+    )
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "section_heading"
+    assert blocks[0]["role_confidence"] == 0.5
+
+
+def test_backmatter_heading_candidate_after_boundary_promoted() -> None:
+    """backmatter_heading_candidate inside backmatter -> backmatter_heading."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        PagePosition,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 7,
+            "role": "backmatter_heading_candidate",
+            "text": "Funding",
+            "bbox": [100, 100, 500, 130],
+        },
+    ]
+    ds = DocumentStructure(
+        body_end_page=5,
+        backmatter_start=PagePosition(page=6, y=0.0),
+    )
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "backmatter_heading"
+
+
+def test_container_activation_guard() -> None:
+    """container paper: child heading before boundary stays section_heading."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "backmatter_heading_candidate",
+            "text": "Funding",
+            "bbox": [100, 100, 500, 130],
+        },
+    ]
+    ds = DocumentStructure(
+        body_end_page=5,
+        backmatter_form="container",
+    )
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "section_heading"
+    assert blocks[0]["role_confidence"] == 0.5
+
+
+# ---------------------------------------------------------------------------
+# Body spine quality tests (Task 2)
+# ---------------------------------------------------------------------------
+
+
+def test_body_spine_quality_strong_with_clean_anchors() -> None:
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    blocks.append(
+        {
+            "block_id": "b0",
+            "page": 1,
+            "role": "paper_title",
+            "text": "Title",
+            "bbox": [80, 20, 280, 60],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+    for pg in range(2, 6):
+        for i in range(3):
+            blocks.append(
+                {
+                    "block_id": f"b{pg}_{i}",
+                    "page": pg,
+                    "role": "body_paragraph",
+                    "text": f"Body {i}",
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "span_metadata": [{"size": 10.0, "font": "Times", "flags": 0, "color": 0}],
+                }
+            )
+    spine = _detect_body_spine(blocks)
+    sp2 = spine.get(2, {})
+    assert sp2.get("quality") == "strong", f"Expected strong, got {sp2.get('quality')}"
+
+
+def test_body_spine_quality_weak_contaminated() -> None:
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    for i in range(3):
+        blocks.append(
+            {
+                "block_id": f"b{i}",
+                "page": 1,
+                "role": "body_paragraph",
+                "text": f"Body {i}",
+                "bbox": [80, 100 + i * 100, 200, 160 + i * 100],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    spine = _detect_body_spine(blocks)
+    sp1 = spine.get(1, {})
+    assert sp1.get("quality") in ("weak", "moderate"), f"Expected weak/moderate, got {sp1.get('quality')}"
+
+
+# ---------------------------------------------------------------------------
+# No-span degraded mode tests (Task 5)
+# ---------------------------------------------------------------------------
+
+
+def test_span_coverage_weak_when_no_metadata() -> None:
+    """Blocks without span_metadata produce weak coverage."""
+    from paperforge.worker.ocr_document import _compute_span_coverage
+
+    blocks = [{"span_metadata": None}, {"span_metadata": {}}]
+    result = _compute_span_coverage(blocks)
+    assert result.get("coverage_ratio", 1.0) < 0.5
+    assert result.get("degraded_mode_active") is True
+
+
+def test_no_span_rescue_more_conservative() -> None:
+    """When span coverage is weak, body_paragraph->reference_item rescue should not
+    trigger on font alone."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        rescue_roles_with_document_context,
+    )
+    from paperforge.worker.ocr_profiles import build_role_span_profiles
+
+    blocks = [
+        {
+            "block_id": "b1",
+            "page": 11,
+            "role": "body_paragraph",
+            "text": "Smith J. (2023) A study about cells.",
+            "bbox": [80, 200, 520, 240],
+            "page_width": 1200,
+            "page_height": 1700,
+            "render_default": True,
+            "role_confidence": 0.5,
+        },
+    ]
+    ds = DocumentStructure(
+        body_end_page=10,
+        backmatter_start=None,
+        references_start=type("PS", (), {"page": 11, "y": 0.0})(),
+        spread_start=11,
+        spread_end=15,
+        backmatter_form="flat",
+        page_layouts={},
+        tail_reading_order=None,
+        reference_zones=None,
+    )
+    profiles = build_role_span_profiles(blocks)
+    result = rescue_roles_with_document_context(blocks, profiles, ds)
+    assert result[0]["role"] == "body_paragraph"
+
+
+def test_non_body_insert_skips_page1_title() -> None:
+    from paperforge.worker.ocr_document import _is_page1_title
+
+    assert _is_page1_title("Metabolic regulation of skeletal cell fate and function") is True
+    assert _is_page1_title("Review article") is False
+    assert _is_page1_title("") is False
+
+
+def test_contaminated_early_page_weak_spine() -> None:
+    """Early pages with mostly non-body blocks produce weak spine quality."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Single contaminated page: lots of frontmatter/noise, very few narrow body paragraphs
+    for i in range(3):
+        blocks.append(
+            {
+                "block_id": f"t{i}",
+                "page": 1,
+                "role": "paper_title",
+                "text": f"Title {i}",
+                "bbox": [80, 20 + i * 40, 280, 60 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    for i in range(2):
+        blocks.append(
+            {
+                "block_id": f"a{i}",
+                "page": 1,
+                "role": "authors",
+                "text": f"Author {i}",
+                "bbox": [80, 140 + i * 40, 300, 180 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    for i in range(5):
+        blocks.append(
+            {
+                "block_id": f"n{i}",
+                "page": 1,
+                "role": "noise",
+                "text": f"Noise {i}",
+                "bbox": [80, 240 + i * 30, 180, 270 + i * 30],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    # Narrow body paragraphs (width < 400, below anchor minimum)
+    blocks.append(
+        {
+            "block_id": "b0",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Narrow body text",
+            "bbox": [80, 400, 300, 440],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"size": 10, "font": "Times", "flags": 0}],
+        }
+    )
+
+    spine = _detect_body_spine(blocks)
+    meta = spine.get("_meta", {})
+    assert meta.get("quality") == "weak", f"Expected weak, got {meta.get('quality')!r}"
+    assert meta.get("anchor_pages") == [], f"Expected empty anchor_pages, got {meta.get('anchor_pages')!r}"
+    assert meta.get("sample_count", -1) == 0, f"Expected sample_count 0, got {meta.get('sample_count')!r}"
+
+
+def test_stable_central_pages_strong_spine() -> None:
+    """Clean middle pages with body paragraphs produce strong spine quality."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 1: frontmatter only
+    blocks.append(
+        {
+            "block_id": "t0",
+            "page": 1,
+            "role": "paper_title",
+            "text": "Title",
+            "bbox": [80, 20, 280, 60],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+    # Pages 4-8: clean body paragraphs (3 each, width 510, same font)
+    for pg in range(4, 9):
+        for i in range(3):
+            blocks.append(
+                {
+                    "block_id": f"b{pg}_{i}",
+                    "page": pg,
+                    "role": "body_paragraph",
+                    "text": f"Body on page {pg}",
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "span_metadata": [{"size": 10, "font": "Times", "flags": 0}],
+                }
+            )
+    # Tail
+    blocks.append(
+        {
+            "block_id": "ref",
+            "page": 10,
+            "role": "reference_heading",
+            "text": "References",
+            "bbox": [80, 100, 400, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+
+    spine = _detect_body_spine(blocks)
+    meta = spine.get("_meta", {})
+    assert meta.get("quality") == "strong", f"Expected strong, got {meta.get('quality')!r}"
+    assert len(meta.get("anchor_pages", [])) >= 3, f"Expected >= 3 anchor_pages, got {meta.get('anchor_pages')!r}"
+    assert meta.get("font_coherence", 0.0) > 0.8, f"Expected font_coherence > 0.8, got {meta.get('font_coherence')!r}"
+    assert meta.get("width_dispersion", 1.0) < 0.3, (
+        f"Expected width_dispersion < 0.3, got {meta.get('width_dispersion')!r}"
+    )
+    assert meta.get("sample_count", 0) >= 8, f"Expected sample_count >= 8, got {meta.get('sample_count')!r}"
+
+
+# ---------------------------------------------------------------------------
+# Structured insert candidate / cluster tests (Task 4)
+# ---------------------------------------------------------------------------
+
+
+def test_textual_table_not_media_asset() -> None:
+    """A block with raw_label=table but substantive bullet text is NOT media_asset,
+    and enters as structured_insert_candidate instead."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "table",
+        "block_content": "Key findings:\n\u2022 Finding one\n\u2022 Finding two\n\u2022 Finding three",
+        "block_bbox": [100, 200, 500, 400],
+        "page": 2,
+    }
+    page_blocks = [
+        {
+            "block_label": "table",
+            "block_content": "Key findings:\n\u2022 Finding one\n\u2022 Finding two\n\u2022 Finding three",
+            "block_bbox": [100, 200, 500, 400],
+            "page": 2,
+        },
+    ]
+    role = assign_block_role(block, page_blocks=page_blocks)
+    assert role.role != "media_asset", f"Expected NOT media_asset, got {role.role}"
+    assert role.role == "structured_insert_candidate"
+
+
+def test_key_points_box_not_body_paragraph() -> None:
+    """A detached summary box with heading + bullet items is clustered as structured_insert,
+    not left as body_paragraph."""
+    from paperforge.worker.ocr_document import _detect_structured_insert_clusters
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "structured_insert_candidate",
+            "block_content": "Key points of the study",
+            "bbox": [100, 200, 500, 230],
+            "block_bbox": [100, 200, 500, 230],
+        },
+        {
+            "page": 3,
+            "role": "structured_insert_candidate",
+            "block_content": "\u2022 First important point\n\u2022 Second important point\n\u2022 Third point",
+            "bbox": [100, 240, 500, 350],
+            "block_bbox": [100, 240, 500, 350],
+        },
+    ]
+    indices = _detect_structured_insert_clusters(blocks)
+    assert len(indices) == 2
+    assert 0 in indices
+    assert 1 in indices
+
+
+def test_single_key_points_anchor_with_adjacent_mixed_blocks_forms_sidebar_cluster() -> None:
+    from paperforge.worker.ocr_document import (
+        _detect_structured_insert_clusters,
+        _expand_structured_insert_cluster_with_mixed_sidebar_blocks,
+    )
+
+    blocks = [
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "text": "Key points",
+            "bbox": [80, 220, 180, 247],
+            "block_bbox": [80, 220, 180, 247],
+            "page_width": 1200,
+            "raw_label": "paragraph_title",
+        },
+        {
+            "page": 2,
+            "role": "media_asset",
+            "text": "<table><tr><td>• Point one</td></tr><tr><td>• Point two</td></tr></table>",
+            "bbox": [73, 270, 591, 738],
+            "block_bbox": [73, 270, 591, 738],
+            "page_width": 1200,
+            "raw_label": "table",
+        },
+        {
+            "page": 2,
+            "role": "unknown_structural",
+            "text": "• Point three",
+            "bbox": [74, 675, 566, 743],
+            "block_bbox": [74, 675, 566, 743],
+            "page_width": 1200,
+            "raw_label": "vision_footnote",
+        },
+    ]
+
+    base = _detect_structured_insert_clusters(blocks)
+    expanded = _expand_structured_insert_cluster_with_mixed_sidebar_blocks(blocks, base)
+
+    assert 0 in expanded
+    assert 1 in expanded
+    assert 2 in expanded
+
+
+def test_structured_insert_cluster_detected() -> None:
+    """Multiple structured insert candidates on the same page with close geometry
+    are detected as a cluster."""
+    from paperforge.worker.ocr_document import _detect_structured_insert_clusters
+
+    blocks = [
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "block_content": "Box 1. Summary",
+            "bbox": [100, 100, 500, 130],
+            "block_bbox": [100, 100, 500, 130],
+        },
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "block_content": "\u2022 Item A\n\u2022 Item B\n\u2022 Item C",
+            "bbox": [100, 140, 500, 250],
+            "block_bbox": [100, 140, 500, 250],
+        },
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "block_content": "Box 2. Additional notes",
+            "bbox": [100, 300, 500, 330],
+            "block_bbox": [100, 300, 500, 330],
+        },
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "block_content": "\u2022 Note one\n\u2022 Note two",
+            "bbox": [100, 340, 500, 400],
+            "block_bbox": [100, 340, 500, 400],
+        },
+    ]
+    indices = _detect_structured_insert_clusters(blocks)
+    # At least 3 of the 4 blocks should form clusters (two pairs)
+    assert len(indices) >= 3
+
+
+# ---------------------------------------------------------------------------
+# Degraded mode / span coverage tests (Task 6)
+# ---------------------------------------------------------------------------
+
+
+def test_degraded_mode_weaker_heading_promotion() -> None:
+    """Blocks without span_metadata, with weak heading-to-body rescue →
+    weaker promotion (higher threshold) — heading keeps its role in degraded mode."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        rescue_roles_with_document_context,
+    )
+
+    # Most blocks lack span_metadata → ratio = 3/10 = 0.3 → moderate, not weak.
+    # Need 3/11 = 0.27 < 0.3 → weak coverage → degraded mode.
+    blocks = [
+        {
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "page": 1,
+            "text": "Normal body paragraph with font profile data.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "page": 2,
+            "text": "Another body paragraph to strengthen the body profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "section_heading",
+            "role_confidence": 0.5,
+            "page": 2,
+            "text": "Methods",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+    ]
+    # Add 9 blocks without span_metadata to push ratio to 3/12 = 0.25 < 0.3
+    for i in range(9):
+        blocks.append({"role": "body_paragraph", "role_confidence": 0.5, "page": 2, "text": f"No span block {i}"})
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 11,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "section_heading": {
+            "block_count": 1,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(body_end_page=2)
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    heading = next(b for b in result if b["text"] == "Methods")
+    assert heading["role"] == "section_heading", (
+        f"Weak heading should keep its role in degraded mode, got {heading['role']}"
+    )
+
+
+def test_degraded_mode_weaker_non_body_insert() -> None:
+    """No-span blocks with moderate narrow+font signal → NOT promoted
+    to non_body_insert when spine weak."""
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        # Body paragraphs with span_metadata to establish body_family
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "role_confidence": 0.8,
+            "text": "Normal body paragraph with enough text for profiling purposes.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "role_confidence": 0.8,
+            "text": "Another body paragraph to strengthen the body font profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        # non_body_insert block without span_metadata — cannot be compared
+        {
+            "role": "non_body_insert",
+            "page": 1,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "bbox": [100, 400, 700, 440],
+            "page_width": 1200,
+            "text": "This block has no span metadata so rescue cannot run",
+        },
+    ]
+    # Add 7 blocks without span to push coverage to 2/10 = 0.2 < 0.3 → degraded
+    for i in range(7):
+        blocks.append({"role": "body_paragraph", "role_confidence": 0.5, "page": 2, "text": f"No span {i}"})
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 9,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "non_body_insert": {
+            "block_count": 1,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "moderate",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+    # Without span_metadata, extract_block_span_profile returns None →
+    # the block cannot be rescued, should remain as non_body_insert
+    non_body = [b for b in result if b.get("_non_body_insert")]
+    assert len(non_body) == 1
+    assert non_body[0]["role"] == "non_body_insert"
+
+
+def test_span_coverage_strong_when_most_blocks_have_metadata() -> None:
+    """80%+ blocks have span_metadata → strong coverage."""
+    from paperforge.worker.ocr_document import _compute_span_coverage
+
+    blocks = []
+    for i in range(8):
+        blocks.append({"span_metadata": {"size": 10, "flags": "normal"}})
+    for i in range(2):
+        blocks.append({"span_metadata": None})
+
+    result = _compute_span_coverage(blocks)
+    assert result["coverage_quality"] == "strong"
+    assert result["coverage_ratio"] >= 0.7
+    assert result["blocks_with_span"] == 8
+    assert result["blocks_without_span"] == 2
+    assert result["degraded_mode_active"] is False
+
+
+# ---------------------------------------------------------------------------
+# Non-body insert: spine quality gating (Task 5)
+# ---------------------------------------------------------------------------
+
+
+def test_non_body_insert_weak_spine_requires_font_mismatch() -> None:
+    """Moderate spine (2 anchor pages) + narrow width + same font → NOT non_body_insert."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = []
+    # Pages 2-3: 3 body paragraphs each → 2 anchor pages → moderate meta quality
+    for pg in range(2, 4):
+        for i in range(3):
+            blocks.append(
+                {
+                    "role": "body_paragraph",
+                    "page": pg,
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "span_metadata": [{"size": 10, "font": "Times"}],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
+    # Page 1: 2 body paragraphs
+    for i in range(2):
+        blocks.append(
+            {
+                "role": "body_paragraph",
+                "page": 1,
+                "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                "span_metadata": [{"size": 10, "font": "Times"}],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    # Page 1: 2 narrow blocks with SAME font → should NOT be non_body_insert
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 600, 300, 640],
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 680, 310, 720],
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+
+    spine = _detect_body_spine(blocks)
+    result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
+    assert len(result) == 0, f"Expected 0 non_body_insert with moderate spine + same font, got {result}"
+
+
+def test_non_body_insert_strong_spine_or_gate_ok() -> None:
+    """Strong spine (5 anchor pages) + narrow width or font mismatch → OK to detect."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = []
+    # Pages 2-6: 3 body paragraphs each → 5 anchor pages → strong meta quality
+    for pg in range(2, 7):
+        for i in range(3):
+            blocks.append(
+                {
+                    "role": "body_paragraph",
+                    "page": pg,
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "span_metadata": [{"size": 10, "font": "Times"}],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
+    # Page 1: 2 narrow blocks with SAME font → should be detected (strong spine trusts narrow alone)
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 600, 300, 640],
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 680, 310, 720],
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+
+    spine = _detect_body_spine(blocks)
+    result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
+    assert len(result) >= 2, f"Expected at least 2 non_body_insert with strong spine, got {result}"
+
+
+def test_non_body_insert_strong_spine_does_not_use_font_only_for_body_width_blocks() -> None:
+    """Strong spine should not classify body-width paragraphs by font mismatch alone."""
+    from paperforge.worker.ocr_document import _detect_non_body_insert_clusters
+
+    blocks = [
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "bbox": [80, 600, 590, 660],
+            "text": "This is real body text with a locally different OCR font family.",
+            "span_metadata": [{"size": 10, "font": "Helvetica"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "bbox": [80, 700, 590, 760],
+            "text": "This continuation paragraph should remain body text as well.",
+            "span_metadata": [{"size": 10, "font": "Helvetica"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
+    body_spine = {
+        2: {"median_width": 510, "all_fonts": {"times"}, "quality": "strong"},
+        "_meta": {"quality": "strong"},
+    }
+
+    result = _detect_non_body_insert_clusters(blocks, body_spine, page_width=1200)
+    assert result == set(), f"Body-width font-only mismatch should not be non_body_insert, got {result}"
+
+
+def test_title_not_swept_into_non_body_insert() -> None:
+    """Page 1 title-like block (long text, no bullets) is NOT marked as non_body_insert."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = []
+    # Pages 2-6: 3 body paragraphs each → strong meta quality
+    for pg in range(2, 7):
+        for i in range(3):
+            blocks.append(
+                {
+                    "role": "body_paragraph",
+                    "page": pg,
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "span_metadata": [{"size": 10, "font": "Times"}],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
+    # Page 1: title-like block (long text, narrow width, no bullets)
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 100, 400, 140],  # width 350 < 357 → narrow
+            "text": "Metabolic regulation of skeletal cell fate and function in development and disease",
+            "span_metadata": [{"size": 14, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+    # Page 1: companion narrow block (also narrow, same font)
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 200, 400, 240],  # width 350 < 357 → narrow
+            "text": "Short narrow paragraph that is not a title",
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+
+    spine = _detect_body_spine(blocks)
+    result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
+    # Title block must not be in result
+    title_idx = 15  # indices 0-14 are body paragraphs
+    assert title_idx not in result, f"Title block (idx {title_idx}) should not be non_body_insert, got {result}"
+
+
+# ---------------------------------------------------------------------------
+# Layout audit tests (Task 8)
+# ---------------------------------------------------------------------------
+
+
+def test_layout_audit_heading_owns_wrong_body() -> None:
+    """Heading in left column, body above it in right column -> audit flags info when no layout confidence."""
+    from paperforge.worker.ocr_document import _run_layout_audit
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "bbox": [700, 100, 1100, 140], "text": "Body above heading"},
+        {"page": 1, "role": "section_heading", "bbox": [100, 200, 500, 230], "text": "Introduction"},
+    ]
+    result = _run_layout_audit(blocks)
+    assert result["status"] == "pass", f"Expected pass (info-only), got {result['status']}"
+    assert result["info_count"] >= 1, "Expected at least 1 info anomaly"
+    assert result["anomaly_count"] >= 1
+    assert all(a["severity"] == "info" for a in result["anomalies"]), (
+        "All anomalies should be info severity without layout confidence"
+    )
+
+
+def test_layout_audit_reference_zone_overlaps_body() -> None:
+    """structured_insert overlapping body region -> info when no spine/insert_score."""
+    from paperforge.worker.ocr_document import _run_layout_audit
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "bbox": [100, 100, 500, 300], "text": "Body text", "raw_label": "text"},
+        {"page": 1, "role": "structured_insert", "bbox": [200, 150, 400, 250], "text": "Insert overlapping body"},
+    ]
+    result = _run_layout_audit(blocks)
+    assert result["status"] == "pass", f"Expected pass (info-only), got {result['status']}"
+    assert result["info_count"] >= 1, "Expected at least 1 info anomaly"
+
+
+# ---------------------------------------------------------------------------
+# Region prepass tests (Task 3)
+# ---------------------------------------------------------------------------
+
+
+def test_region_prepass_marks_frontmatter_insert_and_body_regions() -> None:
+    from paperforge.worker.ocr_document import _build_region_prepass
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "paper_title",
+            "text": "A Real Paper Title",
+            "bbox": [80, 80, 700, 140],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 1,
+            "role": "authors",
+            "text": "Jane Author & John Writer",
+            "bbox": [80, 160, 600, 200],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Key points",
+            "bbox": [760, 280, 1050, 315],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Important short list item",
+            "bbox": [760, 330, 1050, 370],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "This is a real body paragraph with enough words to train the body spine.",
+            "bbox": [80, 220, 640, 270],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
+
+    prepass = _build_region_prepass(blocks)
+
+    assert prepass.block_regions[0] == "frontmatter"
+    assert prepass.block_regions[1] == "frontmatter"
+    assert prepass.block_regions[2] == "body"
+    assert prepass.block_regions[3] == "frontmatter"
+    assert prepass.block_regions[4] == "body"
+
+
+def test_body_spine_ignores_region_frontmatter_and_structured_insert_blocks() -> None:
+    from paperforge.worker.ocr_document import _build_region_prepass, _detect_body_spine
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Review article",
+            "bbox": [80, 80, 240, 110],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"font": "Heading"}],
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Key points",
+            "bbox": [760, 280, 1050, 315],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"font": "Box"}],
+        },
+    ]
+    for page in range(2, 6):
+        for line in range(3):
+            blocks.append(
+                {
+                    "page": page,
+                    "role": "body_paragraph",
+                    "text": "Real body paragraph text for spine training.",
+                    "bbox": [80, 200 + line * 80, 620, 250 + line * 80],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "span_metadata": [{"font": "Body"}],
+                }
+            )
+
+    prepass = _build_region_prepass(blocks)
+    spine = _detect_body_spine(blocks, region_prepass=prepass)
+
+    assert "heading" not in spine[1].get("all_fonts", set()), str(spine[1].get("all_fonts"))
+    assert "box" not in spine[1].get("all_fonts", set()), str(spine[1].get("all_fonts"))
+
+
+def test_normalize_marks_structured_insert_before_non_body_insert_suppression() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Key points",
+            "bbox": [760, 280, 1050, 315],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Short summary point",
+            "bbox": [760, 330, 1050, 370],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
+    for page in range(2, 6):
+        for line in range(3):
+            blocks.append(
+                {
+                    "page": page,
+                    "role": "body_paragraph",
+                    "text": "Real body paragraph text for training.",
+                    "bbox": [80, 200 + line * 80, 620, 250 + line * 80],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "span_metadata": [{"font": "Body"}],
+                }
+            )
+
+    _, normalized = normalize_document_structure(blocks)
+
+    assert normalized[0]["role"] == "structured_insert"
+    assert normalized[1]["role"] == "body_paragraph"
+
+
+def test_normalize_promotes_mixed_sidebar_blocks_into_single_structured_insert_cluster() -> None:
+    """Sidebar heading, textual table container, and continuation block should all join one structured insert."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "Key points",
+            "bbox": [80, 220, 180, 247],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "media_asset",
+            "raw_label": "table",
+            "text": "<table><tr><td>• Point one</td></tr><tr><td>• Point two</td></tr></table>",
+            "bbox": [73, 270, 591, 738],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "unknown_structural",
+            "text": "• Point three continues below the detected table box.",
+            "bbox": [74, 675, 566, 743],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "sub_subsection_heading",
+            "text": "Introduction",
+            "bbox": [76, 780, 210, 803],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "The skeleton has been considered to be a metabolically active organ for decades.",
+            "bbox": [73, 805, 593, 1192],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
+    for i in range(3):
+        blocks.append(
+            {
+                "page": 3 + i,
+                "role": "body_paragraph",
+                "text": "Real body paragraph text for training and normalization.",
+                "bbox": [80, 200, 620, 260],
+                "page_width": 1200,
+                "page_height": 1700,
+                "span_metadata": [{"font": "Body"}],
+            }
+        )
+
+    _, normalized = normalize_document_structure(blocks)
+
+    assert normalized[0]["role"] == "structured_insert"
+    assert normalized[1]["role"] == "structured_insert"
+    assert normalized[2]["role"] == "structured_insert"
+    assert normalized[3]["role"] != "structured_insert"
+    assert normalized[4]["role"] == "body_paragraph"
+
+
+def test_frontmatter_side_candidates_are_not_left_as_body_paragraph_when_source_frontmatter_is_localized() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "block_id": "p1_title",
+            "page": 1,
+            "role": "paper_title",
+            "text": "Magnetoresponsive stem cell spheroid-based cartilage recovery platform",
+            "bbox": [120, 90, 980, 150],
+            "page_width": 1200,
+            "page_height": 1700,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "Title", "font_size_median": 16.0, "font_size_bucket": 16.0},
+            "layout_signature": {"width": 860, "width_bucket": 850, "x_center": 550, "x_center_bucket": 550},
+        },
+        {
+            "block_id": "p2_corr",
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "Correspondence: jia@example.org",
+            "bbox": [830, 180, 1110, 220],
+            "page_width": 1200,
+            "page_height": 1700,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "Sidebar", "font_size_median": 8.0, "font_size_bucket": 8.0},
+            "layout_signature": {"width": 280, "width_bucket": 275, "x_center": 970, "x_center_bucket": 975},
+        },
+        {
+            "block_id": "p2_highlights",
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "Highlights: electromagnetic fields improved cartilage repair outcomes.",
+            "bbox": [820, 250, 1115, 340],
+            "page_width": 1200,
+            "page_height": 1700,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "Sidebar", "font_size_median": 8.0, "font_size_bucket": 8.0},
+            "layout_signature": {"width": 295, "width_bucket": 300, "x_center": 968, "x_center_bucket": 975},
+        },
+    ]
+
+    for page in range(3, 6):
+        for line in range(3):
+            blocks.append(
+                {
+                    "block_id": f"p{page}_body_{line}",
+                    "page": page,
+                    "role": "body_paragraph",
+                    "text": (
+                        "Stable body paragraph text with enough words to establish the "
+                        "main article family anchor across repeated middle pages. "
+                    )
+                    * 2,
+                    "bbox": [90, 180 + line * 90, 610, 245 + line * 90],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "marker_signature": {"type": "none"},
+                    "span_signature": {"font_family_norm": "Body", "font_size_median": 9.0, "font_size_bucket": 9.0},
+                    "layout_signature": {"width": 520, "width_bucket": 525, "x_center": 350, "x_center_bucket": 350},
+                }
+            )
+
+    _, normalized = normalize_document_structure(blocks)
+    by_id = {str(block.get("block_id")): block for block in normalized}
+
+    for block_id in ("p2_corr", "p2_highlights"):
+        block = by_id[block_id]
+        assert block.get("zone") == "frontmatter_side_zone"
+        assert block.get("style_family") == "support_like"
+        assert block.get("role") == "frontmatter_noise"
+
+
+def test_full_width_heading_above_two_columns_is_not_anomaly() -> None:
+    """Full-width heading spanning >55% page width is NOT an error, even if it owns body in both columns."""
+    from paperforge.worker.ocr_document import _run_layout_audit
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "section_heading",
+            "bbox": [50, 200, 1150, 230],
+            "text": "Introduction and Background",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "bbox": [620, 100, 1150, 160],
+            "text": "Right column body above heading...",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+    result = _run_layout_audit(blocks)
+    errors = [a for a in result.get("anomalies", []) if a.get("severity") == "error"]
+    assert len(errors) == 0, f"Expected no error anomalies, got {errors}"
+    assert result["status"] != "fail"
+
+
+def test_low_confidence_layout_audit_reports_info_not_fail() -> None:
+    """Low layout confidence results in info severity, not fail."""
+    from paperforge.worker.ocr_document import PageLayoutProfile, _run_layout_audit
+
+    page_layouts = {1: PageLayoutProfile(column_count=2, confidence=0.3, layout_type="two_column")}
+    blocks = [
+        {
+            "page": 1,
+            "role": "section_heading",
+            "bbox": [100, 200, 500, 230],
+            "text": "Introduction",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "bbox": [700, 100, 1100, 140],
+            "text": "Body above heading",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+    result = _run_layout_audit(blocks, page_layouts=page_layouts)
+    assert result["status"] != "fail", f"Expected status != 'fail', got {result['status']}"
+    assert result["info_count"] >= 1, "Expected at least 1 info anomaly"
+    assert result["error_count"] == 0, "Expected 0 errors"
+
+
+def test_low_layout_confidence_never_audit_error_on_insert_overlap() -> None:
+    """Low layout confidence with strong insert overlap should produce info, not error."""
+    from paperforge.worker.ocr_document import PageLayoutProfile, _run_layout_audit
+
+    page_layouts = {1: PageLayoutProfile(column_count=2, confidence=0.3, layout_type="two_column")}
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "bbox": [100, 100, 500, 300],
+            "text": "Body text real",
+            "raw_label": "text",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "page": 1,
+            "role": "structured_insert",
+            "bbox": [200, 150, 400, 250],
+            "text": "Insert overlapping body a lot",
+            "insert_score": {"score": 0.9},
+        },
+    ]
+    body_spine = {"_meta": {"quality": "strong"}}
+    result = _run_layout_audit(blocks, body_spine=body_spine, page_layouts=page_layouts)
+    assert result["error_count"] == 0, f"Expected 0 errors, got {result['error_count']}"
+    assert result["status"] != "fail", f"Expected no fail, got {result['status']}"
+
+
+def test_gate_context_adapters_do_not_accept_from_seed_roles_only() -> None:
+    from paperforge.worker.ocr_document import (
+        _build_accepted_caption_block_ids,
+        _build_accepted_heading_block_ids,
+        _build_accepted_table_block_ids,
+        _build_source_frontmatter_anchor_ids,
+    )
+
+    blocks = [
+        {"block_id": "t", "seed_role": "paper_title", "role": "paper_title"},
+        {"block_id": "h", "seed_role": "section_heading", "role": "section_heading"},
+        {"block_id": "c", "seed_role": "figure_caption", "role": "figure_caption"},
+        {"block_id": "tbl", "seed_role": "table_html", "role": "table_html"},
+    ]
+
+    assert _build_source_frontmatter_anchor_ids(None, blocks) == {"title": set(), "authors": set(), "doi": set()}
+    assert _build_accepted_heading_block_ids(blocks, None) == set()
+    assert _build_accepted_caption_block_ids({}, {"reader_figures": []}, blocks) == set()
+    assert _build_accepted_table_block_ids({}, blocks) == set()
+
+
+def test_build_accepted_heading_block_ids_uses_page_safe_ids_for_duplicates() -> None:
+    from paperforge.worker.ocr_document import _build_accepted_heading_block_ids
+
+    blocks = [
+        {"page": 2, "block_id": 4, "seed_role": "section_heading", "role": "section_heading", "zone": "body_zone"},
+        {"page": 7, "block_id": 4, "seed_role": "section_heading", "role": "section_heading", "zone": "body_zone"},
+    ]
+
+    accepted = _build_accepted_heading_block_ids(blocks, None)
+
+    assert accepted == {"p2:4", "p7:4"}
+    assert 4 not in accepted
+
+
+def test_gate_accepts_frontmatter_only_from_source_anchors() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    context = RoleGateContext(source_frontmatter_anchor_ids={"title": {"t"}, "authors": {"a"}})
+
+    title = resolve_verified_role({"block_id": "t", "seed_role": "paper_title", "text": "Canonical Title"}, context)
+    authors = resolve_verified_role({"block_id": "a", "seed_role": "authors", "text": "Author One"}, context)
+    bad = resolve_verified_role({"block_id": "x", "seed_role": "authors", "text": "Author-like sidebar"}, context)
+
+    assert title.status == "ACCEPT"
+    assert title.source == "source_frontmatter_title_anchor"
+    assert authors.status == "ACCEPT"
+    assert authors.source == "source_frontmatter_authors_anchor"
+    assert bad.status == "HOLD"
+
+
+def test_figure_caption_preserved_as_candidate_when_caption_artifacts_empty() -> None:
+    """RC2: figure_caption seed survives gate as figure_caption_candidate."""
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    context = RoleGateContext(accepted_caption_block_ids=set())
+
+    block = {"block_id": "fc1", "seed_role": "figure_caption", "role": "figure_caption_candidate",
+             "text": "Fig. 1. Principle idea"}
+    decision = resolve_verified_role(block, context)
+
+    assert decision.status == "CANDIDATE"
+    assert decision.role == "figure_caption_candidate"
+    assert decision.role_candidate == "figure_caption"
+    assert decision.render_default is False
+    assert decision.seed_role == "figure_caption"
+
+
+def test_figure_caption_accepted_when_in_accepted_caption_block_ids() -> None:
+    """RC2: figure_caption accepted when anchor matches."""
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    context = RoleGateContext(accepted_caption_block_ids={"fc1"})
+
+    block = {"block_id": "fc1", "seed_role": "figure_caption", "role": "figure_caption",
+             "text": "Fig. 1. Principle idea"}
+    decision = resolve_verified_role(block, context)
+
+    assert decision.status == "ACCEPT"
+    assert decision.role == "figure_caption"
+
+
+def test_normalized_required_roles_have_accept_verification() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+    from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED
+
+    blocks = [
+        {"block_id": "h", "role": "unassigned", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "a", "role": "unassigned", "seed_role": "abstract_body", "text": "Real abstract."},
+        {"block_id": "intro", "role": "unassigned", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "bad", "role": "unassigned", "seed_role": "authors", "text": "Author-like sidebar"},
+    ]
+    _doc, normalized = normalize_document_structure(blocks)
+
+    offenders = [
+        block
+        for block in normalized
+        if block.get("role") in VERIFY_REQUIRED and block.get("role_verification_status") != "ACCEPT"
+    ]
+    assert offenders == []
+    assert next(block for block in normalized if block["block_id"] == "bad")["role"] != "authors"
+
+
+def test_rejected_required_seed_can_fallback_to_safe_body_role_without_content_loss() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "block_id": "intro",
+            "role": "section_heading",
+            "seed_role": "section_heading",
+            "text": "Introduction",
+            "page": 1,
+            "render_default": True,
+        },
+        {
+            "block_id": "bad",
+            "role": "body_paragraph",
+            "seed_role": "abstract_body",
+            "text": "Body mislabeled as abstract.",
+            "page": 1,
+            "render_default": True,
+        },
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    repaired = next(block for block in normalized if block["block_id"] == "bad")
+
+    # body_paragraph is not VERIFY_REQUIRED, so gate preserves it as non_structural_normalized_role
+    assert repaired["role"] == "body_paragraph"
+    assert repaired["role_source"] == "non_structural_normalized_role"
+    assert repaired["render_default"] is True
+
+
+def test_collect_unverified_required_roles_reports_offenders_without_raising() -> None:
+    from paperforge.worker.ocr_document import _collect_unverified_required_roles, normalize_document_structure
+
+    blocks = [
+        {"block_id": "h", "role": "unassigned", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "a1", "role": "unassigned", "seed_role": "abstract_body", "text": "Real abstract."},
+        {
+            "block_id": "bad",
+            "role": "unassigned",
+            "seed_role": "reference_item",
+            "text": "[1] Tail-like text outside reference zone.",
+        },
+    ]
+    _doc, normalized = normalize_document_structure(blocks)
+    offenders = _collect_unverified_required_roles(normalized)
+    block_ids = {b.get("block_id") for b in offenders}
+    assert block_ids == set(), f"Expected no unverified required roles, got {block_ids}"
+    assert len(offenders) == 0
+
+
+def test_no_high_risk_role_assignment_after_gate_collector() -> None:
+    from paperforge.worker.ocr_document import _collect_unverified_required_roles, normalize_document_structure
+    from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED
+
+    blocks = [
+        {"block_id": "1", "role": "unassigned", "seed_role": "body_paragraph", "text": "Body paragraph."},
+        {
+            "block_id": "2",
+            "role": "unassigned",
+            "seed_role": "reference_item",
+            "text": "[1] Tail-like text outside reference zone.",
+        },
+    ]
+    _doc, normalized = normalize_document_structure(blocks)
+
+    offenders = _collect_unverified_required_roles(normalized)
+    assert offenders == []
+    for block in normalized:
+        if block.get("role") in VERIFY_REQUIRED:
+            assert block.get("role_verification_status") == "ACCEPT", (
+                f"Block {block.get('block_id')} role {block.get('role')} has status {block.get('role_verification_status')}"
+            )
+
+
+# --- Gap surface lock tests (expected to FAIL until Tasks 2-9 fix production code) ---
+
+
+def test_same_page_conclusion_stays_in_body_zone_before_reference_tail() -> None:
+    """Conclusion heading + body on same page as References should keep body in body_zone."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "c", "page": 7, "seed_role": "section_heading", "text": "Conclusion", "bbox": [80, 120, 420, 180]},
+        {"block_id": "g", "page": 7, "seed_role": "body_paragraph", "text": "I wish to express my gratitude", "bbox": [80, 220, 920, 320]},
+        {"block_id": "refs", "page": 7, "seed_role": "reference_heading", "text": "References", "bbox": [80, 1080, 360, 1140]},
+        {"block_id": "r1", "page": 7, "seed_role": "reference_item", "text": "1 Buckland-Wright JC...", "bbox": [80, 1180, 960, 1260]},
+    ]
+    doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+
+    assert by_id["c"]["zone"] == "body_zone"
+    assert by_id["g"]["zone"] == "body_zone"
+    assert by_id["g"]["role"] == "body_paragraph"
+    assert by_id["r1"]["zone"] == "reference_zone"
+
+
+def test_backmatter_heading_candidate_promotes_when_post_reference_tail_is_confirmed() -> None:
+    """backmatter_heading_candidate after reference tail should promote to backmatter_heading."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "refs", "page": 25, "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "page": 25, "seed_role": "reference_item", "text": "[1] ref"},
+        {"block_id": "coi", "page": 25, "seed_role": "backmatter_heading_candidate", "text": "Conflict of Interest"},
+        {"block_id": "coi_body", "page": 25, "seed_role": "body_paragraph", "text": "All authors declare no conflict."},
+    ]
+    doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["coi"]["role"] == "backmatter_heading"
+    assert by_id["coi_body"]["role"] == "backmatter_body"
+
+
+def test_same_page_post_reference_non_reference_block_enters_tail_hold_zone() -> None:
+    """Non-reference block below same-page reference heading goes to tail_nonref_hold_zone."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "intro", "page": 9, "seed_role": "body_paragraph", "text": "Closing discussion text.", "bbox": [80, 180, 960, 280]},
+        {"block_id": "refs", "page": 9, "seed_role": "reference_heading", "text": "References", "bbox": [80, 980, 340, 1040]},
+        {"block_id": "r1", "page": 9, "seed_role": "reference_item", "text": "[1] First ref", "bbox": [80, 1080, 960, 1160]},
+        {"block_id": "ack", "page": 9, "seed_role": "body_paragraph", "text": "Acknowledgments The authors thank the staff.", "bbox": [80, 1280, 960, 1360]},
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+
+    assert by_id["intro"]["zone"] == "body_zone"
+    assert by_id["r1"]["zone"] == "reference_zone"
+    assert by_id["ack"]["zone"] == "tail_nonref_hold_zone"
+
+
+def test_tail_nonref_exclusion_does_not_convert_plain_body_prose() -> None:
+    """Plain body prose above same-page References should stay body_paragraph, not backmatter_body."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "h1", "page": 8, "seed_role": "section_heading", "text": "Discussion", "bbox": [80, 120, 320, 180]},
+        {"block_id": "p1", "page": 8, "seed_role": "body_paragraph", "text": "This study demonstrates a reproducible increase in migration after stimulation.", "bbox": [80, 220, 980, 320]},
+        {"block_id": "refs", "page": 8, "seed_role": "reference_heading", "text": "References", "bbox": [80, 1100, 320, 1160]},
+        {"block_id": "r1", "page": 8, "seed_role": "reference_item", "text": "[1] Ref one", "bbox": [80, 1220, 980, 1300]},
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["p1"]["role"] == "body_paragraph"
+    assert by_id["p1"]["zone"] == "body_zone"
+
+
+# ---------------------------------------------------------------------------
+# Backmatter zone normalization
+# ---------------------------------------------------------------------------
+
+
+def test_backmatter_zone_preserves_supported_heading_roles() -> None:
+    """Supported heading roles in post_reference_backmatter_zone stay intact."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "b1", "page": 1, "role": "section_heading", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "refs", "page": 10, "role": "reference_heading", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "page": 10, "role": "reference_item", "seed_role": "reference_item", "text": "[1] Some reference"},
+        {"block_id": "bio_heading", "page": 12, "role": "sub_subsection_heading", "seed_role": "sub_subsection_heading", "zone": "post_reference_backmatter_zone", "text": "Biographies"},
+        {"block_id": "bio_1", "page": 12, "role": "body_paragraph", "seed_role": "body_paragraph", "zone": "post_reference_backmatter_zone", "text": "Ami Yoo received PhD."},
+        {"block_id": "bio_ref", "page": 12, "role": "reference_item", "seed_role": "reference_item", "zone": "post_reference_backmatter_zone", "text": "[3] Yet another reference"},
+    ]
+    doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["bio_heading"]["role"] == "sub_subsection_heading"
+    assert by_id["bio_1"]["role"] == "backmatter_body"
+    assert by_id["bio_ref"]["role"] == "backmatter_body"
+
+
+def test_backmatter_zone_preserves_figure_adjacent_roles() -> None:
+    """Figure-adjacent roles in post_reference_backmatter_zone are not flattened."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "refs", "page": 10, "role": "reference_heading", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "page": 10, "role": "reference_item", "seed_role": "reference_item", "text": "[1] Some reference"},
+        {
+            "block_id": "cap",
+            "page": 12,
+            "role": "figure_caption",
+            "seed_role": "figure_caption",
+            "zone": "post_reference_backmatter_zone",
+            "text": "Figure 7. Author portrait.",
+        },
+        {
+            "block_id": "inner",
+            "page": 12,
+            "role": "figure_inner_text",
+            "seed_role": "figure_inner_text",
+            "zone": "post_reference_backmatter_zone",
+            "text": "(a)",
+        },
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+
+    assert by_id["cap"]["role"] in {"figure_caption", "figure_caption_candidate"}
+    assert by_id["inner"]["role"] == "figure_inner_text"
+
+
+def test_non_backmatter_zone_not_affected() -> None:
+    """Blocks outside verified reference zone are HOLD by structural gate."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "b1", "page": 1, "role": "section_heading", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "refs", "page": 10, "role": "reference_heading", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "page": 10, "role": "reference_item", "seed_role": "reference_item", "text": "[1] Some reference"},
+        {"block_id": "bio_1", "page": 11, "role": "reference_item", "seed_role": "reference_item", "text": "Ami Yoo received PhD."},
+    ]
+    doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    # Verified reference zone correctly excludes bio_1 (page 11, not in zone).
+    # Structural gate HOLDs it as unknown_structural with role_candidate retained.
+    assert by_id["bio_1"]["role"] == "unknown_structural"
+    assert by_id["bio_1"]["role_candidate"] == "reference_item"
+    # Ref items inside verified zone remain accepted.
+    assert by_id["r1"]["role"] == "reference_item"
+
+
+def test_sanitize_reference_zone_boundary_strips_non_reference_roles() -> None:
+    """Non-reference roles inside reference_zone are stripped."""
+    from paperforge.worker.ocr_document import _sanitize_reference_zone_boundary
+
+    blocks = [
+        {"block_id": "r1", "zone": "reference_zone", "role": "reference_item", "text": "[1] Ref one"},
+        {"block_id": "r2", "zone": "reference_zone", "role": "body_paragraph", "text": "Stray content"},
+        {"block_id": "r3", "zone": "reference_zone", "role": "reference_heading", "text": "References"},
+        {"block_id": "r4", "zone": "reference_zone", "role": "frontmatter_noise", "text": "noise"},
+    ]
+    _sanitize_reference_zone_boundary(blocks)
+    by_id = {b["block_id"]: b for b in blocks}
+    assert by_id["r1"]["zone"] == "reference_zone"  # kept
+    assert by_id["r2"]["zone"] == ""  # stripped
+    assert by_id["r3"]["zone"] == "reference_zone"  # kept
+    assert by_id["r4"]["zone"] == ""  # stripped
+
+
+def test_check_reference_completeness_ok_sequential() -> None:
+    """Sequential [1] [2] [3] is complete."""
+    from paperforge.worker.ocr_document import _check_reference_completeness
+
+    blocks = [
+        {"block_id": "r1", "zone": "reference_zone", "role": "reference_item", "text": "[1] First ref"},
+        {"block_id": "r2", "zone": "reference_zone", "role": "reference_item", "text": "[2] Second ref"},
+        {"block_id": "r3", "zone": "reference_zone", "role": "reference_item", "text": "[3] Third ref"},
+    ]
+    result = _check_reference_completeness(blocks)
+    assert result["status"] == "OK"
+    assert result["expected_count"] == 3
+    assert result["actual_count"] == 3
+    assert result["missing_numbers"] == []
+
+
+def test_check_reference_completeness_incomplete() -> None:
+    """Missing [2] in [1] [3] [4] is INCOMPLETE."""
+    from paperforge.worker.ocr_document import _check_reference_completeness
+
+    blocks = [
+        {"block_id": "r1", "zone": "reference_zone", "role": "reference_item", "text": "[1] First ref"},
+        {"block_id": "r2", "zone": "reference_zone", "role": "reference_item", "text": "[3] Third ref"},
+        {"block_id": "r3", "zone": "reference_zone", "role": "reference_item", "text": "[4] Fourth ref"},
+    ]
+    result = _check_reference_completeness(blocks)
+    assert result["status"] == "INCOMPLETE"
+    assert result["expected_count"] == 4
+    assert result["actual_count"] == 3
+    assert result["missing_numbers"] == [2]
+
+
+def test_check_reference_completeness_dot_pattern() -> None:
+    """Dot-pattern numbering (1. 2. 3.) also detected."""
+    from paperforge.worker.ocr_document import _check_reference_completeness
+
+    blocks = [
+        {"block_id": "r1", "zone": "reference_zone", "role": "reference_item", "text": "1. First ref"},
+        {"block_id": "r2", "zone": "reference_zone", "role": "reference_item", "text": "2. Second ref"},
+    ]
+    result = _check_reference_completeness(blocks)
+    assert result["status"] == "OK"
+    assert result["expected_count"] == 2
+    assert result["actual_count"] == 2
+
+
+def test_check_reference_completeness_empty() -> None:
+    """No reference items returns OK."""
+    from paperforge.worker.ocr_document import _check_reference_completeness
+
+    result = _check_reference_completeness([])
+    assert result["status"] == "OK"
+    assert result["actual_count"] == 0
+
+
+def test_reference_zone_boundary_protection_via_normalize() -> None:
+    """End-to-end: non-reference block in reference_zone is stripped during normalization."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "b1", "page": 1, "role": "section_heading", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "refs", "page": 10, "role": "reference_heading", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "page": 10, "role": "reference_item", "seed_role": "reference_item", "text": "[1] Some reference"},
+        {"block_id": "stray", "page": 10, "role": "body_paragraph", "seed_role": "body_paragraph", "text": "Stray content that somehow landed in ref zone"},
+    ]
+    doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    # The stray body_paragraph should have been stripped from reference_zone
+    assert by_id["stray"]["zone"] != "reference_zone"
+    # Reference items should remain
+    assert by_id["r1"]["zone"] == "reference_zone"
+
+
+def test_same_page_reference_boundary_is_resolved_upstream_not_in_renderer() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "body_1", "page": 7, "seed_role": "body_paragraph", "text": "Conclusion text above refs.", "bbox": [80, 420, 980, 510]},
+        {"block_id": "refs_h", "page": 7, "seed_role": "reference_heading", "text": "References", "bbox": [80, 900, 320, 960]},
+        {"block_id": "ref_1", "page": 7, "seed_role": "reference_item", "text": "[1] First ref", "bbox": [80, 980, 980, 1060]},
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["body_1"]["role"] == "body_paragraph"
+    assert by_id["ref_1"]["role"] == "reference_item"
+    assert by_id["body_1"].get("zone") != "reference_zone"
+    assert by_id["ref_1"].get("zone") == "reference_zone"
+
+
+def test_page_text_coverage_flags_low_ratio_when_pdf_text_dominates() -> None:
+    from paperforge.worker.ocr_blocks import _summarize_page_text_coverage
+
+    result = _summarize_page_text_coverage(
+        ocr_text="short text",
+        pdf_text="short text plus a much longer native PDF segment that should dominate coverage",
+    )
+
+    assert result["page_text_coverage_status"] == "low"
+    assert result["page_text_coverage_ratio_chars"] < 0.5
+
+
+def test_region_text_completeness_marks_empty_vs_pdf() -> None:
+    from paperforge.worker.ocr_blocks import _classify_region_text_completeness
+
+    result = _classify_region_text_completeness(
+        ocr_text="",
+        pdf_region_text="A complete sentence present in the PDF native text layer.",
+    )
+
+    assert result["text_completeness_status"] == "empty_vs_pdf"
+
+
+def test_rendered_text_coverage_flags_missing_pdf_segment() -> None:
+    from paperforge.worker.ocr_health import audit_rendered_text_coverage
+
+    result = audit_rendered_text_coverage(
+        rendered_markdown="Only the introduction survived.",
+        pdf_segments=["Only the introduction survived.", "A long methods segment that is missing from render."],
+    )
+
+    assert result["rendered_text_gap_count"] == 1
+
+
+def test_compute_layout_facts_marks_reading_band_region_boundary_and_bridge() -> None:
+    from paperforge.worker.ocr_document import compute_layout_facts
+
+    blocks = [
+        {
+            "block_id": "body_1",
+            "page": 5,
+            "role": "body_paragraph",
+            "zone": "body_zone",
+            "bbox": [80, 120, 520, 220],
+            "text": "Body text.",
+        },
+        {
+            "block_id": "ref_1",
+            "page": 5,
+            "role": "reference_item",
+            "zone": "reference_zone",
+            "bbox": [610, 120, 1120, 180],
+            "text": "Smith J, Doe P. J Bone Miner Res. 2021;36(4):100-110.",
+        },
+        {
+            "block_id": "gap_1",
+            "page": 5,
+            "role": "unknown_structural",
+            "zone": "display_zone",
+            "bbox": [640, 200, 1110, 360],
+            "text": "",
+        },
+    ]
+
+    facts = compute_layout_facts(blocks)
+    by_id = {row["block_id"]: row for row in facts}
+
+    assert by_id["body_1"]["layout_region"] == "body_flow"
+    assert by_id["ref_1"]["layout_region"] == "reference_candidate"
+    assert by_id["body_1"]["reading_band_id"] != by_id["ref_1"]["reading_band_id"]
+    assert by_id["gap_1"]["bridge_eligible"] is True
+    assert by_id["ref_1"]["boundary_before"] in {"weak", "hard"}
+
+
+def test_reference_signal_detector_scores_unnumbered_vancouver_entry() -> None:
+    from paperforge.worker.ocr_reference_signals import score_reference_entry
+
+    result = score_reference_entry(
+        "Smith J, Doe P. Bone regeneration with scaffold support. J Bone Miner Res. 2021;36(4):100-110. doi:10.1000/test"
+    )
+
+    assert result["family"] == "vancouver_structured_unnumbered"
+    assert result["confidence"] > 0.6
+    assert result["signals"]["journal_lexicon_match"] is True
+
+
+def test_reference_signal_detector_distinguishes_report_like_entry() -> None:
+    from paperforge.worker.ocr_reference_signals import score_reference_entry
+
+    result = score_reference_entry(
+        "World Health Organization. Clinical management guideline [Internet]. 2023 [cited 2024 Jan 10]. Available from: https://example.org"
+    )
+
+    assert result["family"] == "book_or_report"
+    assert result["signals"]["online_marker_signature"] is True
+
+
+def test_reference_corridor_keeps_reference_like_blocks_but_rejects_acknowledgements() -> None:
+    from paperforge.worker.ocr_document import score_reference_corridor_membership
+
+    ref_block = {
+        "block_id": "r1",
+        "page": 20,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "layout_region": "reference_candidate",
+        "text": "Brown T, Green S. N Engl J Med. 2020;382(4):100-110.",
+    }
+    ack_block = {
+        "block_id": "a1",
+        "page": 20,
+        "role": "backmatter_body",
+        "zone": "tail_nonref_hold_zone",
+        "layout_region": "tail_candidate",
+        "text": "Acknowledgements We thank the patients and families.",
+    }
+
+    ref_score = score_reference_corridor_membership(ref_block)
+    ack_score = score_reference_corridor_membership(ack_block)
+
+    assert ref_score["accept_reference_membership"] is True
+    assert ack_score["accept_reference_membership"] is False
+    assert ack_score["non_ref_intrusion_score"] > ref_score["non_ref_intrusion_score"]
+
+
+def test_reference_hold_does_not_promote_final_reference_membership() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"block_id": "x1", "role": "backmatter_body", "zone": "tail_nonref_hold_zone", "text": "Data availability statement."},
+    ]
+    zone = build_verified_reference_zone_from_artifacts(blocks, {"region_bus": {"reference_zone_ids": set()}})
+    assert zone.get("status") != "ACCEPT"
+
+
+# ---------------------------------------------------------------------------
+# Weak cluster rejection tests (Task 3-7)
+# ---------------------------------------------------------------------------
+
+
+def test_short_isolated_body_line_does_not_create_two_column_layout() -> None:
+    """Replicates page 12 of paper 2E4EPHN2: 6 full-width body blocks +
+    1 short offset line should NOT be classified as two_column."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 1191.0
+    page_height = 1684.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [325, 224, 1123, 298], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [325, 299, 1124, 377], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [325, 398, 1125, 633], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [326, 643, 1125, 762], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [325, 772, 1124, 820], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [328, 832, 704, 854], "text": "Informed Consent Statement: Not applicable.", "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [327, 867, 1122, 914], "text": "Long paragraph " * 40, "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+
+    assert profile.layout_type == "single_column", f"Expected single_column, got {profile.layout_type}"
+    assert profile.column_count == 1, f"Expected column_count=1, got {profile.column_count}"
+    assert "weak_isolated_column_cluster_ignored" in profile.evidence, (
+        f"Expected weak_isolated_column_cluster_ignored in evidence, got {profile.evidence}"
+    )
+
+
+def test_balanced_two_column_layout_still_detected() -> None:
+    """True two-column page with multiple blocks per column must remain two_column."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [50, 100, 380, 250], "text": "Left body " * 30, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [50, 270, 380, 420], "text": "Left body " * 30, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [420, 100, 750, 250], "text": "Right body " * 30, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [420, 270, 750, 420], "text": "Right body " * 30, "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.layout_type == "two_column", f"Expected two_column, got {profile.layout_type}"
+    assert profile.column_count == 2, f"Expected column_count=2, got {profile.column_count}"
+
+
+def test_single_large_block_per_column_still_two_column() -> None:
+    """Each column has only 1 block, but large y_coverage and word_count
+    must still classify as two_column (not killed by count=1 guard)."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [50, 100, 380, 800], "text": "Left body " * 100, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [420, 100, 750, 800], "text": "Right body " * 100, "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.layout_type == "two_column", f"Expected two_column, got {profile.layout_type}"
+    assert profile.column_count == 2, f"Expected column_count=2, got {profile.column_count}"
+
+
+def test_multiple_weak_offset_lines_do_not_create_wide_dispersion() -> None:
+    """3 raw clusters (2 weak, 1 real) must produce single_column, not two_column/wide_dispersion."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 1191.0
+    page_height = 1684.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [325, 224, 1123, 298], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [325, 299, 1124, 377], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [328, 832, 704, 854], "text": "IC Statement: Not applicable.", "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [328, 870, 550, 890], "text": "Short note.", "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [327, 900, 1122, 950], "text": "Long paragraph " * 40, "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+
+    assert profile.layout_type == "single_column", f"Expected single_column, got {profile.layout_type}"
+    assert profile.column_count == 1, f"Expected column_count=1, got {profile.column_count}"
+    assert "weak_isolated_column_cluster_ignored" in profile.evidence, (
+        f"Expected weak_isolated_column_cluster_ignored in evidence, got {profile.evidence}"
+    )
+
+
+def test_all_clusters_weak_fallback_to_single_column() -> None:
+    """When all clusters are weak (e.g. only short offset lines), fallback to low-confidence single_column."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 1191.0
+    page_height = 1684.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [328, 832, 704, 854], "text": "IC Statement: Not applicable.", "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [60, 870, 300, 890], "text": "Footnote text.", "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+
+    assert profile.layout_type == "single_column", f"Expected single_column, got {profile.layout_type}"
+    assert profile.confidence <= 0.35, f"Expected confidence <= 0.35, got {profile.confidence}"
+    assert "all_column_clusters_weak" in profile.evidence, (
+        f"Expected all_column_clusters_weak in evidence, got {profile.evidence}"
+    )

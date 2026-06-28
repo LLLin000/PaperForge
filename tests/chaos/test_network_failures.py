@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pytest
 
-
 pytestmark = pytest.mark.chaos
 
 # Short timeout for network tests — the OCR module has retry+backoff logic

@@ -1,0 +1,1197 @@
+{
+  "mappable_block_count": 119,
+  "found_count": 94,
+  "missing_count": 25,
+  "rows": [
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Re-tear after arthroscopic rotator cuff tear surgery: risk analysis using machin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 466
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Issei Shinohara, M.D., Ph.D. $ ^{1} $, Yutaka Mifune $ ^{*} $, M.D., Ph.D. $ ^{1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "1. Department of Orthopaedic Surgery, Kobe University Graduate School of Medicin",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "frontmatter_support",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2. Department of Orthopaedic Surgery, Himeji St Mary's Hospital, Himeji, Hyogo, ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "The Kobe University Graduate School of Medicine Ethics Committee approved this s",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Running-head title: Machine learning predicts rotator cuff re-tear",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6122
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "sub_subsection_heading",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Disclaimers:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6194
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Funding: No funding was disclosed by the authors.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6207
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conflicts of interest: The authors, their immediate families, and any research f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6257
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 428
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusions: The ML classifier model predicted re-tears after ARCR with high acc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2565
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Postoperative re-tear is still a problem in arthroscopic rotator cuff repair (AR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3180
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 412
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "classification by MRI images. There are few reports taking stump classification ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4476
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Materials and Methods",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6555
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Ethical approval",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This study was approved by the appropriate review board, and informed consent wa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6577
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Data collection",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3",
+      "found_in_fulltext": true,
+      "fulltext_offset": 445
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Patients who underwent ARCR for degenerative complete rotator cuff tears from Ap",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6712
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Each patient parameter is expressed as mean ± standard deviation. To compare pat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7574
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Machine learning",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1026
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The data collection and ML workflow are shown in Fig. 2. Five supervised algorit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7911
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 415
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "method that attempts to obtain better predictions by using multiple training mod",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8879
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1351
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "randomly shuffled; $ ^{12} $ the Shapley additive explanation (SHAP) value is de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results Study participants and statistical analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11541
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Of the 582 cases who underwent ARCR at our institution or affiliated institution",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11593
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Prediction of rotator cuff re-tear in each ML model",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12078
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Fig. 3 shows a heat map representing the correlation between each parameter and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12130
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Important features of the predictor variables",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12697
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To detect the importance of each parameter for predicting postoperative rotator ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12743
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "6",
+      "found_in_fulltext": true,
+      "fulltext_offset": 434
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "153 154 155 156 157 158 159 160 161 162 163 164 165 166 167 168 169 170 171 172 ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "associated with postoperative rotator cuff re-tear in the LightGBM model (Fig. 5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13034
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13348
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The ML classification models predicted re-tears after ARCR with high accuracy. A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13359
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the last decades, AI techniques based on mathematical modeling have been deve",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13638
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "7",
+      "found_in_fulltext": true,
+      "fulltext_offset": 448
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "178 179 180 181 182 183 184 185 186 187 188 189 190 191 192 193 194 195 196 197 ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "framework that uses a decision-tree-based learning algorithm, adopting a histogr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14996
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "8",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2339
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "203 204 205 206 207 208 209 210 211 212 213 214 215 216 217 218 219 220 221 222 ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This study has some limitations. First, although the model performed well on the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17727
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2565
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The ML classifier model predicted re-tears after ARCR with high accuracy, and th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2578
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19031
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Alderden J, Pepper GA, Wilson A, Whitney JD, Richardson S, Butcher R, et al. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19042
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Barth J, Andrieu K, Fotiadis E, Hannink G, Barthelemy R, Saffarini M. Critica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19280
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Cho NS, Lee BG, Rhee YG. Arthroscopic rotator cuff repair using a suture brid",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19555
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "9",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3399
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "230 231 232 233 234 235 236 237 238 239 240 241 242 243 244 245 246 247 248 249 ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Cho NS, Rhee YG. The factors affecting the clinical outcome and integrity of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19797
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Cho NS, Yi JW, Lee BG, Rhee YG. Retear patterns after arthroscopic rotator cu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20022
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Chona DV, Lakomkin N, Lott A, Workman AD, Henry AC, Kuntz AF, et al. The timi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20219
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Chung SW, Kim JY, Kim MH, Kim SH, Oh JH. Arthroscopic repair of massive rotat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20426
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Cofield RH, Parvizi J, Hoffmeyer PJ, Lanzer WL, Ilstrup DM, Rowland CM. Surgi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20682
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Collin P, Betz M, Herve A, Walch G, Mansat P, Favard L, et al. Clinical and s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20872
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. DeOrio JK, Cofield RH. Results of a second attempt at surgical repair of a f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21114
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Diebold G, Lam P, Walton J, Murrell GAC. Relationship between age and rotato",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21268
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Doyen S, Taylor H, Nicholas P, Crawford L, Young I, Sughrue ME. Hollow-tree ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21503
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Elbuluk AM, Coxe FR, Fabricant PD, Ramos NL, Alaia MJ, Jones KJ. Does medial",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21755
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Elkins AR, Lam PH, Murrell GAC. Duration of surgery and learning curve affec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22044
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "10",
+      "found_in_fulltext": true,
+      "fulltext_offset": 428
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "unknown_structural",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "264 265 266 267 268 269 270 271 272 273 274 275 276 277 278 279 280 281 282 283 ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Gladstone JN, Bishop JY, Lo IK, Flatow EL. Fatty infiltration and atrophy of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22271
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Goutallier D, Postel JM, Bernageau J, Lavau L, Voisin MC. Fatty muscle degen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22538
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Goutallier D, Postel JM, Gleyze P, Leguilloux P, Van Driessche S. Influence ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22728
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Gowd AK, Agarwalla A, Beck EC, Rosas S, Waterman BR, Romeo AA, et al. Predic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22997
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Gumina S, Carbone S, Campagna V, Candela V, Sacchetti FM, Giannicola G. The ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23266
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Hancock JT, Khoshgoftaar TM. CatBoost for big data: an interdisciplinary rev",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23462
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Harris JD. Editorial commentary: personalized hip arthroscopy outcome predic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23622
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Inui A, Nishimoto H, Mifune Y, Yoshikawa T, Shinohara I, Furukawa T, et al. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23836
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Ishitani E, Harada N, Sonoda Y, Okada F, Yara T, Katsuki I. Tendon stump typ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24105
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Jeong HY, Kim HJ, Jeon YS, Rhee YG. Factors predictive of healing in large r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24363
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Kunze KN, Police EM, Chahla J. Response to \"regarding 'editorial commentary'",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24597
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "11",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17229
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "unknown_structural",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "298 299 300 301 302 303 304 305 306 307 308 309 310 311 312 313 314 315 316 317 ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Kunze KN, Police EM, Ranawat AS, Randsborg PH, Williams RJ, Allen AA, et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24854
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Li C, Alike Y, Hou J, Long Y, Zheng Z, Meng K, et al. Machine learning model",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25163
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Lubowitz JH, Brand JC, Rossi MJ. Preoperative shoulder corticosteroid inject",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25423
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Malavolta EA, Assunção JH, Ramos FF, Ferreira TC, Gracitelli ME, Bordalo-Rod",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25654
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Matsuo K, Aihara H, Nakai T, Morishita A, Tohma Y, Kohmura E. Machine learni",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25975
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Pedregosa F, Varoquaux G, Al. G. Scikit-learn: machine learning in Python. J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26194
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Police EM, Kunze KN, Fu MC, Garrigues GE, Forsythe B, Nicholson GP, et al. D",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26356
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Quddusi A, Eversdijk HAJ, Klukowska AM, de Wispelaere MP, Kernbach JM, Schrö",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26643
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Ranebo MC, Björnsson Hallgren HC, Holmgren T, Adolfsson LE. Surgery and phys",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26910
+    },
+    {
+      "block_id": "p14:11",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Sevinç E. An empowered AdaBoost algorithm implementation: a COVID-19 dataset",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27188
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "12",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11254
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "unknown_structural",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "332 333 334 335 336 337 338 339 340 341 342 343 344 345 346 347 348 349 350 351 ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. Shimizu T, Suda K, Maki S, Koda M, Matsumoto Harmon S, Komatsu M, et al. Eff",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27377
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. Shinohara I, Mifune Y, Inui A, Nishimoto H, Yamaura K, Mukohara S, et al. Bi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27695
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Sugaya H, Maeda K, Matsuki K, Moriishi J. Functional and structural outcome ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28019
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. Takeuchi N, Kozono N, Nishii A, Matsuura K, Ishitani E, Onizuka T, et al. St",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28277
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40. Tseng PY, Chen YT, Wang CH, Chiu KM, Peng YS, Hsu SP, et al. Prediction of t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28583
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41. Yan J, Xu Y, Cheng Q, Jiang S, Wang Q, Xiao Y, et al. LightGBM: accelerated ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28824
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42. Zhang C, Lei X, Liu L. Predicting metabolite-disease associations based on L",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29024
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "13",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20635
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "unknown_structural",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "356 357 358 359 360 361 362 363 364 365 366 367 368 369 370 371 372 373 374",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Table Legends",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Table.1 Statistical analysis of patient background in the presence or absence of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29216
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "subsection_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Figure Legends",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29491
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "14",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22044
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "media_asset",
+      "zone": "",
+      "render_default": true,
+      "snippet": "<table><tr><td></td><td>Re-tear (n=45)</td><td>No re-tear (n=308)</td><td>P valu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "N.S.: not significant",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29365
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "media_asset",
+      "zone": "",
+      "render_default": true,
+      "snippet": "<table><tr><td>ML model</td><td>logistic regression (95% CI)</td><td>random fore",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "CI: confidence interval; ML: machine learning",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29562
+    },
+    {
+      "block_id": "p20:2",
+      "page": 20,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ROC: receiver operating characteristic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29740
+    },
+    {
+      "block_id": "p21:2",
+      "page": 21,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "DM: diabetes mellitus",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29701
+    },
+    {
+      "block_id": "p22:1",
+      "page": 22,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ROC curve of each trained model",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:3",
+      "page": 22,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "ROC: receiver operating characteristic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29740
+    },
+    {
+      "block_id": "p23:5",
+      "page": 23,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "DM; diabetes mellitus",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29796
+    }
+  ]
+}

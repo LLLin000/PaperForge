@@ -4,7 +4,6 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-
 HIGH_SIGNAL_PRIORITY = [
     "doi",
     "zotero_key",
@@ -83,11 +82,27 @@ def classify_signals(query: str) -> QuerySignals:
     title_like_tokens: list[str] = []
     content_terms: list[str] = []
 
-    lowered = [t.lower() for t in raw_tokens]
+    _lowered = [t.lower() for t in raw_tokens]
     content_keywords = {
-        "hz", "v/cm", "v", "ma", "mv", "galvanotaxis", "electrotaxis",
-        "dc", "ac", "cc", "pemf", "field", "scaffold", "stimulation",
-        "migration", "chondrocyte", "cartilage", "method", "parameter",
+        "hz",
+        "v/cm",
+        "v",
+        "ma",
+        "mv",
+        "galvanotaxis",
+        "electrotaxis",
+        "dc",
+        "ac",
+        "cc",
+        "pemf",
+        "field",
+        "scaffold",
+        "stimulation",
+        "migration",
+        "chondrocyte",
+        "cartilage",
+        "method",
+        "parameter",
     }
 
     for token in raw_tokens:
@@ -138,23 +153,62 @@ def build_query_plan(query: str, intent: str) -> dict:
 
     query_rules: list[str] = []
     fallback_plan: list[dict] = []
+    suggested_modes: list[dict] = []
 
     if query_class == "identifier_exact":
         identifier = signals.doi or signals.zotero_key or signals.citation_key or query.strip()
         primary = {"command": "paper-context", "args": {"key": identifier}}
         query_rules.append("Use exact identifiers directly with paper-context; do not rewrite them.")
         fallback_plan.append({"when": "not_found", "action": "fallback_to_paper_status"})
+    elif intent == "evidence":
+        query_class = "evidence_query"
+        evidence_query = (
+            " ".join(signals.content_terms or signals.title_like_tokens or tokenize(query)[:6]).strip() or query.strip()
+        )
+        primary = {"command": "search", "args": {"query": evidence_query, "limit": 10}}
+        query_rules.extend(
+            [
+                "For evidence/parameter queries, start with metadata search then verify via OCR role index.",
+                "When OCR role index exists, check index/role-index.json for body/caption/reference blocks.",
+            ]
+        )
+        fallback_plan.extend(
+            [
+                {"when": "zero_results", "action": "fallback_to_content_retrieve"},
+                {"when": "results_found", "action": "check_ocr_evidence_layer"},
+            ]
+        )
+        suggested_modes = [
+            {
+                "mode": "ocr_evidence_layer",
+                "description": "Check OCR role-index for exact evidence blocks.",
+            },
+            {
+                "mode": "metadata_narrow",
+                "description": "Narrow by domain/year/author for targeted verification.",
+            },
+            {
+                "mode": "read_fulltext",
+                "description": "Read structured fulltext for evidence context.",
+            },
+        ]
     elif intent == "content":
-        content_query = " ".join(signals.content_terms or signals.title_like_tokens or tokenize(query)[:6]).strip() or query.strip()
+        content_query = (
+            " ".join(signals.content_terms or signals.title_like_tokens or tokenize(query)[:6]).strip() or query.strip()
+        )
         primary = {"command": "retrieve", "args": {"query": content_query, "limit": 30}}
-        query_rules.extend([
-            "For content lookup, start with retrieve rather than metadata search.",
-            "Use content-bearing terms, parameters, and method phrases as they would appear in fulltext.",
-        ])
-        fallback_plan.extend([
-            {"when": "retrieve_unavailable", "action": "interactive_fulltext_fallback"},
-            {"when": "zero_results", "action": "interactive_fulltext_fallback"},
-        ])
+        query_rules.extend(
+            [
+                "For content lookup, start with retrieve rather than metadata search.",
+                "Use content-bearing terms, parameters, and method phrases as they would appear in fulltext.",
+            ]
+        )
+        fallback_plan.extend(
+            [
+                {"when": "retrieve_unavailable", "action": "interactive_fulltext_fallback"},
+                {"when": "zero_results", "action": "interactive_fulltext_fallback"},
+            ]
+        )
     elif signals.author_tokens and signals.year_tokens:
         primary = {
             "command": "search",
@@ -165,25 +219,33 @@ def build_query_plan(query: str, intent: str) -> dict:
                 "limit": 10,
             },
         }
-        query_rules.extend([
-            "For metadata search, prefer author and year over mixed natural-language query strings.",
-            "When author and year are known, do not include title words in the first-pass search query.",
-        ])
-        fallback_plan.extend([
-            {"when": "zero_results", "action": "report_noncanonical_query_risk"},
-            {"when": "multiple_results", "action": "visually_narrow_with_title_terms"},
-        ])
+        query_rules.extend(
+            [
+                "For metadata search, prefer author and year over mixed natural-language query strings.",
+                "When author and year are known, do not include title words in the first-pass search query.",
+            ]
+        )
+        fallback_plan.extend(
+            [
+                {"when": "zero_results", "action": "report_noncanonical_query_risk"},
+                {"when": "multiple_results", "action": "visually_narrow_with_title_terms"},
+            ]
+        )
     else:
         topic_query = " ".join(signals.title_like_tokens or tokenize(query)[:6]).strip() or query.strip()
         primary = {"command": "search", "args": {"query": topic_query, "limit": 30}}
-        query_rules.extend([
-            "Use short metadata-facing terms for search: title keywords, author names, domain, or collection.",
-            "Do not treat search as semantic fulltext discovery.",
-        ])
-        fallback_plan.extend([
-            {"when": "zero_results", "action": "report_metadata_miss_not_library_absence"},
-            {"when": "large_result_set", "action": "narrow_by_domain_year_or_author"},
-        ])
+        query_rules.extend(
+            [
+                "Use short metadata-facing terms for search: title keywords, author names, domain, or collection.",
+                "Do not treat search as semantic fulltext discovery.",
+            ]
+        )
+        fallback_plan.extend(
+            [
+                {"when": "zero_results", "action": "report_metadata_miss_not_library_absence"},
+                {"when": "large_result_set", "action": "narrow_by_domain_year_or_author"},
+            ]
+        )
 
     return {
         "intent": intent,
@@ -201,6 +263,7 @@ def build_query_plan(query: str, intent: str) -> dict:
         "recommended_primary": primary,
         "query_writing_rules": query_rules,
         "fallback_plan": fallback_plan,
+        "suggested_modes": suggested_modes,
     }
 
 
@@ -210,6 +273,18 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
 
     embed = get_embed_status(vault)
     retrieve_available = bool(embed.get("healthy", True) and embed.get("db_exists") and embed.get("chunk_count", 0) > 0)
+    ocr_evidence_available = False
+    try:
+        ocr_root = vault / "System" / "PaperForge" / "ocr"
+        if ocr_root.exists():
+            ocr_evidence_available = any(
+                (paper_dir / "index" / "role-index.json").exists()
+                for paper_dir in ocr_root.iterdir()
+                if paper_dir.is_dir()
+            )
+    except Exception:
+        pass
+
     plan["runtime"] = {
         "retrieve_available": retrieve_available,
         "vector_status": {
@@ -218,7 +293,21 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
             "healthy": embed.get("healthy", True),
             "error": embed.get("error", ""),
         },
+        "ocr_evidence_available": ocr_evidence_available,
     }
+
+    if plan.get("query_class") == "evidence_query" and ocr_evidence_available:
+        plan["suggested_modes"] = [
+            {
+                "mode": "ocr_evidence_layer",
+                "description": "Check OCR role-index for exact evidence blocks (body, captions, references).",
+            },
+            {
+                "mode": "metadata_narrow",
+                "description": "Narrow by domain/year/author for targeted evidence verification.",
+            },
+            {"mode": "read_fulltext", "description": "Read structured fulltext for context around evidence hits."},
+        ]
 
     data = read_index(vault)
     items = []
@@ -236,13 +325,17 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
                 "command": "context",
                 "args": {"domain": scope["label"]},
             }
-            plan["query_writing_rules"].append("When the user names a known domain, prefer context --domain over metadata search.")
+            plan["query_writing_rules"].append(
+                "When the user names a known domain, prefer context --domain over metadata search."
+            )
         else:
             plan["recommended_primary"] = {
                 "command": "context",
                 "args": {"collection": scope["label"]},
             }
-            plan["query_writing_rules"].append("When the user names a known collection, prefer context --collection over metadata search.")
+            plan["query_writing_rules"].append(
+                "When the user names a known collection, prefer context --collection over metadata search."
+            )
         plan["fallback_plan"].insert(0, {"when": "large_inventory", "action": "summarize_and_offer_narrowing"})
 
     if plan["intent"] == "content":
@@ -277,7 +370,8 @@ def _assess_scope(items: list[dict], signals: dict) -> dict:
     normalized_terms = [str(t).strip().lower() for t in query_terms if str(t).strip()]
     matched_domain = next(
         (
-            d for d in domain_counts
+            d
+            for d in domain_counts
             if any(str(d).strip().lower() == token or token in str(d).strip().lower() for token in normalized_terms)
         ),
         None,
@@ -289,7 +383,8 @@ def _assess_scope(items: list[dict], signals: dict) -> dict:
     else:
         matched_collection = next(
             (
-                c for c in collection_counts
+                c
+                for c in collection_counts
                 if any(
                     str(c).strip().lower() == token
                     or token in str(c).strip().lower()
@@ -301,14 +396,22 @@ def _assess_scope(items: list[dict], signals: dict) -> dict:
         )
         if matched_collection:
             matched_items = [
-                entry for entry in items
-                if any(isinstance(col, str) and col.startswith(matched_collection) for col in entry.get("collections", []) or [])
+                entry
+                for entry in items
+                if any(
+                    isinstance(col, str) and col.startswith(matched_collection)
+                    for col in entry.get("collections", []) or []
+                )
             ]
             source = "collection"
             label = matched_collection
 
     estimated = len(matched_items)
-    fulltext_ready = sum(1 for entry in matched_items if entry.get("lifecycle") in {"fulltext_ready", "deep_read_done", "ai_context_ready"})
+    fulltext_ready = sum(
+        1
+        for entry in matched_items
+        if entry.get("lifecycle") in {"fulltext_ready", "deep_read_done", "ai_context_ready"}
+    )
 
     if estimated <= 20:
         recommended_mode = "rg_now"

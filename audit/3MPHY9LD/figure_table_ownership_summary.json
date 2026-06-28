@@ -1,0 +1,146 @@
+{
+  "figures": {
+    "matched_count": 7,
+    "ambiguous_count": 0,
+    "unresolved_cluster_count": 0,
+    "unmatched_asset_count": 6,
+    "matched": [
+      {
+        "figure_number": 2,
+        "legend_block_id": 18,
+        "asset_block_ids": [
+          4,
+          6,
+          8,
+          16,
+          14,
+          17,
+          11
+        ],
+        "page": 4,
+        "match_type": null
+      },
+      {
+        "figure_number": 1,
+        "legend_block_id": 5,
+        "asset_block_ids": [
+          3,
+          4
+        ],
+        "page": 3,
+        "match_type": null
+      },
+      {
+        "figure_number": 3,
+        "legend_block_id": 14,
+        "asset_block_ids": [
+          3,
+          5,
+          9,
+          8,
+          13,
+          11
+        ],
+        "page": 5,
+        "match_type": null
+      },
+      {
+        "figure_number": 4,
+        "legend_block_id": 20,
+        "asset_block_ids": [
+          12,
+          17,
+          16,
+          14,
+          19
+        ],
+        "page": 7,
+        "match_type": null
+      },
+      {
+        "figure_number": 5,
+        "legend_block_id": 25,
+        "asset_block_ids": [
+          9,
+          11,
+          15,
+          17,
+          19,
+          24,
+          22,
+          21
+        ],
+        "page": 9,
+        "match_type": null
+      },
+      {
+        "figure_number": 6,
+        "legend_block_id": 21,
+        "asset_block_ids": [
+          8,
+          5,
+          7,
+          3,
+          13,
+          15,
+          10,
+          16,
+          17,
+          18,
+          20
+        ],
+        "page": 11,
+        "match_type": null
+      },
+      {
+        "figure_number": 7,
+        "legend_block_id": 8,
+        "asset_block_ids": [
+          4,
+          5,
+          7
+        ],
+        "page": 13,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [],
+    "unresolved": []
+  },
+  "tables": {
+    "matched_count": 4,
+    "ambiguous_count": 0,
+    "unmatched_asset_count": 1,
+    "matched": [
+      {
+        "table_number": 1,
+        "caption_block_id": 3,
+        "asset_block_ids": [],
+        "page": 6,
+        "match_status": "matched"
+      },
+      {
+        "table_number": 2,
+        "caption_block_id": 3,
+        "asset_block_ids": [],
+        "page": 10,
+        "match_status": "matched"
+      },
+      {
+        "table_number": 3,
+        "caption_block_id": 14,
+        "asset_block_ids": [],
+        "page": 10,
+        "match_status": "matched"
+      },
+      {
+        "table_number": 4,
+        "caption_block_id": 3,
+        "asset_block_ids": [],
+        "page": 12,
+        "match_status": "matched"
+      }
+    ],
+    "ambiguous": []
+  }
+}

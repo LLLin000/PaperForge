@@ -1,8 +1,7 @@
-from pathlib import Path
 
 from paperforge.doctor.field_validator import (
-    validate_entry_fields,
     validate_collection,
+    validate_entry_fields,
     validate_frontmatter_from_file,
 )
 

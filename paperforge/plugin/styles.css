@@ -5,1676 +5,2073 @@
 
 /* ── Root Panel ── */
 .paperforge-status-panel {
-    font-family: inherit;
-    font-size: 14px;
-    color: var(--text-normal);
-    padding: 14px 14px 56px 14px;
-    height: 100%;
-    overflow-y: auto;
-    scrollbar-gutter: stable;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    container-type: inline-size;
-    container-name: pfpanel;
-    --pf-surface: var(--background-secondary);
-    --pf-surface-alt: var(--background-primary-alt);
-    --pf-border: var(--background-modifier-border);
-    --pf-border-hover: var(--background-modifier-border-hover);
-    --pf-accent: var(--interactive-accent);
-    --pf-radius: var(--radius-m);
-    --pf-paper-accent: #6f8780;
-    --pf-collection-accent: #9a6b52;
-    --pf-global-accent: #5f7180;
-    --pf-warm-line: #a28a5d;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-normal);
+  padding: 14px 14px 56px 14px;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  container-type: inline-size;
+  container-name: pfpanel;
+  --pf-surface: var(--background-secondary);
+  --pf-surface-alt: var(--background-primary-alt);
+  --pf-border: var(--background-modifier-border);
+  --pf-border-hover: var(--background-modifier-border-hover);
+  --pf-accent: var(--interactive-accent);
+  --pf-radius: var(--radius-m);
+  --pf-paper-accent: #6f8780;
+  --pf-collection-accent: #9a6b52;
+  --pf-global-accent: #5f7180;
+  --pf-warm-line: #a28a5d;
 }
 
 /* ── Typography tokens ── */
-.pf-title { font-size: 16px; font-weight: 600; line-height: 1.35; color: var(--text-normal); }
-.pf-body  { font-size: 14px; font-weight: 400; line-height: 1.55; }
-.pf-meta  { font-size: 13px; font-weight: 400; line-height: 1.4; color: var(--text-muted); }
-.pf-label { font-size: 12px; font-weight: 600; line-height: 1.3; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.pf-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-normal);
+}
+.pf-body {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+.pf-meta {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.pf-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
 /* ── Base card (only for primary content modules) ── */
 .pf-card {
-    background: var(--pf-surface);
-    border: 1px solid var(--pf-border);
-    border-radius: var(--pf-radius);
-    padding: 12px;
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  padding: 12px;
 }
 
 /* ── Pill ── */
 .pf-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: var(--pf-surface-alt);
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--pf-surface-alt);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
-.pf-pill--ok { color: var(--text-success); }
-.pf-pill--warn { color: var(--text-warning); }
-.pf-pill--fail { color: var(--text-error); }
+.pf-pill--ok {
+  color: var(--text-success);
+}
+.pf-pill--warn {
+  color: var(--text-warning);
+}
+.pf-pill--fail {
+  color: var(--text-error);
+}
 
 /* ── Complete state row ── */
 .pf-complete-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-success);
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 1.4;
-    padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-success);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  padding: 4px 0;
 }
 
 /* ── Disclosure row (technical details) ── */
 .pf-disclosure-row {
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 1.4;
-    padding: 4px 0;
-    cursor: pointer;
-    user-select: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  padding: 4px 0;
+  cursor: pointer;
+  user-select: none;
 }
-.pf-disclosure-row:hover { color: var(--text-normal); }
-.pf-disclosure-body { padding: 6px 0 2px 0; }
+.pf-disclosure-row:hover {
+  color: var(--text-normal);
+}
+.pf-disclosure-body {
+  padding: 6px 0 2px 0;
+}
 
 /* ── Buttons ── */
 .pf-btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: var(--interactive-normal);
-    border: 1px solid var(--pf-border);
-    color: var(--text-normal);
-    border-radius: var(--button-radius, 4px);
-    font-size: 12px;
-    font-weight: 400;
-    padding: 3px 8px;
-    cursor: pointer;
-    transition: background 0.15s;
-    white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--interactive-normal);
+  border: 1px solid var(--pf-border);
+  color: var(--text-normal);
+  border-radius: var(--button-radius, 4px);
+  font-size: 12px;
+  font-weight: 400;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
 }
-.pf-btn-secondary:hover { background: var(--interactive-hover); border-color: var(--pf-border-hover); }
+.pf-btn-secondary:hover {
+  background: var(--interactive-hover);
+  border-color: var(--pf-border-hover);
+}
 
 .pf-btn-primary {
-    background: var(--interactive-accent);
-    color: var(--text-on-accent);
-    border-radius: var(--button-radius, 4px);
-    font-size: 12px;
-    font-weight: 500;
-    padding: 4px 10px;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.15s;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-radius: var(--button-radius, 4px);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
-.pf-btn-primary:hover { opacity: 0.85; }
-.pf-btn-primary.running { opacity: 0.5; pointer-events: none; }
+.pf-btn-primary:hover {
+  opacity: 0.85;
+}
+.pf-btn-primary.running {
+  opacity: 0.5;
+  pointer-events: none;
+}
 
 /* ── Section Label ── */
 .pf-section-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
 }
 
 /* ── Spacing utilities ── */
-.pf-stack-8 > * + * { margin-top: 8px; }
-.pf-stack-12 > * + * { margin-top: 12px; }
+.pf-stack-8 > * + * {
+  margin-top: 8px;
+}
+.pf-stack-12 > * + * {
+  margin-top: 12px;
+}
 
 /* ==========================================================================
    SECTION 1 — Header
    ========================================================================== */
 .paperforge-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .paperforge-header-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .paperforge-header-logo {
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-s);
-    background: var(--interactive-accent);
-    color: var(--text-on-accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: var(--font-bold);
-    flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-s);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: var(--font-bold);
+  flex-shrink: 0;
 }
 
 .paperforge-header-title {
-    font-size: var(--font-ui-medium);
-    font-weight: var(--font-semibold);
-    color: var(--text-normal);
-    margin: 0;
-    line-height: 1;
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  margin: 0;
+  line-height: 1;
 }
 
 .paperforge-header-badge {
-    font-size: 11px;
-    font-weight: var(--font-medium);
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: var(--background-secondary);
-    color: var(--text-muted);
-    border: 1px solid var(--background-modifier-border);
-    line-height: 1.4;
+  font-size: 11px;
+  font-weight: var(--font-medium);
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--background-modifier-border);
+  line-height: 1.4;
 }
 
 .paperforge-header-refresh {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    cursor: pointer;
-    background: transparent;
-    color: var(--text-muted);
-    border: none;
-    border-radius: var(--radius-s);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    transition: background 0.15s, color 0.15s, transform 0.3s;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  border-radius: var(--radius-s);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    transform 0.3s;
 }
 
 .paperforge-header-refresh:hover {
-    background: var(--background-modifier-hover);
-    color: var(--text-normal);
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
 
 .paperforge-header-refresh:active {
-    transform: rotate(180deg);
+  transform: rotate(180deg);
 }
 
 /* ==========================================================================
    SECTION 2 — Metric Cards
    ========================================================================== */
 .paperforge-metrics {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
 }
 
 .paperforge-metric-card {
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    padding: 16px 12px 14px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.15s, opacity 0.3s;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 16px 12px 14px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color 0.15s,
+    opacity 0.3s;
 }
 
 .paperforge-metric-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--metric-color, var(--interactive-accent));
-    border-radius: 0 2px 2px 0;
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--metric-color, var(--interactive-accent));
+  border-radius: 0 2px 2px 0;
 }
 
 .paperforge-metric-card:hover {
-    border-color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
 }
 
 .paperforge-metric-value {
-    font-size: clamp(18px, 4vw, 28px);
-    font-weight: var(--font-bold);
-    line-height: 1.1;
-    color: var(--text-normal);
-    letter-spacing: -0.5px;
-    transition: opacity 0.3s;
+  font-size: clamp(18px, 4vw, 28px);
+  font-weight: var(--font-bold);
+  line-height: 1.1;
+  color: var(--text-normal);
+  letter-spacing: -0.5px;
+  transition: opacity 0.3s;
 }
 
 .paperforge-metric-label {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: var(--font-medium);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Optional progress bar inside metric card (D-05) */
 .paperforge-metric-progress {
-    margin-top: 10px;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--background-modifier-border);
-    overflow: hidden;
+  margin-top: 10px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+  overflow: hidden;
 }
 
 .paperforge-metric-progress-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: var(--metric-color, var(--interactive-accent));
-    transition: width 0.3s;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--metric-color, var(--interactive-accent));
+  transition: width 0.3s;
 }
 
 /* ==========================================================================
    SECTION 3 — OCR Pipeline
    ========================================================================== */
 .paperforge-ocr-section {
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    padding: 16px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 16px;
 }
 
 .paperforge-ocr-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
 }
 
 .paperforge-ocr-title {
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-semibold);
-    color: var(--text-normal);
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .paperforge-ocr-badge {
-    font-size: 11px;
-    font-weight: var(--font-semibold);
-    padding: 3px 10px;
-    border-radius: 10px;
-    line-height: 1.4;
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  padding: 3px 10px;
+  border-radius: 10px;
+  line-height: 1.4;
 }
 
 .paperforge-ocr-badge.idle {
-    background: var(--background-modifier-hover);
-    color: var(--text-muted);
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
 }
 
 .paperforge-ocr-badge.active {
-    background: var(--color-blue);
-    color: var(--text-on-accent);
+  background: var(--color-blue);
+  color: var(--text-on-accent);
 }
 
 .paperforge-progress-track {
-    display: flex;
-    height: 10px;
-    border-radius: 5px;
-    overflow: hidden;
-    background: var(--background-modifier-border);
-    gap: 2px;
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--background-modifier-border);
+  gap: 2px;
 }
 
 .paperforge-progress-seg {
-    height: 100%;
-    transition: width 0.5s ease;
-    min-width: 0;
+  height: 100%;
+  transition: width 0.5s ease;
+  min-width: 0;
 }
 
 .paperforge-progress-seg:first-child {
-    border-radius: 5px 0 0 5px;
+  border-radius: 5px 0 0 5px;
 }
 
 .paperforge-progress-seg:last-child {
-    border-radius: 0 5px 5px 0;
+  border-radius: 0 5px 5px 0;
 }
 
 .paperforge-progress-seg:only-child {
-    border-radius: 5px;
+  border-radius: 5px;
 }
 
 .paperforge-progress-seg.pending {
-    background: #e2d9c8;
+  background: #e2d9c8;
 }
 
 .theme-dark .paperforge-progress-seg.pending {
-    background: #4a4135;
+  background: #4a4135;
 }
 
 .paperforge-progress-seg.active {
-    background: var(--color-blue);
-    animation: paperforge-pulse 1.5s ease-in-out infinite;
+  background: var(--color-blue);
+  animation: paperforge-pulse 1.5s ease-in-out infinite;
 }
 
 .paperforge-progress-seg.done {
-    background: #3e5a47;
+  background: #3e5a47;
 }
 
 .theme-dark .paperforge-progress-seg.done {
-    background: #4f735b;
+  background: #4f735b;
 }
 
 .paperforge-progress-seg.failed {
-    background: var(--text-error);
+  background: var(--text-error);
 }
 
 @keyframes paperforge-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .paperforge-ocr-counts {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 12px;
-    gap: 4px;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  gap: 4px;
 }
 
 .paperforge-ocr-count {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-    min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 
 .paperforge-ocr-count-value {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-normal);
-    line-height: 1.2;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.2;
 }
 
 .paperforge-ocr-count-label {
-    font-size: 10px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 2px;
 }
 
 .paperforge-ocr-empty {
-    text-align: center;
-    padding: 24px 12px;
-    color: var(--text-muted);
-    font-size: var(--font-ui-small);
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
 }
 
 /* ==========================================================================
    SECTION 4 — Quick Actions
    ========================================================================== */
 .paperforge-actions-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .paperforge-actions-title {
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-semibold);
-    color: var(--text-normal);
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .paperforge-actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
 }
 
 .paperforge-action-card {
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    padding: 14px;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, transform 0.1s;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    position: relative;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
 }
 
 .paperforge-action-card:hover {
-    background: var(--background-modifier-hover);
-    border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
 }
 
 .paperforge-action-card:active {
-    transform: scale(0.98);
+  transform: scale(0.98);
 }
 
 .paperforge-action-card.running {
-    opacity: 0.6;
-    pointer-events: none;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .paperforge-action-card-icon {
-    font-size: 18px;
-    color: var(--interactive-accent);
-    line-height: 1;
+  font-size: 18px;
+  color: var(--interactive-accent);
+  line-height: 1;
 }
 
 .paperforge-action-card-title {
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-semibold);
-    color: var(--text-normal);
-    line-height: 1.3;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  line-height: 1.3;
 }
 
 .paperforge-action-card-desc {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    line-height: 1.4;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 .paperforge-action-card-hint {
-    font-size: 10px;
-    color: var(--text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    align-self: flex-end;
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-self: flex-end;
 }
 
 /* ==========================================================================
    Misc
    ========================================================================== */
 .paperforge-message {
-    padding: 8px 12px;
-    border-radius: var(--radius-s);
-    font-size: var(--font-ui-smaller);
-    line-height: 1.4;
-    display: none;
-    word-break: break-word;
+  padding: 8px 12px;
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  display: none;
+  word-break: break-word;
 }
 
 .paperforge-message.msg-running {
-    display: block;
-    background: var(--background-secondary);
-    border: 1px solid var(--color-blue);
-    color: var(--color-blue);
+  display: block;
+  background: var(--background-secondary);
+  border: 1px solid var(--color-blue);
+  color: var(--color-blue);
 }
 
 .paperforge-message.msg-ok {
-    display: block;
-    background: color-mix(in srgb, var(--color-green) 8%, var(--background-secondary));
-    border: 1px solid var(--color-green);
-    color: var(--color-green);
+  display: block;
+  background: color-mix(
+    in srgb,
+    var(--color-green) 8%,
+    var(--background-secondary)
+  );
+  border: 1px solid var(--color-green);
+  color: var(--color-green);
 }
 
 .paperforge-message.msg-error {
-    display: block;
-    background: color-mix(in srgb, var(--text-error) 8%, var(--background-secondary));
-    border: 1px solid var(--text-error);
-    color: var(--text-error);
+  display: block;
+  background: color-mix(
+    in srgb,
+    var(--text-error) 8%,
+    var(--background-secondary)
+  );
+  border: 1px solid var(--text-error);
+  color: var(--text-error);
 }
 
 .paperforge-status-error {
-    color: var(--text-error);
-    font-size: var(--font-ui-small);
-    padding: 12px;
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    text-align: center;
+  color: var(--text-error);
+  font-size: var(--font-ui-small);
+  padding: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  text-align: center;
 }
 
 .paperforge-status-loading {
-    text-align: center;
-    padding: 24px 12px;
-    color: var(--text-muted);
-    font-size: var(--font-ui-small);
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
 }
 
 /* ==========================================================================
    SECTION 5 — Settings Tab: Guide & Summary
    ========================================================================== */
 .paperforge-settings-desc {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    line-height: 1.6;
-    margin: 8px 0 16px;
-    padding: 10px 14px;
-    background: var(--background-secondary);
-    border-radius: var(--radius-m);
-    border: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 8px 0 16px;
+  padding: 10px 14px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
 }
 
 .paperforge-guide {
-    margin: 8px 0 16px;
+  margin: 8px 0 16px;
 }
 
 .paperforge-guide-item {
-    padding: 8px 14px;
-    margin-bottom: 6px;
-    background: var(--background-secondary);
-    border-radius: var(--radius-s);
-    border: 1px solid var(--background-modifier-border);
-    font-size: var(--font-ui-small);
-    line-height: 1.5;
+  padding: 8px 14px;
+  margin-bottom: 6px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+  border: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
 }
 
 .paperforge-setup-bar {
-    margin: 8px 0 12px;
-    padding: 10px 14px;
-    border-radius: var(--radius-m);
-    font-size: var(--font-ui-small);
-    border: 1px solid var(--background-modifier-border);
+  margin: 8px 0 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-m);
+  font-size: var(--font-ui-small);
+  border: 1px solid var(--background-modifier-border);
 }
 
-.paperforge-setup-label { font-weight: var(--font-semibold); }
-.paperforge-setup-done { color: var(--color-green); }
-.paperforge-setup-pending { color: var(--text-muted); }
+.paperforge-setup-label {
+  font-weight: var(--font-semibold);
+}
+.paperforge-setup-done {
+  color: var(--color-green);
+}
+.paperforge-setup-pending {
+  color: var(--text-muted);
+}
 
 .paperforge-summary {
-    margin: 8px 0;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    overflow: hidden;
+  margin: 8px 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  overflow: hidden;
 }
 
 .paperforge-summary-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    padding: 6px 14px;
-    font-size: var(--font-ui-smaller);
-    border-bottom: 1px solid var(--background-modifier-border);
-    background: var(--background-primary);
-    gap: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding: 6px 14px;
+  font-size: var(--font-ui-smaller);
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  gap: 4px;
 }
 
-.paperforge-summary-row:last-child { border-bottom: none; }
+.paperforge-summary-row:last-child {
+  border-bottom: none;
+}
 .paperforge-summary-label {
-    flex: 0 0 auto;
-    min-width: 80px;
-    color: var(--text-muted);
-    white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 80px;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 .paperforge-summary-value {
-    flex: 1 1 200px;
-    word-break: break-all;
-    font-family: var(--font-monospace);
-    font-size: 11px;
+  flex: 1 1 200px;
+  word-break: break-all;
+  font-family: var(--font-monospace);
+  font-size: 11px;
 }
 
 /* ==========================================================================
    SECTION 6 — Setup Wizard Modal
    ========================================================================== */
 .paperforge-modal {
-    padding: 0 20px 20px;
+  padding: 0 20px 20px;
 }
 
 .paperforge-modal .paperforge-step-bar {
-    display: flex;
-    justify-content: center;
-    gap: 0;
-    margin: 20px 0 24px;
-    padding: 0 10px;
-    position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 20px 0 24px;
+  padding: 0 10px;
+  position: relative;
 }
 
 .paperforge-step-dot {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    flex: 1;
-    position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  position: relative;
 }
 
 .paperforge-step-dot::before {
-    content: '';
-    position: absolute;
-    top: 12px;
-    left: -50%;
-    right: 50%;
-    height: 2px;
-    background: var(--background-modifier-border);
-    z-index: 0;
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: -50%;
+  right: 50%;
+  height: 2px;
+  background: var(--background-modifier-border);
+  z-index: 0;
 }
 
-.paperforge-step-dot:first-child::before { display: none; }
+.paperforge-step-dot:first-child::before {
+  display: none;
+}
 .paperforge-step-dot.done::before,
-.paperforge-step-dot.active::before { background: var(--interactive-accent); }
+.paperforge-step-dot.active::before {
+  background: var(--interactive-accent);
+}
 
 .paperforge-step-num {
-    width: 24px; height: 24px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: var(--font-bold);
-    background: var(--background-secondary);
-    border: 2px solid var(--background-modifier-border);
-    color: var(--text-muted); z-index: 1;
-    transition: all 0.2s;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: var(--font-bold);
+  background: var(--background-secondary);
+  border: 2px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  z-index: 1;
+  transition: all 0.2s;
 }
 
 .paperforge-step-dot.active .paperforge-step-num {
-    background: var(--interactive-accent); border-color: var(--interactive-accent); color: var(--text-on-accent);
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
 }
 .paperforge-step-dot.done .paperforge-step-num {
-    background: var(--color-green); border-color: var(--color-green); color: var(--text-on-accent);
+  background: var(--color-green);
+  border-color: var(--color-green);
+  color: var(--text-on-accent);
 }
 
-.paperforge-step-label { font-size: 11px; color: var(--text-muted); }
-.paperforge-step-dot.active .paperforge-step-label { color: var(--text-normal); font-weight: var(--font-semibold); }
-.paperforge-step-dot.done .paperforge-step-label { color: var(--color-green); }
+.paperforge-step-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.paperforge-step-dot.active .paperforge-step-label {
+  color: var(--text-normal);
+  font-weight: var(--font-semibold);
+}
+.paperforge-step-dot.done .paperforge-step-label {
+  color: var(--color-green);
+}
 
 .paperforge-step-content {
-    min-height: 260px;
-    margin-bottom: 20px;
+  min-height: 260px;
+  margin-bottom: 20px;
 }
 
 .paperforge-step-content h2 {
-    font-size: var(--font-ui-large);
-    margin-bottom: 8px;
+  font-size: var(--font-ui-large);
+  margin-bottom: 8px;
 }
 
 .paperforge-step-nav {
-    display: flex; justify-content: space-between; gap: 12px;
-    padding-top: 16px;
-    border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--background-modifier-border);
 }
 
 .paperforge-step-btn {
-    padding: 8px 20px; border-radius: var(--radius-m);
-    font-size: var(--font-ui-small); cursor: pointer;
-    border: 1px solid var(--background-modifier-border);
-    background: var(--background-secondary); color: var(--text-normal);
-    transition: background 0.15s;
+  padding: 8px 20px;
+  border-radius: var(--radius-m);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  transition: background 0.15s;
 }
 
-.paperforge-step-btn:hover { background: var(--background-modifier-hover); }
+.paperforge-step-btn:hover {
+  background: var(--background-modifier-hover);
+}
 .paperforge-step-btn.mod-cta {
-    background: var(--interactive-accent); color: var(--text-on-accent); border-color: var(--interactive-accent);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
 }
-.paperforge-step-btn.mod-cta:hover { opacity: 0.9; }
+.paperforge-step-btn.mod-cta:hover {
+  opacity: 0.9;
+}
 
-.paperforge-apikey-status { margin-left: 8px; font-size: var(--font-ui-smaller); }
-.paperforge-apikey-status.ok { color: var(--color-green); }
-.paperforge-apikey-status.error { color: var(--color-red); }
+.paperforge-apikey-status {
+  margin-left: 8px;
+  font-size: var(--font-ui-smaller);
+}
+.paperforge-apikey-status.ok {
+  color: var(--color-green);
+}
+.paperforge-apikey-status.error {
+  color: var(--color-red);
+}
 
 .paperforge-modal-hint {
-    font-size: var(--font-ui-smaller); color: var(--text-muted);
-    margin-top: 12px; padding: 6px 10px;
-    background: var(--background-secondary); border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin-top: 12px;
+  padding: 6px 10px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
 }
 
 /* ── Modal Form Fields ── */
 .paperforge-modal-field {
-    display: flex; flex-direction: column; gap: 4px;
-    margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
 }
 
 .paperforge-modal-label {
-    font-size: var(--font-ui-small); font-weight: var(--font-semibold);
-    color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
 }
 
 .paperforge-modal-input {
-    width: 100%; padding: 7px 10px;
-    font-size: var(--font-ui-small); font-family: var(--font-monospace);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-s);
-    background: var(--background-primary); color: var(--text-normal);
+  width: 100%;
+  padding: 7px 10px;
+  font-size: var(--font-ui-small);
+  font-family: var(--font-monospace);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  color: var(--text-normal);
 }
 
 .paperforge-modal-input:focus {
-    border-color: var(--interactive-accent);
-    outline: none;
-    box-shadow: 0 0 0 1px var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--interactive-accent);
 }
 
 .paperforge-modal-input:disabled {
-    opacity: 0.6; cursor: not-allowed;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .paperforge-modal-select {
-    width: 100%; padding: 7px 10px;
-    font-size: var(--font-ui-small);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-s);
-    background: var(--background-primary); color: var(--text-normal);
-    cursor: pointer;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: var(--font-ui-small);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  cursor: pointer;
 }
 
 .paperforge-modal-select:focus {
-    border-color: var(--interactive-accent);
-    outline: none;
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+/* ── Description box token ── */
+.paperforge-desc-box {
+  padding: 10px 14px;
+  margin: 0 0 12px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-m, 8px);
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  border: 1px solid var(--background-modifier-border);
+}
+.paperforge-desc-box span {
+  opacity: 0.7;
+}
+
+/* ── Skills container ── */
+.paperforge-skills-box {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 14px 14px 10px;
+  margin: 10px 0 18px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+/* ── Skills arrow ── */
+.paperforge-skills-arrow,
+.paperforge-collapsible-arrow {
+  display: inline-block;
+  font-size: 10px;
+  margin-right: 6px;
+  transition: transform 0.2s;
+  color: var(--text-muted);
+}
+.paperforge-skills-subheader {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* ── Collapsible header ── */
+.paperforge-collapsible-header {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  user-select: none;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.paperforge-collapsible-header:hover {
+  background: var(--background-modifier-hover);
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.paperforge-collapsible-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.paperforge-collapsible-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+/* ── Memory status row ── */
+.paperforge-memory-status {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  margin: 10px 0;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s;
+}
+.paperforge-memory-status:hover {
+  border-color: var(--background-modifier-border-hover);
+}
+
+/* ── Memory / embed status text ── */
+.paperforge-memory-text {
+  flex: 1;
+}
+.paperforge-sync-status {
+  opacity: 0.7;
+  margin-right: 8px;
+  font-size: 12px;
+}
+
+/* ── Rebuild / refresh buttons ── */
+.paperforge-rebuild-btn {
+  margin-left: auto;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-right: 6px;
+  color: var(--text-normal);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.paperforge-rebuild-btn:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
+}
+.paperforge-refresh-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  color: var(--text-muted);
+  transition: color 0.15s;
+  border-radius: 4px;
+}
+.paperforge-refresh-btn:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+/* ── Vector config ── */
+.paperforge-vec-header {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 6px 6px 4px;
+  margin: 0;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.paperforge-vec-header:hover {
+  background: var(--background-modifier-hover);
+}
+.paperforge-vec-header-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.paperforge-vector-config {
+  margin: 4px 0;
+}
+.paperforge-embed-status-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.paperforge-embed-progress-text {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.paperforge-embed-progress-key {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* ── Embed rebuild section ── */
+.paperforge-embed-section {
+  padding: 4px 0;
+}
+.paperforge-embed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.paperforge-embed-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Progress track in features ── */
+.paperforge-progress-track {
+  flex: 1;
+}
+.paperforge-progress-track .paperforge-progress-seg.done {
+  background: #3e5a47;
+}
+.theme-dark .paperforge-progress-track .paperforge-progress-seg.done {
+  background: #4f735b;
 }
 
 /* ── Step 1: Directory Tree ── */
 .paperforge-dir-tree {
-    margin: 16px 0; font-size: var(--font-ui-small); line-height: 1.8; font-family: var(--font-monospace);
+  margin: 16px 0;
+  font-size: var(--font-ui-small);
+  line-height: 1.8;
+  font-family: var(--font-monospace);
 }
 
 .paperforge-dir-node.root {
-    font-weight: var(--font-bold); padding: 6px 10px;
-    background: var(--background-secondary); border-radius: var(--radius-s);
-    border: 1px solid var(--background-modifier-border); margin-bottom: 4px;
+  font-weight: var(--font-bold);
+  padding: 6px 10px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+  border: 1px solid var(--background-modifier-border);
+  margin-bottom: 4px;
 }
 
-.paperforge-dir-node.folder { padding: 4px 10px; color: var(--text-normal); }
-.paperforge-dir-node.file { padding: 3px 10px; color: var(--text-muted); }
-.paperforge-dir-children { padding-left: 24px; }
+.paperforge-dir-node.folder {
+  padding: 4px 10px;
+  color: var(--text-normal);
+}
+.paperforge-dir-node.file {
+  padding: 3px 10px;
+  color: var(--text-muted);
+}
+.paperforge-dir-children {
+  padding-left: 24px;
+}
 
 /* ── Step 4: Install Log ── */
 .paperforge-install-log {
-    margin: 12px 0; padding: 14px;
-    background: #1e1e1e; color: #d4d4d4;
-    border-radius: var(--radius-m);
-    font-family: var(--font-monospace); font-size: 12px;
-    line-height: 1.6; max-height: 300px;
-    overflow-y: auto; white-space: pre-wrap;
+  margin: 12px 0;
+  padding: 14px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: var(--radius-m);
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.6;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
 }
 
 /* ── Step 5: Next Steps ── */
-.paperforge-nextsteps { margin: 8px 0; }
+.paperforge-nextsteps {
+  margin: 8px 0;
+}
 
 .paperforge-nextstep-item {
-    padding: 8px 14px; margin-bottom: 6px;
-    background: var(--background-secondary); border-radius: var(--radius-s);
-    border: 1px solid var(--background-modifier-border);
-    font-size: var(--font-ui-small); line-height: 1.5;
+  padding: 8px 14px;
+  margin-bottom: 6px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+  border: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
 }
 
 /* ── OCR Processing Animation ── */
 .paperforge-processing .paperforge-progress-seg.pending {
-    animation: paperforge-pulse 1.5s ease-in-out infinite;
+  animation: paperforge-pulse 1.5s ease-in-out infinite;
 }
 @keyframes paperforge-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* ==========================================================================
    SECTION 7 — Loading Skeleton & Empty States
    ========================================================================== */
 .paperforge-loading {
-    position: relative;
-    overflow: hidden;
+  position: relative;
+  overflow: hidden;
 }
 
 .paperforge-loading > * {
-    opacity: 0.6;
-    pointer-events: none;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .paperforge-loading::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.08) 50%,
-        transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: paperforge-shimmer 1.5s ease-in-out infinite;
-    pointer-events: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: paperforge-shimmer 1.5s ease-in-out infinite;
+  pointer-events: none;
 }
 
 @keyframes paperforge-shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Dark mode adjustment: lighter shimmer is slightly dimmer */
 .theme-dark .paperforge-loading::after {
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.04) 50%,
-        transparent 100%
-    );
-    background-size: 200% 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
 }
 
 .paperforge-empty-state {
-    text-align: center;
-    padding: 24px 12px;
-    color: var(--text-muted);
-    font-size: var(--font-ui-small);
-    font-style: italic;
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  font-style: italic;
 }
 
 /* ==========================================================================
    SECTION 9 — Lifecycle Stepper
    ========================================================================== */
 .paperforge-lifecycle-stepper {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    padding: 8px 0;
-    position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 0;
+  position: relative;
 }
 
 .paperforge-lifecycle-stepper .step {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    position: relative;
-    min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  position: relative;
+  min-height: 36px;
 }
 
 .paperforge-lifecycle-stepper .step-indicator {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: var(--font-bold);
-    position: relative;
-    z-index: 1;
-    background: var(--background-modifier-border);
-    color: var(--text-muted);
-    border: 2px solid var(--background-modifier-border);
-    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: var(--font-bold);
+  position: relative;
+  z-index: 1;
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+  border: 2px solid var(--background-modifier-border);
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
 }
 
 /* Connecting line between steps via ::before on each step (D-09) */
 .paperforge-lifecycle-stepper .step::before {
-    content: '';
-    position: absolute;
-    left: 22px;  /* centers under the 24px indicator circle */
-    top: 32px;   /* below the indicator */
-    bottom: -8px;
-    width: 2px;
-    background: var(--background-modifier-border);
-    z-index: 0;
+  content: "";
+  position: absolute;
+  left: 22px; /* centers under the 24px indicator circle */
+  top: 32px; /* below the indicator */
+  bottom: -8px;
+  width: 2px;
+  background: var(--background-modifier-border);
+  z-index: 0;
 }
 
 .paperforge-lifecycle-stepper .step:last-child::before {
-    display: none;
+  display: none;
 }
 
 .paperforge-lifecycle-stepper .step-label {
-    font-size: var(--font-ui-small);
-    color: var(--text-muted);
-    font-weight: var(--font-medium);
-    line-height: 1.3;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+  line-height: 1.3;
 }
 
 /* -- State: completed (D-10) -- */
 .paperforge-lifecycle-stepper .step.completed .step-indicator {
-    background: var(--color-green);
-    border-color: var(--color-green);
-    color: var(--text-on-accent);
+  background: var(--color-green);
+  border-color: var(--color-green);
+  color: var(--text-on-accent);
 }
 
 .paperforge-lifecycle-stepper .step.completed .step-indicator::after {
-    content: '\2713';  /* checkmark */
+  content: "\2713"; /* checkmark */
 }
 
 .paperforge-lifecycle-stepper .step.completed .step-label {
-    color: var(--text-normal);
+  color: var(--text-normal);
 }
 
 .paperforge-lifecycle-stepper .step.completed::before {
-    background: var(--color-green);
+  background: var(--color-green);
 }
 
 /* -- State: current (D-10) -- */
 .paperforge-lifecycle-stepper .step.current .step-indicator {
-    background: var(--interactive-accent);
-    border-color: var(--interactive-accent);
-    color: var(--text-on-accent);
-    animation: paperforge-step-pulse 2s ease-in-out infinite;
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  animation: paperforge-step-pulse 2s ease-in-out infinite;
 }
 
 @keyframes paperforge-step-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.3); }
-    50% { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+  }
 }
 
 .paperforge-lifecycle-stepper .step.current .step-label {
-    color: var(--text-normal);
-    font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  font-weight: var(--font-semibold);
 }
 
 /* -- State: pending (D-10) -- */
 .paperforge-lifecycle-stepper .step.pending .step-indicator {
-    opacity: 0.4;
+  opacity: 0.4;
 }
 
 .paperforge-lifecycle-stepper .step.pending .step-label {
-    opacity: 0.5;
+  opacity: 0.5;
 }
 
 /* ==========================================================================
    SECTION 10 — Health Matrix
    ========================================================================== */
 .paperforge-health-matrix {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .paperforge-health-cell {
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    padding: 14px 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    cursor: help;
-    transition: border-color 0.15s;
-    position: relative;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: help;
+  transition: border-color 0.15s;
+  position: relative;
 }
 
 .paperforge-health-cell:hover {
-    border-color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
 }
 
 .paperforge-health-cell-icon {
-    font-size: 18px;
-    line-height: 1;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .paperforge-health-cell-label {
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-medium);
-    color: var(--text-normal);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  color: var(--text-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 /* Status coloring (D-14) */
 .paperforge-health-cell.ok {
-    border-left: 3px solid var(--color-green);
+  border-left: 3px solid var(--color-green);
 }
 
 .paperforge-health-cell.ok .paperforge-health-cell-icon {
-    color: var(--color-green);
+  color: var(--color-green);
 }
 
 .paperforge-health-cell.warn {
-    border-left: 3px solid var(--color-yellow);
+  border-left: 3px solid var(--color-yellow);
 }
 
 .paperforge-health-cell.warn .paperforge-health-cell-icon {
-    color: var(--color-yellow);
+  color: var(--color-yellow);
 }
 
 .paperforge-health-cell.fail {
-    border-left: 3px solid var(--color-red);
+  border-left: 3px solid var(--color-red);
 }
 
 .paperforge-health-cell.fail .paperforge-health-cell-icon {
-    color: var(--color-red);
+  color: var(--color-red);
 }
 
 /* Tooltip on hover (D-16) */
 .paperforge-health-cell[title]:hover::after {
-    content: attr(title);
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--background-modifier-hover);
-    color: var(--text-normal);
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: var(--radius-s);
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 100;
-    border: 1px solid var(--background-modifier-border);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--radius-s);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .paperforge-health-cell[title]:hover::before {
-    content: '';
-    position: absolute;
-    bottom: calc(100% + 2px);
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: var(--background-modifier-border);
-    pointer-events: none;
-    z-index: 100;
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--background-modifier-border);
+  pointer-events: none;
+  z-index: 100;
 }
 
 /* ==========================================================================
    SECTION 11 — Maturity Gauge
    ========================================================================== */
 .paperforge-maturity-gauge {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .paperforge-maturity-gauge .gauge-track {
-    display: flex;
-    gap: 4px;
-    height: 16px;
-    border-radius: 8px;
-    overflow: hidden;
-    background: var(--background-modifier-border);
+  display: flex;
+  gap: 4px;
+  height: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--background-modifier-border);
 }
 
 .paperforge-maturity-gauge .gauge-segment {
-    flex: 1;
-    height: 100%;
-    border-radius: 2px;
-    background: var(--background-modifier-border);
-    transition: background 0.3s;
+  flex: 1;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+  transition: background 0.3s;
 }
 
 .paperforge-maturity-gauge .gauge-segment.filled {
-    background: var(--interactive-accent);
+  background: var(--interactive-accent);
 }
 
 /* Gradient variant: each filled segment gets progressively richer color */
-.paperforge-maturity-gauge .gauge-segment.filled.level-1 { background: var(--color-cyan); }
-.paperforge-maturity-gauge .gauge-segment.filled.level-2 { background: var(--color-blue); }
-.paperforge-maturity-gauge .gauge-segment.filled.level-3 { background: var(--color-purple); }
-.paperforge-maturity-gauge .gauge-segment.filled.level-4 { background: var(--color-green); }
-.paperforge-maturity-gauge .gauge-segment.filled.level-5 { background: var(--color-yellow); }
-.paperforge-maturity-gauge .gauge-segment.filled.level-6 { background: var(--color-red); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-1 {
+  background: var(--color-cyan);
+}
+.paperforge-maturity-gauge .gauge-segment.filled.level-2 {
+  background: var(--color-blue);
+}
+.paperforge-maturity-gauge .gauge-segment.filled.level-3 {
+  background: var(--color-purple);
+}
+.paperforge-maturity-gauge .gauge-segment.filled.level-4 {
+  background: var(--color-green);
+}
+.paperforge-maturity-gauge .gauge-segment.filled.level-5 {
+  background: var(--color-yellow);
+}
+.paperforge-maturity-gauge .gauge-segment.filled.level-6 {
+  background: var(--color-red);
+}
 
 .paperforge-maturity-gauge .gauge-level {
-    font-size: var(--font-ui-medium);
-    font-weight: var(--font-bold);
-    color: var(--text-normal);
-    text-align: center;
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-bold);
+  color: var(--text-normal);
+  text-align: center;
 }
 
 .paperforge-maturity-gauge .gauge-blockers {
-    list-style: disc;
-    padding-left: 20px;
-    margin: 4px 0 0;
+  list-style: disc;
+  padding-left: 20px;
+  margin: 4px 0 0;
 }
 
 .paperforge-maturity-gauge .gauge-blockers li {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    line-height: 1.5;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 /* ==========================================================================
    SECTION 12 — Bar Chart
    ========================================================================== */
 .paperforge-bar-chart {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
 }
 
 .paperforge-bar-chart .bar-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .paperforge-bar-chart .bar-label {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    flex: 0 0 90px;
-    text-align: right;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-weight: var(--font-medium);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  flex: 0 0 90px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: var(--font-medium);
 }
 
 .paperforge-bar-chart .bar-track {
-    flex: 1;
-    height: 20px;
-    border-radius: 4px;
-    background: var(--background-modifier-border);
-    overflow: hidden;
-    position: relative;
+  flex: 1;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--background-modifier-border);
+  overflow: hidden;
+  position: relative;
 }
 
 .paperforge-bar-chart .bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    background: var(--interactive-accent);
-    transition: width 0.3s;
-    min-width: 2px;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--interactive-accent);
+  transition: width 0.3s;
+  min-width: 2px;
 }
 
 .paperforge-bar-chart .bar-count {
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-bold);
-    color: var(--text-normal);
-    flex: 0 0 30px;
-    text-align: left;
-    font-variant-numeric: tabular-nums;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-bold);
+  color: var(--text-normal);
+  flex: 0 0 30px;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Color variants for bar fills based on lifecycle stage */
-.paperforge-bar-chart .bar-fill.stage-indexed { background: var(--color-blue); }
-.paperforge-bar-chart .bar-fill.stage-pdf-ready { background: var(--color-purple); }
-.paperforge-bar-chart .bar-fill.stage-fulltext-ready { background: var(--color-green); }
-.paperforge-bar-chart .bar-fill.stage-deep-read { background: var(--color-yellow); }
+.paperforge-bar-chart .bar-fill.stage-indexed {
+  background: var(--color-blue);
+}
+.paperforge-bar-chart .bar-fill.stage-pdf-ready {
+  background: var(--color-purple);
+}
+.paperforge-bar-chart .bar-fill.stage-fulltext-ready {
+  background: var(--color-green);
+}
+.paperforge-bar-chart .bar-fill.stage-deep-read {
+  background: var(--color-yellow);
+}
 
 /* ==========================================================================
    SECTION 13 — Mode-Aware Content Area
    ========================================================================== */
 .paperforge-content-area {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    transition: opacity 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition: opacity 0.2s ease;
 }
 
 .paperforge-content-area.switching {
-    opacity: 0.4;
-    pointer-events: none;
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .paperforge-content-placeholder {
-    text-align: center;
-    padding: 32px 12px;
-    color: var(--text-muted);
-    font-size: var(--font-ui-small);
-    border: 1px dashed var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    background: var(--background-secondary);
-    font-style: italic;
+  text-align: center;
+  padding: 32px 12px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  font-style: italic;
 }
 
 /* ==========================================================================
    SECTION 14 — Mode-Aware Header Context
    ========================================================================== */
 .paperforge-mode-context {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
 .paperforge-mode-badge {
-    font-size: 10px;
-    font-weight: var(--font-semibold);
-    padding: 2px 8px;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    line-height: 1.4;
-    flex-shrink: 0;
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+  flex-shrink: 0;
 }
 
 .paperforge-mode-badge.global {
-    background: color-mix(in srgb, var(--pf-global-accent) 12%, var(--background-secondary));
-    border-color: color-mix(in srgb, var(--pf-global-accent) 28%, var(--pf-border));
-    color: var(--pf-global-accent);
+  background: color-mix(
+    in srgb,
+    var(--pf-global-accent) 12%,
+    var(--background-secondary)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--pf-global-accent) 28%,
+    var(--pf-border)
+  );
+  color: var(--pf-global-accent);
 }
 
 .paperforge-mode-badge.paper {
-    background: color-mix(in srgb, var(--pf-paper-accent) 12%, var(--background-secondary));
-    border-color: color-mix(in srgb, var(--pf-paper-accent) 28%, var(--pf-border));
-    color: var(--pf-paper-accent);
+  background: color-mix(
+    in srgb,
+    var(--pf-paper-accent) 12%,
+    var(--background-secondary)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--pf-paper-accent) 28%,
+    var(--pf-border)
+  );
+  color: var(--pf-paper-accent);
 }
 
 .paperforge-mode-badge.collection {
-    background: color-mix(in srgb, var(--pf-collection-accent) 12%, var(--background-secondary));
-    border-color: color-mix(in srgb, var(--pf-collection-accent) 28%, var(--pf-border));
-    color: var(--pf-collection-accent);
+  background: color-mix(
+    in srgb,
+    var(--pf-collection-accent) 12%,
+    var(--background-secondary)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--pf-collection-accent) 28%,
+    var(--pf-border)
+  );
+  color: var(--pf-collection-accent);
 }
 
 .paperforge-mode-name {
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-semibold);
-    color: var(--text-normal);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    line-height: 1.3;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  line-height: 1.3;
 }
 
 .paperforge-mode-warning {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-warning);
-    margin-left: auto;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-warning);
+  margin-left: auto;
 }
 
 /* ==========================================================================
    SECTION 15 — Per-Paper View Layout
    ========================================================================== */
 .paperforge-paper-view {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .paperforge-paper-header {
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .paperforge-paper-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-normal);
-    line-height: 1.4;
-    margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.4;
+  margin: 0 0 4px 0;
 }
 
 .paperforge-paper-meta {
-    display: flex;
-    align-items: baseline;
-    gap: 4px;
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.5;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .paperforge-paper-authors {
-    display: inline;
+  display: inline;
 }
 
 .paperforge-paper-year {
-    display: inline;
-    font-size: 12px;
-    color: var(--text-faint);
+  display: inline;
+  font-size: 12px;
+  color: var(--text-faint);
 }
 
 .paperforge-paper-year::before {
-    content: " · ";
-    color: var(--text-faint);
+  content: " · ";
+  color: var(--text-faint);
 }
 
 .paperforge-paper-actions {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    flex-wrap: wrap;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* ==========================================================================
    SECTION 16 — Next-Step Recommendation Card
    ========================================================================== */
 .paperforge-next-step-card {
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .paperforge-next-step-card.ready {
-    border-color: var(--color-green);
-    background: color-mix(in srgb, var(--color-green) 8%, var(--background-secondary));
+  border-color: var(--color-green);
+  background: color-mix(
+    in srgb,
+    var(--color-green) 8%,
+    var(--background-secondary)
+  );
 }
 
 .paperforge-next-step-label {
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-semibold);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
 }
 
 .paperforge-next-step-text {
-    font-size: var(--font-ui-small);
-    color: var(--text-normal);
-    line-height: 1.5;
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  line-height: 1.5;
 }
 
 .paperforge-next-step-trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-semibold);
-    color: var(--text-on-accent);
-    background: var(--interactive-accent);
-    border: none;
-    border-radius: var(--radius-m);
-    cursor: pointer;
-    transition: opacity 0.15s;
-    align-self: flex-start;
-    user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+  border: none;
+  border-radius: var(--radius-m);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  align-self: flex-start;
+  user-select: none;
 }
 
 .paperforge-next-step-trigger:hover {
-    opacity: 0.85;
+  opacity: 0.85;
 }
 
 .paperforge-next-step-trigger:active {
-    transform: scale(0.97);
+  transform: scale(0.97);
 }
 
 .paperforge-next-step-trigger.running {
-    opacity: 0.6;
-    pointer-events: none;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 /* ==========================================================================
    SECTION 17 — Collection View Layout
    ========================================================================== */
 .paperforge-collection-view {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    max-width: 800px;
-    margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .paperforge-collection-metrics {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
 }
 
 .paperforge-collection-health {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .paperforge-collection-health-cell {
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    padding: 14px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    position: relative;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
 }
 
 .paperforge-collection-health-cell-label {
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-semibold);
-    color: var(--text-normal);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .paperforge-collection-health-counts {
-    font-size: var(--font-ui-small);
-    color: var(--text-muted);
-    line-height: 1.6;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  line-height: 1.6;
 }
 
 .paperforge-collection-health-counts .ok {
-    color: var(--color-green);
+  color: var(--color-green);
 }
 
 .paperforge-collection-health-counts .warn {
-    color: var(--color-yellow);
+  color: var(--color-yellow);
 }
 
 .paperforge-collection-health-counts .fail {
-    color: var(--color-red);
+  color: var(--color-red);
 }
 
 /* ==========================================================================
    SECTION 33 — Deep-Reading Dashboard Mode
    ========================================================================== */
 .paperforge-mode-deepreading {
-    display: flex;
-    flex-direction: column;
-    gap: var(--size-4-4, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4, 16px);
 }
 
 .paperforge-deepreading-card {
-    background: var(--background-primary-alt);
-    border-radius: var(--radius-m, 8px);
-    padding: var(--size-4-4, 16px);
+  background: var(--background-primary-alt);
+  border-radius: var(--radius-m, 8px);
+  padding: var(--size-4-4, 16px);
 }
 
 .paperforge-deepreading-card-title {
-    font-weight: 600;
-    font-size: var(--font-ui-medium);
-    margin-bottom: var(--size-4-2, 8px);
+  font-weight: 600;
+  font-size: var(--font-ui-medium);
+  margin-bottom: var(--size-4-2, 8px);
 }
 
 .paperforge-deepreading-card-header.collapsible {
-    cursor: pointer;
-    user-select: none;
+  cursor: pointer;
+  user-select: none;
 }
 
 .paperforge-deepreading-card-header:hover {
-    opacity: 0.8;
+  opacity: 0.8;
 }
 
 .paperforge-deepreading-card-body.collapsed {
-    display: none;
+  display: none;
 }
 
 .paperforge-deepreading-status-list {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .paperforge-deepreading-status-row {
-    display: flex;
-    justify-content: space-between;
-    padding: var(--size-4-1, 4px) 0;
-    border-bottom: 1px solid var(--background-modifier-border);
+  display: flex;
+  justify-content: space-between;
+  padding: var(--size-4-1, 4px) 0;
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .paperforge-deepreading-status-row:last-child {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 .paperforge-deepreading-status-label {
-    color: var(--text-muted);
-    font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
 }
 
 .paperforge-deepreading-status-value {
-    font-size: var(--font-ui-small);
+  font-size: var(--font-ui-small);
 }
 
 .paperforge-deepreading-pass1-content {
-    line-height: 1.6;
+  line-height: 1.6;
 }
 
 .paperforge-deepreading-pass1-subheading {
-    margin: var(--size-4-2, 8px) 0 var(--size-4-1, 4px);
-    color: var(--text-accent);
+  margin: var(--size-4-2, 8px) 0 var(--size-4-1, 4px);
+  color: var(--text-accent);
 }
 
 .paperforge-deepreading-pass1-marker {
-    font-weight: 600;
-    color: var(--text-normal);
-    margin: var(--size-4-2, 8px) 0;
+  font-weight: 600;
+  color: var(--text-normal);
+  margin: var(--size-4-2, 8px) 0;
 }
 
 .paperforge-deepreading-pass1-text {
-    color: var(--text-muted);
-    margin: var(--size-4-1, 4px) 0;
+  color: var(--text-muted);
+  margin: var(--size-4-1, 4px) 0;
 }
 
 .paperforge-deepreading-empty {
-    color: var(--text-faint);
-    font-size: var(--font-ui-small);
-    padding: var(--size-4-2, 8px);
-    text-align: center;
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+  padding: var(--size-4-2, 8px);
+  text-align: center;
 }
 
 /* Session grouping */
 .paperforge-deepreading-session {
-    margin-bottom: var(--size-4-3, 12px);
+  margin-bottom: var(--size-4-3, 12px);
 }
 
 .paperforge-deepreading-session-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: var(--font-ui-small);
-    color: var(--text-faint);
-    margin-bottom: var(--size-4-2, 8px);
-    padding-bottom: var(--size-4-1, 4px);
-    border-bottom: 1px dashed var(--background-modifier-border);
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-ui-small);
+  color: var(--text-faint);
+  margin-bottom: var(--size-4-2, 8px);
+  padding-bottom: var(--size-4-1, 4px);
+  border-bottom: 1px dashed var(--background-modifier-border);
 }
 
 .paperforge-deepreading-session-date {
-    color: var(--text-muted);
+  color: var(--text-muted);
 }
 
 /* Dialog bubbles */
 .paperforge-deepreading-bubble {
-    padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
-    border-radius: var(--radius-s, 6px);
-    margin-bottom: var(--size-4-2, 8px);
-    max-width: 90%;
+  padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+  border-radius: var(--radius-s, 6px);
+  margin-bottom: var(--size-4-2, 8px);
+  max-width: 90%;
 }
 
 .paperforge-deepreading-bubble.question {
-    background: var(--interactive-accent);
-    color: var(--text-on-accent);
-    margin-right: auto;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  margin-right: auto;
 }
 
 .paperforge-deepreading-bubble.answer {
-    background: var(--background-secondary-alt);
-    color: var(--text-normal);
-    margin-left: auto;
+  background: var(--background-secondary-alt);
+  color: var(--text-normal);
+  margin-left: auto;
 }
 
 .paperforge-deepreading-bubble .bubble-label {
-    font-size: var(--font-smallest, 10px);
-    opacity: 0.7;
-    margin-bottom: 2px;
+  font-size: var(--font-smallest, 10px);
+  opacity: 0.7;
+  margin-bottom: 2px;
 }
 
 .paperforge-deepreading-bubble .bubble-text {
-    font-size: var(--font-ui-small);
-    line-height: 1.5;
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
 }
 
 /* ==========================================================================
    SECTION 34 — Runtime Health
    ========================================================================== */
 .paperforge-runtime-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    font-weight: 600;
-    margin-left: 8px;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: 600;
+  margin-left: 8px;
 }
 .paperforge-runtime-badge.match {
-    background: var(--color-green, #4caf50);
-    color: #ffffff;
+  background: var(--color-green, #4caf50);
+  color: #ffffff;
 }
 .paperforge-runtime-badge.mismatch {
-    background: var(--color-red, #f44336);
-    color: #ffffff;
+  background: var(--color-red, #f44336);
+  color: #ffffff;
 }
 .paperforge-runtime-badge.missing {
-    background: var(--color-orange, #ff9800);
-    color: #ffffff;
+  background: var(--color-orange, #ff9800);
+  color: #ffffff;
 }
 
 /* ==========================================================================
    SECTION 35 — Dashboard Drift Banner
    ========================================================================== */
 .paperforge-drift-banner {
-    background: var(--color-yellow, #ffc107);
-    color: var(--background-primary, #000000);
-    padding: 8px 14px;
-    border-radius: 6px;
-    font-size: 0.9em;
-    margin-bottom: 16px;
-    cursor: pointer;
+  background: var(--color-yellow, #ffc107);
+  color: var(--background-primary, #000000);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  margin-bottom: 16px;
+  cursor: pointer;
 }
 .paperforge-drift-banner:hover {
-    opacity: 0.9;
+  opacity: 0.9;
 }
 
 /* ==========================================================================
    SECTION 36 — Copy Diagnostic Button
    ========================================================================== */
 .paperforge-copy-diag-btn {
-    margin-top: 8px;
-    padding: 4px 12px;
-    font-size: 0.85em;
-    background: var(--interactive-normal, #e0e0e0);
-    color: var(--text-normal, #000000);
-    border: 1px solid var(--background-modifier-border, #cccccc);
-    border-radius: 4px;
-    cursor: pointer;
+  margin-top: 8px;
+  padding: 4px 12px;
+  font-size: 0.85em;
+  background: var(--interactive-normal, #e0e0e0);
+  color: var(--text-normal, #000000);
+  border: 1px solid var(--background-modifier-border, #cccccc);
+  border-radius: 4px;
+  cursor: pointer;
 }
 .paperforge-copy-diag-btn:hover {
-    background: var(--interactive-hover, #d0d0d0);
+  background: var(--interactive-hover, #d0d0d0);
 }
 
 /* ==========================================================================
    SECTION 37 — DASH-01: OCR Queue Hint (per-paper)
    ========================================================================== */
 .paperforge-ocr-queue-hint {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    font-style: italic;
-    margin-left: 8px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  font-style: italic;
+  margin-left: 8px;
 }
 
 /* ── DASH-02: Agent Platform Label ── */
 .paperforge-agent-platform-label {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    margin-top: -4px;
-    font-style: italic;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin-top: -4px;
+  font-style: italic;
 }
 
 /* ==========================================================================
    SECTION 38 — DASH-03: OCR Privacy Warning Modal
    ========================================================================== */
 .paperforge-ocr-privacy-modal h2 {
-    margin-top: 8px;
-    margin-bottom: 16px;
-    font-size: var(--font-ui-large);
-    font-weight: var(--font-semibold);
+  margin-top: 8px;
+  margin-bottom: 16px;
+  font-size: var(--font-ui-large);
+  font-weight: var(--font-semibold);
 }
 
 .paperforge-ocr-privacy-warning {
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    padding: 16px;
-    margin-bottom: 20px;
-    line-height: 1.6;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 16px;
+  margin-bottom: 20px;
+  line-height: 1.6;
 }
 
 .paperforge-ocr-privacy-warning p {
-    margin: 0;
-    color: var(--text-normal);
-    font-size: var(--font-ui-small);
+  margin: 0;
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
 }
 
 .paperforge-ocr-privacy-actions {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
 }
 
 /* ==========================================================================
@@ -1683,748 +2080,1480 @@
 
 /* Shared tokens */
 .paperforge-section-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin: 0 0 10px 0;
-    padding-left: 10px;
-    border-left: 3px solid var(--pf-warm-line);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    line-height: 1.3;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 10px 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--pf-warm-line);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
 }
 
 .paperforge-contextual-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    background: var(--background-secondary);
-    border: 1px solid var(--pf-border);
-    border-radius: var(--radius-s);
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
-    white-space: nowrap;
-    user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+  user-select: none;
 }
 
 .paperforge-contextual-btn:hover {
-    background: var(--background-modifier-hover);
-    border-color: color-mix(in srgb, var(--pf-warm-line) 52%, var(--pf-border-hover));
-    color: var(--text-normal);
+  background: var(--background-modifier-hover);
+  border-color: color-mix(
+    in srgb,
+    var(--pf-warm-line) 52%,
+    var(--pf-border-hover)
+  );
+  color: var(--text-normal);
 }
 
 .paperforge-contextual-btn.running {
-    opacity: 0.6;
-    pointer-events: none;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .paperforge-contextual-btn:active {
-    transform: scale(0.97);
+  transform: scale(0.97);
 }
 
 .paperforge-contextual-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--interactive-accent) 62%, white 38%);
-    outline-offset: 2px;
+  outline: 2px solid
+    color-mix(in srgb, var(--interactive-accent) 62%, white 38%);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   SECTION 39b — Dashboard Global & Paper & Collection Vercel Polish
+   ========================================================================== */
+
+/* Click-to-copy indicator */
+.pf-copy {
+  cursor: copy;
+  padding: 0 2px;
+  border-radius: 2px;
+  transition: background 0.15s;
+}
+.pf-copy:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+}
+.pf-copy:active {
+  background: color-mix(in srgb, var(--interactive-accent) 20%, transparent);
+}
+
+/* Snapshot pills */
+.paperforge-snapshot-pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.paperforge-snapshot-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  min-width: 64px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+  border: 1px solid transparent;
+}
+.paperforge-snapshot-pill:hover {
+  border-color: var(--background-modifier-border);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 8px rgba(0, 0, 0, 0.02);
+}
+.paperforge-snapshot-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+.paperforge-snapshot-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+/* Status grid */
+.paperforge-status-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.paperforge-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.paperforge-status-row:hover {
+  background: var(--background-modifier-hover);
+}
+.paperforge-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.paperforge-status-dot.ok {
+  background: var(--color-green, #4caf50);
+}
+.paperforge-status-dot.fail {
+  background: var(--color-red, #f44336);
+}
+.paperforge-status-label {
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 100px;
+  color: var(--text-normal);
+}
+.paperforge-status-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Issue summary */
+.paperforge-issue-summary {
+  padding: 16px;
+  background: color-mix(
+    in srgb,
+    var(--color-orange, #ff9800) 6%,
+    var(--background-primary)
+  );
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--color-orange, #ff9800) 18%,
+      var(--background-modifier-border)
+    );
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.paperforge-issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+}
+.paperforge-issue-item {
+  font-size: 12px;
+  color: var(--text-normal);
+  padding: 4px 8px;
+  background: var(--background-primary);
+  border-radius: 4px;
+  border-left: 3px solid var(--color-orange, #ff9800);
+}
+.paperforge-issue-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Global actions */
+.paperforge-global-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Technical details */
+.paperforge-technical-details {
+  margin: 12px 0;
+}
+.paperforge-technical-details-toggle {
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.paperforge-technical-details-toggle:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
+}
+.paperforge-technical-details-body {
+  margin-top: 8px;
+}
+.paperforge-workflow-toggles {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.paperforge-workflow-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+}
+.paperforge-workflow-toggle:hover {
+  background: var(--background-modifier-hover);
+}
+.paperforge-workflow-toggle-label {
+  font-weight: 500;
+}
+.paperforge-workflow-toggle-hint {
+  color: var(--text-muted);
+}
+.paperforge-technical-row {
+  display: flex;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: 12px;
+  gap: 8px;
+}
+.paperforge-technical-row:last-child {
+  border-bottom: none;
+}
+.paperforge-technical-label {
+  flex: 0 0 100px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.paperforge-technical-value {
+  color: var(--text-normal);
+  word-break: break-all;
+}
+
+/* Collection funnel */
+.paperforge-workflow-funnel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+}
+.paperforge-workflow-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  min-width: 60px;
+  transition: border-color 0.15s;
+  border: 1px solid transparent;
+}
+.paperforge-workflow-stage:hover {
+  border-color: var(--background-modifier-border);
+}
+.paperforge-workflow-stage-value {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+.paperforge-workflow-stage-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+.paperforge-workflow-arrow {
+  font-size: 16px;
+  color: var(--text-faint);
+}
+
+.paperforge-collection-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Collection OCR header */
+.paperforge-collection-ocr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+/* ==========================================================================
+   SECTION 40 — Maintenance Tab (Vercel-inspired)
+   ========================================================================== */
+.pf-maint-hero {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 8px rgba(0, 0, 0, 0.02);
+  margin-bottom: 20px;
+}
+.pf-maint-hero h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+.pf-maint-hero p {
+  margin: 0;
+}
+
+.pf-maint-counts {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+.pf-maint-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 18px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  min-width: 72px;
+}
+.pf-maint-stat strong {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-normal);
+  letter-spacing: -0.5px;
+}
+.pf-maint-stat span {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+.pf-maint-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 18px;
+}
+.pf-maint-card {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.pf-maint-card:hover {
+  border-color: var(--background-modifier-border-hover);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 8px rgba(0, 0, 0, 0.02);
+}
+.pf-maint-card > strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.4;
+}
+.pf-maint-card p {
+  margin: 4px 0 8px;
+  font-size: 12px;
+}
+.pf-maint-card button {
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  transition: opacity 0.15s;
+}
+.pf-maint-card button:hover {
+  opacity: 0.85;
+}
+
+.pf-maint-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+.pf-maint-chip--rebuild {
+  background: color-mix(
+    in srgb,
+    var(--color-orange, #ff9800) 14%,
+    var(--background-primary)
+  );
+  color: var(--color-orange, #ff9800);
+  border: 1px solid
+    color-mix(in srgb, var(--color-orange, #ff9800) 25%, transparent);
+}
+.pf-maint-chip--failed {
+  background: color-mix(
+    in srgb,
+    var(--color-red, #f44336) 10%,
+    var(--background-primary)
+  );
+  color: var(--color-red, #f44336);
+  border: 1px solid
+    color-mix(in srgb, var(--color-red, #f44336) 22%, transparent);
+}
+.pf-maint-chip--limited {
+  background: color-mix(
+    in srgb,
+    var(--color-yellow, #ffc107) 10%,
+    var(--background-primary)
+  );
+  color: var(--color-yellow, #ffc107);
+  border: 1px solid
+    color-mix(in srgb, var(--color-yellow, #ffc107) 22%, transparent);
+}
+
+.pf-maint-advanced {
+  margin: 18px 0;
+}
+.pf-maint-advanced summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px 0;
+  user-select: none;
+}
+.pf-maint-advanced summary:hover {
+  color: var(--text-normal);
+}
+
+.pf-maint-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.pf-maint-toolbar select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 12px;
+  cursor: pointer;
+}
+.pf-maint-toolbar select:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+.pf-maint-toolbar button {
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.pf-maint-toolbar button:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
+}
+.pf-maint-toolbar .mod-cta {
+  padding: 4px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  margin-left: auto;
+  transition: opacity 0.15s;
+}
+.pf-maint-toolbar .mod-cta:hover {
+  opacity: 0.85;
+}
+.pf-maint-toolbar .pf-maint-exec-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.pf-maint-table-wrap {
+  max-height: 60vh;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.pf-maint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.pf-maint-table th {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--background-modifier-border);
+  position: sticky;
+  top: 0;
+  background: var(--background-primary);
+  z-index: 1;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pf-maint-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.pf-maint-table tr:last-child td {
+  border-bottom: none;
+}
+.pf-maint-table tr:hover td {
+  background: var(--background-secondary);
+}
+
+.pf-maint-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.pf-maint-global {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.pf-maint-global button {
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.pf-maint-global button:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
+}
+
+/* ==========================================================================
+   SECTION 41 — Global Settings Tab Polish (Vercel-inspired)
+   ========================================================================== */
+.paperforge-settings-tabs {
+  gap: 0 !important;
+  margin-bottom: 20px !important;
+}
+.paperforge-settings-tab {
+  padding: 8px 20px !important;
+  font-size: 13px !important;
+  font-weight: 500;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.paperforge-settings-tab:hover {
+  color: var(--text-normal);
+}
+
+.paperforge-guide-item,
+.paperforge-nextstep-item {
+  border-radius: 6px !important;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.paperforge-guide-item:hover,
+.paperforge-nextstep-item:hover {
+  border-color: var(--background-modifier-border-hover);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.paperforge-summary-row {
+  transition: background 0.15s;
+}
+.paperforge-summary-row:hover {
+  background: var(--background-secondary) !important;
+}
+
+.paperforge-release-card {
+  border-radius: 8px !important;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.paperforge-release-card:hover {
+  border-color: var(--background-modifier-border-hover);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 8px rgba(0, 0, 0, 0.02);
+}
+
+/* Collapsible sections */
+.paperforge-collapsible-header,
+.paperforge-skills-collapse-header {
+  border-radius: 6px;
+  padding: 8px 10px !important;
+  transition: background 0.15s;
+  margin: 0 !important;
+}
+.paperforge-collapsible-header:hover,
+.paperforge-skills-collapse-header:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Clean up desc boxes */
+.paperforge-settings-desc {
+  border-radius: 8px !important;
+  font-size: 13px !important;
+}
+
+/* Runtime badge */
+.paperforge-runtime-badge {
+  border-radius: 6px !important;
+}
+
+/* CTA button for install */
+.paperforge-setup-bar {
+  border-radius: 8px !important;
+}
+
+.paperforge-setup-label {
+  font-size: 14px;
+}
+
+/* Modal step bar polish */
+.paperforge-step-dot .paperforge-step-num {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.paperforge-step-btn {
+  border-radius: 8px !important;
 }
 
 .paperforge-contextual-btn-icon {
-    font-size: 14px;
-    line-height: 1;
+  font-size: 14px;
+  line-height: 1;
 }
 
 .paperforge-status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 10px;
-    border: 1px solid var(--pf-border);
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.5;
-    background: var(--background-primary-alt);
-    color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border: 1px solid var(--pf-border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  background: var(--background-primary-alt);
+  color: var(--text-muted);
 }
 
 .paperforge-status-pill.pending {
-    background: color-mix(in srgb, var(--pf-paper-accent) 9%, var(--background-primary));
-    border-color: color-mix(in srgb, var(--pf-paper-accent) 20%, var(--pf-border));
-    color: var(--pf-paper-accent);
+  background: color-mix(
+    in srgb,
+    var(--pf-paper-accent) 9%,
+    var(--background-primary)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--pf-paper-accent) 20%,
+    var(--pf-border)
+  );
+  color: var(--pf-paper-accent);
 }
 
 .paperforge-status-pill.ok {
-    background: rgba(var(--background-modifier-success-rgb, 0, 200, 100), 0.12);
-    border-color: rgba(var(--background-modifier-success-rgb, 0, 200, 100), 0.2);
-    color: var(--text-success, var(--color-green));
+  background: rgba(var(--background-modifier-success-rgb, 0, 200, 100), 0.12);
+  border-color: rgba(var(--background-modifier-success-rgb, 0, 200, 100), 0.2);
+  color: var(--text-success, var(--color-green));
 }
 
 .paperforge-status-pill.fail {
-    background: rgba(var(--background-modifier-error-rgb, 255, 80, 80), 0.12);
-    border-color: rgba(var(--background-modifier-error-rgb, 255, 80, 80), 0.22);
-    color: var(--text-error);
+  background: rgba(var(--background-modifier-error-rgb, 255, 80, 80), 0.12);
+  border-color: rgba(var(--background-modifier-error-rgb, 255, 80, 80), 0.22);
+  color: var(--text-error);
 }
 
 .paperforge-status-pill-icon {
-    font-size: 11px;
-    line-height: 1;
+  font-size: 11px;
+  line-height: 1;
 }
 
 .paperforge-library-snapshot,
 .paperforge-system-status,
 .paperforge-global-actions {
-    padding: 20px;
-    background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
-    border: 1px solid color-mix(in srgb, var(--pf-warm-line) 20%, var(--pf-border));
-    border-radius: calc(var(--pf-radius) + 2px);
-    box-shadow: 0 1px 2px rgba(20, 18, 14, 0.04), 0 10px 24px rgba(20, 18, 14, 0.04);
-    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  padding: 20px;
+  background: color-mix(
+    in srgb,
+    var(--background-primary) 92%,
+    var(--background-secondary) 8%
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--pf-warm-line) 20%, var(--pf-border));
+  border-radius: calc(var(--pf-radius) + 2px);
+  box-shadow:
+    0 1px 2px rgba(20, 18, 14, 0.04),
+    0 10px 24px rgba(20, 18, 14, 0.04);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .paperforge-library-snapshot:hover,
 .paperforge-system-status:hover,
 .paperforge-global-actions:hover {
-    border-color: color-mix(in srgb, var(--pf-warm-line) 42%, var(--pf-border));
-    box-shadow: 0 2px 10px rgba(20, 18, 14, 0.08), 0 14px 28px rgba(20, 18, 14, 0.06);
+  border-color: color-mix(in srgb, var(--pf-warm-line) 42%, var(--pf-border));
+  box-shadow:
+    0 2px 10px rgba(20, 18, 14, 0.08),
+    0 14px 28px rgba(20, 18, 14, 0.06);
 }
 
 /* Paper mode */
 .paperforge-status-strip {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 10px 0 8px;
-    margin: 4px 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 0 8px;
+  margin: 4px 0 6px;
 }
 
 .paperforge-status-strip-left,
 .paperforge-status-strip-right {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .paperforge-paper-overview {
-    margin: 10px 0;
-    padding: 18px;
-    background: var(--background-primary);
-    border: 1px solid color-mix(in srgb, var(--pf-warm-line) 18%, var(--pf-border));
-    border-radius: calc(var(--pf-radius) + 2px);
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 16%, transparent);
-    transition: border-color 0.2s, box-shadow 0.2s;
+  margin: 10px 0;
+  padding: 18px;
+  background: var(--background-primary);
+  border: 1px solid
+    color-mix(in srgb, var(--pf-warm-line) 18%, var(--pf-border));
+  border-radius: calc(var(--pf-radius) + 2px);
+  box-shadow: inset 3px 0 0
+    color-mix(in srgb, var(--pf-paper-accent) 16%, transparent);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .paperforge-paper-overview:hover {
-    border-color: color-mix(in srgb, var(--pf-warm-line) 34%, var(--pf-border));
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 22%, transparent), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: color-mix(in srgb, var(--pf-warm-line) 34%, var(--pf-border));
+  box-shadow:
+    inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 22%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .paperforge-paper-overview-header {
-    margin-bottom: 8px;
+  margin-bottom: 8px;
 }
 
 .paperforge-paper-overview-title,
 .paperforge-discussion-title {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--pf-paper-accent);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pf-paper-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .paperforge-paper-overview-body {
-    font-size: 14px;
-    color: var(--text-normal);
-    line-height: 1.72;
+  font-size: 14px;
+  color: var(--text-normal);
+  line-height: 1.72;
 }
 
 .paperforge-paper-overview-excerpt {
-    white-space: pre-wrap;
-    word-break: break-word;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .paperforge-expand-container,
 .paperforge-discussion-viewall {
-    color: var(--pf-paper-accent);
+  color: var(--pf-paper-accent);
 }
 
 .paperforge-expand-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    margin-top: 8px;
-    padding: 4px 0;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    border-radius: var(--pf-radius);
-    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--pf-surface-alt) 50%, transparent));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+  border-radius: var(--pf-radius);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--pf-surface-alt) 50%, transparent)
+  );
 }
 
 .paperforge-expand-icon {
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    color: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none; /* Let container handle clicks */
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* Let container handle clicks */
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
 }
 
 .paperforge-expand-container:hover,
 .paperforge-discussion-viewall:hover {
-    color: var(--interactive-accent-hover);
+  color: var(--interactive-accent-hover);
 }
 
 .paperforge-expand-container:hover {
-    background: color-mix(in srgb, var(--pf-surface-alt) 80%, transparent);
+  background: color-mix(in srgb, var(--pf-surface-alt) 80%, transparent);
 }
 
 .paperforge-expand-container:hover .paperforge-expand-icon {
-    opacity: 1;
+  opacity: 1;
 }
 
 .paperforge-discussion-header {
-    margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 .paperforge-discussion-card {
-    margin: 10px 0;
-    padding: 18px;
-    background: var(--background-primary);
-    border: 1px solid color-mix(in srgb, var(--pf-warm-line) 18%, var(--pf-border));
-    border-radius: calc(var(--pf-radius) + 2px);
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 11%, transparent);
-    transition: border-color 0.2s, box-shadow 0.2s;
+  margin: 10px 0;
+  padding: 18px;
+  background: var(--background-primary);
+  border: 1px solid
+    color-mix(in srgb, var(--pf-warm-line) 18%, var(--pf-border));
+  border-radius: calc(var(--pf-radius) + 2px);
+  box-shadow: inset 3px 0 0
+    color-mix(in srgb, var(--pf-paper-accent) 11%, transparent);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .paperforge-discussion-card:hover {
-    border-color: color-mix(in srgb, var(--pf-warm-line) 34%, var(--pf-border));
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 16%, transparent), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: color-mix(in srgb, var(--pf-warm-line) 34%, var(--pf-border));
+  box-shadow:
+    inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 16%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .paperforge-discussion-item {
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--pf-border);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--pf-border);
 }
 
 .paperforge-discussion-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 .paperforge-discussion-q {
-    padding: 8px 10px;
-    margin-bottom: 8px;
-    border-radius: 6px;
-    background: color-mix(in srgb, #3e5a47 15%, transparent);
-    line-height: 1.5;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, #3e5a47 15%, transparent);
+  line-height: 1.5;
 }
 
 .paperforge-discussion-q-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-muted);
-    margin-right: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-right: 4px;
 }
 
 .paperforge-discussion-q-text {
-    color: var(--text-normal);
-    font-weight: 600;
+  color: var(--text-normal);
+  font-weight: 600;
 }
 
 .paperforge-discussion-a {
-    font-size: 14px;
-    color: var(--text-normal);
-    line-height: 1.68;
+  font-size: 14px;
+  color: var(--text-normal);
+  line-height: 1.68;
 }
 
 .paperforge-discussion-a-collapsed {
-    max-height: 200px;
-    overflow: hidden;
-    position: relative;
+  max-height: 200px;
+  overflow: hidden;
+  position: relative;
 }
 
 .paperforge-discussion-a-collapsed::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: linear-gradient(transparent, var(--background-primary));
-    pointer-events: none;
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(transparent, var(--background-primary));
+  pointer-events: none;
 }
 
 .paperforge-discussion-a-expanded {
-    max-height: none;
-    overflow: visible;
+  max-height: none;
+  overflow: visible;
 }
 
 .paperforge-discussion-item {
-    position: relative;
-    margin-bottom: 12px;
+  position: relative;
+  margin-bottom: 12px;
 }
 
 .paperforge-discussion-item:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
-
-
 .paperforge-discussion-viewall {
-    display: block;
-    text-align: right;
-    margin-top: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    transition: color 0.15s;
+  display: block;
+  text-align: right;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s;
 }
 
 .paperforge-discussion-viewall:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 .paperforge-paper-files {
-    display: flex;
-    gap: 8px;
-    margin: 10px 0;
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
 }
 
 .paperforge-status-strip-right .paperforge-contextual-btn {
-    min-height: 34px;
-    padding: 7px 12px;
-    background: color-mix(in srgb, var(--background-secondary) 78%, var(--background-primary));
-    border-color: color-mix(in srgb, var(--pf-border) 88%, var(--pf-warm-line));
-    color: var(--text-muted);
+  min-height: 34px;
+  padding: 7px 12px;
+  background: color-mix(
+    in srgb,
+    var(--background-secondary) 78%,
+    var(--background-primary)
+  );
+  border-color: color-mix(in srgb, var(--pf-border) 88%, var(--pf-warm-line));
+  color: var(--text-muted);
 }
 
 .paperforge-status-strip-right .paperforge-contextual-btn:hover {
-    background: color-mix(in srgb, var(--background-modifier-hover) 78%, var(--background-primary));
-    border-color: color-mix(in srgb, var(--pf-border-hover) 82%, var(--pf-warm-line));
-    color: var(--text-normal);
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 78%,
+    var(--background-primary)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--pf-border-hover) 82%,
+    var(--pf-warm-line)
+  );
+  color: var(--text-normal);
 }
 
 .paperforge-technical-details {
-    margin: 8px 0 4px;
+  margin: 8px 0 4px;
 }
 
 .paperforge-technical-details-toggle {
-    width: 100%;
-    min-height: 34px;
-    padding: 8px 0;
-    background: none;
-    border: none;
-    border-radius: 0;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: left;
-    letter-spacing: 0.02em;
-    transition: color 0.15s;
+  width: 100%;
+  min-height: 34px;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
 }
 
 .paperforge-technical-details-toggle:hover {
-    background: none;
-    border-color: transparent;
-    color: var(--text-normal);
+  background: none;
+  border-color: transparent;
+  color: var(--text-normal);
 }
 
 .paperforge-technical-details-body {
-    margin-top: 0;
-    padding: 8px 0 0;
-    background: none;
-    border: none;
-    border-radius: 0;
-    font-size: 12px;
+  margin-top: 0;
+  padding: 8px 0 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font-size: 12px;
 }
 
 .paperforge-technical-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 6px 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--pf-border) 72%, transparent);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--pf-border) 72%, transparent);
 }
 
 .paperforge-technical-row:last-child {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 .paperforge-technical-label {
-    color: var(--text-faint);
-    flex-shrink: 0;
-    margin-right: 12px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+  margin-right: 12px;
 }
 
 .paperforge-technical-value {
-    color: var(--text-muted);
-    max-width: 60%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-align: right;
+  color: var(--text-muted);
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
 }
 
 .paperforge-workflow-toggles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px;
-    margin: 0 0 10px;
-    padding: 0 0 10px;
-    background: none;
-    border: none;
-    border-bottom: 1px solid color-mix(in srgb, var(--pf-border) 72%, transparent);
-    border-radius: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0 0 10px;
+  padding: 0 0 10px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--pf-border) 72%, transparent);
+  border-radius: 0;
 }
 
 .paperforge-workflow-toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 34px;
-    padding: 6px 10px;
-    background: color-mix(in srgb, var(--background-primary-alt) 88%, var(--background-primary));
-    border: 1px solid color-mix(in srgb, var(--pf-border) 82%, var(--pf-paper-accent));
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--text-muted);
-    user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 10px;
+  background: color-mix(
+    in srgb,
+    var(--background-primary-alt) 88%,
+    var(--background-primary)
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--pf-border) 82%, var(--pf-paper-accent));
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  user-select: none;
 }
 
 .paperforge-workflow-checkbox {
-    width: 15px;
-    height: 15px;
-    margin: 0;
-    cursor: pointer;
-    accent-color: var(--interactive-accent);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--interactive-accent);
 }
 
 .paperforge-workflow-toggle-label {
-    font-weight: 600;
-    color: var(--text-normal);
+  font-weight: 600;
+  color: var(--text-normal);
 }
 
 .paperforge-workflow-toggle-hint {
-    color: var(--text-faint);
-    font-size: 11px;
+  color: var(--text-faint);
+  font-size: 11px;
 }
 
 /* Collection mode */
 .paperforge-collection-header {
-    padding: 10px 0 0 0;
-    margin-bottom: -12px;
+  padding: 10px 0 0 0;
+  margin-bottom: -12px;
 }
 
 .paperforge-collection-title {
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--text-normal);
-    line-height: 1.3;
-    margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.3;
+  margin: 0;
 }
 
-
-
 .paperforge-global-view {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    max-width: 800px;
-    margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .paperforge-global-view .paperforge-section-label,
 .paperforge-workflow-overview .paperforge-section-label {
-    margin-bottom: 12px;
+  margin-bottom: 12px;
 }
 
 .paperforge-workflow-overview {
-    padding: 20px;
-    background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
-    border: 1px solid color-mix(in srgb, var(--pf-warm-line) 20%, var(--pf-border));
-    border-radius: calc(var(--pf-radius) + 2px);
-    box-shadow: 0 1px 2px rgba(20, 18, 14, 0.04), 0 10px 24px rgba(20, 18, 14, 0.04);
-    transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 20px;
+  background: color-mix(
+    in srgb,
+    var(--background-primary) 92%,
+    var(--background-secondary) 8%
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--pf-warm-line) 20%, var(--pf-border));
+  border-radius: calc(var(--pf-radius) + 2px);
+  box-shadow:
+    0 1px 2px rgba(20, 18, 14, 0.04),
+    0 10px 24px rgba(20, 18, 14, 0.04);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .paperforge-workflow-overview:hover {
-    border-color: color-mix(in srgb, var(--pf-warm-line) 42%, var(--pf-border));
-    box-shadow: 0 2px 10px rgba(20, 18, 14, 0.08), 0 14px 28px rgba(20, 18, 14, 0.06);
+  border-color: color-mix(in srgb, var(--pf-warm-line) 42%, var(--pf-border));
+  box-shadow:
+    0 2px 10px rgba(20, 18, 14, 0.08),
+    0 14px 28px rgba(20, 18, 14, 0.06);
 }
 
 .paperforge-workflow-funnel {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
-    gap: 10px 6px;
-    align-items: stretch;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  gap: 10px 6px;
+  align-items: stretch;
 }
 
 @container pfpanel (max-width: 380px) {
-    .paperforge-workflow-funnel {
-        grid-template-columns: 1fr auto 1fr;
-    }
-    .paperforge-workflow-funnel > div:nth-child(4) {
-        display: none;
-    }
-    .paperforge-workflow-stage {
-        max-width: none;
-        justify-self: stretch;
-    }
+  .paperforge-workflow-funnel {
+    grid-template-columns: 1fr auto 1fr;
+  }
+  .paperforge-workflow-funnel > div:nth-child(4) {
+    display: none;
+  }
+  .paperforge-workflow-stage {
+    max-width: none;
+    justify-self: stretch;
+  }
 }
 
 @container pfpanel (max-width: 220px) {
-    .paperforge-workflow-funnel {
-        grid-template-columns: 1fr;
-    }
-    .paperforge-workflow-arrow {
-        display: none;
-    }
-    .paperforge-workflow-stage {
-        max-width: none;
-        justify-self: stretch;
-    }
+  .paperforge-workflow-funnel {
+    grid-template-columns: 1fr;
+  }
+  .paperforge-workflow-arrow {
+    display: none;
+  }
+  .paperforge-workflow-stage {
+    max-width: none;
+    justify-self: stretch;
+  }
 }
 
 .paperforge-workflow-stage {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 14px 16px;
-    background: color-mix(in srgb, var(--background-primary-alt) 86%, var(--background-primary) 14%);
-    border: 1px solid color-mix(in srgb, var(--pf-collection-accent) 22%, var(--pf-border));
-    border-radius: 8px;
-    min-width: 0;
-    width: 100%;
-    max-width: 160px;
-    justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+  background: color-mix(
+    in srgb,
+    var(--background-primary-alt) 86%,
+    var(--background-primary) 14%
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--pf-collection-accent) 22%, var(--pf-border));
+  border-radius: 8px;
+  min-width: 0;
+  width: 100%;
+  max-width: 160px;
+  justify-self: center;
 }
 
 .paperforge-workflow-stage-value {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--pf-collection-accent);
-    line-height: 1.2;
-    letter-spacing: -0.5px;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--pf-collection-accent);
+  line-height: 1.2;
+  letter-spacing: -0.5px;
 }
 
 .paperforge-workflow-stage-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    margin-top: 4px;
-    text-align: center;
-    word-break: break-word;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 4px;
+  text-align: center;
+  word-break: break-word;
 }
 
 .paperforge-workflow-arrow {
-    color: var(--text-faint);
-    font-size: 11px;
-    flex-shrink: 0;
-    align-self: center;
+  color: var(--text-faint);
+  font-size: 11px;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .paperforge-collection-ocr-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .paperforge-issue-summary {
-    margin: 10px 0;
-    padding: 12px 14px;
-    background: var(--background-primary);
-    border: 1px solid var(--pf-border);
-    border-left: 3px solid var(--pf-warm-line);
-    border-radius: var(--pf-radius);
+  margin: 10px 0;
+  padding: 12px 14px;
+  background: var(--background-primary);
+  border: 1px solid var(--pf-border);
+  border-left: 3px solid var(--pf-warm-line);
+  border-radius: var(--pf-radius);
 }
 
 .paperforge-issue-summary .paperforge-section-label {
-    border-left-color: var(--pf-warm-line);
-    color: var(--text-normal);
+  border-left-color: var(--pf-warm-line);
+  color: var(--text-normal);
 }
 
 .paperforge-issue-list {
-    margin: 8px 0 12px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  margin: 8px 0 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .paperforge-issue-item {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-normal);
-    padding: 6px 10px;
-    background: color-mix(in srgb, var(--background-secondary) 50%, transparent);
-    border-radius: calc(var(--pf-radius) - 2px);
-    display: flex;
-    align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--background-secondary) 50%, transparent);
+  border-radius: calc(var(--pf-radius) - 2px);
+  display: flex;
+  align-items: center;
 }
 
 .paperforge-issue-actions,
 .paperforge-collection-actions {
-    display: flex;
-    gap: 8px;
+  display: flex;
+  gap: 8px;
 }
 
 .paperforge-issue-actions {
-    margin-top: 8px;
+  margin-top: 8px;
 }
 
 .paperforge-collection-actions {
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid color-mix(in srgb, var(--pf-border) 82%, var(--pf-warm-line));
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid
+    color-mix(in srgb, var(--pf-border) 82%, var(--pf-warm-line));
 }
 
 /* Global mode */
 .paperforge-snapshot-pills {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .paperforge-snapshot-pill {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 14px 16px;
-    background: color-mix(in srgb, var(--background-primary-alt) 86%, var(--background-primary) 14%);
-    border: 1px solid color-mix(in srgb, var(--pf-global-accent) 22%, var(--pf-border));
-    border-radius: 8px;
-    min-width: 72px;
-    flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+  background: color-mix(
+    in srgb,
+    var(--background-primary-alt) 86%,
+    var(--background-primary) 14%
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--pf-global-accent) 22%, var(--pf-border));
+  border-radius: 8px;
+  min-width: 72px;
+  flex: 1;
 }
 
 .paperforge-snapshot-value {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--pf-global-accent);
-    line-height: 1.2;
-    letter-spacing: -0.5px;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--pf-global-accent);
+  line-height: 1.2;
+  letter-spacing: -0.5px;
 }
 
 .paperforge-snapshot-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    margin-top: 4px;
-    text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 4px;
+  text-align: center;
 }
 
 .paperforge-status-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .paperforge-status-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
 }
 
 .paperforge-status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: var(--pf-border);
-    transition: background 0.3s;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--pf-border);
+  transition: background 0.3s;
 }
 
 .paperforge-status-dot.ok {
-    background: var(--text-success);
+  background: var(--text-success);
 }
 
 .paperforge-status-dot.fail {
-    background: var(--text-error);
+  background: var(--text-error);
 }
 
 .paperforge-status-label {
-    font-size: 13px;
-    color: var(--text-muted);
-    min-width: 85px;
+  font-size: 13px;
+  color: var(--text-muted);
+  min-width: 85px;
 }
 
 .paperforge-status-detail {
-    font-size: 13px;
-    color: var(--text-faint);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  font-size: 13px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .paperforge-global-actions-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .paperforge-collection-actions .paperforge-contextual-btn,
 .paperforge-global-actions-row .paperforge-contextual-btn {
-    min-height: 36px;
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .paperforge-global-actions-row .paperforge-contextual-btn.primary {
-    background: color-mix(in srgb, var(--pf-global-accent) 86%, black 14%);
-    border-color: color-mix(in srgb, var(--pf-global-accent) 90%, black 10%);
-    color: var(--text-on-accent);
+  background: color-mix(in srgb, var(--pf-global-accent) 86%, black 14%);
+  border-color: color-mix(in srgb, var(--pf-global-accent) 90%, black 10%);
+  color: var(--text-on-accent);
 }
 
 .paperforge-collection-actions .paperforge-contextual-btn.primary {
-    background: color-mix(in srgb, var(--pf-collection-accent) 84%, black 16%);
-    border-color: color-mix(in srgb, var(--pf-collection-accent) 88%, black 12%);
-    color: var(--text-on-accent);
+  background: color-mix(in srgb, var(--pf-collection-accent) 84%, black 16%);
+  border-color: color-mix(in srgb, var(--pf-collection-accent) 88%, black 12%);
+  color: var(--text-on-accent);
 }
 
 .paperforge-global-actions-row .paperforge-contextual-btn.primary:hover {
-    background: color-mix(in srgb, var(--pf-global-accent) 78%, black 22%);
-    border-color: color-mix(in srgb, var(--pf-global-accent) 82%, black 18%);
+  background: color-mix(in srgb, var(--pf-global-accent) 78%, black 22%);
+  border-color: color-mix(in srgb, var(--pf-global-accent) 82%, black 18%);
 }
 
 .paperforge-collection-actions .paperforge-contextual-btn.primary:hover {
-    background: color-mix(in srgb, var(--pf-collection-accent) 76%, black 24%);
-    border-color: color-mix(in srgb, var(--pf-collection-accent) 80%, black 20%);
+  background: color-mix(in srgb, var(--pf-collection-accent) 76%, black 24%);
+  border-color: color-mix(in srgb, var(--pf-collection-accent) 80%, black 20%);
 }
 
 .paperforge-collection-view .paperforge-ocr-section {
-    padding: 18px 18px 16px;
-    background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
-    border-color: color-mix(in srgb, var(--pf-warm-line) 20%, var(--background-modifier-border));
-    box-shadow: 0 1px 2px rgba(20, 18, 14, 0.04), 0 8px 20px rgba(20, 18, 14, 0.04);
+  padding: 18px 18px 16px;
+  background: color-mix(
+    in srgb,
+    var(--background-secondary) 90%,
+    var(--background-primary) 10%
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--pf-warm-line) 20%,
+    var(--background-modifier-border)
+  );
+  box-shadow:
+    0 1px 2px rgba(20, 18, 14, 0.04),
+    0 8px 20px rgba(20, 18, 14, 0.04);
 }
 
 .paperforge-collection-view .paperforge-ocr-count-label {
-    font-size: 11px;
+  font-size: 11px;
 }
 
 .theme-dark .paperforge-collection-view .paperforge-ocr-section,
@@ -2432,16 +3561,16 @@
 .theme-dark .paperforge-system-status,
 .theme-dark .paperforge-global-actions,
 .theme-dark .paperforge-workflow-overview {
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Dark theme overrides */
 .theme-dark .paperforge-status-pill.ok {
-    background: rgba(100, 200, 120, 0.15);
+  background: rgba(100, 200, 120, 0.15);
 }
 
 .theme-dark .paperforge-status-pill.fail {
-    background: rgba(255, 100, 100, 0.15);
+  background: rgba(255, 100, 100, 0.15);
 }
 
 .theme-dark .paperforge-library-snapshot:hover,
@@ -2449,143 +3578,248 @@
 .theme-dark .paperforge-global-actions:hover,
 .theme-dark .paperforge-workflow-overview:hover,
 .theme-dark .paperforge-workflow-toggles:hover {
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .theme-dark .paperforge-paper-overview:hover {
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 22%, transparent), 0 2px 12px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 22%, transparent),
+    0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .theme-dark .paperforge-discussion-card:hover {
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 16%, transparent), 0 2px 12px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 16%, transparent),
+    0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .paperforge-embed-progress-text {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 4px;
-    text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-align: center;
 }
 
 .paperforge-embed-progress-key {
-    font-size: 10px;
-    color: var(--text-faint);
-    font-family: var(--font-monospace);
+  font-size: 10px;
+  color: var(--text-faint);
+  font-family: var(--font-monospace);
 }
 
 /* ── Orphan Modal ── */
 .paperforge-modal-desc {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 16px;
 }
 
 .paperforge-orphan-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 20px;
-    max-height: 400px;
-    overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .paperforge-orphan-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 10px 12px;
-    background: var(--background-secondary);
-    border-radius: 6px;
-    gap: 12px;
-    cursor: pointer;
-    transition: opacity 0.15s;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  gap: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
 .paperforge-orphan-row:hover {
-    background: var(--background-modifier-hover);
+  background: var(--background-modifier-hover);
 }
 .paperforge-orphan-dimmed {
-    opacity: 0.45;
+  opacity: 0.45;
 }
 .paperforge-orphan-dimmed:hover {
-    opacity: 0.6;
+  opacity: 0.6;
 }
 
 .paperforge-orphan-info {
-    flex: 1;
-    min-width: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .paperforge-orphan-key {
-    font-size: 12px;
-    font-weight: 600;
-    font-family: var(--font-monospace);
-    color: var(--text-normal);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-monospace);
+  color: var(--text-normal);
 }
 
 .paperforge-orphan-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .paperforge-orphan-explain {
-    font-size: 10px;
-    color: var(--text-faint);
-    margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: 4px;
 }
 
 .paperforge-orphan-title {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 2px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .paperforge-orphan-meta {
-    font-size: 11px;
-    color: var(--text-faint);
-    margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 4px;
 }
 
 .paperforge-orphan-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    flex-shrink: 0;
-    align-items: flex-start;
-    max-width: 160px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex-shrink: 0;
+  align-items: flex-start;
+  max-width: 160px;
 }
 
 .paperforge-tag {
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .tag-pdf {
-    background: rgba(76, 175, 80, 0.15);
-    color: #4caf50;
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
 }
 
 .tag-nopdf {
-    background: var(--background-modifier-border);
-    color: var(--text-muted);
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
 }
 
 .tag-collection {
-    background: rgba(33, 150, 243, 0.12);
-    color: #2196f3;
+  background: rgba(33, 150, 243, 0.12);
+  color: #2196f3;
 }
 
 .paperforge-modal-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ── OCR Maintenance UX (actionability-first) ── */
+
+.pf-maint-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pf-maint-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.pf-maint-stat {
+  background: var(--background-primary);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  padding: 10px;
+  text-align: center;
+}
+
+.pf-maint-stat strong {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pf-maint-stat span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.pf-maint-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pf-maint-card {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  padding: 12px;
+}
+
+.pf-maint-card p {
+  margin: 4px 0 8px;
+}
+
+.pf-maint-chip {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.pf-maint-chip--ok {
+  background: color-mix(in srgb, var(--text-success) 12%, transparent);
+  color: var(--text-success);
+}
+
+.pf-maint-chip--rebuild {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--interactive-accent);
+}
+
+.pf-maint-chip--failed {
+  background: color-mix(in srgb, var(--text-error) 14%, transparent);
+  color: var(--text-error);
+}
+
+.pf-maint-chip--limited {
+  background: color-mix(in srgb, var(--text-warning) 14%, transparent);
+  color: var(--text-warning);
+}
+
+.pf-maint-advanced {
+  margin-top: 12px;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  padding: 8px;
+}
+
+.pf-maint-advanced summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.pf-maint-advanced summary:hover {
+  color: var(--text-normal);
 }

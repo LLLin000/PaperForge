@@ -1,0 +1,4307 @@
+{
+  "mappable_block_count": 430,
+  "found_count": 346,
+  "missing_count": 84,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "frontiers Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "TYPE Review PUBLISHED 10 July 2025 DOI 10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{†} $These authors have contributed equally to this work and share first auth",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Insights into bone and cartilage responses to pulsed electromagnetic field stimu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Beatrice Masante $ ^{1,2\\dagger} $, Stefano Gabetti $ ^{1,2\\dagger} $, Joao C. S",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $Department of Mechanical and Aerospace Engineering and Polito $ ^{BIC} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "01",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2642
+    },
+    {
+      "block_id": "p1:21",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "1 Introduction",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Bone fragility fractures and osteoarthritis (OA) are two of the most prevalent d",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although bone has an intrinsic capacity for regeneration and functional recovery",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2327
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Beside conventional surgical procedures, bone and cartilage tissue engineering (",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3619
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Among the biophysical stimulations explored to promote bone and cartilage healin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5998
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "02",
+      "found_in_fulltext": true,
+      "fulltext_offset": 358
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "tissue properties. IC mode operates at low frequencies (6–500 Hz) and low intens",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The main effect of such stimulations is to induce a time-varying electric field ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Indeed, clinical studies performed using different devices showed biological eff",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8234
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This review aims to illustrate the advancements made over the past three decades",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9508
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2 Background to composition and electroactive properties of bone and articular c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10193
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Bone and articular cartilage are connective tissues composed predominantly by th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10290
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.1 Bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11791
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Bone tissue is considered a composite material consisting of an inorganic (65%) ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11800
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "03",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5243
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 1 Summary of the main differences observed between bone and cartilage tiss",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The dielectric and piezoelectric features of natural bone, responsible for the b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13524
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The primary origin of bone piezoelectricity arises from the noncentrosymmetric s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14804
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.2 Articular cartilage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15926
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage is a highly specialized and complex connective tissue consis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15950
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage tissue has been shown to regulate its own metabolism through",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17278
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The electrical properties of the cartilage tissue arise from the flow of free ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17977
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "04",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20830
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "properties (Denning et al., 2014). Notably, as in bone, the piezoelectricity of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18893
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3 PEMF stimulators",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19344
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Several PEMF stimulators, both commercially available and custom-made, were used",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19363
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4 Quantitative descriptor for comparing PEMF stimulation protocols",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21195
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To address the challenge of comparing PEMF stimulation protocols and biological ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21262
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "05",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28477
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 2 Commercially available PEMF stimulators and operating parameters.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "waveform, and the exposure duration to the magnetic field. In detail, we calcula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21696
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ D=B_{r m s}\\cdot t_{e x p} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(1)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ B_{rms} $ is the root mean square value of the magnetic field intensity ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The $ t_{exp} $ was calculated as in Equation 2:",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ t_{\\mathrm{e x p}}=E D_{d a y}\\cdot E D_{w e e k}\\cdot n_{w e e k}, $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(2)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 3 Formulas adopted for the calculation of $ B_{rms} $ depending on the wav",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ ED_{day} $ is the daily exposure duration to the PEMF stimulation (h/day",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "06",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5263
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In Sections 5, 6, the PEMF dose has been calculated only for the studies that pr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22781
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition, for visually representing and using the PEMF dose descriptor, we pr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23457
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "5 In vitro PEMF studies",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24213
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Over the past few decades, numerous in vitro experiments have been conducted on ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24237
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "5.1 Bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24583
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "For investigating the effects of PEMF stimulation on bone stem cells, differenti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24592
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Several researchers adopted a specific PEMF parameter combination (B = 1.5 mT, f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25016
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "07",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5474
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 4 In vitro studies on the effects of PEMF stimulation on bone tissue.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(Continued on following page)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26552
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "08",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31005
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 4 (Continued) In vitro studies on the effects of PEMF stimulation on bone ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "involved in osteogenic differentiation, and increased microRNA and the vascular ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26630
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "09",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3799
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Besides the differentiation of hBMMSCs toward osteoblasts, it was also demonstra",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Interestingly, Zhou and colleagues demonstrated that cell proliferation can be a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, although the high variability in operating parameters, it is interes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28502
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "5.2 Quantitative comparison among in vitro studies on PEMF stimulation for bone ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30582
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Figure 3 shows the distribution of the root mean square values of the magnetic f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32897
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Interestingly, in studies where the applied $ B_{rms} $ was below 0.3 mT and the",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Remarkably, for $ B_{rms} $ values above 0.3 mT, intensity-dependent effects cou",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:10",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p10:11",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(corresponding to $D = 0.11$ mT•h) did not show any significant differences in c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33404
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To sum up, the proposed quantitative comparison made it possible to deduce that,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34755
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "5.3 Cartilage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35245
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "PEMF stimulation has recently gained attention also as a promising non-invasive ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35259
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "11",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5081
+    },
+    {
+      "block_id": "p11:11",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 5 In vitro studies on the effects of PEMF stimulation on cartilage tissue.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(day) applied to human umbilical cord derived MSCs was observed to significantly",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36667
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "12",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3254
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2 mT, f = 15 Hz, sinusoidal waveform) to chondroprogenitors harvested from non-d",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Briefly, several studies demonstrated that PEMF may have beneficial influence fo",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "5.4 Quantitative comparison among in vitro studies on PEMF stimulation for carti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37753
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Similarly to what was reported for the in vitro studies on bone cells, the wide ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37845
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In contrast, for $D$ values below 3.5 mT•h, no clear relationship between PEMF p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39300
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Overall, the quantitative comparison of in vitro studies applying PEMF stimulati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40249
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "6 In vivo animal studies",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40723
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The effects of PEMF stimulation on bone, cartilage, and osteochondral tissues ha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40748
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "6.1 Bone",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Analogously to in vitro studies, the in vivo investigation of the effects of PEM",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As regards the treatment of bone fractures, in 1974 Bassett and Pawluk conducted",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41562
+    },
+    {
+      "block_id": "p13:14",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p13:15",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "13",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3819
+    },
+    {
+      "block_id": "p13:16",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "repaired tissue after fracture (Andrew et al., 1974). Subsequent experiments fur",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41836
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Recently, PEMF stimulation has also been explored as a potential adjuvant therap",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43317
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Over the past decade, researchers have also focused on exploring the potential o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45172
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "14",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3614
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 6 In vivo studies on the effects of PEMF stimulation on bone tissue.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(Continued on following page)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26552
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "15",
+      "found_in_fulltext": true,
+      "fulltext_offset": 392
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 6 (Continued) In vivo studies on the effects of PEMF stimulation on bone t",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "female rats with osteopenia and subjected them to PEMF treatment (B = 0.5 mT, f ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45636
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "16",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3845
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "higher B values (B = 2.5 and 4.5 mT, f = 3,000–50,000 Hz) reduced these effects.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Since osteopenia and osteoporosis can also result from disuse conditions, such a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Overall, these studies suggest that PEMF can promote bone health by modulating o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47476
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "6.2 Quantitative comparison among in vivo studies on PEMF stimulation for bone t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47861
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The in vivo investigations of the effects of PEMF stimulation on bone tissue rep",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47947
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Interestingly, regarding the use of PEMF for the treatment of osteoporosis-relat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48601
+    },
+    {
+      "block_id": "p17:8",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Notably, most of the studies that reported positive effects of in vivo PEMF stim",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51077
+    },
+    {
+      "block_id": "p17:9",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p17:10",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "17",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5155
+    },
+    {
+      "block_id": "p17:11",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p18:4",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ B_{rms} $ values were provided, the corresponding protocols did not prove effe",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "6.3 Cartilage and osteochondral tissue",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51656
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The promising results of in vitro application of PEMF on cartilage regeneration ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51695
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Regarding the direct treatment of OA, Veronesi and colleagues exposed guinea pig",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54126
+    },
+    {
+      "block_id": "p18:9",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p18:10",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4250
+    },
+    {
+      "block_id": "p18:11",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p19:0",
+      "page": 19,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:1",
+      "page": 19,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p19:2",
+      "page": 19,
+      "role": "table_caption",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "TABLE 7 In vivo studies on the effects of PEMF stimulation on cartilage and oste",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:4",
+      "page": 19,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "OA. Both PEMF stimulation (B = 1.6 mT, f = 75 Hz, square waveform, for 1 h/day) ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55514
+    },
+    {
+      "block_id": "p19:6",
+      "page": 19,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "In summary, it has been demonstrated that PEMF treatment can improve cartilage h",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56611
+    },
+    {
+      "block_id": "p19:7",
+      "page": 19,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p19:8",
+      "page": 19,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "19",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5179
+    },
+    {
+      "block_id": "p19:9",
+      "page": 19,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p20:0",
+      "page": 20,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:1",
+      "page": 20,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p20:4",
+      "page": 20,
+      "role": "subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "6.4 Quantitative comparison among in vivo studies on PEMF stimulation for cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57146
+    },
+    {
+      "block_id": "p20:5",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Besides variations in the intensity of the imposed magnetic field (resulting in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57255
+    },
+    {
+      "block_id": "p20:6",
+      "page": 20,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "7 Concluding remarks",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58302
+    },
+    {
+      "block_id": "p20:7",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Over the past three decades, due to its non-invasiveness and promising outcomes,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58323
+    },
+    {
+      "block_id": "p20:9",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "However, this variability in experimental set-ups and imposed PEMF parameters co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59570
+    },
+    {
+      "block_id": "p20:10",
+      "page": 20,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p20:11",
+      "page": 20,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 357
+    },
+    {
+      "block_id": "p20:12",
+      "page": 20,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p21:0",
+      "page": 21,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:1",
+      "page": 21,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p21:2",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "evidence with greater translational relevance. These examples demonstrate that i",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:3",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "To facilitate the comparability of past and future research, here we proposed a ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:4",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The method proposed for quantitative comparison is affected by some limitations.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60940
+    },
+    {
+      "block_id": "p21:5",
+      "page": 21,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "For the future of PEMF research, it would be desirable to use, at least initiall",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61844
+    },
+    {
+      "block_id": "p21:7",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "In conclusion, this review provides a comprehensive overview of the current stat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63721
+    },
+    {
+      "block_id": "p21:8",
+      "page": 21,
+      "role": "subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Author contributions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64791
+    },
+    {
+      "block_id": "p21:9",
+      "page": 21,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "BM: Conceptualization, Investigation, Visualization, Writing – original draft. S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64814
+    },
+    {
+      "block_id": "p21:10",
+      "page": 21,
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Funding",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65143
+    },
+    {
+      "block_id": "p21:11",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The author(s) declare that financial support was received for the research and/o",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:12",
+      "page": 21,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p21:13",
+      "page": 21,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "21",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2481
+    },
+    {
+      "block_id": "p21:14",
+      "page": 21,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p22:0",
+      "page": 22,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:1",
+      "page": 22,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p22:2",
+      "page": 22,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Marie Skłodowska-Curie Actions Individual Postdoctoral Fellowship 2023 (awarded ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:3",
+      "page": 22,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acknowledgments",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:4",
+      "page": 22,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The authors are grateful to Prof. Aldo Canova for technical explanations about P",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65323
+    },
+    {
+      "block_id": "p22:5",
+      "page": 22,
+      "role": "subsection_heading",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "Conflict of interest",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65562
+    },
+    {
+      "block_id": "p22:7",
+      "page": 22,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Generative AI statement",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65589
+    },
+    {
+      "block_id": "p22:8",
+      "page": 22,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65797
+    },
+    {
+      "block_id": "p22:9",
+      "page": 22,
+      "role": "backmatter_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Publisher's note",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65615
+    },
+    {
+      "block_id": "p22:10",
+      "page": 22,
+      "role": "backmatter_body",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The author(s) declare that no Generative AI was used in the creation of this man",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71733
+    },
+    {
+      "block_id": "p22:11",
+      "page": 22,
+      "role": "backmatter_body",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All claims expressed in this article are solely those of the authors and do not ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:12",
+      "page": 22,
+      "role": "backmatter_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Supplementary material",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:13",
+      "page": 22,
+      "role": "backmatter_body",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The Supplementary Material for this article can be found online at: https://www.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65634
+    },
+    {
+      "block_id": "p22:14",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Amin, B., Elahi, M. A., Shahzad, A., Porter, E., and O'Halloran, M. (2019). A re",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65808
+    },
+    {
+      "block_id": "p22:15",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Amini, A. R., Laurencin, C. T., and Nukavarapu, S. P. (2013). Bone tissue engine",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66041
+    },
+    {
+      "block_id": "p22:16",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ampatzis, C., Zervoudis, S., Iatrakis, G., and Mastorakos, G. (2022). Effect of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66164
+    },
+    {
+      "block_id": "p22:17",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Andrew, C., Bassett, L., Pawluk, R. J., and Pilla, A. A. (1974). Augmentation of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66353
+    },
+    {
+      "block_id": "p22:18",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Androjna, C., Fort, B., Zborowski, M., and Midura, R. J. (2014). Pulsed electrom",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66548
+    },
+    {
+      "block_id": "p22:19",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Androjna, C., Yee, C. S., White, C. R., Waldorff, E. I., Ryaby, J. T., Zborowski",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66837
+    },
+    {
+      "block_id": "p22:20",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bagheri, L., Pellati, A., Rizzo, P., Aquila, G., Massari, L., De Mattei, M., et ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67134
+    },
+    {
+      "block_id": "p22:21",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bagnato, G. L., Miceli, G., Marino, N., Sciortino, D., and Bagnato, G. F. (2016)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67432
+    },
+    {
+      "block_id": "p22:22",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bai, Y., Li, X., Wu, K., Heng, B. C., Zhang, X., and Deng, X. (2024). Biophysica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67689
+    },
+    {
+      "block_id": "p22:23",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bancroft, G. N., Sikavitsas, V. I., van den Dolder, J., Sheffield, T. L., Ambros",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67867
+    },
+    {
+      "block_id": "p22:24",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bao, Z., Fan, M., Ma, L., Duan, Q., and Jiang, W. (2019). The effects of pulsed ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68196
+    },
+    {
+      "block_id": "p22:25",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Barak, S., Neuman, M., Iezzi, G., Piattelli, A., Perrotti, V., and Gabet, Y. (20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68477
+    },
+    {
+      "block_id": "p22:26",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Barbosa, F., Ferreira, F. C., and Silva, J. C. (2022). Piezoelectric electrospun",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68738
+    },
+    {
+      "block_id": "p22:27",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Barker, A. T., and Lunt, M. J. (1983). The effects of pulsed magnetic fields of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68958
+    },
+    {
+      "block_id": "p22:28",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bassett, C. A., Mitchell, S. N., Norton, L., and Pilla, A. (1978). Repair of non",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69163
+    },
+    {
+      "block_id": "p22:29",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bassett, C. A., Pilla, A. A., and Pawluk, R. J. (1977). A non-operative salvage ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69317
+    },
+    {
+      "block_id": "p22:30",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Baxter, F. R., Bowen, C. R., Turner, I. G., and Dent, A. C. E. (2010). Electrica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69581
+    },
+    {
+      "block_id": "p22:31",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bentley, G., Biant, L. C., Vijayan, S., Macmull, S., Skinner, J. A., and Carring",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69783
+    },
+    {
+      "block_id": "p22:32",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Beşkardeş, I. G., Aydın, G., Bektaş, Ş., Cengiz, A., and Gümüşderelioğlu, M. (20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70134
+    },
+    {
+      "block_id": "p22:33",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bloise, N., Petecchia, L., Ceccarelli, G., Fassina, L., Usai, C., Bertoglio, F.,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70391
+    },
+    {
+      "block_id": "p22:34",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Borgström, F., Karlsson, L., Ortsäter, G., Norton, N., Halbout, P., Cooper, C., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70677
+    },
+    {
+      "block_id": "p22:35",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Brighton, C. T., Friedenberg, Z. B., Zemsky, L. M., and Pollis, P. R. (1975). Di",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70897
+    },
+    {
+      "block_id": "p22:36",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Cadossi, R., Massari, L., Racine-Avila, J., and Aaron, R. K. (2020). Pulsed elec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71159
+    },
+    {
+      "block_id": "p22:37",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Cai, J., Li, W., Sun, T., Li, X., Luo, E., and Jing, D. (2018). Pulsed electroma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71422
+    },
+    {
+      "block_id": "p22:38",
+      "page": 22,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p22:39",
+      "page": 22,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "22",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3888
+    },
+    {
+      "block_id": "p22:40",
+      "page": 22,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p23:0",
+      "page": 23,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:1",
+      "page": 23,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p23:2",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Cebrián, J. L., Gallego, P., Francés, A., Sánchez, P., Manrique, E., Marco, F., ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:3",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Celik, C., Franco-Obregón, A., Lee, E. H., Hui, J. H., and Yang, Z. (2021). Dire",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:4",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Chalidis, B., Sachinis, N., Assiotis, A., Maccauro, G., and Graziani, F. (2011).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71839
+    },
+    {
+      "block_id": "p23:5",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Chen, C.-H., Lin, Y.-S., Fu, Y.-C., Wang, C.-K., Wu, S.-C., Wang, G.-J., et al. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72128
+    },
+    {
+      "block_id": "p23:6",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Chen, L., Yang, J., Cai, Z., Huang, Y., Xiao, P., Wang, J., et al. (2024). Elect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72413
+    },
+    {
+      "block_id": "p23:7",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Chen, Y., Braun, B. J., Menger, M. M., Ronniger, M., Falldorf, K., Histing, T., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72676
+    },
+    {
+      "block_id": "p23:8",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Claes, L., and Willie, B. (2007). The enhancement of bone regeneration by ultras",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73004
+    },
+    {
+      "block_id": "p23:9",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Court-Brown, C. M., Clement, N. D., Duckworth, A. D., Biant, L. C., and McQueen,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73410
+    },
+    {
+      "block_id": "p23:10",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Collins, M. N., Ren, G., Young, K., Pina, S., Reis, R. L., and Oliveira, J. M. (",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73168
+    },
+    {
+      "block_id": "p23:11",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Daher, R. J., Chahine, N. O., Greenberg, A. S., Sgaglione, N. A., and Grande, D.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:12",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Daou, F., Masante, B., Gabetti, S., Mochi, F., Putame, G., Zenobi, E., et al. (2",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:13",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Daish, C., Blanchard, R., Fox, K., Pivonka, P., and Pirogova, E. (2018). The app",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73621
+    },
+    {
+      "block_id": "p23:14",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "da Silva, H. M., Mateescu, M., Damia, C., Champion, E., Soares, G., and Anselme,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73869
+    },
+    {
+      "block_id": "p23:15",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Datta, N., Pham, Q. P., Sharma, U., Sikavitsas, V. I., Jansen, J. A., and Mikos,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74153
+    },
+    {
+      "block_id": "p23:16",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Dauben, T. J., Ziebart, J., Bender, T., Zaatreh, S., Kreikemeyer, B., and Bader,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74444
+    },
+    {
+      "block_id": "p23:17",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Davies, B. M., Rikabi, S., French, A., Pinedo-Villanueva, R., Morrey, M. E., War",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74696
+    },
+    {
+      "block_id": "p23:18",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "De Mattei, M., Caruso, A., Pezzetti, F., Pellati, A., Stabellini, G., Sollazzo, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74985
+    },
+    {
+      "block_id": "p23:19",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "De Mattei, M., Grassilli, S., Pellati, A., Brugnoli, F., De Marchi, E., Contarte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75235
+    },
+    {
+      "block_id": "p23:20",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Denning, D., Kilpatrick, J. I., Hsu, T., Habelitz, S., Fertala, A., and Rodrigue",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75569
+    },
+    {
+      "block_id": "p23:21",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Domingues, M. F., Silva, J. C., and Sanjuan-Alberte, P. (2024). From spheroids t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75800
+    },
+    {
+      "block_id": "p23:22",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Du, D., Furukawa, K. S., and Ushida, T. (2009). 3D culture of osteoblast-like ce",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76032
+    },
+    {
+      "block_id": "p23:23",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ehnert, S., van Griensven, M., Unger, M., Scheffler, H., Falldorf, K., Fentz, A.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76241
+    },
+    {
+      "block_id": "p23:24",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "pulsed electromagnetic fields improve osteogenic differentiation of human adipos",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76415
+    },
+    {
+      "block_id": "p23:25",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "El-Shamy, S. M. (2020). Long-term effect of electromagnetic field in treatment o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76568
+    },
+    {
+      "block_id": "p23:26",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Engel, N., Fechner, C., Voges, A., Ott, R., Stenzel, J., Siewert, S., et al. (20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76847
+    },
+    {
+      "block_id": "p23:27",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Esposito, M., Lucariello, A., Costanzo, C., Fiumarella, A., Giannini, A., Riccar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77122
+    },
+    {
+      "block_id": "p23:28",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Faldini, C., Cadossi, M., Luciani, D., Betti, E., Chiarello, E., and Giannini, S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77388
+    },
+    {
+      "block_id": "p23:29",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Farooqi, A. R., Bader, R., and van Rienen, U. (2019). Numerical study on electro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77689
+    },
+    {
+      "block_id": "p23:30",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Flatscher, J., Pavez Loriè, E., Mittermayr, R., Meznik, P., Slezak, P., Redl, H.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77909
+    },
+    {
+      "block_id": "p23:31",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Freeman, M. F. E., Haugh, D. M. G., and McNamara, D. L. (2015). An in vitro bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78160
+    },
+    {
+      "block_id": "p23:32",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Friedenberg, Z. B., and Brighton, C. T. (1974). Electrical fracture healing. Ann",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78469
+    },
+    {
+      "block_id": "p23:33",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Fukada, E., and Yasuda, I. (1957). On the piezoelectric effect of bone. J. Phys.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78621
+    },
+    {
+      "block_id": "p23:34",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Gabetti, S., Masante, B., Cochis, A., Putame, G., Sanginario, A., Armando, I., e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78752
+    },
+    {
+      "block_id": "p23:35",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Garland, D. E., Moses, B., and Salyer, W. (1991). Long-term follow-up of fractur",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79032
+    },
+    {
+      "block_id": "p23:36",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Gaspar, D. A., Gomide, V., and Monteiro, F. J. (2012). The role of perfusion bio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79174
+    },
+    {
+      "block_id": "p23:37",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Gavazzo, P., Viti, F., Donnelly, H., Oliva, M. A. G., Salmeron-Sanchez, M., Dalb",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79336
+    },
+    {
+      "block_id": "p23:38",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Goodwin, T. J., and Parker, C. R. (2007). Apparatus and method for enhancing tis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79601
+    },
+    {
+      "block_id": "p23:39",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Goodwin, T. J., and Shackelford, L. C. (2014). Modifying the genetic regulation ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79756
+    },
+    {
+      "block_id": "p23:40",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Gu, Z., Wang, J., Fu, Y., Pan, H., He, H., Gan, Q., et al. (2023). Smart biomate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79980
+    },
+    {
+      "block_id": "p23:41",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Guilak, F., Cohen, D. M., Estes, B. T., Gimble, J. M., Liedtke, W., and Chen, C.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80174
+    },
+    {
+      "block_id": "p23:42",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Haddad, J. B., Obolensky, A. G., and Shinnick, P. (2007). The biologic effects a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80404
+    },
+    {
+      "block_id": "p23:43",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "He, Z., Selvamurugan, N., Warshaw, J., and Partridge, N. C. (2018). Pulsed elect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80708
+    },
+    {
+      "block_id": "p23:44",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hilz, F. M., Ahrens, P., Grad, S., Stoddart, M. J., Dahmani, C., Wilken, F. L., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80928
+    },
+    {
+      "block_id": "p23:45",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hoenig, E., Winkler, T., Mielke, G., Paetzold, H., Schuettler, D., Goepfert, C.,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81297
+    },
+    {
+      "block_id": "p23:46",
+      "page": 23,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hoffmann, W., Feliciano, S., Martin, I., de Wild, M., and Wendt, D. (2015). Nove",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81575
+    },
+    {
+      "block_id": "p23:47",
+      "page": 23,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p23:48",
+      "page": 23,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "23",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2803
+    },
+    {
+      "block_id": "p23:49",
+      "page": 23,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p24:0",
+      "page": 24,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p24:1",
+      "page": 24,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p24:2",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hu, H., Yang, W., Zeng, Q., Chen, W., Zhu, Y., Liu, W., et al. (2020). Promising",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p24:3",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hunter, D. J., March, L., and Chew, M. (2020). Osteoarthritis in 2020 and beyond",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p24:4",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "IOF (2024). International osteoporosis foundation. Available online at: https://",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81830
+    },
+    {
+      "block_id": "p24:5",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Jacob, J., More, N., Kalia, K., and Kapusetti, G. (2018). Piezoelectric smart bi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81981
+    },
+    {
+      "block_id": "p24:6",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Jing, D., Cai, J., Wu, Y., Shen, G., Li, F., Xu, Q., et al. (2014). Pulsed elect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82168
+    },
+    {
+      "block_id": "p24:7",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Jing, D., Zhai, M., Tong, S., Xu, F., Cai, J., Shen, G., et al. (2016). Pulsed e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82510
+    },
+    {
+      "block_id": "p24:8",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Jing, W., Huang, Y., Wei, P., Cai, Q., Yang, X., and Zhong, W. (2019). Roles of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82808
+    },
+    {
+      "block_id": "p24:9",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Jordan University of Science and Technology (2021). The effect of pulsed electro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83052
+    },
+    {
+      "block_id": "p24:10",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kaadan, A., Salati, S., Setti, S., and Aaron, R. (2024). Augmentation of deficie",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83323
+    },
+    {
+      "block_id": "p24:11",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kaivosoja, E., Sariola, V., Chen, Y., and Konttinen, Y. T. (2012). The effect of",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p24:12",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kanis, J. A., Norton, N., Harvey, N. C., Jacobson, T., Johansson, H., Lorentzon,",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p24:13",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kapat, K., Shubhra, Q. T. H., Zhou, M., and Leeuwenburgh, S. (2020). Piezoelectr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83551
+    },
+    {
+      "block_id": "p24:14",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kar, N. S., Ferguson, D., Zhang, N., Waldorff, E. I., Ryaby, J. T., and DiDonato",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83752
+    },
+    {
+      "block_id": "p24:15",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kavand, H., Lintel, H., and Renaud, P. (2019). Efficacy of pulsed electromagneti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84043
+    },
+    {
+      "block_id": "p24:16",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kavlock, K. D., and Goldstein, A. S. (2011). Effect of pulse frequency on the os",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84315
+    },
+    {
+      "block_id": "p24:17",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kim, Y., Lim, H., Lee, E., Ki, G., and Seo, Y. (2021). Synergistic effect of ele",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84539
+    },
+    {
+      "block_id": "p24:18",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kuzyk, P., and Schemitsch, E. (2009). The science of electrical stimulation ther",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84781
+    },
+    {
+      "block_id": "p24:19",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Langer, R., and Vacanti, J. (2016). Advances in tissue engineering. J. Pediatr. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84942
+    },
+    {
+      "block_id": "p24:20",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lanza, R., Langer, R., and Vacanti, J. (2000). Principle of tissue engineering. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85073
+    },
+    {
+      "block_id": "p24:21",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lei, T., Li, F., Liang, Z., Tang, C., Xie, K., Wang, P., et al. (2017). Effects ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85189
+    },
+    {
+      "block_id": "p24:22",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lei, T., Liang, Z., Li, F., Tang, C., Xie, K., Wang, P., et al. (2018). Pulsed e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85444
+    },
+    {
+      "block_id": "p24:23",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Leppik, L., Bhavsar, M. B., Oliveira, K. M. C., Eischen-Loges, M., Mobini, S., a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85693
+    },
+    {
+      "block_id": "p24:24",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Leppik, L., Oliveira, K. M. C., Bhavsar, M. B., and Barker, J. H. (2020). Electr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85986
+    },
+    {
+      "block_id": "p24:25",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Li, D., Tang, T., Lu, J., and Dai, K. (2009). Effects of flow shear stress and m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86194
+    },
+    {
+      "block_id": "p24:26",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Li, J., Zeng, Z., Zhao, Y., Jing, D., Tang, C., Ding, Y., et al. (2017). Effects",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86439
+    },
+    {
+      "block_id": "p24:27",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Li, S., Luo, Q., Huang, L., Hu, Y., Xia, Q., and He, C. (2011). Effects of pulse",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86714
+    },
+    {
+      "block_id": "p24:28",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Li, W.-Y., Li, X.-Y., Tian, Y.-H., Chen, X.-R., Zhou, J., Zhu, B.-Y., et al. (20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86952
+    },
+    {
+      "block_id": "p24:29",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Li, Y., Li, L., Li, Y., Feng, L., Wang, B., Wang, M., et al. (2023). Enhancing c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87295
+    },
+    {
+      "block_id": "p24:30",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lim, K., Kim, J., Seonwoo, H., Park, S. H., Choung, P.-H., and Chung, J. H. (201",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87543
+    },
+    {
+      "block_id": "p24:31",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lin, C.-C., Chang, Y.-T., Lin, R.-W., Chang, C.-W., Wang, G.-J., and Lai, K.-A. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87863
+    },
+    {
+      "block_id": "p24:32",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Liu, J., Huang, X., Zhou, J., Li, L., Xiao, H., Qu, M., et al. (2022). Pulsed el",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88134
+    },
+    {
+      "block_id": "p24:33",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Liu, Y., Hao, L., Jiang, L., and Li, H. (2021). Therapeutic effect of pulsed ele",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88407
+    },
+    {
+      "block_id": "p24:34",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lovechio, J., Gargiulo, P., Vargas Luna, J. L., Giordano, E., and Sigurjónsson, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88606
+    },
+    {
+      "block_id": "p24:35",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Luo, F., Hou, T., Zhang, Z., Xie, Z., Wu, X., and Xu, J. (2012). Effects of puls",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88879
+    },
+    {
+      "block_id": "p24:36",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ma, Y., He, F., Chen, X., Zhou, S., He, R., Liu, Q., et al. (2024). Low-frequenc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89123
+    },
+    {
+      "block_id": "p24:37",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Markov, M. S. (2007). Pulsed electromagnetic field therapy history, state of the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89416
+    },
+    {
+      "block_id": "p24:38",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Martini, F., Pellati, A., Mazzoni, E., Salati, S., Caruso, G., Contartese, D., e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89573
+    },
+    {
+      "block_id": "p24:39",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Massai, D., Cerino, G., Gallo, D., Pennella, F., Deriu, M., Rodriguez, A., et al",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89866
+    },
+    {
+      "block_id": "p24:40",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Massari, L., Benazzo, F., Moretti, B., Dallari, D., Perugia, D., Meani, E., et a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90096
+    },
+    {
+      "block_id": "p24:41",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Massari, L., Fini, M., Cadossi, R., Setti, S., and Traina, G. C. (2006). Biophys",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90278
+    },
+    {
+      "block_id": "p24:42",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Matziolis, D., Tuischer, J., Matziolis, G., Kasper, G., Duda, G., and Perka, C. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90489
+    },
+    {
+      "block_id": "p24:43",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mauck, R. L., Nicoll, S. B., Seyhan, S. L., Ateshian, G. A., and Hung, C. T. (20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90741
+    },
+    {
+      "block_id": "p24:44",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "McAlindon, T. E., Bannuru, R. R., Sullivan, M. C., Arden, N. K., Berenbaum, F., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90982
+    },
+    {
+      "block_id": "p24:45",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Miguel, F., Barbosa, F., Ferreira, F. C., and Silva, J. C. (2022). Electrically ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91234
+    },
+    {
+      "block_id": "p24:46",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mittwede, P. N., Gottardi, R., Alexander, P. G., Tarkin, I. S., and Tuan, R. S. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91416
+    },
+    {
+      "block_id": "p24:47",
+      "page": 24,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Miyamoto, H., Sawaji, Y., Iwaki, T., Masaoka, T., Fukada, E., Date, M., et al. (",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91638
+    },
+    {
+      "block_id": "p24:48",
+      "page": 24,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p24:49",
+      "page": 24,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "24",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5536
+    },
+    {
+      "block_id": "p24:50",
+      "page": 24,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p25:0",
+      "page": 25,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p25:1",
+      "page": 25,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p25:2",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mow, V. C., Wang, C. C., and Hung, C. T. (1999). The extracellular matrix, inter",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p25:3",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Murray, H., and Pethica, B. (2016). A follow-up study of the in-practice results",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p25:4",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Nelson, F. R., Zvirbulis, R., and Pilla, A. A. (2013). Non-invasive electromagne",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91937
+    },
+    {
+      "block_id": "p25:5",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Nicolin, V., Ponti, C., Baldini, G., Gibellini, D., Bortul, R., Zmeyer, M., et a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92211
+    },
+    {
+      "block_id": "p25:6",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Nunes, C. M. M., Ferreira, C. L., Bernardo, D. V., Lopes, C. C. R., Collino, L.,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92407
+    },
+    {
+      "block_id": "p25:7",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ongaro, A., Pellati, A., Bagheri, L., Fortini, C., Setti, S., and De Mattei, M. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92699
+    },
+    {
+      "block_id": "p25:8",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ongaro, A., Pellati, A., Setti, S., Masieri, F. F., Aquila, G., Fini, M., et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93026
+    },
+    {
+      "block_id": "p25:9",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Orthopaedic and Rehabilitation Devices Panel (2020). Bone growth stimulators exe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93283
+    },
+    {
+      "block_id": "p25:10",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Parate, D., Kadir, N. D., Celik, C., Lee, E. H., Hui, J. H. P., Franco-Obregón, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93490
+    },
+    {
+      "block_id": "p25:11",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Parate, D., Franco-Obregón, A., Fröhlich, J., Beyer, C., Abbas, A. A., Kamarul, ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p25:12",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Pedrero, S. G., Llamas-Sillero, P., and Serrano-López, J. (2021). A multidiscipl",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p25:13",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Peteechia, L., Sbrana, F., Utzeri, R., Vercellino, M., Usai, C., Visai, L., et a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93766
+    },
+    {
+      "block_id": "p25:14",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Pi, Y., Liang, H., Yu, Q., Yin, Y., Xu, H., Lei, Y., et al. (2019). Low-frequenc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94031
+    },
+    {
+      "block_id": "p25:15",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Poh, P. S. P., Seeliger, C., Unger, M., Falldorf, K., Balmayor, E. R., and van G",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94308
+    },
+    {
+      "block_id": "p25:16",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Poillot, P., Le Maitre, C. L., and Huyghe, J. M. (2021). The strain-generated el",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94613
+    },
+    {
+      "block_id": "p25:17",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Portan, D. V., Deligianni, D. D., Papanicolaou, G. C., Kostopoulos, V., Psarras,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94824
+    },
+    {
+      "block_id": "p25:18",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Quarto, R., and Giannoni, P. (2016). \"Bone tissue engineering: past-present-futu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95116
+    },
+    {
+      "block_id": "p25:19",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Rajabi, A. H., Jaffe, M., and Arinzeh, T. L. (2015). Piezoelectric materials for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95334
+    },
+    {
+      "block_id": "p25:20",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ravichandran, A., Lim, J., Chong, M. S. K., Wen, F., Liu, Y., Pillay, Y. T., et ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95505
+    },
+    {
+      "block_id": "p25:21",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Reihani Kermani, H., Pourghazi, M., and Mahani, S. E. (2014). Effects of pulsed ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95782
+    },
+    {
+      "block_id": "p25:22",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ricotti, L., Cafarelli, A., Manferdini, C., Trucco, D., Vannozzi, L., Gabusi, E.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96001
+    },
+    {
+      "block_id": "p25:23",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Rossi, N., Hadad, H., Bejar-Chapa, M., Peretti, G. M., Randolph, M. A., Redmond,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96302
+    },
+    {
+      "block_id": "p25:24",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Saino, E., Fassina, L., Van Vlierberghe, S., Avanzini, M. A., Dubruel, P., Magen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96583
+    },
+    {
+      "block_id": "p25:25",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Salhotra, A., Shah, H. N., Levi, B., and Longaker, M. T. (2020). Mechanisms of b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96892
+    },
+    {
+      "block_id": "p25:26",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Schaffler, M. B., and Kennedy, O. D. (2012). Osteocyte signaling in bone. Curr. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97070
+    },
+    {
+      "block_id": "p25:27",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Scocozza, F., Bina, V., Caliogna, L., Brancato, A. M., Mosconi, M., Fassina, L.,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97210
+    },
+    {
+      "block_id": "p25:28",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Selvamurugan, N., He, Z., Rifkin, D., Dabovic, B., and Partridge, N. C. (2017). ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97556
+    },
+    {
+      "block_id": "p25:29",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Sierpowska, J., Töyräs, J., Hakulinen, M. A., Saarakkala, S., Jurvelin, J. S., a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97853
+    },
+    {
+      "block_id": "p25:30",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Silva, J. C., Moura, C. S., Borrecho, G., Alves de Matos, A. P., Cabral, J. M. S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98146
+    },
+    {
+      "block_id": "p25:31",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Song, M., Zhao, D., Wei, S., Liu, C., Liu, Y., Wang, B., et al. (2014). The effe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98547
+    },
+    {
+      "block_id": "p25:32",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Sophia Fox, A. J., Bedi, A., and Rodeo, S. A. (2009). The basic science of artic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98874
+    },
+    {
+      "block_id": "p25:33",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Stefani, R. M., Barbosa, S., Tan, A. R., Setti, S., Stoker, A. M., Ateshian, G. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99063
+    },
+    {
+      "block_id": "p25:34",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Sung, Y.-Y., Shin, J.-W., Yang, W.-K., Kim, M.-J., Koo, J.-I., Noh, E.-M., et al",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99344
+    },
+    {
+      "block_id": "p25:35",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Suryani, L., Too, J. H., Hassanbhai, A. M., Wen, F., Lin, D. J., Yu, N., et al. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99595
+    },
+    {
+      "block_id": "p25:36",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Topal, O., Çina Aksoy, M., Ciriş, İ. M., Doğuc, D. K., Sert, S., and Çömlekçi, S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99857
+    },
+    {
+      "block_id": "p25:37",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "van der Jagt, O. P., van der Linden, J. C., Waarsing, J. H., Verhaar, J. A. N., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100161
+    },
+    {
+      "block_id": "p25:38",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Varani, K., Vincenzi, F., Pasquini, S., Blo, I., Salati, S., Cadossi, M., et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100444
+    },
+    {
+      "block_id": "p25:39",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Veronesi, F., Cadossi, M., Giavaresi, G., Martini, L., Setti, S., Buda, R., et a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100698
+    },
+    {
+      "block_id": "p25:40",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Veronesi, F., Torricelli, P., Giavaresi, G., Sartori, M., Cavani, F., Setti, S.,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101004
+    },
+    {
+      "block_id": "p25:41",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Vinod, E., Kachroo, U., Rebekah, G., Thomas, S., and Ramasamy, B. (2021). In vit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101274
+    },
+    {
+      "block_id": "p25:42",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wang, H., Tang, X., Li, W., Chen, J., Li, H., Yan, J., et al. (2019a). Enhanced ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101544
+    },
+    {
+      "block_id": "p25:43",
+      "page": 25,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wang, L., Li, Y., Xie, S., Huang, J., Song, K., and He, C. (2021). Effects of pu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101822
+    },
+    {
+      "block_id": "p25:44",
+      "page": 25,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p25:45",
+      "page": 25,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "25",
+      "found_in_fulltext": true,
+      "fulltext_offset": 359
+    },
+    {
+      "block_id": "p25:46",
+      "page": 25,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    },
+    {
+      "block_id": "p26:0",
+      "page": 26,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Masante et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p26:1",
+      "page": 26,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "10.3389/fbioe.2025.1557572",
+      "found_in_fulltext": true,
+      "fulltext_offset": 373
+    },
+    {
+      "block_id": "p26:2",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wang, Q., Zhou, J., Wang, X., Xu, Y., Liang, Z., Gu, X., et al. (2022). Coupling",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p26:3",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wang, X., Dai, X., and Chen, Y. (2023). Sonopiezoelectric nanomedicine and mater",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p26:4",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wang, Y., Pu, X., Shi, W., Fang, Q., Chen, X., Xi, H., et al. (2019b). Pulsed el",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102091
+    },
+    {
+      "block_id": "p26:5",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wendt, D., Marsano, A., Jakob, M., Heberer, M., and Martin, I. (2003). Oscillati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102325
+    },
+    {
+      "block_id": "p26:6",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wiesmann, H.-P., Hartig, M., Stratmann, U., Meyer, U., and Joos, U. (2001). Elec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102578
+    },
+    {
+      "block_id": "p26:7",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Willers, C., Norton, N., Harvey, N. C., Jacobson, T., Johansson, H., Lorentzon, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102838
+    },
+    {
+      "block_id": "p26:8",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wu, A.-M., Bisignano, C., James, S. L., Abady, G. G., Abedi, A., Abu-Gharbieh, E",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103060
+    },
+    {
+      "block_id": "p26:9",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Xiong, J. (2012). Phase 4 study of early applied pulsed electromagnetic field in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103398
+    },
+    {
+      "block_id": "p26:10",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Yamada, S., Yassin, M. A., Schwarz, T., Mustafa, K., and Hansmann, J. (2022). Op",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103664
+    },
+    {
+      "block_id": "p26:11",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Yang, X., Guo, H., Ye, W., Yang, L., and He, C. (2021). Pulsed electromagnetic f",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p26:12",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Yang, X., He, H., Zhou, Y., Zhou, Y., Gao, Q., Wang, P., et al. (2017). Pulsed e",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p26:13",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "microarchitecture and cartilage degradation. Bioelectromagnetics 38, 227–238. do",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103972
+    },
+    {
+      "block_id": "p26:14",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ye, W., Guo, H., Yang, X., Yang, L., and He, C. (2020). Pulsed electromagnetic f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104072
+    },
+    {
+      "block_id": "p26:15",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Yin, Y., Chen, P., Yu, Q., Peng, Y., Zhu, Z., and Tian, J. (2018). The effects o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104319
+    },
+    {
+      "block_id": "p26:16",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Yuan, J., Xin, F., and Jiang, W. (2018). Underlying signaling pathways and thera",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104818
+    },
+    {
+      "block_id": "p26:17",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Yong, Y., Ming, Z. D., Feng, L., Chun, Z. W., and Hua, W. (2014). Electromagneti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104577
+    },
+    {
+      "block_id": "p26:18",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zha, K., Tian, Y., Panayi, A. C., Mi, B., and Liu, G. (2022). Recent advances in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105027
+    },
+    {
+      "block_id": "p26:19",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zhou, J., Chen, S., Guo, H., Xia, L., Liu, H., Qin, Y., et al. (2013). Pulsed el",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105281
+    },
+    {
+      "block_id": "p26:20",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zhou, J., Liao, Y., Xie, H., Liao, Y., Liu, H., Zeng, Y., et al. (2017). Pulsed ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105522
+    },
+    {
+      "block_id": "p26:21",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zhou, J., Ming, L.-G., Ge, B.-F., Wang, J.-Q., Zhu, R.-Q., Wei, Z., et al. (2011",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105801
+    },
+    {
+      "block_id": "p26:22",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zhou, J., Wang, J.-Q., Ge, B.-F., Ma, X.-N., Ma, H.-P., Xian, C. J., et al. (201",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106092
+    },
+    {
+      "block_id": "p26:23",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zhou, X., Castro, N. J., Zhu, W., Cui, H., Aliabouzar, M., Sarkar, K., et al. (2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106422
+    },
+    {
+      "block_id": "p26:24",
+      "page": 26,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zhou, Z., Qian, D., and Minary-Jolandan, M. (2016b). Molecular mechanism of pola",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106697
+    },
+    {
+      "block_id": "p26:25",
+      "page": 26,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Frontiers in Bioengineering and Biotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 299
+    },
+    {
+      "block_id": "p26:26",
+      "page": 26,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "26",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39155
+    },
+    {
+      "block_id": "p26:27",
+      "page": 26,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "frontiersin.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65714
+    }
+  ]
+}

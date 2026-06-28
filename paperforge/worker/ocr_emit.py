@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+# NOTE: This module is not used in the OCR production path.
+# Production OCR structure is owned by ocr_document.py, ocr_figures.py,
+# ocr_tables.py, ocr_render.py, and ocr_health.py.
+# Keep this module only for compatibility/experimental tests.
+
 
 def emit_page_markdown(
     page_index: int,

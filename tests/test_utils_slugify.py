@@ -5,10 +5,6 @@ Covers: slugify_filename, _extract_year
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import pytest
-
 from paperforge.worker._utils import _extract_year, slugify_filename
 
 

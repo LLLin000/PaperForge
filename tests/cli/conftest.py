@@ -80,7 +80,7 @@ def mock_ocr_backend():
     This fixture is context-managed — use it with 'with' statement.
     """
     import json
-    from pathlib import Path
+
     import responses as _responses
 
     ocr_fixtures_dir = Path(__file__).resolve().parent.parent.parent / "fixtures" / "ocr"
@@ -129,5 +129,4 @@ def mock_ocr_backend():
 @pytest.fixture
 def snapshot_dir():
     """Return path to the snapshots directory."""
-    from pathlib import Path
     return Path(__file__).resolve().parent.parent.parent / "fixtures" / "snapshots"

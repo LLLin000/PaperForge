@@ -1,0 +1,97 @@
+{
+  "figures": {
+    "matched_count": 6,
+    "ambiguous_count": 0,
+    "unresolved_cluster_count": 1,
+    "unmatched_asset_count": 6,
+    "matched": [
+      {
+        "figure_number": 1,
+        "legend_block_id": 7,
+        "asset_block_ids": [
+          8
+        ],
+        "page": 3,
+        "match_type": null
+      },
+      {
+        "figure_number": 2,
+        "legend_block_id": 3,
+        "asset_block_ids": [
+          4
+        ],
+        "page": 5,
+        "match_type": null
+      },
+      {
+        "figure_number": 3,
+        "legend_block_id": 9,
+        "asset_block_ids": [
+          10
+        ],
+        "page": 5,
+        "match_type": null
+      },
+      {
+        "figure_number": 4,
+        "legend_block_id": 6,
+        "asset_block_ids": [
+          7,
+          8
+        ],
+        "page": 6,
+        "match_type": null
+      },
+      {
+        "figure_number": 5,
+        "legend_block_id": 2,
+        "asset_block_ids": [
+          3,
+          4
+        ],
+        "page": 7,
+        "match_type": null
+      },
+      {
+        "figure_number": 6,
+        "legend_block_id": 5,
+        "asset_block_ids": [
+          6
+        ],
+        "page": 8,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [],
+    "unresolved": [
+      {
+        "figure_number": null,
+        "asset_block_ids": [],
+        "page": 6
+      }
+    ]
+  },
+  "tables": {
+    "matched_count": 1,
+    "ambiguous_count": 1,
+    "unmatched_asset_count": 10,
+    "matched": [
+      {
+        "table_number": 2,
+        "caption_block_id": 5,
+        "asset_block_ids": [],
+        "page": 4,
+        "match_status": "matched"
+      }
+    ],
+    "ambiguous": [
+      {
+        "table_number": 1,
+        "caption_block_id": 2,
+        "asset_block_ids": [],
+        "page": 4,
+        "match_status": "ambiguous"
+      }
+    ]
+  }
+}

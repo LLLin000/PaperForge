@@ -9,9 +9,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -153,6 +150,33 @@ class TestStatusJsonIndexSource:
         assert data["health_aggregate"] == {}
         assert data["maturity_distribution"] == {}
 
+    def test_status_json_includes_structured_ocr_health(self, tmp_path: Path, capsys) -> None:
+        """JSON output includes structured_ocr_health key."""
+        from paperforge.worker.status import run_status
+
+        vault = _minimal_vault(tmp_path)
+        _ensure_domain_config(vault)
+        _ensure_exports(vault)
+
+        ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "HLTH001"
+        ocr_dir.mkdir(parents=True)
+        health_dir = ocr_dir / "health"
+        health_dir.mkdir(parents=True)
+        (health_dir / "ocr_health.json").write_text(
+            json.dumps({"overall": "green", "page_count": 3, "blocks_count": 50}),
+            encoding="utf-8",
+        )
+
+        code = run_status(vault, json_output=True)
+        captured = capsys.readouterr().out
+        assert code == 0
+        envelope = json.loads(captured)
+        data = envelope["data"]
+        assert "structured_ocr_health" in data
+        assert len(data["structured_ocr_health"]) == 1
+        assert data["structured_ocr_health"][0]["key"] == "HLTH001"
+        assert data["structured_ocr_health"][0]["overall"] == "green"
+
     def test_status_text_output_includes_index_section(self, tmp_path: Path, capsys) -> None:
         """Text output contains 'lifecycle:' line when index is present."""
         from paperforge.worker.status import run_status
@@ -179,10 +203,10 @@ class TestDoctorIndexHealth:
 
     def _run_doctor(self, vault: Path) -> str:
         """Run doctor and return captured stdout."""
-        from paperforge.worker.status import run_doctor
-
         import io
         import sys
+
+        from paperforge.worker.status import run_doctor
 
         old_stdout = sys.stdout
         sys.stdout = buf = io.StringIO()
@@ -248,3 +272,112 @@ class TestDoctorIndexHealth:
         output = self._run_doctor(vault)
         assert "Index Health" in output
         assert "No canonical index" in output
+
+
+# ---------------------------------------------------------------------------
+# Structured OCR Health in status
+# ---------------------------------------------------------------------------
+def test_status_text_structured_ocr_health(tmp_path: Path, capsys) -> None:
+    """run_status() text output shows structured OCR health."""
+    from paperforge.worker.status import run_status
+
+    vault = _minimal_vault(tmp_path)
+    _ensure_domain_config(vault)
+    _ensure_exports(vault)
+
+    ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "HLTH001"
+    ocr_dir.mkdir(parents=True)
+    health_dir = ocr_dir / "health"
+    health_dir.mkdir(parents=True)
+    (health_dir / "ocr_health.json").write_text(
+        json.dumps({"overall": "yellow", "page_count": 5, "blocks_count": 100}),
+        encoding="utf-8",
+    )
+
+    code = run_status(vault)
+    captured = capsys.readouterr().out
+    assert code == 0
+    assert "structured_ocr_health" in captured
+    assert "HLTH001" in captured
+    assert "yellow" in captured
+
+
+# ---------------------------------------------------------------------------
+# OCR version runtime state in status
+# ---------------------------------------------------------------------------
+def test_status_json_includes_ocr_version_state(tmp_path: Path, capsys) -> None:
+    """JSON output includes ocr_version_state with version info."""
+    from paperforge.worker.status import run_status
+
+    vault = _minimal_vault(tmp_path)
+    _ensure_domain_config(vault)
+    _ensure_exports(vault)
+
+    ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "VST001"
+    ocr_dir.mkdir(parents=True)
+    meta = {
+        "zotero_key": "VST001",
+        "raw_version": {"ocr_model": "PaddleOCR-VL-1.6", "ocr_raw_schema_version": "1.0.0"},
+        "derived_version": {"renderer_version": "2.0.0"},
+        "raw_upgradable": False,
+        "derived_stale": False,
+    }
+    (ocr_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    code = run_status(vault, json_output=True)
+    assert code == 0
+    captured = capsys.readouterr().out
+    envelope = json.loads(captured)
+    payload = envelope["data"]
+    assert "ocr_version_state" in payload
+    assert payload["ocr_version_state"]["total_papers"] == 1
+    assert payload["ocr_version_state"]["derived_stale_count"] == 0
+    assert payload["ocr_version_state"]["raw_upgradable_count"] == 0
+
+
+def test_status_text_ocr_version_state(tmp_path: Path, capsys) -> None:
+    """Text output includes ocr_version_state line."""
+    from paperforge.worker.status import run_status
+
+    vault = _minimal_vault(tmp_path)
+    _ensure_domain_config(vault)
+    _ensure_exports(vault)
+
+    ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "VST001"
+    ocr_dir.mkdir(parents=True)
+    meta = {
+        "zotero_key": "VST001",
+        "raw_version": {"ocr_model": "PaddleOCR-VL-1.5", "ocr_raw_schema_version": "1.0.0"},
+        "derived_version": {"renderer_version": "1.0.0-compat"},
+        "raw_upgradable": True,
+        "derived_stale": True,
+    }
+    (ocr_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    code = run_status(vault)
+    assert code == 0
+    captured = capsys.readouterr().out
+    assert "ocr_version_state" in captured
+
+
+def test_status_text_legacy_backfilled(tmp_path: Path, capsys) -> None:
+    """Text output includes legacy_backfilled count when papers are backfilled."""
+    from paperforge.worker.status import run_status
+
+    vault = _minimal_vault(tmp_path)
+    _ensure_domain_config(vault)
+    _ensure_exports(vault)
+
+    ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "LEGACY001"
+    ocr_dir.mkdir(parents=True)
+    meta = {
+        "zotero_key": "LEGACY001",
+        "ocr_status": "done",
+        "is_backfilled": True,
+    }
+    (ocr_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    code = run_status(vault)
+    assert code == 0
+    captured = capsys.readouterr().out
+    assert "legacy_backfilled" in captured

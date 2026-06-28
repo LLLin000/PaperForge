@@ -1,0 +1,1430 @@
+{
+  "paper": "K7R8PEKW",
+  "total_reviewed": 158,
+  "pipeline_verified": 133,
+  "need_reaudit": 25,
+  "changed_blocks": [
+    {
+      "block_id": "p1:0",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "frontmatter_main_zone",
+      "pipe_text_len": 6,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:1",
+      "truth_role": "noise",
+      "pipe_role": "non_body_insert",
+      "pipe_zone": "frontmatter_main_zone",
+      "pipe_text_len": 0,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:2",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "frontmatter_main_zone",
+      "pipe_text_len": 29,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:3",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "frontmatter_main_zone",
+      "pipe_text_len": 19,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:4",
+      "truth_role": "paper_title",
+      "pipe_role": "paper_title",
+      "pipe_zone": "frontmatter_main_zone",
+      "pipe_text_len": 108,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:5",
+      "truth_role": "authors",
+      "pipe_role": "authors",
+      "pipe_zone": "frontmatter_main_zone",
+      "pipe_text_len": 61,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:6",
+      "truth_role": "abstract_body",
+      "pipe_role": "abstract_body",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1592,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:7",
+      "truth_role": "footnote",
+      "pipe_role": "footnote",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 288,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p1:8",
+      "truth_role": "section_heading",
+      "pipe_role": "section_heading",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 15,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:9",
+      "truth_role": "body_paragraph",
+      "pipe_role": "non_body_insert",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1244,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:10",
+      "truth_role": "frontmatter_noise",
+      "pipe_role": "frontmatter_noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 126,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p1:11",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 284,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:12",
+      "truth_role": "frontmatter_noise",
+      "pipe_role": "frontmatter_noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 363,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p1:13",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 896,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p1:14",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 27,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p1:15",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 40,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p1:16",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 17,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p1:17",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 79,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p2:2",
+      "truth_role": "noise",
+      "pipe_role": "figure_inner_text",
+      "pipe_zone": "display_zone",
+      "pipe_text_len": 1,
+      "role_match": false,
+      "zone_match": false
+    },
+    {
+      "block_id": "p2:3",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:4",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:5",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:6",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:7",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:8",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:9",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:10",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:11",
+      "truth_role": "figure_caption",
+      "pipe_role": "figure_caption",
+      "pipe_zone": "display_zone",
+      "pipe_text_len": 2565,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:13",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 385,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p2:17",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "frontmatter_side_zone",
+      "pipe_text_len": 365,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p3:2",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p3:3",
+      "truth_role": "figure_caption",
+      "pipe_role": "figure_caption",
+      "pipe_zone": "display_zone",
+      "pipe_text_len": 87,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p3:8",
+      "truth_role": "noise",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 171,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p3:14",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 366,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p4:10",
+      "truth_role": "noise",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1771,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p4:16",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 367,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:3",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:4",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:5",
+      "truth_role": "noise",
+      "pipe_role": "figure_inner_text",
+      "pipe_zone": "display_zone",
+      "pipe_text_len": 1,
+      "role_match": false,
+      "zone_match": false
+    },
+    {
+      "block_id": "p5:6",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:7",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:8",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:9",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:10",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:11",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:12",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:13",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:14",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:15",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:16",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:17",
+      "truth_role": "noise",
+      "pipe_role": "figure_caption_candidate",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 7,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:18",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:19",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:20",
+      "truth_role": "noise",
+      "pipe_role": "figure_caption_candidate",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 6,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:21",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:22",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:23",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:24",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:25",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:26",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:27",
+      "truth_role": "figure_caption",
+      "pipe_role": "figure_caption",
+      "pipe_zone": "display_zone",
+      "pipe_text_len": 2987,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p5:31",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 368,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p6:4",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 3481,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p6:5",
+      "truth_role": "noise",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1004,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p6:14",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 367,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p7:3",
+      "truth_role": "table_caption",
+      "pipe_role": "table_caption",
+      "pipe_zone": "display_zone",
+      "pipe_text_len": 96,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p7:4",
+      "truth_role": "figure_asset",
+      "pipe_role": "table_html",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1498,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p7:7",
+      "truth_role": "noise",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1291,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p7:13",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 368,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p8:6",
+      "truth_role": "noise",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1149,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p8:12",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 367,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p10:6",
+      "truth_role": "noise",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1128,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p10:14",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 368,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:3",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:4",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:5",
+      "truth_role": "noise",
+      "pipe_role": "figure_inner_text",
+      "pipe_zone": "display_zone",
+      "pipe_text_len": 1,
+      "role_match": false,
+      "zone_match": false
+    },
+    {
+      "block_id": "p11:6",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:7",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:8",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:9",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:10",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:11",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:12",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:13",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:14",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:15",
+      "truth_role": "figure_asset",
+      "pipe_role": "figure_asset",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:16",
+      "truth_role": "figure_caption",
+      "pipe_role": "figure_caption",
+      "pipe_zone": "display_zone",
+      "pipe_text_len": 2422,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p11:20",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 365,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p12:6",
+      "truth_role": "noise",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1504,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p12:13",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 366,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p13:3",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 1943,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p13:6",
+      "truth_role": "noise",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 76,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p13:13",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 368,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p14:8",
+      "truth_role": "noise",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "",
+      "pipe_text_len": 1751,
+      "role_match": false,
+      "zone_match": false
+    },
+    {
+      "block_id": "p14:10",
+      "truth_role": "section_heading",
+      "pipe_role": "unknown_structural",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 55,
+      "role_match": false,
+      "zone_match": false
+    },
+    {
+      "block_id": "p14:13",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 18,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p14:15",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "",
+      "pipe_text_len": 369,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p15:5",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "",
+      "pipe_text_len": 796,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p15:10",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 18,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p15:12",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "",
+      "pipe_text_len": 368,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p16:4",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 500,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p16:5",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 422,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p16:6",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 408,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p16:7",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 421,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p16:8",
+      "truth_role": "body_paragraph",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 475,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p16:10",
+      "truth_role": "backmatter_body",
+      "pipe_role": "backmatter_body",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 44,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:11",
+      "truth_role": "backmatter_body",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 130,
+      "role_match": false,
+      "zone_match": false
+    },
+    {
+      "block_id": "p16:12",
+      "truth_role": "backmatter_body",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "body_zone",
+      "pipe_text_len": 22,
+      "role_match": false,
+      "zone_match": false
+    },
+    {
+      "block_id": "p16:13",
+      "truth_role": "frontmatter_noise",
+      "pipe_role": "frontmatter_noise",
+      "pipe_zone": "frontmatter_side_zone",
+      "pipe_text_len": 23,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:14",
+      "truth_role": "backmatter_heading",
+      "pipe_role": "unknown_structural",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 20,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:15",
+      "truth_role": "frontmatter_noise",
+      "pipe_role": "frontmatter_noise",
+      "pipe_zone": "frontmatter_side_zone",
+      "pipe_text_len": 31,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:16",
+      "truth_role": "backmatter_heading",
+      "pipe_role": "sub_subsection_heading",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 16,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:17",
+      "truth_role": "backmatter_body",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 124,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:18",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 95,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:19",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 178,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:20",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 97,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:21",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 144,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:22",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 85,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:23",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 65,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:24",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 108,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:25",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 156,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:26",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 214,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:27",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 54,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:28",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 186,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:29",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 163,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:30",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 152,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:31",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 158,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:32",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 80,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:33",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 83,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:34",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 117,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:35",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 106,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:36",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 66,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:37",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 110,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:38",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 193,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:39",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 90,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:40",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 31,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:41",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 114,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p16:43",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 18,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p16:45",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "",
+      "pipe_text_len": 366,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p20:3",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 104,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:4",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 111,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:5",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 148,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:6",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 71,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:7",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 121,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:8",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 141,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:9",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 101,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:10",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 129,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:11",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 129,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:12",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 135,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:13",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 81,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:14",
+      "truth_role": "reference_item",
+      "pipe_role": "reference_item",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 135,
+      "role_match": true,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:15",
+      "truth_role": "figure_asset",
+      "pipe_role": "media_asset",
+      "pipe_zone": "",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p20:17",
+      "truth_role": "figure_asset",
+      "pipe_role": "media_asset",
+      "pipe_zone": "",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p20:18",
+      "truth_role": "backmatter_body",
+      "pipe_role": "footnote",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 599,
+      "role_match": false,
+      "zone_match": false
+    },
+    {
+      "block_id": "p20:19",
+      "truth_role": "figure_asset",
+      "pipe_role": "media_asset",
+      "pipe_zone": "",
+      "pipe_text_len": 0,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p20:20",
+      "truth_role": "backmatter_body",
+      "pipe_role": "body_paragraph",
+      "pipe_zone": "tail_nonref_hold_zone",
+      "pipe_text_len": 877,
+      "role_match": false,
+      "zone_match": true
+    },
+    {
+      "block_id": "p20:22",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "reference_zone",
+      "pipe_text_len": 18,
+      "role_match": true,
+      "zone_match": false
+    },
+    {
+      "block_id": "p20:24",
+      "truth_role": "noise",
+      "pipe_role": "noise",
+      "pipe_zone": "",
+      "pipe_text_len": 368,
+      "role_match": true,
+      "zone_match": false
+    }
+  ]
+}

@@ -47,12 +47,72 @@ from paperforge.worker._utils import (
     write_json,
 )
 from paperforge.worker.asset_index import refresh_index_entry
+from paperforge.worker.ocr_artifacts import (
+    artifact_paths_for_key,
+    build_version_payload,
+    compute_json_hash,
+    compute_pdf_fingerprint,
+)
+from paperforge.worker.ocr_blocks import (
+    build_raw_blocks_for_result_lines,
+    build_structured_blocks,
+    write_raw_blocks_jsonl,
+    write_structured_blocks_jsonl,
+)
+from paperforge.worker.ocr_errors import (
+    OCRAPISchemaError,
+    OCRArtifactIntegrityError,
+    OCRNetworkError,
+    OCRPDFResolveError,
+    OCRPostprocessError,
+    classify_ocr_error,
+)
+from paperforge.worker.ocr_figures import (
+    build_figure_inventory,
+    tag_figure_contained_text,
+    write_back_figure_roles,
+    write_figure_inventory,
+)
+from paperforge.worker.ocr_metadata import (
+    extract_frontmatter_candidates,
+    resolve_metadata,
+    write_resolved_metadata,
+)
+from paperforge.worker.ocr_tables import (
+    build_table_inventory,
+    write_back_table_roles,
+    write_table_inventory,
+)
 from paperforge.worker.sync import (
     load_control_actions,
     load_export_rows,
 )
 
 logger = logging.getLogger(__name__)
+
+OCR_QUEUE_STATUSES = {
+    "pending",
+    "queued",
+    "running",
+    "done",
+    "done_degraded",
+    "retryable_error",
+    "fatal_error",
+    "nopdf",
+    "blocked",
+}
+OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked"}
+
+
+def apply_ocr_error_state(row: dict, meta: dict, error_state: dict) -> None:
+    status = error_state["status"]
+    row["queue_status"] = status
+    meta["ocr_status"] = status
+    meta["error"] = error_state["last_error"]
+    meta["error_type"] = error_state["error_type"]
+    meta["error_stage"] = error_state["error_stage"]
+    meta["retryable"] = error_state["retryable"]
+    meta["last_error"] = error_state["last_error"]
 
 
 def ensure_ocr_meta(vault: Path, row: dict) -> dict:
@@ -76,9 +136,9 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     meta.setdefault("markdown_path", "")
     meta.setdefault("json_path", "")
     try:
-        assets_path = str((paths["ocr"] / key / "images").relative_to(vault)).replace("\\", "/")
+        assets_path = str((paths["ocr"] / key / "assets").relative_to(vault)).replace("\\", "/")
     except ValueError:
-        assets_path = str(paths["ocr"] / key / "images")
+        assets_path = str(paths["ocr"] / key / "assets")
     meta.setdefault("assets_path", assets_path)
     meta.setdefault("fulltext_md_path", "")
     meta.setdefault("error", "")
@@ -193,7 +253,7 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         meta_path = paths["ocr"] / key / "meta.json"
         meta = _read_meta_or_empty(meta_path)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
-        if status in {"done", "blocked"}:
+        if status in OCR_SETTLED_STATUSES:
             continue
         if status == "nopdf":
             status = "pending"
@@ -215,7 +275,7 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         meta_path = paths["ocr"] / key / "meta.json"
         meta = _read_meta_or_empty(meta_path)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
-        if status in {"done", "blocked"}:
+        if status in OCR_SETTLED_STATUSES:
             continue
         if status == "nopdf":
             status = "pending"
@@ -667,7 +727,9 @@ def build_reference_section_lines(reference_blocks: list[dict], reference_contin
     return lines
 
 
-def append_reference_section(rendered: list[str], reference_blocks: list[dict], reference_continuations: list[dict]) -> None:
+def append_reference_section(
+    rendered: list[str], reference_blocks: list[dict], reference_continuations: list[dict]
+) -> None:
     rendered.extend(build_reference_section_lines(reference_blocks, reference_continuations))
 
 
@@ -1366,6 +1428,8 @@ def caption_group_assignments(blocks: list[dict]) -> tuple[dict[int, list[dict]]
             best_caption = None
             best_distance = None
             for caption in figure_captions:
+                if block.get("page") != caption.get("page"):
+                    continue
                 cb = caption.get("block_bbox", [0, 0, 0, 0])
                 if bbox[1] < cb[1]:
                     horizontal_overlap = _bbox_horizontal_overlap(bbox, cb)
@@ -1394,11 +1458,40 @@ def caption_group_assignments(blocks: list[dict]) -> tuple[dict[int, list[dict]]
 
 
 def _apply_layered_body_reorder(blocks: list[dict], page_width: int, page_height: int) -> list[dict]:
-    try:
-        from paperforge.worker.ocr_orchestrator import reorder_blocks_layered
-        return reorder_blocks_layered(blocks, page_width=page_width, page_height=page_height)
-    except ImportError:
+    """Column-major sort for two-column pages.
+
+    Groups blocks by column (left/center first, right second), each
+    sorted by y-position.  Single-column pages pass through unchanged.
+    """
+    if not page_width or len(blocks) < 4:
         return blocks
+
+    mid = page_width / 2
+
+    def _col(b):
+        bb = b.get("block_bbox") or b.get("bbox")
+        if not bb or len(bb) < 4:
+            return 0
+        xc = (bb[0] + bb[2]) / 2
+        w = bb[2] - bb[0]
+        if (bb[0] < mid and bb[2] > mid) or w >= page_width * 0.55:
+            return 0
+        return 1 if xc >= mid else 0
+
+    has_left = any(_col(b) == 0 for b in blocks)
+    has_right = any(_col(b) == 1 for b in blocks)
+    if not (has_left and has_right):
+        return blocks
+
+    left = sorted(
+        [b for b in blocks if _col(b) == 0],
+        key=lambda b: (b.get("block_bbox") or b.get("bbox") or [0, 0, 0, 0])[1],
+    )
+    right = sorted(
+        [b for b in blocks if _col(b) == 1],
+        key=lambda b: (b.get("block_bbox") or b.get("bbox") or [0, 0, 0, 0])[1],
+    )
+    return left + right
 
 
 def render_page_blocks(
@@ -1492,7 +1585,10 @@ def render_page_blocks(
                     append_reference_section(rendered, reference_blocks, reference_continuations)
                     references_emitted = True
                 references_section_active = False
-            rendered.append(f"### {title}")
+            if title.lower() == "abstract" or re.match(r"^\d+\s", title):
+                rendered.append(f"## {title}")
+            else:
+                rendered.append(f"### {title}")
             if title.lower() == "references":
                 references_heading_seen = True
                 references_section_active = True
@@ -1674,7 +1770,6 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     images_dir.mkdir(parents=True, exist_ok=True)
     page_cache_dir.mkdir(parents=True, exist_ok=True)
     page_num = 0
-    merged_parts = []
     meta = read_json(meta_path) if meta_path.exists() else {}
     source_pdf = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
     pdf_doc = None
@@ -1684,20 +1779,252 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         for page_payload in all_results:
             for res in page_payload.get("layoutParsingResults", []):
                 page_num += 1
-                merged_parts.append(
-                    "\n\n".join(render_page_blocks(vault, page_num, res, images_dir, page_cache_dir, pdf_doc=pdf_doc))
-                )
+                render_page_blocks(vault, page_num, res, images_dir, page_cache_dir, pdf_doc=pdf_doc)
     finally:
         if pdf_doc is not None:
             pdf_doc.close()
     write_json(json_dir / "result.json", all_results)
+
+    # --- Phase 1: raw metadata and source metadata ---
+    artifacts = artifact_paths_for_key(vault, key)
+
+    # raw_meta.json
+    source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
+    pdf_fingerprint = (
+        compute_pdf_fingerprint(source_pdf_path) if source_pdf_path and source_pdf_path.exists() else "unknown"
+    )
+    result_hash = compute_json_hash(all_results)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    raw_meta = {
+        "ocr_provider": meta.get("ocr_provider", "PaddleOCR"),
+        "ocr_model": meta.get("ocr_model", "PaddleOCR"),
+        "ocr_raw_schema_version": "1.0.0",
+        "created_at": now_iso,
+        "updated_at": now_iso,
+        "pdf_fingerprint": pdf_fingerprint,
+        "result_hash": result_hash,
+    }
+    write_json(artifacts.raw_meta, raw_meta)
+
+    # source_metadata.json
+    source_meta = {
+        "zotero_key": meta.get("zotero_key", key),
+        "source_pdf": meta.get("source_pdf", ""),
+        "title": meta.get("title", ""),
+        "authors": meta.get("authors", []),
+        "year": meta.get("year", 0),
+        "journal": meta.get("journal", ""),
+        "doi": meta.get("doi", ""),
+        "bbt_citekey": meta.get("bbt_citekey", ""),
+        "source": "zotero_bbt",
+    }
+    write_json(artifacts.source_metadata, source_meta)
+
+    # Emit canonical raw blocks
+    artifacts.blocks_raw.parent.mkdir(parents=True, exist_ok=True)
+    artifacts.blocks_structured.parent.mkdir(parents=True, exist_ok=True)
+    all_raw_blocks = build_raw_blocks_for_result_lines(key, all_results)
+
+    source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
+    if source_pdf_path and source_pdf_path.exists():
+        from paperforge.worker.ocr_pdf_spans import (
+            backfill_missing_text_from_pdf,
+            backfill_span_metadata_from_pdf,
+        )
+
+        # Attach PDF-derived font/geometry evidence first
+        backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
+
+        # Recover empty OCR text using the same source PDF
+        backfill_missing_text_from_pdf(all_raw_blocks, source_pdf_path)
+
+    write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
+
+    structured, doc_structure = build_structured_blocks(
+        all_raw_blocks,
+        source_metadata=source_meta,
+        structure_output_dir=artifacts.blocks_structured.parent,
+    )
+    write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
+    # Write role-level span profiles
+    from paperforge.worker.ocr_profiles import write_role_span_profiles
+
+    write_role_span_profiles(structured, artifacts.blocks_structured.parent)
+
+    # --- Phase 2: metadata resolution ---
+    metadata_dir = ocr_root / "metadata"
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    frontmatter_candidates = extract_frontmatter_candidates(artifacts.blocks_structured)
+    resolved = resolve_metadata(
+        source_meta,
+        frontmatter_candidates,
+        page_blocks=all_raw_blocks,
+        structured_blocks=structured,
+    )
+    write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
+
+    # --- Phase 2: figure inventory ---
+    figure_inventory = build_figure_inventory(structured)
+    write_back_figure_roles(figure_inventory, structured)
+
+    # --- Author bio: residual figure inventory cleanup (Pass B, P1) ---
+    from paperforge.worker.ocr_bio import (
+        residual_author_bio_pass,
+        post_ref_bio_cleanup,
+        prune_figure_inventory_after_bio,
+        _resolve_ref_start_page,
+    )
+    residual_author_bio_pass(
+        figure_inventory, structured,
+        include_ambiguous=False, include_weak_matched=False,
+    )
+
+    # --- Author bio: post-ref bio cleanup (Pass C, P0) ---
+    ref_start_page = _resolve_ref_start_page(structured)
+    if ref_start_page is not None:
+        post_ref_bio_cleanup(figure_inventory, structured, ref_start_page=ref_start_page)
+        prune_figure_inventory_after_bio(figure_inventory)
+
+    # --- Phase 2a: reader figure synthesis ---
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    reader_payload = synthesize_reader_figures(figure_inventory, structured_blocks=structured)
+    reader_figures_dir = ocr_root / "structure"
+    reader_figures_dir.mkdir(parents=True, exist_ok=True)
+    write_json(reader_figures_dir / "reader_figures.json", reader_payload)
+
+    # --- Phase 2: table inventory ---
+    table_inventory = build_table_inventory(structured)
+    from paperforge.worker.ocr_figures import attach_ownership_conflicts
+
+    attach_ownership_conflicts(figure_inventory, table_inventory)
+    write_figure_inventory(
+        artifacts.blocks_structured.parent / "figure_inventory.json",
+        figure_inventory,
+    )
+    write_back_table_roles(table_inventory, structured)
+    write_table_inventory(
+        artifacts.blocks_structured.parent / "table_inventory.json",
+        table_inventory,
+    )
+
+    # Figure containment render hygiene: tag text blocks inside figure regions
+    tag_figure_contained_text(structured, figure_inventory.get("matched_figures", []))
+
+    # Re-persist structured blocks with writeback roles (table_html, figure_asset)
+    # ponytail: writes entire list again; if throughput matters, write only changed blocks
+    write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
+
+    # --- Phase 2: object artifacts ---
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    ocr_asset_root = ocr_root / "assets"
+    ocr_render_root = ocr_root / "render"
+
+    page_dimensions_by_page: dict[int, tuple[int, int]] = {}
+    for block in structured:
+        page = int(block.get("page", 0) or 0)
+        width = int(block.get("page_width", 0) or 0)
+        height = int(block.get("page_height", 0) or 0)
+        if page and width and height and page not in page_dimensions_by_page:
+            page_dimensions_by_page[page] = (width, height)
+
+    extract_and_write_objects(
+        pdf_path=source_pdf_path,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+        asset_root=ocr_asset_root,
+        render_root=ocr_render_root,
+        page_dimensions_by_page=page_dimensions_by_page,
+    )
+
+    # --- Phase 3: structured renderer ---
+    from paperforge.worker.ocr_render import render_fulltext_markdown, write_render_outputs
+
+    markdown = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata=resolved,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+        page_count=page_num,
+        document_structure=doc_structure,
+        reader_payload=reader_payload,
+    )
+    write_render_outputs(
+        render_root=ocr_root / "render",
+        compat_fulltext=ocr_root / "fulltext.md",
+        markdown=markdown,
+    )
+
+    # --- Phase 3: OCR health report ---
+    from paperforge.worker.ocr_health import (
+        build_ocr_health,
+        build_ocr_raw_integrity_health,
+        write_ocr_health,
+    )
+
+    ocr_raw_integrity = build_ocr_raw_integrity_health(all_raw_blocks)
+    health_report = build_ocr_health(
+        page_count=page_num,
+        raw_blocks_count=len(all_raw_blocks),
+        structured_blocks=structured,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+        doc_structure=doc_structure,
+        reader_payload=reader_payload,
+        rendered_markdown=markdown,
+    )
+    health_report["ocr_raw_integrity"] = ocr_raw_integrity
+    write_ocr_health(ocr_root / "health", health_report)
+    meta["ocr_health_overall"] = health_report["overall"]
+
+    # Persist decision log
+    from paperforge.worker.ocr_decisions import collect_decisions, write_decision_log
+
+    write_decision_log(ocr_root / "health" / "decision_log.jsonl", collect_decisions(structured))
+
+    # --- Phase 5: role-based OCR index ---
+    from paperforge.worker.ocr_index import build_role_indexes, write_role_index
+
+    role_indexes = build_role_indexes(
+        structured_blocks=structured,
+        resolved_metadata=resolved,
+    )
+    write_role_index(ocr_root / "index", role_indexes)
+
+    # Update meta.json with version payloads
+    ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))
+    version_payload = build_version_payload(
+        pdf_fingerprint=pdf_fingerprint,
+        result_json_hash=result_hash,
+        ocr_model=ocr_model,
+    )
+    meta["raw_version"] = version_payload["raw_version"]
+    meta["derived_version"] = version_payload["derived_version"]
+
+    from paperforge.worker.ocr_versions import classify_version_state, expected_derived_payload, expected_raw_payload
+
+    state = classify_version_state(
+        meta=meta,
+        expected_raw=expected_raw_payload(ocr_model=meta.get("raw_version", {}).get("ocr_model", "unknown")),
+        expected_derived=expected_derived_payload(),
+    )
+    meta["raw_upgradable"] = state["raw_upgradable"]
+    meta["derived_stale"] = state["derived_stale"]
+    meta["version_state_updated_at"] = __import__("datetime").datetime.now().isoformat()
+    try:
+        meta["legacy_images_path"] = str(images_dir.relative_to(vault)).replace("\\", "/")
+    except ValueError:
+        meta["legacy_images_path"] = str(images_dir)
+    meta["path_map"] = {"structured_truth": "assets/", "legacy_compat": "images/"}
+    write_json(meta_path, meta)
+
     fulltext_path = ocr_root / "fulltext.md"
-    fulltext_path.write_text("\n\n".join(merged_parts).strip() + "\n", encoding="utf-8")
     markdown_dir = ocr_root / "markdown"
     if markdown_dir.exists():
         shutil.rmtree(markdown_dir)
-    markdown_path = str(fulltext_path.relative_to(vault)).replace("\\", "/") if page_num else ""
-    json_path = str((json_dir / "result.json").relative_to(vault)).replace("\\", "/")
+    markdown_path = str(fulltext_path.relative_to(paths["vault"])).replace("\\", "/") if page_num else ""
+    json_path = str((json_dir / "result.json").relative_to(paths["vault"])).replace("\\", "/")
     fulltext_md_path = str(fulltext_path.resolve())
     return (page_num, markdown_path, json_path, fulltext_md_path)
 
@@ -1826,7 +2153,9 @@ def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False, n
     return exit_code
 
 
-def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selected_keys: set[str] | None = None) -> int:
+def run_ocr(
+    vault: Path, verbose: bool = False, no_progress: bool = False, selected_keys: set[str] | None = None
+) -> int:
     from paperforge.pdf_resolver import resolve_pdf_path
 
     paths = pipeline_paths(vault)
@@ -1890,6 +2219,19 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
             meta["ocr_finished_at"] = ""
             meta["retry_count"] = 0
             write_json(paths["ocr"] / key / "meta.json", meta)
+        elif current == "retryable_error":
+            retry_count = int(meta.get("retry_count", 0)) + 1
+            meta["retry_count"] = retry_count
+            if retry_count > 3:
+                meta["ocr_status"] = "fatal_error"
+                meta["error"] = meta.get("last_error", "Max retries exceeded")
+            else:
+                meta["ocr_status"] = "pending"
+                meta["ocr_job_id"] = ""
+                meta["error"] = meta.get("last_error", "")
+            write_json(paths["ocr"] / key / "meta.json", meta)
+        elif current == "fatal_error":
+            pass
         elif current == "nopdf":
             meta["ocr_status"] = "pending"
             meta["error"] = ""
@@ -1905,9 +2247,14 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
             meta["retry_count"] = 0
             write_json(paths["ocr"] / key / "meta.json", meta)
     ocr_queue = sync_ocr_queue(paths, target_rows)
-    print(f"DEBUG: target_keys count={len(target_keys)}, target_rows count={len(target_rows)}, queue count={len(ocr_queue)}", flush=True)
+    print(
+        f"DEBUG: target_keys count={len(target_keys)}, target_rows count={len(target_rows)}, queue count={len(ocr_queue)}",
+        flush=True,
+    )
     if ocr_queue:
-        print(f"DEBUG: first item={ocr_queue[0].get('zotero_key')} status={ocr_queue[0].get('queue_status')}", flush=True)
+        print(
+            f"DEBUG: first item={ocr_queue[0].get('zotero_key')} status={ocr_queue[0].get('queue_status')}", flush=True
+        )
     max_items_raw = os.environ.get("PADDLEOCR_MAX_ITEMS", "").strip()
     max_items = 3
     if max_items_raw:
@@ -1958,11 +2305,8 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
             try:
                 response = retry_with_meta(_do_poll, meta_path_poll, meta["ocr_job_id"], token)
             except Exception as e:
-                meta["ocr_status"] = "pending"
-                meta["error"] = str(e)
-                meta["last_error"] = str(e)
-                meta["retry_count"] = int(meta.get("retry_count", 0)) + 1
-                queue_row["queue_status"] = "pending"
+                error_state = classify_ocr_error(OCRNetworkError(str(e)), stage="poll")
+                apply_ocr_error_state(queue_row, meta, error_state)
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 changed += 1
                 active_submitted = max(0, active_submitted - 1)
@@ -1971,13 +2315,17 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
                 payload = response.json()["data"]
                 state = payload["state"]
             except (json.JSONDecodeError, KeyError) as e:
-                meta["ocr_status"] = "pending"
-                meta["error"] = f"API schema mismatch during polling: {e}"
-                meta["last_error"] = meta["error"]
+                error_state = classify_ocr_error(
+                    OCRAPISchemaError(f"API schema mismatch during polling: {e}"), stage="poll"
+                )
+                apply_ocr_error_state(queue_row, meta, error_state)
                 meta["raw_response"] = response.text[:1000]
-                meta["retry_count"] = int(meta.get("retry_count", 0)) + 1
-                queue_row["queue_status"] = "pending"
                 write_json(paths["ocr"] / key / "meta.json", meta)
+                json_dir = paths["ocr"] / key / "json"
+                json_dir.mkdir(parents=True, exist_ok=True)
+                raw_error_dir = paths["ocr"] / key / "raw"
+                raw_error_dir.mkdir(parents=True, exist_ok=True)
+                write_json(raw_error_dir / "api_error_payload.json", {"raw_response": response.text[:5000]})
                 changed += 1
                 active_submitted = max(0, active_submitted - 1)
                 continue
@@ -1998,16 +2346,29 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
                     page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(
                         vault, key, all_results
                     )
-                except Exception as e:
-                    meta["ocr_status"] = "pending"
-                    meta["error"] = str(e)
-                    meta["retry_count"] = int(meta.get("retry_count", 0)) + 1
-                    queue_row["queue_status"] = "pending"
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except (OCRPDFResolveError, OCRArtifactIntegrityError, OCRPostprocessError) as exc:
+                    error_state = classify_ocr_error(exc, stage="postprocess")
+                    apply_ocr_error_state(queue_row, meta, error_state)
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     active_submitted = max(0, active_submitted - 1)
                     continue
-                meta["ocr_status"] = "done"
+                except Exception as exc:
+                    error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
+                    apply_ocr_error_state(queue_row, meta, error_state)
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    active_submitted = max(0, active_submitted - 1)
+                    continue
+                health_path_poll = paths["ocr"] / key / "health" / "ocr_health.json"
+                health_report_poll = read_json(health_path_poll) if health_path_poll.exists() else {}
+                if health_report_poll.get("degraded_reasons"):
+                    meta["ocr_status"] = "done_degraded"
+                    meta["degraded_reason"] = "; ".join(health_report_poll["degraded_reasons"])
+                else:
+                    meta["ocr_status"] = "done"
                 # Per D-01: auto_analyze_after_ocr opt-in workflow streamlining
                 cfg_path = vault / "paperforge.json"
                 if cfg_path.exists():
@@ -2070,7 +2431,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
     _failed_count = 0
     _token_warned = False
     for _cycle in range(max_poll_cycles):
-        remaining = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "nopdf", "blocked")]
+        remaining = [r for r in ocr_queue if r.get("queue_status", "") not in OCR_SETTLED_STATUSES]
         if not remaining:
             break
         available_slots = max(0, max_items - active_submitted)
@@ -2207,9 +2568,29 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
                     lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
                     results = [json.loads(l)["result"] for l in lines]
                     page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, results)
-                except Exception:
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except (OCRPDFResolveError, OCRArtifactIntegrityError, OCRPostprocessError) as exc:
+                    error_state = classify_ocr_error(exc, stage="postprocess")
+                    apply_ocr_error_state(queue_row, meta, error_state)
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    active_submitted = max(0, active_submitted - 1)
                     continue
-                meta["ocr_status"] = "done"
+                except Exception as exc:
+                    error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
+                    apply_ocr_error_state(queue_row, meta, error_state)
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    active_submitted = max(0, active_submitted - 1)
+                    continue
+                health_path_loop = paths["ocr"] / key / "health" / "ocr_health.json"
+                health_report_loop = read_json(health_path_loop) if health_path_loop.exists() else {}
+                if health_report_loop.get("degraded_reasons"):
+                    meta["ocr_status"] = "done_degraded"
+                    meta["degraded_reason"] = "; ".join(health_report_loop["degraded_reasons"])
+                else:
+                    meta["ocr_status"] = "done"
                 meta["ocr_finished_at"] = datetime.now(timezone.utc).isoformat()
                 meta["page_count"] = page_num
                 meta["markdown_path"] = md_path
@@ -2242,7 +2623,11 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
     write_ocr_queue(paths, ocr_queue)
     # Determine exit code: 0 = all settled, 1 = some items still pending
-    final_remaining = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "nopdf", "blocked", "error")]
+    final_remaining = [
+        r
+        for r in ocr_queue
+        if r.get("queue_status", "") not in ("done", "done_degraded", "fatal_error", "nopdf", "blocked", "error")
+    ]
     pending_keys = [r["zotero_key"] for r in final_remaining]
     final_statuses = {r["zotero_key"]: r.get("queue_status", "?") for r in ocr_queue}
     done_count = sum(1 for s in final_statuses.values() if s == "done")

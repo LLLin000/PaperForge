@@ -85,4 +85,20 @@ All notable changes to PaperForge.
 
 ---
 
+## 1.5.9 (2026-06-17)
+
+### OCR Tail Rendering Fixes
+
+- `_reorder_tail_run`: Added `skip_section_grouping` parameter for tail pages
+  with reference items but no explicit "References" heading. These pages now
+  emit blocks in column-sorted order with refs grouped at end, preserving
+  natural reading order.
+- `_order_tail_blocks`: Per-page detection of ref heading presence to activate
+  the new path.
+- `_normalize_backmatter_roles_after_boundary`: Removed forced
+  `body_paragraph → backmatter_body` conversion inside backmatter region
+  (body paragraphs attach naturally via geometric ownership).
+- Synthetic ref section (Phase 2.5): Creates synthetic `ref_section` when
+  ref_items exist but no ref_heading, preventing ref scattering as orphans.
+
 For upgrade: `pip install --upgrade paperforge`

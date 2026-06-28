@@ -1439,7 +1439,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
         meta = _read_json(meta_path)
         ocr_status = str(meta.get("ocr_status", "pending")).strip().lower()
 
-    if ocr_status != "done":
+    if ocr_status not in ("done", "done_degraded"):
         result["message"] = f"[ERROR] OCR status='{ocr_status}', not 'done'. Wait for OCR or check meta.json."
         return result
 
@@ -1531,7 +1531,7 @@ def scan_deep_reading_queue(vault: Path) -> list[dict]:
     # Sort: OCR completed first, then by domain, then by key
     queue.sort(
         key=lambda row: (
-            0 if row["ocr_status"] == "done" else 1,
+            0 if row["ocr_status"] in ("done", "done_degraded") else 1,
             row["domain"],
             row["zotero_key"],
         )
@@ -1737,8 +1737,8 @@ def main() -> int:
                 serializable.append(r)
             print(json.dumps(serializable, ensure_ascii=False, indent=2))
         else:
-            ready = [row for row in queue if row["ocr_status"] == "done"]
-            blocked = [row for row in queue if row["ocr_status"] != "done"]
+            ready = [row for row in queue if row["ocr_status"] in ("done", "done_degraded")]
+            blocked = [row for row in queue if row["ocr_status"] not in ("done", "done_degraded")]
             print(f"# 待精读队列 ({len(queue)} 篇)")
             print()
             if ready:

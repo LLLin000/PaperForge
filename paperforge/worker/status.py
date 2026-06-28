@@ -782,7 +782,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 if not _ws_dir.exists():
                     _missing_workspace += 1
                     continue
-                if _e.get("ocr_status") == "done":
+                if _e.get("ocr_status") in ("done", "done_degraded"):
                     _ft = _ws_dir / "fulltext.md"
                     if not _ft.exists():
                         _missing_fulltext += 1
@@ -1018,7 +1018,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             ocr_failed += 1
             continue
         status = str(meta.get("ocr_status", "")).strip().lower()
-        if status == "done":
+        if status in ("done", "done_degraded"):
             ocr_done += 1
         elif status in ("queued", "running", "processing"):
             ocr_processing += 1
@@ -1038,7 +1038,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 continue
             ocr_total += 1
             status = str(meta.get("ocr_status", "")).strip().lower()
-            if status == "done":
+            if status in ("done", "done_degraded"):
                 ocr_done += 1
             elif status in ("queued", "running", "processing"):
                 ocr_processing += 1
@@ -1110,6 +1110,48 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     except Exception:
         pass
 
+    # Structured OCR health
+    from paperforge.commands.ocr import _collect_ocr_health_summary as _collect_health
+    _structured_health = _collect_health(vault)
+
+    # OCR version state
+    _ocr_version_state = {
+        "total_papers": 0, "derived_stale_count": 0, "raw_upgradable_count": 0,
+        "derived_stale_keys": [], "raw_upgrade_keys": [],
+        "legacy_backfilled_count": 0, "legacy_backfilled_keys": [],
+    }
+    try:
+        ocr_root = vault / cfg["system_dir"] / "PaperForge" / "ocr"
+        if ocr_root.exists():
+            papers = []
+            for paper_dir in ocr_root.iterdir():
+                if not paper_dir.is_dir():
+                    continue
+                meta_path = paper_dir / "meta.json"
+                if meta_path.exists():
+                    meta = read_json(meta_path)
+                    has_state = "raw_version" in meta or "derived_version" in meta
+                    if has_state:
+                        papers.append(meta)
+                    elif meta.get("ocr_status") == "done" and meta.get("is_backfilled"):
+                        papers.append({**meta, "is_legacy_backfilled": True})
+            if papers:
+                _ocr_version_state["total_papers"] = len(papers)
+                _ocr_version_state["derived_stale_count"] = sum(1 for m in papers if m.get("derived_stale"))
+                _ocr_version_state["raw_upgradable_count"] = sum(1 for m in papers if m.get("raw_upgradable"))
+                _ocr_version_state["derived_stale_keys"] = [
+                    m.get("zotero_key", "?") for m in papers if m.get("derived_stale")
+                ]
+                _ocr_version_state["raw_upgrade_keys"] = [
+                    m.get("zotero_key", "?") for m in papers if m.get("raw_upgradable")
+                ]
+                _ocr_version_state["legacy_backfilled_count"] = sum(1 for m in papers if m.get("is_legacy_backfilled"))
+                _ocr_version_state["legacy_backfilled_keys"] = [
+                    m.get("zotero_key", "?") for m in papers if m.get("is_legacy_backfilled")
+                ]
+    except Exception:
+        pass
+
     if json_output:
         payload = {
             "version": __import__("paperforge").__version__,
@@ -1128,6 +1170,8 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 "done": ocr_done,
                 "failed": ocr_failed,
             },
+            "structured_ocr_health": _structured_health,
+            "ocr_version_state": _ocr_version_state,
             "path_errors": path_error_count,
             "env_configured": len(env_found) > 0,
             # Phase 25: lifecycle/health/maturity from canonical index ({} when unavailable)
@@ -1171,8 +1215,28 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             f"asset={ha['asset_health']['healthy']}/{ha['asset_health']['unhealthy']}"
         )
     print(
-        f"- ocr: {ocr_done}/{ocr_total} done (pending: {ocr_pending}, processing: {ocr_processing}, failed: {ocr_failed})"
+        f"- ocr: {ocr_done}/{ocr_total} done "
+        f"(pending: {ocr_pending}, processing: {ocr_processing}, failed: {ocr_failed})"
     )
+    if _structured_health:
+        print(f"- structured_ocr_health: {len(_structured_health)} paper(s)")
+        for entry in _structured_health:
+            print(
+                f"  - {entry['key']}: overall={entry['overall']}, "
+                f"{entry['page_count']} pages, {entry['blocks_count']} blocks, "
+                f"{entry['figure_count']} figures, {entry['table_count']} tables"
+            )
+    if _ocr_version_state["total_papers"] > 0:
+        stale = _ocr_version_state["derived_stale_count"]
+        upgradable = _ocr_version_state["raw_upgradable_count"]
+        print(f"- ocr_version_state: {_ocr_version_state['total_papers']} paper(s)")
+        if stale:
+            print(f"  derived_stale: {stale} (auto-rebuilt on sync)")
+        if upgradable:
+            print(f"  raw_upgradable: {upgradable} (run `paperforge ocr redo` to upgrade)")
+        legacy_count = _ocr_version_state.get("legacy_backfilled_count", 0)
+        if legacy_count:
+            print(f"  legacy_backfilled: {legacy_count} (backfilled from old OCR result)")
     print(f"- path_errors: {path_error_count}")
     if path_error_count > 0:
         print("  Tip: Run `paperforge repair --fix-paths` to attempt resolution")

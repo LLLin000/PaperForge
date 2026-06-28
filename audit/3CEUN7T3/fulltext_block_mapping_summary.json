@@ -1,0 +1,1357 @@
+{
+  "mappable_block_count": 135,
+  "found_count": 82,
+  "missing_count": 53,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Knee Surgery, Sports Traumatology, Arthroscopy (2023) 31:4585–4593 https://doi.o",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "SHOULDER",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Gender and degree of tendon healing are independent predictive factors for clini",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Koray Şahin $ ^{1} $ ☑. Muhammed Oğuzhan Albayrak $ ^{2} $ ☑. Fatih Şentürk $ ^{",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "urpose Arthroscopic rotator cuff repair (aRCR) is a commonly performed procedure",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2452
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Keywords Rotator cuff tear · Rotator cuff healing · Predictive factor · Outcome",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2921
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3004
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "☒ Koray Şahin drkoraysahin@gmail.com",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3017
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $ Department of Orthopedics and Traumatology, Bezmialem Vakif University,",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Rotator cuff disease is the main cause of admission to primary care due to shoul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3149
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{2} $ Department of Orthopedics and Traumatology, Istanbul University Istanbu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{3} $ Department of Orthopedics and Traumatology, Hendek State Hospital, Saka",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{4} $ Department of Orthopedics and Traumatology, Istanbul Haseki Training an",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "4586",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Knee Surgery, Sports Traumatology, Arthroscopy (2023) 31:4585–4593",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "conservative management is associated with increase in tear size and inferior ou",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Previous outcome studies reported significant correlation between successful hea",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The purpose of this study is to evaluate patients with successfully healed tendo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4056
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Materials and methods",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4388
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Institutional review board approval (E-67690154-050.03.04-1110453) was obtained ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Patient selection",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Records of 454 patients who underwent aRCR procedure during study period by the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4410
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and rehabilitation. All decisions for surgery were given by the senior author wi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4752
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Inclusion criteria were (1) full-thickness RCT treated with transosseous equival",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5228
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Records of 454 patients who underwent aRCR during study period were evaluated an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6059
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Surgical procedure",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6786
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All surgeries were performed by the senior author with patients positioned in be",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6805
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A knotless TOE aRCR repair was then performed using a previously described techn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7408
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Knee Surgery, Sports Traumatology, Arthroscopy (2023) 31:4585–4593",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4587",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1 Preoperative demographic, clinical and intraoperative data of patients (",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Preoperative demographic, clinical and operative variable (n = 13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "BMI body mass index, CMS Constant–Murley score, LHBT long head of biceps tendon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7808
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "small tears and two anchors for medium-sized tears. Repair was completed using o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7888
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Postoperative rehabilitation",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All patients underwent same standardized postoperative protocol and were followe",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Clinical variables and patient assessment",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8033
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All patients underwent preoperative clinical evaluation 1 day before the surgery",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8075
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "group (group II) consisted of patients with postoperative CMS > 75. The cutoff s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8703
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Other clinical outcome measures included pain score and ROM measurements. Pain s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9535
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Radiologic assessment",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10468
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All included patients underwent preoperative MRI to confirm full-thickness RCT d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10490
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4588",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Knee Surgery, Sports Traumatology, Arthroscopy (2023) 31:4585–4593",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "classification described by DeOrio and Cofield [8]. Patte classification [30] wa",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All MRI scans were obtained using a 1.5-Tesla magnetic resonance unit (Magnetom ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Statistical analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10861
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Descriptive statistical methods used in order to analyze study data were mean, m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10882
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A multivariate logistic regression analysis was conducted with statistically sig",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Post hoc power analysis of the logistic regression model was performed using the",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "suggested to reach the necessary power in logistic regression models [32]. Howev",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11553
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Number of independent variables was kept minimum in the logistic regression mode",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11952
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results",
+      "found_in_fulltext": true,
+      "fulltext_offset": 908
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Comparisons of preoperative clinical outcome measures including ROM, functional ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12663
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Possible predictive factors affecting final clinical outcome were evaluated in a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13449
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Knee Surgery, Sports Traumatology, Arthroscopy (2023) 31:4585–4593",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4589",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 2 Preoperative and postoperative clinical outcome data of study groups",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td></td><td>Group I (poor outcome, n=24)</td><td>Group II (good outc",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data are reported as mean±standard deviation. Bolded p values indicate statistic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14378
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A multivariate logistic regression analysis was then conducted following the fin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14726
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The most important finding of the present study is that female gender and degree",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The majority of data in the literature regarding the success of aRCR consists of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15047
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "rotator cuff healing. However, the available data are con- flicting since some i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16417
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4590",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Knee Surgery, Sports Traumatology, Arthroscopy (2023) 31:4585–4593",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 3 Univariate analysis of baseline demographic and clinical data, intraoper",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data reported as mean ± standard deviation or n (%). Bolded p values indicate st",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17574
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "BMI body mass index, CMS Constant–Murley score, VAS visual analogue scale, LHBT ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17677
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 4 Multivariate logistic regression analysis of predictive factors associat",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "BMI body mass index, CI confidence interval, n.s. non-significant",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17937
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Consistent to these data, it was showed by the findings of the present study tha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18003
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "dressing, and that women might have different subjective symptom perception comp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18403
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Findings of the present study showed that second independent predictive factor a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18589
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Knee Surgery, Sports Traumatology, Arthroscopy (2023) 31:4585–4593",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4591",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "showed that higher signal intensity of the repaired tendon on postoperative MRI ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Obesity has been recently reported as a risk factor for poor healing of RCTs $ [",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Determination of all contributors to clinical outcome is difficult since it is a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19728
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "This study has several limitations that need to be noted. Retrospective nature o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20473
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Another limitation is that type of diabetes and level of gly- cemic control data",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This study also has some strength that needs to be mentioned. Compared to simila",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1941
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This study showed that despite successful healing of repaired tendon confirmed o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21857
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Funding No funding was received for this study.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22324
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Declarations",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22377
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Ethical approval IRB approval was obtained from institutional review board of Is",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22390
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22570
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Boileau P, Brassart N, Watkinson DJ, Carles M, Hatzidakis AM, Krishnan SG (20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22581
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Chen Y, Li H, Qiao Y, Ge Y, Li Y, Hua Y et al (2019) Double-row rotator cuff ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22794
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "4592",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Knee Surgery, Sports Traumatology, Arthroscopy (2023) 31:4585–4593",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Cho C-H, Ye H-U, Jung J-W, Lee Y-K (2015) Gender affects early postoperative ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Chung SW, Park JS, Kim SH, Shin SH, Oh JH (2012) Quality of life after arthro",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Colvin AC, Egorova N, Harrison AK, Moskowitz A, Flatow EL (2012) National tre",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23081
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Constant CR, Murley AH (1987) A clinical method of functional assessment of t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23221
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Davey MS, Hurley ET, Carroll PJ, Galbraith JG, Shannon F, Kaar K et al (2023)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. DeOrio JK, Cofield RH (1984) Results of a second attempt at surgical repair o",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Elliott RSJ, Lim Y-J, Coghlan J, Troupis J, Bell S (2019) Structural integrit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23348
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Erşen A, Şahin K, Albayrak MO (2022) Older age and higher body mass index ar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23552
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Fermont AJM, Wolterbeek N, Wessel RN, Baeyens J-P, de Bie RA (2014) Prognost",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23774
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Fuchs B, Weishaupt D, Zanetti M, Hodler J, Gerber C (1999) Fatty degeneratio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24001
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Galatz LM, Ball CM, Teefey SA, Middleton WD, Yamaguchi K (2004) The outcome ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24223
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Giri A, O'Hanlon D, Jain NB (2023) Risk factors for rotator cuff disease: a ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24434
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Harryman DT, Mack LA, Wang KY, Jackins SE, Richardson ML, Matsen FA (1991) R",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24676
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Heuberer PR, Smolen D, Pauzenberger L, Plachel F, Salem S, Laky B et al (201",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24879
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Holtedahl R, Bøe B, Brox JI (2023) The clinical impact of retears after repa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25171
+    },
+    {
+      "block_id": "p8:17",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Hurley ET, Maye AB, Mullett H (2019) Arthroscopic rotator cuff repair: a sys",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25370
+    },
+    {
+      "block_id": "p8:18",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Jeong HJ, Nam KP, Yeo JH, Rhee S-M, Oh JH (2022) Retear after arthroscopic r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25555
+    },
+    {
+      "block_id": "p8:19",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Jost B, Pfirrmann CW, Gerber C, Switzerland Z (2000) Clinical outcome after ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25737
+    },
+    {
+      "block_id": "p8:20",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Kukkonen J, Kauko T, Vahlberg T, Joukainen A, Aärimaa V (2013) Investigating",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25893
+    },
+    {
+      "block_id": "p8:21",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Li H, Chen Y, Chen S (2019) Postoperative residual pain is associated with a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26117
+    },
+    {
+      "block_id": "p8:22",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Longo UG, Risi Ambrogioni L, Candela V, Berton A, Carnevale A, Schena E et a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26350
+    },
+    {
+      "block_id": "p8:23",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Maher A, Leigh W, Young S, Caughey W, Hoffman T, Brick M et al (2022) Do age",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26634
+    },
+    {
+      "block_id": "p8:24",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Mall NA, Tanaka MJ, Choi LS, Paletta GA (2014) Factors affecting rotator cuf",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26948
+    },
+    {
+      "block_id": "p8:25",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Moosmayer S, Lund G, Seljom US, Haldorsen B, Svege IC, Hennig T et al (2014)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27071
+    },
+    {
+      "block_id": "p8:26",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Nabergoj M, Bagheri N, Bonnevialle N, Gallinet D, Barth J, Labattut L et al ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27340
+    },
+    {
+      "block_id": "p8:27",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Noyes MP, Ladermann A, Denard PJ (2019) Functional outcome and healing with ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27565
+    },
+    {
+      "block_id": "p8:28",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Paloneva J, Lepola V, Aärimaa V, Joukainen A, Ylinen J, Mattila VM (2015) In",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27780
+    },
+    {
+      "block_id": "p8:29",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Patte D (1990) Classification of rotator cuff lesions. Clin Orthop Relat Res",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28018
+    },
+    {
+      "block_id": "p8:30",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Paul S, Goyal T, Yadav AK (2022) Association between functional outcome scor",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28109
+    },
+    {
+      "block_id": "p8:31",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Peduzzi P, Concato J, Kemper E, Holford TR, Feinstein AR (1996) A simulation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28323
+    },
+    {
+      "block_id": "p8:32",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Şahin K, Şentürk F, Ersin M, Arzu U, Chodza M, Erşen A (2021) Repair integri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28514
+    },
+    {
+      "block_id": "p8:33",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Sugaya H, Maeda K, Matsuki K, Moriishi J (2007) Repair integrity and functio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28828
+    },
+    {
+      "block_id": "p8:34",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Vittinghoff E, McCulloch CE (2007) Relaxing the rule of ten events per varia",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29033
+    },
+    {
+      "block_id": "p8:35",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. Voigt C, Bosse C, Vosshenrich R, Schulz AP, Lill H (2010) Arthroscopic supra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29179
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Knee Surgery, Sports Traumatology, Arthroscopy (2023) 31:4585–4593",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "4593",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. Warrender WJ, Brown OL, Abboud JA (2011) Outcomes of arthroscopic rotator cu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Wylie JD, Baran S, Granger EK, Tashjian RZ (2018) A comprehensive evaluation",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. Wylie JD, Suter T, Potter MQ, Granger EK, Tashjian RZ (2016) Mental health h",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29411
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40. Yoo JC, Ahn JH, Koh KH, Lim KS (2009) Rotator cuff integrity after arthrosco",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29665
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Publisher's Note Springer Nature remains neutral with regard to jurisdictional c",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Springer Nature or its licensor (e.g. a society or other partner) holds exclusiv",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

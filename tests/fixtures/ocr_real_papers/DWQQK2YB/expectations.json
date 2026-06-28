@@ -1,0 +1,210 @@
+{
+  "document": {
+    "expected_reader_figure_count_min": 4,
+    "expected_reference_zone": true,
+    "expected_abstract_span": true,
+    "expected_post_reference_backmatter_zone": true,
+    "notes": [
+      "Updated expectations after RC3 (unassigned role) and RC4 (post-reference backmatter) fixes.",
+      "Figure captions as figure_caption_candidate is CORRECT per spec: object-gate roles stay as candidate at document-gate time.",
+      "Biographies now correctly in post_reference_backmatter_zone instead of reference_zone.",
+      "Page 1 (preproof cover) removed entirely from output.",
+      "OCR reads 'Amr Yoo' instead of 'Ami Yoo' on page 32.",
+      "Eunpyo Choi biography not present in OCR output."
+    ]
+  },
+  "pages": {
+    "2": {
+      "assertions": [
+        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "notes": "BUG: Real: unknown_structural - should be paper_title"},
+        {"text_contains": "These authors contributed equally", "expected_role": "frontmatter_support", "notes": "frontmatter normalization: equal-contribution note → support"},
+        {"text_contains": "Corresponding author", "expected_role": "frontmatter_support", "notes": "frontmatter normalization: correspondence → support"},
+        {"text_equals": "Highlights", "expected_role": "structured_insert", "notes": "BUG: Real: structured_insert - should be paragraph_title"}
+      ]
+    },
+    "3": {
+      "assertions": [
+        {"text_contains": "Histological evaluation revealed", "expected_role": "abstract_body", "notes": "abstract_span captures Highlights continuation"},
+        {"text_equals": "Abstract", "expected_role": "abstract_heading", "expected_zone": "body_zone"},
+        {"text_contains": "Mesenchymal stem cells", "expected_role": "abstract_body", "expected_zone": "body_zone"},
+        {"text_contains": "Keywords:", "expected_role": "structured_insert"},
+        {"text_equals": "1. Introduction", "expected_role": "section_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "4": {
+      "assertions": [
+        {"text_contains": "As the world population increases", "expected_role": "body_paragraph", "expected_zone": "body_zone"},
+        {"count_text": {"min": 2, "max": 5}}
+      ]
+    },
+    "5": {
+      "assertions": [
+        {"text_contains": "tissues and organs", "expected_role": "body_paragraph", "expected_zone": "body_zone"},
+        {"count_text": {"min": 2, "max": 5}}
+      ]
+    },
+    "6": {
+      "assertions": [
+        {"text_contains": "still some unsolved issues", "expected_role": "body_paragraph", "expected_zone": "body_zone"},
+        {"count_text": {"min": 2, "max": 5}}
+      ]
+    },
+    "7": {
+      "assertions": [
+        {"text_equals": "2. Experimental section", "expected_role": "section_heading", "expected_zone": "body_zone"},
+        {"text_equals": "2.1 Cell culture", "expected_role": "subsection_heading", "expected_zone": "body_zone"},
+        {"text_equals": "2.2 Fabrication and characteristics of MNP labeled MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "8": {
+      "assertions": [
+        {"text_equals": "2.3 Chondrogenic differentiation of the MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"},
+        {"text_equals": "2.4 Experimental setup for electromagnetic actuation of the MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "9": {
+      "assertions": [
+        {"text_contains": "The electromagnetic actuation of the MR-SCS", "expected_role": "body_paragraph", "expected_zone": "body_zone"},
+        {"text_equals": "2.5 Experimental setup for low-field electromagnetic stimulation of the MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "10": {
+      "assertions": [
+        {"text_equals": "2.6 Ex vivo cartilage defect model and implantation of the MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"},
+        {"text_equals": "2.7 Gene expression analysis", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "11": {
+      "assertions": [
+        {"text_equals": "2.8 Histological and immunohistochemical staining analysis", "expected_role": "subsection_heading", "expected_zone": "body_zone"},
+        {"text_equals": "2.9 Statistical data analysis", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "12": {
+      "assertions": [
+        {"text_equals": "3. Results", "expected_role": "section_heading", "expected_zone": "body_zone"},
+        {"text_equals": "3.1 Morphology and cell viability of the MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "13": {
+      "assertions": [
+        {"text_contains": "Prussian blue stain", "expected_role": "body_paragraph", "expected_zone": "body_zone"}
+      ]
+    },
+    "15": {
+      "assertions": [
+        {"text_contains": "linearly increased at fixed magnetic field", "expected_role": "body_paragraph", "expected_zone": "body_zone", "notes": "BUG: OCR raw label is abstract, but normalized role should remain body_paragraph on this Results page."}
+      ]
+    },
+    "17": {
+      "assertions": [
+        {"text_equals": "3.4 Effects of LF-EMF stimulation on in vitro chondrogenic differentiation of the MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "18": {
+      "assertions": [
+        {"text_equals": "3.5 Effects of LF-EMF stimulation on ex vivo cartilage regeneration of MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "19": {
+      "assertions": [
+        {"text_equals": "4. Discussion", "expected_role": "section_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "24": {
+      "assertions": [
+        {"text_equals": "4. Conclusion", "expected_role": "section_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "25": {
+      "assertions": [
+        {"text_equals": "Conflict of Interest", "expected_role": "subsection_heading", "notes": "post-ref heading normalized to subsection_heading per backmatter boundary redesign"},
+        {"text_contains": "All other authors declare", "expected_role": "body_paragraph", "expected_zone": "body_zone", "notes": "post-ref backmatter body in body_zone per backmatter boundary redesign"},
+        {"text_equals": "Acknowledgments", "expected_role": "sub_subsection_heading", "notes": "post-ref heading normalized to sub_subsection_heading per backmatter boundary redesign"},
+        {"text_contains": "A. Yoo and G. Go contributed equally", "expected_role": "body_paragraph", "notes": "equal contribution note in body_zone per backmatter boundary redesign"}
+      ]
+    },
+    "26": {
+      "assertions": [
+        {"text_equals": "References", "expected_role": "reference_heading", "expected_zone": "reference_zone"},
+        {"count_reference_content": {"min": 8, "max": 12}}
+      ]
+    },
+    "27": {
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
+    },
+    "28": {
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
+    },
+    "29": {
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
+    },
+    "30": {
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
+    },
+    "31": {
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
+    },
+    "32": {
+      "assertions": [
+        {"text_equals": "Biographies", "expected_role": "sub_subsection_heading", "expected_zone_any_of": ["post_reference_backmatter_zone", "tail_nonref_hold_zone"], "notes": "post-ref heading normalized to sub_subsection_heading per backmatter boundary redesign"},
+        {"text_contains": "Yoo received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone", "notes": "OCR reads 'Amr Yoo' instead of 'Ami Yoo'"},
+        {"text_contains": "Gwangjun Go received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Kim Tien Nguyen received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Kyungmin Lee received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Hyun-Ki Min received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"}
+      ]
+    },
+    "33": {
+      "assertions": [
+        {"text_contains": "Byungjeon Kang received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Chang-Sei Kim received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Jiwon Han received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Jong-Oh Park received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"}
+      ]
+    },
+    "35": {
+      "assertions": [
+        {"text_equals": "Table and Figure Captions", "expected_role": "subsection_heading", "notes": "post-ref heading → subsection_heading per backmatter boundary redesign"}
+      ]
+    },
+    "36": {
+      "assertions": [
+        {"text_contains": "Fig. 4. Effect of LF-EMF", "expected_role": "figure_caption_candidate", "notes": "CORRECT: object-gate role stays as candidate at document-gate time"}
+      ]
+    },
+    "37": {
+      "assertions": [
+        {"text_contains": "Fig. 1", "expected_role": "figure_caption_candidate"}
+      ],
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 1, "asset_block_ids": [2], "must_render_as_object": true}
+      ]
+    },
+    "38": {
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 2, "asset_block_ids": [14], "must_render_as_object": true}
+      ]
+    },
+    "41": {
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 3, "asset_block_ids": [2], "must_render_as_object": true},
+        {"object_type": "figure", "figure_number": 4, "asset_block_ids": [8, 9], "must_render_as_object": true}
+      ]
+    }
+  },
+  "expected_bugs": [
+    {
+      "bug": "abstract_highlights_confused",
+      "pages": [3],
+      "description": "Highlights bullet continuation classified as abstract_body. Keywords now correctly classified as structured_insert.",
+      "fix": "Cross-page highlights continuation detection"
+    },
+    {
+      "bug": "backmatter_headings_not_recognized",
+      "pages": [25, 35],
+      "description": "Conflict of Interest, Acknowledgments as section_heading. Table and Figure Captions as subsection_heading.",
+      "fix": "Backmatter heading detection in tail_nonref_hold_zone normalization"
+    }
+  ]
+}

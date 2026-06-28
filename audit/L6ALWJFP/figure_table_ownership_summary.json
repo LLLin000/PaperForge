@@ -1,0 +1,55 @@
+{
+  "figures": {
+    "matched_count": 3,
+    "ambiguous_count": 0,
+    "unresolved_cluster_count": 0,
+    "unmatched_asset_count": 3,
+    "matched": [
+      {
+        "figure_number": 1,
+        "legend_block_id": 3,
+        "asset_block_ids": [
+          2
+        ],
+        "page": 2,
+        "match_type": null
+      },
+      {
+        "figure_number": 3,
+        "legend_block_id": 5,
+        "asset_block_ids": [
+          2,
+          4
+        ],
+        "page": 9,
+        "match_type": null
+      },
+      {
+        "figure_number": 4,
+        "legend_block_id": 19,
+        "asset_block_ids": [
+          4,
+          6,
+          7,
+          9,
+          13,
+          12,
+          11,
+          16,
+          18
+        ],
+        "page": 11,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [],
+    "unresolved": []
+  },
+  "tables": {
+    "matched_count": 0,
+    "ambiguous_count": 0,
+    "unmatched_asset_count": 5,
+    "matched": [],
+    "ambiguous": []
+  }
+}

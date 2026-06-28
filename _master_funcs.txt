@@ -1,0 +1,468 @@
+=== def _bbox_center_x ===
+def _bbox_center_x(bbox: list[int]) -> float:
+    return (int(bbox[0]) + int(bbox[2])) / 2
+
+
+
+=== def _bbox_center_y ===
+def _bbox_center_y(bbox: list[int]) -> float:
+    return (int(bbox[1]) + int(bbox[3])) / 2
+
+
+
+=== def _bbox_height ===
+def _bbox_height(bbox: list[int]) -> int:
+    return max(0, int(bbox[3]) - int(bbox[1]))
+
+
+
+=== def _bbox_horizontal_overlap ===
+def _bbox_horizontal_overlap(a: list[int], b: list[int]) -> int:
+    return max(0, min(int(a[2]), int(b[2])) - max(int(a[0]), int(b[0])))
+
+
+
+=== def _bbox_horizontal_overlap_ratio ===
+def _bbox_horizontal_overlap_ratio(a: list[int], b: list[int]) -> float:
+    width = min(_bbox_width(a), _bbox_width(b))
+    if width <= 0:
+        return 0.0
+    return _bbox_horizontal_overlap(a, b) / width
+
+
+
+=== def _bbox_vertical_overlap ===
+def _bbox_vertical_overlap(a: list[int], b: list[int]) -> int:
+    return max(0, min(int(a[3]), int(b[3])) - max(int(a[1]), int(b[1])))
+
+
+
+=== def _bbox_width ===
+def _bbox_width(bbox: list[int]) -> int:
+    return max(0, int(bbox[2]) - int(bbox[0]))
+
+
+
+=== def _cluster_bbox ===
+def _cluster_bbox(cluster: list[dict]) -> list[int]:
+    return [
+        min(int(item["block_bbox"][0]) for item in cluster),
+        min(int(item["block_bbox"][1]) for item in cluster),
+        max(int(item["block_bbox"][2]) for item in cluster),
+        max(int(item["block_bbox"][3]) for item in cluster),
+    ]
+
+
+
+=== def _figure_caption_blocks ===
+def _figure_caption_blocks(blocks: list[dict]) -> list[dict]:
+    captions = []
+    for block in blocks:
+        if block.get("block_label") not in {"figure_title", "paragraph_title", "text"}:
+            continue
+        text = clean_block_text(block.get("block_content", ""))
+        if is_formal_figure_legend(text):
+            captions.append(block)
+    return captions
+
+
+
+=== def _precaption_media_region ===
+def _precaption_media_region(
+    caption_bbox: list[int],
+    cluster_bboxes: list[list[int]],
+    blocks: list[dict] | None = None,
+    body_column_width: int = 0,
+
+=== def _union_bboxes ===
+def _union_bboxes(bbox_list: list[list[int]]) -> list[int]:
+    return [
+        min(int(bbox[0]) for bbox in bbox_list),
+        min(int(bbox[1]) for bbox in bbox_list),
+        max(int(bbox[2]) for bbox in bbox_list),
+        max(int(bbox[3]) for bbox in bbox_list),
+    ]
+
+
+
+=== def clean_block_text ===
+def clean_block_text(text: str) -> str:
+    text = html.unescape(normalize_obsidian_markdown(text)).strip()
+    return text
+
+
+
+=== def compute_precaption_composite_regions ===
+def compute_precaption_composite_regions(blocks: list[dict], page_width: int = 0, page_height: int = 0) -> list[dict]:
+    caption_blocks = _figure_caption_blocks(blocks)
+    _, clusters = media_clusters(blocks)
+    cluster_bboxes = [_cluster_bbox(cluster) for cluster in clusters]
+    body_column_width = estimate_body_column_width(blocks, page_width=page_width)
+    regions: list[dict] = []
+    for caption in caption_blocks:
+        caption_bbox = [int(value) for value in caption.get("block_bbox", [0, 0, 0, 0])]
+        precaption_region = _precaption_media_region(
+            caption_bbox, cluster_bboxes, blocks=blocks, body_column_width=body_column_width
+        )
+        if not precaption_region:
+            continue
+        region_blocks = []
+        for block in blocks:
+            label = block.get("block_label", "")
+            bbox = [int(value) for value in block.get("block_bbox", [0, 0, 0, 0])]
+            if bbox[3] > caption_bbox[1] + 24:
+                continue
+            if bbox[3] < precaption_region[1] - 240:
+                continue
+            vertical_overlap_with_region = _bbox_vertical_overlap(bbox, precaption_region)
+            near_region_side = vertical_overlap_with_region > 0 and (
+                0 <= precaption_region[0] - bbox[2] <= 80 or 0 <= bbox[0] - precaption_region[2] <= 80
+            )
+            intersects_region = (
+                _bbox_horizontal_overlap(bbox, precaption_region) > 0
+                or precaption_region[0] - 24 <= _bbox_center_x(bbox) <= precaption_region[2] + 24
+                or near_region_side
+            )
+            if not intersects_region:
+                continue
+            if label in {"image", "chart"}:
+                if _bbox_vertical_overlap(bbox, precaption_region) <= 0 and bbox[3] < precaption_region[1] - 80:
+                    continue
+                region_blocks.append(block)
+                continue
+            if label in {"text", "paragraph_title"}:
+                if bbox[3] < precaption_region[1] - 80:
+                    continue
+                width = _bbox_width(bbox)
+                text = clean_block_text(block.get("block_content", ""))
+                if is_body_paragraph_like_text_block(
+                    block,
+                    body_column_width=body_column_width,
+                    cluster_bboxes=cluster_bboxes,
+                    caption_bbox=caption_bbox,
+                ):
+                    continue
+                if (
+                    text
+                    and (
+                        not re.match(
+                            "^(?:Extended\\s+Data\\s+Fig\\.?|Extended\\s+Data\\s+Figure|Figure|Fig\\.?|Table)\\s+\\w+",
+                            text,
+                            flags=re.IGNORECASE,
+                        )
+                    )
+                    and (
+                        width <= int(max(body_column_width, 1) * 0.78)
+                        or is_embedded_figure_text_block(block, blocks, page_width=page_width, page_height=page_height)
+                    )
+                ):
+                    region_blocks.append(block)
+        media_ids = {block.get("block_id") for block in region_blocks if block.get("block_label") in {"image", "chart"}}
+        text_ids = {
+            block.get("block_id") for block in region_blocks if block.get("block_label") in {"text", "paragraph_title"}
+        }
+        if len(media_ids) < 1 or not text_ids or len(region_blocks) < 3:
+            continue
+        region_bbox = [
+            min(int(block["block_bbox"][0]) for block in region_blocks),
+            min(int(block["block_bbox"][1]) for block in region_blocks),
+            max(int(block["block_bbox"][2]) for block in region_blocks),
+            max(int(block["block_bbox"][3]) for block in region_blocks),
+        ]
+        regions.append(
+            {
+                "bbox": region_bbox,
+                "block_ids": {block.get("block_id") for block in region_blocks},
+                "caption_block_id": caption.get("block_id"),
+            }
+        )
+    return regions
+
+
+
+=== def estimate_body_column_width ===
+def estimate_body_column_width(blocks: list[dict], page_width: int = 0) -> int:
+    widths: list[int] = []
+    for block in blocks:
+        if block.get("block_label") not in {"text", "paragraph_title", "abstract"}:
+            continue
+        text = clean_block_text(block.get("block_content", ""))
+        if (
+            not text
+            or is_subfigure_label(text)
+            or re.match("^(?:Figure|Fig\\.?|Table)\\s+\\w+", text, flags=re.IGNORECASE)
+        ):
+            continue
+        bbox = [int(value) for value in block.get("block_bbox", [0, 0, 0, 0])]
+        width = _bbox_width(bbox)
+        height = _bbox_height(bbox)
+        if width <= 0 or height <= 0:
+            continue
+        if page_width and width >= int(page_width * 0.82):
+            widths.append(width)
+            continue
+        if width >= 430:
+            widths.append(width)
+    if not widths:
+        return int(page_width * 0.45) if page_width else 520
+    widths.sort()
+    return widths[len(widths) // 2]
+
+
+
+=== def is_body_paragraph_like_text_block ===
+def is_body_paragraph_like_text_block(
+    block: dict,
+    body_column_width: int = 0,
+    cluster_bboxes: list[list[int]] | None = None,
+    caption_bbox: list[int] | None = None,
+
+=== def is_embedded_figure_text_block ===
+def is_embedded_figure_text_block(block: dict, blocks: list[dict], page_width: int = 0, page_height: int = 0) -> bool:
+    label = block.get("block_label", "")
+    if label not in {"text", "paragraph_title"}:
+        return False
+    if label == "paragraph_title":
+        return False
+    text = clean_block_text(block.get("block_content", ""))
+    if not text:
+        return False
+    if is_formal_figure_legend(text):
+        return False
+    bbox = [int(value) for value in block.get("block_bbox", [0, 0, 0, 0])]
+    width = _bbox_width(bbox)
+    height = _bbox_height(bbox)
+    if width <= 0 or height <= 0:
+        return False
+    if label == "paragraph_title" and is_subfigure_label(text):
+        return True
+    caption_blocks = _figure_caption_blocks(blocks)
+    cluster_index, clusters = media_clusters(blocks)
+    cluster_bboxes = [_cluster_bbox(cluster) for cluster in clusters]
+    body_column_width = estimate_body_column_width(blocks, page_width=page_width)
+    del cluster_index
+    nearest_media = None
+    nearest_media_distance = None
+    close_media_count = 0
+    stacked_media_above = False
+    stacked_media_below = False
+    side_media = False
+    for cluster_bbox in cluster_bboxes:
+        horizontal_ratio = _bbox_horizontal_overlap_ratio(bbox, cluster_bbox)
+        vertical_overlap = _bbox_vertical_overlap(bbox, cluster_bbox)
+        top_gap = int(bbox[1]) - int(cluster_bbox[3])
+        bottom_gap = int(cluster_bbox[1]) - int(bbox[3])
+        center_inside_x = int(cluster_bbox[0]) <= _bbox_center_x(bbox) <= int(cluster_bbox[2])
+        center_inside_y = int(cluster_bbox[1]) <= _bbox_center_y(bbox) <= int(cluster_bbox[3])
+        if (
+            horizontal_ratio >= 0.45
+            and (0 <= top_gap <= 48 or 0 <= bottom_gap <= 48 or vertical_overlap > 0)
+            or (center_inside_x and abs(_bbox_center_y(bbox) - _bbox_center_y(cluster_bbox)) <= max(80, height * 4))
+        ):
+            close_media_count += 1
+        if horizontal_ratio >= 0.5 and 0 <= top_gap <= 90:
+            stacked_media_above = True
+        if horizontal_ratio >= 0.5 and 0 <= bottom_gap <= 90:
+            stacked_media_below = True
+        if vertical_overlap > 0 and (
+            0 <= int(bbox[0]) - int(cluster_bbox[2]) <= 60 or 0 <= int(cluster_bbox[0]) - int(bbox[2]) <= 60
+        ):
+            side_media = True
+        dx = 0
+        if int(bbox[2]) < int(cluster_bbox[0]):
+            dx = int(cluster_bbox[0]) - int(bbox[2])
+        elif int(cluster_bbox[2]) < int(bbox[0]):
+            dx = int(bbox[0]) - int(cluster_bbox[2])
+        dy = 0
+        if int(bbox[3]) < int(cluster_bbox[1]):
+            dy = int(cluster_bbox[1]) - int(bbox[3])
+        elif int(cluster_bbox[3]) < int(bbox[1]):
+            dy = int(bbox[1]) - int(cluster_bbox[3])
+        distance = dx + dy
+        if nearest_media_distance is None or distance < nearest_media_distance:
+            nearest_media_distance = distance
+            nearest_media = cluster_bbox
+            del center_inside_y
+    nearest_caption_above = None
+    nearest_caption_below = None
+    for caption in caption_blocks:
+        cb = [int(value) for value in caption.get("block_bbox", [0, 0, 0, 0])]
+        if cb[3] <= bbox[1] and (nearest_caption_above is None or cb[3] > nearest_caption_above[3]):
+            nearest_caption_above = cb
+        if cb[1] >= bbox[3] and (nearest_caption_below is None or cb[1] < nearest_caption_below[1]):
+            nearest_caption_below = cb
+    media_between_block_and_caption = 0
+    media_x_covering_block = 0
+    precaption_region = None
+    if nearest_caption_below:
+        precaption_region = _precaption_media_region(nearest_caption_below, cluster_bboxes)
+        for cluster_bbox in cluster_bboxes:
+            if cluster_bbox[1] >= nearest_caption_below[1] + 24:
+                continue
+            if cluster_bbox[3] <= bbox[1] - 24:
+                continue
+            media_between_block_and_caption += 1
+            if (
+                cluster_bbox[0] - 24 <= _bbox_center_x(bbox) <= cluster_bbox[2] + 24
+                or _bbox_horizontal_overlap_ratio(bbox, cluster_bbox) >= 0.35
+            ):
+                media_x_covering_block += 1
+    if nearest_caption_above:
+        caption_gap = bbox[1] - nearest_caption_above[3]
+        left_align_gap = abs(bbox[0] - nearest_caption_above[0])
+        effective_page_width = max(page_width, width)
+        if (
+            0 <= caption_gap <= 72
+            and left_align_gap <= 80
+            and (width >= int(effective_page_width * 0.45))
+            and (not stacked_media_above)
+        ):
+            return False
+    if is_body_paragraph_like_text_block(
+        block,
+        body_column_width=body_column_width,
+        cluster_bboxes=cluster_bboxes,
+        caption_bbox=nearest_caption_below,
+    ):
+        return False
+    score = 0.0
+    if is_subfigure_label(text):
+        score += 4.0
+    if width <= int(max(body_column_width, 1) * 0.78):
+        score += 1.4
+    elif width <= int(max(body_column_width, 1) * 0.9):
+        score += 0.5
+    if label == "paragraph_title" and len(text) <= 24:
+        score += 0.8
+    if height <= 26:
+        score += 0.8
+    elif height <= 34:
+        score += 0.4
+    if page_width and width <= int(page_width * 0.22):
+        score += 0.5
+    if close_media_count >= 2:
+        score += 2.0
+    elif close_media_count == 1:
+        score += 1.1
+    if stacked_media_above and stacked_media_below:
+        score += 2.2
+    elif stacked_media_above or stacked_media_below:
+        score += 0.9
+    if side_media:
+        score += 1.0
+    if nearest_caption_below and nearest_media:
+        caption_gap = nearest_caption_below[1] - bbox[3]
+        media_gap = min(
+            abs(bbox[1] - nearest_media[3]),
+            abs(nearest_media[1] - bbox[3]),
+            abs(_bbox_center_y(bbox) - _bbox_center_y(nearest_media)),
+        )
+        if 0 <= caption_gap <= 120 and media_gap <= 80:
+            score += 0.8
+    if nearest_caption_below:
+        caption_gap = nearest_caption_below[1] - bbox[3]
+        if 0 <= caption_gap <= 520 and media_between_block_and_caption >= 3:
+            score += 0.9
+        if 0 <= caption_gap <= 520 and media_x_covering_block >= 2:
+            score += 1.3
+        if (
+            0 <= caption_gap <= 520
+            and media_x_covering_block >= 1
+            and (width <= int(max(page_width, width) * 0.82))
+            and (height <= 96)
+        ):
+            score += 0.8
+        if precaption_region:
+            region_overlap = _bbox_horizontal_overlap_ratio(bbox, precaption_region)
+            within_region_y = (
+                int(precaption_region[1]) - 24 <= int(bbox[1]) <= int(precaption_region[3]) + 24
+                and int(bbox[3]) <= int(nearest_caption_below[1]) + 24
+            )
+            if region_overlap >= 0.55 and within_region_y:
+                score += 1.5
+            if (
+                int(precaption_region[0]) - 24 <= _bbox_center_x(bbox) <= int(precaption_region[2]) + 24
+                and within_region_y
+                and (media_between_block_and_caption >= 2)
+            ):
+                score += 1.1
+    if len(text) <= 22:
+        score += 0.15
+    return score >= 2.6
+
+
+
+=== def is_formal_figure_legend ===
+def is_formal_figure_legend(text: str) -> bool:
+    cleaned = clean_block_text(text)
+    if not cleaned:
+        return False
+    return bool(
+        re.match(
+            "^(?:Extended\\s+Data\\s+Fig\\.?\\s+\\w+|Extended\\s+Data\\s+Figure\\s+\\w+|Extended\\s+Data\\s+Table\\s+\\w+|Supplementary\\s+Fig\\.?\\s+\\w+|Supplementary\\s+Figure\\s+\\w+|Supplementary\\s+Table\\s+\\w+|Supplementary\\s+Video\\s+\\w+|Figure\\s+\\d+|Fig\\.?\\s+\\d+|Table\\s+\\d+|Scheme\\s+\\w+|Graphical\\s+Abstract(?:\\s*[:|.\\-].*)?)",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
+
+=== def is_numbered_figure_caption ===
+def is_numbered_figure_caption(text: str) -> bool:
+    cleaned = clean_block_text(text)
+    if not re.match(r"^(?:Figure|Fig\.?)\s+\d+\b", cleaned, flags=re.IGNORECASE):
+        return False
+    return not re.match(
+        r"^(?:Figure|Fig\.?)\s+\d+\s+(?:shows?|illustrates?|depicts?|describes?|summarizes?)\b",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+
+
+
+=== def is_subfigure_label ===
+def is_subfigure_label(text: str) -> bool:
+    compact = re.sub("\\s+", " ", text.strip().lower())
+    return bool(
+        re.fullmatch("(?:\\([a-z]\\)\\s*)+", compact)
+        or re.fullmatch("[a-z]", compact)
+        or re.fullmatch("[a-z]\\)", compact)
+    )
+
+
+
+=== def media_clusters ===
+def media_clusters(blocks: list[dict]) -> tuple[dict[int, int], list[list[dict]]]:
+    media = [b for b in blocks if b.get("block_label") in {"image", "chart"}]
+    clusters: list[list[dict]] = []
+    block_to_cluster: dict[int, int] = {}
+    for block in media:
+        x1, y1, x2, y2 = block.get("block_bbox", [0, 0, 0, 0])
+        assigned = None
+        for idx, cluster in enumerate(clusters):
+            cx1 = min(item["block_bbox"][0] for item in cluster) - 40
+            cy1 = min(item["block_bbox"][1] for item in cluster) - 40
+            cx2 = max(item["block_bbox"][2] for item in cluster) + 40
+            cy2 = max(item["block_bbox"][3] for item in cluster) + 40
+            vertical_overlap = max(0, min(y2, cy2) - max(y1, cy1))
+            min_height = max(1, min(y2 - y1, cy2 - cy1))
+            if x2 < cx1:
+                horizontal_gap = cx1 - x2
+            elif x1 > cx2:
+                horizontal_gap = x1 - cx2
+            else:
+                horizontal_gap = 0
+            overlaps_cluster = not (x2 < cx1 or x1 > cx2 or y2 < cy1 or y1 > cy2)
+            side_by_side_panel = vertical_overlap >= int(min_height * 0.35) and horizontal_gap <= 60
+            if overlaps_cluster or side_by_side_panel:
+                assigned = idx
+                break
+        if assigned is None:
+            assigned = len(clusters)
+            clusters.append([])
+        clusters[assigned].append(block)
+        block_to_cluster[block.get("block_id", -1)] = assigned
+    return (block_to_cluster, clusters)
+
+
+

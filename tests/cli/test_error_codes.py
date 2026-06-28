@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 class TestExitCodes:
     """Contract: CLI commands exit with correct exit codes."""

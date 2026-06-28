@@ -1,0 +1,2157 @@
+{
+  "mappable_block_count": 215,
+  "found_count": 88,
+  "missing_count": 127,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Clin Orthop Relat Res (2023) 481:1158-1170 DOI 10.1097/CORR.0000000000002520",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{®} $ A Publication of The Associa",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Clinical Research",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "High Acromial Slope and Low Acromiohumeral Distance Increase the Risk of Retear ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Thomas Caffard Dr med¹, Desdemona Kralewski Dr med¹, Marius Ludwig Dr med¹, Dani",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Questions/purposes (1) Is acromial morphology associated with the risk of retear",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7425
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "patients who had intact cuff repairs and those who had retears?",
+      "found_in_fulltext": true,
+      "fulltext_offset": 773
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All ICMJE Conflict of Interest Forms for authors and Clinical Orthopaedics and R",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Methods Between August 2012 and December 2015, we treated 92 patients for SSP te",
+      "found_in_fulltext": true,
+      "fulltext_offset": 837
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $Department of Orthopaedic Surgery, RKU, University of Ulm, Ulm, Germany",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "M. Sgroi ✉, Oberer Eelsberg 45, DE-89081 Ulm, Germany, Email: sgroi.mirco@yahoo.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7792
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Volume 481, Number 6",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SSP Rerupture and Acromial and Glenoidal Morphology",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "1159",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "same two observers using the Sugaya and Castricini classifications, accounting f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2567
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results After controlling for potentially confounding variables such as acromiop",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3928
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion The preoperative acromiohumeral interval and acromial slope are assoc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5435
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "rerupture after repair. Conversely, the critical shoulder angle, acromial tilt, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6442
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Despite great scientific interest, the pathogenesis of supraspinatus (SSP) rerup",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7891
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1160",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Caffard et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "been established between the acromion and glenoid morphology and clinical result",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We therefore asked: (1) Is acromial morphology associated with the risk of retea",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Patients and Methods Study Design and Setting",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9702
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This retrospective study investigated the relationship of acromial morphology an",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Participants",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Between August 2012 and December 2015, we treated 92 patients for SSP tendon tea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 845
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Descriptive Data",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A total of 51% (28 of 55) of the patients were women. The mean age was $ 66 \\pm ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Surgical Technique",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Two experienced shoulder surgeons (TK and MS), who were not involved in the radi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10620
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Aftercare",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13023
+    },
+    {
+      "block_id": "p3:16",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "After the surgical procedure, the operated-on arm was immobilized in an abductio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13033
+    },
+    {
+      "block_id": "p3:18",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 481, Number 6",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SSP Rerupture and Acromial and Glenoidal Morphology",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1161",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1. Demographic data and preoperative tendon quality of the investigated pa",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Interval-scaled variables were tested with a t-test. ASA = American Society of A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13379
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Clinical Assessment at Follow-up",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13481
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All patients were clinically assessed at a minimum follow-up of 2 years by a sin",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Radiologic Examination at Follow-up",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MRI was performed at the time of follow-up $ (2.3 \\pm 0.4 $ years) using a 1.5 T",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "body. A dedicated standard shoulder coil was placed over the shoulder. Two blind",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13740
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Measurements on Preoperative True AP Radiographs and MRI",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As part of the preoperative plan, MRI was preoperatively performed on all should",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acromiohumeral Interval",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14817
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The acromiohumeral interval was defined as the shortest interval between the hum",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14841
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Glenoidal Version",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15269
+    },
+    {
+      "block_id": "p4:17",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Glenoid version was measured in the axial plane according to Friedman et al. [11",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15287
+    },
+    {
+      "block_id": "p4:19",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1162",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Caffard et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 481, Number 6",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SSP Rerupture and Acromial and Glenoidal Morphology",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1163",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The angle between these two lines was defined as the glenoid version.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15772
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Glenoidal Inclination",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15846
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Glenoid inclination was measured in the coronal plane using MRI according to Hug",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 2. Sugaya classification [10, 38]",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Measurements on Postoperative MRI",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15872
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To investigate the quality and morphologic integrity of the SSP tendon, the foll",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "38]; SSP tendon integrity according to Castricini et al. [5], including signal i",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Sugaya Classification",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15910
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To assess the tendon’s integrity, we applied the Sugaya classification (Table 2)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15932
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Castricini Classification",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16492
+    },
+    {
+      "block_id": "p6:17",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To better investigate tendon quality after repair, we applied the Castricini cla",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16518
+    },
+    {
+      "block_id": "p6:18",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Fatty Infiltration of the SSP Muscle",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16941
+    },
+    {
+      "block_id": "p6:19",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We evaluated fatty infiltration according to Goutailler et al. [14]. A study on ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16978
+    },
+    {
+      "block_id": "p6:21",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1164",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Caffard et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 3. Castricini classification [5]",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "with the Goutailler classification found good intrarater (ICC = 0.72) and interr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17188
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Atrophy of the SSP Muscle",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17308
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We graded SSP muscle atrophy according to Thomazeau et al.'s method [36]. A stud",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Primary and Secondary Study Outcomes",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Our primary study goal was to investigate the association between acromion morph",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17334
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "with patients with an intact SSP. To answer our third re- search question, there",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Ethical Approval",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Independent institutional review board approval was obtained from the ethics com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Statistical Analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18882
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The sample size was calculated based on a binomial logarithmic regression analys",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18903
+    },
+    {
+      "block_id": "p7:17",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 481, Number 6",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SSP Rerupture and Acromial and Glenoidal Morphology",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1165",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "according to the Sugaya classification (Group 1: Sugaya Grades 1 to 3 and Group ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results Acromial Morphology and Retear Risk",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Only the acromiohumeral interval (adjusted OR 0.9 [95% CI 0.9 to 0.99; p < 0.01)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20283
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 4. Logarithmic multivariate regression analysis of the likelihood of suffe",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The model achieved statistical significance in four steps (p < 0.001). Concomita",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21150
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(95% CI 54 to 98), speciﬁcity of 76 (95% CI 60 to 88) and 62 (95% CI 46 to 76), ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Glenoid Morphology and Retear Risk",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "There was no difference between patients with intact SSP tendons and those with ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Clinical Outcome",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22514
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "No difference in clinical outcomes was found between patients with intact SSPs a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22531
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22887
+    },
+    {
+      "block_id": "p8:17",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acromion morphology and glenoid orientation may be associated with the risk of S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22898
+    },
+    {
+      "block_id": "p8:19",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1166",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Caffard et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 5. Comparison between patients with an intact SSP and those with a reruptu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data are presented as the mean ± SD. SSP = supraspinatus tendon; AHI = acromiohu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23695
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Limitations",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23919
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "First, in most instances, the analyzed patients underwent mild acromioplasty. Be",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "technique were included. In our opinion, this criterion was important because if",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:12",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Fourth, because the preoperative MRI examinations were performed before the star",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:14",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 481, Number 6",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SSP Rerupture and Acromial and Glenoidal Morphology",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1167",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 6. Sensitivity, specificity, likelihood ratio, OR, and AUC of acromial slo",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Variable</td><td>Acromiohumeral distance (95% CI)</td><td>Acromia",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "AUC = area under the curve.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24014
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "resolution. However, we do not have a 3.0 Tesla MRI in our department; this refl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24042
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Sixth, residents performed the measurements. Because of their inexperience, they",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "have biased the assessment of the inﬂuence of acromial morphology and glenoid or",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:10",
+      "page": 10,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acromial Morphology and Retear Risk",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24215
+    },
+    {
+      "block_id": "p10:11",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We found that of the acromial morphologic measures analyzed, only acromial slope",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 7. Clinical and radiologic outcomes depending on the AHI cutoff",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:13",
+      "page": 10,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Variable</td><td>AHI ≤ 7.4 mm</td><td>AHI $ &gt; $ 7.4 mm</td><td",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:14",
+      "page": 10,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "AHI = acromiohumeral interval; WORC = Western Ontario Rotator Cuff Index.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24251
+    },
+    {
+      "block_id": "p10:16",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1168",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Caffard et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 8. Clinical and radiologic outcomes depending on the AS cutoff",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Variable</td><td>AS ≤ 24.5°</td><td>AS &gt; 24.5°</td><td>p value",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "AS = acromial slope; WORC = Western Ontario Rotator Cuff Index,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24342
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "that a higher critical shoulder angle is associated with a higher risk of full-t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24406
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Glenoid Morphology and Retear Risk",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We found that glenoid orientation in terms of inclination and version was not as",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "according to our results, surgeons do not need to measure glenoid morphology pre",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25685
+    },
+    {
+      "block_id": "p11:11",
+      "page": 11,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 9. Comparison between patients with an intact SSP and those with a reruptu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:13",
+      "page": 11,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "SSP = supraspinatus tendon; GV = glenoidal version; GI = glenoidal inclination.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:15",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 481, Number 6",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SSP Rerupture and Acromial and Glenoidal Morphology",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1169",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 10. Postoperative clinical outcomes depending on SSP integrity",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data are presented as the mean ± SD. SSP = supraspinatus tendon; WORC = Western ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27496
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Clinical Outcome Depending on Retear of the SSP",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27608
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "We found no difference in clinical outcome between patients with intact and reru",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "section_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5435
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "We found that acromiohumeral distance and acromial slope are associated with the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27656
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "studies might investigate whether more-radical acromioplasty can reduce the risk",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28567
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Ames JB, Horan MP, Van der Meijden OAJ, Leake MJ, Millett PJ. Association bet",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:14",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Balke M, Schmidt C, Dedy N, Banerjee M, Bouillon B, Liem D. Correlation of ac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28691
+    },
+    {
+      "block_id": "p12:15",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Bigliani LU, Ticker JB, Flatow EL, Soslotsky LJ, Mow VC. The relationship of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28869
+    },
+    {
+      "block_id": "p12:16",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Bishop JL, Kline SK, Aalderink KJ, Zauel R, Bey MJ. Glenoid inclination: in v",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29030
+    },
+    {
+      "block_id": "p12:17",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Castricini R, Longo UG, De Benedetto M, et al. Platelet-rich plasma augmentat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29256
+    },
+    {
+      "block_id": "p12:18",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Chalmers PN, Beck L, Granger E, Henninger H, Tashjian RZ. Superior glenoid in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29443
+    },
+    {
+      "block_id": "p12:19",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Chalmers PN, Beck L, Miller M, et al. Acromial morphology is not associated w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29599
+    },
+    {
+      "block_id": "p12:20",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Chalmers PN, Salazar D, Steger-May K, Chamberlain AM, Yamaguchi K, Keener JD.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29765
+    },
+    {
+      "block_id": "p12:21",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Chung SW, Oh JH, Gong HS, Kim JY, Kim SH. Factors affecting rotator cuff heal",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29968
+    },
+    {
+      "block_id": "p12:22",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Collin P, Yoshida M, Delarue A, et al. Evaluating postoperative rotator cuff",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30168
+    },
+    {
+      "block_id": "p12:23",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Friedman RJ, Hawthorne KB, Genez BM. The use of computerized tomography in t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30357
+    },
+    {
+      "block_id": "p12:24",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Fukuda H, Hamada K, Nakajima T, Tomonaga A. Pathology and pathogenesis of th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30513
+    },
+    {
+      "block_id": "p12:25",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Garcia GH, Liu JN, Degen RM, et al. Higher critical shoulder angle increases",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30718
+    },
+    {
+      "block_id": "p12:26",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Goutallier D, Postel JM, Bernageau J, Lavau L, Voisin MC. Fatty muscle degen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30885
+    },
+    {
+      "block_id": "p12:27",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Hanley JA, McNeil BJ. The meaning and use of the area under a receiver opera",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31076
+    },
+    {
+      "block_id": "p12:29",
+      "page": 12,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Downloaded from http://journals.lww.com/clinorthop by BhDMf5ePHKav1zEoum1tQfN4a+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1170",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Caffard et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Hasegawa A, Mihata T, Yasui K, Kawakami T, Itami Y, Neo M. Intra- and inter-",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Hughes RE, Bryant CR, Hall JM, et al. Glenoid inclination is associated with",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Incesoy MA, Yildiz KI, Türk OI, et al. The critical shoulder angle, the acro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31265
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Jost B, Pfirrmann CWA, Gerber C, Switzerland Z. Clinical outcome after struc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31507
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Jost B, Zumstein M, Pfirrmann CWA, Gerber C. Long-term outcome after structu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Kandemir U, Allaire RB, Jolly JT, Debski RE, McMahon PJ. The relationship be",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Kirkley A, Alvarez C, Griffin S. The development and evaluation of a disease",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31665
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Kirsch JM, Nathani A, Robbins CB, Gagnier JJ, Bedi A, Miller BS. Is there an",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Kitay GS, Iannotti JP, Williams GR, Haygood T, Kneeland BJ, Berlin J. Roentg",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Ko J-Y, Huang CC, Chen W-J, Chen C-E, Chen S-H, Wang C-J. Pathogenesis of pa",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:14",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Lee M, Chen JY, Liow MHL, Chong HC, Chang P, Lie D. Critical shoulder angle ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31896
+    },
+    {
+      "block_id": "p13:15",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Li H, Chen Y, Chen J, Hua Y, Chen S. Large critical shoulder angle has highe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32116
+    },
+    {
+      "block_id": "p13:16",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Ma J, Sahoo S, Imrey PB, et al. Inter-rater agreement of rotator cuff tendon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32296
+    },
+    {
+      "block_id": "p13:17",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "evaluated preoperatively and during the first postoperative year following rotat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32426
+    },
+    {
+      "block_id": "p13:18",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Maurer A, Fucentese SF, Pfirrmann CWA, et al. Assessment of glenoid inclinat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32564
+    },
+    {
+      "block_id": "p13:19",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Moor BK, Bouaicha S, Rothenfluh DA, Sukthankar A, Gerber C. Is there an asso",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32776
+    },
+    {
+      "block_id": "p13:20",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Moses DA, Chang EY, Schweitzer ME. The scapuloacromial angle: a 3D analysis ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33083
+    },
+    {
+      "block_id": "p13:21",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Oh JH, Kim SH, Choi J-A, Kim Y, Oh CH. Reliability of the grading system for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33270
+    },
+    {
+      "block_id": "p13:22",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Olley L, Carr A. The use of a patient-based questionnaire (the Oxford Should",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33438
+    },
+    {
+      "block_id": "p13:23",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Scheiderer B, Imhoff FB, Johnson JD, et al. Higher critical shoulder angle a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33612
+    },
+    {
+      "block_id": "p13:24",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Tétreault P, Krueger A, Zurakowski D, Gerber C. Glenoid version and rotator ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33852
+    },
+    {
+      "block_id": "p13:25",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. Thomazeau H, Rolland Y, Lucas C, Duval JM, Langlais F. Atrophy of the supras",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33975
+    },
+    {
+      "block_id": "p13:26",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. Tokgoz N, Kanatli U, Voyvoda NK, Gultekin S, Bolukbasi S, Tali ET. The relat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34168
+    },
+    {
+      "block_id": "p13:27",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Yoshida M, Collin P, Josseaume T, et al. Post-operative rotator cuff integri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34354
+    },
+    {
+      "block_id": "p13:28",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. Zhao J, Luo M, Pan J, et al. Risk factors affecting rotator cuff retear afte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34581
+    },
+    {
+      "block_id": "p13:29",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Wolters Kluwer",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:30",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Copyright © 2022 by the Association of Bone and Joint Surgeons. Unauthorized rep",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

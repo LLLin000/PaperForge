@@ -17,6 +17,98 @@ from paperforge.core.result import PFError, PFResult
 
 logger = logging.getLogger(__name__)
 
+_OCR_RUNTIME_FILES: tuple[str, ...] = (
+    "paperforge/worker/ocr_render.py",
+    "paperforge/worker/ocr_objects.py",
+)
+
+
+def _get_dirty_files() -> list[str]:
+    """Return list of files with unstaged changes via git diff --name-only."""
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    except Exception:
+        pass
+    return []
+
+
+def detect_ocr_runtime_preflight_issues(dirty_files: list[str]) -> list[str]:
+    """Check if any watched OCR runtime files have uncommitted changes.
+
+    Args:
+        dirty_files: Relative paths of files with uncommitted changes.
+
+    Returns:
+        List of warning strings. Empty if no issues.
+    """
+    watched = {f.replace("\\", "/") for f in _OCR_RUNTIME_FILES}
+    warnings: list[str] = []
+    for dirty in dirty_files:
+        normalized = dirty.replace("\\", "/")
+        if normalized in watched:
+            warnings.append(f"OCR runtime file has uncommitted changes: {dirty}")
+    return warnings
+
+
+def summarize_ocr_version_actions(papers: list[dict]) -> dict:
+    """Summarize OCR version actions across a list of paper version states.
+
+    Args:
+        papers: List of paper dicts with derived_stale and raw_upgradable flags.
+
+    Returns:
+        Dict with derived_rebuild_count, raw_upgrade_count, and paper list.
+    """
+    derived_stale = [p for p in papers if p.get("derived_stale")]
+    raw_upgradable = [p for p in papers if p.get("raw_upgradable")]
+    return {
+        "derived_rebuild_count": len(derived_stale),
+        "raw_upgrade_count": len(raw_upgradable),
+        "derived_stale_keys": [p["zotero_key"] for p in derived_stale],
+        "raw_upgrade_keys": [p["zotero_key"] for p in raw_upgradable],
+    }
+
+
+def summarize_ocr_runtime_followups(
+    papers: list[dict],
+    dirty_runtime_files: bool = False,
+) -> dict:
+    """Summarize OCR runtime follow-up actions with scheduling mode.
+
+    When dirty_runtime_files is True, auto-derived-rebuild is suppressed
+    and the mode is 'suppressed_dirty_runtime'. Otherwise the mode is
+    'deferred' --- sync records what needs doing but does not execute inline.
+    """
+    derived_stale = [p for p in papers if p.get("derived_stale") and not p.get("raw_upgradable")]
+    raw_upgradable = [p for p in papers if p.get("raw_upgradable")]
+    legacy = [p for p in papers if p.get("is_legacy")]
+
+    mode = "suppressed_dirty_runtime" if dirty_runtime_files else "deferred"
+
+    result: dict = {
+        "derived_rebuild_count": len(derived_stale),
+        "raw_upgrade_count": len(raw_upgradable),
+        "derived_stale_keys": [p["zotero_key"] for p in derived_stale],
+        "raw_upgrade_keys": [p["zotero_key"] for p in raw_upgradable],
+        "derived_rebuild_mode": mode,
+        "legacy_count": len(legacy),
+        "legacy_keys": [p["zotero_key"] for p in legacy],
+        "backfill_count": len(legacy),
+        "backfill_keys": [p["zotero_key"] for p in legacy],
+    }
+
+    if mode == "suppressed_dirty_runtime":
+        result["suppressed_keys"] = [p["zotero_key"] for p in derived_stale]
+
+    return result
+
 
 class SyncService:
     """Orchestrates the sync lifecycle: load BBT exports, match entries, generate notes.
@@ -226,11 +318,16 @@ class SyncService:
 
         selection_result: dict = {"new": 0, "updated": 0, "skipped": 0, "failed": 0, "errors": []}
         _prune_preview: list[dict] = []
+        ocr_runtime_summary: dict = {
+            "derived_rebuild_count": 0, "raw_upgrade_count": 0,
+            "derived_stale_keys": [], "raw_upgrade_keys": [],
+            "derived_rebuild_mode": "deferred",
+        }
 
         # ── Phase 1: Select ──
-        if not index_only:
-            import time as _time
+        import time as _time
 
+        if not index_only:
             from paperforge.worker.sync import run_selection_sync
 
             _t0 = _time.time()
@@ -324,6 +421,91 @@ class SyncService:
                 total = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
                 print(f"index-refresh: {total} formal note(s) in literature")
 
+            # ── Phase 5: OCR version scan ──
+            try:
+                from paperforge.core.io import read_json
+                from paperforge.worker._utils import pipeline_paths
+                from paperforge.worker.ocr_versions import (
+                    classify_legacy_ocr_state,
+                    classify_version_state,
+                    expected_derived_payload,
+                    expected_raw_payload,
+                )
+
+                ocr_root = pipeline_paths(self.vault)["ocr"]
+                if ocr_root.exists():
+                    papers: list[dict] = []
+                    for paper_dir in ocr_root.iterdir():
+                        if not paper_dir.is_dir():
+                            continue
+                        meta_path = paper_dir / "meta.json"
+                        if not meta_path.exists():
+                            continue
+                        meta = read_json(meta_path)
+                        raw_ver = meta.get("raw_version", {})
+                        state = classify_version_state(
+                            meta=meta,
+                            expected_raw=expected_raw_payload(ocr_model=raw_ver.get("ocr_model", "unknown")),
+                            expected_derived=expected_derived_payload(),
+                        )
+
+                        legacy_state = classify_legacy_ocr_state(
+                            meta=meta,
+                            ocr_dir=paper_dir,
+                        )
+
+                        papers.append({
+                            "zotero_key": paper_dir.name,
+                            "derived_stale": state["derived_stale"],
+                            "raw_upgradable": state["raw_upgradable"],
+                            "derived_reasons": state["derived_reasons"],
+                            "raw_reasons": state["raw_reasons"],
+                            "is_legacy": legacy_state["is_legacy"],
+                            "can_backfill": legacy_state["can_backfill"],
+                        })
+
+                    # Check for dirty runtime files
+                    _dirty = _get_dirty_files()
+                    watched_dirty = bool(detect_ocr_runtime_preflight_issues(_dirty))
+
+                    ocr_runtime_summary = summarize_ocr_runtime_followups(
+                        papers=papers,
+                        dirty_runtime_files=watched_dirty,
+                    )
+
+                    if ocr_runtime_summary["derived_rebuild_count"] > 0 and not json_output:
+                        mode = ocr_runtime_summary["derived_rebuild_mode"]
+                        count = ocr_runtime_summary["derived_rebuild_count"]
+                        if mode == "suppressed_dirty_runtime":
+                            print(f"ocr: {count} derived-stale paper(s) deferred (dirty runtime files)")
+                        elif mode == "deferred":
+                            print(f"ocr: {count} derived-stale paper(s) identified (deferred)")
+
+                    if ocr_runtime_summary["raw_upgrade_count"] > 0 and not json_output:
+                        print(f"ocr: {ocr_runtime_summary['raw_upgrade_count']} paper(s) can be upgraded (redo available)")
+
+                    # Legacy backfill: can_backfill papers get derived artifacts rebuilt
+                    if ocr_runtime_summary.get("backfill_count", 0) > 0:
+                        from paperforge.worker.ocr_rebuild import (
+                            backfill_from_result,
+                            select_legacy_papers_for_backfill,
+                        )
+
+                        backfill_keys = select_legacy_papers_for_backfill(papers)
+                        backfill_results: list[dict] = []
+                        for bk in backfill_keys:
+                            br = backfill_from_result(self.vault, bk)
+                            backfill_results.append(br)
+
+                        ocr_runtime_summary["backfill_results"] = backfill_results
+                        done_count = sum(1 for r in backfill_results if r.get("backfill_status") == "done")
+
+                        if not json_output and done_count > 0:
+                            print(f"ocr: backfilled {done_count} legacy paper(s) with derived artifacts")
+
+            except Exception as exc:
+                logger.warning("ocr version scan skipped: %s", exc)
+
         is_ok = selection_result.get("failed", 0) == 0 and not selection_result.get("errors")
 
         result = PFResult(
@@ -334,11 +516,17 @@ class SyncService:
                 "selection": selection_result,
                 "index": {"updated": index_count, "orphaned_cleaned": orphaned, "flat_cleaned": flat_cleaned},
                 "prune": {"preview": _prune_preview} if _prune_preview else None,
+                "ocr_runtime": ocr_runtime_summary,
             },
         )
 
         if _export_code != "ok":
             result.warnings.append(f"BBT exports: {_export_code}")
+
+        # ── Preflight: OCR runtime dirty files ──
+        _dirty = _get_dirty_files()
+        if _dirty:
+            result.warnings.extend(detect_ocr_runtime_preflight_issues(_dirty))
 
         return result
 

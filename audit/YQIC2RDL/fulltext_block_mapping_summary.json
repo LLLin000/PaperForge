@@ -1,0 +1,937 @@
+{
+  "mappable_block_count": 93,
+  "found_count": 67,
+  "missing_count": 26,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "J Shoulder Elbow Surg (2013) ☐, 1-6",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "ELSEVIER",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "JOURNAL OF SHOULDER AND E_LBOW SURGERY",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "www.elsevier.com/locate/ymse",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Relationship of individual scapular anatomy and degenerative rotator cuff tears",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Beat K. Moor, MD $ ^{a,b,*} $, Karl Wieser, MD $ ^{a} $, Ksenija Slankamenac, MD",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{a} $Department of Orthopaedics, Balgrist University Hospital, Zürich, Switze",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{b} $Department of Orthopaedic Surgery and Traumatology, Inselspital, Bern Un",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "footnote",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Funding: This was an internally financed study. There were no external funding s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2201
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "footnote",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "*Reprint requests: Beat K. Moor, MD, Department of Orthopaedics, Balgrist Univer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2289
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "footnote",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "IRB: This study was conducted at the Balgrist University Hospital, Zürich, accor",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2431
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "footnote",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "E-mail address: bmoor@gmx.ch (B.K. Moor).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2651
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "1058-2746/$ - see front matter © 2013 Journal of Shoulder and Elbow Surgery Boar",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 268
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "B.K. Moor et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Distinct anatomic variants of the scapula have been found to be associated with ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2709
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Other authors focused on the inclination of the glenoid and hypothesized that an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3298
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The aims of the present study were to assess the inter-rater reliability of diff",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3993
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Materials and methods Patient selection",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4516
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "On the basis of data from previously published series, pre hoc power analysis wa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4556
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The RCT group consisted of 51 consecutive patients who underwent arthroscopic ro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4873
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "On the basis of the demographics of the RCT group, an age-and sex-matched contro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5565
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "idiopathic frozen shoulder between January 2011 and December 2011. In all of the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5822
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Radiologic assessment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Two independent readers (K. W. and S. B.), who were both blinded to the patients",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "sub_subsection_heading",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "Statistics",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6302
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the first step, we tested data for normality with the Kolmogorov-Smirnov test",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6313
+    },
+    {
+      "block_id": "p2:16",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1501
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The data for all parameters (median and interquartile range) are summarized in T",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7686
+    },
+    {
+      "block_id": "p2:18",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ICCs were good to excellent for all parameters studied, with an ICC $ _{AI} $ an",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Scapular anatomy and rotator cuff tears",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3",
+      "found_in_fulltext": true,
+      "fulltext_offset": 301
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mean AI of the control and RCT groups was 0.66 (SD, 0.06; range, 0.53-0.79) ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7966
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The distribution of acromion morphologies classified according to Bigliani and M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8552
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ROC curve analysis determined cutoff values for discriminating the control and R",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8816
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CSA is the most valuable measure for discriminating be- tween the RCT and contro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9707
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10326
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The influence of individual scapular morphology on the pathogenesis of RCTs rema",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10337
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 271
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "B.K. Moor et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Table I Linear and logistic regression analysis for each parameter",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td></td><td>CTRL (n = 51)</td><td>RCT (n = 51)</td><td>Unadjusted di",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CRTL, control group; RCT, rotator cuff tear group; AI, acromion index; LAA, late",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10731
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Since the introduction of the AI by Nyffeler in 2006, his concept was strengthen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11071
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "acromion, their results were comparable to those of Nyff- eler et al. A high AI ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11648
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Contrary to these findings, Hamid et al $ ^{7} $ found no association between a ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The present study supports the findings of Nyffeler et al. A significant differe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12279
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition, our study confirmed the results of Banas et al. Although the LAA wa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12546
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Finally, we confirmed the recently reported association between large CSAs and d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12906
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The CSA reflects not only lateral extension of the acromion but also glenoid inc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13170
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Scapular anatomy and rotator cuff tears",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 637
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "In contrast to other authors, we could not demonstrate a significant correlation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13854
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "There are limitations. As already suggested by Bhatia et al. $ ^{4} $ the morpho",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "structured_insert",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2033
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "structured_insert",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "This study confirms the previously reported association of the AI, LAA, and CSA ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15633
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "structured_insert",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "In contrast to these findings, neither the relationship between rotator cuff dis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15888
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "structured_insert",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Disclaimer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16136
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16484
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "structured_insert",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "The authors, their immediate families, and any research foundation with which th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16149
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Aoki M, Ishii S, Usui M. The slope of the acromion and rotator cuff impingeme",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16371
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Balke M, Schmidt C, Dedy N, Banerjee M, Bouillon B, Liem D. Correlation of ac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16495
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Banas MP, Miller RJ, Totterman S. Relationship between the lateral acromion a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16718
+    },
+    {
+      "block_id": "p5:14",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Bhatia DN, Debeer JF, Toit DF. Association of a large lateral extension of th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16866
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Bigliani L, Morrison D, April E. The morphology of the acromion and its relat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17017
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Hamada K, Fukuda H, Mikasa M, Kobayashi Y. Roentgenographic findings in massi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17154
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Hamid N, Omid R, Yamaguchi K, Steger-May K, Stobbs G, Keener JD. Relationship",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17319
+    },
+    {
+      "block_id": "p5:18",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Hughes RE, Bryant CR, Hall JM, Wening J, Huston LJ, Kuhn JE, et al. Glenoid i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17631
+    },
+    {
+      "block_id": "p5:19",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Kim JR, Ryu KJ, Hong IT, Kim BK, Kim JH. Can a high acromion index predict ro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17816
+    },
+    {
+      "block_id": "p5:20",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Liotard JP, Cochard P, Walch G. Critical analysis of the supraspinatus outle",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17986
+    },
+    {
+      "block_id": "p5:21",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Miyazaki AN, Itoi E, Sano H, Fregoneze M, Santos PD, da Silva LA, et al. Com",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18152
+    },
+    {
+      "block_id": "p5:22",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Moor BK, Bouaicha S, Rothenfluh DA, Sukthankar A, Gerber C. Is there an asso",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18415
+    },
+    {
+      "block_id": "p5:23",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Musil D, Sadovsky P, Rost M, Stehlik J, Filip L. Relationship of acromial mo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18767
+    },
+    {
+      "block_id": "p5:24",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Neer CS 2nd. Anterior acromioplasty for the chronic impingement syndrome in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18928
+    },
+    {
+      "block_id": "p5:25",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Neer CS 2nd. Impingement lesions. Clin Orthop Relat Res 1983;173:70-7.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19080
+    },
+    {
+      "block_id": "p5:26",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Neer CS 2nd, Craig EV, Fukuda H. Cuff-tear arthropathy. J Bone Joint Surg Am",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19155
+    },
+    {
+      "block_id": "p5:27",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Nicholson GP, Goodman DA, Flatow EL, Bigliani LU. The acromion: morphologic ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19253
+    },
+    {
+      "block_id": "p5:28",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Nyffeler RW, Werner CM, Sukthankar A, Schmid MR, Gerber C. Association of a ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19428
+    },
+    {
+      "block_id": "p5:29",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Ozaki J, Fujimoto S, Nakagawa Y, Masuhara K, Tamai S. Tears of the rotator c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19648
+    },
+    {
+      "block_id": "p5:30",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Sanders TG, Jersey SL. Conventional radiography of the shoulder. Semin Roent",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19861
+    },
+    {
+      "block_id": "p5:31",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Shah NN, Bayliss NC, Malcolm A. Shape of the acromion: congenital or acquire",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19963
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "6",
+      "found_in_fulltext": true,
+      "fulltext_offset": 290
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "B.K. Moor et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Tetreault P, Krueger A, Zurakowski D, Gerber C. Glenoid version and rotator ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20163
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Torrens C, Lopez JM, Puente I, Caceres E. The influence of the acromial cove",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20331
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Wang JC, Shapiro MS. Changes in acromial morphology with age. J Shoulder Elb",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20527
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Zumstein MA, Jost B, Hempel J, Hodler J, Gerber C. The clinical and structur",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20628
+    }
+  ]
+}

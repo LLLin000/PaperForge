@@ -1,0 +1,52 @@
+{
+  "reference_span": {
+    "status": "ACCEPT",
+    "span_id": "refspan_001",
+    "start": {
+      "page": 4,
+      "column": 2,
+      "y": 687.0,
+      "block_id": "p4:27"
+    },
+    "end": {
+      "page": 4,
+      "column": 2,
+      "y": 1194.0,
+      "block_id": "p4:38"
+    },
+    "heading_block_id": 27,
+    "ordered_block_ids": [
+      "p4:27",
+      "p4:28",
+      "p4:29",
+      "p4:30",
+      "p4:31",
+      "p4:32",
+      "p4:33",
+      "p4:34",
+      "p4:35",
+      "p4:36",
+      "p4:37",
+      "p4:38"
+    ],
+    "inside_block_ids": [
+      "p4:27",
+      "p4:28",
+      "p4:29",
+      "p4:30",
+      "p4:31",
+      "p4:32",
+      "p4:33",
+      "p4:34",
+      "p4:35",
+      "p4:36",
+      "p4:37",
+      "p4:38"
+    ],
+    "explicitly_outside_nearby_block_ids": [
+      "p4:26",
+      "p4:39"
+    ],
+    "intrusion_candidates": []
+  }
+}

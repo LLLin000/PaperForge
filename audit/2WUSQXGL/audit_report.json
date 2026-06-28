@@ -1,0 +1,521 @@
+{
+  "paper_key": "2WUSQXGL",
+  "mode": "high-risk",
+  "status": "READY",
+  "focus": [],
+  "artifact_fingerprint": {
+    "result_json_hash": "sha256:76b91121626229e5250c39c489da7237e97f4342883a205db1494313b4e91818",
+    "meta_json_hash": "sha256:b3566775075c1a6c9f0ed77cd018f54689bd147d6269a882c7f86a3d2721ca5e",
+    "blocks_raw_hash": "sha256:c3566f2a228dffac6b1bb127dba094d1ee6ade138505c8ea05e986fcac0d6d81",
+    "structured_blocks_hash": "sha256:2811047967fc2da8b1c57b5c6fd9053491fb07b71f33249742d015f1d7e76076",
+    "document_structure_hash": "sha256:363eaf93e3c430a45fc71216566e42f4281956c7a4477b3d1b3e8b9f7419c451",
+    "figure_inventory_hash": "sha256:aea28c2f31e16cb08b43ea468366f092ea246b808b09881d1a725ce0f6f8c17e",
+    "table_inventory_hash": "sha256:035701989d7f91df9cecc7be433b1adb64e5489bfb47a2aee566ac544846da85",
+    "reader_figures_hash": "sha256:9b4c6af173bc746130046d58f7534752810e52be3f49cf7233dd885a1d2a074a",
+    "resolved_metadata_hash": "sha256:23ff10a82ad11e97a6a720c94a6d7aa6827eaca7d39b3b5753017c58ae4d7147",
+    "fulltext_hash": "sha256:794983075e32c7bbc5d07b1ee31f690c2437ba857775bdb82e942d49eeab30d4",
+    "block_trace_hash": "sha256:5ff7a7f187bd3d09aee3492d679b2dcc2163f0766d0c3a8bf37172d0744ba1b5",
+    "annotated_pages": {
+      "page_001.png": "sha256:af5bde2b88dfe1c1ae2cfd12d03d7ac0e4fc6b405560c14b5076f6b2e4cb3dc1",
+      "page_002.png": "sha256:74c5dac236e3c084d21ac3d94b89e39879adaba6180c4f2ebe70e339692e79ea",
+      "page_003.png": "sha256:4c4aca4f36a56a7489e428d60081dde392fc2b2bb36b9b3a6d577b943a89f3bf",
+      "page_004.png": "sha256:249ce6fac79775d377c3dda634ad196979b1b330550bbca61278cb17bdd60c42",
+      "page_005.png": "sha256:c230595104d3f004974ded9d5054b45fa9d2f3d0158341861cd6d307434f93e7",
+      "page_006.png": "sha256:6cc737281bb6087b13bcfcbf33182f06f7dfaaa9762977bc7765da5e8c03830e",
+      "page_007.png": "sha256:43768ef917801f080ad32990a3e04c37c3ec49222d0c494c1f6378dedd354de7",
+      "page_008.png": "sha256:7ed46d4e8f423fe7a67f5890446dc0be071ca10aa2c04e76d60603f82524d2f7",
+      "page_009.png": "sha256:f292f3b83c31b47015e15700fc8740051a140a8de678d22892a735c85f6c92e4",
+      "page_010.png": "sha256:c0fa47f62fcb508d363f44746ceeb35d5c0f87110d4e843374a43044f6aea93d",
+      "page_011.png": "sha256:f8b4f5b11deef4f17ec6823d8136efb1e6874ca948a91ce6f51f331ae4a4f7ee",
+      "page_012.png": "sha256:bc2410b30729bc5afbab214f717732574f5dfaf8e9cabfeb41238da5c26ad7d5",
+      "page_013.png": "sha256:49028e0f8eafa062799224f803d86356bf40ccd7fd38760f700c611d5110f28a",
+      "page_014.png": "sha256:6000c9ef2473cd4eff0a7f9bc368f7346d798ab3530e04042fa2f643dc6b5921",
+      "page_015.png": "sha256:f0901a42352ce4fb778990206b442ddaa8c111174703867005eb14c137dee593",
+      "page_016.png": "sha256:98178adfdef710897a4f2e8a71ffac66bb602a4147bc20a10036eb2f4b4d5aea",
+      "page_017.png": "sha256:70804c0f7f03d4a3e35e2050657325a1aaef322dfe5d04cda3ef9749a3ed61ae",
+      "page_018.png": "sha256:b70ee63e4579d557b149aaec0cee7c69cb7a9b5d3850635f2d5651291593eef3",
+      "page_019.png": "sha256:ed157e96def63d47cbb028fe84a8ed30cf26f87041024933da7140f8af4fd0db",
+      "page_020.png": "sha256:85ba259f57382a78cfb648d70ce4f4e7c67a54fd72d9217bdc3036a89652db17",
+      "page_021.png": "sha256:909bc4f27c4b468c7164510676375d555c157d3d747847b8e07189c54db8561d",
+      "page_022.png": "sha256:743b2441b9f6b2baf0170c407741a4af94360dc791addda8c6fe52b1abacf1ff",
+      "page_023.png": "sha256:57507fb670fa469f681032792d6293568214445973764d09fe42019d9038419c",
+      "page_024.png": "sha256:477478423596ada5f15d03eecda90077d258d8c23018598008036a0ebf32ff96",
+      "page_025.png": "sha256:f355f3ef1dda34292eb14ce0a39321ac9cce6025b7a44dd0c4a5b186616de9c9"
+    }
+  },
+  "artifact_freshness": {
+    "missing": [],
+    "mismatches": [
+      "document_structure older than blocks_structured",
+      "figure_inventory older than blocks_structured",
+      "table_inventory older than blocks_structured",
+      "resolved_metadata older than blocks_structured"
+    ],
+    "annotated_pages_rendered": [
+      "page_001.png",
+      "page_002.png",
+      "page_003.png",
+      "page_004.png",
+      "page_005.png",
+      "page_006.png",
+      "page_007.png",
+      "page_008.png",
+      "page_009.png",
+      "page_010.png",
+      "page_011.png",
+      "page_012.png",
+      "page_013.png",
+      "page_014.png",
+      "page_015.png",
+      "page_016.png",
+      "page_017.png",
+      "page_018.png",
+      "page_019.png",
+      "page_020.png",
+      "page_021.png",
+      "page_022.png",
+      "page_023.png",
+      "page_024.png",
+      "page_025.png"
+    ]
+  },
+  "reviewed_pages": [
+    1,
+    3,
+    6,
+    7,
+    15,
+    16,
+    17
+  ],
+  "reviewed_blocks": [
+    "p1:0",
+    "p1:1",
+    "p1:2",
+    "p1:3",
+    "p1:4",
+    "p1:5",
+    "p1:6",
+    "p1:7",
+    "p1:8",
+    "p1:9",
+    "p1:10",
+    "p1:11",
+    "p1:12",
+    "p1:13",
+    "p1:14",
+    "p1:15",
+    "p1:16",
+    "p1:17",
+    "p1:18",
+    "p1:19",
+    "p1:20",
+    "p1:21",
+    "p1:22",
+    "p1:23",
+    "p1:24",
+    "p1:25",
+    "p1:26",
+    "p1:27",
+    "p1:28",
+    "p1:29",
+    "p1:30",
+    "p1:31",
+    "p3:0",
+    "p3:1",
+    "p3:2",
+    "p3:3",
+    "p3:4",
+    "p3:5",
+    "p3:6",
+    "p3:7",
+    "p6:0",
+    "p6:1",
+    "p6:2",
+    "p6:3",
+    "p6:4",
+    "p6:5",
+    "p7:0",
+    "p7:1",
+    "p7:2",
+    "p7:3",
+    "p7:4",
+    "p7:5",
+    "p7:6",
+    "p15:0",
+    "p15:1",
+    "p15:2",
+    "p15:3",
+    "p15:4",
+    "p15:5",
+    "p15:6",
+    "p15:7",
+    "p16:0",
+    "p16:1",
+    "p16:2",
+    "p16:3",
+    "p16:4",
+    "p16:5",
+    "p16:6",
+    "p16:7",
+    "p17:0",
+    "p17:1",
+    "p17:2",
+    "p17:3",
+    "p17:4",
+    "p17:5",
+    "p17:6",
+    "p17:7",
+    "p17:8",
+    "p17:9",
+    "p17:10",
+    "p17:11",
+    "p17:12",
+    "p17:13",
+    "p17:14",
+    "p17:15",
+    "p17:16",
+    "p17:17",
+    "p17:18",
+    "p17:19",
+    "p17:20",
+    "p17:21",
+    "p17:22",
+    "p17:23",
+    "p17:24",
+    "p17:25",
+    "p17:26",
+    "p17:27",
+    "p17:28",
+    "p17:29",
+    "p17:30",
+    "p17:31"
+  ],
+  "findings": [
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:4"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:5"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:6"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:7"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:8"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:9"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:10"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:11"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:12"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:13"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:14"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:15"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:16"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:17"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:18"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:19"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:20"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:21"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:22"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "reference_span_error",
+      "severity": "critical",
+      "block_ids": [
+        "p17:23"
+      ],
+      "truth": "block should remain outside the accepted reference span",
+      "pipeline_behavior": "block appears inside the logical reference reading-order region",
+      "root_cause_hypothesis": "logical_order_between_reference_members",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "reference_span_audit.json"
+      }
+    },
+    {
+      "category": "same_page_boundary_error",
+      "severity": "major",
+      "block_ids": [],
+      "truth": "body/reference/backmatter boundaries should be explainable at block level",
+      "pipeline_behavior": "page contains mixed body/reference/tail signals",
+      "root_cause_hypothesis": "same-page boundary ambiguity",
+      "evidence": {
+        "annotated_page": "annotated_pages/page_017.png",
+        "artifact": "page_risk_summary.json"
+      }
+    },
+    {
+      "category": "render_mapping_error",
+      "severity": "minor",
+      "block_ids": [
+        "p1:4",
+        "p1:5",
+        "p1:13",
+        "p1:14",
+        "p1:15",
+        "p1:16",
+        "p1:17",
+        "p1:19",
+        "p1:20",
+        "p1:21",
+        "p1:22",
+        "p1:27",
+        "p1:30",
+        "p1:31",
+        "p2:0",
+        "p2:1",
+        "p2:3",
+        "p2:4",
+        "p2:5",
+        "p3:0"
+      ],
+      "truth": "rendered fulltext should be traceable back to source blocks",
+      "pipeline_behavior": "some render-default blocks are not easily mapped into the current fulltext output",
+      "root_cause_hypothesis": "render omission or snippet mismatch",
+      "evidence": {
+        "annotated_page": null,
+        "artifact": "fulltext_block_mapping_summary.json"
+      }
+    }
+  ]
+}

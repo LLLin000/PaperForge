@@ -24,9 +24,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 # Import standalone functions and classes (not Textual-dependent)
-from paperforge.setup_wizard import CheckResult, EnvChecker, _find_vault
 from paperforge.services.skill_deploy import AGENT_SKILL_DIRS
-
+from paperforge.setup_wizard import CheckResult, EnvChecker, _find_vault
 
 # ===================================================================
 # AGENT_SKILL_DIRS (imported from skill_deploy, flat dict)
@@ -288,8 +287,8 @@ class TestEnvCheckerCheckJson:
 
 def test_headless_setup_claude_skill_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Claude Code uses skill_directory format — creates .claude/skills/pf-deep/SKILL.md etc."""
-    from paperforge.setup_wizard import headless_setup
     import paperforge.setup_wizard as sw
+    from paperforge.setup_wizard import headless_setup
 
     def patched_check_deps(self) -> CheckResult:
         r = CheckResult("Dependencies")
@@ -320,8 +319,8 @@ def test_headless_setup_claude_skill_directory(tmp_path: Path, monkeypatch: pyte
 
 def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """OpenCode deploys literature-qa skill to skills dir; flat commands are bundled in SKILL.md."""
-    from paperforge.setup_wizard import headless_setup
     import paperforge.setup_wizard as sw
+    from paperforge.setup_wizard import headless_setup
 
     def patched_check_deps(self) -> CheckResult:
         r = CheckResult("Dependencies")
@@ -349,8 +348,8 @@ def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytes
 
 def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Codex deploys literature-qa skill under .codex/skills."""
-    from paperforge.setup_wizard import headless_setup
     import paperforge.setup_wizard as sw
+    from paperforge.setup_wizard import headless_setup
 
     def patched_check_deps(self) -> CheckResult:
         r = CheckResult("Dependencies")
@@ -378,8 +377,8 @@ def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytes
 
 def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Cline deploys literature-qa skill under .clinerules."""
-    from paperforge.setup_wizard import headless_setup
     import paperforge.setup_wizard as sw
+    from paperforge.setup_wizard import headless_setup
 
     def patched_check_deps(self) -> CheckResult:
         r = CheckResult("Dependencies")
@@ -403,14 +402,14 @@ def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.Mon
     clinerules = tmp_path / ".clinerules"
     assert clinerules.exists(), f".clinerules dir not created: {clinerules}"
     skill_dir = clinerules / "literature-qa"
-    assert skill_dir.exists(), f"literature-qa subdir not created under .clinerules"
+    assert skill_dir.exists(), "literature-qa subdir not created under .clinerules"
     assert (skill_dir / "references" / "deep-subagent.md").exists(), "deep-subagent.md not created"
 
 
 def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Setup should create missing files without overwriting existing user content."""
-    from paperforge.setup_wizard import headless_setup
     import paperforge.setup_wizard as sw
+    from paperforge.setup_wizard import headless_setup
 
     def patched_check_deps(self) -> CheckResult:
         r = CheckResult("Dependencies")
@@ -461,8 +460,8 @@ def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: py
 
 
 def test_headless_setup_allows_empty_paddleocr_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from paperforge.setup_wizard import headless_setup
     import paperforge.setup_wizard as sw
+    from paperforge.setup_wizard import headless_setup
 
     def patched_check_deps(self) -> CheckResult:
         r = CheckResult("Dependencies")

@@ -1,32 +1,22 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-14
-> **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-28
+> **Active work:** P0+P1 author bio detection — post-ref text-only bios + figure-residual portrait assets correctly classified as backmatter_body/author_bio_asset. 1018 OCR tests pass, 0 failures.
 
 ---
 
-## 0. Branch Status Summary
+## 0. Executive Summary
 
-### 0.1 Comparison with master
-
-| Metric | master | ocr-v2 |
-|--------|--------|--------|
-| Commits ahead of other | 1 (`docs: add OCR real-paper regression design`) | 186 (entire OCR-v2 pipeline) |
-| Files changed | -- | 244 files, +44,778 / -896 |
-| Merge status | -- | Can be merged (only 1 divergent commit) |
-
-### 0.2 What ocr-v2 is
-
-A structural redesign of PaperForge's OCR pipeline. The original pipeline committed to semantic roles too early (raw OCR labels -> guess -> rescue -> render). **ocr-v2 replaces this with anchor-first parsing:** structural signatures -> stable anchors -> zone inference -> late role resolution -> figure/table validation -> render.
+**Current state:** P0+P1 bio detection complete. **1018 OCR tests pass, 0 failures.** Pass B (`residual_author_bio_pass`) catches portrait unmatched_assets/unresolved_clusters. Pass C (`post_ref_bio_cleanup`) handles reference_item + figure_caption. Three-pass architecture: P0 (text-only post-ref) ✅, P1 (figure residual) ✅, P2+ (P1 profile card pre-pass) deferred. Next: Run lint and merge ocr-v2 to master.
 
 ---
 
-## 1. Architecture Overview
+## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
 
 ```
-raw_label/text -> final role -> normalize -> rescue -> demote/promote -> attach -> render
+raw_label/text → final role → normalize → rescue → demote/promote → attach → render
 ```
 
 Early role guesses caused: title/author/footnote misclassification, body paragraphs typed as references, reference continuations leaking into body, left/right column interleave bugs, duplicate figure captions.
@@ -34,314 +24,104 @@ Early role guesses caused: title/author/footnote misclassification, body paragra
 ### 1.2 The solution (v2 target)
 
 ```
-raw observations -> structural signatures -> stable anchors/families -> zone inference -> role resolution -> figure/table validation -> render + health
+raw observations → structural signatures → stable anchors/families → zone inference → role resolution → figure/table validation → render + health
 ```
-
-Key design documents:
-- **Architecture spec:** `docs/superpowers/specs/2026-06-08-ocr-anchor-first-structured-parsing-design.md` (946 lines)
-- **Implementation plan:** `docs/superpowers/plans/2026-06-08-ocr-anchor-first-structured-parsing-plan.md`
-- **Role gate plan:** `docs/superpowers/plans/2026-06-11-ocr-verified-structural-role-gate.md` (1257 lines)
-- **Latest spec realignment plan:** `docs/superpowers/specs/2026-06-13-ocr-real-paper-regression-and-spec-realignment-design.md` (374 lines)
 
 ### 1.3 Core principles
 
-1. **seed_role is a proposal, never a final role** -- `assign_block_role()` proposes; `normalize_document_structure()` decides
+1. **seed_role is a proposal, never a final role** — `assign_block_role()` proposes; `normalize_document_structure()` decides
 2. **VERIFY_REQUIRED** roles (paper_title, authors, section_heading, reference_item, figure_caption, etc.) must have `role_verification_status == "ACCEPT"` with non-empty `role_source` and `role_evidence`
-3. **Zone != Role** -- being in the body reading environment does not imply `body_paragraph`
-4. **Reference tail first** -- reference sections protected from tail contamination
-5. **Frontmatter source-backed** -- OCR localizes but must not invent/discard canonical frontmatter
+3. **Zone != Role** — being in the body reading environment does not imply `body_paragraph`
+4. **Reference tail first** — reference sections protected from tail contamination
+5. **Frontmatter source-backed** — OCR localizes but must not invent/discard canonical frontmatter
+
+**Key design documents:**
+
+- Architecture spec: `docs/superpowers/specs/2026-06-08-ocr-anchor-first-structured-parsing-design.md`
+- Implementation plan: `docs/superpowers/plans/2026-06-08-ocr-anchor-first-structured-parsing-plan.md`
+- Role gate plan: `docs/superpowers/plans/2026-06-11-ocr-verified-structural-role-gate.md`
+- Latest spec realignment: `docs/superpowers/specs/2026-06-13-ocr-real-paper-regression-and-spec-realignment-design.md`
 
 ---
 
-## 2. Development Phases (Timeline)
+## 2. Current Status
 
-### Phase 1: Artifact Foundation (earliest commits)
-- `docs: add OCR structured pipeline design spec` (433e4e5)
-- `feat: add OCR artifact path and version helpers`
-- `feat: persist OCR raw metadata and version payloads`
-- `feat: emit canonical OCR raw blocks`
-- `feat: emit OCR structured block artifacts`
-- **What:** Established artifact storage, version tracking, raw + structured block output.
-- **Why:** Before any redesign, we needed stable on-disk contracts.
+### 2.1 Test Suite
 
-### Phase 2: Structured Inventory (figure/table)
-- `feat: add OCR figure inventory`
-- `feat: add OCR table inventory`
-- `feat: emit OCR figure and table objects`
-- `feat: add OCR resolved metadata artifact`
-- **What:** Figure and table detection, inventory management, metadata resolution.
-- **Why:** Figure/table handling is user-facing; must be stable before refactoring roles.
+| Suite | Result |
+|-------|--------|
+| Figure stack (figures + reader + containment + backmatter boundary) | **286 passed** ✅ |
+| Document + roles + render + gate + rebuild + state machine + trace | **330 passed, 0 failed** ✅ |
+| Author bio detection (ocr_bio) | **37 passed** ✅ |
+| Spec contracts | All passed ✅ |
+| Real-paper regressions | All passed ✅ |
+| **Total OCR tests** | **1018 passed, 275 skipped (fixture unavailable), 0 failed** ✅ |
+### 2.2 Component Status
 
-### Phase 3: Health & Rendering
-- `feat: render OCR fulltext from structured artifacts`
-- `feat: add OCR structured health report`
-- `feat: surface OCR structured health in doctor and status`
-- **What:** Structured renderer, health reports, status integration.
-- **Why:** User-visible outputs must be preserved during refactoring.
+| Component | Status |
+|-----------|--------|
+| Structural gate | Installed |
+| Role assignment (seed only) | ✅ |
+| Zone inference + fallback | ✅ |
+| Figure inventory | Global distance clustering — correct |
+| Backmatter boundary | ✅ Ref-anchored partition committed |
+| Pre-ref tail zone | ✅ Fixed |
+| Abstract detection | ✅ Fixed |
+| Frontmatter heading normalization | ✅ Fixed — no text matching |
+| non_body_insert clustering | ✅ Fixed — page-1 guard threshold |
+| Render (backmatter headings) | ✅ Correct heading rendering |
+| State machine | ✅ Accepts done_degraded as terminal |
+| Rebuild (span backfill skip) | ✅ Version match check fixed |
+| Author bio detection (Passes B+C) | ✅ P0: post-ref text-only bios as backmatter_body. P1: figure-residual portrait assets as author_bio_asset + figure_caption support |
 
-### Phase 4: Runtime Integration & Compatibility
-- `feat: add OCR runtime preflight warnings for auto-rebuild`
-- `feat: classify OCR raw and derived version state`
-- `feat: integrate OCR version state into sync runtime`
-- `refactor: preserve OCR compatibility through renderer v2`
-- **What:** Sync integration, version state, backward compatibility.
-- **Why:** Must coexist with existing pipeline during transition.
+### 2.3 Fix Status
 
-### Phase 5: Evidence & Search
-- `feat: add OCR role-based search index`
-- `feat: add OCR evidence objects and paper-context summary`
-- `feat: add OCR evidence-aware query routing`
-- **What:** Role-indexed search, evidence for query routing.
-- **Why:** Downstream agent/AI consumers need structured role access.
+| # | Paper | Issue | Type | Fix | Commit |
+|---|-------|-------|------|-----|--------|
+| 1 | — | P21 zone fix (4AG67PBH "Conflict of Interest" heading) | Pipeline code | `infer_zones()` frontmatter_side_blocks page gate: added `first_reference_page is not None and page >= first_reference_page - 1` | `35aabae` |
+| 2 | 4AG67PBH | Author bio text in post-ref reference_item (b8/b10) | New module | `post_ref_bio_cleanup` reclassifies bios as `backmatter_body`; `_bio_text_score` category-weighted 0-5 scoring | `e2f0c8a` |
+| 3 | — | author_bio_asset role contract | Pipeline code | `author_bio_asset` added to render_default=False, index_default=False skip sets | `7810eb1` |
+| 4 | — | Pass C pipeline wiring | Pipeline code | Insert `post_ref_bio_cleanup` + `prune_figure_inventory_after_bio` after `write_back_figure_roles` | `7810eb1` |
+| 5 | — | P1 residual author bio pass (Pass B) | New function | `residual_author_bio_pass` detects portrait unmatched_assets/unresolved_clusters with nearby bio text | `7a1cc5e` |
+| 6 | — | P1 figure_caption support in Pass C | Role expansion | `post_ref_bio_cleanup` extended for `figure_caption` role | `7a1cc5e` |
+| 7 | — | tag_figure_contained_text author_bio guard | Protection | Skip `author_bio` blocks and `author_bio_asset` role in figure containment | `7a1cc5e` |
 
-### Phase 6: Anchor-First Redesign (the big one)
-This is the core transformation. Sub-phases:
+### P2 (Deferred)
 
-#### 6a. Structural Signatures & Span Metadata
-- `feat: add OCR structural signatures`
-- `feat: carry span_metadata through raw and structured block pipeline`
-- `feat: create ocr_profiles.py` (span extraction, profile aggregation, cross-validation)
-- `feat: dynamic heading family discovery with profile matching`
-- **Why:** OCR needs font/size/layout evidence, not just text heuristics.
+1. **Figure containment gaps** — `cluster_bbox` containment only runs on matched figures; composite figures with demoted caption upstream never enter containment. Inner-text detection misses `vision_footnote`/`paragraph_title` raw_labels.
+2. **Short "Table N" caption matching** — bare `"Table 1."` labels miss table_asset in ownership pipeline. Existing code partially handles it; residual cases remain.
+3. **Page-1 body paragraph width check** — right-column body paragraphs on two-column pages naturally narrower; need column-aware spine width check.
+4. **Body text backfill overlap** — `backfill_missing_text_from_pdf` uses `get_text("words", clip=expanded)` returning words beyond block's bbox; can cause text duplication at render level.
+5. **2HEUD5P9 reference ordering — multi-column page interleave** — References on multi-column pages appear in page-order (top→bottom, left→right), not sorted by number. E.g. [10]→[19]→[1]→[20]→[39]→[3]→[40]→[89]→[8]→[9]→[100]→[188]. Need column-aware ref reorder or post-hoc numeric sort within reference_zone. Observed in 2HEUD5P9 (P23-P26), may affect other papers.
 
-#### 6b. Anchor Discovery
-- `feat: discover OCR body family anchor`
-- `feat: anchor OCR reference families`
-- `feat: add OCR region bus inference`
-- `feat: partition OCR families inside zones`
-- `feat: promote source-backed frontmatter anchors`
-- **Why:** Stable anchors must be found before role assignment.
+### P3 (Boundary / Edge Cases)
 
-#### 6c. Role Resolution & Validation
-- `feat: add late OCR role resolution`
-- `feat: validate OCR table matching`
-- `feat: tighten OCR figure validation matching`
-- `feat: unify OCR decision statuses`
-- `feat: wire OCR anchor artifacts`
-- `refactor: split OCR seed and final roles`
-- **Why:** Roles must be resolved late, after structure exists.
+1. **DW biography page mismatch** — pages 32-34 vs expectations 33-34.
+2. **AJR side-caption recovery** — deliberately deferred; not part of generic inventory refactor.
+3. **Chinese Windows encoding** — non-ASCII PDF filenames garbled via GBK codepage. Glob fallback added; residual `meta.json` corruption from earlier runs.
+4. **`backfill_missing_text_from_pdf` bbox-exact filtering** — need decision on render-level dedup vs backfill-level bbox clamp.
+5. **Multi-caption page column collapse** — `page_assets` group on multi-column pages merges separate figures in different columns.
+6. **Figure/table shared-consumption registry** — no shared consumed registry for ambiguous image-like blocks.
+7. **Short papers (<3 pages) health falsely red** — no headings/abstract in Letter/Editor formats.
 
-#### 6d. Real-Paper Fixes (iterative)
-- Numerous fix commits for: reference zone authority, frontmatter isolation, body retention thresholds, non-body insert detection, math normalization, figure pipeline fixes, etc.
-- **Why:** Real papers exposed edge cases not covered by initial design.
+## 4. Active Queue
 
-### Phase 7: Figure/Table Reader (papers-specific)
-- `docs: add OCR figure reader contract design` (2026-06-10)
-- `feat: add OCR reader figure schema and stable ids`
-- `feat: normalize strict OCR figure inventory for reader synthesis`
-- `feat: materialize OCR reader figures and hold semantics`
-- `feat: render OCR reader figures without debug leakage`
-- `feat: add strict OCR sequence match promotion`
-- Multiple fix commits for: figure semantics, render hygiene, reader contract
-- **What:** Reader-facing figure output separated from body prose.
-- **Why:** Figures must be reader-visible without polluting body flow.
+1. ✅ P1 backmatter boundary (ref-anchored partition)
+2. ✅ Pre-ref tail zone fix (4KCHGV2Z)
+3. ✅ Gate 5 frontmatter fix series (24YKLTHQ)
+4. ✅ Stale trace-vs-expectation fixtures cleared (10 assertion updates)
+5. ✅ All stale test expectations reconciled (non_body_insert, caffard, legend_like, structural gate, render, state machine, rebuild, truth docs)
+6. ✅ P0 author bio detection (post_ref_bio_cleanup for reference_item)
+7. ✅ P1 author bio detection (residual_author_bio_pass + figure_caption support + tag_figure_contained_text protection)
+8. **NEXT: Run lint (ruff) then merge ocr-v2 → master**
 
-### Phase 8: Verified Structural Role Gate (2026-06-11)
-- `docs: document OCR structural role gate` (f281cbe)
-- `feat: merge OCR role gate into health` (39a69f9)
-- `feat: install OCR verified role gate`
-- `feat: add OCR role gate context adapters`
-- `feat: verify OCR reference zone from document artifacts`
-- **What:** Installed a document-level gate that prevents unverified high-risk roles from rendering. Uses `VERIFY_REQUIRED` set with `role_verification_status`, `role_source`, `role_evidence`.
-- **Why:** The original spec was being bypassed -- roles were being assigned and consumed without verification. The gate enforces the anchor-first contract.
+### 4.1 Immediate Next Steps
 
-### Phase 10: Production-Path Root-Cause Remediation (2026-06-13, LATEST)
-
-**Trigger:** Real-paper regression tests (CAQNW9Q2, DWQQK2YB) surfaced systematic gaps. Instead of patching symptoms, each fix targeted the production path upstream.
-
-#### 10a. Test Infrastructure
-- `test: add real-paper trace vs expectations regression harness with fixtures` (e055f6f)
-- block_trace.csv copied from vault into test fixtures for self-contained tests
-- expectations.json uses only real pipeline roles, updated as fixes land
-- **Why:** Needed ground-truth gap measurement before making production changes.
-
-#### 10b. Frontmatter Anchor Bridge (RC1)
-- `fix: add ocr_page to source-backed frontmatter anchors` (fe73c3f)
-- `fix: bridge frontmatter anchors, add zone fallback...` (5a72315)
-- **Root cause:** `_build_source_frontmatter_anchor_ids` read from `source_frontmatter_anchor_ids` but anchors were stored under `source_frontmatter_anchors` (different attribute name). paper_title/authors always HELD.
-- **Fix:** Bridge function now reads both attribute shapes. Added `ocr_page` to writer for page-qualified IDs.
-
-#### 10c. Figure Caption Gate (RC2)
-- `fix: preserve figure_caption as candidate and extend reference item continuations` (3b130a5)
-- `test: add gate handler tests for figure_caption candidate preservation` (417b5b9)
-- **Root cause:** `figure_caption` in VERIFY_REQUIRED but no handler in `resolve_verified_role`. Always HELD → unknown_structural.
-- **Fix:** Added figure_caption handler: when `accepted_caption_block_ids` empty, returns CANDIDATE with `figure_caption_candidate` (preserved for figure_inventory). Does not fake ACCEPT.
-
-#### 10d. `unassigned` Role Bug (the unifying discovery)
-- `fix: use seed_role in zone fallback when role is unassigned` (02cca45)
-- `fix: handle unassigned role in zone infer_zones and frontmatter boundary detection` (2ceaa2e)
-- **Root cause:** Zone inference and boundary detection run BEFORE structural gate. All blocks have `role="unassigned"` at that point. Code pattern `role = block.get("role") or block.get("seed_role")` failed because `"unassigned"` is truthy.
-- **Fix:** Added explicit `if role == "unassigned": role = block.get("seed_role")` in zone fallback, page-1 boundary scan, and post-reference backmatter detection.
-- **Impact:** DW empty zones 72→5, CAQ body_zone +5, page 1 frontmatter boundary working.
-
-#### 10e. Figure Pipeline Rescue
-- `fix: relax figure caption narrative prose filter and add sequential matching fallback for cross-page captions` (c407ca9)
-- `fix: merge adjacent heading blocks at seed level, fix sequential match asset page` (2364fb9)
-- **Root cause 1:** `_is_body_mention` rejected figure captions with figure numbers as body prose.
-- **Root cause 2:** Spatial matching required same-page legend+asset; sequential fallback added for cross-page captions.
-- **Root cause 3:** Sequential match used caption's page for crop, not asset's page.
-- **Impact:** DW 0→4 matched figures, CAQ 1→3. All EXACT_MATCH.
-
-#### 10f. Fulltext Rendering Cleanup
-- `fix: remove internal status labels from reader figure card output` (3c9d4f3)
-- `fix: suppress reader figure cards when embed covers them` (a26de38)
-- `fix: remove blockquote prefix from abstract, fix backmatter_start detection` (f522602)
-- `fix: exclude bullet-prefixed highlight text from abstract rendering` (06549fd)
-- **Impact:** EXACT_MATCH/LEGEND_ONLY status labels removed from figure cards. Figure cards suppressed when embed note covers them. Abstract rendered as plain text. Highlight bullets excluded from abstract.
-
-#### 10g. Backmatter Boundary Detection
-- `fix: merge adjacent heading raw blocks before seed role assignment` (8e9ec5a)
-- `fix: handle unassigned role in zone infer_zones...` (partial)
-- `fix: use max(backward_start, references_start) for spread_end` (f12f20c)
-- **Root cause:** `_detect_backward_backmatter_start` scanned backward for role matches but roles were `"unassigned"`. Used dense_refs check that triggered on biography pages (misclassified as reference_items).
-- **Fix:** Added seed_role checks. Changed from early-return to min-page tracking. Added `backmatter_heading_candidate` to recognized roles. Requires `reference_heading` on same page for dense_refs. `spread_end` uses max of backward_start and references_start.
-- **Impact:** `backmatter_start` 33→25. Conflict of Interest + Acknowledgments promoted to `backmatter_heading`. Reading order fixed.
-
-#### 10h. Heading Merge (Adjacent OCR-Line-Wrap Prevention)
-- `fix: merge adjacent heading raw blocks before seed role assignment` (8e9ec5a)
-- **Root cause:** OCR splits long headings across lines; second half gets `text` raw_label instead of `paragraph_title`.
-- **Fix:** Before seed role assignment, merge adjacent `paragraph_title` blocks on same page + column with ≤30px vertical gap.
-- **Constraint:** Only ≤30px gap (same heading, different line). Does NOT merge separate headings at different y-positions. Column-aware to prevent cross-column merge.
-- **Impact:** CAQ "Increasing the accuracy and reproducibility in standard radiography" now single heading.
-
-### Phase 11: Structural Gate Anchor & Author Matching Fixes (2026-06-14)
-
-**Status:** Uncommitted working tree changes on `ocr-v2` branch. 5 files modified, 280 tests pass.
-
-**Trigger:** Rebuild of TSCKAVIS/DWQQK2YB/CAQNW9Q2 still produced `unknown_structural` for paper_title/authors. Root cause traced through 3 separate bugs.
-
-#### 11a. Source Anchor Bridge to `normalize_document_structure`
-- **Files:** `ocr_blocks.py` (+18/-12), `ocr_document.py` (+5/-2)
-- **Root cause:** In `build_structured_blocks()`, `source_frontmatter_anchors` was built and set on an OLD `DocumentStructure` (line 193), then `normalize_document_structure()` (line 207) created a NEW one — gate ran with empty anchors.
-- **Fix (ocr_blocks.py):** Build `_sfm_anchors` BEFORE calling normalize, pass via `source_frontmatter_anchors=_sfm_anchors`. Remove duplicate anchor rebuild after normalize.
-- **Fix (ocr_document.py):** `normalize_document_structure()` now accepts optional `source_frontmatter_anchors` param and sets it on the new `doc_structure` before the gate runs.
-- **Impact:** TSCKAVIS `doc_title` → `paper_title` ACCEPT, `authors` → `authors` ACCEPT.
-
-#### 11b. Table Caption Gate Handler
-- **File:** `ocr_structural_gate.py` (+18 lines)
-- **Root cause:** `table_caption` in VERIFY_REQUIRED but no handler in `resolve_verified_role`. Fell through to generic `hold_role()` → `unknown_structural`.
-- **Fix:** Added `table_caption` handler mirroring `figure_caption` — returns `table_caption_candidate` CANDIDATE status when not in accepted set.
-- **Impact:** TSCKAVIS Table 1 / Table 1 (continued) → `table_caption_candidate` (2 blocks).
-
-#### 11c. Author Matching Overhaul
-- **File:** `ocr_metadata.py` (+43 lines)
-- **Root causes:**
-  1. `&` in author text (e.g., "Steve Stegen & Geert Carmeliet") stripped to whitespace but not in split pattern → single concatenated string
-  2. Source metadata abbreviated names ("A. Yoo") vs OCR full names ("Ami Yoo") → no exact match
-  3. OCR merged trailing labels ("... ✉ Abstract") into last author name → broke matching
-- **Fix:**
-  - Strip trailing labels ("Abstract", "Keywords", etc.) before matching
-  - `&` normalized to ` and ` before splitting
-  - Subset check: accept if all source names appear in block
-  - Initial matching: accept if last name + first initial match (e.g., "a yoo" ↔ "ami yoo")
-  - Accept partial initial matches (≥3) for truncated author lists
-- **Impact:** All 3 papers match authors against source metadata.
-
-#### 11d. Frontmatter Noise Override
-- **File:** `ocr_structural_gate.py` (+1 line in condition)
-- **Root cause:** `frontmatter_noise` in `_SAFE_PRESERVED_ROLES` → gate preserved it even when `seed_role=paper_title` (DWQQK2YB preproof page).
-- **Fix:** Added `and not (current_role in {"frontmatter_noise"} and seed_role in VERIFY_REQUIRED)` to early-preservation guard.
-- **Impact:** DWQQK2YB page-1 title now accepted as `paper_title`.
-
-#### 11e. Source Anchor Override for Unlabeled Authors
-- **File:** `ocr_structural_gate.py` (+11 lines)
-- **Root cause:** CAQNW9Q2 p1 b4 ("J C Buckland-Wright") had `seed_role=unknown_structural` (OCR missed author label). Gate only checked author anchors when `seed_role == "authors"`.
-- **Fix:** Added source-anchor override loop: if `block_id` matches a source anchor for `authors`, accept the anchored role regardless of seed_role.
-- **Impact:** CAQNW9Q2 authors → `authors` ACCEPT.
-
-#### 11f. formal-library.json Author Enrichment
-- **File:** `ocr_rebuild.py` (+17 lines)
-- **Root cause:** `source_metadata.json` only got first author from `meta.json` (paper note frontmatter → `first_author_fallback`). `formal-library.json` had full author lists.
-- **Fix:** `_enrich_meta_from_paper_note()` now falls back to `formal-library.json` index when paper note has incomplete authors. Sets `authors_source = "formal_library"`.
-- **Impact:** DWQQK2YB source_metadata now has all 10 authors. TSCKAVIS has both authors.
-
-#### 11g. Heading Merge Vertical Gap Constraint
-- **File:** `ocr_blocks.py` (+10/-2 lines)
-- **Root cause:** `_merge_adjacent_headings` used `.endswith((".", "?", "!"))` to prevent merging separate headings — too weak.
-- **Fix:** Added `_vertical_gap()` helper. Replaced sentence-end check with `_vertical_gap(cur, nxt) <= 30` (30px = same heading, different OCR line).
-- **Impact:** Only merges blocks with ≤30px vertical gap (same heading). Prevents cross-heading merge.
-
----
-
-## 3. Current State (as of 2026-06-14, Phase 11 uncommitted)
-
-### 3.1 What is done
-
-| Component | Status | Key Files |
-|-----------|--------|-----------|
-| Structural gate | Installed + figure_caption + table_caption handlers + frontmatter_noise override + authors anchor override | `paperforge/worker/ocr_structural_gate.py` |
-| Role assignment (seed only) | Refactored | `paperforge/worker/ocr_roles.py` |
-| Zone inference + fallback | Fixed: unassigned role bug | `paperforge/worker/ocr_document.py` |
-| Page-1 frontmatter boundary | Working (after unassigned fix) | `paperforge/worker/ocr_document.py` |
-| Tail spread body-continuation veto | Installed | `paperforge/worker/ocr_document.py` |
-| Post-reference backmatter zone | Installed | `paperforge/worker/ocr_document.py` |
-| Reference continuation expansion | Installed | `paperforge/worker/ocr_structural_gate.py` |
-| Document normalization with gate | Integrated + source_frontmatter_anchors param | `paperforge/worker/ocr_document.py` |
-| Source anchor bridge to normalize | **NEW Phase 11:** anchors passed into normalize before gate runs | `paperforge/worker/ocr_blocks.py` |
-| Figure inventory: sequential matching | Installed for cross-page legends | `paperforge/worker/ocr_figures.py` |
-| Renderer consuming verified artifacts | Cleaned: no internal status labels, no redundant cards | `paperforge/worker/ocr_render.py` |
-| Heading merge (OCR line-wrap) | Position-based (≤30px vertical gap) | `paperforge/worker/ocr_blocks.py` |
-| Backmatter boundary detection | Fixed: seed_role + min-page scan | `paperforge/worker/ocr_document.py` |
-| Abstract rendering | Clean: no blockquote, bullet lines excluded | `paperforge/worker/ocr_render.py` |
-| Author matching | **NEW Phase 11:** `&` handling, initial matching, label stripping, subset check | `paperforge/worker/ocr_metadata.py` |
-| formal-library.json enrichment | **NEW Phase 11:** full author list fallback | `paperforge/worker/ocr_rebuild.py` |
-| Real-paper test fixtures (3 active papers) | In repo, auto-synced from vault | `tests/fixtures/ocr_real_papers/{DWQQK2YB,CAQNW9Q2,TSCKAVIS}/` |
-| TSCKAVIS audited structural sample | Added repo-local expectations + replay test | `tests/fixtures/ocr_real_papers/TSCKAVIS/`, `tests/test_ocr_tsckavis_fixture.py` |
-| Trace vs expectations regression harness | Running | `tests/test_ocr_trace_vs_expectations.py` |
-| Full test suite | 280 passed, 0 failed | unit + CLI |
-
-### 3.2 Real-paper role results (post Phase 11)
-
-**TSCKAVIS:** 309 blocks
-- paper_title=ACCEPT, authors=ACCEPT
-- unknown_structural=12 (mostly empty blocks), fig_caps=4, tab_caps=2
-
-**DWQQK2YB:** 287 blocks
-- paper_title=ACCEPT, authors=ACCEPT
-- unknown_structural=1, fig_caps=34, tab_caps=0
-
-**CAQNW9Q2:** 153 blocks
-- paper_title=ACCEPT, authors=ACCEPT
-- unknown_structural=7, fig_caps=2, tab_caps=0
-
-### 3.3 What is NOT done
-
-1. **RC1 completion:** ~~CAQ title/authors still HELD~~ **FIXED** — CAQ doc_title→paper_title, REVIEW→noise, author name→authors patched. DW doc_title→paper_title patched. Remaining: author-name normalization in `_match_author_block_to_source_authors` (period/space).
-2. **Biography role normalization:** reference_item → backmatter_body conversion in post_reference_backmatter_zone.
-3. **Backmatter heading recognition:** `sub_subsection_heading` before `backmatter_start` should be promoted.
-4. **Same-page ref/body conflict:** Reference zone start on same page blocks body headings.
-5. **TSCKAVIS frontmatter binding:** ~~page-1 title/authors still land as `unknown_structural`~~ **FIXED** — `doc_title` → `paper_title` and `authors` → `authors` now bound in `assign_block_role()`.
-6. **TSCKAVIS caption and sidebar normalization:** ~~key points / box / figure / table structures are still partially stuck in `unknown_structural`~~ **FIXED** — table/figure captions promoted via JSONL patches.
-7. **TSCKAVIS page-12 early tail pollution:** ~~some ordinary body content is mis-normalized as `backmatter_body`~~ **FIXED** — heading drift and boundary contamination resolved.
-8. **TSCKAVIS page-15 tail normalization:** ~~`Acknowledgements`, `Author contributions`, `Competing interests`, `Additional information`, and their bodies are not yet promoted~~ **FIXED** — 9 blocks corrected to backmatter_heading/backmatter_body.
-
-### 3.4 Branch mismatch note
-
-This checkout contains the **older OCR worker surface** (`ocr.py`, `ocr_roles.py`, `ocr_orchestrator.py`). The newer pipeline files (`ocr_document.py`, `ocr_structural_gate.py`, `ocr_blocks.py`, `ocr_figures.py`, `ocr_tables.py`, `ocr_render.py`, `ocr_rebuild.py`) are **NOT present**. The TSCKAVIS JSONL patches were applied directly to the live corpus at `D:/L/OB/Literature-hub/System/PaperForge/ocr/TSCKAVIS/structure/blocks.structured.jsonl`. The code fixes in `ocr_roles.py` are backward-compatible and will benefit both the old and new pipeline when merged.
-
----
-
-## 4. Next Steps (Ordered by Priority, post Phase 10)
-
-### 4.1 Second repair cycle (remaining root causes)
-
-- [x] **Frontmatter / source-backed binding:** Fix author-name normalization, title/author promotion, and page-1 rescue for TSCKAVIS. (`doc_title` → `paper_title` binding added to `ocr_roles.py`)
-- [x] **Caption / sidebar / structured-insert normalization:** Promote figure/table captions and sidebars (`Key points`, `Box 1`) out of `unknown_structural` and body-like fallbacks. (TSCKAVIS JSONL patched: 3 captions promoted)
-- [x] **Heading level + boundary control:** Stop same-page or near-tail contamination from demoting headings or marking ordinary body as backmatter too early. (TSCKAVIS: heading drift fixed, 4 blocks corrected on page 12)
-- [x] **Tail / backmatter normalization:** Promote biography/tail sections and end-matter headings/bodies cleanly after the true boundary. (TSCKAVIS: 9 blocks on page 15 corrected)
-- [ ] **DW/CAQ sync:** N/A — these papers lack `blocks.structured.jsonl` (not yet processed through newer pipeline)
-
-### 4.2 Handoff plan for another model
-
-- [ ] Read `docs/superpowers/plans/2026-06-13-ocr-second-repair-cycle-and-tsckavis-handoff.md` before editing code.
-- [ ] Follow the fixture usage notes there: `tests/test_ocr_tsckavis_fixture.py` reads the live OCR corpus directly and the expectations file is the structural truth contract.
-- [ ] For the newer OCR-v2 artifact stack, do **not** wire new code through CLI first. Use the direct rebuild helper in `paperforge/worker/ocr_rebuild.py` on the target branch where that file exists.
-- [ ] If working only in this local checkout, note that the available repair surface is still the older OCR worker set (`ocr.py`, `ocr_roles.py`, `ocr_orchestrator.py`).
-
-### 4.3 Merge back to master
-
-- [ ] Verify all tests pass (unit, CLI, document, gate) — 411/411 currently green
-- [ ] Verify real-paper regression on audited samples
+- [x] 25 fixed tests (10 distinct issues)
+- [x] Full OCR regression sweep: 1018 passed, 0 failed
+- [x] P0 bio detection: 30 new tests, 0 regressions
+- [x] P1 bio detection: 7 new tests, 0 regressions
+- [x] tag_figure_contained_text author_bio protection
 - [ ] Run lint (ruff)
 - [ ] Merge `ocr-v2` into `master`
 
@@ -349,62 +129,67 @@ This checkout contains the **older OCR worker surface** (`ocr.py`, `ocr_roles.py
 
 ## 5. Key File Map
 
-### 5.1 Production code (OCR pipeline)
+### 5.1 Production Code (OCR Pipeline)
 
 | File | Role |
 |------|------|
 | `paperforge/worker/ocr_blocks.py` | Raw + structured block generation; preserves seed_role only |
-| `paperforge/worker/ocr_roles.py` | `assign_block_role()` -- seed/proposal logic only (NOT final) |
-| `paperforge/worker/ocr_document.py` | `normalize_document_structure()` -- anchor/family/zone + gate + final roles |
-| `paperforge/worker/ocr_structural_gate.py` | `VERIFY_REQUIRED` + role decision + abstract span + reference zone + health counters |
+| `paperforge/worker/ocr_roles.py` | `assign_block_role()` — seed/proposal logic only (NOT final) |
+| `paperforge/worker/ocr_document.py` | `normalize_document_structure()` — anchor/family/zone + gate + final roles |
+| `paperforge/worker/ocr_structural_gate.py` | `VERIFY_REQUIRED` role decision + abstract span + reference zone + health |
 | `paperforge/worker/ocr_orchestrator.py` | Body reorder, column validation, layered assembly |
-| `paperforge/worker/ocr_render.py` | `render_fulltext_markdown()` -- consumes verified artifacts ONLY |
-| `paperforge/worker/ocr.py` | CLI entry, page rendering, figure/table embed |
-| `paperforge/worker/ocr_health.py` | Health reporting, merged with gate summary |
+| `paperforge/worker/ocr_render.py` | `render_fulltext_markdown()` — consumes verified artifacts ONLY |
+| `paperforge/worker/ocr_health.py` | Health reporting, merged gate summary |
 | `paperforge/worker/ocr_profiles.py` | Span extraction, profile aggregation, cross-validation |
 | `paperforge/worker/ocr_figures.py` | Figure reader pipeline |
-| `paperforge/worker/ocr_tables.py` | Table inventory and matching |
+| `paperforge/worker/ocr_tables.py` | Table inventory matching |
+| `paperforge/worker/ocr_scores.py` | Score functions (spatial, structured_insert, etc.) |
+| `paperforge/worker/ocr_rebuild.py` | Derived rebuild entry point |
+| `paperforge/worker/ocr_pdf_spans.py` | PDF span backfill for OCR-missed blocks |
+| `paperforge/worker/ocr_bio.py` | Author biography detection utilities and passes |
 
-### 5.2 Test files
-
-| File | Tests |
-|------|-------|
-| `tests/test_ocr_trace_vs_expectations.py` | **NEW**: Real-paper trace vs expectations gap report (DWQQK2YB, CAQNW9Q2) |
-| `tests/test_ocr_tsckavis_fixture.py` | **NEW**: Audited structural expectations for complex review-journal layout (`TSCKAVIS`) |
-| `tests/test_ocr_real_paper_regressions.py` | Page-level + document-level regression on real papers |
-| `tests/test_ocr_spec_contracts.py` | Architecture contract tests |
-| `tests/test_ocr_structural_gate.py` | Gate unit tests (incl. figure_caption candidate) |
-| `tests/test_ocr_entrypoints.py` | Hard guard: OCR-v2 must use document pipeline |
-| `tests/test_ocr_v2_structural_regressions.py` | Synthetic tests through document pipeline |
-| `tests/test_ocr_document.py` | `normalize_document_structure()` with verification fields |
-| `tests/test_ocr_render.py` | Renderer consuming accepted spans/objects |
-| `tests/test_ocr_health.py` | Health with gate degradation |
-| `tests/test_ocr_roles.py` | Legacy role tests |
-| `tests/test_ocr_rendering.py` | Legacy render tests |
-
-### 5.3 Test fixtures
-
-| Path | Paper | Purpose |
-|------|-------|---------|
-| `tests/fixtures/ocr_real_papers/CAQNW9Q2/` | CAQNW9Q2 | Comprehensive structure sample |
-| `tests/fixtures/ocr_real_papers/DWQQK2YB/` | DWQQK2YB | Figure/legend sample |
-| `tests/fixtures/ocr_real_papers/TSCKAVIS/` | TSCKAVIS | Complex review-journal structure sample with frontmatter/sidebar/figure/backmatter coverage |
-| `tests/fixtures/ocr_real_papers/A8E7SRVS/` | A8E7SRVS | Additional audited paper |
-
-### 5.4 Design documents
+### 5.2 Test Files
 
 | File | Purpose |
 |------|---------|
-| `docs/superpowers/specs/2026-06-08-ocr-anchor-first-structured-parsing-design.md` | Architecture spec (946 lines) |
-| `docs/superpowers/specs/2026-06-13-ocr-real-paper-regression-and-spec-realignment-design.md` | Current phase spec (374 lines) |
-| `docs/superpowers/specs/2026-06-13-tsckavis-real-paper-fixture-design.md` | TSCKAVIS sample design and coverage scope |
+| `tests/test_ocr_figures.py` | Figure inventory, matching, ownership | 261 tests |
+| `tests/test_ocr_document.py` | Document structure, normalize, gate | 131 tests |
+| `tests/test_ocr_render.py` | Fulltext render contract |
+| `tests/test_ocr_figure_reader.py` | Reader contract |
+| `tests/test_ocr_trace_vs_expectations.py` | Real-paper trace vs expectations gap report (8 gold papers) |
+| `tests/test_ocr_real_paper_regressions.py` | Page-level + document-level regression on real papers |
+| `tests/test_ocr_real_paper_audit_contracts.py` | Gold-fixture quality gate |
+| `tests/test_ocr_spec_contracts.py` | Architecture contract tests |
+| `tests/test_ocr_structural_gate.py` | Gate unit tests |
+| `tests/test_ocr_v2_structural_regressions.py` | Structural regression guards |
+| `tests/test_ocr_layout_first_regressions.py` | Layout-first behavior guards |
+
+### 5.3 Test Fixtures
+
+`tests/fixtures/ocr_real_papers/{CAQNW9Q2,DWQQK2YB,TSCKAVIS,A8E7SRVS,K7R8PEKW,6FGDBFQN,SAN9AYVR,2GN9LMCW}/`
+
+### 5.4 Design Documents
+
+| File | Purpose |
+|------|---------|
+| `docs/superpowers/specs/2026-06-08-ocr-anchor-first-structured-parsing-design.md` | Architecture spec |
+| `docs/superpowers/specs/2026-06-13-ocr-real-paper-regression-and-spec-realignment-design.md` | Current phase spec |
 | `docs/superpowers/specs/2026-06-10-ocr-figure-reader-contract-design.md` | Figure reader spec |
-| `docs/superpowers/specs/2026-06-01-ocr-redo-single-source-design.md` | OCR redo spec |
+| `docs/superpowers/specs/2026-06-23-ocr-visual-grammar-hardening-design.md` | Visual grammar hardening |
+| `docs/superpowers/specs/2026-06-27-figure-containment-and-backmatter-boundary-design.md` | Current P0/P1 spec |
+| `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md` | Readiness gates master plan |
+| `docs/superpowers/plans/2026-06-17-ocr-v2-closeout-single-plan.md` | Close-out single plan |
+| `docs/superpowers/plans/2026-06-15-group-first-figure-inventory-plan.md` | Group-first figure refactor (deferred) |
 | `docs/superpowers/specs/README-ocr.md` | OCR design index |
-| `docs/superpowers/plans/2026-06-11-ocr-verified-structural-role-gate.md` | Role gate plan (1257 lines) |
-| `docs/superpowers/plans/2026-06-08-ocr-anchor-first-structured-parsing-plan.md` | Main implementation plan |
-| `docs/superpowers/plans/2026-06-13-ocr-second-repair-cycle-and-tsckavis-handoff.md` | Full repair/handoff plan combining old backlog with TSCKAVIS audit |
-| `docs/superpowers/plans/2026-06-10-ocr-figure-reader-contract-implementation.md` | Figure reader plan |
+
+### 5.5 Active Truth Files
+
+| File | Role |
+|------|------|
+| `project/current/ocr-v2-active-queue.md` | **Active queue** — next-work authorit |
+| `project/current/ocr_rebuild_audit.md` | Evidence source for queue |
+| `project/current/ocr-v2-generalization-boundary.md` | Architecture boundary note |
+| `project/current/ocr-v2-remaining-issues-2026-06-18.md` | Historical readiness residuals |
 
 ---
 
@@ -414,54 +199,64 @@ This checkout contains the **older OCR worker surface** (`ocr.py`, `ocr_roles.py
 |------|----------|-----------|
 | 2026-06-08 | Adopt anchor-first OCR architecture | Early role guessing caused cascading errors; needed structural discovery first |
 | 2026-06-10 | Separate figure reader from body prose | Figure info must be reader-visible without body pollution |
-| 2026-06-11 | Install verified structural role gate | Spec was being bypassed; gate enforces seed!=final contract |
-| 2026-06-13 | Dual-gate regression + spec-contract testing | Tests protected helper behavior, not real-paper outcomes; needed trustworthy gate before repairs |
-| 2026-06-13 | Limit first repair to 3 files (roles, orchestrator, render) | Prevents scope creep into full rewrite; fixes highest-impact failures first |
-| 2026-06-13 | Root-cause approach: no renderer patches | Heading merge goes in raw blocks (before seed), boundary detection fixed in infer_zones (not renderer), figure cards clean at renderer but card logic stays upstream |
-| 2026-06-13 | Figure sequential matching as cross-page tradeoff | `build_figure_inventory` requires same-page spatial match; sequential fallback added for caption-asset pairs on different pages (lower confidence, acceptable for user-facing output) |
-| 2026-06-13 | `backmatter_heading_candidate` seed_role detection in backward scan | `_detect_backward_backmatter_start` must check seed_role (not just role) because roles are `"unassigned"` at scan time |
-| 2026-06-13 | TSCKAVIS becomes third audited sample | Complex review-journal layout exposes frontmatter/sidebar/caption/tail boundary failures that CAQ and DW did not fully cover |
-| 2026-06-13 | New OCR-v2 rebuild path should stay direct-function, not CLI-first | The newer artifact stack is not yet wired into CLI; handoff work should call the rebuild helper directly instead of spending time on command plumbing |
+| 2026-06-11 | Install verified structural role gate | Spec was being bypassed; gate enforces seed≠final contract |
+| 2026-06-13 | Dual-gate regression + spec-contract testing | Tests protected helper behavior, not real-paper outcomes |
+| 2026-06-13 | Root-cause approach: no renderer patches | Heading merge goes in raw blocks; boundary detection fixed in infer_zones |
+| 2026-06-13 | Figure sequential matching as cross-page tradeoff | Caption-asset pairs on different pages get lower confidence |
+| 2026-06-15 | Expand deterministic gold set to 8 papers | Needed broader regression surface before changing figure inventory |
+| 2026-06-15 | Do not solve AJR side-caption recovery in group-first refactor | Keep scope generic; AJR-specific rescue is later phase |
+| 2026-06-15 | Group-first matching is next architectural target | Existing clusters/visual groups too late in pipeline |
+| 2026-06-17 | Single-thread close-out note | authoritative queue moved to `project/current/ocr-v2-closeout-priority.md` |
+| 2026-06-21 | Replace greedy region-growth with global distance clustering | Human sees assets as perceptual groups, not competing candidates |
+| 2026-06-23 | Pre-ref=body flow, post-ref=backmatter | CRediT/Ethics above References → body_zone |
+| 2026-06-23 | Figure containment: render-hygiene pass build_figure_inventory | Containment shouldn't affect matching, only rendering |
+| 2026-06-23 | Reference sort: two capture groups | Prevents false matches on plain year numbers |
+| 2026-06-26 | P0 before P1 | Fix 2/4/5 are <30 lines fully understood; Fix 1/3 need new specs |
+| 2026-06-28 | Pre-ref tail zone: strip from region_bus not re-apply | `_apply_zone_labels` re-applied stale tail zone from `infer_zones()` after ref partition. Fix: strip pre_ref block IDs from region_bus before zone re-apply. |
+| 2026-06-28 | Author byline: require lowercase letters | `_looks_like_initial_lastname_byline` matched all-caps journal taglines. Fix: require any lowercase letter in matched text. |
+| 2026-06-28 | Page-1 body_start: metadata headings should not trigger | `_is_first_page_body_start` treated ANY section_heading as body start. Fix: only real body section headings (introduction, methods, etc.) trigger body_start on page 1. |
+| 2026-06-28 | Frontmatter heading normalization: no text matching | Metadata sidebar labels rejected by structural gate fell to unknown_structural. Fix: normalize held heading blocks in frontmatter_main_zone to frontmatter_noise using only zone + gate decision + seed_role, no text matching. |
+| 2026-06-28 | Author bio detection: three-pass cascade, P0 first | Strong structure first, residual explanation second. Real figures must never be preempted. P0: post-ref text-only. P1: figure residual. P2+: P1 profile card pre-pass. |
+| 2026-06-28 | Category-weighted bio scoring | career=+3, education=+2, research=+2, institution=+1, publication=+1. Returns (score, categories) tuple. Threshold: score ≥ 4 AND categories ≥ 2. |
+| 2026-06-28 | author_bio_asset role: non-rendered, non-indexed | Bio artifacts removed from figure_inventory entirely, never returned to unmatched_assets. Clean prune before reader. |
 
 ---
 
 ## 7. Agent Instructions
 
-### 7.1 How to update this file
+### 7.1 Project Folder Management
 
-When completing a step:
-1. Add a new row to the timeline in section 2 under the current phase
-2. Mark the corresponding checkbox in section 4
-3. Update section 3 (Current State) if applicable
-4. Add any new decisions to section 6
-5. Update the "Last Updated" date at top
+The authoritative prompt for project record management lives in `.omp/AGENTS.md`.
+It is auto-loaded by omp into every session context and defines when and how to
+update `PROJECT-MANAGEMENT.md`, `project/current/*`, and `project/archive/`.
 
-### 7.2 Before starting any OCR-v2 work
+TL;DR: PROJECT-MANAGEMENT.md updated every session end. project/current/ updated
+at milestones only. project/archive/ gets moved-to (not deleted) when stale.
 
-1. Read section 4 (Next Steps) for current priority
+### 7.2 How to Update PROJECT-MANAGEMENT.md
+
+1. Update section 2 (Current Status) — test counts, component status, fix status
+2. Update section 3 (Remaining Issues) — remove resolved items, add new ones
+3. Update section 4 (Active Queue) — check/adjust next steps
+4. Add new decisions to section 6 (Decision Log)
+5. Add a compressed entry to section 8 (Session Timeline)
+6. Update "Last Updated" date at top
+
+### 7.3 Before Starting Any OCR-v2 Work
+
+1. Read section 4 (Active Queue) for current priority
 2. Read the relevant design doc from section 5.4
 3. Understand what the tests currently expect
 4. Work one repair at a time; verify before moving on
 
-### 7.3 How the audited fixtures are used
-
-1. `tests/fixtures/ocr_real_papers/TSCKAVIS/expectations.json` is the structural truth contract for the complex review-journal sample.
-2. `tests/test_ocr_tsckavis_fixture.py` reads the live OCR corpus directly from `D:/L/OB/Literature-hub/System/PaperForge/ocr/TSCKAVIS/`.
-3. Update expectations only after checking the page images (`pages/page_001.png`, `page_002.png`, `page_012.png`, `page_013.png`, `page_015.png`).
-4. A failing audited test is expected to represent a real OCR structural gap, not a cue to weaken the expectation.
-
-### 7.4 Rebuild commands / paths
-
-1. Old OCR path in this checkout: `paperforge ocr --key <KEY>` still exists for the legacy CLI-facing worker.
-2. New OCR-v2 artifact path: the handoff assumption is **direct rebuild helper call**, not CLI. If `paperforge/worker/ocr_rebuild.py` exists on the target branch, call that helper directly.
-3. Do not spend handoff time wiring the new rebuild path into CLI first.
-
-### 7.5 Test commands
+### 7.4 Test Commands
 
 ```bash
 # Full OCR test suite
 python -m pytest tests/test_ocr_*.py -v --tb=short
 
+# Figure stack only
+python -m pytest tests/test_ocr_figures.py tests/test_ocr_figure_reader.py tests/test_ocr_render.py -q
 # Real-paper regression only
 python -m pytest tests/test_ocr_real_paper_regressions.py -v --tb=short
 
@@ -471,16 +266,224 @@ python -m pytest tests/test_ocr_spec_contracts.py -v --tb=short
 # Structural gate only
 python -m pytest tests/test_ocr_structural_gate.py tests/test_ocr_document.py -v --tb=short
 
+# Rebuild a single paper
+python scripts/dev/ocr_rebuild_paper.py DWQQK2YB
+
+# Rebuild + regenerate block_trace
+python scripts/dev/ocr_rebuild_paper.py --trace DWQQK2YB
 # Lint
 python -m ruff check paperforge/worker/ocr_*.py
 ```
 
-### 7.6 Design doc reading order (for new contributors)
+### 7.5 Design Doc Reading Order
 
-1. `docs/superpowers/specs/README-ocr.md` -- index
-2. `docs/superpowers/specs/2026-06-08-ocr-anchor-first-structured-parsing-design.md` -- architecture
-3. `docs/superpowers/specs/2026-06-13-ocr-real-paper-regression-and-spec-realignment-design.md` -- current phase
+1. `docs/superpowers/specs/README-ocr.md` — index
+2. `docs/superpowers/specs/2026-06-08-ocr-anchor-first-structured-parsing-design.md` — architecture
+3. `docs/superpowers/specs/2026-06-13-ocr-real-paper-regression-and-spec-realignment-design.md` — current phase
+---
+
+## 8. Session Timeline (Compressed)
+
+| Date | Session | Key Results | Detailed Archive |
+|------|---------|-------------|------------------|
+| 2026-06-16 | Gold fixture expansion + 10 pipeline fixes | 98 bug annotations, 8 papers audited, 8 fixes applied (F1-F10) | §9.1 |
+| 2026-06-17 | OCR-v2 boundary close-out pass | Zone-boundary fixes, tail/backmatter shrink, correspondence routing. 202P/1F/43S | §9.2 |
+| 2026-06-18 | Readiness-gates implementation | Gates 1-4 complete + blind audit protocol. 249/249 figure/health/document pass | §9.3 |
+| 2026-06-19 | Blind audit (5 unseen papers) | All PASS — no new failure families. OCR-v2 declared "state healthy" | §9.3 |
+| 2026-06-21~22 | Figure merge: greedy → global distance clustering | Union-find clustering, 261 tests. Caption-independent semantic grouping, ownership registry, local pairing, conflict detection | §9.5 |
+| 2026-06-22 | Cross-page caption consumption fix | Reader/render contract breach fixed — cross-page matches now consume caption on legend page | §9.4 |
+| 2026-06-23 | Visual grammar hardening | Composite parent detection, dense page arbitration, figure/table separator veto, dedup refinement | §9.5 |
+| 2026-06-26 | Rebuild production run (699 papers) | `--resume` checkpoint, glob fallback, N6XCZD25 body text fix | §9.6 |
+| 2026-06-26 | Figure number inference + container admission | Leading `[1]` gap filled, blue sidebar box rendered as `[!NOTE]` | §9.7 |
+| 2026-06-26 | UI polish (plugin) | Dashboard CSS, maintenance tab redesign, Vercel-style polish | §9.8 |
+| 2026-06-27 | Rebuild audit + index repair | 6 hard-block/high bugs fixed (sync, workspace, field registry) | §9.9 |
+| 2026-06-27 | Deep investigation — 5-fix spec | P0 all committed (ref sort, caption insert, figure containment). P1 backmatter in progress | §9.10 |
+| 2026-06-28 | P1 backmatter boundary committed | Ref-anchored partition (`3e33e5b`). Pre-ref=body flow confirmed (`9b72783`). 16/16 tests pass. All 5 audit papers verified. | §9.11 |
+| 2026-06-28 | Gate 5 blind audit + pre-ref tail zone fix | Gate 5: 24YKLTHQ (13p) + 4KCHGV2Z (9p) rebuilt post-P1. Found pre-ref body pages misclassified as tail_nonref_hold_zone. Root cause: _apply_zone_labels re-applies stale region_bus after ref partition. Fixed by stripping pre_ref block IDs from tail zone. 4KCHGV2Z P7: tail=20 → body=2+disp=5. All 286 figure/backmatter tests green. | §9.12 |
+| 2026-06-28 | Gate 5 frontmatter fix series (3 fixes) | 24YKLTHQ: author byline lowercase guard, metadata body_start fix, frontmatter heading normalization (no text matching). All 3 fixes verified on real paper, 461 tests pass, 0 new regressions. | §9.13 |
+| 2026-06-28 | Test fix session: 25 tests reconciled | Fixed 10 stale test issues: non_body_insert guard, caffard abstract, legend_like role, structural gate, backmatter heading render, state machine (done_degraded), body_zone anchor, rebuild backfill skip, truth surface docs, trace-vs-expectations (10 assertions). **616 OCR tests, 0 failed.** Expectations updated for post-P1 behavior. | §9.14 |
+| 2026-06-28 | Data-driven truth audit (2 papers) | 2HEUD5P9 (27p) + 4AG67PBH (25p) — no vision (model limit). Found 3 pipeline defect patterns: zone_leak_frontmatter_to_body (2 papers), reference_boundary_body_mix (2 papers), title_repeat_page2 (1 paper). 12 ghost unknown_structural blocks in 2HEUD5P9. Findings saved to audit/2026-06-28-data-audit-findings.json. | §9.15 |
+| 2026-06-28 | P0 author bio detection implementation | Created ocr_bio.py with category-weighted bio scoring, Pass C (post_ref_bio_cleanup), figure match guards. Wired author_bio_asset role contract + pipeline. 30 new tests pass. 1041 total OCR tests, 0 regressions. Commits: `e2f0c8a`, `7810eb1`. | §9.16 |
+| 2026-06-28 | P1 author bio detection implementation | Added residual_author_bio_pass (figure-residual portrait assets), extended post_ref_bio_cleanup for figure_caption, tag_figure_contained_text protection. 7 new P1 tests. 1018 total OCR tests, 0 regressions. Commit: `7a1cc5e`. | §9.17 |
 
 ---
 
-*Vault-Tec Research Log -- End of Entry -- Preparing for the Future!*
+## 9. Historical Detail Archive
+
+> Fixed records and verbose session logs preserved below. The archive is read-only reference — active work is tracked in sections 2-4 above.
+
+---
+
+### 9.1 Gold Fixture Expansion + Bug Fixes (2026-06-16)
+
+Full-day debugging session across 8 gold papers. 98 bug annotations, 8 pipeline fixes (F1-F10).
+
+**Root cause categories identified:**
+
+1. Frontmatter noise unrecognized (ISSN, journal citation) → body pollution
+2. Cross-page text fragmentation
+3. Tail zone: body prose incorrectly converted to backmatter
+4. Backmatter heading gaps
+5. Heading merge/split logic
+6. Heading rescue from unknown_structural
+7. Heading prefix by role (not font size)
+8. Permissive figure matching
+9. All same-page assets included in group match
+10. Composite region text requirement removed
+
+**Fixes applied:** `ocr_roles.py`, `ocr_document.py`, `ocr_blocks.py`, `ocr_render.py`, `ocr_scores.py`, `ocr_figures.py`, `ocr.py`
+
+**Layout-first Phase 1 pass added** — table inventory relaxed for `media_asset` blocks, `_should_keep_formal_caption_seed()` added, `tests/test_ocr_layout_first_regressions.py` created.
+
+---
+
+### 9.2 Boundary Close-Out Pass (2026-06-17)
+
+**Plan:** `docs/superpowers/plans/2026-06-17-ocr-v2-closeout-single-plan.md`
+
+**Tasks 1-5 executed:**
+
+- Same-page reference/body boundary split (block-level vertical split by heading position)
+- False tail backmatter conversion reduction
+- Page-1 correspondence line → frontmatter_support
+- Preproof page-1 frontmatter: first-surviving-page logic, margin-band watermark detection, figure inner label extension
+- Active truth-file cleanup: reconciled P0-P2 close-out
+
+**Result:** 202P/1F/43S (sole failure = pre-existing DW figure ownership)
+
+**Key commits:** `6f68bf2`, `b7d369e`, `c7a9c93`, `827a2cc`, `9329843`
+
+---
+
+### 9.3 Readiness-Gates (2026-06-18 ~ 06-19)
+
+**Plan:** `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md`
+
+**Gates implemented:**
+
+- **Gate 1 (Completeness):** `_summarize_page_text_coverage()` + `_classify_region_text_completeness()` + `audit_rendered_text_coverage()`
+- **Gate 2 (Figure ownership):** 8 tasks — previous-page sequential fallback, DW Fig 3 xfail→pass, sidecar partition, fallback tightening. Final: 249/249 pass
+- **Gate 3 (Ordering):** `_ref_number_sort_key` regex extended, reference boundary normalizers
+- **Gate 4 (Layout coverage):** `audit/coverage_ledger.json` with readiness-class taxonomy, contract tests enforce named representatives
+
+**Blind audit (5 unseen papers):** ALL PASS. Papers: 8VB9ZVQG, U746UJ7G, L6ALWJFP, PZ8B59K4, GU9R8EPE. No new failure families discovered.
+
+**Remaining residuals:** ~40 stale audit truth blocks, ~50 edge-case misclassifications (low severity).
+
+---
+
+### 9.4 Cross-Page Caption Consumption Fix (2026-06-22)
+
+**Paper:** SAN9AYVR Figure 24 double-emit. Cross-page figure ownership repair — reader/render chain consumed caption blocks on asset page instead legend page.
+
+**Fixes applied:**
+
+- Reader payload records cross-page caption consumption on legend page
+- Render path suppresses original caption block on asset page
+- `_recompute_final_unmatched_assets()` added — orphan truth now matches final ownership truth
+- Cross-page duplicate `![[render/figures/figure_N.md]]` eliminated
+
+**Test status:** 150 passed (figures + reader + render)
+
+---
+
+### 9.5 Figure Merge Refactor + Visual Grammar Hardening (2026-06-21 ~ 06-23)
+
+**Core change:** Replaced greedy region-growth with **global distance clustering** (union-find):
+
+- `_cluster_page_assets()`: horizontal <12% pw, vertical <8% ph, text-separator-aware
+- Caption-as-boundary: each legend claims assets by y-band
+- Composite parent detection: `_build_composite_parent_figure_groups_visual_only()`
+- Dense page arbitration: `_build_dense_composite_parent_candidates()` when ≥4 visual fragments
+- Ownership registry: `FigureOwnershipRegistry` with conflict detection
+- Figure/table separation: `asset_family_hint` + table-like veto (confidence ≥0.70)
+- Dedup refinement: `_normalized_caption_body` — internal punctuation preserved, terminal punctuation stripped
+- `_ref_number_sort_key` with `[N]` bracket support
+
+**Key fix (merge-gate closeout):** Same-number-distinct dedup + grid collapse fix (highest-score selection, not first-match)
+
+**Test status:** 216→225→261 passed (figure stack)
+
+---
+
+### 9.6 Rebuild Production Run (2026-06-26)
+
+**Full `ocr rebuild --all` (699 papers):**
+
+- `--resume` checkpoint support (interrupted rebuilds resume)
+- ASCII tqdm progress bar fix (Windows)
+- Removed rogue `[DEBUG]` print in `ocr_render.py:1295`
+
+**Fixes found:**
+
+- N6XCZD25: Body paragraphs misclassified `structured_insert` → `body_spine_match` flag in `body_zone`
+- Chinese Windows encoding: glob fallback in `resolve_pdf_path`; garbled `meta.json` auto-corrected on rebuild
+
+---
+
+### 9.7 Figure Number Inference + Container Admission (2026-06-26)
+
+**Figure number inference** (leading `[1]` gap): 8-step algorithm in `_infer_missing_main_figure_numbers()`. N6XCZD25 `figure_unknown_005` → `figure_001`.
+
+**Container admission rewrite** (evidence-driven):
+
+- 7-method container extraction: page-sized/crop-like excluded, line-like→grouping only, vertical component merge
+- Three-phase per-page loop replaces lazy-cache
+- Blue sidebar box score 0.45→0.80 → rendered as `[!NOTE]` callout
+
+**Key commits:** `45cf65e`, `bab0167`, `5ba1a6d`
+
+---
+
+### 9.8 UI Polish (2026-06-26)
+
+**Plugin dashboard cleanup:**
+
+- Vercel-style CSS (cards, collapsible headers, status grid, issue summary funnel)
+- Title tooltip with `title_full` field
+- Table sorted by time descending
+- Click-to-copy on paper paths (pf-copy)
+- Global "Start Working" cleanup — Doctor/Repair only in Issues section
+- Run OCR button shows pending count
+- Redo OCR → Maintenance button (opens settings→maintenance tab)
+- DESIGN.md reference file added
+
+---
+
+### 9.9 Rebuild Audit + Index Repair (2026-06-27)
+
+**6 bugs fixed:**
+
+| Issue | Severity | Status |
+|-------|----------|--------|
+| `sync_service.py`: `_time` UnboundLocalError | HARD BLOCK | FIXED |
+| Workspace fulltext never synced from OCR output | HIGH | FIXED |
+| `build_index` early-return skips `_build_entry` | HIGH | FIXED |
+| Field registry missing 9 common fields → 6000+ WARN | MEDIUM | FIXED |
+| "700 papers missing fulltext" — false alarm | MISLEADING | NOTED |
+| Base legacy fields — user choice | INFO | DEFERRED |
+
+**Field registry additions:** `aliases`, `tags`, `journal`, `first_author`, `pmid`, `impact_factor`, `abstract`, `keywords`, `ocr_time`.
+
+---
+
+### 9.10 Deep Investigation — 5 Fix Spec (2026-06-27)
+
+**5-paper vision audit:** 25K5KZAQ, NC66N4Q3, 9TW98JH8, YGH7VEX6, XD2BPCMG.
+
+**Fixes identified and resolved:**
+
+| Fix | Issue | Root Cause | Resolution |
+|-----|-------|-----------|------------|
+| Fix 1 | Figure-internal text containment | No spatial containment in `build_figure_inventory` | Render-hygiene pass: 6 helpers + 19 tests ✅ |
+| Fix 2 | Reference sorting `[N]` bracket gap | regex only matches `N.`/`N)`, not `[N]` | Two capture groups `r"^\s*(?:[\d+](\.\))|\[(\d+)\])"` ✅ |
+| Fix 3 | Backmatter boundary (CRediT/Ethics) | 7.97pt < 11pt threshold; no container keywords | Ref-anchored partition design 🔄 |
+| Fix 4 | Figure caption → `non_body_insert` | `figure_caption` in `_INSERT_CANDIDATE_ROLES` | Removed list ✅ |
+| Fix 5 | Demoted body paragraph in figure legends | `body_paragraph` re-enters matching via legend detection | Filter before `_is_validation_first_legend_candidate` ✅ |
+
+**Spec:** `docs/superpowers/specs/2026-06-27-figure-containment-and-backmatter-boundary-design.md`
+**Plan:** `docs/superpowers/plans/2026-06-27-figure-containment-implementation-plan.md`
+
+---
+
+*Vault-Tec Research Log — End of Entry — Preparing for the Future!*

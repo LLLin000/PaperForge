@@ -521,6 +521,7 @@ class TestRepairExceptionLogging:
     def test_index_write_failure_first_branch_logs_warning(self, tmp_path, caplog, monkeypatch):
         """Index write exception in first --fix branch at line 306 logs warning."""
         import logging
+
         import paperforge.worker.repair as repair_mod
         caplog.set_level(logging.WARNING, logger="paperforge.worker.repair")
 
@@ -544,6 +545,7 @@ class TestRepairExceptionLogging:
     def test_index_write_failure_second_branch_logs_warning(self, tmp_path, caplog, monkeypatch):
         """Index write exception in second --fix branch at line 347 logs warning."""
         import logging
+
         import paperforge.worker.repair as repair_mod
         caplog.set_level(logging.WARNING, logger="paperforge.worker.repair")
 
@@ -567,6 +569,7 @@ class TestRepairExceptionLogging:
     def test_meta_write_failure_logs_warning(self, tmp_path, caplog, monkeypatch):
         """Meta write exception in second --fix branch at line 355 logs warning."""
         import logging
+
         import paperforge.worker.repair as repair_mod
         caplog.set_level(logging.WARNING, logger="paperforge.worker.repair")
 
