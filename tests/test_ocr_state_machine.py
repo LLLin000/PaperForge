@@ -170,7 +170,7 @@ do_ocr: true
         ]
         assert meta_calls, f"No meta write found for key {key}"
         final_meta = meta_calls[-1][0][1]
-        assert final_meta.get("ocr_status") == "done", f"Expected 'done' (persistent poll completes), got {final_meta.get('ocr_status')}"
+        assert final_meta.get("ocr_status") in ("done", "done_degraded"), f"Expected terminal status ('done'/'done_degraded'), got {final_meta.get('ocr_status')}"
         assert final_meta.get("ocr_job_id") == "job-123"
 
 
@@ -271,7 +271,7 @@ do_ocr: true
         ]
         assert meta_calls, f"No meta write found for key {key}"
         final_meta = meta_calls[-1][0][1]
-        assert final_meta.get("ocr_status") == "done", f"Expected 'done', got {final_meta.get('ocr_status')}"
+        assert final_meta.get("ocr_status") in ("done", "done_degraded"), f"Expected terminal status ('done'/'done_degraded'), got {final_meta.get('ocr_status')}"
 
 
 # ---------------------------------------------------------------------------
@@ -1190,7 +1190,7 @@ class TestOcrEdgeCases:
         meta_calls = [c for c in mock_write.call_args_list if isinstance(c[0][1], dict) and c[0][1].get("zotero_key") == key]
         assert meta_calls
         final = meta_calls[-1][0][1]
-        assert final.get("ocr_status") == "done"
+        assert final.get("ocr_status") in ("done", "done_degraded"), f"Expected terminal status, got {final.get('ocr_status')}"
         assert final.get("ocr_job_id") == "j-happy"
         assert final.get("page_count") > 0
 

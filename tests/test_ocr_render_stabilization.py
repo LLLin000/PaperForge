@@ -1179,7 +1179,7 @@ def test_render_fulltext_abstract_ids_do_not_consume_later_page_blocks_with_same
     assert "## References" in md
 
 
-def test_render_fulltext_backmatter_like_section_heading_renders_bold_instead_of_disappearing() -> None:
+def test_render_fulltext_backmatter_like_section_heading_renders_as_heading_not_disappeared() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     blocks = [
@@ -1194,7 +1194,8 @@ def test_render_fulltext_backmatter_like_section_heading_renders_bold_instead_of
         table_inventory={},
     )
 
-    assert "**AUTHOR CONTRIBUTIONS**" in md
+    # section_heading with backmatter-like text renders as heading (##), not disappearing
+    assert "## AUTHOR CONTRIBUTIONS" in md, "backmatter section heading should render as heading, not disappear"
     assert "A.B. designed the study" in md
 
 

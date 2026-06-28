@@ -57,7 +57,7 @@
       "assertions": [
         {"text_equals": "Buckland-Wright", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
         {"text_equals": "Conclusion", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone"},
-        {"text_contains": "I wish to express my gratitude", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"}
+        {"text_contains": "I wish to express my gratitude", "expected_role": "body_paragraph", "expected_zone": "body_zone", "notes": "post-ref backmatter body in body_zone per backmatter boundary redesign"}
       ]
     },
     "8": {

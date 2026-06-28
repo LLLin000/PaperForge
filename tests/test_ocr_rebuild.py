@@ -187,9 +187,8 @@ def test_run_derived_rebuild_skips_span_backfill_when_valid(tmp_path: Path, monk
         + "\n",
         encoding="utf-8",
     )
-    (paper_root / "raw" / "source_metadata.json").write_text('{"title":"Example Title"}', encoding="utf-8")
     (paper_root / "meta.json").write_text(
-        '{"source_pdf":"sample.pdf","span_backfill_version":"2026-06-22.1","span_visual_container_version":"2026-06-22.1","span_pdf_fingerprint":"fp-1","span_backfill_coverage":1.0}',
+        '{"source_pdf":"sample.pdf","span_backfill_version":"2026-06-22.1","span_visual_container_version":"2026-06-26.6","span_pdf_fingerprint":"fp-1","span_backfill_coverage":1.0}',
         encoding="utf-8",
     )
     pdf_path = tmp_path / "sample.pdf"

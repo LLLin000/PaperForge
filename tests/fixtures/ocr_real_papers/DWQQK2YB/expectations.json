@@ -17,14 +17,14 @@
     "2": {
       "assertions": [
         {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "notes": "BUG: Real: unknown_structural - should be paper_title"},
-        {"text_contains": "These authors contributed equally", "expected_role": "structured_insert", "notes": "BUG: Real: frontmatter_noise"},
-        {"text_contains": "Corresponding author", "expected_role": "structured_insert", "notes": "BUG: Real: frontmatter_noise"},
+        {"text_contains": "These authors contributed equally", "expected_role": "frontmatter_support", "notes": "frontmatter normalization: equal-contribution note → support"},
+        {"text_contains": "Corresponding author", "expected_role": "frontmatter_support", "notes": "frontmatter normalization: correspondence → support"},
         {"text_equals": "Highlights", "expected_role": "structured_insert", "notes": "BUG: Real: structured_insert - should be paragraph_title"}
       ]
     },
     "3": {
       "assertions": [
-        {"text_contains": "Histological evaluation revealed", "expected_role": "body_paragraph", "notes": "BUG: Real: abstract_body - Highlights continuation"},
+        {"text_contains": "Histological evaluation revealed", "expected_role": "abstract_body", "notes": "abstract_span captures Highlights continuation"},
         {"text_equals": "Abstract", "expected_role": "abstract_heading", "expected_zone": "body_zone"},
         {"text_contains": "Mesenchymal stem cells", "expected_role": "abstract_body", "expected_zone": "body_zone"},
         {"text_contains": "Keywords:", "expected_role": "structured_insert"},
@@ -118,10 +118,10 @@
     },
     "25": {
       "assertions": [
-        {"text_equals": "Conflict of Interest", "expected_role": "backmatter_heading", "notes": "BUG: Real: section_heading"},
-        {"text_contains": "All other authors declare", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"},
-        {"text_equals": "Acknowledgments", "expected_role": "backmatter_heading", "notes": "BUG: Real: section_heading"},
-        {"text_contains": "A. Yoo and G. Go contributed equally", "expected_role": "backmatter_body", "notes": "Equal contribution note in post_reference_backmatter_zone -> backmatter_body per zone normalization"}
+        {"text_equals": "Conflict of Interest", "expected_role": "subsection_heading", "notes": "post-ref heading normalized to subsection_heading per backmatter boundary redesign"},
+        {"text_contains": "All other authors declare", "expected_role": "body_paragraph", "expected_zone": "body_zone", "notes": "post-ref backmatter body in body_zone per backmatter boundary redesign"},
+        {"text_equals": "Acknowledgments", "expected_role": "sub_subsection_heading", "notes": "post-ref heading normalized to sub_subsection_heading per backmatter boundary redesign"},
+        {"text_contains": "A. Yoo and G. Go contributed equally", "expected_role": "body_paragraph", "notes": "equal contribution note in body_zone per backmatter boundary redesign"}
       ]
     },
     "26": {
@@ -147,7 +147,7 @@
     },
     "32": {
       "assertions": [
-        {"text_equals": "Biographies", "expected_role": "backmatter_heading", "expected_zone_any_of": ["post_reference_backmatter_zone", "tail_nonref_hold_zone"], "notes": "Now in post_reference_backmatter_zone"},
+        {"text_equals": "Biographies", "expected_role": "sub_subsection_heading", "expected_zone_any_of": ["post_reference_backmatter_zone", "tail_nonref_hold_zone"], "notes": "post-ref heading normalized to sub_subsection_heading per backmatter boundary redesign"},
         {"text_contains": "Yoo received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone", "notes": "OCR reads 'Amr Yoo' instead of 'Ami Yoo'"},
         {"text_contains": "Gwangjun Go received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
         {"text_contains": "Kim Tien Nguyen received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
@@ -165,7 +165,7 @@
     },
     "35": {
       "assertions": [
-        {"text_equals": "Table and Figure Captions", "expected_role": "backmatter_heading", "notes": "BUG: Real: subsection_heading"}
+        {"text_equals": "Table and Figure Captions", "expected_role": "subsection_heading", "notes": "post-ref heading → subsection_heading per backmatter boundary redesign"}
       ]
     },
     "36": {

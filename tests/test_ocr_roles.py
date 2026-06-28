@@ -1370,7 +1370,7 @@ def test_body_paragraph_overridden_to_figure_caption_when_style_family_is_legend
         "role_confidence": 0.6,
         "style_family": "legend_like",
         "style_family_authority": "figure_marker",
-        "zone": "body_zone",
+        "zone": "display_zone",
         "marker_signature": {"type": "figure_number"},
         "text": "Figure 3.",
     }

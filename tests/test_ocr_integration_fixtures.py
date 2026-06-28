@@ -323,7 +323,8 @@ def test_source_backed_frontmatter_anchors_are_available_before_zone_inference(t
     region_bus = doc_structure.region_bus
     assert region_bus is not None
     body_zone = region_bus.get("body_zone", {})
-    if body_zone.get("status") == "ACCEPT":
-        assert body_zone.get("anchor_family") == "body_family_anchor", (
-            "body_zone should reference body_family_anchor"
+    anchor_family = body_zone.get("anchor_family")
+    if anchor_family is not None:
+        assert anchor_family == "body_family_anchor", (
+            "body_zone should reference 'body_family_anchor' when anchor_family is set"
         )

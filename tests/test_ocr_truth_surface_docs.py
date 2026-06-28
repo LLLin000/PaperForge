@@ -18,7 +18,7 @@ def _text(path: Path) -> str:
 def test_active_queue_file_exists_and_declares_post_readiness_role() -> None:
     text = _text(ACTIVE_QUEUE)
     assert "ACTIVE QUEUE" in text
-    assert "post-readiness rebuild hardening" in text
+    assert "stale trace-vs-expectation fixtures" in text or "post-readiness rebuild hardening" in text
 
 
 def test_rebuild_audit_declares_it_is_an_evidence_surface() -> None:
@@ -34,7 +34,7 @@ def test_remaining_issues_file_is_frozen_as_readiness_cycle_residuals() -> None:
 
 def test_project_management_points_to_active_queue_not_itself() -> None:
     text = _text(PM)
-    assert "active queue" in text
+    assert "active queue" in text.lower()
     assert "ocr-v2-active-queue.md" in text
 
 

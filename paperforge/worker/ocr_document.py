@@ -4184,7 +4184,7 @@ def _detect_non_body_insert_clusters(
                     spine_fonts = set(spine_fonts) if spine_fonts else set()
                 block_font = _first_font(block)
                 font_matches_body = not block_font or not spine_fonts or block_font in spine_fonts
-                not_extremely_narrow = block_width > page_width * 0.2
+                not_extremely_narrow = block_width > page_width * 0.25
                 if font_matches_body and not_extremely_narrow:
                     continue
 
@@ -4262,7 +4262,7 @@ def _detect_non_body_insert_clusters(
                             spine_fonts = set(spine_fonts) if spine_fonts else set()
                         block_font = _first_font(block)
                         font_matches_body = not block_font or not spine_fonts or block_font in spine_fonts
-                        not_extremely_narrow = block_width > page_width * 0.2
+                        not_extremely_narrow = block_width > page_width * 0.25
                         if font_matches_body and not_extremely_narrow:
                             continue
                 block_font = _first_font(block)

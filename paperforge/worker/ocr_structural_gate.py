@@ -125,7 +125,6 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
         current_role not in {"", "unassigned", "unknown_structural"}
         and current_role not in VERIFY_REQUIRED
         and (seed_role not in VERIFY_REQUIRED or current_role in _SAFE_PRESERVED_ROLES)
-        and not (current_role in {"frontmatter_noise"} and seed_role in VERIFY_REQUIRED)
     ):
         return accept_role(
             current_role,
