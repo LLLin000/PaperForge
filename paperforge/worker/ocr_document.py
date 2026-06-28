@@ -5928,6 +5928,26 @@ def normalize_document_structure(
     doc_structure.role_gate_summary["rendered_unverified_structural_role_count"] = 0
     doc_structure.role_gate_summary["downgraded_unverified_structural_role_count"] = len(offenders)
 
+    # Normalize: page-1 heading blocks held by the structural gate (unknown_structural)
+    # that landed in frontmatter_main_zone are metadata sidebar labels, not structural
+    # unknowns. Convert to frontmatter_noise so they don't render as unknown blocks.
+    # This is safer than text-based matching in assign_block_role because it uses
+    # the structural gate's judgment + zone assignment, both layout-derived signals.
+    _FRONTMATTER_HEADING_SEEDS = {"section_heading", "subsection_heading", "sub_subsection_heading",
+                                   "backmatter_heading", "backmatter_heading_candidate"}
+    for block in blocks:
+        if block.get("zone") != "frontmatter_main_zone":
+            continue
+        if block.get("role") != "unknown_structural":
+            continue
+        if block.get("seed_role") not in _FRONTMATTER_HEADING_SEEDS:
+            continue
+        if (block.get("page") or 0) > 2:
+            continue
+        block["role"] = "frontmatter_noise"
+        block["role_source"] = "structural_gate_fallback"
+        block["role_verification_status"] = "ACCEPT"
+        block["render_default"] = False
     _demote_early_frontmatter_body_leaks(blocks)
     _restore_numbered_body_from_tail_hold(blocks)
     if tail_spread is not None:
