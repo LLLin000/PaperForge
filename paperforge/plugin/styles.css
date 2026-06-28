@@ -2605,7 +2605,7 @@
     border-color: color-mix(in srgb, var(--pf-warm-line) 30%, var(--pf-border));
 }
 
-/* ── Page badge ── */
+/* ── Page badge (semantic jump button) ── */
 .paperforge-annotation-page-badge {
     display: inline-flex;
     align-items: center;
@@ -2616,10 +2616,29 @@
     font-weight: 600;
     color: var(--text-faint);
     background: var(--pf-surface-alt);
+    border: none;
     border-radius: 3px;
     line-height: 1.5;
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.paperforge-annotation-page-badge:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.paperforge-annotation-page-badge:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+}
+
+.paperforge-annotation-page-badge:disabled {
+    cursor: default;
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 /* ── Color swatch ── */
