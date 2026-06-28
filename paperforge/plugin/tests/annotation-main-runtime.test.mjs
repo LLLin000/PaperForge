@@ -253,6 +253,7 @@ function makeRuntimeView(opts = {}) {
     view._annotationOverlayRootEl = null;
     view._annotationOverlayObserver = null;
     view._annotationOverlayActiveKey = null;
+    view._annotationPopoverEl = null;
     view._invalidateIndex = vi.fn();
     view._renderModeHeader = vi.fn();
     view._showMessage = vi.fn();
@@ -903,6 +904,199 @@ describe('Overlay lifecycle — state, attach, teardown', () => {
         expect(() => view._refreshAnnotationOverlay('test')).not.toThrow();
         // State should still be clean
         expect(view._annotationOverlayState.status).toBe('idle');
+    });
+
+});
+
+// ── Popover interaction (Phase 8, Plan 04) ──
+
+describe('Popover interaction — show, close, keyboard, read-only', () => {
+
+    function makeMarkData(overrides) {
+        var o = overrides || {};
+        return {
+            id: o.id || 'ANN_1',
+            pageIndex: o.pageIndex != null ? o.pageIndex : 0,
+            rects: [{ x: 60, y: 70, w: 200, h: 20 }],
+            color: '#ffd400',
+            selectedText: o.selectedText || 'Sample selected text from the paper.',
+            comment: o.comment || 'A noteworthy observation about the methodology.',
+            pageLabel: o.pageLabel || '1',
+            source: o.source || 'zotero',
+            isReadonly: o.isReadonly != null ? o.isReadonly : true,
+            attachmentKey: o.attachmentKey || 'STORAGE_ABC',
+            pdfPath: o.pdfPath || '99_System/Zotero/storage/STORAGE_ABC/main.pdf',
+        };
+    }
+
+    it('_showAnnotationPopover creates popover DOM with required content', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        // Provide a viewer root for popover position calculation
+        const viewerRoot = document.createElement('div');
+        viewerRoot.className = 'paperforge-annotation-overlay-root';
+        document.body.appendChild(viewerRoot);
+        view._annotationOverlayRootEl = viewerRoot;
+
+        const markEl = document.createElement('div');
+        markEl.className = 'paperforge-annotation-overlay-mark';
+        document.body.appendChild(markEl);
+
+        const markData = makeMarkData();
+        view._showAnnotationPopover(markEl, markData);
+
+        // Popover should exist in the DOM
+        expect(view._annotationPopoverEl).toBeTruthy();
+        expect(view._annotationPopoverEl.className).toContain('paperforge-annotation-overlay-popover');
+
+        // Should show selected text
+        expect(view._annotationPopoverEl.textContent).toContain('Sample selected text');
+        // Should show comment
+        expect(view._annotationPopoverEl.textContent).toContain('A noteworthy observation');
+        // Should show page info
+        expect(view._annotationPopoverEl.textContent).toContain('Page');
+        expect(view._annotationPopoverEl.textContent).toContain('1');
+        // Should show source / read-only provenance
+        expect(view._annotationPopoverEl.textContent).toContain('zotero');
+        expect(view._annotationPopoverEl.textContent).toContain('read-only');
+        // Should show attachment identity
+        expect(view._annotationPopoverEl.textContent).toContain('STORAGE_ABC');
+        // Should show annotation identity
+        expect(view._annotationPopoverEl.textContent).toContain('ANN_1');
+
+        // Close button must exist
+        const closeBtn = view._annotationPopoverEl.querySelector('.paperforge-annotation-overlay-close');
+        expect(closeBtn).toBeTruthy();
+
+        // Popover dialog role
+        expect(view._annotationPopoverEl.getAttribute('role')).toBe('dialog');
+
+        // Cleanup
+        view._closeAnnotationPopover();
+        document.body.removeChild(viewerRoot);
+        document.body.removeChild(markEl);
+    });
+
+    it('popover has NO edit/delete/create/save/write-back/database/import-apply/evidence/concept-card controls', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        const viewerRoot = document.createElement('div');
+        viewerRoot.className = 'paperforge-annotation-overlay-root';
+        document.body.appendChild(viewerRoot);
+        view._annotationOverlayRootEl = viewerRoot;
+
+        const markEl = document.createElement('div');
+        markEl.className = 'paperforge-annotation-overlay-mark';
+        document.body.appendChild(markEl);
+
+        const markData = makeMarkData();
+        view._showAnnotationPopover(markEl, markData);
+
+        const popoverHtml = view._annotationPopoverEl.innerHTML.toLowerCase();
+        // Must not contain forbidden controls
+        expect(popoverHtml).not.toContain('edit');
+        expect(popoverHtml).not.toContain('delete');
+        expect(popoverHtml).not.toContain('remove');
+        expect(popoverHtml).not.toContain('create');
+        expect(popoverHtml).not.toContain('save');
+        expect(popoverHtml).not.toContain('write back');
+        expect(popoverHtml).not.toContain('sync to');
+        expect(popoverHtml).not.toContain('database');
+        expect(popoverHtml).not.toContain('import');
+        expect(popoverHtml).not.toContain('apply');
+        expect(popoverHtml).not.toContain('evidence');
+        expect(popoverHtml).not.toContain('concept');
+        // The only button should be the close button
+        const buttons = view._annotationPopoverEl.querySelectorAll('button');
+        expect(buttons.length).toBe(1);
+        expect(buttons[0].className).toContain('paperforge-annotation-overlay-close');
+
+        view._closeAnnotationPopover();
+        document.body.removeChild(viewerRoot);
+        document.body.removeChild(markEl);
+    });
+
+    it('_closeAnnotationPopover removes popover from DOM', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        const viewerRoot = document.createElement('div');
+        viewerRoot.className = 'paperforge-annotation-overlay-root';
+        document.body.appendChild(viewerRoot);
+        view._annotationOverlayRootEl = viewerRoot;
+
+        const markEl = document.createElement('div');
+        markEl.className = 'paperforge-annotation-overlay-mark';
+        document.body.appendChild(markEl);
+
+        const markData = makeMarkData();
+        view._showAnnotationPopover(markEl, markData);
+        expect(view._annotationPopoverEl).toBeTruthy();
+
+        view._closeAnnotationPopover();
+        expect(view._annotationPopoverEl).toBeNull();
+
+        // Should not throw on repeated close
+        expect(() => view._closeAnnotationPopover()).not.toThrow();
+
+        document.body.removeChild(viewerRoot);
+        document.body.removeChild(markEl);
+    });
+
+    it('_showAnnotationPopover closes existing popover before creating new one', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        const viewerRoot = document.createElement('div');
+        viewerRoot.className = 'paperforge-annotation-overlay-root';
+        document.body.appendChild(viewerRoot);
+        view._annotationOverlayRootEl = viewerRoot;
+
+        const markEl1 = document.createElement('div');
+        markEl1.className = 'paperforge-annotation-overlay-mark';
+        document.body.appendChild(markEl1);
+        const markEl2 = document.createElement('div');
+        markEl2.className = 'paperforge-annotation-overlay-mark';
+        document.body.appendChild(markEl2);
+
+        const markData1 = makeMarkData({ id: 'ANN_1' });
+        const markData2 = makeMarkData({ id: 'ANN_2', selectedText: 'Second annotation' });
+
+        view._showAnnotationPopover(markEl1, markData1);
+        expect(view._annotationPopoverEl.textContent).toContain('ANN_1');
+
+        view._showAnnotationPopover(markEl2, markData2);
+        expect(view._annotationPopoverEl.textContent).toContain('ANN_2');
+        // Only one popover at a time
+        const popovers = document.querySelectorAll('.paperforge-annotation-overlay-popover');
+        expect(popovers.length).toBe(1);
+
+        view._closeAnnotationPopover();
+        document.body.removeChild(viewerRoot);
+        document.body.removeChild(markEl1);
+        document.body.removeChild(markEl2);
+    });
+
+    it('shows textContent (not innerHTML) for all user-facing text', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        const viewerRoot = document.createElement('div');
+        viewerRoot.className = 'paperforge-annotation-overlay-root';
+        document.body.appendChild(viewerRoot);
+        view._annotationOverlayRootEl = viewerRoot;
+
+        const markEl = document.createElement('div');
+        markEl.className = 'paperforge-annotation-overlay-mark';
+        document.body.appendChild(markEl);
+
+        const markData = makeMarkData({
+            selectedText: '<script>alert("xss")</script>',
+            comment: '<b>bold</b> comment',
+        });
+        view._showAnnotationPopover(markEl, markData);
+
+        // textContent should contain the raw text, innerHTML should not contain HTML tags
+        expect(view._annotationPopoverEl.textContent).toContain('<script>alert("xss")</script>');
+        const innerHtml = view._annotationPopoverEl.innerHTML;
+        expect(innerHtml).not.toContain('<script>');
+        expect(innerHtml).not.toContain('<b>bold</b>');
+
+        view._closeAnnotationPopover();
+        document.body.removeChild(viewerRoot);
+        document.body.removeChild(markEl);
     });
 
 });

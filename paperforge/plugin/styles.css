@@ -2827,3 +2827,74 @@
 .theme-dark .paperforge-annotation-overlay-mark:hover {
     opacity: 0.55 !important;
 }
+
+/* ── Overlay popover/detail surface (Phase 8, Plan 04) ── */
+.paperforge-annotation-overlay-popover {
+    position: absolute;
+    z-index: 50;
+    min-width: 200px;
+    max-width: 320px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    padding: 12px 14px;
+    pointer-events: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-normal);
+}
+
+.theme-dark .paperforge-annotation-overlay-popover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Popover close button ── */
+.paperforge-annotation-overlay-close {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+.paperforge-annotation-overlay-close:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+/* ── Popover field label ── */
+.paperforge-annotation-overlay-field {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 8px;
+    margin-bottom: 2px;
+}
+
+.paperforge-annotation-overlay-field:first-child {
+    margin-top: 0;
+}
+
+/* ── Popover field value ── */
+.paperforge-annotation-overlay-value {
+    font-size: 13px;
+    color: var(--text-normal);
+    word-break: break-word;
+    white-space: pre-wrap;
+    margin-bottom: 2px;
+}

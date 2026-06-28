@@ -663,8 +663,22 @@ describe('T-annotation-07-10 / D-15 / D-25 — Forbidden controls absent from an
         // (they belong in the PDF viewer DOM, not the annotation section)
         const sectionHtml = section.innerHTML.toLowerCase();
         expect(sectionHtml).not.toContain('paperforge-annotation-overlay');
+        // Confirm popover hooks are also not in the annotation section
+        // (popover belongs to the PDF viewer DOM, not the sidebar/list)
+        expect(sectionHtml).not.toContain('annotation-overlay-popover');
+        expect(sectionHtml).not.toContain('annotation-overlay-close');
+        expect(sectionHtml).not.toContain('annotation-overlay-field');
+        expect(sectionHtml).not.toContain('annotation-overlay-value');
 
-        // Popover hooks not yet present — Plan 06 will add popover support
+        // No edit/delete/create controls in annotation section (D-17)
+        const allButtons = section.querySelectorAll('button');
+        for (const btn of allButtons) {
+            const text = btn.textContent.toLowerCase();
+            expect(text).not.toContain('edit');
+            expect(text).not.toContain('delete');
+            expect(text).not.toContain('remove');
+            expect(text).not.toContain('create');
+        }
     });
 
     it('no edit, delete, or remove buttons present', () => {

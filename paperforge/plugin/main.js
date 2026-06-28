@@ -1008,6 +1008,41 @@ function buildAnnotationOverlayMarks(annotationState, entry, activePdfPath, opti
  * @param {object|null|undefined} entry - Paper entry with pdf_path, supplementary, etc.
  * @returns {{ ok: boolean, path: string|null, reason: string|null }}
  */
+
+/**
+ * Build a read-only popover view-model from a normalized annotation row.
+ * Exposes selected text, comment, page label/number, type, color, source,
+ * read-only state, annotation identity, and attachment identity.
+ * No edit/delete/create/write-back/database/evidence/import-apply/
+ * concept-card controls (D-14 through D-17).
+ *
+ * @param {object|null|undefined} row - Normalized annotation row ({ display, provenance, pdfLocation }).
+ * @returns {{ ok: boolean, data: object|null, reason: string|null }}
+ */
+function buildAnnotationPopoverViewModel(row) {
+    if (!row) return { ok: false, data: null, reason: 'No annotation row provided.' };
+    var display = row.display || {};
+    var provenance = row.provenance || {};
+    var pdfLoc = row.pdfLocation || {};
+    var pageNumber = pdfLoc.pageIndex != null ? pdfLoc.pageIndex + 1 : null;
+    return {
+        ok: true,
+        data: {
+            selectedText: display.selectedText || '',
+            comment: display.comment || '',
+            pageLabel: pdfLoc.pageLabel || '',
+            pageNumber: pageNumber,
+            type: display.type || '',
+            color: normalizeAnnotationColor(display.color),
+            source: provenance.source || '',
+            isReadonly: Boolean(provenance.isReadonly),
+            attachmentKey: pdfLoc.sourceAttachmentKey || '',
+            annotationKey: provenance.sourceAnnotationKey || '',
+        },
+        reason: null,
+    };
+}
+
 function resolveActivePdfPath(entry) {
     if (!entry) return { ok: false, path: null, reason: 'No entry provided.' };
     // Try main pdf_path first
@@ -1798,6 +1833,7 @@ class PaperForgeStatusView extends ItemView {
         this._annotationOverlayRootEl = null;   // DOM root for overlay marks
         this._annotationOverlayObserver = null;  // bounded MutationObserver for page-layer changes
         this._annotationOverlayActiveKey = null; // active paper key for stale guard
+        this._annotationPopoverEl = null;        // active popover DOM element (read-only detail surface per D-14)
     }
 
     getViewType() { return VIEW_TYPE_PAPERFORGE; }
@@ -3165,6 +3201,11 @@ class PaperForgeStatusView extends ItemView {
             return;
         }
 
+        // Close any open popover (Phase 8, Plan 04)
+        if (this._annotationPopoverEl) {
+            this._closeAnnotationPopover();
+        }
+
         // Disconnect bounded MutationObserver
         if (this._annotationOverlayObserver) {
             this._annotationOverlayObserver.disconnect();
@@ -3419,9 +3460,209 @@ class PaperForgeStatusView extends ItemView {
                     this.style.opacity = '0.25';
                 });
 
+                // Popover interaction per D-14 — click or keyboard Enter opens read-only detail surface
+                (function(mEl, mData, self) {
+                    mEl.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        self._showAnnotationPopover(mEl, mData);
+                    });
+                    mEl.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            self._showAnnotationPopover(mEl, mData);
+                        }
+                    });
+                })(markEl, mark, this);
+
                 pageOverlay.appendChild(markEl);
             }
         }
+    }
+
+    /* ── Popover interaction (Phase 8, Plan 04) ── */
+
+    /**
+     * Show a read-only popover/detail surface for the given overlay mark.
+     * Creates a lightweight PDF-local popover near the mark element using
+     * textContent/setText. Popover shows: selected text, comment, page,
+     * source/read-only provenance, attachment identity, annotation identity.
+     * No edit/delete/create/save/write-back/database/import/apply/controls
+     * per D-14 through D-17.
+     *
+     * @param {Element} markEl - The overlay mark DOM element
+     * @param {object} markData - The mark view-model from buildAnnotationOverlayMarks
+     */
+    _showAnnotationPopover(markEl, markData) {
+        // Close any existing popover first
+        this._closeAnnotationPopover();
+
+        var pageNumber = markData.pageIndex != null ? markData.pageIndex + 1 : null;
+
+        var popover = document.createElement('div');
+        popover.className = 'paperforge-annotation-overlay-popover';
+        popover.setAttribute('role', 'dialog');
+        popover.setAttribute('aria-label', 'Annotation details');
+
+        // ── Close button ──
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'paperforge-annotation-overlay-close';
+        closeBtn.setAttribute('aria-label', 'Close annotation details');
+        closeBtn.textContent = '\u00D7'; // × symbol
+        closeBtn.addEventListener('click', (function (self) {
+            return function () { self._closeAnnotationPopover(); };
+        })(this));
+        popover.appendChild(closeBtn);
+
+        // ── Selected text ──
+        if (markData.selectedText) {
+            var selLabel = document.createElement('div');
+            selLabel.className = 'paperforge-annotation-overlay-field';
+            selLabel.textContent = 'Selected Text';
+            popover.appendChild(selLabel);
+
+            var selValue = document.createElement('div');
+            selValue.className = 'paperforge-annotation-overlay-value';
+            selValue.textContent = markData.selectedText;
+            popover.appendChild(selValue);
+        }
+
+        // ── Comment ──
+        if (markData.comment) {
+            var cmtLabel = document.createElement('div');
+            cmtLabel.className = 'paperforge-annotation-overlay-field';
+            cmtLabel.textContent = 'Comment';
+            popover.appendChild(cmtLabel);
+
+            var cmtValue = document.createElement('div');
+            cmtValue.className = 'paperforge-annotation-overlay-value';
+            cmtValue.textContent = markData.comment;
+            popover.appendChild(cmtValue);
+        }
+
+        // ── Page ──
+        var pageValue = pageNumber != null
+            ? (markData.pageLabel ? markData.pageLabel + ' (page ' + pageNumber + ')' : 'Page ' + pageNumber)
+            : 'Unknown page';
+        var pageLabel = document.createElement('div');
+        pageLabel.className = 'paperforge-annotation-overlay-field';
+        pageLabel.textContent = 'Page';
+        popover.appendChild(pageLabel);
+
+        var pageVal = document.createElement('div');
+        pageVal.className = 'paperforge-annotation-overlay-value';
+        pageVal.textContent = pageValue;
+        popover.appendChild(pageVal);
+
+        // ── Source / Read-only provenance ──
+        var sourceText = markData.source ? markData.source : 'Unknown source';
+        if (markData.isReadonly) {
+            sourceText = sourceText + ' (read-only)';
+        }
+        var srcLabel = document.createElement('div');
+        srcLabel.className = 'paperforge-annotation-overlay-field';
+        srcLabel.textContent = 'Source';
+        popover.appendChild(srcLabel);
+
+        var srcVal = document.createElement('div');
+        srcVal.className = 'paperforge-annotation-overlay-value';
+        srcVal.textContent = sourceText;
+        popover.appendChild(srcVal);
+
+        // ── Attachment identity ──
+        if (markData.attachmentKey) {
+            var attLabel = document.createElement('div');
+            attLabel.className = 'paperforge-annotation-overlay-field';
+            attLabel.textContent = 'Attachment';
+            popover.appendChild(attLabel);
+
+            var attVal = document.createElement('div');
+            attVal.className = 'paperforge-annotation-overlay-value';
+            attVal.textContent = markData.attachmentKey;
+            popover.appendChild(attVal);
+        }
+
+        // ── Annotation identity ──
+        if (markData.id) {
+            var annLabel = document.createElement('div');
+            annLabel.className = 'paperforge-annotation-overlay-field';
+            annLabel.textContent = 'Annotation ID';
+            popover.appendChild(annLabel);
+
+            var annVal = document.createElement('div');
+            annVal.className = 'paperforge-annotation-overlay-value';
+            annVal.textContent = markData.id;
+            popover.appendChild(annVal);
+        }
+
+        // Position popover near the mark element
+        var markRect = markEl.getBoundingClientRect();
+        var viewerRoot = this._annotationOverlayRootEl && this._annotationOverlayRootEl.parentElement;
+        if (viewerRoot) {
+            var viewerRect = viewerRoot.getBoundingClientRect();
+            var topOffset = markRect.bottom - viewerRect.top + 4;
+            var leftOffset = markRect.left - viewerRect.left;
+            // Keep popover within viewer horizontally
+            if (leftOffset + 280 > viewerRect.width) {
+                leftOffset = Math.max(0, viewerRect.width - 290);
+            }
+            popover.style.top = topOffset + 'px';
+            popover.style.left = leftOffset + 'px';
+        }
+
+        // Append to viewer root so it's positioned relative to the PDF
+        if (viewerRoot) {
+            viewerRoot.appendChild(popover);
+        } else if (this._annotationOverlayRootEl) {
+            this._annotationOverlayRootEl.appendChild(popover);
+        }
+
+        this._annotationPopoverEl = popover;
+
+        // Keyboard: Escape closes popover
+        var escHandler = (function (self) {
+            return function (e) {
+                if (e.key === 'Escape') {
+                    self._closeAnnotationPopover();
+                }
+            };
+        })(this);
+        popover._escHandler = escHandler;
+        document.addEventListener('keydown', escHandler);
+
+        // Click outside closes popover (deferred to avoid capturing this click)
+        var outsideHandler = (function (self, pEl) {
+            return function (e) {
+                if (pEl && !pEl.contains(e.target) && e.target !== markEl && !markEl.contains(e.target)) {
+                    self._closeAnnotationPopover();
+                }
+            };
+        })(this, popover);
+        popover._outsideHandler = outsideHandler;
+        setTimeout(function () {
+            document.addEventListener('click', outsideHandler);
+        }, 0);
+    }
+
+    /**
+     * Close and remove the active popover/detail surface.
+     * Cleans up event listeners and resets state. Safe to call multiple times.
+     */
+    _closeAnnotationPopover() {
+        if (!this._annotationPopoverEl) return;
+
+        // Remove keyboard handler
+        if (this._annotationPopoverEl._escHandler) {
+            document.removeEventListener('keydown', this._annotationPopoverEl._escHandler);
+        }
+        // Remove outside-click handler
+        if (this._annotationPopoverEl._outsideHandler) {
+            document.removeEventListener('click', this._annotationPopoverEl._outsideHandler);
+        }
+        // Remove from DOM
+        if (this._annotationPopoverEl.parentNode) {
+            this._annotationPopoverEl.parentNode.removeChild(this._annotationPopoverEl);
+        }
+        this._annotationPopoverEl = null;
     }
 
     /* ── Paper Overview Card: read from formal note body ── */
