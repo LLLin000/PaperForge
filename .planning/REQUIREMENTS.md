@@ -25,10 +25,10 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 ### PDF Navigation and Overlay (OVLY)
 
 - [ ] **OVLY-01**: User can jump from an annotation list item to the corresponding PDF and page when the source PDF is available.
-- [ ] **OVLY-02**: User can see imported annotations as highlights or marks over the native Obsidian PDF viewer when viewer internals are available.
-- [ ] **OVLY-03**: Overlay positioning uses stored annotation position/page data and remains scoped to the active PDF/paper.
+- [x] **OVLY-02**: User can see imported annotations as highlights or marks over the native Obsidian PDF viewer when viewer internals are available.
+- [x] **OVLY-03**: Overlay positioning uses stored annotation position/page data and remains scoped to the active PDF/paper.
 - [ ] **OVLY-04**: User can inspect annotation text/comment from the overlay through a lightweight popover or selection detail.
-- [ ] **OVLY-05**: Overlay degrades safely when Obsidian PDF.js internals change or are unavailable, falling back to the sidebar/list without breaking the plugin.
+- [x] **OVLY-05**: Overlay degrades safely when Obsidian PDF.js internals change or are unavailable, falling back to the sidebar/list without breaking the plugin.
 
 ### Safety and Scope (SAFE)
 
@@ -87,11 +87,11 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 | LIST-03 | Annotation Phase 6 | Complete |
 | LIST-04 | Annotation Phase 6 | Complete |
 | LIST-05 | Annotation Phase 6 | Complete |
-| OVLY-01 | Annotation Phase 7 | Pending |
-| OVLY-02 | Annotation Phase 8 | Pending |
-| OVLY-03 | Annotation Phase 8 | Pending |
+| OVLY-01 | Annotation Phase 7 | Complete |
+| OVLY-02 | Annotation Phase 8 | Complete |
+| OVLY-03 | Annotation Phase 8 | Complete |
 | OVLY-04 | Annotation Phase 8 | Pending |
-| OVLY-05 | Annotation Phase 8 | Pending |
+| OVLY-05 | Annotation Phase 8 | Complete |
 | SAFE-01 | Annotation Phase 9 | Pending |
 | SAFE-02 | Annotation Phase 9 | Pending |
 | SAFE-03 | Annotation Phase 9 | Pending |

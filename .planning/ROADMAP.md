@@ -97,7 +97,12 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 4. Overlay teardown and refresh do not leave stale marks when switching files or panes.
 5. If PDF viewer internals are unavailable, the plugin disables overlay and preserves the annotation list workflow.
 
-**Plans:** TBD
+**Plans:** 4 plans
+
+- [x] `annotation-08-01-PLAN.md` completed — PDF viewer spike document and attach contract (Wave 1).
+- [x] `annotation-08-02-PLAN.md` completed — Overlay pure helpers (state, position parsing, color, mark and popover view-models) (Wave 2).
+- [x] `annotation-08-03-PLAN.md` completed — Runtime overlay lifecycle, CSS, and runtime/DOM tests (Wave 3).
+- [ ] `annotation-08-04-PLAN.md` — Popover interaction layer (Wave 4, pending).
 
 ### Annotation Phase 9: Display Layer Verification Gate
 
@@ -125,8 +130,8 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 |-------|----------------|--------|-----------|
 | Annotation Phase 5. Plugin Annotation Data Bridge | 2/2 | Executed | 2026-06-19 |
 | Annotation Phase 6. Annotation Sidebar and List View | 4/4 | Executed | 2026-06-20 |
-| Annotation Phase 7. PDF Jump Navigation | 2/4 | In progress | - |
-| Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 0/TBD | Not started | - |
+| Annotation Phase 7. PDF Jump Navigation | 4/4 | Executed | 2026-06-28 |
+| Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 3/4 | In progress | - |
 | Annotation Phase 9. Display Layer Verification Gate | 0/TBD | Not started | - |
 
 ---

@@ -4,14 +4,14 @@ milestone: annotation v0.2
 milestone_name: milestone
 status: planned
 stopped_at: Annotation Phase 7 planned
-last_updated: "2026-06-28T00:00:00.000Z"
-last_activity: 2026-06-28 - Annotation Phase 7 executed: Plans 03-04 completed; page-badge jump affordance with styling, DOM tests, and verification gate.
+last_updated: "2026-06-28T16:50:00.000Z"
+last_activity: 2026-06-28 - Annotation Phase 8 Plan 03 executed: overlay lifecycle, CSS, and runtime/DOM tests (356/359 pass).
 progress:
   total_phases: 69
   completed_phases: 51
   total_plans: 125
-  completed_plans: 116
-  percent: 93
+  completed_plans: 117
+  percent: 94
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-18)
 
 ## Current Position
 
-Phase: Annotation Phase 7 of 9 (PDF Jump Navigation) completed
-Plan: annotation-07-01-PLAN.md -> annotation-07-04-PLAN.md — 4/4 plans executed
-Status: Complete — 142/142 automated tests pass, page-badge jump affordance with disabled/fallback semantics, CSS hover/focus/disabled styling, DOM regression coverage
-Last activity: 2026-06-28 - Annotation Phase 7 executed: Plans 03-04 completed.
+Phase: Annotation Phase 8 of 9 (PDF Overlay Rendering Spike and Implementation) — Plan 03 of 4
+Plans: annotation-08-01-PLAN.md (spike, done) -> annotation-08-02-PLAN.md (pure helpers, done) -> annotation-08-03-PLAN.md (overlay lifecycle, done) -> annotation-08-04-PLAN.md (popover, pending)
+Status: Plan 03 complete — Runtime overlay lifecycle with session-only state, fail-closed attach/teardown, PaperForge-owned mark DOM, SECTION 41 CSS; 356/359 tests pass (3 pre-existing baseline failures in errors.test.mjs, runtime.test.mjs).
+Last activity: 2026-06-28 - Annotation Phase 8 Plan 03 executed: overlay lifecycle implementation.
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Last activity: 2026-06-28 - Annotation Phase 7 executed: Plans 03-04 completed.
 | Phase annotation-06-annotation-sidebar-and-list-view P04 | 5min | 2 tasks | 2 files |
 | Phase annotation-07 P03 | 15min | 2 tasks | 3 files |
 | Phase annotation-07 P04 | 1min | 1 task | 1 file |
+| Phase annotation-08 P03 | ~3h30min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
