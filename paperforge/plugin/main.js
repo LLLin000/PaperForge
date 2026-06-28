@@ -846,6 +846,183 @@ function mergeAnnotationRefreshResult(previousRenderable, nextState) {
     return nextState;
 }
 
+// ── Overlay rendering helpers (Phase 8, Plan 02/03) ──
+
+/**
+ * Default overlay highlight color — restrained yellow per D-06.
+ * Used when annotation color is missing or unrecognized.
+ * @type {string}
+ */
+var DEFAULT_OVERLAY_HIGHLIGHT_COLOR = '#ffd400';
+
+/**
+ * Create a fresh overlay state object.
+ * @returns {{ status: string, reason: string, paperKey: string|null, pdfPath: string|null, viewerAttached: boolean, activePopoverId: string|null }}
+ */
+function createDefaultAnnotationOverlayState() {
+    return {
+        status: 'idle',
+        reason: '',
+        paperKey: null,
+        pdfPath: null,
+        viewerAttached: false,
+        activePopoverId: null,
+    };
+}
+
+/**
+ * Parse and validate an annotation `positionJson` string.
+ * Never throws.
+ */
+function parseAnnotationPositionJson(positionJson) {
+    if (positionJson == null || typeof positionJson !== 'string') {
+        return { ok: false, rects: [], reason: 'Position data must be a JSON string.' };
+    }
+    var parsed;
+    try {
+        parsed = JSON.parse(positionJson);
+    } catch (_) {
+        return { ok: false, rects: [], reason: 'Position data is not valid JSON.' };
+    }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        return { ok: false, rects: [], reason: 'Position data must be a JSON object.' };
+    }
+    if (!Array.isArray(parsed.rects)) {
+        return { ok: false, rects: [], reason: 'Position data has no rectangle coordinates.' };
+    }
+    if (parsed.rects.length === 0) {
+        return { ok: false, rects: [], reason: 'Position data has an empty rectangle list.' };
+    }
+    var rects = [];
+    for (var i = 0; i < parsed.rects.length; i++) {
+        var r = parsed.rects[i];
+        if (typeof r !== 'object' || r === null) {
+            return { ok: false, rects: [], reason: 'Position data contains an invalid rectangle entry.' };
+        }
+        var x = r.x, y = r.y, w = r.w, h = r.h;
+        if (typeof x !== 'number' || typeof y !== 'number' || typeof w !== 'number' || typeof h !== 'number') {
+            return { ok: false, rects: [], reason: 'Position data contains a rectangle with non-numeric values.' };
+        }
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !Number.isFinite(h)) {
+            return { ok: false, rects: [], reason: 'Position data contains a rectangle with non-finite values.' };
+        }
+        if (x < 0 || y < 0 || w < 0 || h < 0) {
+            return { ok: false, rects: [], reason: 'Position data contains a rectangle with negative values.' };
+        }
+        rects.push({ x: x, y: y, w: w, h: h });
+    }
+    return { ok: true, rects: rects, reason: null };
+}
+
+/**
+ * Normalize an annotation color to a usable CSS value.
+ * Returns restrained default yellow when the input is missing or unrecognized.
+ */
+function normalizeAnnotationColor(color) {
+    if (typeof color !== 'string' || color.trim() === '') {
+        return DEFAULT_OVERLAY_HIGHLIGHT_COLOR;
+    }
+    var trimmed = color.trim();
+    if (/^#[0-9a-fA-F]{3}$/.test(trimmed) ||
+        /^#[0-9a-fA-F]{6}$/.test(trimmed) ||
+        /^#[0-9a-fA-F]{8}$/.test(trimmed)) {
+        return trimmed;
+    }
+    if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*[\d.]+)?\s*\)$/.test(trimmed)) {
+        return trimmed;
+    }
+    var namedColors = new Set([
+        'red', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink',
+        'cyan', 'magenta', 'lime', 'teal', 'navy', 'maroon', 'olive',
+        'aqua', 'fuchsia', 'silver', 'gray', 'black', 'white',
+    ]);
+    if (namedColors.has(trimmed.toLowerCase())) {
+        return trimmed.toLowerCase();
+    }
+    return DEFAULT_OVERLAY_HIGHLIGHT_COLOR;
+}
+
+/**
+ * Build renderable overlay mark view-models from annotation state.
+ * Fail-closed: returns disabled/empty if guards are not met.
+ */
+function buildAnnotationOverlayMarks(annotationState, entry, activePdfPath, options) {
+    if (!annotationState || annotationState.state !== 'ready') {
+        return { ok: false, status: 'disabled', marks: [], skipped: 0, reason: 'Annotation data is not ready.' };
+    }
+    if (!entry) {
+        return { ok: false, status: 'disabled', marks: [], skipped: 0, reason: 'No paper entry provided.' };
+    }
+    if (!activePdfPath || typeof activePdfPath !== 'string') {
+        return { ok: false, status: 'disabled', marks: [], skipped: 0, reason: 'No active PDF path available.' };
+    }
+    var rows = Array.isArray(annotationState.annotations) ? annotationState.annotations : [];
+    if (rows.length === 0) {
+        return { ok: true, status: 'empty', marks: [], skipped: 0, reason: null };
+    }
+    var marks = [];
+    var skipped = 0;
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        var target = resolveAnnotationPdfTarget(row, entry);
+        if (!target.ok || !target.path) { skipped++; continue; }
+        if (target.path !== activePdfPath) { skipped++; continue; }
+        var pdfLoc = row.pdfLocation || {};
+        var pageIndex = pdfLoc.pageIndex;
+        if (typeof pageIndex !== 'number' || !Number.isFinite(pageIndex) || pageIndex < 0 || !Number.isInteger(pageIndex)) {
+            skipped++; continue;
+        }
+        var position = parseAnnotationPositionJson(pdfLoc.positionJson);
+        if (!position.ok || position.rects.length === 0) { skipped++; continue; }
+        var display = row.display || {};
+        var provenance = row.provenance || {};
+        var color = normalizeAnnotationColor(display.color);
+        marks.push({
+            id: getAnnotationIdentity(row),
+            pageIndex: pageIndex,
+            rects: position.rects.map(function (r) { return { x: r.x, y: r.y, w: r.w, h: r.h }; }),
+            color: color,
+            selectedText: display.selectedText || '',
+            comment: display.comment || '',
+            pageLabel: pdfLoc.pageLabel || String(pageIndex + 1),
+            source: provenance.source || '',
+            isReadonly: Boolean(provenance.isReadonly),
+            attachmentKey: pdfLoc.sourceAttachmentKey || '',
+            pdfPath: target.path,
+        });
+    }
+    return {
+        ok: true,
+        status: marks.length > 0 ? 'rendered' : 'empty',
+        marks: marks,
+        skipped: skipped,
+        reason: null,
+    };
+}
+
+/**
+ * Resolve the active PDF path from the current paper entry.
+ * Tries the entry's main pdf_path first, then the first PDF candidate.
+ * Pure function — no DOM dependency.
+ *
+ * @param {object|null|undefined} entry - Paper entry with pdf_path, supplementary, etc.
+ * @returns {{ ok: boolean, path: string|null, reason: string|null }}
+ */
+function resolveActivePdfPath(entry) {
+    if (!entry) return { ok: false, path: null, reason: 'No entry provided.' };
+    // Try main pdf_path first
+    if (entry.pdf_path) {
+        var extracted = extractVaultPdfPath(entry.pdf_path);
+        if (extracted.ok) return { ok: true, path: extracted.path, reason: null };
+    }
+    // Fall back to first candidate
+    var candidates = buildPaperPdfCandidates(entry);
+    if (candidates.length > 0) {
+        return { ok: true, path: candidates[0].path, reason: null };
+    }
+    return { ok: false, path: null, reason: 'No PDF path could be resolved from entry.' };
+}
+
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
 
 let _gitDir = null;
@@ -1615,6 +1792,12 @@ class PaperForgeStatusView extends ItemView {
         this._annotationLoadSeq = 0;    // monotonic stale-result guard (D-22, T-annotation-05-06)
         this._annotationUiState = createDefaultAnnotationListUiState(); // UI-only session state (D-17)
         this._lastRenderableAnnotationState = null; // last renderable state for stale merge (D-20)
+
+        // OVLY: Overlay state (Phase 8, Plan 03) — session-only, no persistence
+        this._annotationOverlayState = createDefaultAnnotationOverlayState();
+        this._annotationOverlayRootEl = null;   // DOM root for overlay marks
+        this._annotationOverlayObserver = null;  // bounded MutationObserver for page-layer changes
+        this._annotationOverlayActiveKey = null; // active paper key for stale guard
     }
 
     getViewType() { return VIEW_TYPE_PAPERFORGE; }
@@ -1718,6 +1901,9 @@ class PaperForgeStatusView extends ItemView {
         // Clear cached data
         this._cachedItems = null;
         this._cachedStats = null;
+
+        // OVLY: Clear overlay marks on close (Phase 8, Plan 03)
+        this._clearAnnotationOverlay();
     }
 
     /* ---------------------------------------------------------------------- */
@@ -2316,6 +2502,9 @@ class PaperForgeStatusView extends ItemView {
         this._currentFilePath = filePath;
         this._techDetailsExpanded = false;  // reset disclosure state on mode switch
 
+        // OVLY: Clear overlay marks on mode switch (Phase 8, Plan 03)
+        this._clearAnnotationOverlay();
+
         // Clear existing content (D-06)
         this._contentEl.empty();
         this._contentEl.removeClass('switching');
@@ -2593,6 +2782,9 @@ class PaperForgeStatusView extends ItemView {
 
         // ── Annotation Section (Phase 6, Plan 03) ──
         this._renderAnnotationSection(view, this.getAnnotationState(), entry);
+
+        // OVLY: Try to attach overlay after annotation section renders (Phase 8, Plan 03)
+        this._refreshAnnotationOverlay('paper-mode');
 
         // ── Complete state or Next Step ──
         if (entry.next_step === 'ready' && entry.deep_reading_status === 'done') {
@@ -2922,6 +3114,8 @@ class PaperForgeStatusView extends ItemView {
                 this._lastRenderableAnnotationState = merged;
             }
             this._rerenderAnnotationSection();
+            // OVLY: Refresh overlay marks after annotation data updates
+            this._refreshAnnotationOverlay('refresh');
         }.bind(this)).catch(function () {
             // If loader throws, try to keep current state
             if (this._annotationSectionEl) {
@@ -2951,6 +3145,283 @@ class PaperForgeStatusView extends ItemView {
 
         // Open the PDF via Obsidian's openLinkText (read-only navigation)
         this.app.workspace.openLinkText(result.linkText, '');
+    }
+
+    // ── Overlay Lifecycle (Phase 8, Plan 03) ──
+
+    /**
+     * Clear PaperForge-owned overlay marks from the PDF viewer.
+     * Removes overlay root elements, disconnects observer, resets state.
+     * Safe to call multiple times — no-op when no overlay is active.
+     * Per D-18: must not leave orphaned DOM nodes in the PDF viewer.
+     */
+    _clearAnnotationOverlay() {
+        // Guard: state may not be initialized (e.g. test harness via Object.create)
+        if (!this._annotationOverlayState) {
+            this._annotationOverlayState = createDefaultAnnotationOverlayState();
+            this._annotationOverlayRootEl = null;
+            this._annotationOverlayObserver = null;
+            this._annotationOverlayActiveKey = null;
+            return;
+        }
+
+        // Disconnect bounded MutationObserver
+        if (this._annotationOverlayObserver) {
+            this._annotationOverlayObserver.disconnect();
+            this._annotationOverlayObserver = null;
+        }
+
+        // Remove overlay root from DOM (D-18)
+        if (this._annotationOverlayRootEl && this._annotationOverlayRootEl.parentNode) {
+            this._annotationOverlayRootEl.parentNode.removeChild(this._annotationOverlayRootEl);
+        }
+        this._annotationOverlayRootEl = null;
+        this._annotationOverlayActiveKey = null;
+
+        // Reset state
+        var resetState = createDefaultAnnotationOverlayState();
+        resetState.status = 'idle';
+        this._annotationOverlayState = resetState;
+    }
+
+    /**
+     * Try to attach the annotation overlay to the active PDF viewer.
+     * Fail-closed per D-02: if viewer internals, active PDF identity,
+     * or page layers cannot be confirmed, overlay does not render.
+     *
+     * @param {string} [reason='auto'] - Reason tag for observability.
+     */
+    _tryAttachAnnotationOverlay(reason) {
+        // Guard: need active paper key and entry
+        if (!this._currentPaperKey || !this._currentPaperEntry) {
+            return;
+        }
+
+        // Guard: need active leaf with a view
+        var activeView = this.app.workspace.activeLeaf && this.app.workspace.activeLeaf.view;
+        if (!activeView) return;
+
+        // Resolve active PDF path from the current paper entry
+        var pdfTarget = resolveActivePdfPath(this._currentPaperEntry);
+        if (!pdfTarget.ok || !pdfTarget.path) {
+            return;
+        }
+        var activePdfPath = pdfTarget.path;
+
+        // Guard: need viewer root in active leaf
+        var viewerRoot = this._findPdfViewerRoot();
+        if (!viewerRoot) {
+            return;
+        }
+
+        // Guard: need at least one page layer
+        var firstPage = viewerRoot.querySelector('[data-page-number]');
+        if (!firstPage) {
+            return;
+        }
+
+        // Create overlay root on the first page (spike contract: .pdf-embed)
+        var overlayRoot = document.createElement('div');
+        overlayRoot.className = 'paperforge-annotation-overlay-root';
+        overlayRoot.style.cssText = [
+            'position: absolute', 'top: 0', 'left: 0',
+            'width: 100%', 'height: 100%',
+            'pointer-events: none', 'overflow: hidden', 'z-index: 10',
+        ].join('; ');
+
+        firstPage.style.position = 'relative';
+        firstPage.appendChild(overlayRoot);
+
+        this._annotationOverlayRootEl = overlayRoot;
+        this._annotationOverlayActiveKey = this._currentPaperKey;
+        this._annotationOverlayState.status = 'attached';
+        this._annotationOverlayState.paperKey = this._currentPaperKey;
+        this._annotationOverlayState.pdfPath = activePdfPath;
+        this._annotationOverlayState.viewerAttached = true;
+    }
+
+    /**
+     * Find the active PDF viewer root element.
+     * Uses the spike contract: .pdf-embed, .pdf-viewer, or fallback scan for canvas.
+     * @returns {Element|null}
+     */
+    _findPdfViewerRoot() {
+        var activeView = this.app.workspace.activeLeaf && this.app.workspace.activeLeaf.view;
+        if (!activeView) return null;
+
+        var contentEl = activeView.contentEl || activeView.containerEl;
+        if (!contentEl) return null;
+
+        // Try common Obsidian PDF viewer root selectors
+        var viewerRoot = contentEl.querySelector('.pdf-embed, .pdf-viewer, .pdf-container');
+        if (viewerRoot) return viewerRoot;
+
+        // Fallback: scan for canvas with page ancestry
+        var canvas = contentEl.querySelector('canvas');
+        if (!canvas) return null;
+
+        return contentEl;
+    }
+
+    /**
+     * Refresh overlay marks after annotation data or active paper changes.
+     * Tears down old marks first, then tries to attach if conditions still hold.
+     *
+     * @param {string} [reason='auto'] - Reason tag for observability.
+     */
+    _refreshAnnotationOverlay(reason) {
+        var r = reason || 'auto';
+
+        // Guard: ensure overlay state exists (safe for test harness via Object.create)
+        if (!this._annotationOverlayState) {
+            this._annotationOverlayState = createDefaultAnnotationOverlayState();
+            this._annotationOverlayRootEl = null;
+            this._annotationOverlayObserver = null;
+            this._annotationOverlayActiveKey = null;
+        }
+
+        // Check if paper identity has changed
+        var paperChanged = this._annotationOverlayActiveKey !== this._currentPaperKey;
+
+        // Resolve current PDF path
+        var pdfTarget = this._currentPaperEntry
+            ? resolveActivePdfPath(this._currentPaperEntry)
+            : { ok: false, path: null };
+        var currentPdfPath = pdfTarget.ok ? pdfTarget.path : null;
+        var prevPdfPath = this._annotationOverlayState.pdfPath;
+        var pdfChanged = prevPdfPath !== currentPdfPath;
+
+        // Clear if identity changed
+        if (paperChanged || pdfChanged) {
+            this._clearAnnotationOverlay();
+        }
+
+        // If current state is not attached, try to attach
+        if (!this._annotationOverlayState.viewerAttached) {
+            this._tryAttachAnnotationOverlay(r);
+        }
+
+        // If still not attached, nothing more to do
+        if (!this._annotationOverlayState.viewerAttached) {
+            return;
+        }
+
+        // Check if overlay is stale for current PDF
+        if (this._annotationOverlayState.pdfPath !== currentPdfPath) {
+            this._clearAnnotationOverlay();
+            return;
+        }
+
+        // Render marks if annotation data and entry are ready
+        var annState = this.getAnnotationState();
+        if (annState && annState.state === 'ready' && this._currentPaperEntry && currentPdfPath) {
+            var marksResult = buildAnnotationOverlayMarks(annState, this._currentPaperEntry, currentPdfPath);
+            if (marksResult.ok && marksResult.status === 'rendered') {
+                this._renderAnnotationOverlayMarks({
+                    viewerRoot: this._annotationOverlayRootEl ? this._annotationOverlayRootEl.parentElement : null,
+                }, marksResult.marks);
+            }
+        }
+    }
+
+    /**
+     * Render PaperForge-owned overlay marks in the PDF viewer.
+     * Creates lightweight semi-transparent highlight elements per D-05 through D-07.
+     * Marks are placed inside each page's overlay-root area.
+     *
+     * @param {object} viewerContext - Context with viewerRoot reference.
+     * @param {Array} marks - Array of mark view-models from buildAnnotationOverlayMarks().
+     */
+    _renderAnnotationOverlayMarks(viewerContext, marks) {
+        if (!marks || !Array.isArray(marks) || marks.length === 0) return;
+
+        // Clear existing marks from overlay root
+        if (this._annotationOverlayRootEl) {
+            while (this._annotationOverlayRootEl.firstChild) {
+                this._annotationOverlayRootEl.removeChild(this._annotationOverlayRootEl.firstChild);
+            }
+        }
+
+        var viewerRoot = viewerContext && viewerContext.viewerRoot;
+        if (!viewerRoot) {
+            viewerRoot = this._findPdfViewerRoot();
+        }
+        if (!viewerRoot) return;
+
+        // Group marks by pageIndex
+        var marksByPage = {};
+        for (var mi = 0; mi < marks.length; mi++) {
+            var m = marks[mi];
+            var pageKey = 'page-' + (m.pageIndex != null ? m.pageIndex : 0);
+            if (!marksByPage[pageKey]) marksByPage[pageKey] = [];
+            marksByPage[pageKey].push(m);
+        }
+
+        // For each page with marks, find page element and create overlay container
+        for (var pageKey in marksByPage) {
+            if (!Object.prototype.hasOwnProperty.call(marksByPage, pageKey)) continue;
+            var pageMarks = marksByPage[pageKey];
+            var pageNum = parseInt(pageKey.replace('page-', ''), 10) + 1;
+
+            var pageEl = viewerRoot.querySelector('[data-page-number="' + pageNum + '"]');
+            if (!pageEl) continue;
+
+            // Create or reuse per-page overlay container
+            var pageOverlay = pageEl.querySelector('.paperforge-annotation-overlay-page');
+            if (!pageOverlay) {
+                pageOverlay = document.createElement('div');
+                pageOverlay.className = 'paperforge-annotation-overlay-page';
+                pageOverlay.style.cssText = [
+                    'position: absolute', 'top: 0', 'left: 0',
+                    'width: 100%', 'height: 100%',
+                    'pointer-events: none', 'overflow: hidden', 'z-index: 10',
+                ].join('; ');
+                pageEl.style.position = 'relative';
+                pageEl.appendChild(pageOverlay);
+            } else {
+                while (pageOverlay.firstChild) {
+                    pageOverlay.removeChild(pageOverlay.firstChild);
+                }
+            }
+
+            // Render each mark on this page
+            for (var pmi = 0; pmi < pageMarks.length; pmi++) {
+                var mark = pageMarks[pmi];
+                var rect = mark.rects && mark.rects[0];
+                if (!rect) continue;
+
+                var markEl = document.createElement('div');
+                markEl.className = 'paperforge-annotation-overlay-mark';
+                markEl.setAttribute('data-mark-id', mark.id);
+                markEl.setAttribute('role', 'button');
+                markEl.setAttribute('tabindex', '0');
+                markEl.setAttribute('aria-label', 'Annotation: ' + (mark.selectedText || '').substring(0, 60));
+
+                markEl.style.cssText = [
+                    'position: absolute',
+                    'top: ' + rect.y + 'px',
+                    'left: ' + rect.x + 'px',
+                    'width: ' + rect.w + 'px',
+                    'height: ' + rect.h + 'px',
+                    'background: ' + mark.color,
+                    'opacity: 0.25',
+                    'border-radius: 2px',
+                    'pointer-events: auto',
+                    'cursor: pointer',
+                    'transition: opacity 0.15s',
+                ].join('; ');
+
+                // Hover highlight
+                markEl.addEventListener('mouseenter', function () {
+                    this.style.opacity = '0.45';
+                });
+                markEl.addEventListener('mouseleave', function () {
+                    this.style.opacity = '0.25';
+                });
+
+                pageOverlay.appendChild(markEl);
+            }
+        }
     }
 
     /* ── Paper Overview Card: read from formal note body ── */
@@ -6054,6 +6525,13 @@ if (typeof module !== 'undefined' && module.exports) {
         extractVaultPdfPath,
         buildPaperPdfCandidates,
         resolveAnnotationPdfTarget,
+        // OVLY: Overlay helpers (Phase 8, Plan 03)
+        DEFAULT_OVERLAY_HIGHLIGHT_COLOR,
+        createDefaultAnnotationOverlayState,
+        parseAnnotationPositionJson,
+        normalizeAnnotationColor,
+        buildAnnotationOverlayMarks,
+        resolveActivePdfPath,
     };
 }
 

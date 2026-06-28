@@ -639,7 +639,7 @@ describe('T-annotation-07-10 / D-15 / D-25 — Forbidden controls absent from an
         expect(nonBadgeHtml).not.toContain('open-at-page');
     });
 
-    it('no overlay rendering or popover hooks present', () => {
+    it('overlay lifecycle coexists with annotation section rendering', () => {
         const annState = makeAnnotationState(ANNOTATION_LOAD_STATES.READY, {
             paperKey: 'PAPER_A',
             annotations: [makeAnnotationRow({ id: 'r1' })],
@@ -648,10 +648,23 @@ describe('T-annotation-07-10 / D-15 / D-25 — Forbidden controls absent from an
         const view = makeRuntimeView({ paperKey: 'PAPER_A', annotationState: annState });
         view._renderPaperMode();
 
+        // Annotation section must still render correctly
         const section = view._contentEl.querySelector('.paperforge-annotations-section');
-        const html = section.innerHTML.toLowerCase();
-        expect(html).not.toContain('overlay');
-        expect(html).not.toContain('popover');
+        expect(section).toBeTruthy();
+        const header = section.querySelector('.paperforge-annotations-header');
+        expect(header).toBeTruthy();
+        const rows = section.querySelectorAll('.paperforge-annotation-row');
+        expect(rows.length).toBeGreaterThanOrEqual(1);
+
+        // Overlay state was initialized (fail-closed — no PDF viewer in test env)
+        expect(view._annotationOverlayState).toBeDefined();
+
+        // Overlay elements are NOT in the annotation section DOM
+        // (they belong in the PDF viewer DOM, not the annotation section)
+        const sectionHtml = section.innerHTML.toLowerCase();
+        expect(sectionHtml).not.toContain('paperforge-annotation-overlay');
+
+        // Popover hooks not yet present — Plan 06 will add popover support
     });
 
     it('no edit, delete, or remove buttons present', () => {

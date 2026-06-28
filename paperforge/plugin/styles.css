@@ -2768,3 +2768,62 @@
 .theme-dark .paperforge-annotations-list {
     scrollbar-color: var(--pf-border) transparent;
 }
+
+/* ==========================================================================
+   SECTION 41 — PDF Annotation Overlay (Phase 8, Plan 03)
+   Lightweight semi-transparent marks rendered over the PDF viewer.
+   ========================================================================== */
+
+/* ── Overlay root container ── */
+.paperforge-annotation-overlay-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+
+/* ── Per-page overlay container ── */
+.paperforge-annotation-overlay-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+
+/* ── Individual overlay mark (highlight rectangle) ── */
+.paperforge-annotation-overlay-mark {
+    position: absolute;
+    border-radius: 2px;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    background: #ffd400;
+    opacity: 0.25;
+}
+
+.paperforge-annotation-overlay-mark:hover {
+    opacity: 0.45 !important;
+}
+
+.paperforge-annotation-overlay-mark:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+    opacity: 0.45;
+}
+
+/* ── Dark theme refinement for overlay marks ── */
+.theme-dark .paperforge-annotation-overlay-mark {
+    opacity: 0.30;
+}
+
+.theme-dark .paperforge-annotation-overlay-mark:hover {
+    opacity: 0.55 !important;
+}

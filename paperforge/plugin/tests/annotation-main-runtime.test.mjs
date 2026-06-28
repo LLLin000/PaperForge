@@ -248,6 +248,11 @@ function makeRuntimeView(opts = {}) {
     view._cachedStats = null;
     view._ocrPrivacyShown = false;
     view._leafChangeTimer = null;
+    // OVLY: Overlay state (Phase 8, Plan 03) — inline literal to avoid import dependency
+    view._annotationOverlayState = { status: 'idle', reason: '', paperKey: null, pdfPath: null, viewerAttached: false, activePopoverId: null };
+    view._annotationOverlayRootEl = null;
+    view._annotationOverlayObserver = null;
+    view._annotationOverlayActiveKey = null;
     view._invalidateIndex = vi.fn();
     view._renderModeHeader = vi.fn();
     view._showMessage = vi.fn();
@@ -816,4 +821,88 @@ describe('Plan 02 — UI state preservation', () => {
         // Verify openLinkText was never called
         expect(app.workspace.openLinkText).not.toHaveBeenCalled();
     });
+});
+
+// ── Overlay Lifecycle (Phase 8, Plan 03) ──
+
+describe('Overlay lifecycle — state, attach, teardown', () => {
+
+    it('overlay state is session-only with default values', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        expect(view._annotationOverlayState).toBeDefined();
+        expect(view._annotationOverlayState.status).toBe('idle');
+        expect(view._annotationOverlayState.paperKey).toBeNull();
+        expect(view._annotationOverlayState.pdfPath).toBeNull();
+        expect(view._annotationOverlayState.viewerAttached).toBe(false);
+        expect(view._annotationOverlayState.activePopoverId).toBeNull();
+        expect(view._annotationOverlayRootEl).toBeNull();
+        expect(view._annotationOverlayObserver).toBeNull();
+        expect(view._annotationOverlayActiveKey).toBeNull();
+    });
+
+    it('_clearAnnotationOverlay is safe to call multiple times', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        // Call once on fresh state
+        expect(() => view._clearAnnotationOverlay()).not.toThrow();
+        // State should still be valid defaults
+        expect(view._annotationOverlayState.status).toBe('idle');
+        // Call again
+        expect(() => view._clearAnnotationOverlay()).not.toThrow();
+        // Verify observer disconnected (was null)
+        expect(view._annotationOverlayObserver).toBeNull();
+    });
+
+    it('_tryAttachAnnotationOverlay fails closed when no active leaf', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        view.app.workspace.activeLeaf = null;
+        view._tryAttachAnnotationOverlay('test');
+        // Should remain idle — fail-closed per D-02
+        expect(view._annotationOverlayState.status).toBe('idle');
+        expect(view._annotationOverlayState.viewerAttached).toBe(false);
+        expect(view._annotationOverlayRootEl).toBeNull();
+    });
+
+    it('_tryAttachAnnotationOverlay fails closed when leaf has no view', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        view.app.workspace.activeLeaf = { view: null };
+        view._tryAttachAnnotationOverlay('test');
+        expect(view._annotationOverlayState.status).toBe('idle');
+        expect(view._annotationOverlayState.viewerAttached).toBe(false);
+    });
+
+    it('_tryAttachAnnotationOverlay fails closed when viewer root not found', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        // Create a leaf with a view but no PDF viewer DOM
+        const containerEl = document.createElement('div');
+        const leafView = { contentEl: containerEl, containerEl: containerEl };
+        view.app.workspace.activeLeaf = { view: leafView };
+        view._tryAttachAnnotationOverlay('test');
+        // Should remain idle — no .pdf-embed in DOM
+        expect(view._annotationOverlayState.status).toBe('idle');
+        expect(view._annotationOverlayState.viewerAttached).toBe(false);
+    });
+
+    it('overlay lifecycle does not break existing annotation section rendering', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        view._renderPaperMode();
+        // Annotation section must still render
+        const section = view._contentEl.querySelector('.paperforge-annotations-section');
+        expect(section).toBeTruthy();
+        // Header must be present
+        const header = section.querySelector('.paperforge-annotations-header');
+        expect(header).toBeTruthy();
+        // Annotation rows must render
+        const rows = section.querySelectorAll('.paperforge-annotation-row');
+        expect(rows.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('_refreshAnnotationOverlay is safe to call without active leaf', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        view.app.workspace.activeLeaf = null;
+        // Must not throw
+        expect(() => view._refreshAnnotationOverlay('test')).not.toThrow();
+        // State should still be clean
+        expect(view._annotationOverlayState.status).toBe('idle');
+    });
+
 });
