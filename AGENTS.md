@@ -99,7 +99,47 @@ JS 读（同步，不推断）:
 
 ---
 
-## 4. 路由
+## 4. Codebase Memory (Knowledge Graph)
+
+This project has **codebase-memory-mcp** installed — a knowledge graph of the entire repo. Use it instead of grep/glob for structural queries.
+
+### When to Use
+
+| Agent task | Use this tool | Instead of |
+|-----------|--------------|------------|
+| Find definition of X | `search_graph` | grep/glob |
+| Who calls this function | `trace_path` | recursive grep |
+| Architecture overview | `get_architecture` | manual reading |
+| Find all routes/views | `search_graph(label="Route")` | glob guessing |
+| Impact of changing X | `detect_changes` | grep + manual tracing |
+| Complex relationship query | `query_graph` (Cypher) | multiple greps |
+| Search by semantic meaning | `search_graph(semantic_query=[...])` | keyword guessing |
+| Read source code | `get_code_snippet` | reading around |
+
+### Rules
+
+1. **Graph first.** For any structural question (definitions, callers, call chains, routes, imports), use graph tools before grep/glob.
+2. **`search_graph` before `get_code_snippet`.** Discover the `qualified_name` first, then read the source.
+3. **Use `project=<name>` filter.** Check with `list_projects` if unsure.
+4. **`trace_path` replaces recursive grep.** Find all callers: `trace_path(function_name="X", direction="inbound")`. Depth up to 5.
+5. **`detect_changes` for change impact.** Before modifying shared code, check what depends on it.
+
+### Quick Reference
+
+```
+search_graph(query="find all handlers", label="Function")
+search_graph(name_pattern=".*Handler.*", label="Function")
+search_graph(semantic_query=["send", "publish"])
+trace_path(function_name="search", direction="inbound", depth=3)
+trace_path(function_name="search", direction="outbound")
+get_architecture(aspects=["all"])
+detect_changes(since="HEAD~5")
+query_graph(query="MATCH (f:Function) WHERE f.complexity > 10 RETURN f.name, f.complexity")
+```
+
+---
+
+## 5. 路由
 
 | Route | 类型 | 动作 |
 |-------|------|------|
@@ -111,7 +151,7 @@ JS 读（同步，不推断）:
 
 ---
 
-## 5. 版本发布流程
+## 6. 版本发布流程
 
 发布新版前确认测试通过，然后 bump 版本：
 
@@ -140,7 +180,7 @@ GitHub Actions（release.yml / publish.yml）会自动在 tag push 后创建 Rel
 
 ---
 
-## 6. Skill 部署
+## 7. Skill 部署
 
 Skill 文件在 `paperforge/skills/paperforge/` 中。部署到 vault 由 `paperforge/services/skill_deploy.py` 处理：
 - **setup wizard**：首次安装时部署
@@ -149,7 +189,7 @@ Skill 文件在 `paperforge/skills/paperforge/` 中。部署到 vault 由 `paper
 
 ---
 
-## 7. 测试
+## 8. 测试
 
 ```bash
 # Python
@@ -167,7 +207,7 @@ python -m pytest tests/test_skill_graph_contracts.py tests/test_skill_graph_layo
 
 ---
 
-## 8. Ponytail 模式 — 始终默认激活
+## 9. Ponytail 模式 — 始终默认激活
 
 > **本 section 是** ***开发纪律*** **，不是可选模式。** 无论用户是否提到 ponytail，每次编写/修改代码前必须先读本节并默认遵守。
 
@@ -217,7 +257,7 @@ python -m pytest tests/test_skill_graph_contracts.py tests/test_skill_graph_layo
 
 ---
 
-## 9. PROJECT-MANAGEMENT 实时更新规则
+## 10. PROJECT-MANAGEMENT 实时更新规则
 
 每个开发会话结束时（或阶段性完成后），必须更新 `PROJECT-MANAGEMENT.md`。规则：
 
