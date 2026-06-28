@@ -94,7 +94,14 @@ _INITIAL_LASTNAME_PATTERN = re.compile(
 
 
 def _looks_like_initial_lastname_byline(text: str) -> bool:
+    """Check if text looks like a list of author initials + lastnames.
+    
+    Matches patterns like "J. Smith", "J C Buckland-Wright", "J. C. Smith".
+    Rejects ALL-CAPS phrases like "A RESEARCH VISION" (journal taglines, not names).
+    """
     compact = " ".join(text.split())
+    if not any(c.islower() for c in compact):
+        return False
     return bool(_INITIAL_LASTNAME_PATTERN.fullmatch(compact))
 
 

@@ -405,7 +405,9 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
         if block_id in support_ids:
             excluded.insert(0, block_id)
             continue
-        if seed_role in {"abstract_body", "body_paragraph"} and text and not text.startswith(("keywords", "key words", "highlights")):
+        if seed_role in {"abstract_body", "body_paragraph"} and text and not any(
+            text.startswith(w) for w in ("keywords", "key words", "highlights", "palabras clave", "mots clés", "schlagwörter")
+        ):
             leading_body_ids.insert(0, block_id)
             continue
         break

@@ -640,6 +640,22 @@ def _is_first_page_body_start(block: dict, *, seen_title_or_author: bool) -> boo
     if marker_type == "preproof_marker":
         return False
     if role in {"section_heading", "subsection_heading", "structured_insert", "structured_insert_candidate"}:
+        # On page 1, some section headings are frontmatter metadata sections
+        # ("Article Information", "INFORMACIÓN DEL ARTÍCULO") — these should NOT
+        # trigger body start. Only trigger for actual body section headings.
+        canonical = _canonical_section_text(block)
+        if canonical in {
+            "introduction", "background", "methods", "materials and methods",
+            "results", "discussion", "conclusion", "conclusions", "summary",
+        }:
+            return True
+        # Without a known body-heading match, check whether this section heading
+        # looks like frontmatter metadata (short, preceded by title/authors,
+        # containing metadata keywords). If uncertain, let the body_paragraph
+        # threshold decide rather than triggering body start on every heading.
+        lower = text.lower()
+        if any(w in lower for w in ("article", "information", "información")):
+            return False
         return True
     if role == "body_paragraph" and len(words) >= 20:
         lower = text.lower()
