@@ -10,7 +10,7 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 
 - [x] **Annotation Phase 5: Plugin Annotation Data Bridge** - Connect the Obsidian plugin to v0.1 annotation CLI JSON and normalize UI-ready state.
 - [x] **Annotation Phase 6: Annotation Sidebar and List View** - Display paper-scoped annotations in Obsidian with scanning, filtering, refresh, and empty/error states. (completed 2026-06-20)
-- [ ] **Annotation Phase 7: PDF Jump Navigation** - Jump from an annotation row to the source PDF/page using existing paper/PDF path resolution. (in progress: 2/4 plans complete)
+- [x] **Annotation Phase 7: PDF Jump Navigation** - Jump from an annotation row to the source PDF/page using existing paper/PDF path resolution. (completed 2026-06-28 — 4/4 plans, 142 tests passing)
 - [ ] **Annotation Phase 8: PDF Overlay Rendering Spike and Implementation** - Render imported annotations over the native PDF viewer when available, with graceful fallback.
 - [ ] **Annotation Phase 9: Display Layer Verification Gate** - Verify plugin parsing/rendering/navigation/overlay fallback and document known baseline failures separately.
 
@@ -78,8 +78,8 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 
 - [x] `annotation-07-01-PLAN.md` completed - Pure fail-closed attachment/PDF target resolver and helper tests (Wave 1).
 - [x] `annotation-07-02-PLAN.md` completed - Obsidian runtime page opening, fallback, state isolation, and read-only tests (Wave 2).
-- [ ] `annotation-07-03-PLAN.md` - Accessible page-badge jump affordance, styling, and DOM regressions (Wave 3).
-- [ ] `annotation-07-04-PLAN.md` - Focused automated gate and manual Obsidian navigation checkpoint (Wave 4).
+- [x] `annotation-07-03-PLAN.md` completed — Accessible page-badge jump affordance, styling, and DOM regressions (Wave 3).
+- [x] `annotation-07-04-PLAN.md` completed — Focused automated gate and manual Obsidian navigation checkpoint (Wave 4).
 
 ### Annotation Phase 8: PDF Overlay Rendering Spike and Implementation
 

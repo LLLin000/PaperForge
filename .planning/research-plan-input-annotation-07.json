@@ -1,0 +1,27 @@
+{
+  "ecosystem": "npm",
+  "config": {
+    "exa_search": false,
+    "brave_search": false,
+    "firecrawl": false,
+    "tavily_search": false
+  },
+  "questions": [
+    {
+      "text": "What is the officially supported Obsidian link fragment syntax for opening or embedding a PDF at a specific page, and is the page number one-based?",
+      "kind": "docs",
+      "library": "obsidian",
+      "version": "1.12.0"
+    },
+    {
+      "text": "How should an Obsidian plugin use Workspace.openLinkText to open an internal vault PDF link with a PDF page subpath while preserving normal workspace behavior?",
+      "kind": "docs",
+      "library": "obsidian",
+      "version": "1.12.0"
+    },
+    {
+      "text": "What official Obsidian documentation or API behavior supports graceful fallback when a PDF page subpath cannot be positioned exactly?",
+      "kind": "web"
+    }
+  ]
+}

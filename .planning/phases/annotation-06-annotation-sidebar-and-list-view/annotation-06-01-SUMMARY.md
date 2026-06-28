@@ -95,6 +95,14 @@ None — this is a verification-only plan with no implementation.
 - Phase 6 Plans 02-04 can proceed with annotation sidebar, list view, and PDF jump navigation implementation
 - Existing plugin baseline Vitest failures (3 known unrelated failures: `buildRuntimeInstallCommand` expectations in `errors.test.mjs`, `resolvePythonExecutable` on Windows in `runtime.test.mjs`) remain as baseline concerns but do not block annotation-specific implementation
 
+## Self-Check: PASSED
+
+- ✅ `.planning/phases/annotation-06-annotation-sidebar-and-list-view/annotation-06-01-SUMMARY.md` — created
+- ✅ `.planning/STATE.md` — updated with position, metrics, session
+- ✅ `.planning/ROADMAP.md` — updated via `roadmap.update-plan-progress`
+- ✅ Commit `1a44d80` — `docs(annotation-06-01): record Phase 5 bridge hard preflight and dependency gate`
+- ✅ No orphaned untracked files
+
 ---
 
 *Phase: annotation-06-annotation-sidebar-and-list-view*

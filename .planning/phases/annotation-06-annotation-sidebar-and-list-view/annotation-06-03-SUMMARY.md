@@ -125,9 +125,10 @@ _Note: TDD tasks committed together since implementation required both tasks to 
 - [x] All deviations documented — 2 auto-fixed bugs
 - [x] Authentication gates — None encountered
 - [x] SUMMARY.md created with substantive content ✓
-- [ ] STATE.md updated — PENDING
-- [ ] ROADMAP.md updated with plan progress — PENDING
-- [ ] Final metadata commit — PENDING
-- [ ] Completion format returned — PENDING
+- [x] STATE.md updated — progression, metrics, decisions, session recorded
+- [x] ROADMAP.md updated with plan progress ✓
+- [x] REQUIREMENTS.md updated — LIST-01 through LIST-05 marked complete
+- [x] Final metadata commit made — `158fa32` via gsd-tools
+- [x] Completion format returned below
 
-**Self-Check: IN PROGRESS** (state file updates and final commit remaining)
+**Self-Check: PASSED**
