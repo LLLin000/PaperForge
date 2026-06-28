@@ -1051,6 +1051,25 @@ def assign_block_role(
                 confidence=0.9,
                 evidence=[f"frontmatter noise: {text[:60]}"],
             )
+        # Page-1 metadata sidebar labels ("INFORMACIÓN DEL ARTÍCULO", "Article Info")
+        # are frontmatter_noise, not section headings. They layout the metadata
+        # panel (article history, keywords, correspondence) not the paper's sections.
+        # Structural guard: only applies if the block is narrow + in the left column,
+        # preventing false matches on full-width or right-column content.
+        if (block.get("page") or 1) == 1:
+            _bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
+            if len(_bbox) >= 4:
+                _bw = _bbox[2] - _bbox[0]
+                _pw = float(block.get("page_width") or page_width or 1200)
+                _xc = (_bbox[0] + _bbox[2]) / 2
+                if _bw < _pw * 0.35 and _xc < _pw * 0.5:
+                    if lower in {"información del artículo", "article info", "article information",
+                                 "informations sur l'article", "artikel information"}:
+                        return RoleAssignment(
+                            role="frontmatter_noise",
+                            confidence=0.85,
+                            evidence=[f"page-1 metadata sidebar label: {text[:60]}"],
+                        )
         if lower == "abstract":
             return RoleAssignment(
                 role="abstract_heading",
