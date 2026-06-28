@@ -5442,6 +5442,26 @@ def normalize_document_structure(
             ref_partition_active = tail_spread is not None
 
             if ref_partition_active:
+                # Pre-ref blocks must NOT be in tail_nonref_hold_zone — they are body flow.
+                # infer_zones() may have placed them there before the ref partition was
+                # established; strip them from region_bus so _apply_zone_labels doesn't
+                # re-apply the stale tail zone.
+                pre_ref_block_ids = set()
+                pre_ref_zone_keys = set()
+                for b in partition.get("pre_ref", []):
+                    bid = b.get("block_id")
+                    if bid is not None:
+                        pre_ref_block_ids.add(str(bid))
+                        pre_ref_zone_keys.add(_zone_block_key(b))
+                pre_ref_all_keys = pre_ref_block_ids | pre_ref_zone_keys
+                tail_zone = region_bus.get("tail_nonref_hold_zone")
+                if tail_zone and pre_ref_all_keys:
+                    for key in ("block_ids", "composite_block_ids"):
+                        existing = tail_zone.get(key) or []
+                        if existing:
+                            filtered = [bid for bid in existing if str(bid) not in pre_ref_all_keys]
+                            if len(filtered) != len(existing):
+                                tail_zone[key] = filtered
                 _clear_partition_zones(blocks)
                 _apply_zone_labels(blocks, region_bus)
                 _apply_content_zone_fallback(blocks, region_bus)
