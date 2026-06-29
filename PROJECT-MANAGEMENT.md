@@ -85,6 +85,9 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 5 | — | P1 residual author bio pass (Pass B) | New function | `residual_author_bio_pass` detects portrait unmatched_assets/unresolved_clusters with nearby bio text | `7a1cc5e` |
 | 6 | — | P1 figure_caption support in Pass C | Role expansion | `post_ref_bio_cleanup` extended for `figure_caption` role | `7a1cc5e` |
 | 7 | — | tag_figure_contained_text author_bio guard | Protection | Skip `author_bio` blocks and `author_bio_asset` role in figure containment | `7a1cc5e` |
+| 8 | — | Bio word limit 80→200 | Pipeline code | Real bio text 90-100 words exceeded 80-word limit in `_bio_text_score` | `ae081a4` |
+| 9 | 4AG67PBH | Barbara bio as structured_insert_candidate missed by Pass C | Role expansion | Added `structured_insert_candidate` to Pass C role list | `ae081a4` |
+| 10 | 4AG67PBH | Page 25 portrait id=5 missing from unmatched_assets | Pipeline bug fix | `ocr_figures.py` 4479/4529 used page-agnostic bare block_id filter, hitting collision when same id exists on different pages. Changed to `(page, block_id)` tuples. | `ae081a4` |
 
 ### P2 (Deferred)
 
@@ -92,7 +95,8 @@ raw observations → structural signatures → stable anchors/families → zone 
 2. **Short "Table N" caption matching** — bare `"Table 1."` labels miss table_asset in ownership pipeline. Existing code partially handles it; residual cases remain.
 3. **Page-1 body paragraph width check** — right-column body paragraphs on two-column pages naturally narrower; need column-aware spine width check.
 4. **Body text backfill overlap** — `backfill_missing_text_from_pdf` uses `get_text("words", clip=expanded)` returning words beyond block's bbox; can cause text duplication at render level.
-5. **2HEUD5P9 reference ordering — multi-column page interleave** — References on multi-column pages appear in page-order (top→bottom, left→right), not sorted by number. E.g. [10]→[19]→[1]→[20]→[39]→[3]→[40]→[89]→[8]→[9]→[100]→[188]. Need column-aware ref reorder or post-hoc numeric sort within reference_zone. Observed in 2HEUD5P9 (P23-P26), may affect other papers.
+5. **2HEUD5P9 reference ordering — multi-column page interleave** — References on multi-column pages appear in page-order (top→bottom, left→right), not sorted by number. Need column-aware ref reorder or post-hoc numeric sort within reference_zone.
+6. **Mixed-column tail page zone absorption** — 4AG67PBH P21: Acknowledgments (pre-ref body text in left column) absorbed into reference_zone when right column has refs. seed_role=body_paragraph gets accepted as reference_item via reference_zone_fallback. Need column-aware zone inference for mixed tail pages.
 
 ### P3 (Boundary / Edge Cases)
 
