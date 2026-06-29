@@ -523,11 +523,13 @@ def _reorder_tail_run(
     # Column-sort is maintained; ref items are grouped at the end.
     if skip_section_grouping:
         ref_roles = frozenset({"reference_heading", "reference_item", "reference_body"})
-        non_ref = [b for b in tail_blocks if b.get("role") not in ref_roles and b.get("role") != "footnote"]
+        backmatter_roles = frozenset({"backmatter_body", "backmatter_heading"})
+        non_ref = [b for b in tail_blocks if b.get("role") not in ref_roles and b.get("role") not in backmatter_roles and b.get("role") != "footnote"]
         refs = [b for b in tail_blocks if b.get("role") in ref_roles]
         refs.sort(key=_ref_number_sort_key)
+        backmatter = [b for b in tail_blocks if b.get("role") in backmatter_roles]
         fnotes = [b for b in tail_blocks if b.get("role") == "footnote"]
-        return non_ref + refs + fnotes, carried_ref, carried_backmatter
+        return non_ref + refs + backmatter + fnotes, carried_ref, carried_backmatter
 
     # Quick check: do blocks have bbox data?  If not, use FIFO fallback.
     has_geo = any(

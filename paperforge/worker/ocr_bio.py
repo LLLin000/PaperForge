@@ -490,6 +490,7 @@ def post_ref_bio_cleanup(
         # Override role
         old_role = role
         block["role"] = "backmatter_body"
+        block["zone"] = ""        # clear reference_zone so render doesn't interleave with refs
         block["render_default"] = True
         block["_object_owner_family"] = "author_bio"
         block["_excluded_from_figure_inventory"] = True
