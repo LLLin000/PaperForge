@@ -810,14 +810,29 @@ def assign_block_role(
 
     raw_label = str(block.get("block_label") or block.get("raw_label") or "").strip()
     text = str(block.get("block_content") or block.get("text") or "").strip()
+    bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
 
-    # ocr_raw_error: unrecovered OCR extraction failure
-    if block.get("_ocr_raw_status") == "missing_text_unrecovered":
+    # ocr_raw_error / ocr_text_missing: unrecovered OCR extraction failure
+    # Cases:
+    #   missing_text_unrecovered — backfill ran, PDF had no text → ocr_raw_error
+    #   missing_text_rejected   — backfill found text but duplicates neighbor → ocr_raw_error
+    #   None + raw_label=text + no text — backfill never ran (no PDF path) → ocr_text_missing
+    ocr_status = block.get("_ocr_raw_status")
+    if ocr_status in ("missing_text_unrecovered", "missing_text_rejected"):
         return RoleAssignment(
             role="ocr_raw_error",
             confidence=0.99,
             evidence=[f"unrecovered empty text: {block.get('_ocr_raw_error_type', 'unknown')}"],
         )
+    if ocr_status is None and raw_label in ("text", "") and not text and len(bbox) >= 4:
+        bw = bbox[2] - bbox[0]
+        bh = bbox[3] - bbox[1]
+        if bw > 30 and bh > 15:  # legitimate non-noise size
+            return RoleAssignment(
+                role="ocr_text_missing",
+                confidence=0.8,
+                evidence=[f"ocr detected text region (raw_label={raw_label}) but no text extracted; no pdf backfill available"],
+            )
 
     # Page-1 article-type labels (e.g. "REVIEW", "Case Report") are frontmatter
     # noise, not paper titles or section headings.
@@ -833,7 +848,6 @@ def assign_block_role(
         )
 
     if _PREPROOF_MARKER.match(text):
-        bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
         y_top = bbox[1] if len(bbox) >= 4 else 0
         page_num = int(block.get("page", 0) or 0)
         page_h = float(block.get("page_height") or page_height or 1700)
