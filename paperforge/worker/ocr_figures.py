@@ -4475,8 +4475,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 }
             )
         if unresolved_clusters:
-            consumed = {bid for uc in unresolved_clusters for bid in uc["media_block_ids"]}
-            unmatched_assets = [a for a in unmatched_assets if a.get("block_id", "") not in consumed]
+            consumed = {
+                (int(uc.get("page", 0) or 0), str(bid))
+                for uc in unresolved_clusters
+                for bid in uc["media_block_ids"]
+            }
+            unmatched_assets = [
+                a for a in unmatched_assets
+                if (int(a.get("page", 0) or 0), str(a.get("block_id", ""))) not in consumed
+            ]
 
     unmatched_assets = _recompute_final_unmatched_assets(assets, used_asset_page_ids, unresolved_clusters)
 
@@ -4525,8 +4532,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 }
             )
         if unresolved_clusters:
-            consumed_dense = {bid for uc in unresolved_clusters for bid in uc["media_block_ids"]}
-            unmatched_assets = [a for a in unmatched_assets if a.get("block_id", "") not in consumed_dense]
+            consumed_dense = {
+                (int(uc.get("page", 0) or 0), str(bid))
+                for uc in unresolved_clusters
+                for bid in uc["media_block_ids"]
+            }
+            unmatched_assets = [
+                a for a in unmatched_assets
+                if (int(a.get("page", 0) or 0), str(a.get("block_id", ""))) not in consumed_dense
+            ]
 
     # --- P2: page-local caption grammar validation ---
     local_pairing_hypotheses = _validate_page_local_caption_grammar(
