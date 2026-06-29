@@ -15,6 +15,7 @@
 
 ### 1.1 The problem (pre-v2)
 
+
 ```
 raw_label/text → final role → normalize → rescue → demote/promote → attach → render
 ```
@@ -88,6 +89,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 8 | — | Bio word limit 80→200 | Pipeline code | Real bio text 90-100 words exceeded 80-word limit in `_bio_text_score` | `ae081a4` |
 | 9 | 4AG67PBH | Barbara bio as structured_insert_candidate missed by Pass C | Role expansion | Added `structured_insert_candidate` to Pass C role list | `ae081a4` |
 | 10 | 4AG67PBH | Page 25 portrait id=5 missing from unmatched_assets | Pipeline bug fix | `ocr_figures.py` 4479/4529 used page-agnostic bare block_id filter, hitting collision when same id exists on different pages. Changed to `(page, block_id)` tuples. | `ae081a4` |
+| 11 | 4AG67PBH | Acknowledgment text absorbed as reference_item (p21) | Regex fix | `_is_reference_item_candidate` year-period regex `\b(?:19|20)\d{2}\.` matched `2023.` and `2020.` in grant numbers. Tightened to `\b(?:19|20)\d{2}\.(?:\s|$)` | (this commit) |
 
 ### P2 (Deferred)
 
@@ -96,7 +98,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 3. **Page-1 body paragraph width check** — right-column body paragraphs on two-column pages naturally narrower; need column-aware spine width check.
 4. **Body text backfill overlap** — `backfill_missing_text_from_pdf` uses `get_text("words", clip=expanded)` returning words beyond block's bbox; can cause text duplication at render level.
 5. **2HEUD5P9 reference ordering — multi-column page interleave** — References on multi-column pages appear in page-order (top→bottom, left→right), not sorted by number. Need column-aware ref reorder or post-hoc numeric sort within reference_zone.
-6. **Mixed-column tail page zone absorption** — 4AG67PBH P21: Acknowledgments (pre-ref body text in left column) absorbed into reference_zone when right column has refs. seed_role=body_paragraph gets accepted as reference_item via reference_zone_fallback. Need column-aware zone inference for mixed tail pages.
+6. | ✅ Fixed | Mixed-column tail page zone absorption — 4AG67PBH P21: acknowledgment text matched as reference_item candidate due to stray `2023.` in grant "2023.02051.BD". Fix: tighten year-period regex in `_is_reference_item_candidate`. |
 
 ### P3 (Boundary / Edge Cases)
 

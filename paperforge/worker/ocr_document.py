@@ -679,8 +679,8 @@ def _is_reference_item_candidate(block: dict) -> bool:
     if text and len(text) >= 40:
         lower = text.lower()
         if (
-            re.search(r"\((?:19|20)\d{2}[a-z]?\)|\b(?:19|20)\d{2}\.", text)
-            and (text.count(",") >= 2 or "et al." in lower or "doi:" in lower)
+            re.search(r"\((?:19|20)\d{2}[a-z]?\)|\b(?:19|20)\d{2}\.(?:\s|$)", text)
+            and (text.count(",") >= 2 or "et al." in text.lower() or "doi:" in text.lower())
         ):
             return True
     # Old-style references can miss explicit markers, but they should still
