@@ -269,6 +269,22 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
 
         figure_inventory = build_figure_inventory(structured)
         write_back_figure_roles(figure_inventory, structured)
+
+        # Author bio passes (Pass B + Pass C)
+        from paperforge.worker.ocr_bio import (
+            residual_author_bio_pass,
+            post_ref_bio_cleanup,
+            prune_figure_inventory_after_bio,
+            _resolve_ref_start_page,
+        )
+        residual_author_bio_pass(
+            figure_inventory, structured,
+            include_ambiguous=False, include_weak_matched=False,
+        )
+        ref_start_page = _resolve_ref_start_page(structured)
+        if ref_start_page is not None:
+            post_ref_bio_cleanup(figure_inventory, structured, ref_start_page=ref_start_page)
+            prune_figure_inventory_after_bio(figure_inventory)
         # Rebuild reader figures
         from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
 

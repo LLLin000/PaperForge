@@ -87,12 +87,12 @@ def _bio_text_score(text: str) -> tuple[int, set[str]]:
     """Score 0-5 and return category set.
 
     Category-weighted: each signal type contributes independently.
-    Returns (0, set()) for text too short (<5 words) or too long (>80 words).
+    Returns (0, set()) for text too short (<5 words) or too long (>200 words).
     """
     if not text:
         return 0, set()
     words = text.split()
-    if len(words) < 5 or len(words) > 80:
+    if len(words) < 5 or len(words) > 200:
         return 0, set()
 
     categories: set[str] = set()
@@ -462,7 +462,7 @@ def post_ref_bio_cleanup(
             continue
 
         role = block.get("role", "")
-        if role not in {"reference_item", "reference_heading", "figure_caption"}:
+        if role not in {"reference_item", "reference_heading", "figure_caption", "structured_insert_candidate"}:
             continue
 
         text = str(block.get("text", "") or "")
