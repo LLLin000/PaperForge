@@ -492,6 +492,25 @@ def _is_previous_page_legend_locator(block: dict) -> bool:
         return False
     return bool(_PREVIOUS_PAGE_LOCATOR_PATTERN.search(text))
 
+
+def _is_tight_asset_cluster(assets: list[dict], below_top: float) -> bool:
+    """Check if assets form a single tight visual cluster below a threshold."""
+    if len(assets) < 1:
+        return False
+    bboxes = [a.get("bbox") or a.get("block_bbox") or [0, 0, 0, 0] for a in assets]
+    valid = [b for b in bboxes if len(b) >= 4 and b[2] > b[0] and b[3] > b[1]]
+    if not valid:
+        return False
+    union_top = min(b[1] for b in valid)
+    union_bot = max(b[3] for b in valid)
+    union_left = min(b[0] for b in valid)
+    union_right = max(b[2] for b in valid)
+    spread_x = union_right - union_left
+    spread_y = union_bot - union_top
+    # Cluster is tight if vertical span < 90% of space to locator,
+    # and horizontal spread is within page width limits.
+    return spread_y < (below_top - union_top) * 0.9 and spread_x < 1500
+
 def _is_formal_legend(text: str, block: dict | None = None, page_width: float = 1200) -> bool:
     if not text:
         return False
@@ -4303,33 +4322,78 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             if full_legend is None:
                 continue
 
-            # Find visual group on locator's page: unowned assets above locator
+
+            # Find visual group on locator's page:
+            # 1) Priority: candidate_groups (distance_cluster, composite_parent)
+            # 2) Fallback: only if there's one tight cluster above locator
             locator_bbox = locator.get("bbox") or [0, 0, 0, 0]
             locator_top = locator_bbox[1] if len(locator_bbox) >= 4 else 0
-            page_assets = _unowned_by_page.get(locator_page, [])
-            group_assets = [a for a in page_assets if (a.get("bbox") or [0, 0, 0, 0])[3] <= locator_top]
-            # Prefer multi-asset groups; fall back to any candidate
-            if not group_assets:
-                # Look for candidate_groups on this page with matching page
-                for group in candidate_groups:
-                    if int(group.get("page", 0) or 0) != locator_page:
-                        continue
-                    g_bbox = group.get("cluster_bbox") or [0, 0, 0, 0]
-                    if len(g_bbox) >= 4 and g_bbox[3] <= locator_top:
-                        group_assets = [
-                            a for a in _filter_figure_assets(assets)
-                            if (int(a.get("page", 0) or 0) == locator_page
-                                and str(a.get("block_id", "")) in group.get("asset_block_ids", []))
-                        ]
-                        break
 
-            if not group_assets:
+            best_group_assets: list[dict] = []
+            all_groups = (candidate_groups or []) + (composite_parent_candidates or [])
+            scored_groups: list[tuple[tuple[int, int, float], dict, list[str]]] = []
+            _seen_group_bids: set[str] = set()
+            for g in all_groups:
+                gp = int(g.get("page", 0) or 0)
+                if gp != locator_page:
+                    continue
+                g_bbox = g.get("cluster_bbox") or [0, 0, 0, 0]
+                if len(g_bbox) < 4 or g_bbox[3] > locator_top:
+                    continue
+                g_asset_ids = g.get("asset_block_ids", [])
+                g_unowned = [
+                    bid for bid in g_asset_ids
+                    if (locator_page, str(bid)) not in used_asset_page_ids
+                ]
+                if not g_unowned:
+                    continue
+                g_type = g.get("group_type", "")
+                g_dist = abs(g_bbox[3] - locator_top)
+                score = (
+                    0 if g_type == "composite_parent" else
+                    1 if g_type == "distance_cluster" else
+                    2,
+                    -len(g_unowned),
+                    g_dist,
+                )
+                scored_groups.append((score, g, g_unowned))
+                _seen_group_bids.update(g_unowned)
+
+            if scored_groups:
+                scored_groups.sort(key=lambda x: x[0])
+                best = scored_groups[0]
+                g_unowned = best[2]
+                best_group_assets = [
+                    a for a in _filter_figure_assets(assets)
+                    if int(a.get("page", 0) or 0) == locator_page
+                    and str(a.get("block_id", "")) in g_unowned
+                ]
+
+            # Fallback: no candidate group, but one tight asset cluster above locator
+            if not best_group_assets:
+                page_assets = [
+                    a for a in _unowned_by_page.get(locator_page, [])
+                    if (locator_page, str(a.get("block_id", ""))) not in used_asset_page_ids
+                ]
+                above = [a for a in page_assets if (a.get("bbox") or [0,0,0,0])[3] <= locator_top]
+                if above and _is_tight_asset_cluster(above, locator_top):
+                    best_group_assets = above
+
+            if not best_group_assets:
                 continue
 
             # Build matched figure entry: use full_legend as caption, locator as bridge
             fig_id = _format_figure_id(ns, fn)
-            consumed = [_project_asset_record(a) for a in group_assets]
-            for a in group_assets:
+            consumed = [_project_asset_record(a) for a in best_group_assets]
+            # Compute cluster_bbox from consumed asset bboxes
+            asset_bboxes = [
+                a.get("bbox") or a.get("block_bbox") or [0, 0, 0, 0]
+                for a in best_group_assets
+            ]
+            valid_bboxes = [b for b in asset_bboxes if len(b) >= 4 and b[2] > b[0] and b[3] > b[1]]
+            cluster_bbox = _cluster_bbox(valid_bboxes) if valid_bboxes else [0, 0, 0, 0]
+
+            for a in best_group_assets:
                 bid = a.get("block_id", "")
                 if bid:
                     ownership.mark_assets_owned(
@@ -4337,15 +4401,17 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                         owner_id=str(full_legend.get("block_id", "")),
                         owner_family="figure",
                     )
-            # Remove full_legend from unmatched_legends
+            # Remove full_legend from unmatched_legends (page-aware key)
+            full_key = (
+                int(full_legend.get("page", 0) or 0),
+                str(full_legend.get("block_id", "")),
+            )
             unmatched_legends = [
                 l for l in unmatched_legends
-                if l.get("block_id") != full_legend.get("block_id")
+                if (int(l.get("page", 0) or 0), str(l.get("block_id", ""))) != full_key
             ]
-            # Remove locator from unmatched_legends (it was added as formal legend
-            # during collection, only later routed to locators; extra safety)
             # Remove consumed assets from unmatched_assets
-            consumed_ids = {(locator_page, str(a.get("block_id", ""))) for a in group_assets}
+            consumed_ids = {(locator_page, str(a.get("block_id", ""))) for a in best_group_assets}
             unmatched_assets = [
                 a for a in unmatched_assets
                 if (int(a.get("page", 0) or 0), str(a.get("block_id", ""))) not in consumed_ids
@@ -4360,6 +4426,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 "figure_number": fn,
                 "matched_assets": consumed,
                 "asset_block_ids": [c["block_id"] for c in consumed],
+                "cluster_bbox": cluster_bbox,
+                "group_type": "previous_page_locator_bridge",
+                "group_evidence": ["explicit_previous_page_locator", "previous_page_full_legend", "same_page_visual_group"],
                 "bridge_block_ids": [str(locator.get("block_id", ""))],
                 "caption_score": score_figure_caption(
                     full_legend, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
@@ -4373,9 +4442,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 "asset_pages": [locator_page],
                 "settlement_type": "previous_page_legend_locator",
             })
-            # Clean up ambiguous_figures that referenced the locator
-            locator_bid = str(locator.get("block_id", ""))
-            ambiguous_figures[:] = [af for af in ambiguous_figures if af.get("legend_block_id") != locator_bid]
+            # Clean up ambiguous_figures that referenced the locator (page-aware)
+            locator_key = (locator_page, str(locator.get("block_id", "")))
+            ambiguous_figures[:] = [
+                af for af in ambiguous_figures
+                if (
+                    int(af.get("page", 0) or 0),
+                    str(af.get("legend_block_id", "")),
+                ) != locator_key
+            ]
 
     # === Group-aware sequential fallback ===
     # Consume unmatched distance_clusters that no same-page legend claimed.

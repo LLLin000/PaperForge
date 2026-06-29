@@ -155,6 +155,7 @@ def _normalize_bucket(
                     legend_data.get("style_family") or source_item.get("style_family") or block.get("style_family")
                 ),
                 "strict_status": source_item.get("strict_status", bucket_name.removesuffix("s")),
+                "bridge_block_ids": source_item.get("bridge_block_ids", []),
                 "source_item": source_item,
             }
         )
@@ -288,9 +289,8 @@ def _materialize_reader_figure(
                     "rendered_as_representative": True,
                 }
             ],
-            "consumed_caption_block_ids": [{"page": _caption_consumption_page(normalized_item), "block_id": legend_block_id}]
-            if legend_block_id is not None
-            else [],
+            "consumed_caption_block_ids": (([{"page": _caption_consumption_page(normalized_item), "block_id": legend_block_id}] if legend_block_id is not None else [])
+            + [{"page": normalized_item.get("page"), "block_id": bid} for bid in normalized_item.get("bridge_block_ids", [])]),
             "consumed_asset_block_ids": [{"page": normalized_item.get("page"), "block_id": aid} for aid in asset_ids],
             "debug_refs": {},
         }
