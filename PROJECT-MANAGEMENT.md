@@ -90,15 +90,18 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 9 | 4AG67PBH | Barbara bio as structured_insert_candidate missed by Pass C | Role expansion | Added `structured_insert_candidate` to Pass C role list | `ae081a4` |
 | 10 | 4AG67PBH | Page 25 portrait id=5 missing from unmatched_assets | Pipeline bug fix | `ocr_figures.py` 4479/4529 used page-agnostic bare block_id filter, hitting collision when same id exists on different pages. Changed to `(page, block_id)` tuples. | `ae081a4` |
 | 11 | 4AG67PBH | Acknowledgment text absorbed as reference_item (p21) | Regex fix | `_is_reference_item_candidate` tightened | `fe9cc70` |
-| 12 | — | ocr_text_missing role for empty-text OCR blocks | New role | Blocks with raw_label=text, empty text, no backfill: `ocr_text_missing`. Backfill-failed blocks: `ocr_raw_error` (previously `unknown_structural`). | `fe57f0e` |
-### P2 (Deferred)
+| 13 | WV2FF4NV | Fig 10/6 locator caption bridge | New feature | `_is_previous_page_legend_locator` + bridge in `build_figure_inventory`: connects locator → previous full legend → current visual group. Recovers misclassified legends from rejected_legends. | `3f61f4a` |
+#### P2#1a — Previous-page legend locator bridge (✅ Fixed `3f61f4a`)
+WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to full legend (in rejected_legends, misclassified as body_paragraph)
+
+#### Remaining P2
 
 1. **Figure containment gaps** — `cluster_bbox` containment only runs on matched figures; composite figures with demoted caption upstream never enter containment. Inner-text detection misses `vision_footnote`/`paragraph_title` raw_labels.
 2. **Short "Table N" caption matching** — bare `"Table 1."` labels miss table_asset in ownership pipeline. Existing code partially handles it; residual cases remain.
-3. **Page-1 body paragraph OCR text extraction failure** (was: width check) — W33NLVJ2 right col Introduction block: OCR detected text region (raw_label=text) but extracted empty string. Pipeline previously mis-signaled as `unknown_structural`. Fixed: now `ocr_text_missing`. The width spine check (0.7*median) is NOT the root cause — the right column blocks are simply empty. Root cause is OCR text extraction quality, not pipeline width logic.
+3. **Page-1 body paragraph OCR text extraction failure** (was: width check) — W33NLVJ2 right col Introduction block: OCR detected text region (raw_label=text) but extracted empty string. Pipeline previously mis-signaled as `unknown_structural`. Fixed: now `ocr_text_missing`.
 4. **Body text backfill overlap** — `backfill_missing_text_from_pdf` uses `get_text("words", clip=expanded)` returning words beyond block's bbox; can cause text duplication at render level.
-5. **2HEUD5P9 reference ordering — multi-column page interleave** — References on multi-column pages appear in page-order (top→bottom, left→right), not sorted by number. Need column-aware ref reorder or post-hoc numeric sort within reference_zone.
-6. | ✅ Fixed | Mixed-column tail page zone absorption — 4AG67PBH P21: acknowledgment text matched as reference_item candidate due to stray `2023.` in grant "2023.02051.BD". Fix: tighten year-period regex in `_is_reference_item_candidate`. |
+5. **2HEUD5P9 reference ordering** — ✅ Fixed by F12 (raw_label=reference_content signal)
+6. **Mixed-column tail page zone absorption** — ✅ Fixed: tighten year-period regex
 
 ### P3 (Boundary / Edge Cases)
 
