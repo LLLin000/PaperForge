@@ -5761,3 +5761,134 @@ def test_infer_duplicate_known_numbers_skips() -> None:
     assert inf["status"] == "skipped"
     assert inf["reason"] == "duplicate_known_main_numbers"
 
+
+# --- Previous-page legend locator bridge ---
+
+
+def test_previous_page_locator_bridge_cross_page_full_legend() -> None:
+    """A locator "Fig. 10 (See legend on previous page.)" on p16 should
+    bridge to the full legend on p15 and consume the visual group on p16.
+    The full legend may be in rejected_legends (misclassified as body_paragraph)."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        # p15: full legend (misclassified as body_paragraph via rejected_legend)
+        {"block_id": "full_leg", "page": 15, "role": "body_paragraph",
+         "seed_role": "figure_caption_candidate",
+         "text": "Fig. 10 Histological scores for evaluation of osteochondral repair. "
+                 "A Scores for overall defect evaluation. B Scores for subchondral bone. "
+                 "C Scores for cartilage evaluation.",
+         "bbox": [100, 1300, 800, 1400], "page_width": 1191, "page_height": 1582,
+         "style_family": "legend_like", "zone": "display_zone",
+         "marker_signature": {"type": "figure_number", "number": 10}},
+        # p16: locator caption
+        {"block_id": "locator", "page": 16, "role": "figure_caption",
+         "text": "Fig. 10 (See legend on previous page.)",
+         "bbox": [100, 1380, 700, 1410], "page_width": 1191, "page_height": 1582,
+         "style_family": "legend_like", "zone": "display_zone",
+         "marker_signature": {"type": "figure_number", "number": 10}},
+        # p16: three figure assets (composite visual group)
+        {"block_id": "a1", "page": 16, "role": "figure_asset",
+         "bbox": [100, 200, 500, 700], "page_width": 1191, "page_height": 1582,
+         "raw_label": "image"},
+        {"block_id": "a2", "page": 16, "role": "figure_asset",
+         "bbox": [100, 750, 500, 1000], "page_width": 1191, "page_height": 1582,
+         "raw_label": "image"},
+        {"block_id": "a3", "page": 16, "role": "figure_asset",
+         "bbox": [100, 1050, 500, 1360], "page_width": 1191, "page_height": 1582,
+         "raw_label": "image"},
+    ]
+
+    inventory = build_figure_inventory(blocks, page_width=1191)
+
+    # Find the bridged figure
+    bridged = [m for m in inventory.get("matched_figures", [])
+               if "previous_page_locator_match" in m.get("flags", [])]
+    assert len(bridged) == 1, f"Expected 1 bridged figure, got {len(bridged)}"
+    bf = bridged[0]
+
+    # settlement_type
+    assert bf.get("settlement_type") == "previous_page_legend_locator"
+    # legend_page = 15 (full legend page)
+    assert bf.get("legend_page") == 15
+    # page = 16 (visual group page)
+    assert bf.get("page") == 16
+    # text must be full legend text, not locator
+    assert "See legend on previous page" not in bf.get("text", "")
+    assert "Histological scores" in bf.get("text", "")
+    # bridge_block_ids includes locator
+    assert "locator" in bf.get("bridge_block_ids", [])
+    # asset_block_ids should have all 3 assets
+    assert len(bf.get("asset_block_ids", [])) == 3
+    assert "a1" in bf.get("asset_block_ids", [])
+    assert "a2" in bf.get("asset_block_ids", [])
+    assert "a3" in bf.get("asset_block_ids", [])
+    # cluster_bbox must be present
+    assert len(bf.get("cluster_bbox", [])) == 4
+    assert bf["cluster_bbox"][0] <= 100  # min x
+    assert bf["cluster_bbox"][2] >= 500  # max x
+    # Full legend no longer in unmatched_legends
+    unmatched_ids = [(l.get("block_id"), l.get("page"))
+                     for l in inventory.get("unmatched_legends", [])]
+    assert ("full_leg", 15) not in unmatched_ids
+    # Assets no longer in unmatched_assets
+    unmatched_asset_ids = [(a.get("block_id"), a.get("page"))
+                          for a in inventory.get("unmatched_assets", [])]
+    assert ("a1", 16) not in unmatched_asset_ids
+    assert ("a2", 16) not in unmatched_asset_ids
+    assert ("a3", 16) not in unmatched_asset_ids
+
+
+def test_previous_page_locator_bridge_does_not_swallow_other_group() -> None:
+    """When a locator page has TWO unowned visual groups above the locator,
+    only the best candidate group should be consumed — not both."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        # p7: full legend
+        {"block_id": "fl8", "page": 7, "role": "figure_caption",
+         "text": "Fig. 8. Micro-CT analysis for subchondral bone regeneration. "
+                 "A Reconstructed images. B Quantitative analysis.",
+         "bbox": [100, 1300, 800, 1400], "page_width": 1191, "page_height": 1582,
+         "marker_signature": {"type": "figure_number", "number": 8},
+         "style_family": "legend_like", "zone": "display_zone"},
+        # p8: locator
+        {"block_id": "loc8", "page": 8, "role": "figure_caption",
+         "text": "Fig. 8 (See legend on previous page.)",
+         "bbox": [100, 1400, 700, 1430], "page_width": 1191, "page_height": 1582,
+         "marker_signature": {"type": "figure_number", "number": 8},
+         "style_family": "legend_like", "zone": "display_zone"},
+        # p8: Fig.8 visual group (3 assets)
+        {"block_id": "g1a", "page": 8, "role": "figure_asset",
+         "bbox": [100, 200, 500, 600], "page_width": 1191, "page_height": 1582,
+         "raw_label": "image"},
+        {"block_id": "g1b", "page": 8, "role": "figure_asset",
+         "bbox": [100, 650, 500, 900], "page_width": 1191, "page_height": 1582,
+         "raw_label": "image"},
+        {"block_id": "g1c", "page": 8, "role": "figure_asset",
+         "bbox": [100, 950, 500, 1350], "page_width": 1191, "page_height": 1582,
+         "raw_label": "image"},
+        # p8: OTHER unowned group (small figure, not Fig.8)
+        {"block_id": "other", "page": 8, "role": "figure_asset",
+         "bbox": [600, 300, 800, 500], "page_width": 1191, "page_height": 1582,
+         "raw_label": "image"},
+    ]
+
+    inventory = build_figure_inventory(blocks, page_width=1191)
+
+    bridged = [m for m in inventory.get("matched_figures", [])
+               if "previous_page_locator_match" in m.get("flags", [])]
+    assert len(bridged) == 1
+    bf = bridged[0]
+
+    # Should have consumed only the 3-group, not the "other" asset
+    consumed_ids = bf.get("asset_block_ids", [])
+    assert "g1a" in consumed_ids
+    assert "g1b" in consumed_ids
+    assert "g1c" in consumed_ids
+    assert "other" not in consumed_ids, "Must not swallow competing unowned group"
+
+    # The "other" asset should remain in unmatched_assets
+    unmatched_ids = [(a.get("block_id"), a.get("page"))
+                     for a in inventory.get("unmatched_assets", [])]
+    assert ("other", 8) in unmatched_ids
