@@ -471,6 +471,27 @@ def _has_strong_explicit_caption_text(block: dict) -> bool:
     return len(words) >= 5 and len(text) >= 30
 
 
+_PREVIOUS_PAGE_LOCATOR_PATTERN = re.compile(
+    r"(?:see|refer)\s+(?:to\s+)?(?:the\s+)?(?:legend|figure|caption)\s+(?:on\s+)?(?:the\s+)?(?:preceding|previous|facing)\s+page",
+    re.IGNORECASE,
+)
+
+
+def _is_previous_page_legend_locator(block: dict) -> bool:
+    """Detect locator captions like 'Fig. 10 (See legend on previous page)'.
+
+    These are short captions that point to a full legend on the preceding page.
+    They should not enter ordinary legend matching; instead they bridge the
+    previous page's full legend to the current page's visual group.
+    """
+    role = str(block.get("role") or "")
+    if role not in {"figure_caption", "figure_caption_candidate"}:
+        return False
+    text = str(block.get("text") or "").strip()
+    if not text or _extract_figure_number(text) is None:
+        return False
+    return bool(_PREVIOUS_PAGE_LOCATOR_PATTERN.search(text))
+
 def _is_formal_legend(text: str, block: dict | None = None, page_width: float = 1200) -> bool:
     if not text:
         return False
@@ -2915,6 +2936,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     assets: list[dict] = []
     unmatched_legends: list[dict] = []
     unmatched_assets: list[dict] = []
+    figure_locators: list[dict] = []
     matched_figures: list[dict] = []
     unresolved_clusters: list[dict] = []
     ambiguous_figures: list[dict] = []
@@ -2981,7 +3003,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 )
                 rejected_legends.append(block)
             else:
-                legends.append(block)
+                if _is_previous_page_legend_locator(block):
+                    figure_locators.append(block)
+                else:
+                    legends.append(block)
         elif role == "figure_asset":
             assets.append(block)
         elif role == "media_asset":
@@ -4210,6 +4235,147 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 m["legend_block_id"] for m in matched_figures if "legend_bundle_match" in m.get("flags", [])
             }
             ambiguous_figures[:] = [a for a in ambiguous_figures if a.get("legend_block_id") not in bundle_legend_ids]
+
+
+    # === Previous-page legend locator bridge ===
+    # Some papers use a short locator caption like "Fig. 10 (See legend on previous page.)"
+    # on the figure's page instead of a full legend. The full legend lives on the preceding
+    # page. This bridge connects the three components:
+    #   previous page: full_legend (unmatched after normal matching)
+    #   locator page:  visual group (unowned assets above the locator)
+    #   locator:       the "see previous page" caption itself
+    #
+    # Runs AFTER normal matching and legend_bundle, BEFORE generic fallbacks.
+    if figure_locators:
+        # Collect unmatched legends by figure_number for quick lookup
+        _unmatched_by_number: dict[tuple[str, int], list[dict]] = {}
+        for leg in unmatched_legends:
+            fn = _extract_figure_number(str(leg.get("text", "")))
+            if fn is None:
+                continue
+            ns = _extract_figure_namespace(str(leg.get("text", "")))
+            _unmatched_by_number.setdefault((ns, fn), []).append(leg)
+        # Rejected legends may hold full legends misclassified as body_paragraph
+        # (e.g. OCR raw_label=footnote causing role demotion). Scan them too.
+        for leg in rejected_legends:
+            fn = _extract_figure_number(str(leg.get("text", "")))
+            if fn is None:
+                continue
+            ns = _extract_figure_namespace(str(leg.get("text", "")))
+            key = (ns, fn)
+            if key in _unmatched_by_number:
+                continue
+            style = str(leg.get("style_family") or "")
+            zone = str(leg.get("zone") or "")
+            if style == "legend_like" and zone in ("display_zone", ""):
+                _unmatched_by_number.setdefault(key, []).append(leg)
+
+        # Collect unowned assets per page (candidate visual groups)
+        _unowned_by_page: dict[int, list[dict]] = {}
+        for ast in unmatched_assets:
+            ap = int(ast.get("page", 0) or 0)
+            if ap > 0:
+                _unowned_by_page.setdefault(ap, []).append(ast)
+
+        for locator in figure_locators:
+            locator_text = str(locator.get("text", "") or "")
+            fn = _extract_figure_number(locator_text)
+            if fn is None:
+                continue
+            ns = _extract_figure_namespace(locator_text)
+            locator_page = int(locator.get("page", 0) or 0)
+            if locator_page <= 1:
+                continue
+            prev_page = locator_page - 1
+
+            # Find full legend on previous page with same figure_number
+            full_legends = _unmatched_by_number.get((ns, fn), [])
+            full_legend = None
+            for leg in full_legends:
+                lp = int(leg.get("page", 0) or 0)
+                if lp == prev_page:
+                    leg_text = str(leg.get("text", "") or "")
+                    # Must have substantial text (not itself a locator)
+                    if len(leg_text) >= 60 and not _is_previous_page_legend_locator(leg):
+                        full_legend = leg
+                        break
+
+            if full_legend is None:
+                continue
+
+            # Find visual group on locator's page: unowned assets above locator
+            locator_bbox = locator.get("bbox") or [0, 0, 0, 0]
+            locator_top = locator_bbox[1] if len(locator_bbox) >= 4 else 0
+            page_assets = _unowned_by_page.get(locator_page, [])
+            group_assets = [a for a in page_assets if (a.get("bbox") or [0, 0, 0, 0])[3] <= locator_top]
+            # Prefer multi-asset groups; fall back to any candidate
+            if not group_assets:
+                # Look for candidate_groups on this page with matching page
+                for group in candidate_groups:
+                    if int(group.get("page", 0) or 0) != locator_page:
+                        continue
+                    g_bbox = group.get("cluster_bbox") or [0, 0, 0, 0]
+                    if len(g_bbox) >= 4 and g_bbox[3] <= locator_top:
+                        group_assets = [
+                            a for a in _filter_figure_assets(assets)
+                            if (int(a.get("page", 0) or 0) == locator_page
+                                and str(a.get("block_id", "")) in group.get("asset_block_ids", []))
+                        ]
+                        break
+
+            if not group_assets:
+                continue
+
+            # Build matched figure entry: use full_legend as caption, locator as bridge
+            fig_id = _format_figure_id(ns, fn)
+            consumed = [_project_asset_record(a) for a in group_assets]
+            for a in group_assets:
+                bid = a.get("block_id", "")
+                if bid:
+                    ownership.mark_assets_owned(
+                        [(locator_page, bid)],
+                        owner_id=str(full_legend.get("block_id", "")),
+                        owner_family="figure",
+                    )
+            # Remove full_legend from unmatched_legends
+            unmatched_legends = [
+                l for l in unmatched_legends
+                if l.get("block_id") != full_legend.get("block_id")
+            ]
+            # Remove locator from unmatched_legends (it was added as formal legend
+            # during collection, only later routed to locators; extra safety)
+            # Remove consumed assets from unmatched_assets
+            consumed_ids = {(locator_page, str(a.get("block_id", ""))) for a in group_assets}
+            unmatched_assets = [
+                a for a in unmatched_assets
+                if (int(a.get("page", 0) or 0), str(a.get("block_id", ""))) not in consumed_ids
+            ]
+
+            matched_figures.append({
+                "figure_id": fig_id,
+                "figure_namespace": ns,
+                "legend_block_id": full_legend.get("block_id", ""),
+                "legend_page": prev_page,
+                "text": str(full_legend.get("text", "")),
+                "figure_number": fn,
+                "matched_assets": consumed,
+                "asset_block_ids": [c["block_id"] for c in consumed],
+                "bridge_block_ids": [str(locator.get("block_id", ""))],
+                "caption_score": score_figure_caption(
+                    full_legend, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
+                ),
+                "match_score": {"score": 0.5, "decision": "matched", "evidence": ["previous_page_locator_bridge"]},
+                "confidence": 0.5,
+                "flags": ["previous_page_locator_match"],
+                "page": locator_page,
+                "locator_block_id": locator.get("block_id", ""),
+                "locator_page": locator_page,
+                "asset_pages": [locator_page],
+                "settlement_type": "previous_page_legend_locator",
+            })
+            # Clean up ambiguous_figures that referenced the locator
+            locator_bid = str(locator.get("block_id", ""))
+            ambiguous_figures[:] = [af for af in ambiguous_figures if af.get("legend_block_id") != locator_bid]
 
     # === Group-aware sequential fallback ===
     # Consume unmatched distance_clusters that no same-page legend claimed.
