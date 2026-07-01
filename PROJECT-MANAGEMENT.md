@@ -1,13 +1,13 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-28
-> **Active work:** P0+P1 author bio detection — post-ref text-only bios + figure-residual portrait assets correctly classified as backmatter_body/author_bio_asset. 1018 OCR tests pass, 0 failures.
+> **Branch:** `master` | **Last Updated:** 2026-07-01
+> **Active work:** Residual issues fix — 7 fixes across 6 issues resolved (backfill clamp, table fallthrough, caption continuation, short-form health, container bbox containment, cross-column gate, asset arbitration). **364 targeted tests pass, 0 failures.**
 
 ---
 
 ## 0. Executive Summary
 
-**Current state:** P0+P1 bio detection complete. **1018 OCR tests pass, 0 failures.** Pass B (`residual_author_bio_pass`) catches portrait unmatched_assets/unresolved_clusters. Pass C (`post_ref_bio_cleanup`) handles reference_item + figure_caption. Three-pass architecture: P0 (text-only post-ref) ✅, P1 (figure residual) ✅, P2+ (P1 profile card pre-pass) deferred. Next: Run lint and merge ocr-v2 to master.
+**Current state:** All 6 residual OCR issues resolved (7 fix targets). **3 commits on master.** Backfill word clamp (Issue 3) ✅, table caption fallthrough + continuation (Issues 1A+1B) ✅, short-form health profile (Issue 4) ✅, figure contained-text via container bbox (Issue 2) ✅, cross-column safe-gate rejection (Issue 5) ✅, figure-table asset arbitration (Issue 6) ✅. 364 targeted tests pass. Next: Monitor production OCR for regressions, archive stale project docs.
 
 ---
 
@@ -91,6 +91,13 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 10 | 4AG67PBH | Page 25 portrait id=5 missing from unmatched_assets | Pipeline bug fix | `ocr_figures.py` 4479/4529 used page-agnostic bare block_id filter, hitting collision when same id exists on different pages. Changed to `(page, block_id)` tuples. | `ae081a4` |
 | 11 | 4AG67PBH | Acknowledgment text absorbed as reference_item (p21) | Regex fix | `_is_reference_item_candidate` tightened | `fe9cc70` |
 | 13 | WV2FF4NV | Fig 10/6 locator caption bridge | New feature | `_is_previous_page_legend_locator` + bridge in `build_figure_inventory`: connects locator → previous full legend → current visual group. Recovers misclassified legends from rejected_legends. | `3f61f4a` |
+| 14 | — | **Issue 3**: Backfill word leakage beyond bbox | Word-level filter | Added `_word_belongs_to_block` + `_word_center_inside_rect` filters after expanded clip | `796e8bb` |
+| 15 | — | **Issue 1A**: Validation-first bare table skips same-page asset | Continue guard | Validation-first branch only early-exits when no same-page assets exist | `796e8bb` |
+| 16 | — | **Issue 1B**: Split table caption continuation escapes ownership | Continuation materialization | `_find_table_caption_continuation` + `_materialize_table_caption` inside `build_table_inventory` | `796e8bb` |
+| 17 | — | **Issue 4**: Short papers (≤2p) incorrectly red + needs_rebuild | Health profile | Added `_health_profile(page_count)` → `short_form` waives abstract/heading gates | `796e8bb` |
+| 18 | — | **Issue 2**: Demoted-caption figure inner-text leakage | Container bbox regions | Validated `_container_bbox` regions in `tag_figure_contained_text` via 3 helpers + containment-only integration | `0e4ecbc` |
+| 19 | — | **Issue 5**: Cross-column page_assets groups falsely accepted | Column-homogeneity gate | `_column_band_id` + rejection in `_is_safe_page_assets_group` | `4ab227e` |
+| 20 | — | **Issue 6**: Same asset consumed by figure AND table | Post-hoc arbitration | `resolve_media_asset_conflicts` resolves asymmetric cases; weak/weak stays in `ownership_conflicts` | `4ab227e` |
 #### P2#1a — Previous-page legend locator bridge (✅ Fixed `3f61f4a`)
 WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to full legend (in rejected_legends, misclassified as body_paragraph)
 
@@ -314,6 +321,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-06-28 | Data-driven truth audit (2 papers) | 2HEUD5P9 (27p) + 4AG67PBH (25p) — no vision (model limit). Found 3 pipeline defect patterns: zone_leak_frontmatter_to_body (2 papers), reference_boundary_body_mix (2 papers), title_repeat_page2 (1 paper). 12 ghost unknown_structural blocks in 2HEUD5P9. Findings saved to audit/2026-06-28-data-audit-findings.json. | §9.15 |
 | 2026-06-28 | P0 author bio detection implementation | Created ocr_bio.py with category-weighted bio scoring, Pass C (post_ref_bio_cleanup), figure match guards. Wired author_bio_asset role contract + pipeline. 30 new tests pass. 1041 total OCR tests, 0 regressions. Commits: `e2f0c8a`, `7810eb1`. | §9.16 |
 | 2026-06-28 | P1 author bio detection implementation | Added residual_author_bio_pass (figure-residual portrait assets), extended post_ref_bio_cleanup for figure_caption, tag_figure_contained_text protection. 7 new P1 tests. 1018 total OCR tests, 0 regressions. Commit: `7a1cc5e`. | §9.17 |
+| 2026-07-01 | Residual fixes — 6 issues | Backfill clamp, table fallthrough + continuation, short-form health, container bbox containment, cross-column gate, asset arbitration. 3 commits on master, 364 tests pass. | §2.3 |
 
 ---
 
@@ -493,6 +501,4 @@ Full-day debugging session across 8 gold papers. 98 bug annotations, 8 pipeline 
 **Spec:** `docs/superpowers/specs/2026-06-27-figure-containment-and-backmatter-boundary-design.md`
 **Plan:** `docs/superpowers/plans/2026-06-27-figure-containment-implementation-plan.md`
 
----
 
-*Vault-Tec Research Log — End of Entry — Preparing for the Future!*

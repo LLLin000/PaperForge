@@ -1,23 +1,19 @@
 # OCR-v2 Active Queue
-
-> Status: ACTIVE QUEUE — Gate 5 blind audit + frontmatter fix series done
-> Last updated: 2026-06-28
-> Scope: next-work priorities after P1 + Gate 5 completion
-
+> Status: ACTIVE QUEUE — Residual fixes complete. All 6 issues resolved.
+> Last updated: 2026-07-01
+> Scope: post-fix priorities
 ## Current Priorities
-
-1. **Clear stale trace-vs-expectation fixtures** — 6 pre-existing test failures
-2. Re-run full regression sweep after fix series
-3. Archive stale project/current/ files
-4. Group-first figure inventory refactor (deferred)
-5. Merge back to master
+1. **Monitor production OCR** for regressions from 3-commit fix set
+2. **Archive stale `project/current/` files** — `ocr-v2-remaining-issues-2026-06-18.md`, `ocr-v2-generalization-boundary.md`
+3. **Update PROJECT-MANAGEMENT.md** with session timeline + fix table ✅
+4. **Group-first figure inventory refactor** (deferred — not urgent)
 
 ## Completed This Session
 
-- P1 backmatter boundary redesign (ref-anchored partition)
-- Pre-ref tail zone fix (4KCHGV2Z P7 → correct zone)
-- Gate 5 blind audit: 24YKLTHQ (13p) + 4KCHGV2Z (9p)
-- 5 frontmatter/zone fixes committed
+- **PR1** (commit `796e8bb`): Backfill word clamp, table caption fallthrough, caption continuation materialization, short-form health profile
+- **PR2** (commit `0e4ecbc`): Validated container bbox regions for figure contained-text
+- **PR3** (commit `4ab227e`): Cross-column safe-gate rejection, post-hoc figure-table asset arbitration
+- All 364 targeted tests pass, all agents completed cleanly
 
 ## Cross-Links
 
