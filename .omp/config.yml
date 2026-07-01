@@ -1,0 +1,10 @@
+memory:
+  backend: mnemopi
+mnemopi:
+  scoping: per-project
+
+advisor:
+  enabled: true
+  subagents: false
+  syncBacklog: off
+  immuneTurns: 8

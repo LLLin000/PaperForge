@@ -296,7 +296,7 @@
       "block_id": "p1:13",
       "page": 1,
       "raw_label": "text",
-      "role": "structured_insert_candidate",
+      "role": "structured_insert",
       "zone": "frontmatter_main_zone",
       "bbox": [
         844.0,
@@ -396,7 +396,7 @@
       "block_id": "p1:18",
       "page": 1,
       "raw_label": "text",
-      "role": "body_paragraph",
+      "role": "non_body_insert",
       "zone": "body_zone",
       "bbox": [
         833.0,
@@ -537,7 +537,7 @@
       "page": 2,
       "raw_label": "header",
       "role": "noise",
-      "zone": "frontmatter_side_zone",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         67.0,
@@ -557,7 +557,7 @@
       "page": 2,
       "raw_label": "header",
       "role": "noise",
-      "zone": "frontmatter_side_zone",
+      "zone": "body_zone",
       "bbox": [
         813.0,
         68.0,
@@ -577,7 +577,7 @@
       "page": 2,
       "raw_label": "paragraph_title",
       "role": "section_heading",
-      "zone": "frontmatter_side_zone",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         116.0,
@@ -717,7 +717,7 @@
       "page": 2,
       "raw_label": "footer",
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         1468.0,
@@ -1057,7 +1057,7 @@
       "page": 3,
       "raw_label": "footer",
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         1468.0,
@@ -1357,7 +1357,7 @@
       "page": 4,
       "raw_label": "footer",
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         1468.0,
@@ -1597,7 +1597,7 @@
       "page": 5,
       "raw_label": "footer",
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         1468.0,
@@ -1897,7 +1897,7 @@
       "page": 6,
       "raw_label": "vision_footnote",
       "role": "footnote",
-      "zone": "",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         1468.0,
@@ -2397,7 +2397,7 @@
       "page": 7,
       "raw_label": "footer",
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "bbox": [
         93.0,
         1468.0,
@@ -2537,7 +2537,7 @@
       "page": 8,
       "raw_label": "vision_footnote",
       "role": "footnote",
-      "zone": "",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         1468.0,
@@ -2917,7 +2917,7 @@
       "page": 9,
       "raw_label": "footer",
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         1468.0,
@@ -3056,7 +3056,7 @@
       "block_id": "p10:3",
       "page": 10,
       "raw_label": "text",
-      "role": "frontmatter_noise",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         90.0,
@@ -3237,7 +3237,7 @@
       "page": 10,
       "raw_label": "text",
       "role": "frontmatter_noise",
-      "zone": "frontmatter_side_zone",
+      "zone": "body_zone",
       "bbox": [
         92.0,
         505.0,
@@ -3557,7 +3557,7 @@
       "page": 10,
       "raw_label": "footer",
       "role": "noise",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "",
       "bbox": [
         972.0,
         1470.0,
@@ -3577,7 +3577,7 @@
       "page": 10,
       "raw_label": "footer",
       "role": "noise",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "",
       "bbox": [
         2.0,
         1549.0,
@@ -3597,7 +3597,7 @@
       "page": 10,
       "raw_label": "number",
       "role": "noise",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "",
       "bbox": [
         1094.0,
         1470.0,

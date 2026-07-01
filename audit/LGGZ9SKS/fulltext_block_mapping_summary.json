@@ -1,0 +1,677 @@
+{
+  "mappable_block_count": 67,
+  "found_count": 49,
+  "missing_count": 18,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Review Article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Minced Articular Cartilage—Basic Science, Surgical Technique, and Clinical Appli",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Frank McCormick, MD,* Adam Yanke, BS,† Matthew T. Provencher, MD, LCDR, MC, USN,",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(Sports Med Arthrosc Rev 2008;16:217–220)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 904
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage is a thin layer of highly specialized connective tissue that",
+      "found_in_fulltext": true,
+      "fulltext_offset": 946
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cartilage defects are characterized according to the depth and linear size. $ ^{",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Each year it is estimated that chondral lesions affect up to 900,000 individuals",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2825
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As previously discussed, fibrocartilage cannot withstand the demands of articula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3689
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Finally, ACI, a first-generation option for cell-based treatment of chondral def",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4520
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "From the *Department of Orthopaedic Surgery, Naval Medical Center, San Diego, CA",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Prints: Frank McCormick, MD, Orthopedic Surgery Resident, Harvard Combined Ortho",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Sports Med Arthrosc Rev • Volume 16, Number 4, December 2008",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "217",
+      "found_in_fulltext": true,
+      "fulltext_offset": 937
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "McCormick et al",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Sports Med Arthrosc Rev • Volume 16, Number 4, December 2008",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "techniques, recent research is focusing on tissue-engineered hyaline-like cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4770
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The advancement of cartilage tissue engineering allows for significant gains in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4862
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although tissue engineering can provide important solutions to the cartilage def",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5631
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Minced cartilage repair is a treatment that parallels the theory of ACI, but by ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6339
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The principle of minced cartilage techniques is to accomplish hyaline-like chond",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6983
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Once the inclusion criteria for CAIS are satisfied, the cartilage can then be ha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8709
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This technique has been the subject of several studies ranging from in vitro ana",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9629
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2008 Lippincott Williams & Wilkins",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Sports Med Arthrosc Rev • Volume 16, Number 4, December 2008",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Minced Articular Cartilage",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "between cartilage fragment size and amount of outgrowth (smaller size, more chon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10263
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "These studies were followed by large animal studies including a goat model where",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10476
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "proteoglycans, demonstrated zonal structure, and had a higher collagen type II t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10871
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As studies such as these demonstrated that scaffolds are beneficial, Frisbie et ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11177
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Anecdotally, the authors experience with clinical trials of CAIS suggests that t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11931
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "DeNovo NT Graft (“Natural Tissue Graft,” Zimmer Inc, Warsaw, IN/ISTO Technologie",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12257
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2008 Lippincott Williams & Wilkins",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "219",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "McCormick et al",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Sports Med Arthrosc Rev • Volume 16, Number 4, December 2008",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Denovo NT follows Good Tissue Practice in processing Denovo NT. Mincing the allo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12960
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "During surgical implantation, the minced cartilage tissue is mixed in a fibrin g",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13260
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CONCLUSIONS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13569
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Minced articular cartilage procedures are attractive as they are 1-stage, consis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13581
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "REFERENCES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14023
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Buckwalter JA, Mankin HJ. Articular cartilage repair and transplantation. Art",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14034
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Buckwalter JA, Mankin HJ, Grodzinsky AJ. Articular cartilage and osteoarthrit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14147
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Jackson DW, Scheer MJ, Simon TM. Cartilage substitutes: overview of basic sci",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14267
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Mankin HJ. The response of articular cartilage to mechanical injury. J Bone J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14412
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Alford JW, Cole BJ. Cartilage restoration, part 1: basic science, historical ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14523
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Brittberg M, Winalski CS. Evaluation of cartilage injuries and repair. J Bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14693
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Kleemann RU, Krocker D, Cedraro A, et al. Altered cartilage mechanics and his",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14815
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Redman SN, Oldfield SF, Archer CW. Current strategies for articular cartilage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15015
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Shapiro F, Koide S, Glimcher MJ. Cell origin and differentiation in the repai",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15134
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. DePalma AF, McKeever CD, Subin DK. Process of repair of articular cartilage ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15305
+    },
+    {
+      "block_id": "p4:17",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Mankin HJ. The reaction of articular cartilage to injury and osteoarthritis ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15497
+    },
+    {
+      "block_id": "p4:18",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Nehrer S, Spector M, Minas T. Histologic analysis of tissue after failed car",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15633
+    },
+    {
+      "block_id": "p4:19",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Detterline AJ, Goldberg S, Bach BR Jr, et al. Treatment options for articula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15780
+    },
+    {
+      "block_id": "p4:20",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Curl WW, Krome J, Gordon ES, et al. Cartilage injuries: a review of 31,516 k",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15937
+    },
+    {
+      "block_id": "p4:21",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Bentley G, Biant LC, Carrington RW, et al. A prospective, randomised compari",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16066
+    },
+    {
+      "block_id": "p4:22",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Kreuz PC, Steinwachs MR, Erggelet C, et al. Results after microfracture of f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16287
+    },
+    {
+      "block_id": "p4:23",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Dragoo JL, Carlson G, McCormick F, et al. Healing full-thickness cartilage d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16482
+    },
+    {
+      "block_id": "p4:24",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Cancedda R, Dozin B, Giannoni P, et al. Tissue engineering and cell therapy ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16634
+    },
+    {
+      "block_id": "p4:25",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Elisseeff J. Injectable cartilage tissue engineering. Exp Opin Biol Ther. 20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16765
+    },
+    {
+      "block_id": "p4:26",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Salgado AJ, Oliveira JT, Pedro AJ, et al. Adult stem cells in bone and carti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16861
+    },
+    {
+      "block_id": "p4:27",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Ahmed TA, Dare EV, Hincke M. Fibrin: a versatile scaffold for tissue enginee",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17007
+    },
+    {
+      "block_id": "p4:28",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Lu Y, Dhanaraj S, Wang Z, et al. Minced cartilage without cell culture serve",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17146
+    },
+    {
+      "block_id": "p4:29",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Frisbie DD, Lu Y, Colhoun HA, et al. In vivo evaluation of a one step autolo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17326
+    },
+    {
+      "block_id": "p4:30",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. McIlwraith CW, Frisbie DD, Lu Y, et al. In-vivo evaluation of a one-step aut",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17491
+    },
+    {
+      "block_id": "p4:31",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "220",
+      "found_in_fulltext": true,
+      "fulltext_offset": 941
+    },
+    {
+      "block_id": "p4:32",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2008 Lippincott Williams & Wilkins",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

@@ -1,0 +1,2097 @@
+{
+  "mappable_block_count": 209,
+  "found_count": 151,
+  "missing_count": 58,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "A guide to systematic review and meta-analysis of prediction model performance",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $Cochrane Netherlands, University Medical Center Utrecht, PO Box 85500 St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Julius Center for Health Sciences and Primary Care, University Medical Center Ut",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{3} $Research Institute for Primary Care and Health Sciences, Keele Universit",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Correspondence to: T P A Debray T.Debray@umcutrecht.nl Additional material is pu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Cite this as: BMJ 2017;356:i6460 http://dx.doi.org/10.1136/bmj.i6460",
+      "found_in_fulltext": true,
+      "fulltext_offset": 336
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Systematic reviews and meta-analysis are an important—if not the most important—",
+      "found_in_fulltext": true,
+      "fulltext_offset": 405
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SUMMARY POINTS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 689
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Systematic review of the validation studies of a prediction model might help to ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 706
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Efforts should be made to restore missing information from validation studies an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 889
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heterogeneity should be expected when summarising estimates of a model's predict",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1253
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Meta-analysis should primarily be used to investigate variation across validatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1351
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Previous guidance papers regarding methods for systematic reviews of predictive ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2241
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although systematic reviews of prediction modelling studies are increasingly com",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2845
+    },
+    {
+      "block_id": "p1:21",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Based on previous publications, we therefore first describe how to define the sy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3290
+    },
+    {
+      "block_id": "p1:22",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "thebmj | BMJ2017;356:i6460 | doi:10.1136/bmj.i6460",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:23",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 288
+    },
+    {
+      "block_id": "p1:24",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "BMJ: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31532
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We subsequently discuss how to quantitatively summarise the extracted predictive",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4029
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Empirical example",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4937
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As mentioned earlier, we illustrate our guidance using a published review of stu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4955
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this paper, we focus on the validation studies that examined the predictive p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5747
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Steps of the systematic review Formulating the review question and protocol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6120
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As for any other type of biomedical research, it is strongly recommended to star",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6196
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Case study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7089
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The formal review question was as follows: to what extent is the additive EuroSC",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7100
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 286
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "doi:10.1136/bmj.i6460 | BMJ 2017;356:i6460 | thebmj",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "BMU: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27447
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Box 1: PICOTS system",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "The PICOTS system, as presented in the CHARMS checklist, $ ^{6} $ describes key ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "• Population—define the target population in which the prediction model will be ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7266
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "• Intervention (model)—define the prediction model(s) under review. In the case ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7463
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "• Comparator—if applicable, one can address competing models for the prognostic ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7609
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "• Outcome(s)—define the outcome(s) of interest for which the model is validated.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7785
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "• Timing—specifically for prognostic models, it is important to define when and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8047
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "• Setting—define the intended role or setting of the prognostic model. In the ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8268
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "cause mortality at 30 days in patients undergoing CABG? The question is primaril",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Formulating the search strategy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8567
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "When reviewing studies that evaluate the predictive performance of a specific pr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8599
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Case study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7089
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We used a generic search strategy including the terms \"EuroSCORE\" and \"Euro SCOR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9305
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Critical appraisal",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9603
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The quality of any meta-analysis of a systematic review strongly depends on the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9622
+    },
+    {
+      "block_id": "p3:18",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "recommended by Cochrane, and can be implemented using the CHARMS checklist, $ ^{",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:19",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Case study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7089
+    },
+    {
+      "block_id": "p3:20",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Using the CHARMS checklist and a preliminary version of the PROBAST tool, we cri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10148
+    },
+    {
+      "block_id": "p3:21",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "thebmj | BMJ2017;356:i6460 | doi:10.1136/bmj.i6460",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:22",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "blished as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from https://www.bmj.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27460
+    },
+    {
+      "block_id": "p3:23",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3",
+      "found_in_fulltext": true,
+      "fulltext_offset": 307
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Example 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10579
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We consider here the situation where the distribution of the linear predictor is",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10589
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Example 2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11138
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Sometimes, the distribution of the linear predictor is reported separately for d",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\mu=\\frac{3440\\times3.26+1140\\times3.94}{(3440+1140)}=3.43 $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ SD=\\sqrt{\\frac{\\begin{array}{r}(3440-1)\\times2.45^{2}+(1140-1)\\times2.57^{2}+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Example 3",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11153
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Another validation study reported the median EuroSCORE as 8 (interquartile range",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11163
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ SD=\\frac{11-6}{1.35}=3.70 $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "handled (n=13) or performed complete case analysis (n=5). We planned a sensitivi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11422
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Quantitative data extraction and preparation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11616
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To allow for quantitative synthesis of the predictive performance of the predict",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11661
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discrimination",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12166
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discrimination refers to a prediction model's ability to distinguish between pat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12181
+    },
+    {
+      "block_id": "p4:17",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "The C statistic of a prediction model can vary substantially across different va",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12995
+    },
+    {
+      "block_id": "p4:18",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Therefore, it is important to extract information on the case mix variation betw",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13732
+    },
+    {
+      "block_id": "p4:19",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Case study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7089
+    },
+    {
+      "block_id": "p4:20",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We found that the C statistic of the EuroSCORE was reported in 20 validations (t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14637
+    },
+    {
+      "block_id": "p4:21",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 316
+    },
+    {
+      "block_id": "p4:22",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "doi:10.1136/bmj.i6460 | BMJ2017;356:i6460 | thebmj",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:23",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "BMU: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27447
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1 | Details of the 22 validations of the additive EuroSCORE to predict ove",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "SD=standard deviation.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{*} $Data are standard error or 95% confidence intervals.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "tScores for risk factors in the EuroSCORE are added to give an approximate perce",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{\\#} $Presented with total number of observed deaths and total number of expe",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$Original development study. Results are based on split sample validation. No ex",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "¶The effect of pulmonary hypertension was not incorporated into the calculation ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "**Estimated from a histogram or calibration table (fig 3).**",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{\\dagger\\dagger} $Standard deviation was estimated from a 95% confidence inte",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Calibration",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15318
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Calibration refers to a model's accuracy of predicted risk probabilities, and in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15330
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Summarising estimates of calibration performance is challenging because calibrat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16344
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Case study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7089
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Calibration of the additive EuroSCORE was visually assessed in seven validation ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17378
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "thebmj | BMJ2017;356:i6460 | doi:10.1136/bmj.i6460",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:18",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 360
+    },
+    {
+      "block_id": "p5:19",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "BMJ: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31532
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "structured_insert_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Mesquita 2008</td><td>Biancari 2006</td><td>Parolari 2009</td><td",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "reported for any validation study and could not be derived using other informati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18105
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Performance of survival models",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18193
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although we focus on discrimination and calibration measures of prediction model",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18224
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "For instance, the D statistic gives the log hazard ratio of a model's predicted ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18730
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Meta-analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1351
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Once all relevant studies have been identified and corresponding results have be",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19372
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "6",
+      "found_in_fulltext": true,
+      "fulltext_offset": 308
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "doi:10.1136/bmj.i6460 | BMJ2017;356:i6460 | thebmj",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "BMJ: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31532
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "synthesised using multivariate meta-analysis. $ ^{9} $ This might help to increa",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "To further interpret the relevance of any between-study heterogeneity, it is als",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21655
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Some caution is warranted when summarising estimates of model discrimination and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22605
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Case study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7089
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "To summarise the performance of the EuroSCORE, we performed random effects meta-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23508
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Investigating heterogeneity across studies",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "When the discrimination or calibration performance of a prediction model is hete",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24862
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "In general, sources of heterogeneity can be explored by performing a meta-regres",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25454
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Key issues that could be considered as modifiers of model performance are differ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26078
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Case study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7089
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "To investigate whether population differences generated heterogeneity across the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27346
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "thebmj | BMJ2017;356:i6460 | doi:10.1136/bmj.i6460",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "7",
+      "found_in_fulltext": true,
+      "fulltext_offset": 289
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "BMU: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27447
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Standard deviation of patient age",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Mean EuroSCORE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "studies, we performed several meta-regression analyses (fig 5 and appendix 10). ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27705
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Overall, we can conclude that the additive Euro-SCORE fairly discriminates betwe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28864
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Sensitivity analysis",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "As for any meta-analysis, it is important to show that results are not distorted",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29457
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Case study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7089
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "We performed a subgroup analysis by excluding those studies at high risk of bias",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29672
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Reporting and presentation",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "As for any other type of systematic review and meta-analysis, it is important to",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29950
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "As illustrated in this article, researchers should clearly describe the review q",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30952
+    },
+    {
+      "block_id": "p8:17",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "8",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2761
+    },
+    {
+      "block_id": "p8:18",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "doi:10.1136/bmj.i6460 | BMJ 2017;356:i6460 | thebmj",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:19",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "BMJ: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31532
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 2 | Results from the case study (predictive performance of the EuroSCORE f",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Results are based on random effects meta-analyses with REML estimation and HKSJ ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "$ ^{*} $Includes results from the split sample validation of the development stu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Finally, it might be helpful to report probabilities of good performance separat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31856
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Concluding remarks",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "In this article, we provide guidance on how to systematically review and quantit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32060
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Meta-analysis of a prediction model's predictive performance bears many similari",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32698
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Although several concerns can be resolved by aforementioned strategies, it is po",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33483
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Often, multiple models exist for predicting the same condition in similar popula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34124
+    },
+    {
+      "block_id": "p9:12",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Finally, the following limitations need to be considered in order to fully appre",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35139
+    },
+    {
+      "block_id": "p9:13",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "thebmj | BMJ2017;356:i6460 | doi:10.1136/bmj.i6460",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:14",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "9",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4009
+    },
+    {
+      "block_id": "p9:15",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "BMJ: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31532
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "the performance results from prediction models developed with logistic regressio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35994
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, systematic review and meta-analysis of prediction model performance ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36983
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We thank The BMJ editors and reviewers for their helpful feedback on this manusc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37372
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Contributors: KGMM, TPAD, JBR, and RDR conceived the paper objectives. TPAD prep",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37458
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Funding: Financial support received from the Cochrane Methods Innovation Funds R",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38088
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Competing interests: All authors have completed the ICMJE uniform disclosure for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38676
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Khan K, Kunz R, Kleijnen J, et al. Systematic reviews to support evidence-based ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44976
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2 Steyerberg EW, Moons KGM, van der Windt DA, et al. PROGRESS Group. Prognosis R",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41158
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3 Geersing GJ, Bouwmeester W, Zuithoff P, Spijker R, Leeflang M, Moons KG. Searc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43187
+    },
+    {
+      "block_id": "p10:10",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4 Wong SS, Wilczynski NL, Haynes RB, Ramkissoonsingh R. Hedges Team. Developing ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43530
+    },
+    {
+      "block_id": "p10:11",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5 Ingui BJ, Rogers MA. Searching for clinical prediction rules in MEDLINE. J Am ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43729
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6 Moons KGM, de Groot JAH, Bouwmeester W, et al. Critical appraisal and data ext",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43872
+    },
+    {
+      "block_id": "p10:13",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7 Wolff R, Whiting P, Mallett S, et al. PROBAST: a risk of bias tool for predict",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44099
+    },
+    {
+      "block_id": "p10:14",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Debray TPA, Vergouwe Y, Rothjberg H, Nieboer D, Steyerberg EW, Moons KG. A new f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44726
+    },
+    {
+      "block_id": "p10:15",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9 Snell KI, Hua H, Debray TP, et al. Multivariate meta-analysis of individual pa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44236
+    },
+    {
+      "block_id": "p10:16",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10 Altman DG, Royston P. What do we mean by validating a prognostic model? Stat ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39200
+    },
+    {
+      "block_id": "p10:17",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11 Justice AC, Covinsky KE, Berlin JA. Assessing the generalizability of prognos",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39370
+    },
+    {
+      "block_id": "p10:18",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12 Collins GS, Omar O, Shanyinde M, Yu LM. A systematic review finds prediction ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39544
+    },
+    {
+      "block_id": "p10:19",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13 Siregar S, Groenwold RHH, de Heer F, Bots ML, van der Graaf Y, van Herwerden ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39797
+    },
+    {
+      "block_id": "p10:20",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14 Echouffo-Tcheugui JB, Batty GD, Kivimäki M, Kengne AP. Risk models to predict",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39986
+    },
+    {
+      "block_id": "p10:21",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15 Tzoulaki I, Liberopoulos G, Ioannidis JPA. Assessment of claims of improved p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40160
+    },
+    {
+      "block_id": "p10:22",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16 Eichler K, Puhan MA, Steurer J, Bachmann LM. Prediction of first coronary eve",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40335
+    },
+    {
+      "block_id": "p10:23",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17 Perel P, Edwards P, Wentz R, Roberts I. Systematic review of prognostic model",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40536
+    },
+    {
+      "block_id": "p10:24",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18 Collins GS, de Groot JA, Dutton S, et al. External validation of multivariabl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40709
+    },
+    {
+      "block_id": "p10:25",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19 Riley RD, Ensor J, Snell KI, et al. External validation of clinical predictio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40933
+    },
+    {
+      "block_id": "p10:26",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20 Peat G, Riley RD, Croft P, et al. PROGRESS Group. Improving the transparency ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41357
+    },
+    {
+      "block_id": "p10:27",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21 Iorio A, Spencer FA, Falavigna M, et al. Use of GRADE for assessment of evide",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41587
+    },
+    {
+      "block_id": "p10:28",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22 Vergouwe Y, Moons KGM, Steyerberg EW. External validity of risk models: Use o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41808
+    },
+    {
+      "block_id": "p10:29",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23 Moons KGM, Altman DG, Reitsma JB, et al. Transparent Reporting of a multivari",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42025
+    },
+    {
+      "block_id": "p10:30",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24 van Klaveren D, Gönen M, Steyerberg EW, Vergouwe Y. A new concordance measure",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42256
+    },
+    {
+      "block_id": "p10:31",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25 Higgins JPT, Green S. Combining Groups. http://handbook.cochrane.org/chapter_",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42445
+    },
+    {
+      "block_id": "p10:32",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26 Hozo SP, Djulbegovic B, Hozo I. Estimating the mean and variance from the med",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42563
+    },
+    {
+      "block_id": "p10:33",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27 Bouwmeester W, Zuithoff NPA, Mallett S, et al. Reporting and methods in clini",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42741
+    },
+    {
+      "block_id": "p10:34",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28 Austin PC, Pencinca MJ, Steyerberg EW. Predictive accuracy of novel risk fact",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42923
+    },
+    {
+      "block_id": "p10:35",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "10",
+      "found_in_fulltext": true,
+      "fulltext_offset": 302
+    },
+    {
+      "block_id": "p10:36",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "doi:10.1136/bmj.i6460 | BMJ2017:356:i6460 | thebmj",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:37",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "BMJ: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31532
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "RESEARCH METHODS AND REPORTING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29 Blanche P, Dartigues JF, Jacqmin-Gadda H. Review and comparison of ROC curve ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30 Jinks RC, Royston P, Parmar MKB. Discrimination-based sample size calculation",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31 Pennells L, Kaptoge S, White IR, Thompson SG, Wood AM. Emerging Risk Factors ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45165
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32 Riley RD, Higgins JPT, Deeks JJ. Interpretation of random effects meta-analys",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33 Snell KIE. Development and application of statistical methods for prognosis r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45406
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34 van Klaveren D, Steyerberg EW, Perel P, Vergouwe Y. Assessing discriminative ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45571
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35 Gengsheng Qin, Hotilovac L. Comparison of non-parametric confidence intervals",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45753
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36 IntHout J, Ioannidis JP, Borm GF. The Hartung-Knapp-Sidik-Jonkman method for ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45973
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37 Cornell JE, Mulrow CD, Localio R, et al. Random-effects meta-analysis of inco",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46231
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38 Ban JW, Emparanza JI, Urreta I, Burls A. Design Characteristics Influence Per",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46402
+    },
+    {
+      "block_id": "p11:11",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39 Deeks JJ, Higgins JPT, Altman DG. Chapter 9. Analysing data and undertaking m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46626
+    },
+    {
+      "block_id": "p11:12",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40 Berlin JA, Santanna J, Schmid CH, Szczech LA, Feldman HI. Anti-Lymphocyte Ant",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46750
+    },
+    {
+      "block_id": "p11:13",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41 Liberati A, Altman DG, Tetzlaff J, et al. The PRISMA statement for reporting ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47065
+    },
+    {
+      "block_id": "p11:14",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42 Stewart LA, Clarke M, Rovers M, et al. PRISMA-IPD Development Group. Preferre",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47305
+    },
+    {
+      "block_id": "p11:15",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "43 Collins GS, Reitsma JB, Altman DG, Moons KG. Transparent Reporting of a multi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47554
+    },
+    {
+      "block_id": "p11:16",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "44 Debray TPA, Riley RD, Rovers MM, Reitsma JB, Moons KG. Cochrane IPD Meta-anal",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47783
+    },
+    {
+      "block_id": "p11:17",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "45 Sutton AJ, Abrams KR. Bayesian methods in meta-analysis and evidence synthesi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48062
+    },
+    {
+      "block_id": "p11:18",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "46 Vickers AJ, Van Calster B, Steyerberg EW. Net benefit approaches to the evalu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48215
+    },
+    {
+      "block_id": "p11:19",
+      "page": 11,
+      "role": "backmatter_body",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Appendix: Supplementary material",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48642
+    },
+    {
+      "block_id": "p11:20",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "No commercial reuse: See rights and reprints http://www.bmj.com/permissions",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:21",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Subscribe: http://www.bmj.com/subscribe",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:22",
+      "page": 11,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "BMJ: first published as 10.1136/bmj.i6460 on 5 January 2017. Downloaded from htt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31532
+    }
+  ]
+}

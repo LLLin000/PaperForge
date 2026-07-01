@@ -1,0 +1,1917 @@
+{
+  "mappable_block_count": 191,
+  "found_count": 120,
+  "missing_count": 71,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Physical Therapy Journal of the American Physical Therapy Association",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on the Proliferation and Differe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44741
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "media_asset",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Online-Only Material</td><td>http://ptjournal.apta.org/content/su",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://ptjournal.apta.org/ by guest on April 25, 2015",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Research Report",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "C. Zhong, MS, Department of Orthopedic Surgery, Second Affiliated Hospital, Scho",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Z. Xu, MS, Department of Orthopedic Surgery, Second Affiliated Hospital, School ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on the Proliferation and Differe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44741
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "X. Zhang, MS, Department of Orthopedic Surgery, Second Affiliated Hospital, Scho",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "[Zhong C, Zhang X, Xu Z, He R. Effects of low-intensity electromagnetic fields o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 328
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Cheng Zhong, Xin Zhang, Zhengjian Xu, Rongxin He",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Background. Electromagnetic fields (EMFs) used in stem-cell tissue engineering c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 524
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Objective. The aim of this study was to investigate the effects of low-intensity",
+      "found_in_fulltext": true,
+      "fulltext_offset": 651
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Methods. Harvested BMSCs were cultured for 3 generations and divided into 4 grou",
+      "found_in_fulltext": true,
+      "fulltext_offset": 871
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results. The results showed that EMFs (0.5 mT, 50 Hz) accelerated cellular proli",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1700
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion. Irradiation of BMSCs with low-intensity EMFs (0.5 mT, 50 Hz) increas",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2223
+    },
+    {
+      "block_id": "p2:16",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Post a Rapid Response to this article at: ptjournal.apta.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1208",
+      "found_in_fulltext": true,
+      "fulltext_offset": 512
+    },
+    {
+      "block_id": "p2:18",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "■ Physical Therapy Volume 92 Number 9 Downloaded from http://ptjournal.apta.org/",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:19",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Physical therapy often is advocated to treat a variety of bone diseases, as it o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2566
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electromagnetic fields have been used widely in the treatment of orthopedic cond",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3278
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mechanism underlying promotion of bone proliferation and differentiation by ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4128
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "These clinical research and laboratory issues have not been clarified. However, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5074
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The International Commission on Non-ionizing Radiation Protection (ICNIRP) has d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5818
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Materials and Method Reagents",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6566
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The BMSCs were maintained in DMEM-LG medium (Hyclone Laboratories Inc, Logan, Ut",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6596
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Animals",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7214
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The experiments were performed on 8 Sprague-Dawley mice with initial weights of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7222
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Available With This Article at ptjournal.apta.org",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7546
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "• $ \\underline{\\text{eFigure:}} $ Photographs of Mouse Bone Marrow Stromal Cells",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7598
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:16",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 92 Number 9 Physical Therapy ■ 1209 Downloaded from http://ptjournal.apta",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "object. Mice were obtained from the Center of Experimental Animals of Zhejiang U",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7749
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Instruments",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8516
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The sXcELF exposure system for electromagnetic radiation in complex environments",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8528
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell Culture",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8930
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The Sprague-Dawley mice (4 weeks of age) were killed by cervical vertebra disloc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8943
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1210",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "■ Physical Therapy Volume 92 Number 9",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://ptjournal.apta.org/ by guest on April 25, 2015",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Grouping and Designing",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10326
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Third-generation BMSCs were divided into 4 groups. Cells from groups A and C wer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10349
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cellular Proliferation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11542
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In order to evaluate the effect of the 0.5-mT-intensity EMF stimulation on BMSC ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11565
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cellular Cycle",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12385
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We used flow cytometry to detect the cell cycle phases ( $ G_{0}/G_{1} $, S, and",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ation indexes for the BMSCs in all groups were analyzed statistically, as follow",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13906
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Determination of Cellular Differentiation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14067
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In order to assess the effects of 0.5-mT-intensity EMF stimulation on the cell d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14109
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "RT-PCR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1366
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We used RT-PCR to detect the expression of the collagen I gene. Collagen I is th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14857
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:14",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 92 Number 9 Physical Therapy 1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://ptjournal.apta.org/ by guest on April 25, 2015",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1211",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "accordance with the requirements of the reverse transcription kit used for this ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15702
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Determination of the Effects of Callus Formation in Mice After In Vitro EMF Stim",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8028
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In order to detect the effects of 0.5-mT-intensity EMFs on BMSCs in the living a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16709
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data Analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17967
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The data from each group were expressed as averages ( $ \\pm $SD). The difference",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Role of the Funding Source",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18297
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Funding support for this study was provided by the Department of Orthopedic Surg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18324
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results Cell Proliferation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18481
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell growth and morphology were observed daily under an inverted microscope. Fou",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18508
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1212",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "■ Physical Therapy Volume 92 Number 9",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:17",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://ptjournal.apta.org/ by guest on April 25, 2015",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:18",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "lation, third-passage cells had adhered completely and began to proliferate and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18659
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Figures 2 and 3 detail the significant differences in growth rate observed betwe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19260
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell Differentiation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20147
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In general, ALP activity increased around day 5 in all groups. The ALP activity ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20168
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "point compared with to the control group and the group exposed to osteogenic med",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20405
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The 4 groups were stained with Alizarin Red S on day 12 after treatment. The sta",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20938
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell Cycle",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21258
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As observed by flow cytometry, the EMF-stimulated samples did not contain abnorm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21269
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 92 Number 9 Physical Therapy ■",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://ptjournal.apta.org/ by guest on April 25, 2015",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1213",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Alizarin Red S-stained mineralization on the 12th day post-culture for (A) group",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "medium (group D: 20.23%±0.28%) in the G₂/M+S phase was significantly higher than",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21828
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "RT-PCR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1366
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The relative expression of the collagen I gene was determined after 10 days in c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22034
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Animal Experiments",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22455
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As shown in Figure 6, both the EMF-stimulated and control groups did not show fu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22474
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1214",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Physical Therapy Volume 92 Number 9",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://ptjournal.apta.org/ by guest on April 25, 2015",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "revealed a scattered sheet with a small callus. After 8 weeks, the PLGA scaffold",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22862
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23239
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition to investigating the effects of EMF-treated BMSCs in maintaining sig",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23250
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Used as a noninvasive physical therapy for delayed bone-fracture healing, EMF tr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24193
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "mental parameters likely to have the greatest beneficial effects in physical the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24658
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Zhang et al $ ^{20} $ reported that rectangular EMF treatment of osteoblasts inc",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Table.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25508
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Relative Expression of Collagen I in Bone Marrow Stromal Cells From Sprague-Dawl",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Group $ ^{a} $</td><td>Average</td><td>SD</td></tr><tr><td>A</td>",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:12",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Third-generation bone marrow stromal cells were divided into 4 groups. Cells fro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25515
+    },
+    {
+      "block_id": "p9:13",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{b} $ Compared with the control group ( $ P<.05 $). $ ^{c} $ Compared with th",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:14",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:15",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 92 Number 9 Physical Therapy ■ 121 Downloaded from http://ptjournal.apta.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:16",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1215",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4.5-millisecond bursts repeating at 15 Hz and 20 pulses per burst. Sun et al. th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26309
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Based on the literature, it appears that the differences in cell proliferation a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27243
+    },
+    {
+      "block_id": "p10:11",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The healing capacity of EMF depends on the operating parameters and exposure pro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27752
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1216",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:13",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Physical Therapy Volume 92 Number 9",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:14",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Downloaded from http://ptjournal.apta.org/ by guest on April 25, 2015",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:15",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "disrupt cellular electrochemical balance and function. $ ^{23} $ Because the mec",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Reports on the effects of EMF stimulation on cellular proliferation and differen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28752
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In vitro experiments have shown that dexamethasone present in an osteogenic indu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30066
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We found that EMF exposure significantly increased BMSC proliferation compared w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31426
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Because bone tissue-related cells, cytology, and microenvironment contribute to ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32423
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Regarding physical therapy, Dallari et al $ ^{2} $ published the first randomize",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 92 Number 9 Physical Therapy 1217 Downloaded from http://ptjournal.apta.o",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "lation on bone mineral density and functional recovery of patients were observed",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34539
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "One limitation of these studies is that only short-term results have been invest",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36222
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In conclusion, EMF exposure induced ALP secretion, which is important in bone fo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33566
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cheng Zhong provided writing. Xin Zhang provided data collection. Zhengjian Xu p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35904
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Funding support for this study was provided by the Department of Orthopedic Surg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18324
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "DOI: 10.2522/ptj.20110224",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36196
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36692
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1 Eyres KS, Saleh M, Kanis JA. Effect of pulsed electromagnetic fields on bone f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36703
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2 Dallari D, Fini M, Giavaresi G, et al. Effects of pulsed electromagnetic stimu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38224
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3 Kennedy WF, Roberts CG, Zuege RC, Dicus WT. Use of pulsed electromagnetic fiel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38442
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4 Fini M, Torricelli P, Giavaresi G, et al. Effect of pulsed electromagnetic fie",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38638
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5 Bekhite MM, Finkensieper A, Abou-Zaid FA, et al. Static electromagnetic fields",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38869
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6 Matl FD, Obermeier A, Zlotnyk J, et al. Augmentation of antibiotic activity by",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39148
+    },
+    {
+      "block_id": "p12:14",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7 Ding S, Peng H, Fang HS, et al. Pulsed electromagnetic fields stimulation prev",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39365
+    },
+    {
+      "block_id": "p12:15",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8 Mild KH, Mattsson MO. ELF noise fields: a review. Electromagn Biol Med. 2010;2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39528
+    },
+    {
+      "block_id": "p12:16",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9 International Commission on Non-Ionizing Radiation Protection. ICNIRP statemen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39617
+    },
+    {
+      "block_id": "p12:17",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10 Karpowicz J, Hietanen M, Gryz K; Central Institute for Labour Protection-Nati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36854
+    },
+    {
+      "block_id": "p12:18",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11 Zhou J, Ming LG, Ge BF, et al. Effects of 50 Hz sinusoidal electromagnetic fi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37089
+    },
+    {
+      "block_id": "p12:19",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12 Sert C, Mustafa D, Duz MZ, et al. The preventive effect on bone loss of 50-Hz",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37338
+    },
+    {
+      "block_id": "p12:20",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13 Alhadlaq A, Mao JJ. Mesenchymal stem cells: isolation and therapeutics. Stem ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37508
+    },
+    {
+      "block_id": "p12:21",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14 Ogston N, Harrison AJ, Cheung HF, et al. Dexamethasone and retinoic acid diff",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37616
+    },
+    {
+      "block_id": "p12:22",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15 Hu W, Xiang Z, Zhang X, et al. Preliminary study of BMSCs seeded into collage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37867
+    },
+    {
+      "block_id": "p12:23",
+      "page": 12,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16 Wang X, Bank RA, TeKoppele JM, et al. Effect of collagen denaturation on the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38084
+    },
+    {
+      "block_id": "p12:24",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:25",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "■ Physical Therapy Volume 92 Number 9 Downloaded from http://ptjournal.apta.org/",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:26",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Effects of Low-Intensity Electromagnetic Fields on Cultured Mouse Bone Marrow St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17 Du XG, Xu SS, Chen Q, et al. Effects of 50 Hz magnetic fields on DNA double-s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39866
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18 Wu W, Yao K, Wang KJ, et al. Blocking 1800 MHz mobile phone radiation-induced",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40062
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19 Nakagawa M. Bioeffects of electromagnetic fields: safety limits of each frequ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40316
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20 Zhang X, Zhang J, Qu X, Wen J. Effects of different extremely low-frequency e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40500
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21 Sun LY, Hsieh DK, Yu TC, et al. Effect of pulsed electromagnetic field on the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40658
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22 Tsai MT, Li WJ, Tuan RS, Chang WH. Modulation of osteogenesis in human mesenc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40866
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23 Panagopoulos DJ, Karabarbounis A, Margaritis LH. Mechanism for action of elec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41050
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24 Markov MS. Magnetic field therapy: a review. Electromagn Biol Med. 2007;26:1-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41204
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25 Haddad JB, Obolensky AG, Shinnick P. The biologic effects and the therapeutic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41288
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26 Fitzsimmons RJ, Farley JR, Adey WR, Baylink DJ. Frequency dependence of incre",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41547
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27 Diniz P, Shomura K, Soejima K, Ito G. Effects of pulsed electromagnetic field",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41843
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28 Sun LY, Hsieh DK, Lin PC, et al. Pulsed electromagnetic fields accelerate pro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42070
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29 Ambrosio F, Wolf SL, Delitto A, et al. The emerging relationship between rege",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42309
+    },
+    {
+      "block_id": "p13:14",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30 Cheng SL, Yang JW, Rifas L, et al. Differentiation of human bone marrow osteo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42464
+    },
+    {
+      "block_id": "p13:15",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31 Kasperk C, Schneider U, Sommer U, et al. Differential effects of glucocortico",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42663
+    },
+    {
+      "block_id": "p13:16",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32 Suarez F, Silve C. Effect of parathyroid hormone on arachidonic acid metaboli",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42831
+    },
+    {
+      "block_id": "p13:17",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33 Mikami Y, Asano M, Honda MJ, Takagi M. Bone morphogenetic protein 2 and dexam",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43005
+    },
+    {
+      "block_id": "p13:18",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34 Zuloaga DG, Carbone DL, Hiroi R, et al. Dexamethasone induces apoptosis in th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43228
+    },
+    {
+      "block_id": "p13:19",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35 Orazizadeh M, Khorsandi LS, Hashemitabar M. Toxic effects of dexamethasone on",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43410
+    },
+    {
+      "block_id": "p13:20",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36 Takano-Murakami R, Tokunaga K, Kondo N, et al. Glucocorticoid inhibits bone r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43549
+    },
+    {
+      "block_id": "p13:21",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37 Zhou Q, Li Q, Yang L, Liu F. Changes of blood vessels in glucocorticoid-induc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43736
+    },
+    {
+      "block_id": "p13:22",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38 Santini MT, Rainaldi G, Ferrante A, et al. Effects of a 50 Hz sinusoidal magn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43933
+    },
+    {
+      "block_id": "p13:23",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39 Peter B, Gauthier O, Laib S, et al. Local delivery of bisphosphonate from coa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44156
+    },
+    {
+      "block_id": "p13:24",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40 Aaron RK, Ciombor DM, Simon BJ. Treatment of nonunions with electric and elec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44361
+    },
+    {
+      "block_id": "p13:25",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41 Doorgakant A, Bhutta MA, Marynissen H. Management of a tibial periprosthetic ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44500
+    },
+    {
+      "block_id": "p13:26",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "September 2012",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:27",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Volume 92 Number 9 Physical Therapy ☐",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:28",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Downloaded from http://ptjournal.apta.org/ by guest on April 25, 2015",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:29",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1219",
+      "found_in_fulltext": true,
+      "fulltext_offset": 517
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Physical Therapy Journal of the American Physical Therapy Association",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "PTJ Effects of Low-Intensity Electromagnetic Fields on the Proliferation and Dif",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44737
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "media_asset",
+      "zone": "",
+      "render_default": true,
+      "snippet": "<table><tr><td>References</td><td>This article cites 41 articles, 1 of which you",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Downloaded from http://ptjournal.apta.org/ by guest on April 25, 2015",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

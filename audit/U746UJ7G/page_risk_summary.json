@@ -14,7 +14,7 @@
         "reading_order"
       ],
       "counts": {
-        "body_paragraph": 7,
+        "body_paragraph": 6,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 0,
@@ -204,9 +204,9 @@
         "same_page_boundary"
       ],
       "counts": {
-        "body_paragraph": 12,
+        "body_paragraph": 13,
         "reference_item": 9,
-        "tail_like": 3,
+        "tail_like": 0,
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,

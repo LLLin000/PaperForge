@@ -1,0 +1,18 @@
+{
+  "figures": {
+    "matched_count": 0,
+    "ambiguous_count": 0,
+    "unresolved_cluster_count": 0,
+    "unmatched_asset_count": 0,
+    "matched": [],
+    "ambiguous": [],
+    "unresolved": []
+  },
+  "tables": {
+    "matched_count": 0,
+    "ambiguous_count": 0,
+    "unmatched_asset_count": 0,
+    "matched": [],
+    "ambiguous": []
+  }
+}

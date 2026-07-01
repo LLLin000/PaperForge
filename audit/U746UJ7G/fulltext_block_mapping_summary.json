@@ -1,7 +1,7 @@
 {
-  "mappable_block_count": 231,
-  "found_count": 156,
-  "missing_count": 75,
+  "mappable_block_count": 232,
+  "found_count": 117,
+  "missing_count": 115,
   "rows": [
     {
       "block_id": "p1:0",
@@ -96,12 +96,12 @@
     {
       "block_id": "p1:13",
       "page": 1,
-      "role": "structured_insert_candidate",
+      "role": "structured_insert",
       "zone": "frontmatter_main_zone",
       "render_default": false,
       "snippet": "Question Does the Sepsis Prediction Model (SPM) outperform other sepsis predicti",
-      "found_in_fulltext": false,
-      "fulltext_offset": -1
+      "found_in_fulltext": true,
+      "fulltext_offset": 2808
     },
     {
       "block_id": "p1:14",
@@ -131,7 +131,7 @@
       "render_default": true,
       "snippet": "✗ Invited Commentary",
       "found_in_fulltext": true,
-      "fulltext_offset": 2796
+      "fulltext_offset": 2939
     },
     {
       "block_id": "p1:17",
@@ -141,17 +141,17 @@
       "render_default": true,
       "snippet": "Supplemental content",
       "found_in_fulltext": true,
-      "fulltext_offset": 2817
+      "fulltext_offset": 2960
     },
     {
       "block_id": "p1:18",
       "page": 1,
-      "role": "body_paragraph",
+      "role": "non_body_insert",
       "zone": "body_zone",
-      "render_default": true,
+      "render_default": false,
       "snippet": "Author affiliations and article information are listed at the end of this articl",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2838
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p1:19",
@@ -160,8 +160,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p1:20",
@@ -180,8 +180,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p1:22",
@@ -190,8 +190,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p1:23",
@@ -217,7 +217,7 @@
       "block_id": "p2:0",
       "page": 2,
       "role": "noise",
-      "zone": "frontmatter_side_zone",
+      "zone": "body_zone",
       "render_default": false,
       "snippet": "JAMA Network Open | Health Informatics",
       "found_in_fulltext": false,
@@ -227,7 +227,7 @@
       "block_id": "p2:1",
       "page": 2,
       "role": "noise",
-      "zone": "frontmatter_side_zone",
+      "zone": "body_zone",
       "render_default": false,
       "snippet": "Sepsis Prediction Model vs SIRS, qSOFA, and SOFA",
       "found_in_fulltext": false,
@@ -237,11 +237,11 @@
       "block_id": "p2:2",
       "page": 2,
       "role": "section_heading",
-      "zone": "frontmatter_side_zone",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "Introduction",
       "found_in_fulltext": true,
-      "fulltext_offset": 3018
+      "fulltext_offset": 3000
     },
     {
       "block_id": "p2:3",
@@ -251,7 +251,7 @@
       "render_default": true,
       "snippet": "The Third International Task Force on Sepsis and Septic Shock (Sepsis-3) establi",
       "found_in_fulltext": true,
-      "fulltext_offset": 3031
+      "fulltext_offset": 3013
     },
     {
       "block_id": "p2:4",
@@ -261,7 +261,7 @@
       "render_default": true,
       "snippet": "Sepsis identification systems based on bedside findings are widely disseminated ",
       "found_in_fulltext": true,
-      "fulltext_offset": 4286
+      "fulltext_offset": 4268
     },
     {
       "block_id": "p2:5",
@@ -281,7 +281,7 @@
       "render_default": true,
       "snippet": "Methods Background",
       "found_in_fulltext": true,
-      "fulltext_offset": 5241
+      "fulltext_offset": 5222
     },
     {
       "block_id": "p2:8",
@@ -291,17 +291,17 @@
       "render_default": true,
       "snippet": "This is a retrospective cohort study of all adult (>17 years) admissions within ",
       "found_in_fulltext": true,
-      "fulltext_offset": 5260
+      "fulltext_offset": 5241
     },
     {
       "block_id": "p2:9",
       "page": 2,
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p2:10",
@@ -310,8 +310,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p2:11",
@@ -361,7 +361,7 @@
       "render_default": true,
       "snippet": "study followed the Strengthening the Reporting of Observational Studies in Epide",
       "found_in_fulltext": true,
-      "fulltext_offset": 5768
+      "fulltext_offset": 5749
     },
     {
       "block_id": "p3:3",
@@ -371,7 +371,7 @@
       "render_default": true,
       "snippet": "Study Population",
       "found_in_fulltext": true,
-      "fulltext_offset": 5898
+      "fulltext_offset": 5879
     },
     {
       "block_id": "p3:4",
@@ -381,7 +381,7 @@
       "render_default": true,
       "snippet": "Structured data from the EHR identified inpatient admissions and all associated ",
       "found_in_fulltext": true,
-      "fulltext_offset": 5915
+      "fulltext_offset": 5896
     },
     {
       "block_id": "p3:5",
@@ -391,7 +391,7 @@
       "render_default": true,
       "snippet": "Exclusion Criteria",
       "found_in_fulltext": true,
-      "fulltext_offset": 6905
+      "fulltext_offset": 6886
     },
     {
       "block_id": "p3:6",
@@ -401,7 +401,7 @@
       "render_default": true,
       "snippet": "For the analysis, we excluded admissions to a Burn Service, length of stay more ",
       "found_in_fulltext": true,
-      "fulltext_offset": 6924
+      "fulltext_offset": 6905
     },
     {
       "block_id": "p3:7",
@@ -411,7 +411,7 @@
       "render_default": true,
       "snippet": "Sepsis Definition",
       "found_in_fulltext": true,
-      "fulltext_offset": 7437
+      "fulltext_offset": 7418
     },
     {
       "block_id": "p3:8",
@@ -421,7 +421,7 @@
       "render_default": true,
       "snippet": "EHR-confirmed sepsis was defined by the Centers for Disease Control and Preventi",
       "found_in_fulltext": true,
-      "fulltext_offset": 7455
+      "fulltext_offset": 7436
     },
     {
       "block_id": "p3:9",
@@ -431,7 +431,7 @@
       "render_default": true,
       "snippet": "Electronic Sepsis Alert Systems",
       "found_in_fulltext": true,
-      "fulltext_offset": 8627
+      "fulltext_offset": 8608
     },
     {
       "block_id": "p3:10",
@@ -441,7 +441,7 @@
       "render_default": true,
       "snippet": "An electronic sepsis alert based on the SPM was active during all phases of care",
       "found_in_fulltext": true,
-      "fulltext_offset": 8659
+      "fulltext_offset": 8640
     },
     {
       "block_id": "p3:11",
@@ -451,7 +451,7 @@
       "render_default": true,
       "snippet": "Time Zero",
       "found_in_fulltext": true,
-      "fulltext_offset": 9110
+      "fulltext_offset": 9091
     },
     {
       "block_id": "p3:12",
@@ -461,17 +461,17 @@
       "render_default": true,
       "snippet": "Time zero was set as 15 minutes prior to first clinician action, as defined by t",
       "found_in_fulltext": true,
-      "fulltext_offset": 9120
+      "fulltext_offset": 9101
     },
     {
       "block_id": "p3:13",
       "page": 3,
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p3:14",
@@ -480,8 +480,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p3:15",
@@ -531,7 +531,7 @@
       "render_default": true,
       "snippet": "action related to suspicion or treatment of sepsis. For example, if a clinician ",
       "found_in_fulltext": true,
-      "fulltext_offset": 9653
+      "fulltext_offset": 9634
     },
     {
       "block_id": "p4:4",
@@ -541,7 +541,7 @@
       "render_default": true,
       "snippet": "The times elapsed for SIRS, qSOFA, and SOFA to reach threshold score were assess",
       "found_in_fulltext": true,
-      "fulltext_offset": 9867
+      "fulltext_offset": 9848
     },
     {
       "block_id": "p4:5",
@@ -551,7 +551,7 @@
       "render_default": true,
       "snippet": "Outcomes",
       "found_in_fulltext": true,
-      "fulltext_offset": 10301
+      "fulltext_offset": 10281
     },
     {
       "block_id": "p4:6",
@@ -561,7 +561,7 @@
       "render_default": true,
       "snippet": "Our primary goal was to compare the performance of the SPM in classifying sepsis",
       "found_in_fulltext": true,
-      "fulltext_offset": 10310
+      "fulltext_offset": 10290
     },
     {
       "block_id": "p4:7",
@@ -571,7 +571,7 @@
       "render_default": true,
       "snippet": "Statistical Analysis",
       "found_in_fulltext": true,
-      "fulltext_offset": 10659
+      "fulltext_offset": 10639
     },
     {
       "block_id": "p4:8",
@@ -581,7 +581,7 @@
       "render_default": true,
       "snippet": "We performed statistical analysis using R Statistical Computing Environment vers",
       "found_in_fulltext": true,
-      "fulltext_offset": 10680
+      "fulltext_offset": 10660
     },
     {
       "block_id": "p4:9",
@@ -591,7 +591,7 @@
       "render_default": true,
       "snippet": "Results",
       "found_in_fulltext": true,
-      "fulltext_offset": 12531
+      "fulltext_offset": 12511
     },
     {
       "block_id": "p4:10",
@@ -601,17 +601,17 @@
       "render_default": true,
       "snippet": "Of 90 773 adult admissions recorded from June 5, 2019, through December 31, 2020",
       "found_in_fulltext": true,
-      "fulltext_offset": 12539
+      "fulltext_offset": 12519
     },
     {
       "block_id": "p4:11",
       "page": 4,
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p4:12",
@@ -620,8 +620,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p4:13",
@@ -671,7 +671,7 @@
       "render_default": true,
       "snippet": "of which were diagnosed with COVID-19. Those with EHR-confirmed sepsis were olde",
       "found_in_fulltext": true,
-      "fulltext_offset": 13811
+      "fulltext_offset": 13791
     },
     {
       "block_id": "p5:4",
@@ -681,7 +681,7 @@
       "render_default": true,
       "snippet": "We observed an inverse association between an increase in PSS threshold and sens",
       "found_in_fulltext": true,
-      "fulltext_offset": 14779
+      "fulltext_offset": 14759
     },
     {
       "block_id": "p5:5",
@@ -691,7 +691,7 @@
       "render_default": true,
       "snippet": "All the prediction scores had a median time to threshold after time zero (Table ",
       "found_in_fulltext": true,
-      "fulltext_offset": 15700
+      "fulltext_offset": 15680
     },
     {
       "block_id": "p5:7",
@@ -700,18 +700,18 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "ASE indicates Adult Sepsis Event; BP, blood pressure; LOS, length of stay.",
-      "found_in_fulltext": true,
-      "fulltext_offset": 16472
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p5:8",
       "page": 5,
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p5:9",
@@ -720,8 +720,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p5:10",
@@ -771,7 +771,7 @@
       "render_default": true,
       "snippet": "of onset of organ dysfunction by eSOFA criteria, we saw similar trends, with SIR",
       "found_in_fulltext": true,
-      "fulltext_offset": 16563
+      "fulltext_offset": 16468
     },
     {
       "block_id": "p6:3",
@@ -781,7 +781,7 @@
       "render_default": true,
       "snippet": "Discussion",
       "found_in_fulltext": true,
-      "fulltext_offset": 16834
+      "fulltext_offset": 16739
     },
     {
       "block_id": "p6:4",
@@ -791,7 +791,7 @@
       "render_default": true,
       "snippet": "Although the SPM demonstrated better balanced accuracy and specificity for sepsi",
       "found_in_fulltext": true,
-      "fulltext_offset": 16845
+      "fulltext_offset": 16750
     },
     {
       "block_id": "p6:5",
@@ -821,7 +821,7 @@
       "render_default": true,
       "snippet": "Abbreviations: ASE, Adult Sepsis Event; ED, emergency department; ICU, intensive",
       "found_in_fulltext": true,
-      "fulltext_offset": 17418
+      "fulltext_offset": 17338
     },
     {
       "block_id": "p6:8",
@@ -851,17 +851,17 @@
       "render_default": true,
       "snippet": "Body mass index is calculated as weight in kilograms divided by height in meters",
       "found_in_fulltext": true,
-      "fulltext_offset": 17856
+      "fulltext_offset": 17776
     },
     {
       "block_id": "p6:11",
       "page": 6,
       "role": "footnote",
-      "zone": "",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p6:12",
@@ -890,8 +890,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p6:15",
@@ -941,7 +941,7 @@
       "render_default": true,
       "snippet": "with increased score complexity and lack of transparency of the SPM epitomizes i",
       "found_in_fulltext": true,
-      "fulltext_offset": 18226
+      "fulltext_offset": 18068
     },
     {
       "block_id": "p7:4",
@@ -951,7 +951,7 @@
       "render_default": true,
       "snippet": "At higher PSS scores (8 to 10), only 12.9% to 19.7% of patients could have been ",
       "found_in_fulltext": true,
-      "fulltext_offset": 18545
+      "fulltext_offset": 18387
     },
     {
       "block_id": "p7:5",
@@ -961,7 +961,7 @@
       "render_default": true,
       "snippet": "Given the existing observational data regarding the importance of early antimicr",
       "found_in_fulltext": true,
-      "fulltext_offset": 19242
+      "fulltext_offset": 19084
     },
     {
       "block_id": "p7:6",
@@ -970,8 +970,8 @@
       "zone": "display_zone",
       "render_default": true,
       "snippet": "Table 2. Performance Metrics for Classification of Admission (All Sepsis vs Nons",
-      "found_in_fulltext": true,
-      "fulltext_offset": 19933
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:7",
@@ -990,8 +990,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Abbreviations: PSS, Predicting Sepsis Score; qSOFA, quick Sepsis-Related Organ F",
-      "found_in_fulltext": true,
-      "fulltext_offset": 20054
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:9",
@@ -1041,7 +1041,7 @@
       "render_default": true,
       "snippet": "Table 3. Performance Metrics for Admissions With Respect to Time Zero Among 1324",
       "found_in_fulltext": true,
-      "fulltext_offset": 20618
+      "fulltext_offset": 19824
     },
     {
       "block_id": "p7:15",
@@ -1050,8 +1050,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Abbreviations: PSS, Predicting Sepsis Score; qSOFA, quick Sepsis-Related Organ F",
-      "found_in_fulltext": true,
-      "fulltext_offset": 20054
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:16",
@@ -1070,8 +1070,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Time zero indicates 15 minutes before clinician action (blood culture or antimic",
-      "found_in_fulltext": true,
-      "fulltext_offset": 21014
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:18",
@@ -1080,18 +1080,18 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Threshold score for PSS was 8 or greater; SIRS, 2 or greater; qSOFA, 2 or greate",
-      "found_in_fulltext": true,
-      "fulltext_offset": 21282
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:19",
       "page": 7,
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:20",
@@ -1100,8 +1100,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:21",
@@ -1147,11 +1147,11 @@
       "block_id": "p8:3",
       "page": 8,
       "role": "footnote",
-      "zone": "",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:4",
@@ -1160,8 +1160,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "This figure demonstrates the difference between time zero and time of sepsis thr",
-      "found_in_fulltext": true,
-      "fulltext_offset": 21479
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:5",
@@ -1170,8 +1170,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:6",
@@ -1221,7 +1221,7 @@
       "render_default": true,
       "snippet": "existing limitations to timeliness that may be due to other aspects of model dev",
       "found_in_fulltext": true,
-      "fulltext_offset": 22230
+      "fulltext_offset": 19997
     },
     {
       "block_id": "p9:3",
@@ -1231,7 +1231,7 @@
       "render_default": true,
       "snippet": "Strengths and Limitations",
       "found_in_fulltext": true,
-      "fulltext_offset": 22389
+      "fulltext_offset": 20156
     },
     {
       "block_id": "p9:4",
@@ -1241,7 +1241,7 @@
       "render_default": true,
       "snippet": "The strengths of our study include a large sample size and inclusion of patients",
       "found_in_fulltext": true,
-      "fulltext_offset": 22415
+      "fulltext_offset": 20182
     },
     {
       "block_id": "p9:5",
@@ -1251,7 +1251,7 @@
       "render_default": true,
       "snippet": "This study also has limitations, including investigation of only a single health",
       "found_in_fulltext": true,
-      "fulltext_offset": 23437
+      "fulltext_offset": 21204
     },
     {
       "block_id": "p9:6",
@@ -1261,7 +1261,7 @@
       "render_default": true,
       "snippet": "Conclusions",
       "found_in_fulltext": true,
-      "fulltext_offset": 24413
+      "fulltext_offset": 22180
     },
     {
       "block_id": "p9:7",
@@ -1271,7 +1271,7 @@
       "render_default": true,
       "snippet": "In this cohort study of 60 507 hospital admissions, we found that although the S",
       "found_in_fulltext": true,
-      "fulltext_offset": 24425
+      "fulltext_offset": 22192
     },
     {
       "block_id": "p9:8",
@@ -1291,7 +1291,7 @@
       "render_default": true,
       "snippet": "Accepted for Publication: July 7, 2023.",
       "found_in_fulltext": true,
-      "fulltext_offset": 25387
+      "fulltext_offset": 23154
     },
     {
       "block_id": "p9:10",
@@ -1300,8 +1300,8 @@
       "zone": "",
       "render_default": true,
       "snippet": "Published: August 25, 2023. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25427
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p9:11",
@@ -1310,8 +1310,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Open Access: This is an open access article distributed under the terms of the C",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25494
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p9:12",
@@ -1320,8 +1320,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Corresponding Author: Adam R. Schertz, MD, MS, Section of Pulmonology, Critical ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25632
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p9:13",
@@ -1330,18 +1330,18 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Author Affiliations: Department of Internal Medicine, Atrium Health Wake Forest ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25865
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p9:14",
       "page": 9,
       "role": "noise",
-      "zone": "",
+      "zone": "body_zone",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p9:15",
@@ -1350,8 +1350,8 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p9:16",
@@ -1401,7 +1401,17 @@
       "render_default": true,
       "snippet": "and Data Science, Division of Public Health Science, Atrium Health Wake Forest B",
       "found_in_fulltext": true,
-      "fulltext_offset": 26214
+      "fulltext_offset": 23211
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Author Contributions: Dr Schertz and Ms Lenoir had full access to all of the dat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23592
     },
     {
       "block_id": "p10:4",
@@ -1411,7 +1421,7 @@
       "render_default": true,
       "snippet": "Concept and design: Schertz, Bertoni, Levine, Mongraw-Chaffin, Thomas.",
       "found_in_fulltext": true,
-      "fulltext_offset": 26595
+      "fulltext_offset": 23780
     },
     {
       "block_id": "p10:5",
@@ -1421,7 +1431,7 @@
       "render_default": true,
       "snippet": "Acquisition, analysis, or interpretation of data: Schertz, Lenoir, Bertoni, Levi",
       "found_in_fulltext": true,
-      "fulltext_offset": 26666
+      "fulltext_offset": 23851
     },
     {
       "block_id": "p10:6",
@@ -1431,7 +1441,7 @@
       "render_default": true,
       "snippet": "Drafting of the manuscript: Schertz, Lenoir, Thomas.",
       "found_in_fulltext": true,
-      "fulltext_offset": 26767
+      "fulltext_offset": 23952
     },
     {
       "block_id": "p10:7",
@@ -1441,7 +1451,7 @@
       "render_default": true,
       "snippet": "Critical review of the manuscript for important intellectual content: Schertz, L",
       "found_in_fulltext": true,
-      "fulltext_offset": 26820
+      "fulltext_offset": 24005
     },
     {
       "block_id": "p10:8",
@@ -1451,7 +1461,7 @@
       "render_default": true,
       "snippet": "Statistical analysis: Lenoir, Levine, Mongraw-Chaffin.",
       "found_in_fulltext": true,
-      "fulltext_offset": 26941
+      "fulltext_offset": 24126
     },
     {
       "block_id": "p10:9",
@@ -1461,7 +1471,7 @@
       "render_default": true,
       "snippet": "Obtained funding: Schertz.",
       "found_in_fulltext": true,
-      "fulltext_offset": 26996
+      "fulltext_offset": 24181
     },
     {
       "block_id": "p10:10",
@@ -1471,7 +1481,7 @@
       "render_default": true,
       "snippet": "Administrative, technical, or material support: Bertoni.",
       "found_in_fulltext": true,
-      "fulltext_offset": 27023
+      "fulltext_offset": 24208
     },
     {
       "block_id": "p10:11",
@@ -1481,7 +1491,7 @@
       "render_default": true,
       "snippet": "Supervision: Schertz, Thomas.",
       "found_in_fulltext": true,
-      "fulltext_offset": 27080
+      "fulltext_offset": 24265
     },
     {
       "block_id": "p10:13",
@@ -1491,7 +1501,7 @@
       "render_default": true,
       "snippet": "Funding/Support: This project was funded by the Wake Forest Clinical and Transla",
       "found_in_fulltext": true,
-      "fulltext_offset": 27110
+      "fulltext_offset": 24344
     },
     {
       "block_id": "p10:14",
@@ -1501,7 +1511,7 @@
       "render_default": true,
       "snippet": "Role of the Funder/Sponsor: The funding source approved the design and conduct o",
       "found_in_fulltext": true,
-      "fulltext_offset": 27216
+      "fulltext_offset": 24450
     },
     {
       "block_id": "p10:15",
@@ -1511,7 +1521,7 @@
       "render_default": true,
       "snippet": "Data Sharing Statement: See Supplement 2.",
       "found_in_fulltext": true,
-      "fulltext_offset": 27509
+      "fulltext_offset": 24744
     },
     {
       "block_id": "p10:16",
@@ -1521,7 +1531,7 @@
       "render_default": true,
       "snippet": "Additional Contributions: We would like to thank the following people for their ",
       "found_in_fulltext": true,
-      "fulltext_offset": 27551
+      "fulltext_offset": 24786
     },
     {
       "block_id": "p10:17",
@@ -1531,7 +1541,7 @@
       "render_default": true,
       "snippet": "REFERENCES",
       "found_in_fulltext": true,
-      "fulltext_offset": 28522
+      "fulltext_offset": 25757
     },
     {
       "block_id": "p10:18",
@@ -1541,7 +1551,7 @@
       "render_default": true,
       "snippet": "1. Singer M, Deutschman CS, Seymour CW, et al. The third international consensus",
       "found_in_fulltext": true,
-      "fulltext_offset": 28533
+      "fulltext_offset": 25768
     },
     {
       "block_id": "p10:19",
@@ -1551,7 +1561,7 @@
       "render_default": true,
       "snippet": "2. Rhee C, Dantes R, Epstein L, et al; CDC Prevention Epicenter Program. Inciden",
       "found_in_fulltext": true,
-      "fulltext_offset": 28720
+      "fulltext_offset": 25955
     },
     {
       "block_id": "p10:20",
@@ -1561,7 +1571,7 @@
       "render_default": true,
       "snippet": "3. Torio CM, Moore BJ. National inpatient hospital costs: the most expensive con",
       "found_in_fulltext": true,
-      "fulltext_offset": 28940
+      "fulltext_offset": 26175
     },
     {
       "block_id": "p10:21",
@@ -1571,7 +1581,7 @@
       "render_default": true,
       "snippet": "4. Rhee C, Jones TM, Hamad Y, et al; Centers for Disease Control and Prevention ",
       "found_in_fulltext": true,
-      "fulltext_offset": 29196
+      "fulltext_offset": 26431
     },
     {
       "block_id": "p10:22",
@@ -1581,7 +1591,7 @@
       "render_default": true,
       "snippet": "6. Mayr FB, Talisa VB, Balakumar V, Chang CH, Fine M, Yende S. Proportion and co",
       "found_in_fulltext": true,
-      "fulltext_offset": 29495
+      "fulltext_offset": 26730
     },
     {
       "block_id": "p10:23",
@@ -1591,7 +1601,7 @@
       "render_default": true,
       "snippet": "5. Prescott HC, Angus DC. Enhancing recovery from sepsis: a review. JAMA. 2018;3",
       "found_in_fulltext": true,
-      "fulltext_offset": 29719
+      "fulltext_offset": 26954
     },
     {
       "block_id": "p10:24",
@@ -1601,7 +1611,7 @@
       "render_default": true,
       "snippet": "7. Fohner AE, Greene JD, Lawson BL, et al. Assessing clinical heterogeneity in s",
       "found_in_fulltext": true,
-      "fulltext_offset": 29840
+      "fulltext_offset": 27075
     },
     {
       "block_id": "p10:25",
@@ -1611,7 +1621,7 @@
       "render_default": true,
       "snippet": "8. Iskander KN, Osuchowski MF, Stearns-Kurosawa DJ, et al. Sepsis: multiple abno",
       "found_in_fulltext": true,
-      "fulltext_offset": 30046
+      "fulltext_offset": 27281
     },
     {
       "block_id": "p10:26",
@@ -1621,7 +1631,7 @@
       "render_default": true,
       "snippet": "9. Seymour CW, Gesten F, Prescott HC, et al. Time to treatment and mortality dur",
       "found_in_fulltext": true,
-      "fulltext_offset": 30256
+      "fulltext_offset": 27491
     },
     {
       "block_id": "p10:27",
@@ -1630,24 +1640,24 @@
       "zone": "",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p10:28",
       "page": 10,
       "role": "noise",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p10:29",
       "page": 10,
       "role": "noise",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "",
       "render_default": false,
       "snippet": "Downloaded from jamanetwork.com by guest on 05/18/2026",
       "found_in_fulltext": false,
@@ -1657,7 +1667,7 @@
       "block_id": "p10:30",
       "page": 10,
       "role": "noise",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "",
       "render_default": false,
       "snippet": "10/13",
       "found_in_fulltext": false,
@@ -1691,7 +1701,7 @@
       "render_default": true,
       "snippet": "10. Weinberger J, Rhee C, Klompas M. A critical analysis of the literature on ti",
       "found_in_fulltext": true,
-      "fulltext_offset": 30457
+      "fulltext_offset": 27692
     },
     {
       "block_id": "p11:3",
@@ -1701,7 +1711,7 @@
       "render_default": true,
       "snippet": "11. Pruinelli L, Westra BL, Yadav P, et al. Delay within the 3-hour surviving se",
       "found_in_fulltext": true,
-      "fulltext_offset": 30646
+      "fulltext_offset": 27881
     },
     {
       "block_id": "p11:4",
@@ -1711,7 +1721,7 @@
       "render_default": true,
       "snippet": "12. Andersson M, Östholm-Balkhed Å, Fredrikson M, et al. Delay of appropriate an",
       "found_in_fulltext": true,
-      "fulltext_offset": 30881
+      "fulltext_offset": 28116
     },
     {
       "block_id": "p11:5",
@@ -1721,7 +1731,7 @@
       "render_default": true,
       "snippet": "13. Peltan ID, Brown SM, Bledsoe JR, et al. ED door-to-antibiotic time and long-",
       "found_in_fulltext": true,
-      "fulltext_offset": 31162
+      "fulltext_offset": 28397
     },
     {
       "block_id": "p11:6",
@@ -1731,7 +1741,7 @@
       "render_default": true,
       "snippet": "14. Whiles BB, Deis AS, Simpson SQ. Increased time to initial antimicrobial admi",
       "found_in_fulltext": true,
-      "fulltext_offset": 31328
+      "fulltext_offset": 28563
     },
     {
       "block_id": "p11:7",
@@ -1741,7 +1751,7 @@
       "render_default": true,
       "snippet": "15. Sherwin R, Winters ME, Vilke GM, Wardi G. Does early and appropriate antibio",
       "found_in_fulltext": true,
-      "fulltext_offset": 31561
+      "fulltext_offset": 28796
     },
     {
       "block_id": "p11:8",
@@ -1751,7 +1761,7 @@
       "render_default": true,
       "snippet": "16. Seymour CW, Kahn JM, Martin-Gill C, et al. Delays from first medical contact",
       "found_in_fulltext": true,
-      "fulltext_offset": 31815
+      "fulltext_offset": 29050
     },
     {
       "block_id": "p11:9",
@@ -1761,7 +1771,7 @@
       "render_default": true,
       "snippet": "17. Liu VX, Fielding-Singh V, Greene JD, et al. The timing of early antibiotics ",
       "found_in_fulltext": true,
-      "fulltext_offset": 32005
+      "fulltext_offset": 29240
     },
     {
       "block_id": "p11:10",
@@ -1771,7 +1781,7 @@
       "render_default": true,
       "snippet": "18. Wallgren UM, Antonsson VE, Castrén MK, Kurland L. Longer time to antibiotics",
       "found_in_fulltext": true,
-      "fulltext_offset": 32198
+      "fulltext_offset": 29433
     },
     {
       "block_id": "p11:11",
@@ -1781,7 +1791,7 @@
       "render_default": true,
       "snippet": "19. Sterling SA, Miller WR, Pryor J, Puskarich MA, Jones AE. The impact of timin",
       "found_in_fulltext": true,
-      "fulltext_offset": 32546
+      "fulltext_offset": 29781
     },
     {
       "block_id": "p11:12",
@@ -1791,7 +1801,7 @@
       "render_default": true,
       "snippet": "20. de Groot B, Ansems A, Gerling DH, et al. The association between time to ant",
       "found_in_fulltext": true,
-      "fulltext_offset": 32800
+      "fulltext_offset": 30035
     },
     {
       "block_id": "p11:13",
@@ -1801,7 +1811,7 @@
       "render_default": true,
       "snippet": "21. Ferrer R, Martin-Loeches I, Phillips G, et al. Empiric antibiotic treatment ",
       "found_in_fulltext": true,
-      "fulltext_offset": 33075
+      "fulltext_offset": 30310
     },
     {
       "block_id": "p11:14",
@@ -1811,7 +1821,7 @@
       "render_default": true,
       "snippet": "22. Szakmany T, Pugh R, Kopczynska M, et al; Welsh Digital Data Collection Platf",
       "found_in_fulltext": true,
-      "fulltext_offset": 33362
+      "fulltext_offset": 30597
     },
     {
       "block_id": "p11:15",
@@ -1821,7 +1831,7 @@
       "render_default": true,
       "snippet": "23. Churpek MM, Snyder A, Sokol S, Pettit NN, Edelson DP. Investigating the impa",
       "found_in_fulltext": true,
-      "fulltext_offset": 33630
+      "fulltext_offset": 30865
     },
     {
       "block_id": "p11:16",
@@ -1831,7 +1841,7 @@
       "render_default": true,
       "snippet": "24. Peltan ID, Mitchell KH, Rudd KE, et al. Physician variation in time to antim",
       "found_in_fulltext": true,
-      "fulltext_offset": 33962
+      "fulltext_offset": 31197
     },
     {
       "block_id": "p11:17",
@@ -1841,7 +1851,7 @@
       "render_default": true,
       "snippet": "25. Mellhammar L, Linder A, Tverring J, et al. Scores for sepsis detection and r",
       "found_in_fulltext": true,
-      "fulltext_offset": 34191
+      "fulltext_offset": 31426
     },
     {
       "block_id": "p11:18",
@@ -1851,7 +1861,7 @@
       "render_default": true,
       "snippet": "26. Nieves Ortega R, Rosin C, Bingisser R, Nickel CH. Clinical scores and formal",
       "found_in_fulltext": true,
-      "fulltext_offset": 34438
+      "fulltext_offset": 31673
     },
     {
       "block_id": "p11:19",
@@ -1861,7 +1871,7 @@
       "render_default": true,
       "snippet": "27. Usman OA, Usman AA, Ward MA. Comparison of SIRS, qSOFA, and NEWS for the ear",
       "found_in_fulltext": true,
-      "fulltext_offset": 34698
+      "fulltext_offset": 31933
     },
     {
       "block_id": "p11:20",
@@ -1871,7 +1881,7 @@
       "render_default": true,
       "snippet": "28. Bush LM, Kaye D. 'Sepsis' is in the eye of the beholder. Infectious Disease ",
       "found_in_fulltext": true,
-      "fulltext_offset": 34904
+      "fulltext_offset": 32139
     },
     {
       "block_id": "p11:21",
@@ -1880,8 +1890,8 @@
       "zone": "",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p11:22",
@@ -1890,8 +1900,8 @@
       "zone": "",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p11:23",
@@ -1941,7 +1951,7 @@
       "render_default": true,
       "snippet": "29. Evans L, Rhodes A, Alhazzani W, et al. Executive summary: Surviving Sepsis C",
       "found_in_fulltext": true,
-      "fulltext_offset": 35498
+      "fulltext_offset": 32733
     },
     {
       "block_id": "p12:3",
@@ -1951,7 +1961,7 @@
       "render_default": true,
       "snippet": "30. Fernando SM, Tran A, Taljaard M, et al. Prognostic accuracy of the quick Seq",
       "found_in_fulltext": true,
-      "fulltext_offset": 35735
+      "fulltext_offset": 32970
     },
     {
       "block_id": "p12:4",
@@ -1961,7 +1971,7 @@
       "render_default": true,
       "snippet": "31. Wong A, Otles E, Donnelly JP, et al. External validation of a widely impleme",
       "found_in_fulltext": true,
-      "fulltext_offset": 35997
+      "fulltext_offset": 33232
     },
     {
       "block_id": "p12:5",
@@ -1971,7 +1981,7 @@
       "render_default": true,
       "snippet": "32. Bennett T, Russell S, King J, et al. Accuracy of the Epic sepsis prediction ",
       "found_in_fulltext": true,
-      "fulltext_offset": 36220
+      "fulltext_offset": 33455
     },
     {
       "block_id": "p12:6",
@@ -1981,7 +1991,7 @@
       "render_default": true,
       "snippet": "33. Habib AR, Lin AL, Grant RW. The epic sepsis model falls short—the importance",
       "found_in_fulltext": true,
-      "fulltext_offset": 36414
+      "fulltext_offset": 33649
     },
     {
       "block_id": "p12:7",
@@ -1991,7 +2001,7 @@
       "render_default": true,
       "snippet": "34. von Elm E, Altman DG, Egger M, Pocock SJ, Gøtzsche PC, Vandenbroucke JP; STR",
       "found_in_fulltext": true,
-      "fulltext_offset": 36595
+      "fulltext_offset": 33830
     },
     {
       "block_id": "p12:8",
@@ -2001,7 +2011,7 @@
       "render_default": true,
       "snippet": "35. Rhee C, Zhang Z, Kadri SS, et al; CDC Prevention Epicenters Program. Sepsis ",
       "found_in_fulltext": true,
-      "fulltext_offset": 36905
+      "fulltext_offset": 34140
     },
     {
       "block_id": "p12:9",
@@ -2011,7 +2021,7 @@
       "render_default": true,
       "snippet": "36. Kluberg SA, Hou L, Dutcher SK, et al. Validation of diagnosis codes to ident",
       "found_in_fulltext": true,
-      "fulltext_offset": 37180
+      "fulltext_offset": 34415
     },
     {
       "block_id": "p12:10",
@@ -2021,7 +2031,7 @@
       "render_default": true,
       "snippet": "37. Quan H, Li B, Couris CM, et al. Updating and validating the Charlson comorbi",
       "found_in_fulltext": true,
-      "fulltext_offset": 37392
+      "fulltext_offset": 34627
     },
     {
       "block_id": "p12:11",
@@ -2031,7 +2041,7 @@
       "render_default": true,
       "snippet": "38. Sloan SNB, Rodriguez N, Seward T, et al. Compliance with SEP-1 guidelines is",
       "found_in_fulltext": true,
-      "fulltext_offset": 37634
+      "fulltext_offset": 34869
     },
     {
       "block_id": "p12:12",
@@ -2041,7 +2051,7 @@
       "render_default": true,
       "snippet": "39. Glas AS, Lijmer JG, Prins MH, Bonsel GJ, Bossuyt PM. The diagnostic odds rat",
       "found_in_fulltext": true,
-      "fulltext_offset": 37862
+      "fulltext_offset": 35097
     },
     {
       "block_id": "p12:13",
@@ -2050,8 +2060,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "40. Diaz N. Epic overhauls sepsis algorithm. October 6, 2022. Accessed June 20, ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 38061
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p12:14",
@@ -2060,8 +2070,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "41. Rhee C, Wang R, Zhang Z, Fram D, Kadri SS, Klompas M; CDC Prevention Epicent",
-      "found_in_fulltext": true,
-      "fulltext_offset": 38227
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p12:15",
@@ -2071,7 +2081,7 @@
       "render_default": true,
       "snippet": "42. Baghdadi JD, Brook RH, Uslan DZ, et al. Association of a care bundle for ear",
       "found_in_fulltext": true,
-      "fulltext_offset": 38558
+      "fulltext_offset": 35296
     },
     {
       "block_id": "p12:16",
@@ -2081,7 +2091,7 @@
       "render_default": true,
       "snippet": "43. Baghdadi JD, Wong MD, Uslan DZ, et al. Adherence to the SEP-1 sepsis bundle ",
       "found_in_fulltext": true,
-      "fulltext_offset": 38810
+      "fulltext_offset": 35548
     },
     {
       "block_id": "p12:17",
@@ -2091,7 +2101,7 @@
       "render_default": true,
       "snippet": "44. Page B, Klompas M, Chan C, et al. Surveillance for healthcare-associated inf",
       "found_in_fulltext": true,
-      "fulltext_offset": 39048
+      "fulltext_offset": 35786
     },
     {
       "block_id": "p12:18",
@@ -2101,7 +2111,7 @@
       "render_default": true,
       "snippet": "45. Rhee C, Klompas M. Should hospital-onset adult sepsis event surveillance be ",
       "found_in_fulltext": true,
-      "fulltext_offset": 39273
+      "fulltext_offset": 36011
     },
     {
       "block_id": "p12:19",
@@ -2111,7 +2121,7 @@
       "render_default": true,
       "snippet": "46. Cárdenas-Turanzas M, Ensor J, Wakefield C, et al. Cross-validation of a Sequ",
       "found_in_fulltext": true,
-      "fulltext_offset": 39460
+      "fulltext_offset": 36198
     },
     {
       "block_id": "p12:20",
@@ -2131,7 +2141,7 @@
       "render_default": true,
       "snippet": "eFigure 1. Diagnostic Odds Ratios for Sepsis, by Model",
       "found_in_fulltext": true,
-      "fulltext_offset": 35138
+      "fulltext_offset": 32373
     },
     {
       "block_id": "p12:22",
@@ -2141,7 +2151,7 @@
       "render_default": true,
       "snippet": "eFigure 2. Kaplan-Meier Analysis of Time to Threshold Positivity vs Time Zero",
       "found_in_fulltext": true,
-      "fulltext_offset": 35193
+      "fulltext_offset": 32428
     },
     {
       "block_id": "p12:23",
@@ -2151,7 +2161,7 @@
       "render_default": true,
       "snippet": "eFigure 3. Plot of Criteria Time With Respect to Time Zero for Each EHR-Confirme",
       "found_in_fulltext": true,
-      "fulltext_offset": 35271
+      "fulltext_offset": 32506
     },
     {
       "block_id": "p12:24",
@@ -2161,7 +2171,7 @@
       "render_default": true,
       "snippet": "eTable 1. Missing Data Stratified by Admission Type",
       "found_in_fulltext": true,
-      "fulltext_offset": 35373
+      "fulltext_offset": 32608
     },
     {
       "block_id": "p12:25",
@@ -2171,7 +2181,7 @@
       "render_default": true,
       "snippet": "eTable 2. Additional Performance Metrics for Classification of Admission",
       "found_in_fulltext": true,
-      "fulltext_offset": 35425
+      "fulltext_offset": 32660
     },
     {
       "block_id": "p12:26",
@@ -2180,8 +2190,8 @@
       "zone": "",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p12:27",
@@ -2190,8 +2200,8 @@
       "zone": "",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p12:28",
@@ -2241,7 +2251,7 @@
       "render_default": true,
       "snippet": "eTable 3. Performance Metrics for Admissions With Respect to Organ Dysfunction A",
       "found_in_fulltext": true,
-      "fulltext_offset": 39753
+      "fulltext_offset": 36491
     },
     {
       "block_id": "p13:4",
@@ -2251,7 +2261,7 @@
       "render_default": true,
       "snippet": "eTable 4. Performance Metrics for Admissions With Respect to Time Zero for 1324 ",
       "found_in_fulltext": true,
-      "fulltext_offset": 39868
+      "fulltext_offset": 36606
     },
     {
       "block_id": "p13:5",
@@ -2271,7 +2281,7 @@
       "render_default": true,
       "snippet": "Data Sharing Statement",
       "found_in_fulltext": true,
-      "fulltext_offset": 27509
+      "fulltext_offset": 24744
     },
     {
       "block_id": "p13:7",
@@ -2280,8 +2290,8 @@
       "zone": "",
       "render_default": false,
       "snippet": "JAMA Network Open. 2023;6(8):e2329729. doi:10.1001/jamanetworkopen.2023.29729",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p13:8",
@@ -2290,8 +2300,8 @@
       "zone": "",
       "render_default": false,
       "snippet": "August 25, 2023",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25438
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p13:9",

@@ -1,0 +1,3127 @@
+{
+  "mappable_block_count": 312,
+  "found_count": 235,
+  "missing_count": 77,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Bone Research",
+      "found_in_fulltext": true,
+      "fulltext_offset": 286
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "www.nature.com/boneres",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "REVIEW ARTICLE OPEN",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Mechanotransduction pathways in articular chondrocytes and the emerging role of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Ning Wang $ ^{1,2} $, Yangfan Lu $ ^{1} $, Benjamin B. Rothrauff $ ^{2} $, Aojie",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "structured_insert_candidate",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "INTRODUCTION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2084
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteoarthritis (OA) is a degenerative joint disease mainly characterized by low-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2097
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "There are several risk factors involved in the pathogenesis of OA, such as aging",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3087
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mechanistically, physical forces are converted into biochemical or electrical si",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3908
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $Department of Orthopaedic Surgery, Xiangya Hospital, Central South Unive",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© The Author(s) 2023",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 312
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "THREE-TIERED CASCADE OF MECHANOTRANSDUCTION PATHWAYS IN CHONDROCYTES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5175
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Previous studies have led to the identification of many cellular structures and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5244
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mechanosensors of chondrocytes and their roles in OA pathogenesis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8306
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mechanosensors respond to mechanical stimulation that alter the molecular/cellul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8372
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3",
+      "found_in_fulltext": true,
+      "fulltext_offset": 315
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 337
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "pathways based on mechanosensing effects (Fig. 2). In addition, the related mech",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8720
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mechanically gated ion channels and porin-mediated pathways Mechanically gated i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9036
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Transient receptor potential cation channel subfamily V member 4 (TRPV4), a Ca²⁺",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9425
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Piezo1 and Piezo2 are two important ion channels in chondrocytes. In contrast to",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11688
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Furthermore, inflammatory cytokines, such as IL-1 $ \\alpha $, have been shown to",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although TRPV4 and Piezo1 represent the two most important ion channels involved",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13175
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cilia-mediated pathways",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14538
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cilia are microtubule-containing structures that extend from the cell surface in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14562
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ED-rich tail 2 (CITED2) is another target that is regulated by primary cilia whe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15687
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, primary cilia function as mechanosensors, and their activity is medi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16444
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Integrins and ECM-mediated pathways",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16921
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Integrin family members are widely expressed in articular chondrocytes as import",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16957
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2473
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td colspan=\"5\">Table 1. List of known mechanosensors in chondrocytes",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "6",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3482
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td colspan=\"5\">Table 1. continued</td></tr><tr><td>Mechanosensors in",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The relationship between mechanosensors and OA is shown",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "TRPV4 transient receptor potential channel subfamily V member 4, NO nitric oxide",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "of integrins are expressed in chondrocytes, including $ \\alpha1\\beta1 $, $ \\alph",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In hyaline cartilage, chondrocytes are surrounded by a dense extracellular matri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19051
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "through binding integrins, the deformation of the ECM may alter ECM component in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19781
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "7",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2463
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, the integrin family plays a critical role in mediating interactions ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20209
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cytoskeleton- and nucleoskeleton-mediated pathways",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21869
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Since cells are not rigid, mechanical loading of sufficient intensity can direct",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21920
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition to the mechanosensing and mechanotransduction roles of the cytoskele",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23316
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, mechanical loading on the cytoskeletal structure not only can influe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24301
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mitochondria",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25017
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Previous research has suggested that mitochondria act as mechanosensors and impa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25030
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Respiratory chain complexes are parts of the mitochondrial biophysical structure",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26572
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In recent studies, considerable attention has been focused on mitochondrial dysf",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27917
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "8",
+      "found_in_fulltext": true,
+      "fulltext_offset": 334
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "mitophagy are two additional processes that contribute to their dynamic balance.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28252
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "TRANSCRIPTION FACTORS IN MECHANOTRANSDUCTION PATHWAYS IN CHONDROCYTES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28523
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Transcription factors (TFs) are proteins that bind to the cis-acting promoter el",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28593
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Nuclear factor kappa-light-chain-enhancer of activated B cells (NF-κB) The nucle",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29253
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "9",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3749
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td colspan=\"8\">Table 2. Mechanosensitive transcription factors (TFs)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10",
+      "found_in_fulltext": true,
+      "fulltext_offset": 328
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td colspan=\"8\">Table 2. continued</td></tr><tr><td>Mechanosensitive ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "11",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4391
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td colspan=\"8\">Table 2. continued</td></tr><tr><td>Mechanosensitive ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Types of mechanical stimuli, cells, tissues, and animal models used in all previ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30100
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "TFs transcription factors, RelA relative v-rel reticuloendotheliosis viral oncog",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30335
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "12",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4547
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "which plays roles with TFs. NF-κB has been identified as a mediator of mechanotr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32180
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Yes-associated protein (YAP)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5783
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Previous research has strongly suggested that YAP is a downstream molecule of th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34388
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Other TFs function as mechanotransducers",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35952
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Various TFs can function as mechanotransducers. For instance, mechanical loading",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35993
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "With the development of large-scale gene sequencing and bioinformatic analytical",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37555
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To date, relevant studies to fully reveal the relationship between these TFs and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38299
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ROLE OF ERA IN REGULATING CHONDROCYTE PHENOTYPE AND RESPONSES TO MECHANICAL FORC",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39047
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ERα activation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39133
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The structure of ERa is composed of five domains, which include a DNA-binding do",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39148
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Expression of ERα in normal and OA cartilage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39994
+    },
+    {
+      "block_id": "p12:14",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "While female animals present with clearly higher levels of circulating estrogen-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40039
+    },
+    {
+      "block_id": "p12:15",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:16",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "13",
+      "found_in_fulltext": true,
+      "fulltext_offset": 340
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "cartilage from cows, pigs, and humans after immunohistochemical staining and rev",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40317
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Genetic analyses have revealed associations between alterations in ESR1, the gen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40822
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "14",
+      "found_in_fulltext": true,
+      "fulltext_offset": 338
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "among other genes, showed a significant association with OA in 14 independent st",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41114
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Studies on the association between ERα levels and OA severity remain inconclusiv",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42399
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The function of ERα in chondrocytes has also been studied through loss-of-functi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43961
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The ligand-independent mechanotransduction function of ERa Our recent study reve",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46454
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Multiple independent studies have shown that the mechanotransduction role of ERα",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47541
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Recent findings have redefined the traditional concept of sex hormones as the ma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49311
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "15",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5997
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "estrogens, androgens activate not only the androgen receptor (AR) but also the E",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49511
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Downstream targets that are regulated by ERα in mechanotransduction pathways",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50454
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To date, the targets of ERα activity contributing to mechanotransduction in chon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50531
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Considering these findings in chondrocytes and other cell types, we propose a ne",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52052
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CONCLUSION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52243
+    },
+    {
+      "block_id": "p15:10",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mechanical loading plays a fundamental role in the health and disease of articul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52254
+    },
+    {
+      "block_id": "p15:11",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:12",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "16",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6000
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "loading. For example, recent studies on TRPV4 and Piezo1/2 have indicated these ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53725
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Notably, mechanical stimulation of articular cartilage induced by the movement o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53982
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "An important topic that we need to specifically address in the future is sex-dep",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55762
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "In our previous study, we discovered that ERα is a negative regulator of p16 $ ^",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Last, our current studies suggest that the role of ERα in influencing mechanotra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58195
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ACKNOWLEDGEMENTS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59031
+    },
+    {
+      "block_id": "p16:9",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This work was supported by the Department of Orthopaedic Surgery at the Universi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59048
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "AUTHOR CONTRIBUTIONS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59415
+    },
+    {
+      "block_id": "p16:11",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Paper conceptualization: N.W., G.H.L., and H.L.; Literature search and paper acq",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59436
+    },
+    {
+      "block_id": "p16:12",
+      "page": 16,
+      "role": "backmatter_boundary_candidate",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ADDITIONAL INFORMATION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59753
+    },
+    {
+      "block_id": "p16:13",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Competing interests: The authors declare no competing interests.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59776
+    },
+    {
+      "block_id": "p16:14",
+      "page": 16,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "REFERENCES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59844
+    },
+    {
+      "block_id": "p16:15",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Loeser, R. F., Goldring, S. R., Scanzello, C. R. & Goldring, M. B. Osteoarthr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59855
+    },
+    {
+      "block_id": "p16:16",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Disease, G. B. D., Injury, I. & Prevalence, C. Global, regional, and national",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60016
+    },
+    {
+      "block_id": "p16:17",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Martel-Pelletier, J. et al. Osteoarthritis. Nat. Rev. Dis. Prim. 2, 16072 (20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60325
+    },
+    {
+      "block_id": "p16:18",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Chang, S. H. et al. Excessive mechanical loading promotes osteoarthritis thro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60410
+    },
+    {
+      "block_id": "p16:19",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Lequesne, M. G., Dang, N. & Lane, N. E. Sport practice and osteoarthritis of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60557
+    },
+    {
+      "block_id": "p16:20",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Griffin, T. M. & Guilak, F. The role of mechanical loading in the onset and p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60689
+    },
+    {
+      "block_id": "p16:21",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Kovar, P. A. et al. Supervised fitness walking in patients with osteoarthriti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60841
+    },
+    {
+      "block_id": "p16:22",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Allen, J. et al. Effects of treadmill exercise on advanced osteoarthritis pai",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61007
+    },
+    {
+      "block_id": "p16:23",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Bannuru, R. R. et al. OARSI guidelines for the non-surgical management of kne",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61141
+    },
+    {
+      "block_id": "p16:24",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Hodgkinson, T., Kelly, D. C., Curtin, C. M. & O'Brien, F. J. Mechanosignalli",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61309
+    },
+    {
+      "block_id": "p16:25",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Wang, N. et al. Novel role of estrogen receptor-alpha on regulating chondroc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61501
+    },
+    {
+      "block_id": "p16:26",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Windahl, S. H. et al. Estrogen receptor-alpha is required for the osteogenic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61671
+    },
+    {
+      "block_id": "p16:27",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Gilbert, S. J., Bonnet, C. S. & Blain, E. J. Mechanical cues: bidirectional ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61899
+    },
+    {
+      "block_id": "p16:28",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Dieterle, M. P., Husari, A., Rolauffs, B., Steinberg, T. & Tomakidi, P. Inte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62105
+    },
+    {
+      "block_id": "p16:29",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:30",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "17",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2462
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Wang, L. et al. Mechanical sensing protein PIEZO1 regulates bone homeostasis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62353
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Pathak, M. M. et al. Stretch-activated ion channel Piezo1 directs lineage ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62500
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Panciera, T., Azzolin, L., Cordenonsi, M. & Piccolo, S. Mechanobiology of YA",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62665
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Fermor, B. et al. Induction of cyclooxygenase-2 by mechanical stress through",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62828
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. O'Conor, C. J., Leddy, H. A., Benefield, H. C., Liedtke, W. B. & Guilak, F. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62983
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Kawakita, K. et al. Akt phosphorylation in human chondrocytes is regulated b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63217
+    },
+    {
+      "block_id": "p17:8",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Gudipaty, S. A. et al. Mechanical stretch triggers rapid epithelial cell div",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63381
+    },
+    {
+      "block_id": "p17:9",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Zeng, W. Z. et al. PIEZOs mediate neuronal sensing of blood pressure and the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63511
+    },
+    {
+      "block_id": "p17:10",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Delco, M. L. & Bonassar, L. J. Targeting calcium-related mechanotransduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63642
+    },
+    {
+      "block_id": "p17:11",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Phan, M. N. et al. Functional characterization of TRPV4 as an osmotically se",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63777
+    },
+    {
+      "block_id": "p17:12",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Clark, A. L., Votta, B. J., Kumar, S., Liedtke, W. & Guilak, F. Chondroprote",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63951
+    },
+    {
+      "block_id": "p17:13",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Fu, S. et al. Activation of TRPV4 by mechanical, osmotic or pharmaceutical s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64242
+    },
+    {
+      "block_id": "p17:14",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Lee, W. et al. Synergy between Piezo1 and Piezo2 channels confers high-strai",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64659
+    },
+    {
+      "block_id": "p17:15",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Agarwal, P. et al. A dysfunctional TRPV4-GSK3beta pathway prevents osteoarth",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64459
+    },
+    {
+      "block_id": "p17:16",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Servin-Vences, M. R., Moroni, M., Lewin, G. R. & Poole, K. Direct measuremen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64836
+    },
+    {
+      "block_id": "p17:17",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Lee, W. et al. Inflammatory signaling sensitizes Piezo1 mechanotransduction ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65034
+    },
+    {
+      "block_id": "p17:18",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Du, G. et al. Roles of TRPV4 and piezo channels in stretch-evoked Ca $ ^{2+}",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:19",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Li, X. F., Zhang, Z., Li, X. D., Wang, T. B. & Zhang, H. N. [Mechanism of th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65404
+    },
+    {
+      "block_id": "p17:20",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Thompson, C. L., Chapple, J. P. & Knight, M. M. Primary cilia disassembly do",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65625
+    },
+    {
+      "block_id": "p17:21",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Ruhlen, R. & Marberry, K. The chondrocyte primary cilium. Osteoarthr. Cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65865
+    },
+    {
+      "block_id": "p17:22",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Wann, A. K. & Knight, M. M. Primary cilia elongation in response to interleu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65969
+    },
+    {
+      "block_id": "p17:23",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. He, Z. et al. Strain-induced mechanotransduction through primary cilia, extr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66134
+    },
+    {
+      "block_id": "p17:24",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. Juhasz, T. et al. Mechanical loading stimulates chondrogenesis via the PKA/C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66400
+    },
+    {
+      "block_id": "p17:25",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Kwon, R. Y., Temiyasatht, S., Tummala, P., Quah, C. C. & Jacobs, C. R. Prima",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66570
+    },
+    {
+      "block_id": "p17:26",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. Wang, Q. et al. Dysregulated integrin alphaVbeta3 and CD47 signaling promote",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66780
+    },
+    {
+      "block_id": "p17:27",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40. Loeser, R. F. Integrins and chondrocyte-matrix interactions in articular car",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66969
+    },
+    {
+      "block_id": "p17:28",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41. Zhen, G. et al. Mechanical stress determines the configuration of TGF $ \\bet",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:29",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42. Zhou, Y. et al. Evidence for JNK-dependent up-regulation of proteoglycan syn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67234
+    },
+    {
+      "block_id": "p17:30",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "43. Ma, D. et al. Hydrostatic compress force enhances the viability and decrease",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67468
+    },
+    {
+      "block_id": "p17:31",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "44. Millward-Sadler, S. J. et al. Integrin-regulated secretion of interleukin 4:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67663
+    },
+    {
+      "block_id": "p17:32",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "45. Shingu, M., Miyauchi, S., Nagai, Y., Yasutake, C. & Horie, K. The role of IL",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67851
+    },
+    {
+      "block_id": "p17:33",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "46. Nemoto, O. et al. Suppression of matrix metalloproteinase-3 synthesis by int",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68029
+    },
+    {
+      "block_id": "p17:34",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "47. Millward-Sadler, S. J., Wright, M. O., Davies, L. W., Nuki, G. & Salter, D. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68189
+    },
+    {
+      "block_id": "p17:35",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "48. Poole, C. A., Flint, M. H. & Beaumont, B. W. Chondrons in cartilage: ultrast",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68503
+    },
+    {
+      "block_id": "p17:36",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "49. Guilak, F., Nims, R. J., Dicks, A., Wu, C. L. & Meulenbelt, I. Osteoarthriti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68710
+    },
+    {
+      "block_id": "p17:37",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "50. Zelenski, N. A. et al. Type VI collagen regulates pericellular matrix proper",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68877
+    },
+    {
+      "block_id": "p17:38",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "51. Browne, J. E. & Branch, T. P. Surgical alternatives for treatment of articul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69082
+    },
+    {
+      "block_id": "p17:39",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "52. Guilak, F. Compression-induced changes in the shape and volume of the chondr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69230
+    },
+    {
+      "block_id": "p17:40",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "53. Ghosh, S. et al. Deformation microscopy for dynamic intracellular and intran",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69359
+    },
+    {
+      "block_id": "p17:41",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "54. Wolff, K. J. et al. Mechanical stress and ATP synthesis are coupled by mitoc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69542
+    },
+    {
+      "block_id": "p17:42",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "55. Szafranski, J. D. et al. Chondrocyte mechanotransduction: effects of compres",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69700
+    },
+    {
+      "block_id": "p17:43",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "56. Irianto, J. et al. Osmotic challenge drives rapid and reversible chromatin c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69908
+    },
+    {
+      "block_id": "p17:44",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "57. Reynolds, N. et al. Image-derived modeling of nucleus strain amplification a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70050
+    },
+    {
+      "block_id": "p17:45",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "58. Chao, P. H., West, A. C. & Hung, C. T. Chondrocyte intracellular calcium, cy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70205
+    },
+    {
+      "block_id": "p17:46",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "59. Erickson, G. R., Northrup, D. L. & Guilak, F. Hypo-osmotic stress induces ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70421
+    },
+    {
+      "block_id": "p17:47",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "60. Lauer, J. C., Selig, M., Hart, M. L., Kurz, B. & Rolauffs, B. Articular chon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70605
+    },
+    {
+      "block_id": "p17:48",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "61. Jiang, W. et al. Mechanisms linking mitochondrial mechanotransduction and ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70955
+    },
+    {
+      "block_id": "p17:49",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "62. He, Y., Makarczyk, M. J. & Lin, H. Role of mitochondria in mediating chondro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71128
+    },
+    {
+      "block_id": "p17:50",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "63. Sauter, E., Buckwalter, J. A., McKinley, T. O. & Martin, J. A. Cytoskeletal ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71275
+    },
+    {
+      "block_id": "p17:51",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "64. Bartell, L. R. et al. Mitoprotective therapy prevents rapid, strain-dependen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71463
+    },
+    {
+      "block_id": "p17:52",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "65. Koike, M. et al. Mechanical overloading causes mitochondrial superoxide and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71643
+    },
+    {
+      "block_id": "p17:53",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "66. Buckwalter, J. A., Anderson, D. D., Brown, T. D., Tochigi, Y. & Martin, J. A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71818
+    },
+    {
+      "block_id": "p17:54",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "67. Oeckinghaus, A. & Ghosh, S. The NF-kappaB family of transcription factors an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72047
+    },
+    {
+      "block_id": "p17:55",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "68. Liu, T., Zhang, L., Joo, D. & Sun, S. C. NF-kappaB signaling in inflammation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72198
+    },
+    {
+      "block_id": "p17:56",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "69. Nam, J., Aguda, B. D., Rath, B. & Agarwal, S. Biomechanical thresholds regul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72328
+    },
+    {
+      "block_id": "p17:57",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:58",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7093
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "70. Chen, N. X., Geist, D. J., Genetos, D. C., Pavalko, F. M. & Duncan, R. L. Fl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72525
+    },
+    {
+      "block_id": "p18:3",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "71. Khachigian, L. M., Resnick, N., Gimbrone, M. A. Jr. & Collins, T. Nuclear fa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72732
+    },
+    {
+      "block_id": "p18:4",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "72. Tong, L. & Tergaonkar, V. Rho protein GTPases and their interactions with NF",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73028
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "73. Shrum, C. K., Defrancisco, D. & Meffert, M. K. Stimulated nuclear translocat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73195
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "74. Mikenberg, I., Widera, D., Kaus, A., Kaltschmidt, B. & Kaltschmidt, C. Trans",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73414
+    },
+    {
+      "block_id": "p18:7",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "75. Rai, A., Kapoor, S., Singh, S., Chatterji, B. P. & Panda, D. Transcription f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73645
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "76. Nemeth, Z. H. et al. Disruption of the actin cytoskeleton results in nuclear",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73901
+    },
+    {
+      "block_id": "p18:9",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "77. Yang, Y. et al. Mechanical stress protects against osteoarthritis via regula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74127
+    },
+    {
+      "block_id": "p18:10",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "78. Yang, Y. et al. Moderate mechanical stimulation protects rats against osteoa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74293
+    },
+    {
+      "block_id": "p18:11",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "79. Xie, M. et al. Dynamic loading enhances chondrogenesis of human chondrocytes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74496
+    },
+    {
+      "block_id": "p18:12",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "80. Sun, Y. et al. G protein coupled estrogen receptor attenuates mechanical str",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74656
+    },
+    {
+      "block_id": "p18:13",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "81. Zhang, X. et al. Targeting downstream subcellular YAP activity as a function",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74844
+    },
+    {
+      "block_id": "p18:14",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "82. Xuan, F. et al. Wnt/beta-catenin signaling contributes to articular cartilag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75056
+    },
+    {
+      "block_id": "p18:15",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "83. Papachristou, D., Pirttiniemi, P., Kantomaa, T., Agnantis, N. & Basdra, E. K",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75239
+    },
+    {
+      "block_id": "p18:16",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "84. Dunn, S. L. et al. Gene expression changes in damaged osteoarthritic cartila",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75494
+    },
+    {
+      "block_id": "p18:17",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "85. Borjesson, A. E. et al. Roles of transactivating functions 1 and 2 of estrog",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75690
+    },
+    {
+      "block_id": "p18:18",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "86. Xiao, Y. P. et al. Are estrogen-related drugs new alternatives for the manag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75847
+    },
+    {
+      "block_id": "p18:19",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "87. Kato, S. et al. Activation of the estrogen receptor through phosphorylation ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75989
+    },
+    {
+      "block_id": "p18:20",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "88. Bunone, G., Briand, P. A., Miksicek, R. J. & Picard, D. Activation of the un",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76137
+    },
+    {
+      "block_id": "p18:21",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "89. Claassen, H. et al. Immunohistochemical detection of estrogen receptor alpha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76341
+    },
+    {
+      "block_id": "p18:22",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "90. Oshima, Y. et al. Localization of estrogen receptors alpha and beta in the a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76538
+    },
+    {
+      "block_id": "p18:23",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "91. Ryder, J. J. et al. Genetic associations in peripheral joint osteoarthritis ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76697
+    },
+    {
+      "block_id": "p18:24",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "92. Valdes, A. M. et al. Association study of candidate genes for the prevalence",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76868
+    },
+    {
+      "block_id": "p18:25",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "93. Bergink, A. P. et al. Estrogen receptor alpha gene haplotype is associated w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77028
+    },
+    {
+      "block_id": "p18:26",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "94. Jin, S. Y. et al. Estrogen receptor-alpha gene haplotype is associated with ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77217
+    },
+    {
+      "block_id": "p18:27",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "95. Dai, X. et al. Genetic estrogen receptor alpha gene Pvull polymorphism in su",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77389
+    },
+    {
+      "block_id": "p18:28",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "96. Ushiyama, T., Ueyama, H., Inoue, K., Ohkubo, I. & Hukuda, S. Expression of g",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77585
+    },
+    {
+      "block_id": "p18:29",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "97. Wang, B. et al. Exploring the mystery of osteoarthritis using bioinformatics",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77780
+    },
+    {
+      "block_id": "p18:30",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "98. Ramos, Y. F. et al. Genes involved in the osteoarthritis process identified ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77945
+    },
+    {
+      "block_id": "p18:31",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "99. Sniekers, Y. H. et al. Development of osteoarthritic features in estrogen re",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78133
+    },
+    {
+      "block_id": "p18:32",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "100. Ziemian, S. N. et al. Low bone mass resulting from impaired estrogen signal",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78277
+    },
+    {
+      "block_id": "p18:33",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "101. Engdahl, C. et al. The role of total and cartilage-specific estrogen recept",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78460
+    },
+    {
+      "block_id": "p18:34",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "102. Guo, Y., Tian, L., Du, X. & Deng, Z. MiR-203 regulates estrogen receptor al",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78662
+    },
+    {
+      "block_id": "p18:35",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "103. Tian, L., Su, Z., Ma, X., Wang, F. & Guo, Y. Inhibition of miR-203 ameliora",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78849
+    },
+    {
+      "block_id": "p18:36",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "104. Rooney, A. M. & van der Meulen, M. C. H. Mouse models to evaluate the role ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79090
+    },
+    {
+      "block_id": "p18:37",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "105. Zhang, M. et al. Estrogen and its receptor enhance mechanobiological effect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79279
+    },
+    {
+      "block_id": "p18:38",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "106. Swift, S. N., Swift, J. M. & Bloomfield, S. A. Mechanical loading increases",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79446
+    },
+    {
+      "block_id": "p18:39",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "107. Ehrlich, P. J. et al. The effect of in vivo mechanical loading on estrogen ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79678
+    },
+    {
+      "block_id": "p18:40",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "108. Nepal, A. K. et al. Mechanical stress regulates bone regulatory gene expres",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79849
+    },
+    {
+      "block_id": "p18:41",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "109. Aguirre, J. I. et al. A novel ligand-independent function of the estrogen r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80026
+    },
+    {
+      "block_id": "p18:42",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "110. Zaman, G. et al. Osteocytes use estrogen receptor alpha to respond to strai",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80217
+    },
+    {
+      "block_id": "p18:43",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "111. Callewaert, F., Sinnesael, M., Gielen, E., Boonen, S. & Vanderschueren, D. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80391
+    },
+    {
+      "block_id": "p18:44",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "112. Manolagas, S. C., O'Brien, C. A. & Almeida, M. The role of estrogen and and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80607
+    },
+    {
+      "block_id": "p18:45",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "113. Armstrong, V. J. et al. Wnt/beta-catenin signaling is a component of osteob",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80772
+    },
+    {
+      "block_id": "p18:46",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "114. Jessop, H. L. et al. Mechanical strain and estrogen activate estrogen recep",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80979
+    },
+    {
+      "block_id": "p18:47",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "115. Zhao, Y. et al. The distinct effects of estrogen and hydrostatic pressure o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81124
+    },
+    {
+      "block_id": "p18:48",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "116. Sunters, A. et al. Mechano-transduction in osteoblastic cells involves stra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81330
+    },
+    {
+      "block_id": "p18:49",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "117. Uzieliene, I., Bironaite, D., Bernotas, P., Sobolev, A. & Bernotiene, E. Me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81700
+    },
+    {
+      "block_id": "p18:50",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "118. Hernandez, P. A. et al. Sexual dimorphism in the extracellular and pericell",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81894
+    },
+    {
+      "block_id": "p18:51",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "119. Yu, S. B. et al. The effects of age and sex on the expression of oestrogen ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82050
+    },
+    {
+      "block_id": "p18:52",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "120. Melville, K. M. et al. Effects of deletion of ERalpha in osteoblast-lineage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82225
+    },
+    {
+      "block_id": "p18:53",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "121. Xu, B. et al. Excessive mechanical stress induces chondrocyte apoptosis thr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82434
+    },
+    {
+      "block_id": "p18:54",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "122. O'Conor, C. J. et al. Cartilage-specific knockout of the mechanosensory ion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82626
+    },
+    {
+      "block_id": "p18:55",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:56",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:0",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Estrogen receptor- $ \\alpha $ in mechanotransduction N Wang et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:1",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "19",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42179
+    },
+    {
+      "block_id": "p19:2",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "123. Sun, Y. et al. Mechanism of abnormal chondrocyte proliferation induced by p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82803
+    },
+    {
+      "block_id": "p19:3",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "124. Chang, C. F., Ramaswamy, G. & Serra, R. Depletion of primary cilia in artic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82966
+    },
+    {
+      "block_id": "p19:4",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "125. Irianto, J., Ramaswamy, G., Serra, R. & Knight, M. M. Depletion of chondroc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83226
+    },
+    {
+      "block_id": "p19:5",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "126. Yuan, X. & Yang, S. Deletion of IFT80 impairs epiphyseal and articular cart",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83412
+    },
+    {
+      "block_id": "p19:6",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "127. Almonte-Becerril, M. et al. Genetic abrogation of the fibronectin-alpha5bet",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83588
+    },
+    {
+      "block_id": "p19:7",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "128. Chery, D. R. et al. Decorin regulates cartilage pericellular matrix microme",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83780
+    },
+    {
+      "block_id": "p19:8",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "129. Fioravanti, A., Benetti, D., Coppola, G. & Collodel, G. Effect of continuou",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83904
+    },
+    {
+      "block_id": "p19:9",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "130. Chen, C. et al. Effects of vimentin disruption on the mechanoresponses of a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84166
+    },
+    {
+      "block_id": "p19:10",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "131. Blain, E. J., Mason, D. J. & Duance, V. C. The effect of thymosin beta4 on ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84320
+    },
+    {
+      "block_id": "p19:11",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "132. Huser, C. A. & Davies, M. E. Calcium signaling leads to mitochondrial depol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84510
+    },
+    {
+      "block_id": "p19:12",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "133. Agarwal, S. et al. Role of NF- $ \\kappa $B transcription factors in antiinf",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:13",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "134. Li, W. et al. Role of HIF-2alpha/NF-kappaB pathway in mechanical stress-ind",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84892
+    },
+    {
+      "block_id": "p19:14",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "135. Jing, X. et al. Mechanical loading induces HIF-1alpha expression in chondro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85050
+    },
+    {
+      "block_id": "p19:15",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "136. Deng, Y. et al. Reciprocal inhibition of YAP/TAZ and NF-kappaB regulates os",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85185
+    },
+    {
+      "block_id": "p19:16",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "137. Tetsunaga, T. et al. Regulation of mechanical stress-induced MMP-13 and ADA",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85330
+    },
+    {
+      "block_id": "p19:17",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "138. Papachristou, D. J., Pirttiniemi, P., Kantomaa, T., Papavassiliou, A. G. & ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85534
+    },
+    {
+      "block_id": "p19:18",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "139. Xiao, L. et al. TGF-beta/SMAD signaling inhibits intermittent cyclic mechan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85774
+    },
+    {
+      "block_id": "p19:19",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "140. De Croos, J. N., Dhaliwal, S. S., Grynpas, M. D., Pilliar, R. M. & Kandel, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85996
+    },
+    {
+      "block_id": "p19:20",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "141. Healy, Z. R., Zhu, F., Stull, J. D. & Konstantopoulos, K. Elucidation of th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86286
+    },
+    {
+      "block_id": "p19:21",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "142. De Croos, J. N., Pilliar, R. M. & Kandel, R. A. AP-1 DNA binding activity r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86563
+    },
+    {
+      "block_id": "p19:22",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "143. Furumatsu, T. et al. Tensile strain increases expression of CCN2 and COL2A1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86763
+    },
+    {
+      "block_id": "p19:23",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "144. Shen, P. C. et al. Shockwave treatment enhanced extracellular matrix produc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86940
+    },
+    {
+      "block_id": "p19:24",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "145. Thomas, R. S., Clarke, A. R., Duance, V. C. & Blain, E. J. Effects of Wnt3A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87142
+    },
+    {
+      "block_id": "p19:26",
+      "page": 19,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Open Access This article is licensed under a Creative Commons Attribution 4.0 In",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:27",
+      "page": 19,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "adaptation, distribution and reproduction in any medium or format, as long as yo",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:28",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© The Author(s) 2023",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:29",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Bone Research (2023)11:13",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:30",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "SPRINGER NATURE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

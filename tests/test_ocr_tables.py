@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 def test_extract_table_number_chinese_biao_prefix() -> None:
     from paperforge.worker.ocr_tables import _extract_table_number
@@ -1293,3 +1295,13 @@ def test_split_table_caption_does_not_steal_real_figure_caption():
 
     assert inventory["tables"][0]["caption_text"] == "Table 2"
     assert "figcap" not in inventory["tables"][0]["consumed_block_ids"]
+
+@pytest.mark.parametrize("text,expected_number", [
+    ("Table I. Electrospun...", 1),
+    ("Table II. Mechanical...", 2),
+    ("Table S1. Supplementary...", 1),
+])
+def test_extract_table_number_supports_roman_and_s_prefix(text, expected_number):
+    from paperforge.worker.ocr_tables import _extract_table_number
+
+    assert _extract_table_number(text) == expected_number

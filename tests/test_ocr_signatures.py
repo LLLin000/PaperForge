@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 
 def test_block_signature_extraction_preserves_observation_without_final_role():
     from paperforge.worker.ocr_signatures import build_block_signatures
@@ -311,3 +313,18 @@ def test_block_signature_missing_bbox_returns_zero_layout_signature():
     assert layout["x_center"] == 0
     assert layout["width_bucket"] == 0
     assert layout["x_ratio"] == 0.0
+
+@pytest.mark.parametrize("text,expected_number", [
+    ("Table I. Electrospun...", 1),
+    ("Table II. Mechanical...", 2),
+    ("Table III. Results...", 3),
+    ("Table IV. Results...", 4),
+    ("Table 1. Baseline...", 1),
+    ("Table S1. Supplementary...", 1),
+])
+def test_table_roman_and_s_prefix_marker_signature(text, expected_number):
+    from paperforge.worker.ocr_signatures import _extract_marker_signature
+
+    sig = _extract_marker_signature(text)
+    assert sig["type"] == "table_number"
+    assert sig["number"] == expected_number

@@ -1,0 +1,91 @@
+{
+  "reference_span": {
+    "status": "ACCEPT",
+    "span_id": "refspan_001",
+    "start": {
+      "page": 3,
+      "column": 2,
+      "y": 608.0,
+      "block_id": "p3:9"
+    },
+    "end": {
+      "page": 3,
+      "column": 2,
+      "y": 877.0,
+      "block_id": "p3:15"
+    },
+    "heading_block_id": "p3:9",
+    "ordered_block_ids": [
+      "p3:9",
+      "p3:10",
+      "p3:11",
+      "p3:12",
+      "p3:13",
+      "p3:14",
+      "p3:15"
+    ],
+    "inside_block_ids": [
+      "p3:9",
+      "p3:10",
+      "p3:11",
+      "p3:12",
+      "p3:13",
+      "p3:14",
+      "p3:15"
+    ],
+    "explicitly_outside_nearby_block_ids": [
+      "p3:8"
+    ],
+    "intrusion_candidates": [
+      {
+        "block_id": "p3:9",
+        "page": 3,
+        "role": "reference_heading",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p3:10",
+        "page": 3,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p3:11",
+        "page": 3,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p3:12",
+        "page": 3,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p3:13",
+        "page": 3,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p3:14",
+        "page": 3,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      },
+      {
+        "block_id": "p3:15",
+        "page": 3,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "reason": "logical_order_between_reference_members"
+      }
+    ]
+  }
+}

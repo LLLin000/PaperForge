@@ -12,10 +12,30 @@ _FIGURE_PREFIX_PATTERN = re.compile(
     flags=re.IGNORECASE,
 )
 
+_TABLE_NUM_TOKEN = r"(?:\d+(?:\.\d+)?|[IVXLCDM]+)"
+
 _TABLE_PREFIX_PATTERN = re.compile(
-    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s+\d+",
+    rf"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s*"
+    rf"(?:S\.?\s*)?({_TABLE_NUM_TOKEN})\b",
     flags=re.IGNORECASE,
 )
+
+
+def _roman_to_int(roman: str) -> int | None:
+    roman_values = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
+    s = roman.strip().upper()
+    if not re.fullmatch(r"[IVXLCDM]+", s):
+        return None
+    total = 0
+    prev = 0
+    for c in reversed(s):
+        val = roman_values.get(c, 0)
+        if val < prev:
+            total -= val
+        else:
+            total += val
+        prev = val
+    return total
 
 _PREPROOF_MARKER = re.compile(
     r"^(?:journal\s+)?pre-?proof\b",
@@ -157,10 +177,14 @@ def _extract_marker_signature(text: str) -> dict:
             result["raw_marker"] = match.group(0)
         result["kind"] = "figure"
     elif marker_type == "table_number":
-        match = re.search(r"(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s+(\d+)", stripped, re.IGNORECASE)
+        match = _TABLE_PREFIX_PATTERN.search(stripped)
         if match:
-            result["number"] = int(match.group(1))
+            token = match.group(1)
             result["raw_marker"] = match.group(0)
+            if re.fullmatch(r"\d+(?:\.\d+)?", token):
+                result["number"] = int(float(token))
+            else:
+                result["number"] = _roman_to_int(token)
         result["kind"] = "table"
     elif marker_type in {
         "reference_numeric_bracket",

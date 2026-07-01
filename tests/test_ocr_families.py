@@ -1,6 +1,6 @@
-"""Tests for OCR family anchor discovery."""
-
 from __future__ import annotations
+
+import pytest
 
 
 def test_middle_page_body_family_anchor_uses_dominant_repeated_family() -> None:
@@ -766,3 +766,17 @@ def test_partition_zone_families_does_not_mark_backmatter_prose_style_match_as_r
 
     assert partitioned["p10_b1"]["style_family"] != "reference_like"
     assert partitioned["p10_b1"]["authority"] != "reference_family_anchor"
+
+def test_table_roman_prefix_family_not_reference_like():
+    from paperforge.worker.ocr_families import _classify_style_family
+
+    block = {
+        "text": "Table II. Mechanical properties...",
+        "marker_signature": {"type": "citation_line"},
+        "zone": "display_zone",
+        "raw_label": "figure_title",
+        "bbox": [100, 100, 800, 130],
+    }
+    family, authority = _classify_style_family(block, {}, {})
+    assert family == "table_caption_like"
+    assert authority == "table_marker"

@@ -2,11 +2,16 @@
 
 - Mode: `high-risk`
 - Status: `READY`
-- Reviewed pages: [1, 3, 4, 6, 9, 10, 12, 13, 15, 17, 19, 21, 23, 26, 27]
-- Reviewed blocks: 371
+- Reviewed pages: [1, 3, 4, 6, 9, 10, 12, 13, 15, 17, 18, 19, 20, 21, 22, 23, 27]
+- Reviewed blocks: 391
 
 ## Findings
 
+- `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
+- `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
+- `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
+- `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
+- `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
 - `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
 - `minor` `render_mapping_error`: some render-default blocks are not easily mapped into the current fulltext output
 

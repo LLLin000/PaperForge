@@ -7,26 +7,54 @@ from typing import Any
 from paperforge.core.io import write_json
 from paperforge.worker.ocr_scores import score_table_match
 
+_TABLE_NUM_TOKEN = r"(?:\d+(?:\.\d+)?|[IVXLCDM]+)"
+
 _TABLE_PREFIX_PATTERN = re.compile(
-    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table|表|��)\s*(?:S\.?\s*)?(\d+(?:\.\d+)?)",
+    rf"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table|表|(?:\ufffc|\ufffd\ufffd))\s*"
+    rf"(?:S\.?\s*)?({_TABLE_NUM_TOKEN})\b",
     flags=re.IGNORECASE,
 )
 
 _CONTINUATION_PATTERN = re.compile(r"\(cont(?:inued)?\.?\)", re.IGNORECASE)
 _TRUNCATED_TABLE_ONLY_PATTERN = re.compile(
-    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table|表|��)\s*\d+(?:\.\d+)?\.?$",
+    rf"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table|表|(?:\ufffc|\ufffd\ufffd))\s*"
+    rf"(?:S\.?\s*)?{_TABLE_NUM_TOKEN}\.?"
+    rf"(?:\s*\(cont(?:inued)?\.?\))?$",
     re.IGNORECASE,
 )
 
 
+def _roman_to_int(roman: str) -> int | None:
+    roman_values = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
+    s = roman.strip().upper()
+    if not re.fullmatch(r"[IVXLCDM]+", s):
+        return None
+    total = 0
+    prev = 0
+    for c in reversed(s):
+        val = roman_values.get(c, 0)
+        if val < prev:
+            total -= val
+        else:
+            total += val
+        prev = val
+    return total
+
+
+def _parse_table_number_token(token: str) -> int | None:
+    token = token.strip().rstrip(".")
+    if re.fullmatch(r"\d+(?:\.\d+)?", token):
+        return int(float(token))
+    if re.fullmatch(r"[IVXLCDM]+", token, re.IGNORECASE):
+        return _roman_to_int(token)
+    return None
+
+
 def _extract_table_number(text: str) -> int | None:
     m = _TABLE_PREFIX_PATTERN.search(text)
-    if m:
-        try:
-            return int(float(m.group(1)))
-        except ValueError:
-            return None
-    return None
+    if not m:
+        return None
+    return _parse_table_number_token(m.group(1))
 
 
 def _is_continuation_caption(text: str) -> bool:

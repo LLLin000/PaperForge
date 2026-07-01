@@ -21,8 +21,11 @@ _FIGURE_PREFIX_PATTERN = re.compile(
     flags=re.IGNORECASE,
 )
 
+_TABLE_NUM_TOKEN = r"(?:\d+(?:\.\d+)?|[IVXLCDM]+)"
+
 _TABLE_PREFIX_PATTERN = re.compile(
-    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s+\d+",
+    rf"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s*"
+    rf"(?:S\.?\s*)?({_TABLE_NUM_TOKEN})\b",
     flags=re.IGNORECASE,
 )
 
@@ -1255,6 +1258,12 @@ def assign_block_role(
         )
 
     if raw_label == "figure_title":
+        if _has_table_prefix(text):
+            return RoleAssignment(
+                role="table_caption",
+                confidence=0.92,
+                evidence=[f"figure_title with table prefix: {text[:60]}"],
+            )
         return RoleAssignment(
             role="figure_caption",
             confidence=0.85,

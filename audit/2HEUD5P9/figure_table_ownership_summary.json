@@ -3,7 +3,7 @@
     "matched_count": 7,
     "ambiguous_count": 0,
     "unresolved_cluster_count": 0,
-    "unmatched_asset_count": 15,
+    "unmatched_asset_count": 10,
     "matched": [
       {
         "figure_number": 1,
@@ -140,32 +140,10 @@
     "unresolved": []
   },
   "tables": {
-    "matched_count": 3,
+    "matched_count": 0,
     "ambiguous_count": 0,
     "unmatched_asset_count": 8,
-    "matched": [
-      {
-        "table_number": 1,
-        "caption_block_id": 3,
-        "asset_block_ids": [],
-        "page": 6,
-        "match_status": "matched"
-      },
-      {
-        "table_number": 2,
-        "caption_block_id": 2,
-        "asset_block_ids": [],
-        "page": 10,
-        "match_status": "matched"
-      },
-      {
-        "table_number": 3,
-        "caption_block_id": 2,
-        "asset_block_ids": [],
-        "page": 17,
-        "match_status": "matched"
-      }
-    ],
+    "matched": [],
     "ambiguous": []
   }
 }

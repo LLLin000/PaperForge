@@ -1,0 +1,1397 @@
+{
+  "mappable_block_count": 139,
+  "found_count": 93,
+  "missing_count": 46,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Macromolecular Research",
+      "found_in_fulltext": true,
+      "fulltext_offset": 242
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "DOI 10.1007/s13233-020-8168-z",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "www.springer.com/13233 pISSN 1598-5032 eISSN 2092-7673",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Fabrication Tough and Electrically Conductive Graphene-Based Nanocomposite Gels ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Jie Ren $ ^{*} $ Xuemiao Wang Aixia Zhang Lan Zhang Lingling Zhao Yan Li Wu Yang",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Key Lab of Bioelectrochemistry & Environmental Analysis of Gansu, Key Lab of Pol",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Materials of Ministry of Education of Ecological Environment, Lanzhou, 730070, P",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "1. Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1555
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Polymer gels, consisting of a percolated polymer network swollen with a substant",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Great achievement has been made in the research of graphene nanocomposite gels i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1571
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acknowledgments: This work was supported in part by the National Natural Science",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "*Corresponding Author: Jie Ren (jieren@nwnu.edu.cn)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Macromol. Res., 28(13), 1253-1260 (2020)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22070
+    },
+    {
+      "block_id": "p1:21",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1253",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22094
+    },
+    {
+      "block_id": "p1:22",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© The Polymer Society of Korea and Springer 2020",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Macromolecular Research",
+      "found_in_fulltext": true,
+      "fulltext_offset": 242
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "for hard tissue construction.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2870
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Besides, Yoshida's group designed novel polymer gels by coupling Belousov-Zhabot",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2900
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this work, we developed a novel kind of gels by combining the excellent elect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4013
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "shows the chemical structure of the self-oscillating gel without RGO.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2. Experimental",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4760
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.1. Materials",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4780
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Graphite powder, hydrazine hydrate, and acrylamide (AM) were supplied by Tianjin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4795
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.2. Fabrication of reduced graphene oxide (RGO)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5469
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Reduced graphene oxide (RGO) was obtained by a two-stage redox reaction. Firstly",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5518
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.3. Preparation of poly(AM-co-AA-co-Fe(phen) $ _{3} $)/RGO gels",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The poly(AM-co-AA-co-Fe(phen) $ _{3} $)/RGO gels were fabricated using a one-ste",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:16",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© The Polymer Society of Korea and Springer 2020",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1254",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:18",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Macromol. Res., 28(13), 1253-1260 (2020)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22070
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Macromolecular Research",
+      "found_in_fulltext": true,
+      "fulltext_offset": 242
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "dispersion as shown in Figure 3. To be specific, an aqueous solution containing ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7035
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.4. Chemical structure characterization",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7637
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The samples were dried at $ 60\\,^{\\circ}\\mathrm{C} $ in a vacuum oven, grind to ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "X-ray photoelectron spectroscopy (XPS) were obtained on a PHI-5702 multifunction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7914
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Raman spectroscopy: The dry gels was prepared into powder. The Raman spectrum wa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8087
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The morphology of the samples was examined with a JSM-6701F GSM-5600LV (JEOL, To",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8237
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.5. Physical performance test",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8641
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The electrical conductivity of the samples was measured by a digital four-point ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8672
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mechanical properties were measured by an electrical universal material test",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8831
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\sigma=N/\\pi R^{2} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(1)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "where N and R are the load and the original radius of the sample, respectively.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:16",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The compressive strain $ \\varepsilon $ was obtained with the following formula:",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:17",
+      "page": 3,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\varepsilon=(l-l_{0})/l_{0}\\times100\\% $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:18",
+      "page": 3,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(2)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22934
+    },
+    {
+      "block_id": "p3:19",
+      "page": 3,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1. The feed amounts of the gels",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:20",
+      "page": 3,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "where $ l_{0} $ is the original length and l is the length after compressing.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:22",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Macromol. Res., 28(13), 1253-1260 (2020)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22070
+    },
+    {
+      "block_id": "p3:23",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1255",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:24",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© The Polymer Society of Korea and Springer 2020",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Macromolecular Research",
+      "found_in_fulltext": true,
+      "fulltext_offset": 242
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The equilibrium swelling behavior of gels in 0.01 mol·L⁻¹ Ce₂(SO₄)₃ solution for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9488
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\mathrm{SR}=\\left(W_{t}-W_{d}\\right)/W_{d} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(3)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23975
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where SR is the swelling ratio, $ W_{t} $ and $ W_{d} $ refer to the weight of t",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The measurement of the redox potential self-oscillating behavior was performed i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10113
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3. Results and discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10799
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.1. Chemical structure characterization",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10829
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Figure 4 shows the FT-IR spectra of GO and RGO. For GO, the characteristic absor",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10870
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The FT-IR spectra of the gels with various RGO content are shown in Figure 5. Th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11318
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "stretching vibration of -NH in acrylamide. The absorption peaks at 1448 cm⁻¹, 80",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11570
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© The Polymer Society of Korea and Springer 2020",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In general, X-ray photoelectron spectroscopy (XPS) is a versatile surface analys",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12314
+    },
+    {
+      "block_id": "p4:17",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Raman spectrum is an important method to characterize the microstructure of grap",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13874
+    },
+    {
+      "block_id": "p4:18",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1256",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:19",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Macromol. Res., 28(13), 1253-1260 (2020)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22070
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Macromolecular Research",
+      "found_in_fulltext": true,
+      "fulltext_offset": 242
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 2. The atomic contents of each element in the G4 gel.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "gels were shown in Figure 7. Graphene has its unique Raman characteristic peaks.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14107
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Figure 8 shows the SEM images of the prepared poly(AM-co-AA-co-Fe(phen) $ _{3} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Macromol. Res., 28(13), 1253-1260 (2020)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22070
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1257",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© The Polymer Society of Korea and Springer 2020",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Macromolecular Research",
+      "found_in_fulltext": true,
+      "fulltext_offset": 242
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The optical micrographs (OM) images of the poly(AM-co-AA-co-Fe(phen) $ _{3} $)/R",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Figure 11 shows the mechanical properties of the prepared gel. It can be seen th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16732
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The conductivity of graphene material is extremely important for boarding its ap",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17953
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© The Polymer Society of Korea and Springer 2020",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1258",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Macromol. Res., 28(13), 1253-1260 (2020)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22070
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Macromolecular Research",
+      "found_in_fulltext": true,
+      "fulltext_offset": 242
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "which is the reduction product of the Fe(phen) $ _{3} $ moiety by RGO or residua",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The content of nanomaterials in the composite gel is one of the important factor",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19165
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "structure. A proper amount of RGO is very important for the balance between phys",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19287
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Figure 14 exhibits the redox potential diagram of the gel sample placed in the B",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20220
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Macromol. Res., 28(13), 1253-1260 (2020)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22070
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1259",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:17",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© The Polymer Society of Korea and Springer 2020",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Macromolecular Research",
+      "found_in_fulltext": true,
+      "fulltext_offset": 242
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "of the gel with RGO increases obviously. Namely, the Fe(phen) $ _{3} $ unit is b",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4. Conclusions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21217
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this work, a multi-functional graphene nanocomposite gel with excellent mecha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21232
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(1) Z. Zhang, Q. Chen, and R. Colby, Soft Matter, 14, 2961 (2018).",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(2) R. Yoshida, K. Uchida, Y. Kaneko, K. Sakai, A. Kikuchi, Y. Sakurai, and T. O",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22934
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(3) B. Srividya, R. M. Cardoza, and P. D. Amin, J. Control. Release, 73, 205(200",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23975
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(4) E. G. Giammanco, B. Carrion, M. R. Coleman, and D. A. Ostrowski, ACS Appl. M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24830
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(5) S. F. Zhao, J. H. Li, D. X. Cao, G. P. Zhang, J. Li, K. Li, Y. Yang, W. Wang",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25073
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(6) H. C. Moon, C. H. Kim, P. L. Timothy, and C. D. Frisbie, ACS Appl. Mater. In",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25235
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(7) S. H. Hwang, P. Y. Bin, S. H. Hur, and H. G. Chae, ACS Appl. Nano Mater., 1,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25341
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(8) Z. W. Wang, J. Chen, Y. Cong, H. Zhang, T. Xu, L. Nie, and J. Fu, Chem. Mate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25435
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(9) T. Liu, M. M. Liu, S. Dou, J. M. Sun, Z. F. Cong, C. Y. Jiang, C. H. Du, X. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25536
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(10) Y. L. Wang, B. Q. Li, F. Xu, Z. D. Han, D. Q. Wei, D. C. Jia, and Y. Zhou, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22111
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(11) X. B. Zhao, L. Liu, X. R. Li, J. Zeng, X. Jia, and P. Liu, Langmuir, 30, 10",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22228
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(12) C. J. Zhang, G. G. Cano, and P. V. Braun, Adv. Mater., 26, 5678 (2014).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22320
+    },
+    {
+      "block_id": "p8:17",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(13) M. J. Yin, M. Yao, S. R. Gao, A. P. Zhang, H. Y. Tam, and P. K. A. Wai, Adv",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22397
+    },
+    {
+      "block_id": "p8:18",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(14) H. Nakagawa, Y. Hara, S. Maeda, and S. Hasimoto, Polymers, 3, 405 (2011).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22502
+    },
+    {
+      "block_id": "p8:19",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(15) J. R. Wang, J. F. Wang, Z. Chen, S. L. Fang, Y. Zhu, R. H. Baughman, and L.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:20",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(16) J. P. Gong, Y. Katsuyama, T. Kurokawa, and Y. Osada, Adv. Mater., 15, 1155 ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22581
+    },
+    {
+      "block_id": "p8:21",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(17) Q. Chen, H. Chen, L. Zhu, and J. Zheng, J. Mater. Chem. B, 3, 3654 (2015).",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:22",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(18) D. Vuluga, J. M. Thomassin, I. Molenberg, I. Huynen, B. Gilbert, C. Jerome,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22669
+    },
+    {
+      "block_id": "p8:23",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(19) F. Beckert, A. M. Rostas, R. Thomann, S. Weber, E. Schleicher, C. Friedrich",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22802
+    },
+    {
+      "block_id": "p8:24",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(20) A. A. Balandin, S. Ghosh, W. Bao, I. Calizo, D. Teweldebrhan, and F. Miao, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23045
+    },
+    {
+      "block_id": "p8:25",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(21) Q. Y. Cheng, D. Zhou, Y. Gao, and B. H. Han, Langmuir, 28, 3005 (2012).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23152
+    },
+    {
+      "block_id": "p8:26",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(22) B. Vedhanarayanan, B. Babu, M. M. Shaijumon, and A. Ajayaghosh, ACS Appl. M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23229
+    },
+    {
+      "block_id": "p8:27",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(23) J. H. Chen, C. Jang, S. Xiao, M. Ishigami, and M. S. Fuhrer, Nat. Nanotechn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23344
+    },
+    {
+      "block_id": "p8:28",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(24) X. Y. Meng, L. Lu, and C. W. Sun, ACS Appl. Mater. Interfaces, 10, 16474 (2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23444
+    },
+    {
+      "block_id": "p8:29",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(25) J. Chen, C. Li, and G. Q. Shi, J. Phys. Chem. Lett., 4, 1244 (2013).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23530
+    },
+    {
+      "block_id": "p8:30",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(26) C. G. Pan, L. B. Liu, Q. Chen, Q. Zhang, and G. L. Guo, ACS Appl. Mater. In",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23604
+    },
+    {
+      "block_id": "p8:31",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(27) L. Zhang and G. Q. Shi, J. Phys. Chem. C, 115, 17206 (2011).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23711
+    },
+    {
+      "block_id": "p8:32",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(28) S. Mohammadi, H. Keshvari, M. Eskandari, and S. Faghihi, React. Funct. Poly",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23777
+    },
+    {
+      "block_id": "p8:33",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(29) R. Yoshida, T. Takahashi, T. Yamaguchi, and H. Ichijo, J. Am. Chem. Soc., 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23878
+    },
+    {
+      "block_id": "p8:34",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(30) R. Yoshida, T. Takahashi, T. Yamaguchi, and H. Ichijo, J. Adv. Mater., 9, 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24059
+    },
+    {
+      "block_id": "p8:35",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(31) R. Yoshida and Y. Murase, J. Colloids Surf. B, 99, 60 (2012).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24150
+    },
+    {
+      "block_id": "p8:36",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(32) R. Yoshida, J. Adv. Mater., 22, 3463 (2010).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24217
+    },
+    {
+      "block_id": "p8:37",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(33) R. Tamate, T. Ueki, and R. Yoshida, Angew. Chem., 128, 5265 (2016).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24267
+    },
+    {
+      "block_id": "p8:38",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(34) R. Tamate, T. Ueki, M. Shibayama, and R. Yoshida, Angew. Chem., 126, 11430 ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24340
+    },
+    {
+      "block_id": "p8:39",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(35) J. Ren, M. Q. Yao, G. C. Zhang, X. C. Yang, J. F. Gu, and W. Yang, J. Polym",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24428
+    },
+    {
+      "block_id": "p8:40",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(36) Y. Si and E. T. Samulski, J. Nano Lett., 8, 1679 (2008).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24531
+    },
+    {
+      "block_id": "p8:41",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(37) J. R. Lomeda, C. D. Doyle, and D. V. Kosynkin, J. Am. Chem. Soc., 130, 1620",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24593
+    },
+    {
+      "block_id": "p8:42",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(38) V. C. Tung, M. J. Allen, and Y. Yang, J. Nat. Nanotechnol., 4, 25 (2009).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24683
+    },
+    {
+      "block_id": "p8:43",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(39) T. Yamashita and P. Hayes. Appl. Surf. Sci., 254, 2441 (2008).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24762
+    },
+    {
+      "block_id": "p8:44",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(40) S. J. Roosendaal, B. van Asselen, J. W. Elsenaar, A. M. Vredenberg, and F. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24945
+    },
+    {
+      "block_id": "p8:45",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Publisher’s Note Springer Nature remains neutral with regard to jurisdictional c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25673
+    },
+    {
+      "block_id": "p8:46",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© The Polymer Society of Korea and Springer 2020",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:47",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1260",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22099
+    },
+    {
+      "block_id": "p8:48",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Macromol. Res., 28(13), 1253-1260 (2020)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22070
+    }
+  ]
+}

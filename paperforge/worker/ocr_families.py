@@ -41,6 +41,13 @@ _EDITORIAL_TAIL_PHRASES = (
 )
 
 
+
+_TABLE_PREFIX_LIKE = re.compile(
+    rf"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s*"
+    rf"(?:S\.?\s*)?(?:\d+(?:\.\d+)?|[IVXLCDM]+)\b",
+    flags=re.IGNORECASE,
+)
+
 def discover_body_family_anchor(blocks: list[dict], page_count: int | None = None) -> dict[str, Any]:
     """Discover a document-level body family anchor from middle-page evidence."""
     resolved_page_count = max(page_count or 0, max((int(b.get("page", 0) or 0) for b in blocks), default=0))
@@ -255,6 +262,9 @@ def _classify_style_family(
 
     if any(phrase in text_lower for phrase in _EDITORIAL_TAIL_PHRASES):
         return "support_like", "editorial_phrase"
+
+    if _TABLE_PREFIX_LIKE.match(text):
+        return "table_caption_like", "table_marker"
 
     if _reference_anchor_matches_block(reference_anchor, block):
         return "reference_like", "reference_family_anchor"

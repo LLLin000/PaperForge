@@ -1,0 +1,65 @@
+{
+  "figures": {
+    "matched_count": 4,
+    "ambiguous_count": 1,
+    "unresolved_cluster_count": 0,
+    "unmatched_asset_count": 0,
+    "matched": [
+      {
+        "figure_number": 1,
+        "legend_block_id": 9,
+        "asset_block_ids": [
+          8
+        ],
+        "page": 2,
+        "match_type": null
+      },
+      {
+        "figure_number": 2,
+        "legend_block_id": 17,
+        "asset_block_ids": [
+          16
+        ],
+        "page": 3,
+        "match_type": null
+      },
+      {
+        "figure_number": 3,
+        "legend_block_id": 11,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 4,
+        "match_type": null
+      },
+      {
+        "figure_number": 5,
+        "legend_block_id": 6,
+        "asset_block_ids": [
+          1,
+          2,
+          4
+        ],
+        "page": 8,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [
+      {
+        "figure_number": 4,
+        "legend_block_id": 2,
+        "asset_block_ids": [],
+        "candidate_asset_ids": [],
+        "page": 6
+      }
+    ],
+    "unresolved": []
+  },
+  "tables": {
+    "matched_count": 0,
+    "ambiguous_count": 0,
+    "unmatched_asset_count": 1,
+    "matched": [],
+    "ambiguous": []
+  }
+}

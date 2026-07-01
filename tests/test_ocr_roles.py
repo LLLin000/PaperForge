@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 
 def test_assign_block_role_abstract_heading_seed_is_explicit() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
@@ -1548,3 +1550,22 @@ def test_first_surviving_page_correspondence_text_routes_to_frontmatter_support(
     result = assign_block_role(support, page_blocks=[title, support], page_width=1200, page_height=1600)
 
     assert result.role == "frontmatter_support"
+
+@pytest.mark.parametrize("raw_label,text,expected", [
+    ("figure_title", "Table I. Electrospun polymeric composites...", "table_caption"),
+    ("figure_title", "Table II. Mechanical properties...", "table_caption"),
+    ("figure_title", "Table 1. Baseline Characteristics...", "table_caption"),
+    ("figure_title", "Table S1. Supplementary characteristics...", "table_caption"),
+    ("figure_title", "Figure 1. Flow diagram...", "figure_caption"),
+    ("figure_title", "Fig. 2. Results...", "figure_caption"),
+])
+def test_figure_title_table_prefix_routes_to_table_caption(raw_label, text, expected):
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "raw_label": raw_label,
+        "text": text,
+        "bbox": [100, 100, 800, 130],
+    }
+    result = assign_block_role(block, [], 1000, 1000)
+    assert result.role == expected

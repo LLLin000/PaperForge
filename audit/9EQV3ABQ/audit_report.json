@@ -1,0 +1,83 @@
+{
+  "paper_key": "9EQV3ABQ",
+  "mode": "high-risk",
+  "status": "READY",
+  "focus": [],
+  "artifact_fingerprint": {
+    "result_json_hash": "sha256:fd805037cc8edd65d5a9ee083669fab11bf9852e4cd1c764b592dc2fbc8eeb10",
+    "meta_json_hash": "sha256:3aa2c9ada0b946389e6ad47b26f378fcac76ef333f4cb3955ecc076948954f61",
+    "blocks_raw_hash": "sha256:7d3c3f1bf287044ae329cd001e21dbfedfdce9aaded1b4942b018f5424b291cd",
+    "structured_blocks_hash": "sha256:4a5cb6a512084ac6894ca14402d6c2361127c568ba98a37e443a6acb12e5b134",
+    "document_structure_hash": "sha256:993bfaa7f9a1317b642d8c2b065eb5d030bfff3a23bdb0c240acc8967d7b0477",
+    "figure_inventory_hash": "sha256:e5bd1481e3a399a2a1b5473565162534ab3bc4d42e72285dd1d3a53d7731ec30",
+    "table_inventory_hash": "sha256:86ccb48fbfd41da91e87ea2c1ef938513732868efcb5e30b31c36f96d432bba2",
+    "reader_figures_hash": "sha256:85e7c0db5c00e481df1c5adf4d1d63070a8d837cd4824de8d979e393c9657b45",
+    "resolved_metadata_hash": "sha256:97bce317af451f90a6c3300346ec0c7d4582f407ffc6ed06ed8e058874469c98",
+    "fulltext_hash": "sha256:c01771834598ae185f8522871679086ac68ea3698892759cbefbb8d26d4cd9dc",
+    "block_trace_hash": "sha256:0d44b805126a571ff35e9e27626fc236c6219cebd7d1a42e6a03047b6f923ff1",
+    "annotated_pages": {
+      "page_001.png": "sha256:3172461803dd03f31b95d9907f44f73ecfe55134865cdc8278d00e0f32246b13",
+      "page_002.png": "sha256:368d1baddc3220354a2e07591bfc56bcee17541f47ae59732164a8cde01a1840"
+    }
+  },
+  "artifact_freshness": {
+    "missing": [],
+    "mismatches": [
+      "document_structure older than blocks_structured",
+      "figure_inventory older than blocks_structured",
+      "table_inventory older than blocks_structured",
+      "reader_figures older than figure_inventory",
+      "resolved_metadata older than blocks_structured"
+    ],
+    "annotated_pages_rendered": [
+      "page_001.png",
+      "page_002.png"
+    ]
+  },
+  "reviewed_pages": [
+    1
+  ],
+  "reviewed_blocks": [
+    "p1:0",
+    "p1:1",
+    "p1:2",
+    "p1:3",
+    "p1:4",
+    "p1:5",
+    "p1:6",
+    "p1:7",
+    "p1:8",
+    "p1:9",
+    "p1:10",
+    "p1:11",
+    "p1:12",
+    "p1:13",
+    "p1:14",
+    "p1:15"
+  ],
+  "findings": [
+    {
+      "category": "render_mapping_error",
+      "severity": "minor",
+      "block_ids": [
+        "p1:0",
+        "p1:1",
+        "p1:2",
+        "p1:3",
+        "p1:9",
+        "p1:10",
+        "p1:11",
+        "p2:0",
+        "p2:1",
+        "p2:2"
+      ],
+      "truth": "rendered fulltext should be traceable back to source blocks",
+      "pipeline_behavior": "some render-default blocks are not easily mapped into the current fulltext output",
+      "root_cause_hypothesis": "render omission or snippet mismatch",
+      "evidence": {
+        "annotated_page": null,
+        "artifact": "fulltext_block_mapping_summary.json"
+      }
+    }
+  ]
+}
