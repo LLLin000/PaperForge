@@ -35,7 +35,7 @@ def stub_run_deep_reading(vault: Path, verbose: bool = False) -> int:
     return 0
 
 
-def stub_run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> int:
+def stub_run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selected_keys: set[str] | None = None) -> int:
     CAPTURED_CALLS.append(("run_ocr", vault))
     return 0
 

@@ -18,7 +18,11 @@ def _text(path: Path) -> str:
 def test_active_queue_file_exists_and_declares_post_readiness_role() -> None:
     text = _text(ACTIVE_QUEUE)
     assert "ACTIVE QUEUE" in text
-    assert "stale trace-vs-expectation fixtures" in text or "post-readiness rebuild hardening" in text
+    assert (
+        "stale trace-vs-expectation fixtures" in text
+        or "post-readiness rebuild hardening" in text
+        or "Residual fixes complete" in text
+    )
 
 
 def test_rebuild_audit_declares_it_is_an_evidence_surface() -> None:

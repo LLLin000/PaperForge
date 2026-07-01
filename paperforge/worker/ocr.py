@@ -2598,6 +2598,7 @@ def run_ocr(
                 except Exception as exc:
                     error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
                     apply_ocr_error_state(queue_row, meta, error_state)
+                    continue
                 health_path_loop = paths["ocr"] / key / "health" / "ocr_health.json"
                 health_report_loop = read_json(health_path_loop) if health_path_loop.exists() else {}
                 hard_reasons_loop = _extract_hard_degraded_reasons(health_report_loop)
