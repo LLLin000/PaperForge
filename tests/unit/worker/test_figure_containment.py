@@ -3,9 +3,12 @@ from __future__ import annotations
 
 from paperforge.worker.ocr_figures import (
     _cluster_bboxes_by_proximity,
+    _container_area_ok,
+    _container_has_media_asset,
     _highly_overlaps_any_matched_region,
     _is_contained,
     _matched_asset_keys,
+    _validated_container_regions,
     tag_figure_contained_text,
 )
 
@@ -86,7 +89,7 @@ class TestMatchedAssetKeys:
 
 class TestTagFigureContainedText:
     def _block(self, bid, page, x1, y1, x2, y2, role="body_paragraph",
-               raw_label="", asset_family_hint=""):
+               raw_label="", asset_family_hint="", **kwargs):
         b = {
             "block_id": bid,
             "page": page,
@@ -97,6 +100,7 @@ class TestTagFigureContainedText:
             b["raw_label"] = raw_label
         if asset_family_hint:
             b["asset_family_hint"] = asset_family_hint
+        b.update(kwargs)
         return b
 
     def _matched_fig(self, page, cluster_bbox, matched_assets=None):
@@ -176,3 +180,95 @@ class TestTagFigureContainedText:
         blocks = [block, self._block("a1", 1, 50, 50, 400, 400, role="figure_asset")]
         tag_figure_contained_text(blocks, [mf])
         assert block["role"] == "figure_inner_text"
+
+    def test_container_bbox_tags_vision_footnote_inside_demoted_figure(self):
+        blocks = [
+            self._block(
+                "inner", 1, 120, 120, 180, 140,
+                role="footnote", text="Single outlet",
+                _container_bbox=[90, 90, 320, 220],
+                page_width=1000, page_height=1600,
+            ),
+            self._block(
+                "asset1", 1, 100, 100, 200, 200,
+                role="media_asset", raw_label="table",
+                asset_family_hint="ambiguous",
+                page_width=1000, page_height=1600,
+            ),
+            self._block(
+                "asset2", 1, 210, 100, 310, 200,
+                role="media_asset", raw_label="table",
+                asset_family_hint="ambiguous",
+                page_width=1000, page_height=1600,
+            ),
+        ]
+        tag_figure_contained_text(blocks, [])
+        assert blocks[0]["role"] == "figure_inner_text"
+        assert blocks[0]["_figure_contained"] is True
+
+    def test_container_bbox_does_not_consume_body_paragraph_next_to_figure(self):
+        blocks = [
+            self._block(
+                "body", 1, 350, 100, 700, 130,
+                role="body_paragraph", text="Nearby body text",
+                _container_bbox=[90, 90, 320, 220],
+                page_width=1000, page_height=1600,
+            ),
+            self._block(
+                "asset1", 1, 100, 100, 200, 200,
+                role="media_asset", raw_label="image",
+                asset_family_hint="figure_like",
+                page_width=1000, page_height=1600,
+            ),
+        ]
+        tag_figure_contained_text(blocks, [])
+        assert blocks[0]["role"] == "body_paragraph"
+        assert not blocks[0].get("_figure_contained")
+
+    def test_huge_container_bbox_is_rejected_by_area_gate(self):
+        blocks = [
+            self._block(
+                "body", 1, 100, 100, 300, 130,
+                role="body_paragraph", text="Nearby body text",
+                _container_bbox=[0, 0, 1000, 1600],
+                page_width=1000, page_height=1600,
+            ),
+            self._block(
+                "asset", 1, 100, 500, 300, 700,
+                role="media_asset", raw_label="image",
+                asset_family_hint="figure_like",
+                page_width=1000, page_height=1600,
+            ),
+        ]
+        tag_figure_contained_text(blocks, [])
+        assert blocks[0]["role"] == "body_paragraph"
+
+    def test_validated_container_regions_reject_missing_media_assets(self):
+        blocks = [
+            self._block("body", 1, 100, 100, 300, 130, role="body_paragraph", text="x",
+                        _container_bbox=[90, 90, 320, 220], page_width=1000, page_height=1600),
+        ]
+        regions = _validated_container_regions(blocks, 1000, 1600)
+        assert regions == []
+
+    def test_validated_container_regions_accept_reasonable_container_with_media(self):
+        blocks = [
+            self._block("body", 1, 120, 120, 180, 140, role="footnote", text="x",
+                        _container_bbox=[90, 90, 320, 220], page_width=1000, page_height=1600),
+            self._block("asset", 1, 100, 100, 200, 200, role="media_asset",
+                        raw_label="image", asset_family_hint="figure_like",
+                        page_width=1000, page_height=1600),
+        ]
+        regions = _validated_container_regions(blocks, 1000, 1600)
+        assert regions == [[90, 90, 320, 220]]
+
+    def test_matched_cluster_bbox_takes_precedence_over_container_bbox(self):
+        mf = self._matched_fig(1, [80, 80, 220, 220], matched_assets=[{"block_id": "a1", "bbox": [90, 90, 200, 200]}])
+        blocks = [
+            self._block("inner", 1, 120, 120, 180, 140, role="footnote", text="x",
+                        _container_bbox=[0, 0, 1000, 1600], page_width=1000, page_height=1600),
+            self._block("a1", 1, 90, 90, 200, 200, role="figure_asset", raw_label="image",
+                        asset_family_hint="figure_like", page_width=1000, page_height=1600),
+        ]
+        tag_figure_contained_text(blocks, [mf])
+        assert blocks[0]["role"] == "figure_inner_text"

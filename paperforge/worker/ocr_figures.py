@@ -5135,6 +5135,54 @@ _LEAK_ROLES = {
 }
 
 
+def _container_area_ok(container_bbox: list[float], page_width: float, page_height: float) -> bool:
+    """Reject container bboxes that cover >65% of the page."""
+    if len(container_bbox) < 4 or page_width <= 0 or page_height <= 0:
+        return False
+    cw = container_bbox[2] - container_bbox[0]
+    ch = container_bbox[3] - container_bbox[1]
+    page_area = max(1.0, page_width * page_height)
+    container_area = max(1.0, cw * ch)
+    if container_area >= page_area * 0.65:
+        return False
+    if cw >= page_width * 0.98 and ch >= page_height * 0.45:
+        return False
+    return True
+
+
+def _container_has_media_asset(container_bbox: list[float], page_blocks: list[dict]) -> bool:
+    """Check at least one figure/table asset falls inside the container."""
+    for block in page_blocks:
+        if block.get("role") not in {"figure_asset", "media_asset"}:
+            continue
+        bbox = block.get("bbox") or [0, 0, 0, 0]
+        if len(bbox) < 4:
+            continue
+        if _is_contained(bbox, container_bbox):
+            return True
+    return False
+
+
+def _validated_container_regions(page_blocks: list[dict], page_width: float, page_height: float) -> list[list[float]]:
+    """Collect and validate unique _container_bbox values from blocks."""
+    regions: list[list[float]] = []
+    seen: set[tuple[float, float, float, float]] = set()
+    for block in page_blocks:
+        bbox = block.get("_container_bbox")
+        if not bbox or len(bbox) < 4:
+            continue
+        tup = tuple(float(x) for x in bbox)
+        if tup in seen:
+            continue
+        seen.add(tup)
+        if not _container_area_ok(list(tup), page_width, page_height):
+            continue
+        if not _container_has_media_asset(list(tup), page_blocks):
+            continue
+        regions.append(list(tup))
+    return regions
+
+
 def _cluster_bboxes_by_proximity(
     bboxes: list[list[float]],
     margin: float = 40,
@@ -5261,6 +5309,12 @@ def tag_figure_contained_text(
             if region:
                 figure_regions.append(("matched", region))
                 covered_asset_keys |= _matched_asset_keys(mf)
+        # ── Container bbox regions (validated _container_bbox) ──
+        page_width = max((float(b.get("page_width") or 0.0) for b in page_blocks), default=0.0)
+        page_height = max((float(b.get("page_height") or 0.0) for b in page_blocks), default=0.0)
+        for cr in _validated_container_regions(page_blocks, page_width, page_height):
+            if not _highly_overlaps_any_matched_region(cr, figure_regions):
+                figure_regions.append(("container", cr))
         fallback_assets = [
             b for b in page_blocks
             if (int(b.get("page", 0) or 0), str(b.get("block_id", ""))) not in covered_asset_keys
