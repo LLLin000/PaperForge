@@ -322,6 +322,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-06-28 | P0 author bio detection implementation | Created ocr_bio.py with category-weighted bio scoring, Pass C (post_ref_bio_cleanup), figure match guards. Wired author_bio_asset role contract + pipeline. 30 new tests pass. 1041 total OCR tests, 0 regressions. Commits: `e2f0c8a`, `7810eb1`. | §9.16 |
 | 2026-06-28 | P1 author bio detection implementation | Added residual_author_bio_pass (figure-residual portrait assets), extended post_ref_bio_cleanup for figure_caption, tag_figure_contained_text protection. 7 new P1 tests. 1018 total OCR tests, 0 regressions. Commit: `7a1cc5e`. | §9.17 |
 | 2026-07-01 | Residual fixes — 6 issues | Backfill clamp, table fallthrough + continuation, short-form health, container bbox containment, cross-column gate, asset arbitration. 3 commits on master, 364 tests pass. | §2.3 |
+| 2026-07-01 | Truth audit — 10 papers + GPT cross-validation | 10-paper batch audit: U746UJ7G vision (vector figure blindspot); KUR9PBJC Table I/II roman bug; YGH7VEX6 zone spillover; V4U backfill confirmation. 4 GPT-reviewed commits planned. Spec: `docs/superpowers/specs/2026-07-01-ocr-audit-findings-for-gpt.md`. Plan: `docs/superpowers/plans/2026-07-01-ocr-audit-gpt-fix-plan.md`. | §9.18 |
 
 ---
 
@@ -500,5 +501,26 @@ Full-day debugging session across 8 gold papers. 98 bug annotations, 8 pipeline 
 
 **Spec:** `docs/superpowers/specs/2026-06-27-figure-containment-and-backmatter-boundary-design.md`
 **Plan:** `docs/superpowers/plans/2026-06-27-figure-containment-implementation-plan.md`
+
+### 9.18 10-Paper Truth Audit + GPT Cross-Validation (2026-07-01)
+
+**Scope:** 10 papers sampled from vault (3 green, 4 yellow, 3 red), batch-audited via `ocr_truth_audit.py` + annotated page vision agents.  
+**1 complete vision audit:** U746UJ7G — 0 matched figures, root cause = vector-rendered Figure 1+2 (52 drawing paths, 0 embedded images).  
+**Key bugs found:**
+- `_TABLE_PREFIX_PATTERN` 3 处只认 `\d+`，不认罗马数字 I/II/III（KUR9PBJC pages 4/5/7）
+- `raw_label=figure_title` 的 Table N caption 无 guard → 进 `figure_caption`
+- `vision_footnote` 里 "This figure..." 被吞成 footnote（U746UJ7G p8:4）
+- `unmatched_assets` 重复计数（matched 后又在 unmatched 列表）
+- HTML table block 断连（2YW2MJBL）
+- Vector figure pipeline 盲区（U746UJ7G）
+
+**False positives:** `reference_span_error` ~90% noise, `same_page_boundary_error` 100% unreliable.
+
+**GPT 二审修正 8 处:** Roman+S prefix 三处同步、score hard gate、tie-breaking、dedup、`_is_near_figure_media` helper。  
+**Outputs:**
+- Spec: `docs/superpowers/specs/2026-07-01-ocr-audit-findings-for-gpt.md`
+- Plan: `docs/superpowers/plans/2026-07-01-ocr-audit-gpt-fix-plan.md`
+- Per-paper vision reports: `local://*-vision-report.md`
+- Block reviews: `audit/<KEY>/block_review.jsonl`（U746UJ7G, KUR9PBJC, CGGYTEEQ, 7FNV9AW2 etc.）
 
 
