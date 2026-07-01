@@ -60,6 +60,54 @@ def _is_weak_explicit_table_caption(block: dict) -> bool:
     return _is_insufficient_table_caption_evidence(block)
 
 
+def _find_table_caption_continuation(caption: dict, structured_blocks: list[dict]) -> dict | None:
+    """Find the block immediately after a weak-truncated table caption that
+    looks like a continuation (stolen as figure_caption or similar)."""
+    caption_page = caption.get("page", 0)
+    caption_bbox = caption.get("bbox") or [0, 0, 0, 0]
+    next_idx = None
+    for i, block in enumerate(structured_blocks):
+        if block.get("block_id") == caption.get("block_id"):
+            next_idx = i + 1
+            break
+    if next_idx is None or next_idx >= len(structured_blocks):
+        return None
+
+    next_block = structured_blocks[next_idx]
+    bbox = next_block.get("bbox") or [0, 0, 0, 0]
+
+    # Trigger rules from spec
+    if bbox[1] - caption_bbox[3] > 25:  # y-gap > 25px
+        return None
+
+    next_text = str(next_block.get("text", "") or "")
+    # reject if starts with Fig/Figure/Scheme/Plate
+    if next_text.lower().startswith(("fig", "figure", "scheme", "plate")):
+        return None
+
+    # x-overlap check
+    x_overlap = max(0, min(caption_bbox[2], bbox[2]) - max(caption_bbox[0], bbox[0]))
+    if x_overlap < min(caption_bbox[2] - caption_bbox[0], bbox[2] - bbox[0]) * 0.5:
+        left_edge_delta = abs(caption_bbox[0] - bbox[0])
+        if left_edge_delta >= 40:
+            return None
+
+    return next_block
+
+
+def _materialize_table_caption(caption: dict, continuation: dict | None) -> tuple[dict, list[str]]:
+    """Merge continuation text into caption, return (merged_caption, consumed_ids)."""
+    consumed_ids = [caption.get("block_id", "")]
+    if continuation is None:
+        return caption, consumed_ids
+
+    merged = dict(caption)
+    cont_text = str(continuation.get("text", "") or "")
+    merged["text"] = (merged.get("text", "") or "") + " " + cont_text
+    consumed_ids.append(continuation.get("block_id", ""))
+    return merged, consumed_ids
+
+
 def _has_strong_spatial_evidence_for_bare_table(caption: dict, top_candidate_score: dict | None) -> bool:
     if top_candidate_score is None:
         return False
@@ -198,25 +246,26 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             ]
             if not same_page_assets:
                 held_tables.append(
-                {
-                    "table_id": f"held_table_{len(held_tables) + 1:03d}",
-                    "caption_block_id": caption.get("block_id", ""),
-                    "page": caption_page,
-                    "caption_text": caption_text,
-                    "table_number": table_num,
-                    "formal_table_number": formal_table_number,
-                    "hold_reason": "insufficient_caption_evidence",
-                    "zone": caption.get("zone", ""),
-                    "style_family": caption.get("style_family", ""),
-                    "marker_signature": caption.get("marker_signature", {}),
-                }
-            )
-            continue
+                    {
+                        "table_id": f"held_table_{len(held_tables) + 1:03d}",
+                        "caption_block_id": caption.get("block_id", ""),
+                        "page": caption_page,
+                        "caption_text": caption_text,
+                        "table_number": table_num,
+                        "formal_table_number": formal_table_number,
+                        "hold_reason": "insufficient_caption_evidence",
+                        "zone": caption.get("zone", ""),
+                        "style_family": caption.get("style_family", ""),
+                        "marker_signature": caption.get("marker_signature", {}),
+                    }
+                )
+                continue
+            # same-page asset exists → fall through into weak-explicit matching
+        continuation_ids: list[str] = []
         if is_weak_truncated:
-            # Truncated table label with same-page assets: proceed
-            # to weak-explicit matching (same as figure's truncated
-            # legend now matching to nearby assets).
-            pass
+            continuation = _find_table_caption_continuation(caption, structured_blocks)
+            materialized_caption, continuation_ids = _materialize_table_caption(caption, continuation)
+            caption_text = materialized_caption.get("text", "")
         all_candidates: list[tuple[int, dict, dict]] = []
 
         if is_weak_explicit_caption:
@@ -431,6 +480,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         if matched_asset:
             consumed_block_ids.append(matched_asset.get("block_id", ""))
         consumed_block_ids.extend(note_block_ids)
+        consumed_block_ids.extend(continuation_ids)
         consumed_block_ids = [bid for bid in consumed_block_ids if bid]
         bridge_block_ids = [
             str(block.get("block_id") or "")

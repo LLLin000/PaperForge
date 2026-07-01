@@ -134,3 +134,60 @@ def test_local_reference_pdf_fallback_repairs_only_local_candidate_text() -> Non
     repaired = repair_reference_entry_from_pdf_text(block_run, page_text)
     assert "N Engl J Med" in repaired
     assert repaired.startswith("Brown T, Green S.")
+
+def test_backfill_expanded_clip_filters_words_to_original_bbox(monkeypatch, tmp_path):
+    from paperforge.worker import ocr_pdf_spans
+    import fitz
+
+    class FakePage:
+        rect = fitz.Rect(0, 0, 1000, 1000)
+        def get_text(self, kind, clip=None):
+            if kind == "words":
+                return [
+                    (100, 100, 120, 110, "inside", 0, 0, 0),
+                    (100, 111, 120, 121, "neighbor", 0, 0, 1),
+                ]
+            if kind == "text":
+                return "inside neighbor"
+            return []
+
+    class FakeDoc:
+        def __len__(self): return 1
+        def __getitem__(self, idx): return FakePage()
+        def close(self): pass
+
+    monkeypatch.setattr(ocr_pdf_spans, "_fitz_quiet_open", lambda path: FakeDoc())
+    monkeypatch.setattr(
+        ocr_pdf_spans,
+        "_map_ocr_bbox_to_pdf_rect",
+        lambda bbox, pw, ph, page: fitz.Rect(100, 100, 120, 110),
+    )
+
+    pdf_path = tmp_path / "fake.pdf"
+    pdf_path.write_bytes(b"%PDF-1.7\n")
+
+    blocks = [{
+        "page": 1,
+        "bbox": [100, 100, 120, 110],
+        "page_width": 1000,
+        "page_height": 1000,
+        "raw_label": "text",
+        "text": "",
+        "block_content": "",
+        "span_metadata": [{"font": "Body"}],
+    }]
+
+    ocr_pdf_spans.backfill_missing_text_from_pdf(blocks, pdf_path)
+
+    assert blocks[0]["text"] == "inside"
+    assert blocks[0]["_ocr_raw_status"] == "missing_text_recovered"
+
+
+def test_backfill_keeps_slightly_misaligned_words_by_center_or_overlap():
+    from paperforge.worker.ocr_pdf_spans import _word_belongs_to_block
+    import fitz
+
+    block_rect = fitz.Rect(100, 100, 120, 110)
+
+    assert _word_belongs_to_block((99, 100, 109, 110), block_rect) is True
+    assert _word_belongs_to_block((121, 111, 131, 121), block_rect) is False

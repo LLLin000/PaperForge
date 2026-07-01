@@ -504,3 +504,36 @@ def test_consumed_stringified_int_note_id_matches_block_int_id() -> None:
     )
 
     assert "Table note with int block_id." not in md
+
+
+def test_materialized_table_caption_continuation_is_skipped_by_render_when_consumed():
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"page": 1, "block_id": "cap1", "role": "table_caption", "text": "Table 2", "bbox": [100, 100, 220, 120]},
+        {"page": 1, "block_id": "cap2", "role": "figure_caption", "text": "Structural parameters of nanocomposites obtained from the d", "bbox": [100, 121, 500, 145]},
+    ]
+    table_inventory = {
+        "tables": [
+            {
+                "page": 1,
+                "caption_block_id": "cap1",
+                "caption_text": "Table 2 Structural parameters of nanocomposites obtained from the d",
+                "consumed_block_ids": ["cap1", "cap2"],
+                "has_asset": False,
+                "match_status": "unmatched_caption",
+            }
+        ]
+    }
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": []},
+        table_inventory=table_inventory,
+        page_count=1,
+        document_structure=None,
+        reader_payload={"reader_figures": [], "consumed_caption_block_ids": []},
+    )
+
+    assert "Structural parameters of nanocomposites" not in md

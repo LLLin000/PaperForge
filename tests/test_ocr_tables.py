@@ -1230,3 +1230,66 @@ def test_weak_match_caption_has_empty_consumed_block_ids() -> None:
     assert table["has_asset"] is False
     assert table["match_status"] in {"unmatched_caption", "ambiguous"}
     assert "p5_caption" not in table.get("consumed_block_ids", [])
+
+
+def test_validation_first_bare_table_with_same_page_asset_falls_through_to_weak_explicit_matching():
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "block_id": "cap",
+            "page": 1,
+            "role": "body_paragraph",
+            "raw_label": "text",
+            "text": "Table 1",
+            "bbox": [100, 100, 300, 120],
+            "marker_signature": {"type": "table_number"},
+            "zone": "display_zone",
+            "style_family": "table_caption_like",
+        },
+        {
+            "block_id": "asset",
+            "page": 1,
+            "role": "media_asset",
+            "raw_label": "table_image",
+            "text": "",
+            "bbox": [100, 130, 500, 400],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    assert inventory["official_table_count"] == 1
+    assert inventory["tables"][0]["asset_block_id"] == "asset"
+    assert inventory["tables"][0]["caption_block_id"] == "cap"
+
+
+def test_split_table_caption_materializes_continuation_stolen_as_figure_caption():
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {"block_id": "cap1", "page": 1, "role": "table_caption", "text": "Table 2", "bbox": [100, 100, 220, 120]},
+        {"block_id": "cap2", "page": 1, "role": "figure_caption", "text": "Structural parameters of nanocomposites obtained from the d", "bbox": [100, 121, 500, 145]},
+        {"block_id": "asset", "page": 1, "role": "media_asset", "raw_label": "table_image", "text": "", "bbox": [100, 150, 500, 400]},
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    assert inventory["official_table_count"] == 1
+    assert inventory["tables"][0]["caption_text"].startswith("Table 2 Structural parameters")
+    assert "cap2" in inventory["tables"][0]["consumed_block_ids"]
+
+
+def test_split_table_caption_does_not_steal_real_figure_caption():
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {"block_id": "cap1", "page": 1, "role": "table_caption", "text": "Table 2", "bbox": [100, 100, 220, 120]},
+        {"block_id": "figcap", "page": 1, "role": "figure_caption", "text": "Figure 3. Histology results.", "bbox": [600, 100, 900, 125]},
+        {"block_id": "asset", "page": 1, "role": "media_asset", "raw_label": "table_image", "text": "", "bbox": [100, 150, 500, 400]},
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    assert inventory["tables"][0]["caption_text"] == "Table 2"
+    assert "figcap" not in inventory["tables"][0]["consumed_block_ids"]

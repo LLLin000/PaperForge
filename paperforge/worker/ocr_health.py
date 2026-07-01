@@ -106,6 +106,10 @@ def _build_held_counts(doc_structure: Any, *, held_figure_count: int, held_table
     }
 
 
+def _health_profile(page_count: int) -> str:
+    return "short_form" if int(page_count or 0) <= 2 else "standard"
+
+
 def build_ocr_health(
     *,
     page_count: int,
@@ -172,17 +176,20 @@ def build_ocr_health(
     formal_legend_accounted = int(completeness.get("accounted_for", 0))
     formal_legend_gaps = int(completeness.get("gap_count", 0))
 
-    # Only flag structural blockers as health-color issues.
-    # Caption/media gaps, empty tables, legend gaps, layout anomalies
-    # are kept in the report as data but do NOT drive the overall color —
-    # they are display-quality concerns, not rebuild triggers.
+    # Health profile determines which structural gates apply
+    profile = _health_profile(page_count)
+    waived_gates: list[str] = []
     structural_blockers = 0
-    if not abstract_found:
-        structural_blockers += 1
-    if not references_found:
-        structural_blockers += 1
-    if section_heading_count < 2:
-        structural_blockers += 1
+
+    if profile == "short_form":
+        waived_gates.extend(["abstract_found", "section_heading_count"])
+    else:
+        if not abstract_found:
+            structural_blockers += 1
+        if not references_found:
+            structural_blockers += 1
+        if section_heading_count < 2:
+            structural_blockers += 1
 
     # Count soft issues for the report (informational only)
     soft_issues = 0
@@ -202,8 +209,9 @@ def build_ocr_health(
     else:
         overall = "red"
 
-    # needs_rebuild: only when structural core is broken
-    needs_rebuild = structural_blockers >= 2 or (not abstract_found and not references_found)
+    # needs_rebuild: only when structural core is broken.
+    # Short-form papers are never red for missing structure alone.
+    needs_rebuild = structural_blockers >= 2 or (not abstract_found and not references_found and profile != "short_form")
 
     # Compute structural health signals
     from paperforge.worker.ocr_document import _compute_span_coverage, _detect_body_spine, _run_layout_audit
@@ -289,6 +297,8 @@ def build_ocr_health(
         "needs_rebuild": needs_rebuild,
         "structural_blockers": structural_blockers,
         "soft_issues": soft_issues,
+        "health_profile": profile,
+        "waived_gates": waived_gates,
         "span_coverage": span,
         "span_coverage_quality": span.get("coverage_quality", "weak"),
         "degraded_mode_active": span.get("degraded_mode_active", True),
@@ -355,18 +365,17 @@ def build_ocr_health(
     if role_gate_summary:
         report["role_gate_summary"] = role_gate_summary
 
-    degraded_reasons = []
+    hard_degraded_reasons = []
+    warning_reasons = []
     if span.get("coverage_quality", "weak") == "weak":
-        degraded_reasons.append(f"weak span coverage ({span.get('coverage_ratio', 0):.0%})")
+        warning_reasons.append(f"weak span coverage ({span.get('coverage_ratio', 0):.0%})")
     if spine.get("_meta", {}).get("quality", "weak") == "weak":
-        degraded_reasons.append("weak body spine")
+        warning_reasons.append("weak body spine")
     if layout.get("error_count", 0) > 0:
-        degraded_reasons.append(f"layout audit errors ({layout.get('error_count', 0)} errors)")
+        warning_reasons.append(f"layout audit errors ({layout.get('error_count', 0)} errors)")
 
     if role_gate_summary.get("status") == "degraded":
-        degraded_reasons.append("OCR structural role gate degraded")
-
-    report["degraded_reasons"] = degraded_reasons
+        warning_reasons.append("OCR structural role gate degraded")
 
     def _score_distribution(scores: list[float]) -> dict:
         return {
@@ -402,16 +411,26 @@ def build_ocr_health(
 
     low_confidence_figures = [s for s in fig_scores if s < 0.4]
     if low_confidence_figures:
-        degraded_reasons.append(f"low figure caption confidence ({len(low_confidence_figures)} figures)")
+        warning_reasons.append(f"low figure caption confidence ({len(low_confidence_figures)} figures)")
     low_confidence_tables = [s for s in table_scores if s < 0.4]
     if low_confidence_tables:
-        degraded_reasons.append(f"low table match confidence ({len(low_confidence_tables)} tables)")
+        warning_reasons.append(f"low table match confidence ({len(low_confidence_tables)} tables)")
     if formal_legend_gaps > 0:
-        degraded_reasons.append(
+        warning_reasons.append(
             f"figure legend completeness gap ({formal_legend_gaps} numbered legends unaccounted for)"
         )
     if reader_payload is not None and reader_payload.get("reader_coverage", {}).get("gap_count", 0) > 0:
-        degraded_reasons.append("reader_figure_coverage_gap")
+        warning_reasons.append("reader_figure_coverage_gap")
+    if rendered_gap["rendered_text_gap_count"] > 0:
+        hard_degraded_reasons.append(
+            f"rendered text gaps ({rendered_gap['rendered_text_gap_count']} segments missing from fulltext)"
+        )
+
+    report["hard_degraded_reasons"] = hard_degraded_reasons
+    report["warning_reasons"] = warning_reasons
+    report["degraded_reasons"] = hard_degraded_reasons
+    if profile == "short_form":
+        report["degraded_reason"] = "short_paper_format"
 
     return report
 

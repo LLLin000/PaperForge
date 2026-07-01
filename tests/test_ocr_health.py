@@ -294,7 +294,7 @@ def test_ocr_health_includes_confidence_distributions() -> None:
     assert tbl_dist["low"] == 1
 
 
-def test_health_report_includes_degraded_reasons() -> None:
+def test_health_report_includes_warning_or_degraded_reasons() -> None:
     from paperforge.worker.ocr_health import build_ocr_health
 
     report = build_ocr_health(
@@ -306,8 +306,56 @@ def test_health_report_includes_degraded_reasons() -> None:
     )
 
     assert "degraded_reasons" in report
-    assert len(report["degraded_reasons"]) > 0
+    assert "warning_reasons" in report
+    assert len(report["degraded_reasons"]) + len(report["warning_reasons"]) > 0
 
+def test_health_report_separates_warning_reasons_from_hard_degradation() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=1,
+        structured_blocks=[
+            {"role": "section_heading", "text": "1 Intro", "span_metadata": {"size": 12}},
+            {"role": "section_heading", "text": "2 Methods", "span_metadata": {"size": 12}},
+            {"role": "abstract_body", "text": "Abstract text", "span_metadata": {"size": 10}},
+            {"role": "reference_item", "text": "[1] Ref", "span_metadata": {"size": 10}},
+            {"role": "body_paragraph", "text": "Body text", "span_metadata": {"size": 10}},
+        ],
+        figure_inventory={
+            "matched_figures": [{"caption_score": {"score": 0.2}, "matched_assets": [{}]}],
+            "unmatched_legends": [],
+            "unmatched_assets": [],
+            "figure_legend_completeness": {"total": 1, "accounted": 1, "gap_count": 0, "ratio": 1.0},
+        },
+        table_inventory={"tables": [], "unmatched_captions": [], "unmatched_assets": []},
+    )
+
+    assert any("low figure caption confidence" in r for r in report["warning_reasons"])
+    assert all("low figure caption confidence" not in r for r in report["degraded_reasons"])
+
+
+def test_health_report_marks_rendered_text_gaps_as_hard_degradation() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=1,
+        structured_blocks=[
+            {
+                "role": "body_paragraph",
+                "text": "Short OCR body",
+                "span_metadata": {"size": 10},
+                "pdf_region_text": "Important missing body segment from PDF",
+            }
+        ],
+        figure_inventory={},
+        table_inventory={},
+        rendered_markdown="Short OCR body",
+    )
+
+    assert any("rendered text gaps" in r for r in report["degraded_reasons"])
+    assert report["rendered_text_gap_count"] > 0
 
 def test_ocr_health_reports_layout_confidence_distribution() -> None:
     from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
@@ -623,7 +671,7 @@ def test_ocr_health_role_gate_degraded_forces_overall_red() -> None:
         "reference_item_outside_reference_zone_count": 0,
     }
     health = build_ocr_health(
-        page_count=1,
+        page_count=3,
         raw_blocks_count=0,
         structured_blocks=[],
         figure_inventory={},
@@ -728,3 +776,41 @@ def test_health_emits_additive_v2_fields_without_replacing_overall() -> None:
     assert "heading_total_v2" in health
     assert "matched_figure_count_v2" in health
     assert "issue_breakdown_v2" in health
+
+def test_short_form_health_does_not_go_red_for_missing_abstract_headings_and_refs():
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=2,
+        raw_blocks_count=2,
+        structured_blocks=[
+            {"page": 1, "role": "body_paragraph", "text": "Short letter text."},
+            {"page": 2, "role": "body_paragraph", "text": "More short letter text."},
+        ],
+        figure_inventory={"matched_figures": [], "held_figures": [], "unmatched_legends": [], "unmatched_assets": [], "figure_legend_completeness": {}},
+        table_inventory={"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": []},
+    )
+
+    assert report["health_profile"] == "short_form"
+    assert report["overall"] in {"green", "yellow"}
+    assert report["needs_rebuild"] is False
+    assert "abstract_found" in report["waived_gates"]
+    assert report["degraded_reason"] == "short_paper_format"
+
+
+def test_standard_profile_still_flags_missing_structure():
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=5,
+        raw_blocks_count=2,
+        structured_blocks=[
+            {"page": 1, "role": "body_paragraph", "text": "Body."},
+            {"page": 5, "role": "body_paragraph", "text": "Tail."},
+        ],
+        figure_inventory={"matched_figures": [], "held_figures": [], "unmatched_legends": [], "unmatched_assets": [], "figure_legend_completeness": {}},
+        table_inventory={"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": []},
+    )
+
+    assert report["health_profile"] == "standard"
+    assert report["overall"] == "red"

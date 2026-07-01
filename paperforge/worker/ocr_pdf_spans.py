@@ -14,6 +14,14 @@ from typing import Any
 
 import fitz
 
+import os as _os
+from contextlib import redirect_stderr as _redirect_stderr
+
+
+def _fitz_quiet_open(path: str):
+    with _redirect_stderr(_os.devnull):
+        return fitz.open(path)
+
 
 def _map_ocr_bbox_to_pdf_rect(
     bbox: list[float],
@@ -277,6 +285,21 @@ def _bbox_overlap_ratio(container_rect: Any, block_rect: Any) -> float:
     return (overlap.width * overlap.height) / area_b
 
 
+def _word_center_inside_rect(word_bbox, block_rect) -> bool:
+    x0, y0, x1, y1 = word_bbox
+    cx = (x0 + x1) / 2.0
+    cy = (y0 + y1) / 2.0
+    return block_rect.x0 <= cx <= block_rect.x1 and block_rect.y0 <= cy <= block_rect.y1
+
+
+def _word_belongs_to_block(word_bbox, block_rect) -> bool:
+    word_rect = fitz.Rect(*word_bbox)
+    return (
+        _word_center_inside_rect(word_bbox, block_rect)
+        or _bbox_overlap_ratio(word_rect, block_rect) >= 0.30
+    )
+
+
 def _has_container_text(
     rect: Any,
     *,
@@ -401,15 +424,12 @@ def backfill_span_metadata_from_pdf(
     """
     if not pdf_path:
         return raw_blocks
-
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
         return raw_blocks
 
-    import fitz
-
     try:
-        doc = fitz.open(str(pdf_path))
+        doc = _fitz_quiet_open(str(pdf_path))
     except Exception:
         return raw_blocks
 
@@ -608,10 +628,8 @@ def backfill_missing_text_from_pdf(
     if not pdf_path.exists():
         return raw_blocks
 
-    import fitz
-
     try:
-        doc = fitz.open(str(pdf_path))
+        doc = _fitz_quiet_open(str(pdf_path))
     except Exception:
         return raw_blocks
 
@@ -695,6 +713,11 @@ def backfill_missing_text_from_pdf(
                 words = pdf_page.get_text("words", clip=expanded)
             except Exception:
                 words = []
+
+            words = [
+                w for w in words
+                if len(w) >= 4 and _word_belongs_to_block(tuple(w[:4]), rect)
+            ]
 
             text = _words_to_text(words)
 
