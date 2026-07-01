@@ -98,7 +98,24 @@ def _crop_asset_from_pdf(
     page_cache_dir: Path | None = None,
     pdf_doc: Any | None = None,
     pdf_doc_provider: Callable[[], Any | None] | None = None,
+    rotation_deg: int = 0,
 ) -> bool:
+
+    def _apply_rotation_if_needed() -> bool:
+        if not rotation_deg:
+            return True
+        try:
+            from PIL import Image
+        except ImportError:
+            return False
+        try:
+            img = Image.open(dst)
+            rotated = img.rotate(rotation_deg, expand=True, resample=Image.Resampling.LANCZOS)
+            rotated.save(dst)
+            return True
+        except Exception:
+            return False
+
     if dst.exists():
         with contextlib.suppress(Exception):
             dst.unlink()
@@ -109,7 +126,8 @@ def _crop_asset_from_pdf(
             from paperforge.worker.ocr import crop_block_asset
         except ImportError:
             return False
-        return crop_block_asset(cached_page_image, [int(v) for v in bbox], dst)
+        ok = crop_block_asset(cached_page_image, [int(v) for v in bbox], dst)
+        return ok and _apply_rotation_if_needed()
 
     created_doc = None
     doc = pdf_doc
@@ -145,7 +163,8 @@ def _crop_asset_from_pdf(
                 )
                 if not rendered:
                     return False
-                return crop_block_asset(rendered, [int(v) for v in bbox], dst)
+                ok = crop_block_asset(rendered, [int(v) for v in bbox], dst)
+                return ok and _apply_rotation_if_needed()
             except Exception:
                 return False
 
@@ -160,7 +179,7 @@ def _crop_asset_from_pdf(
             pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=rect)
             dst.parent.mkdir(parents=True, exist_ok=True)
             pix.save(str(dst))
-            return True
+            return _apply_rotation_if_needed()
         except Exception:
             return False
     finally:
@@ -245,6 +264,8 @@ def extract_and_write_objects(
             asset_path_rel = f"assets/figures/{fig_id}.jpg"
             asset_path_abs = figures_asset_dir / f"{fig_id}.jpg"
 
+            rotation_deg = int(match.get("rotation_correction_deg", 0) or 0)
+
             was_cropped = False
             cluster_bbox = match.get("cluster_bbox")
             if cluster_bbox and all(v > 0 for v in cluster_bbox):
@@ -257,6 +278,7 @@ def extract_and_write_objects(
                     page_height=page_height,
                     page_cache_dir=page_cache_dir,
                     pdf_doc_provider=_get_shared_pdf_doc,
+                    rotation_deg=rotation_deg,
                 )
             if not was_cropped:
                 for asset_info in match.get("matched_assets", []):
@@ -274,6 +296,7 @@ def extract_and_write_objects(
                             page_height=page_height,
                             page_cache_dir=page_cache_dir,
                             pdf_doc_provider=_get_shared_pdf_doc,
+                            rotation_deg=rotation_deg,
                         )
                     ):
                         was_cropped = True

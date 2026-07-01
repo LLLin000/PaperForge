@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from paperforge.core.io import write_json
-from paperforge.worker.ocr_roles import _PANEL_LABEL_PATTERN
+from paperforge.worker.ocr_roles import _PANEL_LABEL_PATTERN, _looks_like_figure_description_opening
 from paperforge.worker.ocr_scores import score_figure_caption, score_figure_match
 
 _FIGURE_NUMBER_PATTERN = re.compile(
@@ -1086,7 +1086,7 @@ def _score_legend_to_group(
             }
 
         cluster_bbox = group.get("cluster_bbox", [0, 0, 0, 0])
-        match_score = score_figure_match(
+        match_score = _score_legend_to_asset_with_orientation(
             legend,
             {"bbox": cluster_bbox, "page": group.get("page", 0)},
             caption_score=caption_score,
@@ -1132,7 +1132,7 @@ def _score_legend_to_group(
 
     if gt == "single_asset":
         asset = group["media_blocks"][0]
-        return score_figure_match(
+        return _score_legend_to_asset_with_orientation(
             legend,
             asset,
             caption_score=caption_score,
@@ -1143,7 +1143,7 @@ def _score_legend_to_group(
         )
 
     cluster_bbox = group.get("cluster_bbox", [0, 0, 0, 0])
-    match_score = score_figure_match(
+    match_score = _score_legend_to_asset_with_orientation(
         legend,
         {"bbox": cluster_bbox, "page": group.get("page", 0)},
         caption_score=caption_score,
@@ -3032,6 +3032,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             continue
         is_validation_first_candidate = _is_validation_first_legend_candidate(block)
         if role in ("figure_caption", "figure_caption_candidate") or is_validation_first_candidate:
+            text = str(block.get("text", "") or "")
+            raw_label = str(block.get("raw_label") or "")
+            rotated_orientation_prematch = (
+                role == "figure_caption_candidate"
+                and raw_label == "vision_footnote"
+                and _caption_has_rotated_text(block)
+                and _looks_like_figure_description_opening(text)
+            )
             if role == "figure_caption_candidate" and (
                 str(block.get("zone") or "") == "body_zone"
                 or (
@@ -3041,15 +3049,32 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     and _extract_figure_number(block.get("text", "")) is None
                 )
             ):
+                if rotated_orientation_prematch:
+                    block["_rotated_caption_prematch"] = True
+                    legends.append(block)
+                else:
+                    # Vision-footnote figure descriptions: add to rejected_legends
+                    # so synthetic vector fallback can match them to unmatched assets.
+                    if raw_label == "vision_footnote":
+                        block["_rejected_legend"] = {
+                            "reason": "vision_footnote_body_zone",
+                            "role": role,
+                            "raw_label": raw_label,
+                        }
+                        rejected_legends.append(block)
                 continue
-            if not _is_formal_legend(block.get("text", ""), block, page_width):
-                block["caption_score"] = score_figure_caption(
-                    block,
-                    nearby_media=False,
-                    caption_style_match=False,
-                    body_prose_likelihood=_looks_like_inline_figure_mention(block.get("text", ""), block),
-                )
-                rejected_legends.append(block)
+            if not _is_formal_legend(text, block, page_width):
+                if rotated_orientation_prematch:
+                    block["_rotated_caption_prematch"] = True
+                    legends.append(block)
+                else:
+                    block["caption_score"] = score_figure_caption(
+                        block,
+                        nearby_media=False,
+                        caption_style_match=False,
+                        body_prose_likelihood=_looks_like_inline_figure_mention(block.get("text", ""), block),
+                    )
+                    rejected_legends.append(block)
             else:
                 if _is_previous_page_legend_locator(block):
                     figure_locators.append(block)
@@ -3371,6 +3396,13 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             caption_style_match=_caption_style_match(legend, structured_blocks),
             body_prose_likelihood=body_prose_likelihood,
         )
+        if legend.get("_rotated_caption_prematch"):
+            caption_score = dict(caption_score)
+            caption_score["score"] = max(float(caption_score.get("score", 0.0) or 0.0), 0.82)
+            caption_score.setdefault("evidence", []).append("rotated_caption_prematch")
+            if caption_score.get("decision") == "rejected":
+                caption_score["decision"] = "candidate"
+
 
         candidates = []
         anchor_supported = _has_anchor_supported_legend_context(legend)
@@ -3659,7 +3691,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                                 "group_type": best_group.get("group_type", ""),
                                 "group_evidence": best_group.get("group_evidence", []),
                             }
-                            if len(matched_assets) > 1:
+                            if "rotation_correction_deg" in best_score:
+                                region_match["rotation_correction_deg"] = best_score["rotation_correction_deg"]
+                                region_match["cluster_bbox"] = best_score.get("rotation_union_bbox", [0, 0, 0, 0])
+                            elif len(matched_assets) > 1:
                                 region_match["cluster_bbox"] = best_group.get("cluster_bbox", [0, 0, 0, 0])
                     else:
                         if (
@@ -3712,7 +3747,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                             "group_type": best_group.get("group_type", ""),
                             "group_evidence": best_group.get("group_evidence", []),
                         }
-                        if len(matched_assets) > 1:
+                        if "rotation_correction_deg" in best_score:
+                            region_match["rotation_correction_deg"] = best_score["rotation_correction_deg"]
+                            region_match["cluster_bbox"] = best_score.get("rotation_union_bbox", [0, 0, 0, 0])
+                        elif len(matched_assets) > 1:
                             region_match["cluster_bbox"] = best_group.get("cluster_bbox", [0, 0, 0, 0])
                 else:
                     if fig_num is None and str(legend.get("role") or "") in (
@@ -3856,12 +3894,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             "caption_score": caption_score,
             "legend_page": legend_page,
             "asset_pages": sorted({int(a.get("page", 0) or 0) for a in matched_assets}) or [legend_page],
-            "settlement_type": "same_page",
+            "settlement_type": "same_page_rotated" if region_match and region_match.get("rotation_correction_deg") else "same_page",
         }
+        if region_match and region_match.get("rotation_correction_deg"):
+            entry["rotation_correction_deg"] = region_match["rotation_correction_deg"]
+            entry["cluster_bbox"] = region_match.get("cluster_bbox", [0, 0, 0, 0])
         local_bridges = _collect_bridge_blocks(int(legend_page or 0))
         entry["asset_block_ids"] = [str(a.get("block_id", "")) for a in matched_assets if a.get("block_id")]
         entry["bridge_block_ids"] = [str(b.get("block_id", "")) for b in local_bridges if b.get("block_id")]
-        if len(matched_assets) > 1:
+        if "cluster_bbox" not in entry and len(matched_assets) > 1:
             entry["cluster_bbox"] = _cluster_bbox([a.get("bbox", [0, 0, 0, 0]) for a in matched_assets])
             # Push cluster_bbox top down past figure_inner_text blocks (panel labels)
             # to exclude (A), (B) etc. from the cropped figure image.
@@ -4863,8 +4904,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     # bbox-only synthetic vector figure fallback (Commit 4)
     _apply_bbox_only_synthetic_vector_fallback(
         matched_figures=inventory.setdefault("matched_figures", []),
-        unmatched_legends=inventory.setdefault("unmatched_figure_legends", []),
-        rejected_legends=inventory.setdefault("rejected_figure_legends", []),
+        unmatched_legends=inventory.setdefault("unmatched_legends", []),
+        rejected_legends=inventory.setdefault("rejected_legends", []),
         unmatched_assets=inventory.setdefault("unmatched_assets", []),
         ownership=ownership,
     )
@@ -5509,6 +5550,116 @@ def _is_synthetic_vector_caption_candidate(caption: dict) -> bool:
     return bool(_FIGURE_DESCRIPTION_OPENING.match(text.strip())) \
         or bool(_extract_figure_number(text) is not None)
 
+def _caption_has_rotated_text(caption: dict) -> bool:
+    span = caption.get("span_metadata") or []
+    if isinstance(span, dict):
+        span = [span]
+    if not isinstance(span, list):
+        return False
+    for entry in span:
+        if not isinstance(entry, dict):
+            continue
+        direction = entry.get("dir")
+        if not isinstance(direction, (list, tuple)) or len(direction) != 2:
+            continue
+        dx = float(direction[0])
+        dy = float(direction[1])
+        if abs(dy) > abs(dx):
+            return True
+    return False
+
+
+def _rotate_rect_within_union(rect: list[float], union: list[float], *, clockwise: bool) -> list[float]:
+    ux1, uy1, ux2, uy2 = union
+    rx1, ry1, rx2, ry2 = rect
+    width = max(0.0, ux2 - ux1)
+    height = max(0.0, uy2 - uy1)
+    pts = [
+        (rx1 - ux1, ry1 - uy1),
+        (rx2 - ux1, ry1 - uy1),
+        (rx2 - ux1, ry2 - uy1),
+        (rx1 - ux1, ry2 - uy1),
+    ]
+    if clockwise:
+        rotated = [(height - y, x) for x, y in pts]
+    else:
+        rotated = [(y, width - x) for x, y in pts]
+    xs = [p[0] for p in rotated]
+    ys = [p[1] for p in rotated]
+    return [min(xs), min(ys), max(xs), max(ys)]
+
+
+def _prepare_rotated_caption_normalization(legend: dict, asset: dict) -> dict | None:
+    if not _caption_has_rotated_text(legend):
+        return None
+    lb = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
+    ab = asset.get("bbox") or asset.get("block_bbox") or [0, 0, 0, 0]
+    if len(lb) < 4 or len(ab) < 4:
+        return None
+    if int(legend.get("page", 0) or 0) != int(asset.get("page", 0) or 0):
+        return None
+
+    lx1, ly1, lx2, ly2 = lb
+    ax1, ay1, ax2, ay2 = ab
+    vertical_overlap = max(0.0, min(ly2, ay2) - max(ly1, ay1))
+    min_height = max(1.0, min(ly2 - ly1, ay2 - ay1))
+    y_ratio = vertical_overlap / min_height
+    x_gap = max(ax1 - lx2, lx1 - ax2, 0.0)
+    if y_ratio < 0.5 or x_gap > 80:
+        return None
+
+    union = [min(lx1, ax1), min(ly1, ay1), max(lx2, ax2), max(ly2, ay2)]
+    clockwise = lx1 >= ax2
+    rotation_correction_deg = 270 if clockwise else 90
+    return {
+        "legend_bbox": _rotate_rect_within_union(lb, union, clockwise=clockwise),
+        "asset_bbox": _rotate_rect_within_union(ab, union, clockwise=clockwise),
+        "rotation_correction_deg": rotation_correction_deg,
+        "rotation_union_bbox": union,
+    }
+
+
+def _score_legend_to_asset_with_orientation(
+    legend: dict,
+    asset: dict,
+    *,
+    caption_score: dict,
+    anchor_supported: bool = False,
+    caption_text_supported: bool = False,
+    family_supported: bool = False,
+    zone_supported: bool = False,
+) -> dict:
+    normalized = _prepare_rotated_caption_normalization(legend, asset)
+    if normalized is not None:
+        norm_legend = dict(legend)
+        norm_asset = dict(asset)
+        norm_legend["bbox"] = normalized["legend_bbox"]
+        norm_asset["bbox"] = normalized["asset_bbox"]
+        match_score = score_figure_match(
+            norm_legend,
+            norm_asset,
+            caption_score=caption_score,
+            anchor_supported=anchor_supported,
+            caption_text_supported=caption_text_supported,
+            family_supported=family_supported,
+            zone_supported=zone_supported,
+        )
+        match_score = dict(match_score)
+        match_score.setdefault("evidence", []).append("rotated_caption_normalized")
+        match_score["rotation_correction_deg"] = normalized["rotation_correction_deg"]
+        match_score["rotation_union_bbox"] = normalized["rotation_union_bbox"]
+        return match_score
+    return score_figure_match(
+        legend,
+        asset,
+        caption_score=caption_score,
+        anchor_supported=anchor_supported,
+        caption_text_supported=caption_text_supported,
+        family_supported=family_supported,
+        zone_supported=zone_supported,
+    )
+
+
 
 def _score_caption_to_unmatched_asset_for_synthetic(caption: dict, asset: dict) -> float:
     cb = caption.get("bbox") or caption.get("block_bbox") or [0, 0, 0, 0]
@@ -5526,6 +5677,16 @@ def _score_caption_to_unmatched_asset_for_synthetic(caption: dict, asset: dict) 
     vertical_gap = max(0.0, max(cy1 - ay2, ay1 - cy2))
     if vertical_gap > 300:
         return 0.0
+
+    normalized = _prepare_rotated_caption_normalization(caption, asset)
+    if normalized is not None:
+        cb = normalized["legend_bbox"]
+        ab = normalized["asset_bbox"]
+        cx1, cy1, cx2, cy2 = cb
+        ax1, ay1, ax2, ay2 = ab
+        vertical_gap = max(0.0, max(cy1 - ay2, ay1 - cy2))
+        if vertical_gap > 300:
+            return 0.0
 
     x_overlap = max(0.0, min(cx2, ax2) - max(cx1, ax1))
     min_width = max(1.0, min(cx2 - cx1, ax2 - ax1))
@@ -5557,7 +5718,8 @@ def _build_bbox_only_synthetic_figure(caption, asset, *, index, score):
     page = int(asset.get("page", caption.get("page", 0)) or 0)
     asset_record = _project_asset_record(asset)
     fig_id = _format_figure_id(ns, fn) if fn is not None else f"synthetic_figure_p{page}_{asset.get('block_id', index)}"
-    return {
+    normalized = _prepare_rotated_caption_normalization(caption, asset)
+    entry = {
         "figure_id": fig_id, "figure_namespace": ns,
         "legend_block_id": caption.get("block_id", ""),
         "page": page, "legend_page": int(caption.get("page", 0) or 0),
@@ -5565,7 +5727,11 @@ def _build_bbox_only_synthetic_figure(caption, asset, *, index, score):
         "text": text, "figure_number": fn,
         "matched_assets": [asset_record],
         "asset_block_ids": [asset_record.get("block_id", "")],
-        "cluster_bbox": asset.get("bbox") or asset.get("block_bbox") or [],
+        "cluster_bbox": (
+            normalized["rotation_union_bbox"]
+            if normalized is not None
+            else asset.get("bbox") or asset.get("block_bbox") or []
+        ),
         "caption_score": score_figure_caption(
             caption,
             nearby_media=True,
@@ -5583,6 +5749,9 @@ def _build_bbox_only_synthetic_figure(caption, asset, *, index, score):
         "group_evidence": [],
         "bridge_block_ids": [],
     }
+    if normalized is not None:
+        entry["rotation_correction_deg"] = normalized["rotation_correction_deg"]
+    return entry
 
 
 def _apply_bbox_only_synthetic_vector_fallback(

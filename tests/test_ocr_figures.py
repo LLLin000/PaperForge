@@ -6132,3 +6132,52 @@ def test_synthetic_fallback_rejects_low_score():
         {"page": 5, "bbox": [100, 900, 900, 1200]},
     )
     assert score == 0.0
+
+
+def test_synthetic_fallback_rotated_caption_normalizes_before_matching():
+    from paperforge.worker.ocr_figures import _score_caption_to_unmatched_asset_for_synthetic
+
+    caption = {
+        "page": 8,
+        "bbox": [984, 136, 1062, 1442],
+        "span_metadata": [{"dir": (0.0, -1.0), "wmode": 0}],
+    }
+    asset = {"page": 8, "bbox": [105, 134, 967, 1443]}
+    assert _score_caption_to_unmatched_asset_for_synthetic(caption, asset) >= 0.65
+
+
+def test_synthetic_fallback_horizontal_sidecar_stays_rejected():
+    from paperforge.worker.ocr_figures import _score_caption_to_unmatched_asset_for_synthetic
+
+    caption = {
+        "page": 8,
+        "bbox": [984, 136, 1062, 1442],
+        "span_metadata": [{"dir": (1.0, 0.0), "wmode": 0}],
+    }
+    asset = {"page": 8, "bbox": [105, 134, 967, 1443]}
+    assert _score_caption_to_unmatched_asset_for_synthetic(caption, asset) == 0.0
+
+
+def test_score_legend_to_group_rotated_prematch_adds_rotation_metadata():
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    legend = {
+        "page": 8,
+        "bbox": [984, 136, 1062, 1442],
+        "text": "This figure demonstrates the difference between time zero and time of sepsis threshold positivity.",
+        "span_metadata": [{"dir": (0.0, -1.0), "wmode": 0}],
+        "_rotated_caption_prematch": True,
+    }
+    group = {
+        "group_type": "single_asset",
+        "page": 8,
+        "media_blocks": [{"page": 8, "bbox": [105, 134, 967, 1443], "block_id": "a1"}],
+    }
+    score = _score_legend_to_group(
+        legend,
+        group,
+        caption_score={"score": 0.9},
+    )
+    assert score["decision"] == "matched"
+    assert score["rotation_correction_deg"] == 270
+    assert "rotated_caption_normalized" in score["evidence"]

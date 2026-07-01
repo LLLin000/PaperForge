@@ -16,6 +16,7 @@ from paperforge.worker.ocr_roles import (
     _is_near_figure_media,
     _looks_like_affiliation,
     _looks_like_author_list,
+    _looks_like_figure_description_opening,
 )
 from paperforge.worker.ocr_scores import score_structured_insert
 
@@ -4556,6 +4557,8 @@ def _resolve_ambiguous_candidates(
                 in_body_spine
                 and is_prose
                 and not (zone == "display_zone" and style_family == "legend_like" and raw_label == "figure_title")
+                # Vision-footnote figure descriptions already validated by dedicated rescue
+                and not (raw_label == "vision_footnote" and _looks_like_figure_description_opening(text))
             ):
                 old_role = block.get("role")
                 block["role"] = "body_paragraph"

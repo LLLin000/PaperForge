@@ -101,6 +101,14 @@ def extract_pdf_spans_for_block(
         if block.get("type") != 0:
             continue
         for line in block.get("lines", []):
+            line_dir = line.get("dir")
+            if isinstance(line_dir, (list, tuple)) and len(line_dir) == 2:
+                line_dir = (float(line_dir[0]), float(line_dir[1]))
+            else:
+                line_dir = None
+            line_wmode = line.get("wmode")
+            if not isinstance(line_wmode, int):
+                line_wmode = 0
             for span in line.get("spans", []):
                 size = span.get("size")
                 if size is None:
@@ -114,6 +122,8 @@ def extract_pdf_spans_for_block(
                         "font": str(span.get("font", "")),
                         "flags": flags,
                         "color": int(span.get("color", 0)),
+                        "dir": line_dir,
+                        "wmode": line_wmode,
                     }
                 )
 
