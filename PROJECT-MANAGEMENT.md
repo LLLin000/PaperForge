@@ -321,8 +321,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-06-28 | Data-driven truth audit (2 papers) | 2HEUD5P9 (27p) + 4AG67PBH (25p) — no vision (model limit). Found 3 pipeline defect patterns: zone_leak_frontmatter_to_body (2 papers), reference_boundary_body_mix (2 papers), title_repeat_page2 (1 paper). 12 ghost unknown_structural blocks in 2HEUD5P9. Findings saved to audit/2026-06-28-data-audit-findings.json. | §9.15 |
 | 2026-06-28 | P0 author bio detection implementation | Created ocr_bio.py with category-weighted bio scoring, Pass C (post_ref_bio_cleanup), figure match guards. Wired author_bio_asset role contract + pipeline. 30 new tests pass. 1041 total OCR tests, 0 regressions. Commits: `e2f0c8a`, `7810eb1`. | §9.16 |
 | 2026-06-28 | P1 author bio detection implementation | Added residual_author_bio_pass (figure-residual portrait assets), extended post_ref_bio_cleanup for figure_caption, tag_figure_contained_text protection. 7 new P1 tests. 1018 total OCR tests, 0 regressions. Commit: `7a1cc5e`. | §9.17 |
-| 2026-07-01 | Residual fixes — 6 issues | Backfill clamp, table fallthrough + continuation, short-form health, container bbox containment, cross-column gate, asset arbitration. 3 commits on master, 364 tests pass. | §2.3 |
-| 2026-07-01 | Truth audit — 10 papers + GPT cross-validation | 10-paper batch audit: U746UJ7G vision (vector figure blindspot); KUR9PBJC Table I/II roman bug; YGH7VEX6 zone spillover; V4U backfill confirmation. 4 GPT-reviewed commits planned. Spec: `docs/superpowers/specs/2026-07-01-ocr-audit-findings-for-gpt.md`. Plan: `docs/superpowers/plans/2026-07-01-ocr-audit-gpt-fix-plan.md`. | §9.18 |
+| 2026-07-01 | Audit fix commits (3 of 4) | Commit 1: Table Roman+S prefix (`2d40ad9`). Commit 2: vision_footnote rescue (`21bdfd0`). Commit 4: synthetic vector fallback (`7670227`). Commit 3 already in codebase from PR3. 419 regr tests pass. | §9.18 |
 
 ---
 
@@ -521,6 +520,7 @@ Full-day debugging session across 8 gold papers. 98 bug annotations, 8 pipeline 
 - Spec: `docs/superpowers/specs/2026-07-01-ocr-audit-findings-for-gpt.md`
 - Plan: `docs/superpowers/plans/2026-07-01-ocr-audit-gpt-fix-plan.md`
 - Per-paper vision reports: `local://*-vision-report.md`
+**Execution:** 3/4 commits implemented (`2d40ad9`, `21bdfd0`, `7670227`). Commit 3 (unmatched dedup) pre-existing from PR3 (`4ab227e`). 419 regression tests pass. Plan filed at `docs/superpowers/plans/2026-07-01-ocr-audit-gpt-fix-plan.md`.
 - Block reviews: `audit/<KEY>/block_review.jsonl`（U746UJ7G, KUR9PBJC, CGGYTEEQ, 7FNV9AW2 etc.）
 
 
