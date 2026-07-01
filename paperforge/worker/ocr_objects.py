@@ -101,33 +101,20 @@ def _crop_asset_from_pdf(
     rotation_deg: int = 0,
 ) -> bool:
 
-    def _apply_rotation_if_needed() -> bool:
-        if not rotation_deg:
-            return True
-        try:
-            from PIL import Image
-        except ImportError:
-            return False
-        try:
-            img = Image.open(dst)
-            rotated = img.rotate(rotation_deg, expand=True, resample=Image.Resampling.LANCZOS)
-            rotated.save(dst)
-            return True
-        except Exception:
-            return False
+
 
     if dst.exists():
         with contextlib.suppress(Exception):
             dst.unlink()
 
     cached_page_image = _find_cached_page_image(page_cache_dir, page_num)
-    if cached_page_image is not None:
+    if cached_page_image is not None and not rotation_deg:
         try:
             from paperforge.worker.ocr import crop_block_asset
         except ImportError:
             return False
         ok = crop_block_asset(cached_page_image, [int(v) for v in bbox], dst)
-        return ok and _apply_rotation_if_needed()
+        return ok
 
     created_doc = None
     doc = pdf_doc
@@ -146,7 +133,7 @@ def _crop_asset_from_pdf(
         doc = created_doc
 
     try:
-        if page_width > 0 and page_height > 0 and page_cache_dir is not None:
+        if page_width > 0 and page_height > 0 and page_cache_dir is not None and not rotation_deg:
             try:
                 from paperforge.worker.ocr import crop_block_asset, render_pdf_page_cached
             except ImportError:
@@ -164,7 +151,7 @@ def _crop_asset_from_pdf(
                 if not rendered:
                     return False
                 ok = crop_block_asset(rendered, [int(v) for v in bbox], dst)
-                return ok and _apply_rotation_if_needed()
+                return ok
             except Exception:
                 return False
 
@@ -172,14 +159,30 @@ def _crop_asset_from_pdf(
             import fitz
         except ImportError:
             return False
-
         try:
             page = doc[page_num - 1]
-            rect = fitz.Rect(*bbox)
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=rect)
+            # Clip is in PDF user space — bbox is in OCR coordinates (scaled).
+            # Convert to PDF space using page_width/height vs PDF page rect ratio.
+            pdf_rect = page.rect
+            sx = max(1.0, page_width / pdf_rect.width) if page_width > 0 else 2.0
+            sy = max(1.0, page_height / pdf_rect.height) if page_height > 0 else 2.0
+            rect = fitz.Rect(bbox[0] / sx, bbox[1] / sy, bbox[2] / sx, bbox[3] / sy)
+            # High-resolution zoom for crisp vector rendering (4x vs previous 2x)
+            zoom = 4.0
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat, clip=rect)
             dst.parent.mkdir(parents=True, exist_ok=True)
-            pix.save(str(dst))
-            return _apply_rotation_if_needed()
+            if rotation_deg:
+                # PyMuPDF Pixmap has no .rotate() — render at 4x then rotate via PIL
+                # on the high-res pixmap data. Single pass, no double JPEG compression.
+                from PIL import Image
+                import io
+                img = Image.open(io.BytesIO(pix.tobytes("png")))
+                img = img.rotate(rotation_deg, expand=True, resample=Image.Resampling.LANCZOS)
+                img.save(str(dst))
+            else:
+                pix.save(str(dst))
+            return True
         except Exception:
             return False
     finally:
