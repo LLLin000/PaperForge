@@ -5892,3 +5892,177 @@ def test_previous_page_locator_bridge_does_not_swallow_other_group() -> None:
     unmatched_ids = [(a.get("block_id"), a.get("page"))
                      for a in inventory.get("unmatched_assets", [])]
     assert ("other", 8) in unmatched_ids
+
+# ──────────────────────────────────────────────
+# PR3 Task 1: Cross-column rejection gate
+# ──────────────────────────────────────────────
+
+
+def test_page_assets_group_rejects_cross_column_media_assets():
+    from paperforge.worker.ocr_figures import _is_safe_page_assets_group
+
+    media_blocks = [
+        {"block_id": "L1", "page": 1, "bbox": [30, 0, 280, 200], "raw_label": "image", "text": ""},
+        {"block_id": "L2", "page": 1, "bbox": [30, 220, 280, 420], "raw_label": "image", "text": ""},
+        {"block_id": "R1", "page": 1, "bbox": [500, 0, 540, 200], "raw_label": "image", "text": ""},
+    ]
+    group = {"media_blocks": media_blocks, "cluster_bbox": [30, 0, 540, 420]}
+    legend = {"text": "Figure 1. Example.", "page": 1}
+
+    safe, evidence = _is_safe_page_assets_group(
+        group, legend, page_blocks=list(media_blocks),
+        page_numbered_legend_count=1, page_width=800, page_height=1000,
+    )
+
+
+def test_same_column_stacked_assets_still_pass_gate():
+    from paperforge.worker.ocr_figures import _is_safe_page_assets_group
+
+    media_blocks = [
+        {"block_id": "A", "page": 1, "bbox": [0, 0, 280, 200], "raw_label": "image", "text": ""},
+        {"block_id": "B", "page": 1, "bbox": [0, 220, 280, 420], "raw_label": "image", "text": ""},
+        {"block_id": "C", "page": 1, "bbox": [0, 440, 280, 640], "raw_label": "image", "text": ""},
+    ]
+    group = {"media_blocks": media_blocks, "cluster_bbox": [0, 0, 280, 640]}
+    legend = {"text": "Figure 1. Example.", "page": 1}
+
+    safe, evidence = _is_safe_page_assets_group(
+        group, legend, page_blocks=list(media_blocks),
+        page_numbered_legend_count=1, page_width=600, page_height=1000,
+    )
+    assert safe is True
+    assert evidence == []
+
+
+def test_full_width_group_can_span_columns_without_rejection():
+    from paperforge.worker.ocr_figures import _is_safe_page_assets_group
+
+    media_blocks = [
+        {"block_id": "A", "page": 1, "bbox": [20, 100, 580, 280], "raw_label": "image", "text": ""},
+        {"block_id": "B", "page": 1, "bbox": [20, 300, 580, 480], "raw_label": "image", "text": ""},
+        {"block_id": "C", "page": 1, "bbox": [20, 500, 580, 680], "raw_label": "image", "text": ""},
+    ]
+    group = {"media_blocks": media_blocks, "cluster_bbox": [20, 100, 580, 680]}
+    legend = {"text": "Figure 1. Full-width figure.", "page": 1}
+
+    safe, evidence = _is_safe_page_assets_group(
+        group, legend, page_blocks=list(media_blocks),
+        page_numbered_legend_count=1, page_width=600, page_height=1000,
+    )
+    assert safe is True
+
+
+# ──────────────────────────────────────────────
+# PR3 Task 2: Post-hoc arbitration helpers
+# ──────────────────────────────────────────────
+
+
+def test_resolve_media_asset_conflicts_prefers_explicit_table_over_weak_figure():
+    from paperforge.worker.ocr_figures import resolve_media_asset_conflicts, _build_ownership_conflicts
+
+    figure_inventory = {
+        "matched_figures": [{
+            "figure_id": "figure_001", "legend_block_id": "figcap",
+            "text": "Figure 1. Example.",
+            "match_score": {"score": 0.51, "decision": "matched", "evidence": ["fallback"]},
+            "asset_block_ids": ["asset"], "page": 1,
+        }]
+    }
+    table_inventory = {
+        "tables": [{
+            "table_id": "table_001", "caption_block_id": "tabcap",
+            "caption_text": "Table 1. Example.", "match_status": "matched",
+            "has_asset": True, "asset_block_id": "asset", "page": 1,
+        }]
+    }
+
+    resolutions = resolve_media_asset_conflicts(figure_inventory, table_inventory)
+    conflicts = _build_ownership_conflicts(figure_inventory, table_inventory)
+
+    assert resolutions[0]["winner"] == "table"
+    assert figure_inventory["matched_figures"] == []
+    assert conflicts == []
+
+
+def test_resolve_media_asset_conflicts_prefers_explicit_figure_over_weak_table():
+    from paperforge.worker.ocr_figures import resolve_media_asset_conflicts, _build_ownership_conflicts
+
+    figure_inventory = {
+        "matched_figures": [{
+            "figure_id": "figure_001", "legend_block_id": "figcap",
+            "text": "Figure 1. Example.",
+            "match_score": {"score": 0.92, "decision": "matched", "evidence": ["same_page", "x_overlap"]},
+            "asset_block_ids": ["asset"], "matched_assets": [{"block_id": "asset"}], "page": 1,
+        }]
+    }
+    table_inventory = {
+        "tables": [{
+            "table_id": "table_001", "caption_block_id": "tabcap",
+            "caption_text": "Table 1", "match_status": "matched_low_confidence",
+            "has_asset": True, "asset_block_id": "asset", "page": 1,
+        }]
+    }
+
+    resolutions = resolve_media_asset_conflicts(figure_inventory, table_inventory)
+    conflicts = _build_ownership_conflicts(figure_inventory, table_inventory)
+
+    assert resolutions[0]["winner"] == "figure"
+    assert table_inventory["tables"][0]["has_asset"] is False
+    assert conflicts == []
+
+
+def test_resolve_media_asset_conflicts_leaves_weak_weak_case_unresolved():
+    from paperforge.worker.ocr_figures import resolve_media_asset_conflicts, _build_ownership_conflicts
+
+    figure_inventory = {
+        "matched_figures": [{
+            "figure_id": "figure_001", "legend_block_id": "figcap",
+            "text": "Figure 1.",
+            "match_score": {"score": 0.52, "decision": "matched_low_confidence", "evidence": ["fallback"]},
+            "asset_block_ids": ["asset"], "matched_assets": [{"block_id": "asset"}], "page": 1,
+        }]
+    }
+    table_inventory = {
+        "tables": [{
+            "table_id": "table_001", "caption_block_id": "tabcap",
+            "caption_text": "Table 1", "match_status": "matched_low_confidence",
+            "has_asset": True, "asset_block_id": "asset", "page": 1,
+        }]
+    }
+
+    resolutions = resolve_media_asset_conflicts(figure_inventory, table_inventory)
+    conflicts = _build_ownership_conflicts(figure_inventory, table_inventory)
+
+    assert resolutions == []
+    assert len(conflicts) == 1
+
+
+# ──────────────────────────────────────────────
+# PR3 Task 3: Integration test
+# ──────────────────────────────────────────────
+
+
+def test_attach_ownership_conflicts_runs_after_resolution():
+    from paperforge.worker.ocr_figures import resolve_media_asset_conflicts, attach_ownership_conflicts
+
+    figure_inventory = {
+        "matched_figures": [{
+            "figure_id": "figure_001", "legend_block_id": "figcap",
+            "text": "Figure 1. Example.",
+            "match_score": {"score": 0.51, "decision": "matched", "evidence": ["fallback"]},
+            "asset_block_ids": ["asset"], "page": 1,
+        }]
+    }
+    table_inventory = {
+        "tables": [{
+            "table_id": "table_001", "caption_block_id": "tabcap",
+            "caption_text": "Table 1. Example.", "match_status": "matched",
+            "has_asset": True, "asset_block_id": "asset", "page": 1,
+        }]
+    }
+
+    resolve_media_asset_conflicts(figure_inventory, table_inventory)
+    attach_ownership_conflicts(figure_inventory, table_inventory)
+
+    assert figure_inventory.get("ownership_conflicts") == []
+    assert figure_inventory.get("ownership_resolutions")[0]["winner"] == "table"

@@ -103,6 +103,22 @@ OCR_QUEUE_STATUSES = {
 }
 OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked"}
 
+_LEGACY_HARD_DEGRADE_PREFIXES = (
+    "rendered text gaps",
+)
+
+
+def _extract_hard_degraded_reasons(health_report: dict) -> list[str]:
+    hard = health_report.get("hard_degraded_reasons")
+    if hard is not None:
+        return [str(r) for r in hard if str(r or "").strip()]
+    legacy = health_report.get("degraded_reasons", []) or []
+    return [
+        str(r)
+        for r in legacy
+        if str(r or "").strip() and str(r).startswith(_LEGACY_HARD_DEGRADE_PREFIXES)
+    ]
+
 
 def apply_ocr_error_state(row: dict, meta: dict, error_state: dict) -> None:
     status = error_state["status"]
@@ -157,7 +173,7 @@ def _read_meta_or_empty(meta_path: Path) -> dict:
 
 def validate_ocr_meta(paths: dict[str, Path], meta: dict) -> tuple[str, str]:
     status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
-    if status != "done":
+    if status not in ("done", "done_degraded"):
         return (status, str(meta.get("error", "") or ""))
     key = str(meta.get("zotero_key", "") or "").strip()
     if not key:
@@ -186,8 +202,7 @@ def validate_ocr_meta(paths: dict[str, Path], meta: dict) -> tuple[str, str]:
         return ("done_incomplete", "OCR fulltext has no rendered pages")
     if rendered_pages != page_count:
         return ("done_incomplete", f"OCR page marker mismatch: meta={page_count}, rendered={rendered_pages}")
-    return ("done", "")
-
+    return (status, "")
 
 def read_ocr_queue(paths: dict[str, Path]) -> list[dict]:
     queue_path = paths["ocr_queue"]
@@ -1895,8 +1910,9 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     # --- Phase 2: table inventory ---
     table_inventory = build_table_inventory(structured)
-    from paperforge.worker.ocr_figures import attach_ownership_conflicts
+    from paperforge.worker.ocr_figures import attach_ownership_conflicts, resolve_media_asset_conflicts
 
+    resolve_media_asset_conflicts(figure_inventory, table_inventory)
     attach_ownership_conflicts(figure_inventory, table_inventory)
     write_figure_inventory(
         artifacts.blocks_structured.parent / "figure_inventory.json",
@@ -2364,11 +2380,13 @@ def run_ocr(
                     continue
                 health_path_poll = paths["ocr"] / key / "health" / "ocr_health.json"
                 health_report_poll = read_json(health_path_poll) if health_path_poll.exists() else {}
-                if health_report_poll.get("degraded_reasons"):
+                hard_reasons_poll = _extract_hard_degraded_reasons(health_report_poll)
+                if hard_reasons_poll:
                     meta["ocr_status"] = "done_degraded"
-                    meta["degraded_reason"] = "; ".join(health_report_poll["degraded_reasons"])
+                    meta["degraded_reason"] = "; ".join(hard_reasons_poll)
                 else:
                     meta["ocr_status"] = "done"
+                    meta.pop("degraded_reason", None)
                 # Per D-01: auto_analyze_after_ocr opt-in workflow streamlining
                 cfg_path = vault / "paperforge.json"
                 if cfg_path.exists():
@@ -2580,17 +2598,15 @@ def run_ocr(
                 except Exception as exc:
                     error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
                     apply_ocr_error_state(queue_row, meta, error_state)
-                    write_json(paths["ocr"] / key / "meta.json", meta)
-                    changed += 1
-                    active_submitted = max(0, active_submitted - 1)
-                    continue
                 health_path_loop = paths["ocr"] / key / "health" / "ocr_health.json"
                 health_report_loop = read_json(health_path_loop) if health_path_loop.exists() else {}
-                if health_report_loop.get("degraded_reasons"):
+                hard_reasons_loop = _extract_hard_degraded_reasons(health_report_loop)
+                if hard_reasons_loop:
                     meta["ocr_status"] = "done_degraded"
-                    meta["degraded_reason"] = "; ".join(health_report_loop["degraded_reasons"])
+                    meta["degraded_reason"] = "; ".join(hard_reasons_loop)
                 else:
                     meta["ocr_status"] = "done"
+                    meta.pop("degraded_reason", None)
                 meta["ocr_finished_at"] = datetime.now(timezone.utc).isoformat()
                 meta["page_count"] = page_num
                 meta["markdown_path"] = md_path

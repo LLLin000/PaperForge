@@ -251,6 +251,18 @@ def _page_assets_strict_ok(page_legends: list[dict], page_assets_count: int, ful
 TABLE_LIKE_RAW = frozenset({"table", "table_image"})
 
 
+def _column_band_id(bbox: list[float], page_width: float) -> int | None:
+    """Classify a bbox into left (0), right (1), or center (None) column band."""
+    if not bbox or len(bbox) < 4 or page_width <= 0:
+        return None
+    center_x = (bbox[0] + bbox[2]) / 2.0
+    if center_x < page_width * 0.45:
+        return 0
+    if center_x > page_width * 0.55:
+        return 1
+    return None
+
+
 def _is_safe_page_assets_group(
     group: dict,
     legend: dict,
@@ -327,6 +339,18 @@ def _is_safe_page_assets_group(
             conf = float(mb.get("asset_family_confidence", 0) or 0)
             if conf >= 0.70:
                 return False, ["group_contains_table_like_asset"]
+
+    # 9. Cross-column rejection gate
+    cw = cluster_bbox[2] - cluster_bbox[0]
+    full_width_group = cw >= page_width * 0.65 and page_numbered_legend_count == 1
+    if not full_width_group:
+        bands = {
+            _column_band_id(mb.get("bbox") or [0, 0, 0, 0], page_width)
+            for mb in media_blocks
+        }
+        bands.discard(None)
+        if len(bands) > 1:
+            return False, ["cross_column_media"]
 
     return True, evidence
 
@@ -5089,6 +5113,66 @@ def _collect_table_owned_asset_ids(table_inventory: dict) -> set[tuple[int, str]
         if asset_id is not None:
             owned.add(asset_id)
     return owned
+
+def _table_ownership_strength(table: dict) -> tuple[int, int]:
+    explicit = 1 if str(table.get("caption_text") or "").lower().startswith("table") else 0
+    strong = 1 if str(table.get("match_status") or "") == "matched" else 0
+    return (explicit, strong)
+
+
+def _figure_ownership_strength(fig: dict) -> tuple[int, int]:
+    text = str(fig.get("text") or "")
+    explicit = 1 if text.lower().startswith(("figure", "fig.")) else 0
+    strong = 1 if float((fig.get("match_score") or {}).get("score", 0.0) or 0.0) >= 0.70 else 0
+    return (explicit, strong)
+
+
+def resolve_media_asset_conflicts(figure_inventory: dict, table_inventory: dict) -> list[dict]:
+    """Arbitrate shared assets between figure and table inventories.
+
+    Only resolves clear asymmetric cases (explicit+strong vs weak).
+    Equal-strength weak/weak stays unresolved — surfaced in ownership_conflicts.
+    Returns list of resolution records.
+    """
+    resolutions: list[dict] = []
+    tables_by_asset = {
+        (int(t.get("page", 0) or 0), str(t.get("asset_block_id", ""))): t
+        for t in table_inventory.get("tables", [])
+        if t.get("has_asset") and t.get("asset_block_id")
+    }
+
+    kept_figures = []
+    for fig in figure_inventory.get("matched_figures", []):
+        asset_ids = [
+            (int(fig.get("page", 0) or 0), str(bid))
+            for bid in fig.get("asset_block_ids", [])
+            if bid is not None
+        ]
+        conflict_id = next((aid for aid in asset_ids if aid in tables_by_asset), None)
+        if conflict_id is None:
+            kept_figures.append(fig)
+            continue
+
+        table = tables_by_asset[conflict_id]
+        table_strength = _table_ownership_strength(table)
+        figure_strength = _figure_ownership_strength(fig)
+
+        if table_strength > figure_strength:
+            resolutions.append({"page": conflict_id[0], "block_id": conflict_id[1], "winner": "table"})
+            continue  # figure removed (not appended to kept_figures)
+        if figure_strength > table_strength:
+            resolutions.append({"page": conflict_id[0], "block_id": conflict_id[1], "winner": "figure"})
+            table["has_asset"] = False
+            table["asset_block_id"] = None
+            kept_figures.append(fig)
+            continue
+
+        kept_figures.append(fig)  # weak/weak, no resolution
+
+    figure_inventory["matched_figures"] = kept_figures
+    figure_inventory["ownership_resolutions"] = resolutions
+    return resolutions
+
 
 
 def _build_ownership_conflicts(figure_inventory: dict, table_inventory: dict) -> list[dict]:
