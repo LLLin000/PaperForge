@@ -2977,7 +2977,7 @@ def _infer_missing_main_figure_numbers(
     return inventory
 
 
-def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
+def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
     legends: list[dict] = []
     held_figures: list[dict] = []
     rejected_legends: list[dict] = []
@@ -4909,6 +4909,12 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         unmatched_assets=inventory.setdefault("unmatched_assets", []),
         ownership=ownership,
     )
+    # Asset-internal figure number recovery
+    _recover_missing_figure_numbers_from_assets(
+        inventory=inventory,
+        page_pdf_lines_by_page=page_pdf_lines_by_page,
+    )
+
     _dedup_unmatched_assets_against_matched_figures(inventory)
     _dedup_unresolved_clusters_against_matched_figures(inventory)
     inventory["figure_legend_completeness"] = compute_figure_legend_completeness(
@@ -5832,3 +5838,200 @@ def _apply_bbox_only_synthetic_vector_fallback(
         rejected_legends[:] = [c for c in rejected_legends if str(c.get("block_id", "") or "") not in used_caption_ids]
     if used_asset_ids:
         unmatched_assets[:] = [a for a in unmatched_assets if (int(a.get("page", 0) or 0), str(a.get("block_id", "") or "")) not in used_asset_ids]
+# === Asset-internal figure number recovery ===
+_FIGURE_DESCRIPTION_OPENING = re.compile(
+    r"^(this|the)\s+figure\b", re.IGNORECASE
+)
+
+_INTERNAL_FIGURE_LABEL_PATTERN = re.compile(
+    r"^(?:Figure|Fig\.?)\s+(\d+(?:\.\d+)?)(?:[A-Za-z])?"
+    r"(?:\.\:?\s*)?(?:\S.*)?$",
+    flags=re.IGNORECASE,
+)
+
+
+def _looks_like_internal_figure_label(text: str) -> bool:
+    """Check if text looks like a bare figure label (e.g. 'Figure 2.' or 'Fig. 3: ...')."""
+    stripped = " ".join(text.split())
+    if len(stripped) < 6 or len(stripped) > 200:
+        return False
+    if not _INTERNAL_FIGURE_LABEL_PATTERN.match(stripped):
+        return False
+    lower = stripped.lower()
+    if re.match(r"^(?:figure|fig\.?)\s+\d+\s+(?:shows|showed|demonstrates|illustrates|indicates)\b", lower):
+        return False
+    return True
+
+
+def _needs_asset_internal_figure_number_recovery(fig: dict) -> bool:
+    """Check if a matched figure entry is eligible for asset-internal number recovery.
+    Works for both:
+    - synthetic_figure entries (from vector fallback, require bbox_only/synthetic flags)
+    - figure_unknown entries (from normal prematch, no flag requirement)
+    """
+    if fig.get("figure_number") is not None:
+        return False
+    figure_id = str(fig.get("figure_id") or "")
+    is_synthetic = figure_id.startswith("synthetic_figure")
+    is_unknown = figure_id.startswith("figure_unknown")
+    if not is_synthetic and not is_unknown:
+        return False
+    # Synthetic figures require bbox_only_asset or synthetic_vector_asset flags
+    if is_synthetic:
+        flags = set(fig.get("flags") or [])
+        if not ("bbox_only_asset" in flags or "synthetic_vector_asset" in flags):
+            return False
+    text = str(fig.get("text") or "").strip()
+    if not text:
+        return False
+    lower = text.lower()
+    return (
+        bool(_FIGURE_DESCRIPTION_OPENING.match(text))
+        or lower.startswith("this figure ")
+        or lower.startswith("the figure ")
+    )
+
+
+def _line_inside_or_overlaps_asset(line_bbox, asset_bbox) -> bool:
+    """Check if a PDF line's center is inside the asset bbox, or overlaps it significantly."""
+    lx1, ly1, lx2, ly2 = line_bbox
+    ax1, ay1, ax2, ay2 = asset_bbox
+    line_area = max(1.0, (lx2 - lx1) * (ly2 - ly1))
+    ix1, iy1 = max(lx1, ax1), max(ly1, ay1)
+    ix2, iy2 = min(lx2, ax2), min(ly2, ay2)
+    inter = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+    cx = (lx1 + lx2) / 2
+    cy = (ly1 + ly2) / 2
+    center_inside = ax1 <= cx <= ax2 and ay1 <= cy <= ay2
+    return center_inside or (inter / line_area) >= 0.7
+
+
+def _asset_edge_band_score(line_bbox, asset_bbox) -> float:
+    """Score how close a line is to the edge of an asset (label-like position).
+    Returns 1.0 (tight edge), 0.7 (near edge), 0.4 (loose edge), or 0.0 (reject).
+    Also rejects lines covering >15% of asset area.
+    """
+    lx1, ly1, lx2, ly2 = line_bbox
+    ax1, ay1, ax2, ay2 = asset_bbox
+    asset_w = max(1.0, ax2 - ax1)
+    asset_h = max(1.0, ay2 - ay1)
+    line_w = lx2 - lx1
+    line_h = ly2 - ly1
+    if (line_w * line_h) / (asset_w * asset_h) > 0.15:
+        return 0.0
+    cx = (lx1 + lx2) / 2
+    cy = (ly1 + ly2) / 2
+    left_dist = abs(cx - ax1)
+    right_dist = abs(cx - ax2)
+    top_dist = abs(cy - ay1)
+    bottom_dist = abs(cy - ay2)
+    edge_dist = min(left_dist / asset_w, right_dist / asset_w,
+                    top_dist / asset_h, bottom_dist / asset_h)
+    if edge_dist <= 0.08:
+        return 1.0
+    if edge_dist <= 0.15:
+        return 0.7
+    if edge_dist <= 0.25:
+        return 0.4
+    return 0.0
+
+
+def _iter_matched_figure_assets(fig: dict) -> list[dict]:
+    """Iterate matched_assets that have valid bboxes."""
+    assets = fig.get("matched_assets") or []
+    return [a for a in assets if a.get("bbox") and len(a.get("bbox", [])) >= 4]
+
+
+def _recover_asset_internal_figure_number(
+    pdf_lines: list[dict], asset: dict, existing_numbers: set,
+) -> dict | None:
+    """Scan pdf_lines for a figure label inside asset bbox.
+    Returns recovery dict with figure_number, text, bbox, figure_namespace, or None.
+    """
+    ab = asset.get("bbox")
+    if not ab or len(ab) < 4:
+        return None
+    candidates: list[dict] = []
+    for line in pdf_lines:
+        lb = line.get("bbox")
+        if not lb or len(lb) < 4:
+            continue
+        if not _line_inside_or_overlaps_asset(lb, ab):
+            continue
+        text = str(line.get("text") or "").strip()
+        if not text:
+            continue
+        if _looks_like_internal_figure_label(text):
+            m = _INTERNAL_FIGURE_LABEL_PATTERN.match(" ".join(text.split()))
+            if m:
+                number = int(m.group(1))
+                edge_score = _asset_edge_band_score(lb, ab)
+                if edge_score > 0:
+                    candidates.append({
+                        "figure_namespace": "figure",
+                        "figure_number": number,
+                        "text": text,
+                        "bbox": lb,
+                        "edge_score": edge_score,
+                    })
+    if not candidates:
+        return None
+    # Multiple different figure numbers -> conflict, don't recover
+    numbers = {(c["figure_namespace"], c["figure_number"]) for c in candidates}
+    if len(numbers) > 1:
+        return None
+    best = max(candidates, key=lambda c: c["edge_score"])
+    ns, number = best["figure_namespace"], best["figure_number"]
+    if (ns, number) in existing_numbers:
+        return None
+    return {
+        "figure_namespace": ns,
+        "figure_number": number,
+        "text": best["text"],
+        "bbox": best["bbox"],
+    }
+
+
+def _recover_missing_figure_numbers_from_assets(
+    inventory: dict,
+    page_pdf_lines_by_page: dict[int, list[dict]] | None,
+) -> None:
+    """Inventory pass: for each matched figure missing a figure_number,
+    scan its matched_assets' internal PDF lines to recover the number.
+    """
+    if not page_pdf_lines_by_page:
+        return
+    matched = inventory.setdefault("matched_figures", [])
+    for idx, fig in enumerate(matched):
+        if not _needs_asset_internal_figure_number_recovery(fig):
+            continue
+        page = int(fig.get("page", 0) or 0)
+        page_lines = page_pdf_lines_by_page.get(page, [])
+        if not page_lines:
+            continue
+        # Build existing figure numbers excluding current figure
+        existing_numbers = {
+            (other.get("figure_namespace") or "figure", other.get("figure_number"))
+            for j, other in enumerate(matched)
+            if j != idx and other.get("figure_number") is not None
+        }
+        assets = _iter_matched_figure_assets(fig)
+        recovered = None
+        for asset in assets:
+            recovered = _recover_asset_internal_figure_number(page_lines, asset, existing_numbers)
+            if recovered is not None:
+                break
+        if recovered is None:
+            continue
+        number = recovered["figure_number"]
+        ns = recovered["figure_namespace"]
+        # Update figure metadata
+        fig["figure_namespace"] = ns
+        fig["figure_number"] = number
+        fig["figure_id"] = _format_figure_id(ns, number)
+        fig["recovered_label_text"] = recovered["text"]
+        fig["recovered_label_bbox"] = recovered["bbox"]
+        fig["figure_number_source"] = "asset_internal_pdf_line"
+        fig["flags"] = list(dict.fromkeys((fig.get("flags") or []) + [
+            "figure_number_recovered_from_asset_text",
+        ]))

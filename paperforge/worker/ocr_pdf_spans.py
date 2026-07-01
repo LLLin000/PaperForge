@@ -775,3 +775,73 @@ def backfill_missing_text_from_pdf(
         doc.close()
 
     return raw_blocks
+def extract_pdf_lines_normalized(pdf_path: str | Path) -> dict[int, list[dict]]:
+    """Extract PDF rawdict text lines per page, normalized to OCR coordinates.
+
+    Each returned line dict:
+        page (int): 1-indexed page number
+        text (str): line text
+        bbox (list[float]): normalized OCR coordinates [x1, y1, x2, y2]
+        source_bbox_pdf (list[float]): original PDF coordinates
+        dir (tuple[float, float]): writing direction (dx, dy)
+        source (str): "pdf_rawdict_line"
+
+    Returns dict mapping 1-indexed page number -> list of line dicts.
+    Empty dict on error.
+    """
+    if not pdf_path:
+        return {}
+    pdf_path = Path(pdf_path)
+    if not pdf_path.exists():
+        return {}
+    try:
+        doc = _fitz_quiet_open(str(pdf_path))
+    except Exception:
+        return {}
+    try:
+        result: dict[int, list[dict]] = {}
+        for page_num in range(len(doc)):
+            try:
+                pdf_page = doc[page_num]
+                pdf_rect = pdf_page.rect
+                ocr_width = int(pdf_rect.width * 2) if pdf_rect.width > 0 else 1200
+                ocr_height = int(pdf_rect.height * 2) if pdf_rect.height > 0 else 1700
+                raw_dict = pdf_page.get_text("dict")
+                page_lines: list[dict] = []
+                for block in raw_dict.get("blocks", []):
+                    if block.get("type") != 0:  # text block
+                        continue
+                    for line in block.get("lines", []):
+                        bbox_pdf = line.get("bbox", [0, 0, 0, 0])
+                        if len(bbox_pdf) < 4:
+                            continue
+                        text_parts = []
+                        for span in line.get("spans", []):
+                            text_parts.append(str(span.get("text", "")))
+                        text = "".join(text_parts).strip()
+                        if not text:
+                            continue
+                        # Normalize PDF coords to OCR/render coords
+                        scale_x = ocr_width / pdf_rect.width if pdf_rect.width > 0 else 2.0
+                        scale_y = ocr_height / pdf_rect.height if pdf_rect.height > 0 else 2.0
+                        bbox_ocr = [
+                            bbox_pdf[0] * scale_x,
+                            bbox_pdf[1] * scale_y,
+                            bbox_pdf[2] * scale_x,
+                            bbox_pdf[3] * scale_y,
+                        ]
+                        direction = tuple(line.get("dir", (1.0, 0.0)))
+                        page_lines.append({
+                            "page": page_num + 1,
+                            "text": text,
+                            "bbox": bbox_ocr,
+                            "source_bbox_pdf": bbox_pdf,
+                            "dir": direction,
+                            "source": "pdf_rawdict_line",
+                        })
+                result[page_num + 1] = page_lines
+            except Exception:
+                continue
+        return result
+    finally:
+        doc.close()

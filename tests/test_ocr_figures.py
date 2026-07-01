@@ -6181,3 +6181,246 @@ def test_score_legend_to_group_rotated_prematch_adds_rotation_metadata():
     assert score["decision"] == "matched"
     assert score["rotation_correction_deg"] == 270
     assert "rotated_caption_normalized" in score["evidence"]
+
+
+# === Asset-internal figure number recovery tests ===
+
+
+def test_recover_internal_figure_number_basic():
+    """Scenario 1: synthetic unknown with asset-internal Figure 2 line -> recovers figure_number==2."""
+    from paperforge.worker.ocr_figures import (
+        _recover_missing_figure_numbers_from_assets,
+        _format_figure_id,
+    )
+
+    fig = {
+        "figure_id": "synthetic_figure_p8_2",
+        "figure_number": None,
+        "figure_namespace": "figure",
+        "page": 8,
+        "text": "This figure demonstrates the experimental results.",
+        "flags": ["bbox_only_asset", "synthetic_vector_asset"],
+        "matched_assets": [
+            {
+                "block_id": "asset_1",
+                "bbox": [100, 100, 900, 1400],
+            }
+        ],
+        "asset_block_ids": ["asset_1"],
+    }
+    inventory = {
+        "matched_figures": [fig],
+        "unmatched_legends": [],
+        "rejected_legends": [],
+        "unmatched_assets": [],
+    }
+    page_pdf_lines = {
+        8: [
+            {
+                "page": 8,
+                "text": "Figure 2. Plot of Criteria Time",
+                "bbox": [120, 130, 300, 160],  # inside asset [100,100,900,1400], edge band
+                "source_bbox_pdf": [60, 65, 150, 80],
+                "dir": (1.0, 0.0),
+                "source": "pdf_rawdict_line",
+            },
+        ],
+    }
+
+    _recover_missing_figure_numbers_from_assets(inventory, page_pdf_lines)
+
+    assert fig["figure_number"] == 2
+    assert fig["figure_id"] == _format_figure_id("figure", 2)
+    assert fig["figure_namespace"] == "figure"
+    assert "Plot of Criteria Time" in fig["recovered_label_text"]
+    assert fig["recovered_label_bbox"] == [120, 130, 300, 160]
+    assert fig["figure_number_source"] == "asset_internal_pdf_line"
+    assert "figure_number_recovered_from_asset_text" in fig["flags"]
+
+
+def test_recover_internal_figure_number_duplicate_rejection():
+    """Scenario 2: already has Figure 2 in inventory -> unknown does NOT get number 2."""
+    from paperforge.worker.ocr_figures import _recover_missing_figure_numbers_from_assets
+
+    existing = {
+        "figure_id": "fig_2",
+        "figure_number": 2,
+        "figure_namespace": "figure",
+        "page": 8,
+        "text": "Figure 2. Experimental results.",
+        "flags": [],
+        "matched_assets": [{"block_id": "existing_asset", "bbox": [100, 100, 500, 500]}],
+        "asset_block_ids": ["existing_asset"],
+    }
+    unknown = {
+        "figure_id": "synthetic_figure_p8_99",
+        "figure_number": None,
+        "figure_namespace": "figure",
+        "page": 8,
+        "text": "This figure demonstrates the results.",
+        "flags": ["bbox_only_asset", "synthetic_vector_asset"],
+        "matched_assets": [
+            {"block_id": "asset_2", "bbox": [100, 100, 900, 1400]}
+        ],
+        "asset_block_ids": ["asset_2"],
+    }
+    inventory = {
+        "matched_figures": [existing, unknown],
+        "unmatched_legends": [],
+        "rejected_legends": [],
+        "unmatched_assets": [],
+    }
+    page_pdf_lines = {
+        8: [
+            {
+                "page": 8,
+                "text": "Figure 2. Another plot",
+                "bbox": [120, 130, 280, 160],
+                "source_bbox_pdf": [60, 65, 140, 80],
+                "dir": (1.0, 0.0),
+                "source": "pdf_rawdict_line",
+            },
+        ],
+    }
+
+    _recover_missing_figure_numbers_from_assets(inventory, page_pdf_lines)
+
+    # existing is unaffected
+    assert existing["figure_number"] == 2
+    # unknown stays None (no recovery)
+    assert unknown.get("figure_number") is None
+    assert "recovered_label_text" not in unknown
+
+
+def test_recover_internal_figure_number_normal_fig_untouched():
+    """Scenario 3: normal already-numbered figure -> unaffected by recovery pass."""
+    from paperforge.worker.ocr_figures import _recover_missing_figure_numbers_from_assets
+
+    normal = {
+        "figure_id": "fig_1",
+        "figure_number": 1,
+        "figure_namespace": "figure",
+        "page": 3,
+        "text": "Figure 1. Normal caption.",
+        "flags": [],
+        "matched_assets": [{"block_id": "a1", "bbox": [100, 100, 500, 500]}],
+        "asset_block_ids": ["a1"],
+    }
+    inventory = {
+        "matched_figures": [normal],
+        "unmatched_legends": [],
+        "rejected_legends": [],
+        "unmatched_assets": [],
+    }
+    page_pdf_lines = {
+        3: [
+            {
+                "page": 3,
+                "text": "Figure 99. Spurious internal label",
+                "bbox": [150, 150, 300, 180],
+                "source_bbox_pdf": [75, 75, 150, 90],
+                "dir": (1.0, 0.0),
+                "source": "pdf_rawdict_line",
+            },
+        ],
+    }
+
+    _recover_missing_figure_numbers_from_assets(inventory, page_pdf_lines)
+
+    # normal figure is unchanged
+    assert normal["figure_number"] == 1
+    assert normal["figure_id"] == "fig_1"
+    assert "recovered_label_text" not in normal
+
+
+def test_recover_internal_figure_number_conflict_multiple_labels():
+    """Scenario 4: asset has multiple different Figure N inside -> no recovery."""
+    from paperforge.worker.ocr_figures import _recover_missing_figure_numbers_from_assets
+
+    unknown = {
+        "figure_id": "synthetic_figure_p5_1",
+        "figure_number": None,
+        "figure_namespace": "figure",
+        "page": 5,
+        "text": "This figure shows the data.",
+        "flags": ["bbox_only_asset", "synthetic_vector_asset"],
+        "matched_assets": [
+            {"block_id": "a1", "bbox": [100, 100, 900, 1400]}
+        ],
+        "asset_block_ids": ["a1"],
+    }
+    inventory = {
+        "matched_figures": [unknown],
+        "unmatched_legends": [],
+        "rejected_legends": [],
+        "unmatched_assets": [],
+    }
+    page_pdf_lines = {
+        5: [
+            {
+                "page": 5,
+                "text": "Figure 2. First label",
+                "bbox": [120, 130, 280, 160],
+                "source_bbox_pdf": [60, 65, 140, 80],
+                "dir": (1.0, 0.0),
+                "source": "pdf_rawdict_line",
+            },
+            {
+                "page": 5,
+                "text": "Figure 3. Second label inside same asset",
+                "bbox": [130, 170, 300, 200],
+                "source_bbox_pdf": [65, 85, 150, 100],
+                "dir": (1.0, 0.0),
+                "source": "pdf_rawdict_line",
+            },
+        ],
+    }
+
+    _recover_missing_figure_numbers_from_assets(inventory, page_pdf_lines)
+
+    # Conflict -> no recovery
+    assert unknown.get("figure_number") is None
+    assert "recovered_label_text" not in unknown
+
+
+def test_recover_internal_figure_number_center_rejection():
+    """Scenario 5: line in asset center (not edge band) -> no recovery."""
+    from paperforge.worker.ocr_figures import _asset_edge_band_score
+
+    # asset = [100, 100, 900, 900], so center is around [500, 500]
+    # edge_band at 0.08 = 64px from edge. So center is at
+    # edge_dist = min(400/800, 400/800) = 0.5 -> 0.0
+    # A small label right in the center
+    line_bbox = [490, 490, 510, 510]
+    asset_bbox = [100, 100, 900, 900]
+
+    score = _asset_edge_band_score(line_bbox, asset_bbox)
+    assert score == 0.0, f"Expected 0.0 for center line, got {score}"
+
+
+def test_recover_internal_figure_number_inside_overlap_gate():
+    """Scenario 6: coordinate normalization & inside/overlap gate."""
+    from paperforge.worker.ocr_figures import (
+        _line_inside_or_overlaps_asset,
+        _asset_edge_band_score,
+    )
+
+    # Line fully inside asset
+    asset = [100, 100, 900, 900]
+    inside_line = [200, 200, 400, 220]  # fully inside, top edge
+    assert _line_inside_or_overlaps_asset(inside_line, asset) is True
+    assert _asset_edge_band_score(inside_line, asset) > 0
+
+    # Line partially overlapping (center outside but >70% overlap)
+    overlap_line = [50, 200, 150, 220]  # half in, half out, center inside
+    # center x = 100, center y = 210 - both inside asset [100,900,100,900]
+    # but x=100 is exactly at left edge -> center_inside is True (ax1 <= 100 <= ax2)
+    assert _line_inside_or_overlaps_asset(overlap_line, asset) is True
+
+    # Line completely outside
+    outside_line = [50, 50, 80, 80]  # top-left, no overlap
+    assert _line_inside_or_overlaps_asset(outside_line, asset) is False
+
+    # Line that covers >15% of asset -> edge_band_score = 0
+    large_line = [100, 100, 500, 600]  # covers large area
+    assert _asset_edge_band_score(large_line, asset) == 0.0

@@ -1,14 +1,13 @@
 # OCR-v2 Project Management Log
 
 > **Branch:** `master` | **Last Updated:** 2026-07-01
-> **Active work:** Residual issues fix — 7 fixes across 6 issues resolved (backfill clamp, table fallthrough, caption continuation, short-form health, container bbox containment, cross-column gate, asset arbitration). **364 targeted tests pass, 0 failures.**
+> **Active work:** Asset-internal figure number recovery — `extract_pdf_lines_normalized` extracts PDF rawdict lines; recovery pass scans matched asset bboxes for `Figure N.` label text, patches figure number, namespace, and `recovered_label_text` onto existing matched figures. U746UJ7G `figure_unknown_000` → `figure_002` with `"Plot of Criteria Time"` label. **428 regression tests pass, 0 failures.**
 
 ---
 
 ## 0. Executive Summary
 
-**Current state:** All 6 residual OCR issues resolved (7 fix targets). **3 commits on master.** Backfill word clamp (Issue 3) ✅, table caption fallthrough + continuation (Issues 1A+1B) ✅, short-form health profile (Issue 4) ✅, figure contained-text via container bbox (Issue 2) ✅, cross-column safe-gate rejection (Issue 5) ✅, figure-table asset arbitration (Issue 6) ✅. 364 targeted tests pass. Next: Monitor production OCR for regressions, archive stale project docs.
-
+**Current state:** All 10-paper audit issues resolved (3 audit fix commits + rotated prematch refactor + asset-internal figure number recovery). U746UJ7G `figure_unknown_000` → `figure_002` with recovered label "Plot of Criteria Time". 428 targeted tests pass. Next: Monitor production OCR for regressions, archive stale project docs.
 ---
 
 ## 1. Architecture
@@ -48,7 +47,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 ## 2. Current Status
 
 ### 2.1 Test Suite
-
+</br>
 | Suite | Result |
 |-------|--------|
 | Figure stack (figures + reader + containment + backmatter boundary) | **286 passed** ✅ |
@@ -57,10 +56,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Spec contracts | All passed ✅ |
 | Real-paper regressions | All passed ✅ |
 | **Total OCR tests** | **1018 passed, 275 skipped (fixture unavailable), 0 failed** ✅ |
-### 2.2 Component Status
-
-| Component | Status |
-|-----------|--------|
+</br>
 | Structural gate | Installed |
 | Role assignment (seed only) | ✅ |
 | Zone inference + fallback | ✅ |
@@ -235,6 +231,8 @@ WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to ful
 | 2026-06-28 | Author bio detection: three-pass cascade, P0 first | Strong structure first, residual explanation second. Real figures must never be preempted. P0: post-ref text-only. P1: figure residual. P2+: P1 profile card pre-pass. |
 | 2026-06-28 | Category-weighted bio scoring | career=+3, education=+2, research=+2, institution=+1, publication=+1. Returns (score, categories) tuple. Threshold: score ≥ 4 AND categories ≥ 2. |
 | 2026-06-28 | author_bio_asset role: non-rendered, non-indexed | Bio artifacts removed from figure_inventory entirely, never returned to unmatched_assets. Clean prune before reader. |
+| 2026-07-01 | Asset-internal figure number recovery: metadata-only pass | Recovery must NOT split OCR blocks or mutate chart text — only patches figure_number, figure_id, recovered_label_text on existing matched figures. Coordinate normalization is caller responsibility. |
+| 2026-07-01 | Broaden recovery gate to handle normal prematch unknown figures | Synthetic-figure gate (`bbox_only_asset` flag) excluded `figure_unknown_NNN` from normal rotated prematch path. Gate now allows figure_unknown figures without synthetic flags. |
 
 ---
 
@@ -322,8 +320,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-06-28 | P0 author bio detection implementation | Created ocr_bio.py with category-weighted bio scoring, Pass C (post_ref_bio_cleanup), figure match guards. Wired author_bio_asset role contract + pipeline. 30 new tests pass. 1041 total OCR tests, 0 regressions. Commits: `e2f0c8a`, `7810eb1`. | §9.16 |
 | 2026-06-28 | P1 author bio detection implementation | Added residual_author_bio_pass (figure-residual portrait assets), extended post_ref_bio_cleanup for figure_caption, tag_figure_contained_text protection. 7 new P1 tests. 1018 total OCR tests, 0 regressions. Commit: `7a1cc5e`. | §9.17 |
 | 2026-07-01 | Audit fix commits + orientation-aware rotated figure normalization | Commit 1 (`2d40ad9`) + Commit 2 (`21bdfd0`) + Commit 4 (`7670227`) landed, then refactored rotated-caption handling out of synthetic fallback into normal figure pre-match. Added PyMuPDF `dir/wmode` capture, same-page rotated settlement, rotated crop render. U746UJ7G now matches via `same_page_rotated`; KUR9PBJC unchanged. 422 regression tests pass. | §9.18 |
-
----
+| 2026-07-01 | Asset-internal figure number recovery implementation | Added `extract_pdf_lines_normalized` helper, `_recover_missing_figure_numbers_from_assets` pass in `build_figure_inventory`, 5 gate functions, 2 pattern constants. U746UJ7G `figure_unknown_000` → `figure_002` with recovered label "Plot of Criteria Time". 6 new tests. 428 regression tests pass. | §9.19 |
 
 ## 9. Historical Detail Archive
 
@@ -524,3 +521,25 @@ Full-day debugging session across 8 gold papers. 98 bug annotations, 8 pipeline 
 - Block reviews: `audit/<KEY>/block_review.jsonl`（U746UJ7G, KUR9PBJC, CGGYTEEQ, 7FNV9AW2 etc.）
 
 
+### 9.19 Asset-Internal Figure Number Recovery (2026-07-01)
+
+**Problem:** U746UJ7G rotated figure — "Figure 2. Plot of Criteria Time..." was absorbed into chart asset bbox during OCR assembly. The rotated prematch refactor (9.18) produced a matched figure (`figure_unknown_000`) but without `figure_number`. No way to assign Figure 2 to the figure.
+
+**Solution:** Metadata-only recovery pass after synthetic vector fallback, before dedup.
+- `extract_pdf_lines_normalized` in `ocr_pdf_spans.py` extracts PDF rawdict text lines page-by-page, normalizing coordinates to OCR space
+- `_recover_missing_figure_numbers_from_assets` iterates matched_figures without numbers, scans each matched asset's bbox for internal PDF line labels ("Figure N.", "Fig. N:")
+- `_needs_asset_internal_figure_number_recovery`: gates by figure_id prefix (`figure_unknown_*` or `synthetic_figure_*`) + text description signal
+- `_looks_like_internal_figure_label`: rejects full-sentence patterns ("Figure X shows...") via regex match
+- `_asset_edge_band_score`: geometric rejection for lines in asset center (not label position) or covering >15% of asset area
+- Coordinate normalization is caller responsibility (done in ocr_rebuild.py)
+
+**Files changed:**
+- `paperforge/worker/ocr_figures.py`: 7 new functions + 2 pattern constants + signature change to `build_figure_inventory` + recovery pass call
+- `paperforge/worker/ocr_pdf_spans.py`: `extract_pdf_lines_normalized` helper
+- `paperforge/worker/ocr_rebuild.py`: call helper, pass `page_pdf_lines_by_page` to inventory builder
+- `tests/test_ocr_figures.py`: 6 new tests (basic recovery, duplicate rejection, normal-fig unaffected, multi-label conflict, center rejection, overlap gate)
+
+**Spec:** `docs/superpowers/plans/2026-07-01-ocr-asset-internal-figure-number-recovery-plan.md`
+**Execution:**
+- U746UJ7G verified: `figure_number == 2`, `figure_id == "figure_002"`, `recovered_label_text` contains "Plot of Criteria Time", flags contain `figure_number_recovered_from_asset_text`
+- **428 regression tests pass** (422 existing + 6 new)

@@ -223,6 +223,10 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
                     status="rerun_backfill",
                 )
 
+        # Extract normalized PDF rawdict lines for asset-internal figure number recovery
+        from paperforge.worker.ocr_pdf_spans import extract_pdf_lines_normalized
+        page_pdf_lines_by_page = extract_pdf_lines_normalized(source_pdf_path)
+
         # Read source metadata. If legacy/old OCR papers are missing canonical
         # bibliographic metadata, enrich source_metadata.json from the formal
         # Literature-hub note frontmatter before rebuilding OCR-derived layers.
@@ -267,7 +271,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             write_figure_inventory,
         )
 
-        figure_inventory = build_figure_inventory(structured)
+        figure_inventory = build_figure_inventory(structured, page_pdf_lines_by_page=page_pdf_lines_by_page)
         write_back_figure_roles(figure_inventory, structured)
 
         # Author bio passes (Pass B + Pass C)
