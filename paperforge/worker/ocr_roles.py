@@ -94,6 +94,15 @@ _ALPHA_SUBSECTION_PATTERN = re.compile(
 _INITIAL_LASTNAME_PATTERN = re.compile(
     r"^(?:[A-Z]\s*){1,3}[A-Z][A-Za-z'\u2019\-]+(?:\s+[A-Z][A-Za-z'\u2019\-]+)?$"
 )
+_FIGURE_DESCRIPTION_OPENING_PATTERN = re.compile(
+    r"^(?:This figure|The figure|This Fig\.?|The Fig\.?|"
+    r"Figure\s+\d+|Fig\.?\s+\d+)\b",
+    flags=re.IGNORECASE,
+)
+
+
+def _looks_like_figure_description_opening(text: str) -> bool:
+    return bool(_FIGURE_DESCRIPTION_OPENING_PATTERN.match(text.strip()))
 
 
 def _looks_like_initial_lastname_byline(text: str) -> bool:
@@ -178,7 +187,7 @@ def _is_near_figure_media(block: dict, page_blocks: list[dict], max_gap: int = 2
         return False
     bx1, by1, bx2 = block_bbox[0], block_bbox[1], block_bbox[2]
     for other in page_blocks:
-        label = str(other.get("block_label", "") or "").strip()
+        label = str(other.get("block_label") or other.get("raw_label") or "").strip()
         if label not in {"image", "chart", "figure"}:
             continue
         ob = other.get("block_bbox", [0, 0, 0, 0])
@@ -1331,6 +1340,17 @@ def assign_block_role(
                 evidence=[f"page-1 DOI/date footnote: {text[:60]}"],
             )
 
+    # Figure-description footnotes are not real footnotes.
+    if raw_label in {"footnote", "vision_footnote"} and _looks_like_figure_description_opening(text):
+        near_media = _is_near_figure_media(block, page_blocks)
+        return RoleAssignment(
+            role="figure_caption" if near_media else "figure_caption_candidate",
+            confidence=0.9 if near_media else 0.82,
+            evidence=[
+                f"{raw_label} with figure-description opening: {text[:60]}",
+                f"near_figure_media={near_media}",
+            ],
+        )
     if raw_label in {"footnote", "vision_footnote"}:
         return RoleAssignment(
             role="footnote",

@@ -6066,3 +6066,33 @@ def test_attach_ownership_conflicts_runs_after_resolution():
 
     assert figure_inventory.get("ownership_conflicts") == []
     assert figure_inventory.get("ownership_resolutions")[0]["winner"] == "table"
+
+
+def test_final_unmatched_assets_excludes_matched_assets_after_promotion():
+    from paperforge.worker.ocr_figures import _dedup_unmatched_assets_against_matched_figures
+
+    inventory = {
+        "matched_figures": [{
+            "page": 9, "asset_pages": [9],
+            "matched_assets": [{"page": 9, "block_id": "11"}],
+            "asset_block_ids": ["11"],
+        }],
+        "unmatched_assets": [
+            {"page": 9, "block_id": "11"},
+            {"page": 9, "block_id": "12"},
+        ],
+        "unresolved_clusters": [],
+    }
+    _dedup_unmatched_assets_against_matched_figures(inventory)
+    assert [a["block_id"] for a in inventory["unmatched_assets"]] == ["12"]
+
+
+def test_collect_matched_figure_asset_ids_uses_asset_page_not_legend_page():
+    from paperforge.worker.ocr_figures import _collect_matched_figure_asset_ids_from_list
+
+    ids = _collect_matched_figure_asset_ids_from_list([{
+        "page": 10, "legend_page": 9, "asset_pages": [10],
+        "matched_assets": [{"page": 10, "block_id": "A"}],
+        "asset_block_ids": ["A"],
+    }])
+    assert ids == {(10, "A")}

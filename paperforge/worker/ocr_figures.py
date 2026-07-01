@@ -4856,6 +4856,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
     inventory = _infer_missing_main_figure_numbers(inventory, structured_blocks)
 
+
+    _dedup_unmatched_assets_against_matched_figures(inventory)
+    _dedup_unresolved_clusters_against_matched_figures(inventory)
     inventory["figure_legend_completeness"] = compute_figure_legend_completeness(
         structured_blocks,
         inventory,
@@ -5093,15 +5096,65 @@ def _promote_sequence_matches(figure_inventory: dict, blocks: list[dict]) -> dic
     return figure_inventory
 
 
+
+def _collect_matched_figure_asset_ids_from_list(matched_figures: list[dict]) -> set[tuple[int, str]]:
+    consumed: set[tuple[int, str]] = set()
+    for fig in matched_figures:
+        fig_page = int(fig.get("page", 0) or 0)
+        asset_pages = [int(p) for p in (fig.get("asset_pages") or []) if p is not None]
+
+        for asset in fig.get("matched_assets", []) or []:
+            bid = str(asset.get("block_id") or "")
+            if not bid:
+                continue
+            ap = int(asset.get("page", 0) or 0) or fig_page
+            if ap > 0:
+                consumed.add((ap, bid))
+
+        for bid_raw in fig.get("asset_block_ids", []) or []:
+            bid = str(bid_raw or "")
+            if not bid:
+                continue
+            if len(asset_pages) == 1:
+                consumed.add((asset_pages[0], bid))
+            elif fig_page > 0:
+                consumed.add((fig_page, bid))
+
+    return consumed
+
+
+def _collect_matched_figure_asset_ids(inventory: dict) -> set[tuple[int, str]]:
+    return _collect_matched_figure_asset_ids_from_list(inventory.get("matched_figures", []) or [])
+
+
+def _dedup_unmatched_assets_against_matched_figures(inventory: dict) -> None:
+    consumed = _collect_matched_figure_asset_ids(inventory)
+    if not consumed:
+        return
+    inventory["unmatched_assets"] = [
+        a for a in inventory.get("unmatched_assets", []) or []
+        if (int(a.get("page", 0) or 0), str(a.get("block_id", "") or "")) not in consumed
+    ]
+
+
+def _dedup_unresolved_clusters_against_matched_figures(inventory: dict) -> None:
+    consumed = _collect_matched_figure_asset_ids(inventory)
+    if not consumed:
+        return
+    cleaned = []
+    for cluster in inventory.get("unresolved_clusters", []) or []:
+        page = int(cluster.get("page", 0) or 0)
+        kept = [str(bid) for bid in (cluster.get("media_block_ids", []) or [])
+                if (page, str(bid)) not in consumed]
+        if not kept:
+            continue
+        cluster = dict(cluster)
+        cluster["media_block_ids"] = kept
+        cleaned.append(cluster)
+    inventory["unresolved_clusters"] = cleaned
+
 def _collect_figure_owned_asset_ids(figure_inventory: dict) -> set[tuple[int, str]]:
-    owned: set[tuple[int, str]] = set()
-    for figure in figure_inventory.get("matched_figures", []):
-        asset_page = int(figure.get("page", figure.get("legend_page", 0)) or 0)
-        for asset in figure.get("matched_assets", []):
-            asset_id = _asset_page_id(asset_page, asset.get("block_id", ""))
-            if asset_id is not None:
-                owned.add(asset_id)
-    return owned
+    return _collect_matched_figure_asset_ids(figure_inventory)
 
 
 def _collect_table_owned_asset_ids(table_inventory: dict) -> set[tuple[int, str]]:

@@ -1569,3 +1569,33 @@ def test_figure_title_table_prefix_routes_to_table_caption(raw_label, text, expe
     }
     result = assign_block_role(block, [], 1000, 1000)
     assert result.role == expected
+
+def test_vision_footnote_this_figure_routes_to_figure_caption_candidate():
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {"raw_label": "vision_footnote",
+             "text": "This figure demonstrates the difference...",
+             "bbox": [100, 500, 800, 560], "page": 8}
+    result = assign_block_role(block, [], 1000, 1000)
+    assert result.role == "figure_caption_candidate"
+
+
+def test_vision_footnote_this_figure_near_media_routes_to_caption():
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {"raw_label": "vision_footnote",
+             "text": "This figure demonstrates...",
+             "bbox": [100, 500, 800, 560],
+             "block_bbox": [100, 500, 800, 560], "page": 8}
+    media = {"raw_label": "image", "block_label": "image",
+             "bbox": [100, 300, 800, 480],
+             "block_bbox": [100, 300, 800, 480], "page": 8}
+    result = assign_block_role(block, [media], 1000, 1000)
+    assert result.role == "figure_caption"
+
+
+def test_ordinary_vision_footnote_stays_footnote():
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {"raw_label": "vision_footnote",
+             "text": "Abbreviations: ICU, intensive care unit.",
+             "bbox": [100, 900, 800, 940], "page": 5}
+    result = assign_block_role(block, [], 1000, 1000)
+    assert result.role == "footnote"
