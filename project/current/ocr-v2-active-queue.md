@@ -5,8 +5,7 @@
 ## Current Priorities
 1. **Monitor production OCR** for regressions from 3-commit fix set
 2. **Archive stale `project/current/` files** — `ocr-v2-remaining-issues-2026-06-18.md`, `ocr-v2-generalization-boundary.md`
-3. **Update PROJECT-MANAGEMENT.md** with session timeline + fix table ✅
-4. **Group-first figure inventory refactor** (deferred — not urgent)
+3. **Group-first figure inventory refactor** (deferred — not urgent)
 
 ## Completed This Session
 
