@@ -136,6 +136,11 @@ _FIGURE_MARKER_PATTERN = re.compile(
     re.I,
 )
 
+_FIGURE_DESCRIPTION_OPENING = re.compile(
+    r"^(?:This figure|The figure|This Fig\.?|The Fig\.?|Figure\s+\d+|Fig\.?\s+\d+)\b",
+    flags=re.IGNORECASE,
+)
+
 
 def _extract_figure_marker(text: str) -> dict:
     m = _FIGURE_MARKER_PATTERN.search(text)
@@ -4855,8 +4860,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     inventory = _promote_sequence_matches(inventory, structured_blocks)
 
     inventory = _infer_missing_main_figure_numbers(inventory, structured_blocks)
-
-
+    # bbox-only synthetic vector figure fallback (Commit 4)
+    _apply_bbox_only_synthetic_vector_fallback(
+        matched_figures=inventory.setdefault("matched_figures", []),
+        unmatched_legends=inventory.setdefault("unmatched_figure_legends", []),
+        rejected_legends=inventory.setdefault("rejected_figure_legends", []),
+        unmatched_assets=inventory.setdefault("unmatched_assets", []),
+        ownership=ownership,
+    )
     _dedup_unmatched_assets_against_matched_figures(inventory)
     _dedup_unresolved_clusters_against_matched_figures(inventory)
     inventory["figure_legend_completeness"] = compute_figure_legend_completeness(
@@ -5492,3 +5503,163 @@ def tag_figure_contained_text(
 
 def write_figure_inventory(dst: Path, inventory: dict[str, Any]) -> None:
     write_json(dst, inventory)
+
+def _is_synthetic_vector_caption_candidate(caption: dict) -> bool:
+    text = str(caption.get("text") or "")
+    return bool(_FIGURE_DESCRIPTION_OPENING.match(text.strip())) \
+        or bool(_extract_figure_number(text) is not None)
+
+
+def _score_caption_to_unmatched_asset_for_synthetic(caption: dict, asset: dict) -> float:
+    cb = caption.get("bbox") or caption.get("block_bbox") or [0, 0, 0, 0]
+    ab = asset.get("bbox") or asset.get("block_bbox") or [0, 0, 0, 0]
+    if len(cb) < 4 or len(ab) < 4:
+        return 0.0
+
+    cx1, cy1, cx2, cy2 = cb
+    ax1, ay1, ax2, ay2 = ab
+
+    # Hard gate: must be same page
+    if int(caption.get("page", 0) or 0) != int(asset.get("page", 0) or 0):
+        return 0.0
+
+    vertical_gap = max(0.0, max(cy1 - ay2, ay1 - cy2))
+    if vertical_gap > 300:
+        return 0.0
+
+    x_overlap = max(0.0, min(cx2, ax2) - max(cx1, ax1))
+    min_width = max(1.0, min(cx2 - cx1, ax2 - ax1))
+    x_ratio = x_overlap / min_width
+    if x_ratio < 0.25:
+        return 0.0
+
+    score = 0.20  # same-page already verified
+
+    if x_ratio >= 0.5:
+        score += 0.45
+    elif x_ratio >= 0.25:
+        score += 0.25
+
+    if vertical_gap <= 80:
+        score += 0.35
+    elif vertical_gap <= 180:
+        score += 0.20
+    elif vertical_gap <= 300:
+        score += 0.10
+
+    return min(score, 1.0)
+
+
+def _build_bbox_only_synthetic_figure(caption, asset, *, index, score):
+    text = str(caption.get("text") or "")
+    fn = _extract_figure_number(text)
+    ns = _extract_figure_namespace(text) if fn is not None else "figure"
+    page = int(asset.get("page", caption.get("page", 0)) or 0)
+    asset_record = _project_asset_record(asset)
+    fig_id = _format_figure_id(ns, fn) if fn is not None else f"synthetic_figure_p{page}_{asset.get('block_id', index)}"
+    return {
+        "figure_id": fig_id, "figure_namespace": ns,
+        "legend_block_id": caption.get("block_id", ""),
+        "page": page, "legend_page": int(caption.get("page", 0) or 0),
+        "asset_pages": [page] if page else [],
+        "text": text, "figure_number": fn,
+        "matched_assets": [asset_record],
+        "asset_block_ids": [asset_record.get("block_id", "")],
+        "cluster_bbox": asset.get("bbox") or asset.get("block_bbox") or [],
+        "caption_score": score_figure_caption(
+            caption,
+            nearby_media=True,
+            caption_style_match=False,
+            body_prose_likelihood=False,
+        ),
+        "match_score": {"score": score, "decision": "matched",
+                        "evidence": ["bbox_only_synthetic_vector_fallback"]},
+        "confidence": min(0.55, score),
+        "flags": ["synthetic_vector_asset", "bbox_only_asset"],
+        "truth_source": "vector_bbox",
+        "strict_status": "bbox_only_synthetic",
+        "settlement_type": "bbox_only_synthetic",
+        "group_type": "",
+        "group_evidence": [],
+        "bridge_block_ids": [],
+    }
+
+
+def _apply_bbox_only_synthetic_vector_fallback(
+    *, matched_figures, unmatched_legends, rejected_legends, unmatched_assets, ownership,
+) -> None:
+    if not unmatched_assets:
+        return
+    candidates = [c for c in list(unmatched_legends) + list(rejected_legends)
+                  if _is_synthetic_vector_caption_candidate(c)]
+    if not candidates:
+        return
+
+    # Build existing figure number set to avoid duplicates (Amendment 6)
+    _existing_numbered = {
+        (str(fig.get("figure_namespace") or "figure"), fig.get("figure_number"))
+        for fig in matched_figures
+        if fig.get("figure_number") is not None
+    }
+
+    used_caption_ids: set[str] = set()
+    used_asset_ids: set[tuple[int, str]] = set()
+
+    for caption in candidates:
+        cap_page = int(caption.get("page", 0) or 0)
+        if cap_page <= 0:
+            continue
+
+        # Skip if figure number already exists (Amendment 6)
+        fn = _extract_figure_number(str(caption.get("text") or ""))
+        ns = _extract_figure_namespace(str(caption.get("text") or "")) if fn is not None else "figure"
+        if fn is not None and (ns, fn) in _existing_numbered:
+            continue
+
+        page_assets = [
+            a for a in unmatched_assets
+            if int(a.get("page", 0) or 0) == cap_page
+            and str(a.get("role") or "") in {"media_asset", "figure_asset"}
+            and (a.get("asset_family_hint") == "figure_like"
+                 or str(a.get("raw_label") or "") in {"image", "chart", "figure"})
+        ]
+        scored = []
+        for asset in page_assets:
+            aid = (int(asset.get("page", 0) or 0), str(asset.get("block_id", "") or ""))
+            if aid in used_asset_ids or not ownership.can_consume_assets([aid]):
+                continue
+            s = _score_caption_to_unmatched_asset_for_synthetic(caption, asset)
+            if s >= 0.65:
+                scored.append((s, asset))
+        if not scored:
+            continue
+
+        # Tie-breaking: skip if top two scores are too close (Amendment 5)
+        scored.sort(key=lambda x: x[0], reverse=True)
+        top_score, top_asset = scored[0]
+        second_score = scored[1][0] if len(scored) > 1 else -1.0
+        if second_score >= 0 and top_score - second_score < 0.15:
+            continue
+
+        score, asset = top_score, top_asset
+        aid = (int(asset.get("page", 0) or 0), str(asset.get("block_id", "") or ""))
+        synthetic = _build_bbox_only_synthetic_figure(caption, asset, index=len(matched_figures) + 1, score=score)
+        matched_figures.append(synthetic)
+
+        # Track figure number for future dedup (Amendment 6)
+        if fn is not None:
+            _existing_numbered.add((ns, fn))
+
+        if aid[1]:
+            ownership.mark_assets_owned([aid], owner_id=str(caption.get("block_id", "")), owner_family="figure")
+            used_asset_ids.add(aid)
+        cid = str(caption.get("block_id", "") or "")
+        if cid:
+            used_caption_ids.add(cid)
+
+    # Clean up consumed legends and assets
+    if used_caption_ids:
+        unmatched_legends[:] = [c for c in unmatched_legends if str(c.get("block_id", "") or "") not in used_caption_ids]
+        rejected_legends[:] = [c for c in rejected_legends if str(c.get("block_id", "") or "") not in used_caption_ids]
+    if used_asset_ids:
+        unmatched_assets[:] = [a for a in unmatched_assets if (int(a.get("page", 0) or 0), str(a.get("block_id", "") or "")) not in used_asset_ids]

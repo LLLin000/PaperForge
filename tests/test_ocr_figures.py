@@ -6096,3 +6096,39 @@ def test_collect_matched_figure_asset_ids_uses_asset_page_not_legend_page():
         "asset_block_ids": ["A"],
     }])
     assert ids == {(10, "A")}
+
+def test_apply_bbox_only_synthetic_vector_fallback_basic():
+    from paperforge.worker.ocr_figures import (
+        _apply_bbox_only_synthetic_vector_fallback,
+        FigureOwnershipRegistry,
+    )
+    ownership = FigureOwnershipRegistry()
+    mf, ul, rl, ua = [], [{
+        "block_id": "cap1", "page": 5, "role": "figure_caption_candidate",
+        "text": "Figure 1. Flow Diagram", "bbox": [100, 700, 900, 760],
+    }], [], [{
+        "block_id": "a1", "page": 5, "role": "media_asset",
+        "raw_label": "chart", "asset_family_hint": "figure_like",
+        "bbox": [100, 200, 900, 680],
+    }]
+    _apply_bbox_only_synthetic_vector_fallback(
+        matched_figures=mf, unmatched_legends=ul, rejected_legends=rl,
+        unmatched_assets=ua, ownership=ownership,
+    )
+    assert len(mf) == 1
+    assert mf[0]["truth_source"] == "vector_bbox"
+    assert "bbox_only_asset" in mf[0]["flags"]
+    assert ua == []
+    assert ul == []
+
+
+def test_synthetic_fallback_rejects_low_score():
+    from paperforge.worker.ocr_figures import (
+        _score_caption_to_unmatched_asset_for_synthetic,
+    )
+    # caption far from asset -> vertical_gap > 300 -> reject
+    score = _score_caption_to_unmatched_asset_for_synthetic(
+        {"page": 5, "bbox": [100, 100, 900, 140]},
+        {"page": 5, "bbox": [100, 900, 900, 1200]},
+    )
+    assert score == 0.0
