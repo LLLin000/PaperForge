@@ -45,3 +45,4 @@ paperforge/plugin/node_modules/
 
 # Audit page screenshots (keep structured JSON/CSV)
 audit/*/annotated_pages/
+.opencode/mcp/
