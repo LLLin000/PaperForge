@@ -1,28 +1,28 @@
 # Layout Robustness Layer — Design Specification
 
-> **Status:** Design drafted from code-path study + corpus scan + representative case studies  
-> **Scope:** PaperForge OCR layout robustness for header/footer banding, tail spread routing, and two-column continuation behavior  
-> **Recommendation:** Build a robust global noise-band layer first; keep continuation / ownership as separate upper-layer layout problems
+> **Status:** Design revised after review; ready to convert into implementation plan  
+> **Scope:** PaperForge OCR layout robustness for global header/footer band estimation, role-aware usable-content gating, tail spread ownership, and two-column continuation behavior  
+> **Recommendation:** Keep a global band model, but replace naive aggregation with a robust global estimator; treat continuation / ownership as separate upper-layer layout problems
 
 ---
 
 ## 0. Executive Summary
 
-PaperForge currently uses a **global header/footer usable-content band** derived from blocks labeled as noise/header/footer/number. The estimator itself is simple:
+PaperForge currently uses a **global header/footer usable-content band** derived from blocks labeled as `noise`, `header`, `footer`, or `number`. The estimator is currently:
 
 - `header_band = max(y2 of top-15%-page noise candidates)`
 - `footer_band = min(y1 of bottom-15%-page noise candidates)`
 
 This works on ordinary journal layouts, but fails badly when a paper contains **abnormal margin-band / watermark / downloaded-from publisher strips** or other tall noise blocks. In those cases the global `header_band` can inflate from a normal ~84–110 px to ~984–1575 px, which causes real content to be treated as out-of-band.
 
-The failure is not limited to one rendering site. The current band affects:
+The failure is not limited to one render branch. The current band affects:
 
 1. `body_paragraph` promotion in `ocr_document.py`
 2. `body_paragraph` routing in `_reorder_tail_run()`
 3. `backmatter_body` routing in `_reorder_tail_run()`
-4. historically, `reference_item` routing in `_reorder_tail_run()` before the local safety patch that bypassed band gating for references
+4. historically, `reference_item` routing in `_reorder_tail_run()` before the local safety patch that bypasses generic usable-content gating for references
 
-This design proposes a **layout robustness layer** with three principles:
+This spec proposes a **layout robustness layer** with three principles:
 
 1. **Robust global estimation** — the band remains global, but outlier noise blocks do not get to define it
 2. **Role-aware gating** — a semantic role already established upstream must not be casually overturned by geometric header/footer heuristics
@@ -174,7 +174,7 @@ This spec does **not** attempt to:
 4. solve figure/table ownership through the band layer
 5. use visual ML to infer headers dynamically at render time
 
-Specifically, this design rejects “page-local only” as the primary strategy. The evidence supports a **global but robust** estimator, not a per-page estimator that can jitter with page-local anomalies.
+Specifically, this design rejects “page-local only” as the primary strategy. The evidence supports a **global but robust** estimator, not a per-page estimator that jitters with page-local anomalies.
 
 ---
 
@@ -202,7 +202,170 @@ When a noise block is excluded from band estimation, or when a block bypasses ba
 
 ---
 
-## 5. Target Architecture
+## 5. Implementation Contract
+
+This section turns the architectural direction into executable contracts.
+
+### 5.1 Band estimator output
+
+Add a new structured return type:
+
+```python
+@dataclass
+class LayoutBandEstimate:
+    header_band: float | None
+    footer_band: float | None
+    status: str
+    method: str
+    accepted_candidates: list[dict]
+    excluded_candidates: list[dict]
+    support_pages: list[int]
+    warnings: list[str]
+```
+
+Contract:
+
+- `status` ∈ `{"ACCEPT", "HOLD_NO_STABLE_BAND", "EMPTY"}`
+- `method` must describe the aggregation mode actually used
+- `accepted_candidates` and `excluded_candidates` must preserve enough geometry/text/evidence for audit
+- `support_pages` must identify the pages that define the final band
+
+### 5.2 Candidate record contract
+
+Before aggregation, every eligible header/footer noise candidate must be materialized as a structured record:
+
+```python
+{
+    "page": int,
+    "page_width": float,
+    "page_height": float,
+    "role": str,
+    "raw_label": str,
+    "text": str,
+    "bbox": [x1, y1, x2, y2],
+    "x1_ratio": x1 / page_width,
+    "x2_ratio": x2 / page_width,
+    "y1_ratio": y1 / page_height,
+    "y2_ratio": y2 / page_height,
+    "width_ratio": width / page_width,
+    "height_ratio": height / page_height,
+    "candidate_side": "header" | "footer",
+    "decision": "accepted" | "excluded",
+    "reason": [str, ...],
+}
+```
+
+Do **not** collapse directly from `structured_blocks` to `(header_band, footer_band)`.
+
+### 5.3 Candidate exclusion contract
+
+Exclude these candidates before aggregation:
+
+```python
+exclude if:
+  height_ratio > 0.08 and width_ratio < 0.35
+  # tall narrow rail / margin-band / vertical strip
+
+exclude if:
+  height_ratio > 0.12
+  # abnormal tall noise block, even if y2 is still in top 15%
+
+exclude if:
+  text is empty or near-empty and height_ratio > 0.04
+  # malformed empty noise bbox
+
+exclude if:
+  text matches downloaded-from / accepted-manuscript / watermark style
+  and geometry is margin-band-like
+```
+
+Important constraint:
+
+- text pattern **alone** is insufficient
+- geometry **alone** may be insufficient
+- use **text + geometry** together for publisher-strip style exclusion
+
+### 5.4 Aggregation contract
+
+Aggregation is page-first, then cluster-based.
+
+Per page:
+
+```python
+header_page_value = max(y2 of accepted header candidates on that page)
+footer_page_value = min(y1 of accepted footer candidates on that page)
+```
+
+Across pages:
+
+```python
+cluster_tolerance = max(25 px, 0.015 * median_page_height)
+```
+
+Build clusters of page-level values. Select the cluster with greatest page support.
+
+Required support:
+
+```python
+support >= max(2 pages, 20% of pages with candidates)
+```
+
+Final band:
+
+```python
+header_band = p90(cluster_values)
+footer_band = p10(cluster_values)
+```
+
+If no stable cluster exists:
+
+```python
+header_band = None
+footer_band = None
+status = "HOLD_NO_STABLE_BAND"
+```
+
+This is the required contract. Do not substitute arbitrary median / trimmed max / single-page fallback behavior.
+
+### 5.5 Decision API contract
+
+Introduce a structured decision API instead of forcing new logic into a bool helper:
+
+```python
+@dataclass
+class UsableContentDecision:
+    usable: bool
+    policy: str
+    reason: list[str]
+    header_band: float | None
+    footer_band: float | None
+    role: str
+```
+
+New API:
+
+```python
+def decide_usable_content(
+    block: dict,
+    band_estimate: LayoutBandEstimate | None,
+    *,
+    context: str,
+) -> UsableContentDecision:
+    ...
+```
+
+Backward-compatibility wrapper:
+
+```python
+def _is_in_usable_content(block, header_band, footer_band) -> bool:
+    return decide_usable_content(...).usable
+```
+
+The wrapper may survive temporarily, but all new logic must be authored against the structured decision API.
+
+---
+
+## 6. Target Architecture
 
 The layout robustness layer is divided into four stacked sublayers.
 
@@ -217,7 +380,7 @@ flowchart TD
     E --> G
 ```
 
-### 5.1 Layer A — Noise candidate filtering
+### 6.1 Layer A — Noise candidate filtering
 
 Input: candidate noise/header/footer/number blocks.
 
@@ -227,51 +390,36 @@ Responsibility:
 - identify margin-band / watermark style artifacts
 - preserve why a candidate was excluded or included
 
-Candidate exclusion signals may include:
-
-- block height exceeds a configured fraction of page height
-- block width is narrow and height is very tall
-- evidence indicates margin-band / watermark / download strip
-- text matches known publisher watermark patterns
-- empty or near-empty noise blocks with anomalously tall bbox
-
-### 5.2 Layer B — Robust global band estimation
+### 6.2 Layer B — Robust global band estimation
 
 Input: filtered candidate set from Layer A.
 
 Responsibility:
 
 - compute one paper-level `header_band` and one paper-level `footer_band`
-- use robust aggregation, not naive `max` / `min`
+- use the aggregation contract from §5.4
 - expose supporting-page counts and outlier rejections for audit
 
 Accepted design direction:
 
 - global estimator remains paper-level
-- aggregation must be based on the dominant candidate cluster or stable majority pages
-- papers with no stable majority may degrade gracefully to `None`
+- majority-stable pages define the band
+- no stable majority cluster ⇒ `None`, not forced overfitting
 
 Rejected design direction:
 
 - per-page header/footer band as the primary system contract
 
-### 5.3 Layer C — Role-aware usable-content gate
+### 6.3 Layer C — Role-aware usable-content gate
 
-Input: semantic block role + robust band.
+Input: semantic block role + robust band estimate.
 
 Responsibility:
 
 - apply band-based gating only where it is semantically defensible
 - preserve strong semantic roles from accidental demotion
 
-Required contract:
-
-- `reference_item` bypasses header/footer gating
-- strong explicit reference-zone members bypass generic content-band gating
-- body-like roles (`body_paragraph`, `backmatter_body`) may still use gating, but only with the robust band from Layer B
-- the gate must explain whether a block was excluded by geometry, role exception, or uncertainty policy
-
-### 5.4 Layer D — Continuation / ownership layer
+### 6.4 Layer D — Continuation / ownership layer
 
 Input: blocks that survive or bypass Layer C.
 
@@ -288,37 +436,30 @@ Critical separation:
 
 ---
 
-## 6. Role Contracts
+## 7. Role Matrix
 
-### 6.1 `reference_item`
+The gate behavior must be explicit.
 
-Current desired contract:
+| Role | Band gate behavior | Rationale |
+|---|---|---|
+| `reference_heading` | bypass | section anchor must not be invalidated by band geometry |
+| `reference_item` | bypass | explicit reference semantics outrank band heuristics |
+| `reference_body` | bypass | continuation / unnumbered ref body must stay in ref flow |
+| `backmatter_heading` | bypass or soft gate | ownership anchor; false negative cost is high |
+| `backmatter_boundary_heading` | bypass | structural boundary anchor |
+| `backmatter_body` | soft gate | if heading ownership exists, ownership outranks band |
+| `body_paragraph` | normal gate | but only against robust band estimate |
+| `tail_candidate_body` | normal gate | same principle as body_paragraph |
+| `figure_asset` / `table_asset` | no generic text band gate | media ownership should not depend on text header heuristics |
+| `noise` / `header` / `footer` / `number` | gate / exclude | these are the intended band-driving roles |
 
-- semantic classification is stronger than banding
-- once classified as `reference_item`, the block belongs to the reference-routing path
-- column/top-of-page position must not demote it into ordinary content
+Additional hard contract for `backmatter_body`:
 
-### 6.2 `body_paragraph`
-
-Current desired contract:
-
-- may still be gated by robust banding, because body-like content near real headers/footers can indeed be noise
-- however, body promotion on tail spreads must not depend on a corrupted global band
-
-### 6.3 `backmatter_body`
-
-Current desired contract:
-
-- may use robust banding, but if excluded the false-path consequence is serious: heading/body detachment
-- therefore the gate should be conservative and auditable
-
-### 6.4 `figure_asset`, `table_caption`, related media roles
-
-This spec does not change their routing directly, but the corpus scan shows they can become collateral damage when a catastrophic header band marks most of the page unusable. The robust estimator should therefore reduce incidental media misgating even before any media-specific redesign.
+> If a `backmatter_body` has a same-page or carried same-column backmatter heading owner, ownership evidence outranks band exclusion.
 
 ---
 
-## 7. Failure Families and Required Handling
+## 8. Failure Families and Required Handling
 
 ### F1 — Margin-band watermark hijacks global band
 
@@ -363,71 +504,147 @@ Affected site: `_promote_tail_body_candidates()` in `ocr_document.py`.
 Required handling:
 
 - ensure robust band quality before promotion depends on it
-- consider exposing diagnostics when many candidate tail bodies are skipped only by band gate
+- expose diagnostics when many candidate tail bodies are skipped only by band gate
 
 ---
 
-## 8. Rollout Strategy
+## 9. Rollout Strategy
 
-### Phase 0 — Preserve safe local patches
+### Phase 0 — Preserve / enforce safe local patches
 
-Keep already-validated narrow fixes that are semantically correct:
+Required contract:
 
-- `reference_item` bypasses `_is_in_usable_content()` during tail render routing
+> Enforce the validated local patch first: `reference_item` and `reference_body` must bypass generic header/footer usable-content gating during tail reference routing.
 
-### Phase 1 — Robust global band estimator
+This must be treated as a prerequisite, not an assumption about the current repository state.
 
-Implement the new band estimator and candidate filtering layer.
+### Phase 1 — Robust estimator in audit-only mode
+
+This phase must **not** change runtime behavior yet.
 
 Deliverables:
 
-- candidate filtering policy
-- robust aggregation policy
-- traceable evidence output
-- regression fixtures from catastrophic sample papers
+- candidate collection API
+- candidate filtering decisions
+- robust estimator candidate output
+- dry-run diagnostics alongside legacy estimator output
 
-### Phase 2 — Role-aware gate normalization
+Required audit output shape:
 
-Revisit every `_is_in_usable_content()` call site and define explicit role contracts:
+```json
+{
+  "legacy_header_band": 1575,
+  "legacy_footer_band": null,
+  "robust_header_band_candidate": 104,
+  "robust_footer_band_candidate": null,
+  "accepted_candidates": [...],
+  "excluded_candidates": [...],
+  "support_pages": [...],
+  "status": "DRY_RUN"
+}
+```
 
-- strong roles bypass
-- uncertain roles gated
-- false-path consequences documented
+### Phase 2 — Enable robust estimator with safe fallback
 
-### Phase 3 — Two-column continuation and tail ownership
+Enable:
+
+```python
+if robust_estimate.status == "ACCEPT":
+    use robust bands
+elif legacy bands are within safe sanity range:
+    use legacy bands
+else:
+    header_band = None
+    footer_band = None
+```
+
+This phase still does **not** claim to solve two-column continuation ownership.
+
+### Phase 3 — Role-aware gate normalization
+
+Revisit all `_is_in_usable_content()` call sites and convert them to the decision API + role matrix.
+
+### Phase 4 — Two-column continuation and tail ownership
 
 Redesign reference continuation and tail ownership logic with explicit column reasoning.
 
-Deliverables:
+Required deliverables:
 
 - replacement for naive `bbox[1] >= ref_bottom` dependency
 - tail spread continuation tests
 - carried_ref / carried_backmatter interactions documented
 
-### Phase 4 — Audit and regression hardening
+Important acceptance boundary:
+
+- Phase 1/2 success means catastrophic band corruption is controlled and strong reference roles are no longer gate-killed
+- Full repair of `95FDVE4W`-style two-column continuation behavior belongs to this phase, not to Phase 1
+
+### Phase 5 — Audit and regression hardening
 
 Add corpus-level checks for:
 
 - suspiciously high header bands
 - large gated real-content counts
-- excluded candidate diagnostics
+- excluded-candidate diagnostics
 - per-paper robustness summaries
 
 ---
 
-## 9. Validation Strategy
+## 10. Validation Strategy
 
-### 9.1 Unit-level validation
+### 10.1 Estimator unit tests
 
-Need targeted tests for:
+Required tests:
 
-1. margin-band noise exclusion from global band estimation
-2. empty tall noise block exclusion
-3. `reference_item` bypass behavior
-4. `body_paragraph` / `backmatter_body` still gated under real header/footer cases
-5. two-column continuation refs surviving reference routing
+```python
+def test_tall_margin_band_noise_excluded_from_header_band():
+    ...
 
-### 9.2 Corpus-level validation
+def test_empty_tall_noise_block_excluded_from_header_band():
+    ...
+
+def test_stable_running_headers_define_global_band():
+    ...
+
+def test_no_stable_noise_candidates_degrades_to_none():
+    ...
+```
+
+### 10.2 Role-aware gate tests
+
+Required tests:
+
+```python
+def test_reference_item_bypasses_usable_content_gate_even_above_header_band():
+    ...
+
+def test_reference_body_bypasses_usable_content_gate():
+    ...
+
+def test_body_paragraph_still_gated_under_valid_header_band():
+    ...
+
+def test_backmatter_body_with_heading_owner_not_dropped_by_band():
+    ...
+```
+
+### 10.3 Regression papers
+
+Must include at minimum:
+
+- `KH3GMDCH`
+- `BKKR4KIV`
+- `ES23M9IS`
+- `97M7HFCD`
+- `3CEUN7T3`
+- `95FDVE4W`
+
+`95FDVE4W` must be explicitly marked as:
+
+- Phase 1/2: band-estimation sanity target
+- Phase 4: full two-column continuation target
+
+### 10.4 Corpus-level validation
 
 Track on representative sample:
 
@@ -436,31 +653,21 @@ Track on representative sample:
 - catastrophic-paper false-positive reductions
 - no regressions on stable ordinary single-column papers
 
-### 9.3 Paper-level regression set
+---
 
-Must include at minimum:
+## 11. Open Questions
 
-- `95FDVE4W` — two-column tail references
-- `WV2FF4NV`
-- `58UFL9UN`
-- several catastrophic watermark-margin papers from corpus scan (`BKKR4KIV`, `ES23M9IS`, `97M7HFCD`, `KH3GMDCH`)
-- one stable baseline paper such as `3CEUN7T3`
+These remain implementation choices, but the architecture is now constrained enough that they no longer block planning:
+
+1. Should dominant-cluster selection use a single-pass tolerance bucket or explicit clustering helper?
+2. Should margin-band detection rely first on geometry then text, or score both jointly?
+3. Should `figure_asset` / `table_caption` receive any media-specific band override, or is robust band cleanup sufficient?
+4. Should the decision API be introduced first in `ocr_document.py` or `ocr_render.py`?
+5. How should Phase 4 represent column-aware continuation ownership: explicit per-column anchors, per-spread regions, or reference-zone segment binding?
 
 ---
 
-## 10. Open Questions
-
-1. Should robust global aggregation use clustering, trimmed maxima, or a dominant-page-support threshold?
-2. Should margin-band exclusion rely purely on geometry, purely on evidence/text, or both?
-3. Should `backmatter_body` remain gated by the band, or move to a softer rule when tail spread anchors are present?
-4. Should `figure_asset` / `table_caption` receive any role-aware bypass, or should band cleanup alone solve most of their false gating?
-5. How much of two-column continuation should be solved in `ocr_document.py` versus `ocr_render.py`?
-
-This spec intentionally leaves those as implementation-design choices while fixing the architectural direction.
-
----
-
-## 11. Recommended Direction
+## 12. Recommended Direction
 
 Adopt **robust global estimation** as the canonical strategy.
 
