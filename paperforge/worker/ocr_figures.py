@@ -6085,24 +6085,19 @@ def _recover_figure_heading_prefix(
         if len(line_text) > 40:
             continue  # too long for a heading — probably in-text reference
 
-        # Scan PDF lines below the heading for a caption text match
+        # Scan lines below the heading (by y-order) for a caption text match
         heading_y = (line.get("bbox") or [0, 0, 0, 0])[1]
-        # Use OCR block's y-top as natural search bound (Figure N is above the caption bbox)
-        block_bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
-        block_y_top = block_bbox[1]
-        # Fallback: relative to page height (8% ≈ 3-5 lines at 200dpi)
-        page_height = float(block.get("page_height") or 1700)
-        search_limit = heading_y + max(page_height * 0.08, 40.0) if block_y_top == 0 else block_y_top
-        for j in range(i + 1, min(i + 20, len(sorted_lines))):
+        found = False
+        for j in range(i + 1, min(i + 10, len(sorted_lines))):
             nxt = sorted_lines[j]
             nxt_y = (nxt.get("bbox") or [0, 0, 0, 0])[1]
-            if nxt_y > search_limit:
-                break
+            if nxt_y - heading_y > 100:
+                break  # too far down — not the same caption block
             next_text = str(nxt.get("text", "") or "").strip()
             if not next_text or len(next_text) < 10:
                 continue
 
-            # Common-prefix match: ≥15 chars or substring match (handles OCR typos)
+            # Common-prefix match: at least 15 chars case-insensitive
             common = 0
             for a, b in zip(next_text.lower(), block_text.lower()):
                 if a == b:
