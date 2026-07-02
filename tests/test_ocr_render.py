@@ -795,3 +795,82 @@ def test_non_ref_blocks_not_moved_by_guard():
     assert texts.count("Second body.") == 1
     assert texts.count("References") == 1
     assert texts.count("1. Author. 2024.") == 1
+
+
+def test_different_column_reference_above_heading_attaches() -> None:
+    from paperforge.worker.ocr_render import _should_attach_reference_item_to_ref_section
+
+    heading = {"role": "reference_heading", "bbox": [100, 1345, 204, 1367]}
+    ref2 = {"role": "reference_item", "bbox": [611, 142, 1069, 180]}
+
+    assert _should_attach_reference_item_to_ref_section(ref2, heading, page_width=1200, ref_bottom=1367) is True
+
+
+def test_same_column_reference_above_heading_does_not_attach() -> None:
+    from paperforge.worker.ocr_render import _should_attach_reference_item_to_ref_section
+
+    heading = {"role": "reference_heading", "bbox": [100, 700, 204, 730]}
+    bad_ref = {"role": "reference_item", "bbox": [110, 650, 566, 690]}
+
+    assert _should_attach_reference_item_to_ref_section(bad_ref, heading, page_width=1200, ref_bottom=730) is False
+
+
+def test_two_column_right_column_refs_attach_after_left_column_heading() -> None:
+    from paperforge.worker.ocr_render import _reorder_tail_run
+
+    open_access = {
+        "role": "body_paragraph",
+        "text": "This is an open access article distributed...",
+        "bbox": [98, 1071, 568, 1193],
+        "page_width": 1200,
+        "page": 16,
+    }
+    ack = {
+        "role": "body_paragraph",
+        "text": "Acknowledgments We thank the Core Facilities...",
+        "bbox": [99, 1225, 568, 1327],
+        "page_width": 1200,
+        "page": 16,
+    }
+    ref_heading = {
+        "role": "reference_heading",
+        "text": "References",
+        "bbox": [100, 1345, 204, 1367],
+        "page_width": 1200,
+        "page": 16,
+    }
+    ref1 = {
+        "role": "reference_item",
+        "text": "1. Bedi A, Bishop J...",
+        "bbox": [110, 1377, 566, 1416],
+        "page_width": 1200,
+        "page": 16,
+    }
+    ref2 = {
+        "role": "reference_item",
+        "text": "2. Bedi A, Dines J...",
+        "bbox": [611, 142, 1069, 180],
+        "page_width": 1200,
+        "page": 16,
+    }
+
+    ordered, _, _ = _reorder_tail_run(
+        [open_access, ack, ref_heading, ref1, ref2],
+        carried_ref=None,
+        carried_backmatter=None,
+        page_width=1200,
+    )
+
+    texts = [b.get("text", "") for b in ordered]
+    assert texts.index("References") < texts.index("1. Bedi A, Bishop J...")
+    assert texts.index("1. Bedi A, Bishop J...") < texts.index("2. Bedi A, Dines J...")
+
+def test_backmatter_body_with_heading_owner_not_dropped_by_band() -> None:
+    from paperforge.worker.ocr_render import _reorder_tail_run
+
+    heading = {"role": "backmatter_heading", "text": "Acknowledgments", "bbox": [100, 1000, 300, 1030]}
+    body = {"role": "backmatter_body", "text": "We thank the lab.", "bbox": [100, 1035, 500, 1080]}
+
+    ordered, _, _ = _reorder_tail_run([heading, body], None, None, header_band=1100, footer_band=None, page_width=1200)
+    texts = [b.get("text") for b in ordered]
+    assert texts == ["Acknowledgments", "We thank the lab."]

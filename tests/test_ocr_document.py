@@ -5154,3 +5154,222 @@ def test_all_clusters_weak_fallback_to_single_column() -> None:
     assert "all_column_clusters_weak" in profile.evidence, (
         f"Expected all_column_clusters_weak in evidence, got {profile.evidence}"
     )
+
+
+
+def test_tall_margin_band_noise_excluded_from_header_band() -> None:
+    from paperforge.worker.ocr_banding import estimate_layout_bands
+
+    blocks = [
+        {
+            "page": 1,
+            "page_width": 1200,
+            "page_height": 1600,
+            "role": "noise",
+            "raw_label": "header",
+            "text": "Journal Name",
+            "bbox": [100, 70, 420, 102],
+            "evidence": [],
+        },
+        {
+            "page": 3,
+            "page_width": 1200,
+            "page_height": 1600,
+            "role": "noise",
+            "raw_label": "header",
+            "text": "Journal Name",
+            "bbox": [100, 72, 420, 104],
+            "evidence": [],
+        },
+        {
+            "page": 2,
+            "page_width": 1200,
+            "page_height": 1600,
+            "role": "noise",
+            "raw_label": "header",
+            "text": "Downloaded from https://publisher.example/...",
+            "bbox": [18, 30, 140, 1480],
+            "evidence": ["margin-band"],
+        },
+    ]
+
+    estimate = estimate_layout_bands(blocks)
+
+    assert estimate.status == "ACCEPT"
+    assert estimate.header_band is not None
+    assert estimate.header_band < 150
+    assert estimate.support_pages == [1, 3]
+    assert any("margin_band" in " ".join(c["reason"]) for c in estimate.excluded_candidates)
+
+
+def test_empty_tall_noise_block_excluded_from_header_band() -> None:
+    from paperforge.worker.ocr_banding import estimate_layout_bands
+
+    blocks = [
+        {
+            "page": 1,
+            "page_width": 1200,
+            "page_height": 1500,
+            "role": "noise",
+            "raw_label": "header",
+            "text": "Header",
+            "bbox": [100, 75, 350, 100],
+            "evidence": [],
+        },
+        {
+            "page": 2,
+            "page_width": 1200,
+            "page_height": 1500,
+            "role": "noise",
+            "raw_label": "header",
+            "text": "Header",
+            "bbox": [100, 74, 350, 102],
+            "evidence": [],
+        },
+        {
+            "page": 3,
+            "page_width": 1200,
+            "page_height": 1500,
+            "role": "noise",
+            "raw_label": "header",
+            "text": "",
+            "bbox": [500, 90, 650, 213],
+            "evidence": [],
+        },
+    ]
+
+    estimate = estimate_layout_bands(blocks)
+
+    assert estimate.status == "ACCEPT"
+    assert estimate.header_band == 102
+    assert any("empty_tall_noise" in c["reason"] for c in estimate.excluded_candidates)
+
+
+def test_stable_running_headers_define_global_band() -> None:
+    from paperforge.worker.ocr_banding import estimate_layout_bands
+
+    blocks = []
+    for page, y2 in [(1, 84), (2, 88), (3, 91), (4, 109), (5, 102)]:
+        blocks.append(
+            {
+                "page": page,
+                "page_width": 1200,
+                "page_height": 1500,
+                "role": "noise",
+                "raw_label": "header",
+                "text": f"Running header {page}",
+                "bbox": [150, y2 - 24, 420, y2],
+                "evidence": [],
+            }
+        )
+
+    estimate = estimate_layout_bands(blocks)
+
+    assert estimate.status == "ACCEPT"
+    assert estimate.header_band == 109
+    assert estimate.support_pages == [1, 2, 3, 4, 5]
+
+
+def test_no_stable_noise_candidates_degrades_to_none() -> None:
+    from paperforge.worker.ocr_banding import estimate_layout_bands
+
+    blocks = [
+        {
+            "page": 1,
+            "page_width": 1200,
+            "page_height": 1500,
+            "role": "noise",
+            "raw_label": "header",
+            "text": "Odd A",
+            "bbox": [100, 70, 240, 95],
+            "evidence": [],
+        },
+        {
+            "page": 2,
+            "page_width": 1200,
+            "page_height": 1500,
+            "role": "noise",
+            "raw_label": "header",
+            "text": "Odd B",
+            "bbox": [100, 70, 240, 180],
+            "evidence": [],
+        },
+    ]
+
+    estimate = estimate_layout_bands(blocks)
+
+    assert estimate.status == "HOLD_NO_STABLE_BAND"
+    assert estimate.header_band is None
+    assert estimate.support_pages == []
+def test_normalize_document_structure_exposes_layout_band_estimate_dry_run() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "page": 1,
+            "page_width": 1200,
+            "page_height": 1500,
+            "role": "noise",
+            "raw_label": "header",
+            "text": "Header",
+            "bbox": [100, 70, 300, 100],
+            "block_id": "h1",
+        },
+        {
+            "page": 1,
+            "page_width": 1200,
+            "page_height": 1500,
+            "role": "body_paragraph",
+            "text": "Body text.",
+            "bbox": [100, 130, 550, 220],
+            "block_id": "b1",
+        },
+    ]
+
+    doc, normalized = normalize_document_structure(blocks)
+
+    assert doc.layout_band_estimate is not None
+    assert doc.layout_band_estimate["mode"] == "DRY_RUN"
+    assert doc.layout_band_estimate["robust_status"] in {"ACCEPT", "EMPTY", "HOLD_NO_STABLE_BAND"}
+    assert "legacy_header_band" in doc.layout_band_estimate
+    assert "robust_header_band_candidate" in doc.layout_band_estimate
+
+def test_runtime_bands_use_robust_when_accept() -> None:
+    from paperforge.worker.ocr_banding import LayoutBandEstimate, choose_runtime_bands
+
+    estimate = LayoutBandEstimate(109, None, "ACCEPT", "robust_cluster", [], [], [1, 2], [])
+    hb, fb, source = choose_runtime_bands(estimate, legacy_header_band=150, legacy_footer_band=None, max_page_height=1600)
+
+    assert (hb, fb, source) == (109, None, "robust")
+
+
+def test_runtime_bands_fallback_to_safe_legacy_when_robust_holds() -> None:
+    from paperforge.worker.ocr_banding import LayoutBandEstimate, choose_runtime_bands
+
+    estimate = LayoutBandEstimate(None, None, "HOLD_NO_STABLE_BAND", "robust_cluster", [], [], [], ["no_stable_cluster"])
+    hb, fb, source = choose_runtime_bands(estimate, legacy_header_band=110, legacy_footer_band=None, max_page_height=1600)
+
+    assert (hb, fb, source) == (110, None, "legacy_safe")
+
+
+def test_runtime_bands_drop_unsafe_legacy_when_robust_holds() -> None:
+    from paperforge.worker.ocr_banding import LayoutBandEstimate, choose_runtime_bands
+
+    estimate = LayoutBandEstimate(None, None, "HOLD_NO_STABLE_BAND", "robust_cluster", [], [], [], ["no_stable_cluster"])
+    hb, fb, source = choose_runtime_bands(estimate, legacy_header_band=1300, legacy_footer_band=None, max_page_height=1600)
+
+    assert (hb, fb, source) == (None, None, "none")
+
+def test_reference_item_bypasses_usable_content_gate_even_above_header_band() -> None:
+    from paperforge.worker.ocr_banding import LayoutBandEstimate, decide_usable_content
+
+    estimate = LayoutBandEstimate(213, None, "ACCEPT", "robust_cluster", [], [], [16], [])
+    block = {
+        "role": "reference_item",
+        "text": "2. Example reference",
+        "bbox": [611, 142, 1069, 180],
+    }
+
+    decision = decide_usable_content(block, estimate, context="tail_render")
+    assert decision.usable is True
+    assert decision.policy == "role_bypass"

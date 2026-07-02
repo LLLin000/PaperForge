@@ -99,6 +99,11 @@ class DocumentStructure:
     abstract_span: dict | None = None
     reference_zone: dict | None = None
     role_gate_summary: dict | None = None
+
+    # Robust layout band diagnostics — populated during
+    # normalize_document_structure with dry-run + runtime estimates
+    # from ocr_banding module.
+    layout_band_estimate: dict | None = None
     reference_completeness_report: dict | None = None
 
 
@@ -3629,7 +3634,21 @@ def _promote_tail_body_candidates(
             block = result[idx]
             if block.get("role") != "body_paragraph":
                 continue
-            if not _is_in_usable_content(block, header_band, footer_band):
+            from paperforge.worker.ocr_banding import decide_usable_content, LayoutBandEstimate
+            band_estimate_for_promotion: LayoutBandEstimate | None = None
+            if doc and doc.layout_band_estimate:
+                lbe = doc.layout_band_estimate
+                band_estimate_for_promotion = LayoutBandEstimate(
+                    header_band=lbe.get("runtime_header_band") or lbe.get("robust_header_band_candidate") or header_band,
+                    footer_band=lbe.get("runtime_footer_band") or lbe.get("robust_footer_band_candidate") or footer_band,
+                    status=lbe.get("robust_status", "EMPTY"),
+                    method="runtime",
+                    accepted_candidates=lbe.get("accepted_candidates", []),
+                    excluded_candidates=lbe.get("excluded_candidates", []),
+                    support_pages=lbe.get("support_pages", []),
+                    warnings=lbe.get("warnings", []),
+                )
+            if not decide_usable_content(block, band_estimate_for_promotion, context="tail_candidate_promotion").usable:
                 continue
 
             # Reference zone ownership is stronger than generic tail/body fallback.
@@ -5621,10 +5640,38 @@ def normalize_document_structure(
         region_bus=region_bus,
         reference_completeness_report=ref_completeness,
     )
-    if source_frontmatter_anchors:
-        doc_structure.source_frontmatter_anchors = source_frontmatter_anchors
 
     header_band, footer_band = _estimate_noise_bands(blocks)
+
+    from paperforge.worker.ocr_banding import estimate_layout_bands, choose_runtime_bands
+
+    robust_estimate = estimate_layout_bands(blocks)
+    layout_band_estimate: dict = {
+        "mode": "DRY_RUN",
+        "legacy_header_band": header_band,
+        "legacy_footer_band": footer_band,
+        "robust_header_band_candidate": robust_estimate.header_band,
+        "robust_footer_band_candidate": robust_estimate.footer_band,
+        "robust_status": robust_estimate.status,
+        "accepted_candidates": robust_estimate.accepted_candidates,
+        "excluded_candidates": robust_estimate.excluded_candidates,
+        "support_pages": robust_estimate.support_pages,
+        "method": robust_estimate.method,
+        "warnings": robust_estimate.warnings,
+    }
+    doc_structure.layout_band_estimate = layout_band_estimate
+    max_page_height = max((float(b.get("page_height") or 0) for b in blocks), default=0.0)
+    runtime_header_band, runtime_footer_band, runtime_band_source = choose_runtime_bands(
+        robust_estimate,
+        header_band,
+        footer_band,
+        max_page_height=max_page_height,
+    )
+    layout_band_estimate["runtime_band_source"] = runtime_band_source
+    layout_band_estimate["runtime_header_band"] = runtime_header_band
+    layout_band_estimate["runtime_footer_band"] = runtime_footer_band
+    if source_frontmatter_anchors:
+        doc_structure.source_frontmatter_anchors = source_frontmatter_anchors
 
     reading_segments = _build_tail_reading_order(blocks, page_layouts)
     doc_structure.tail_reading_order = (

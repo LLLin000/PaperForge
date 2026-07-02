@@ -11,6 +11,7 @@ from paperforge.worker.ocr_document import (
     _get_column,
     _is_in_usable_content,
 )
+from paperforge.worker.ocr_banding import LayoutBandEstimate, decide_usable_content
 from paperforge.worker.ocr_math import normalize_ocr_math_text
 from paperforge.worker.ocr_pdf_spans import _BACKFILL_OVERLAP_REJECT_THRESHOLD, _backfill_coverage_in_existing
 from paperforge.worker.ocr_roles import FRONTMATTER_NOISE
@@ -505,14 +506,46 @@ def _is_tail_backmatter_continuation(block: dict) -> bool:
     text = str(block.get("text") or block.get("block_content") or "").strip()
     return bool(_TAIL_BACKMATTER_CONTINUATION_PATTERN.match(text))
 
+
+def _block_column(block: dict, page_width: float) -> int | None:
+    bbox = block.get("bbox") or block.get("block_bbox")
+    if not bbox or len(bbox) < 4:
+        return None
+    x_center = (bbox[0] + bbox[2]) / 2
+    return 0 if x_center < (page_width / 2.0) else 1
+
+
+def _should_attach_reference_item_to_ref_section(
+    block: dict,
+    ref_heading: dict | None,
+    *,
+    page_width: float,
+    ref_bottom: float,
+) -> bool:
+    bbox = block.get("bbox") or block.get("block_bbox")
+    if not bbox or len(bbox) < 4:
+        return True
+    if ref_heading is None:
+        return True
+
+    heading_bbox = ref_heading.get("bbox") or ref_heading.get("block_bbox")
+    if not heading_bbox or len(heading_bbox) < 4:
+        return True
+
+    block_col = _block_column(block, page_width)
+    heading_col = _block_column(ref_heading, page_width)
+    if block_col == heading_col:
+        return bbox[1] >= ref_bottom
+    return True
 def _reorder_tail_run(
     tail_blocks: list[dict],
     carried_ref: dict | None = None,
     carried_backmatter: dict | None = None,
+    *,
     header_band: float | None = None,
     footer_band: float | None = None,
+    band_estimate: LayoutBandEstimate | None = None,
     page_width: float = 1200,
-    *,
     skip_section_grouping: bool = False,
 ) -> tuple[list[dict], dict | None, dict | None]:
     """Group tail blocks using geometric ownership and reference zone.
@@ -531,6 +564,20 @@ def _reorder_tail_run(
     When blocks lack bbox data, falls back to FIFO matching for backward
     compatibility.
     """
+    # Backward-compatible bridge: when no band_estimate is provided,
+    # create one from the raw header_band/footer_band parameters.
+    if band_estimate is None:
+        band_estimate = LayoutBandEstimate(
+            header_band=header_band,
+            footer_band=footer_band,
+            status="ACCEPT" if (header_band is not None or footer_band is not None) else "EMPTY",
+            method="runtime_selected",
+            accepted_candidates=[],
+            excluded_candidates=[],
+            support_pages=[],
+            warnings=[],
+        )
+
     if not tail_blocks:
         return tail_blocks, carried_ref, carried_backmatter
 
@@ -593,12 +640,9 @@ def _reorder_tail_run(
         elif role == "reference_item":
             ref_items.append(block)
         elif role == "backmatter_body":
-            if _is_in_usable_content(block, header_band, footer_band):
-                body_pool.append(block)
-            else:
-                non_tail_pass.append(block)
+            body_pool.append(block)
         elif role == "body_paragraph":
-            if _is_in_usable_content(block, header_band, footer_band):
+            if decide_usable_content(block, band_estimate, context="tail_render_body").usable:
                 idx = _find_owning_heading(block, backmatter_sections, page_width) if backmatter_sections else None
                 if idx is not None:
                     backmatter_sections[idx]["bodies"].append(block)
@@ -630,17 +674,23 @@ def _reorder_tail_run(
         ref_section = {"heading": None, "bodies": []}
 
     # Phase 3 — assign ref items to zone, backmatter bodies to body pool
+    # Phase 3 — assign ref items to zone
+    rejected_ref_items: list[dict] = []
     for block in ref_items:
         if ref_heading:
-            bbox = block.get("bbox") or block.get("block_bbox")
-            if bbox and len(bbox) >= 4 and bbox[1] >= ref_bottom:
+            if _should_attach_reference_item_to_ref_section(
+                block,
+                ref_heading,
+                page_width=page_width,
+                ref_bottom=ref_bottom,
+            ):
                 ref_section["bodies"].append(block)
             else:
-                body_pool.append(block)
+                rejected_ref_items.append(block)
         elif _needs_synthetic_ref:
             ref_section["bodies"].append(block)
         else:
-            body_pool.append(block)
+            rejected_ref_items.append(block)
 
     # Phase 4a — container regime body attachment (run before generic
     # body loop so container bodies are matched to their specific child
@@ -682,6 +732,11 @@ def _reorder_tail_run(
                     carried_bodies.append(body)
                     continue
 
+        decision = decide_usable_content(body, band_estimate, context="tail_render_backmatter_bodypool")
+        if not decision.usable:
+            non_tail_pass.append(body)
+            continue
+
         if ref_section is not None and not _needs_synthetic_ref:
             if ref_section is carried_ref:
                 ref_section["bodies"].append(body)
@@ -698,6 +753,7 @@ def _reorder_tail_run(
     # cross-page relationship artifacts from previous pages' carried blocks.
     result: list[dict] = []
     result.extend(non_tail_pass)
+    result.extend(rejected_ref_items)
     result.extend(carried_bodies)
     sec_order = sorted(
         backmatter_sections,
@@ -851,7 +907,29 @@ def _order_tail_blocks(
     if not blocks:
         return blocks
 
-    header_band, footer_band = _estimate_noise_bands(blocks)
+    from paperforge.worker.ocr_banding import estimate_layout_bands, choose_runtime_bands, LayoutBandEstimate
+
+    legacy_header_band, legacy_footer_band = _estimate_noise_bands(blocks)
+    robust_estimate = estimate_layout_bands(blocks)
+    max_page_height = max((float(b.get("page_height") or 0) for b in blocks), default=0.0)
+
+    header_band, footer_band, runtime_band_source = choose_runtime_bands(
+        robust_estimate,
+        legacy_header_band,
+        legacy_footer_band,
+        max_page_height=max_page_height,
+    )
+
+    runtime_band_estimate = LayoutBandEstimate(
+        header_band=header_band,
+        footer_band=footer_band,
+        status="ACCEPT" if (header_band is not None or footer_band is not None) else "EMPTY",
+        method=f"runtime_{runtime_band_source}",
+        accepted_candidates=robust_estimate.accepted_candidates,
+        excluded_candidates=robust_estimate.excluded_candidates,
+        support_pages=robust_estimate.support_pages,
+        warnings=robust_estimate.warnings,
+    )
 
     # Find pages that contain tail blocks and their page widths.
     # Skip pages where body_paragraph blocks outnumber tail-role blocks —
@@ -922,6 +1000,7 @@ def _order_tail_blocks(
                 carried_backmatter,
                 header_band=header_band,
                 footer_band=footer_band,
+                band_estimate=runtime_band_estimate,
                 page_width=pw,
                 skip_section_grouping=_page_has_ref_items and not _page_has_ref_heading,
             )
