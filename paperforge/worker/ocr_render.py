@@ -489,6 +489,21 @@ def _ref_number_sort_key(block: dict) -> tuple:
         return (0, int(m.group(1) or m.group(2)))
     return (1, text)
 
+_TAIL_BACKMATTER_CONTINUATION_PATTERN = re.compile(
+    r"^(?:address correspondence|correspondence|e-?mail|email|"
+    r"received|accepted|published|available online|"
+    r"author contributions?|conflicts? of interest|funding|"
+    r"acknowledg(?:e)?ments?)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_tail_backmatter_continuation(block: dict) -> bool:
+    zone = str(block.get("zone") or "")
+    if zone == "tail_nonref_hold_zone":
+        return True
+    text = str(block.get("text") or block.get("block_content") or "").strip()
+    return bool(_TAIL_BACKMATTER_CONTINUATION_PATTERN.match(text))
 
 def _reorder_tail_run(
     tail_blocks: list[dict],
@@ -523,13 +538,30 @@ def _reorder_tail_run(
     # Column-sort is maintained; ref items are grouped at the end.
     if skip_section_grouping:
         ref_roles = frozenset({"reference_heading", "reference_item", "reference_body"})
-        backmatter_roles = frozenset({"backmatter_body", "backmatter_heading"})
-        non_ref = [b for b in tail_blocks if b.get("role") not in ref_roles and b.get("role") not in backmatter_roles and b.get("role") != "footnote"]
+        backmatter_roles = frozenset({
+            "backmatter_body",
+            "backmatter_heading",
+            "backmatter_boundary_heading",
+        })
+
+        non_ref_all = [
+            b for b in tail_blocks
+            if b.get("role") not in ref_roles
+            and b.get("role") not in backmatter_roles
+            and b.get("role") != "footnote"
+        ]
+
         refs = [b for b in tail_blocks if b.get("role") in ref_roles]
         refs.sort(key=_ref_number_sort_key)
+
         backmatter = [b for b in tail_blocks if b.get("role") in backmatter_roles]
         fnotes = [b for b in tail_blocks if b.get("role") == "footnote"]
-        return non_ref + refs + backmatter + fnotes, carried_ref, carried_backmatter
+
+        tail_backmatter = [b for b in non_ref_all if _is_tail_backmatter_continuation(b)]
+        ordinary_non_ref = [b for b in non_ref_all if not _is_tail_backmatter_continuation(b)]
+
+        return (ordinary_non_ref + refs + backmatter + tail_backmatter + fnotes,
+                carried_ref, carried_backmatter)
 
     # Quick check: do blocks have bbox data?  If not, use FIFO fallback.
     has_geo = any(
@@ -559,10 +591,7 @@ def _reorder_tail_run(
         elif role == "reference_heading":
             ref_section = {"heading": block, "bodies": []}
         elif role == "reference_item":
-            if _is_in_usable_content(block, header_band, footer_band):
-                ref_items.append(block)
-            else:
-                non_tail_pass.append(block)
+            ref_items.append(block)
         elif role == "backmatter_body":
             if _is_in_usable_content(block, header_band, footer_band):
                 body_pool.append(block)
@@ -573,6 +602,8 @@ def _reorder_tail_run(
                 idx = _find_owning_heading(block, backmatter_sections, page_width) if backmatter_sections else None
                 if idx is not None:
                     backmatter_sections[idx]["bodies"].append(block)
+                elif _is_tail_backmatter_continuation(block):
+                    body_pool.append(block)
                 else:
                     non_tail_pass.append(block)
             else:
@@ -618,6 +649,7 @@ def _reorder_tail_run(
 
     # Phase 4b — geometric body attachment for remaining bodies
     first_local_anchor_top: float | None = None
+    tail_backmatter_blocks: list[dict] = []
     local_heading_tops = []
     for sec in backmatter_sections:
         bbox = sec["heading"].get("bbox") or sec["heading"].get("block_bbox")
@@ -634,7 +666,13 @@ def _reorder_tail_run(
         idx = _find_owning_heading(body, backmatter_sections, page_width)
         if idx is not None:
             backmatter_sections[idx]["bodies"].append(body)
-        elif carried_backmatter is not None:
+            continue
+
+        if _is_tail_backmatter_continuation(body):
+            tail_backmatter_blocks.append(body)
+            continue
+
+        if carried_backmatter is not None:
             bbox = body.get("bbox") or body.get("block_bbox")
             if bbox and len(bbox) >= 4:
                 body_top = bbox[1]
@@ -643,7 +681,8 @@ def _reorder_tail_run(
                 ):
                     carried_bodies.append(body)
                     continue
-        elif ref_section is not None and not _needs_synthetic_ref:
+
+        if ref_section is not None and not _needs_synthetic_ref:
             if ref_section is carried_ref:
                 ref_section["bodies"].append(body)
                 orphan_blocks.append(body)
@@ -677,6 +716,7 @@ def _reorder_tail_run(
         if ref_section.get("bodies"):
             ref_section["bodies"].sort(key=_ref_number_sort_key)
             result.extend(ref_section["bodies"])
+    result.extend(tail_backmatter_blocks)
     result.extend(footnote_blocks)
     result.extend(orphan_blocks)
 
@@ -774,6 +814,26 @@ def _sort_blocks_by_column(blocks: list[dict], page_width: int) -> list[dict]:
     return sorted(blocks, key=_column_key)
 
 
+
+def _force_reference_heading_before_same_page_refs(page_blocks: list[dict]) -> list[dict]:
+    """Reorder page blocks so reference_item/reference_body always follow
+    the first reference_heading on the same page. Non-ref blocks are unchanged."""
+    headings = [b for b in page_blocks if b.get("role") == "reference_heading"]
+    if not headings:
+        return page_blocks
+
+    ref_roles = {"reference_item", "reference_body"}
+    refs = [b for b in page_blocks if b.get("role") in ref_roles]
+    if not refs:
+        return page_blocks
+
+    first_heading = headings[0]
+    heading_idx = page_blocks.index(first_heading)
+
+    before = [b for b in page_blocks[:heading_idx] if b.get("role") not in ref_roles]
+    after = [b for b in page_blocks[heading_idx + 1:] if b.get("role") not in ref_roles]
+
+    return before + [first_heading] + sorted(refs, key=_ref_number_sort_key) + after
 def _order_tail_blocks(
     blocks: list[dict], style_profiles: dict | None = None, *, has_verified_reference_zone: bool = False
 ) -> list[dict]:
@@ -823,7 +883,17 @@ def _order_tail_blocks(
             page_widths.setdefault(page, pw)
 
     if not tail_pages:
-        return blocks
+        result: list[dict] = []
+        by_page: dict[int, list[dict]] = {}
+        for block in blocks:
+            p = block.get("page")
+            if p is None:
+                result.append(block)
+            else:
+                by_page.setdefault(p, []).append(block)
+        for page in sorted(by_page):
+            result.extend(_force_reference_heading_before_same_page_refs(by_page[page]))
+        return result
 
     # Group blocks by page
     by_page: dict[int, list[dict]] = {}
@@ -843,7 +913,8 @@ def _order_tail_blocks(
         if page in tail_pages:
             pw = page_widths.get(page, 1200)
             sorted_blocks = _sort_blocks_by_column(page_blocks, pw)
-            _page_has_ref_items = any(b.get("role") == "reference_item" for b in sorted_blocks)
+            sorted_blocks = _force_reference_heading_before_same_page_refs(sorted_blocks)
+            _page_has_ref_items = any(b.get("role") in {"reference_item", "reference_body"} for b in sorted_blocks)
             _page_has_ref_heading = any(b.get("role") == "reference_heading" for b in sorted_blocks)
             ordered, carried_ref, carried_backmatter = _reorder_tail_run(
                 sorted_blocks,
@@ -986,6 +1057,18 @@ def _emit_reader_figures_before_references(
             lines.append("")
 
 
+def _add_consumed_key(
+    keys: set[tuple[int | None, str | int]],
+    page: int | None,
+    block_id: str | int,
+) -> None:
+    """Add a per-page consumed block key, keyed by (page, block_id)."""
+    if block_id is None or block_id == "":
+        return
+    keys.add((page, block_id))
+    keys.add((page, str(block_id)))
+
+
 def render_fulltext_markdown(
     *,
     structured_blocks: list[dict],
@@ -1003,23 +1086,71 @@ def render_fulltext_markdown(
     reader_figures = (reader_payload or {}).get("reader_figures", [])
     consumed_caption_keys: set[tuple[int | None, int | str]] = set()
     consumed_caption_ids_unkeyed: set[int | str] = set()
-    consumed_table_block_keys: set[tuple[int | None, str | int]] = set()
-    # Map both raw id and str(id) because note_block_ids are stringified in
-    # build_table_inventory while structured_blocks may carry int block_ids.
-    block_page_by_id: dict[str | int, int | None] = {}
+    # Build page-block_id index from structured blocks for fallback resolution.
+    page_block_ids: dict[int | None, set[str | int]] = {}
     for block in structured_blocks:
         bid = block.get("block_id")
         if bid is None:
             continue
         page = block.get("page")
-        block_page_by_id[bid] = page
-        block_page_by_id[str(bid)] = page
+        page_block_ids.setdefault(page, set()).add(bid)
+        page_block_ids.setdefault(page, set()).add(str(bid))
+
+    consumed_table_block_keys: set[tuple[int | None, str | int]] = set()
     for table in table_inventory.get("tables", []):
-        for block_id in table.get("consumed_block_ids", []):
-            if not block_id:
+        table_page = table.get("page")
+
+        # Build explicit page mapping from table inventory fields.
+        # These fields know each block's true page and disambiguate
+        # cross-page collisions (same block_id on different pages).
+        explicit_id_page: dict[str | int, int | None] = {}
+
+        def _map_eid(bid, page):
+            if bid is not None and bid != "":
+                explicit_id_page[bid] = page
+                explicit_id_page[str(bid)] = page
+
+        _map_eid(table.get("caption_block_id"), table_page)
+
+        for seg in table.get("segments", []):
+            _map_eid(seg.get("asset_block_id"), seg.get("page") or table_page)
+
+        for note_bid in table.get("note_block_ids", []):
+            if note_bid is not None and note_bid != "":
+                # Notes may be on a different page — resolve from structured blocks
+                note_page = None
+                for p, ids in page_block_ids.items():
+                    if note_bid in ids or str(note_bid) in ids:
+                        note_page = p
+                        break
+                _map_eid(note_bid, note_page or table_page)
+
+        for br_bid in table.get("bridge_block_ids", []):
+            _map_eid(br_bid, table_page)
+
+        for bid in table.get("consumed_block_ids", []):
+            if bid is None or bid == "":
                 continue
-            page = block_page_by_id.get(block_id, table.get("page"))
-            consumed_table_block_keys.add((page, block_id))
+            # Try explicit mapping first (handles cross-page assets and notes)
+            page = explicit_id_page.get(bid) or explicit_id_page.get(str(bid))
+            if page is not None:
+                _add_consumed_key(consumed_table_block_keys, page, bid)
+                continue
+
+            # Not in explicit fields — fall back to structured block lookup
+            str_bid = str(bid)
+            table_ids = page_block_ids.get(table_page, set())
+            if bid in table_ids or str_bid in table_ids:
+                _add_consumed_key(consumed_table_block_keys, table_page, bid)
+            else:
+                found = False
+                for p, ids in page_block_ids.items():
+                    if bid in ids or str_bid in ids:
+                        _add_consumed_key(consumed_table_block_keys, p, bid)
+                        found = True
+                        break
+                if not found:
+                    _add_consumed_key(consumed_table_block_keys, table_page, bid)
     for item in (reader_payload or {}).get("consumed_caption_block_ids", []):
         if isinstance(item, dict):
             page = item.get("page")

@@ -780,3 +780,31 @@ def test_table_roman_prefix_family_not_reference_like():
     family, authority = _classify_style_family(block, {}, {})
     assert family == "table_caption_like"
     assert authority == "table_marker"
+
+
+def test_page_continuation_marker_is_not_reference():
+    """Page continuation markers like "13 of 18", "13. of 18", "Page 13 of 18", "13/18" should NOT be classified as reference family."""
+    from paperforge.worker.ocr_families import _is_reference_family_candidate
+
+    markers = [
+        {"text": "13 of 18", "bbox": [0, 0, 60, 10], "marker_signature": {"type": "reference_numeric_dot"}, "span_signature": {"font_size_median": 9.0}, "layout_signature": {"width": 60}},
+        {"text": "13. of 18", "bbox": [0, 0, 65, 10], "marker_signature": {"type": "reference_numeric_dot"}, "span_signature": {"font_size_median": 9.0}, "layout_signature": {"width": 65}},
+        {"text": "Page 13 of 18", "bbox": [0, 0, 90, 10], "marker_signature": {"type": "reference_numeric_dot"}, "span_signature": {"font_size_median": 9.0}, "layout_signature": {"width": 90}},
+        {"text": "13/18", "bbox": [0, 0, 40, 10], "marker_signature": {"type": "reference_numeric_dot"}, "span_signature": {"font_size_median": 9.0}, "layout_signature": {"width": 40}},
+    ]
+    for marker in markers:
+        assert not _is_reference_family_candidate(marker), f"'{marker['text']}' should not be reference family"
+
+
+def test_real_reference_is_still_reference():
+    """Real references like "13. Smith J, Wang L. Cartilage repair in 2018." should still be classified as reference family."""
+    from paperforge.worker.ocr_families import _is_reference_family_candidate
+
+    ref = {
+        "text": "13. Smith J, Wang L. Cartilage repair in 2018. Journal of Orthopaedic Research.",
+        "bbox": [100, 0, 500, 20],
+        "marker_signature": {"type": "reference_numeric_dot"},
+        "span_signature": {"font_size_median": 10.0},
+        "layout_signature": {"width": 400},
+    }
+    assert _is_reference_family_candidate(ref), "Real reference should still be classified as reference family"

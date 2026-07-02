@@ -40,8 +40,26 @@ _EDITORIAL_TAIL_PHRASES = (
     "published online",
 )
 
+_PAGE_CONTINUATION_MARKER_PATTERN = re.compile(
+    r"^(?:page\s*)?\d{1,4}\s*(?:[\.\-–—]?\s+of\s+|/)\s*\d{1,4}$",
+    re.IGNORECASE,
+)
 
 
+def _looks_like_page_continuation_marker(block: dict) -> bool:
+    text = str(block.get("text") or block.get("block_content") or "").strip()
+    if not _PAGE_CONTINUATION_MARKER_PATTERN.match(text):
+        return False
+
+    bbox = block.get("bbox") or block.get("block_bbox") or []
+    width = float(bbox[2]) - float(bbox[0]) if len(bbox) >= 4 else None
+    layout_sig = block.get("layout_signature") or {}
+    if layout_sig.get("width") is not None:
+        width = float(layout_sig["width"])
+
+    if width is not None:
+        return width < 180
+    return len(text.split()) <= 3
 _TABLE_PREFIX_LIKE = re.compile(
     rf"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s*"
     rf"(?:S\.?\s*)?(?:\d+(?:\.\d+)?|[IVXLCDM]+)\b",
@@ -321,6 +339,9 @@ def _anchor_matches_block(
 
 
 def _reference_anchor_matches_block(anchor: dict[str, Any], block: dict) -> bool:
+    if _looks_like_page_continuation_marker(block):
+        return False
+
     if not _anchor_matches_block(anchor, block, _reference_family_key):
         return False
     marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
@@ -348,6 +369,9 @@ def _reference_anchor_matches_block(anchor: dict[str, Any], block: dict) -> bool
 def _has_reference_text_structure(block: dict) -> bool:
     text = str(block.get("text") or block.get("block_content") or "").strip()
     if not text:
+        return False
+
+    if _looks_like_page_continuation_marker(block):
         return False
 
     if re.match(r"^\[\d+\]", text):
@@ -463,6 +487,9 @@ def _word_count(block: dict) -> int:
 
 
 def _is_reference_family_candidate(block: dict) -> bool:
+    if _looks_like_page_continuation_marker(block):
+        return False
+
     marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
     if marker_type not in _REFERENCE_MARKER_TYPES:
         return False
