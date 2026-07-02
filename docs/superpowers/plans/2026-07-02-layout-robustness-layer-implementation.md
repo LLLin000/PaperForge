@@ -639,7 +639,7 @@ def test_runtime_bands_drop_unsafe_legacy_when_robust_holds() -> None:
     assert (hb, fb, source) == (None, None, "none")
 ```
 
-- [ ] **Step 2: Run the runtime-selection tests to confirm they fail**
+- [ ] **Step 2: Run the runtime-selection tests to confirm the integration is still incomplete**
 
 Run:
 
@@ -649,9 +649,11 @@ pytest tests/test_ocr_document.py::test_runtime_bands_use_robust_when_accept \
        tests/test_ocr_document.py::test_runtime_bands_drop_unsafe_legacy_when_robust_holds -v
 ```
 
-Expected: missing helper or runtime selection not wired.
+Expected:
+- helper-only tests may already pass after Task 1
+- runtime selection is still incomplete until the selected bands are wired into `ocr_document.py` and `ocr_render.py`
 
-- [ ] **Step 3: Wire runtime selection in normalization and render entry points**
+- [ ] **Step 3: Wire runtime selection in normalization and `_order_tail_blocks()` explicitly**
 
 Inside `normalize_document_structure()` after dry-run diagnostics:
 
@@ -668,8 +670,33 @@ doc_structure.layout_band_estimate["runtime_band_source"] = runtime_band_source
 
 Use these selected `header_band/footer_band` values where `normalize_document_structure()` currently consumes the legacy tuple.
 
-Mirror the same selection rule in `render_fulltext_markdown()` before `_order_tail_blocks()` / `_reorder_tail_run()` routing.
+Then update `ocr_render.py` inside `_order_tail_blocks()` itself — not just `render_fulltext_markdown()` — because `_order_tail_blocks()` currently owns `_estimate_noise_bands(blocks)` and passes the result to `_reorder_tail_run()`:
 
+```python
+legacy_header_band, legacy_footer_band = _estimate_noise_bands(blocks)
+robust_estimate = estimate_layout_bands(blocks)
+max_page_height = max((float(b.get("page_height") or 0) for b in blocks), default=0.0)
+
+header_band, footer_band, runtime_band_source = choose_runtime_bands(
+    robust_estimate,
+    legacy_header_band,
+    legacy_footer_band,
+    max_page_height=max_page_height,
+)
+
+runtime_band_estimate = LayoutBandEstimate(
+    header_band=header_band,
+    footer_band=footer_band,
+    status="ACCEPT" if (header_band is not None or footer_band is not None) else "EMPTY",
+    method=f"runtime_{runtime_band_source}",
+    accepted_candidates=robust_estimate.accepted_candidates,
+    excluded_candidates=robust_estimate.excluded_candidates,
+    support_pages=robust_estimate.support_pages,
+    warnings=robust_estimate.warnings,
+)
+```
+
+Pass `runtime_band_estimate` into `_reorder_tail_run()` using the Task 4 signature bridge below.
 - [ ] **Step 4: Run the runtime selection tests**
 
 Run:
@@ -743,9 +770,38 @@ pytest tests/test_ocr_document.py::test_reference_item_bypasses_usable_content_g
 
 Expected: one or both fail before call-site conversion.
 
-- [ ] **Step 3: Convert call sites with the correct ordering**
+- [ ] **Step 3: Convert call sites with the correct ordering and add the `_reorder_tail_run()` bridge**
 
-In `ocr_render.py` Phase 1 classification inside `_reorder_tail_run()`:
+First extend `_reorder_tail_run()` to accept a structured estimate while remaining backward compatible:
+
+```python
+from paperforge.worker.ocr_banding import LayoutBandEstimate, decide_usable_content
+
+def _reorder_tail_run(
+    tail_blocks: list[dict],
+    carried_ref: dict | None = None,
+    carried_backmatter: dict | None = None,
+    *,
+    header_band: float | None = None,
+    footer_band: float | None = None,
+    band_estimate: LayoutBandEstimate | None = None,
+    page_width: float = 1200,
+    skip_section_grouping: bool = False,
+) -> tuple[list[dict], dict | None, dict | None]:
+    if band_estimate is None:
+        band_estimate = LayoutBandEstimate(
+            header_band=header_band,
+            footer_band=footer_band,
+            status="ACCEPT" if (header_band is not None or footer_band is not None) else "EMPTY",
+            method="runtime_selected",
+            accepted_candidates=[],
+            excluded_candidates=[],
+            support_pages=[],
+            warnings=[],
+        )
+```
+
+Then in `ocr_render.py` Phase 1 classification inside `_reorder_tail_run()`:
 
 ```python
 elif role == "reference_item":
@@ -777,6 +833,21 @@ This enforces:
 - band gate second
 
 In `ocr_document.py`, `_promote_tail_body_candidates()` should call `decide_usable_content(..., context="tail_candidate_promotion")` instead of the raw bool helper.
+
+Finally, when `_order_tail_blocks()` calls `_reorder_tail_run()`, pass the new structured estimate:
+
+```python
+ordered, carried_ref, carried_backmatter = _reorder_tail_run(
+    sorted_blocks,
+    carried_ref,
+    carried_backmatter,
+    header_band=header_band,
+    footer_band=footer_band,
+    band_estimate=runtime_band_estimate,
+    page_width=pw,
+    skip_section_grouping=_page_has_ref_items and not _page_has_ref_heading,
+)
+```
 
 - [ ] **Step 4: Run the role-aware tests plus the focused OCR suite**
 
@@ -1016,12 +1087,12 @@ pytest tests/test_ocr_document.py tests/test_ocr_render.py tests/test_ocr_famili
 
 Expected: all tests pass.
 
-- [ ] **Step 2: Rebuild the known regression papers**
+- [ ] **Step 2: Rebuild the known regression papers plus catastrophic watermark papers**
 
 Run:
 
 ```bash
-python scripts/dev/ocr_rebuild_paper.py 37LK5T97 B43QSAJP 62LTMCI8 4KCHGV2Z 58UFL9UN JQMRCEXY TXMVULD7 95FDVE4W WV2FF4NV
+python scripts/dev/ocr_rebuild_paper.py 37LK5T97 B43QSAJP 62LTMCI8 4KCHGV2Z 58UFL9UN JQMRCEXY TXMVULD7 95FDVE4W WV2FF4NV KH3GMDCH BKKR4KIV ES23M9IS 97M7HFCD 3CEUN7T3
 ```
 
 Expected: all papers rebuild with `[OK]` fulltext output.
@@ -1032,22 +1103,43 @@ Run:
 
 ```bash
 python -c "
+import json
+from pathlib import Path
+
+root = Path('D:/L/OB/Literature-hub/System/PaperForge/ocr')
+
 checks = {
     '95FDVE4W': ['## References', '1. Bedi A, Bishop J', '2. Bedi A, Dines J'],
-    'KH3GMDCH': ['Downloaded from'],
 }
+
 for key, needles in checks.items():
-    with open(f'D:/L/OB/Literature-hub/System/PaperForge/ocr/{key}/fulltext.md', encoding='utf-8') as f:
+    with open(root / key / 'fulltext.md', encoding='utf-8') as f:
         text = f.read()
     print('===', key, '===')
     for n in needles:
         print(n, '->', n in text)
+
+for key in ['KH3GMDCH', 'BKKR4KIV', 'ES23M9IS', '97M7HFCD', '3CEUN7T3']:
+    with open(root / key / 'structure' / 'document_structure.json', encoding='utf-8') as f:
+        ds = json.load(f)
+    lbe = ds.get('layout_band_estimate') or {}
+    print('===', key, 'layout_band_estimate ===')
+    print('mode ->', lbe.get('mode'))
+    print('robust_status ->', lbe.get('robust_status'))
+    print('legacy_header_band ->', lbe.get('legacy_header_band'))
+    print('robust_header_band_candidate ->', lbe.get('robust_header_band_candidate'))
+    print('excluded_margin_band ->', any(
+        'margin_band' in ' '.join(c.get('reason', []))
+        for c in lbe.get('excluded_candidates', [])
+    ))
 "
 ```
 
 Expected:
 - `95FDVE4W`: heading before refs in output order
-- catastrophic watermark papers no longer exhibit absurd header-band-driven content suppression when manually spot-checked through diagnostics
+- catastrophic watermark papers expose serialized diagnostics
+- `KH3GMDCH` / `BKKR4KIV` / `ES23M9IS` / `97M7HFCD`: `legacy_header_band` is very high, `robust_header_band_candidate` is back in a sane range, and `excluded_candidates` includes `margin_band_geometry` / `watermark_margin_band`
+- `3CEUN7T3`: stable baseline remains normal
 
 Note: do **not** use this task to validate unrelated reference-zone fixes unless those prerequisite fixes are already landed.
 
