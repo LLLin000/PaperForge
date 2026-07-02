@@ -1599,3 +1599,49 @@ def test_ordinary_vision_footnote_stays_footnote():
              "bbox": [100, 900, 800, 940], "page": 5}
     result = assign_block_role(block, [], 1000, 1000)
     assert result.role == "footnote"
+
+_PAREN_REF_TEXT = "(1) Li, T.; Shi, C.; Jin, F.; Yang, F.; Gu, L.; Wang, T.; Dong, W.; Feng, Z.-Q. Cell Activity Modulation and Its Specific Function in Load Bearing."
+_SHORT_PAREN_HEADING = "(1) Introduction"
+
+
+def test_reference_pattern_accepts_long_paren_reference() -> None:
+    from paperforge.worker.ocr_roles import _looks_like_reference
+    assert _looks_like_reference(_PAREN_REF_TEXT) is True
+
+
+def test_reference_pattern_matches_short_paren_heading_pattern_only() -> None:
+    from paperforge.worker.ocr_roles import _looks_like_reference
+    assert _looks_like_reference(_SHORT_PAREN_HEADING) is True
+
+
+def test_assign_block_role_rejects_short_paren_heading() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {
+        "raw_label": "text",
+        "text": "(1) Introduction",
+        "page": 3,
+        "bbox": [100, 100, 300, 130],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+    role = assign_block_role(block, page_blocks=[block]).role
+    assert role != "reference_item", f"Expected not reference_item, got {role}"
+
+
+@pytest.mark.parametrize("text", [
+    "References", "Reference", "REFERENCES",
+    "References and Notes", "References and Notes ..... 42",
+    "Bibliography", "Cited References",
+])
+def test_reference_heading_variants(text: str) -> None:
+    from paperforge.worker.ocr_roles import _is_reference_heading_text
+    assert _is_reference_heading_text(text), f"Expected match: {text!r}"
+
+
+@pytest.mark.parametrize("text", [
+    "References in this article", "Reference values",
+    "Further reading", "References and results",
+])
+def test_reference_heading_variants_rejects_non_headings(text: str) -> None:
+    from paperforge.worker.ocr_roles import _is_reference_heading_text
+    assert not _is_reference_heading_text(text), f"Expected no match: {text!r}"

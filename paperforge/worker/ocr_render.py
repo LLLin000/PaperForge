@@ -481,13 +481,10 @@ def _attach_container_bodies(
 
 def _ref_number_sort_key(block: dict) -> tuple:
     text = str(block.get("text") or block.get("block_content") or "")
-    # Two capture groups — alternation prevents false matches on plain year numbers
-    # like "2024" that lack a period/bracket suffix.
-    # ponytail: only handles N. / N) / [N] prefix formats.  Unnumbered refs fall
-    # through to lexicographic sort — upgrade to column-major sort if needed.
-    m = re.match(r"^\s*(?:(\d+)[\.\)]|\[(\d+)\])", text)
+    m = re.match(r"^\s*(?:(\d+)[\.\)]|\[(\d+)\]|\((\d+)\))", text)
     if m:
-        return (0, int(m.group(1) or m.group(2)))
+        num = m.group(1) or m.group(2) or m.group(3)
+        return (0, int(num))
     return (1, text)
 
 _TAIL_BACKMATTER_CONTINUATION_PATTERN = re.compile(
@@ -771,6 +768,18 @@ def _reorder_tail_run(
             result.append(ref_section["heading"])
         if ref_section.get("bodies"):
             ref_section["bodies"].sort(key=_ref_number_sort_key)
+            # Collision diagnostic: log duplicate ref numbers.
+            # Do NOT drop by number — different refs sharing a number is an OCR
+            # numbering error, not duplicate content. Dropping loses valid refs.
+            seen_numbers: set[int] = set()
+            for block in ref_section["bodies"]:
+                key = _ref_number_sort_key(block)
+                if key[0] == 0:
+                    num = key[1]
+                    if num in seen_numbers:
+                        import logging
+                        logging.warning(f"Duplicate ref number {num}: '{str(block.get('text',''))[:60]}'")
+                    seen_numbers.add(num)
             result.extend(ref_section["bodies"])
     result.extend(tail_backmatter_blocks)
     result.extend(footnote_blocks)

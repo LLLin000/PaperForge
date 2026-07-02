@@ -3234,6 +3234,12 @@ def _check_reference_completeness(blocks: list[dict]) -> dict:
     for block in ref_items:
         text = (block.get("text") or "").strip()
         # Try bracket pattern: [1]
+        # Try parenthetical pattern: (1)
+        m = _re.match(r"^\s*\((\d+)\)", text)
+        if m:
+            numbers.append(int(m.group(1)))
+            continue
+
         m = _re.match(r"^\s*\[(\d+)\]", text)
         if m:
             numbers.append(int(m.group(1)))
@@ -5512,6 +5518,24 @@ def normalize_document_structure(
             _normalize_reference_roles_from_partition(blocks, partition)
             tail_spread = _build_tail_boundary_from_ref_partition(partition, region_bus)
             ref_partition_active = tail_spread is not None
+
+            # Post-partition fallback: restore reference_item for blocks that OCR
+            # explicitly identified as reference content but were excluded from the
+            # reference partition boundary (WNDJX4KB pattern — heading-page refs).
+            for block in blocks:
+                zone = str(block.get("zone") or "")
+                seed = str(block.get("seed_role") or "")
+                raw = str(block.get("raw_label") or block.get("block_label") or "")
+                if block.get("role") == "body_paragraph" and "reference" in zone:
+                    if seed == "reference_item" or raw == "reference_content":
+                        block["role"] = "reference_item"
+                        record_decision(
+                            block,
+                            stage="partition_fallback",
+                            old_role="body_paragraph",
+                            new_role="reference_item",
+                            reason="reference_content block outside partition, restored from seed_role",
+                        )
 
             if ref_partition_active:
                 # Pre-ref blocks must NOT be in tail_nonref_hold_zone — they are body flow.

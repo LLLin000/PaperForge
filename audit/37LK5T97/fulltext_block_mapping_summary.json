@@ -1,0 +1,2707 @@
+{
+  "mappable_block_count": 270,
+  "found_count": 215,
+  "missing_count": 55,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "TISSUE ENGINEERING: Part B Volume 21, Number 3, 2015 © Mary Ann Liebert, Inc. DO",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Endochondral Ossification for Enhancing Bone Regeneration: Converging Native Ext",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "S. Connor Dennis, BS, $ ^{1,2} $ Cory J. Berkland, PhD, $ ^{1-3} $ Lynda F. Bone",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2891
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "THE HUMAN BODY HAS AN EXTENSIVE capacity to regenerate bone tissue after trauma.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2904
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $Bioengineering Program, University of Kansas, Lawrence, Kansas.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "²Chemical and Petroleum Engineering Department, University of Kansas, Lawrence, ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{3} $Pharmaceutical Chemistry Department, University of Kansas, Lawrence, Kan",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{4} $Department of Oral Biology, University of Missouri-Kansas City, Kansas C",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "247",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64883
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "248",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "DENNIS ET AL.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "FIG. 1. Both IM and EC ossification occurs during the bone-healing process in th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3930
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Phase I: Inflammatory 1. Hematoma Week (0-1)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Damaged vasculature and marrow facilitate hematoma formation along with influx o",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Phase III: Remodeling 3. Remodeled Bone Week ( $ \\geq $ 8)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Resorption of excess callus and replacement of woven bone with stronger lamellar",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and thus osteogenic capabilities. $ ^{6,12-14} $ Despite these advantages, ABG h",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To date, acellular biomaterial-based products have dominated the alternative bon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5579
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Addressing this avenue of research is the emerging paradigm of “developmental en",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6426
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The incorporation of donor cells via SCBT strategies may provide advantageous os",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7641
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ENDOCHONDRAL OSSIFICATION WITH NATIVE ECM AND DEVELOPMENTAL ENGINEERING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "249",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "in vitro cell expansion. Critical-sized bone defects often require surgical inte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8664
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "An alternative strategy to reduce or remove the cell expansion step may reside i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9519
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This review will highlight essential design criteria involved in the underexplor",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10304
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Overview of the Natural Bone-Healing Process",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11521
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As mentioned earlier, the human body has an extensive capacity to regenerate bon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11566
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In general, the fracture-healing process is most often described in three overla",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12087
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "250",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44925
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "DENNIS ET AL.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and bioactive signals. $ ^{1-9} $ Initially, disrupted vasculature and bone marr",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In contrast, chondrogenesis predominantly occurs in avascular environments where",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13685
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "While the process mentioned earlier describes successful bone regeneration withi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14576
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Strategies to Enhance EC Ossification Harnessing the potential of developmental ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15344
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Developmental engineering, a term first introduced into the tissue engineering c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15436
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "(1) Path dependence: successive developmental tissue relies on previous tissue f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15959
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "(2) Robustness: tissue developmental process resistant to unintended external pe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16048
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "(3) Semi-autonomy: partially self-governed tissue development",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16139
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "EC ossification is a feasible route to utilize these guiding principles of devel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16201
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "While the Lenas reviews only covered replicating in vivo developmental processes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16439
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Coupling in vivo developmental engineering with native ECM biomaterials",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17182
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Characterizing the influence of DBM on ossification pathway. Inspiration for in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17254
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Regardless of this, the DBM composition containing conductive and inductive biol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18396
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 1. PRIMING IN VITRO CHONDROGENESIS WITH BONE MESENCHYMAL STEM CELLS FOR IN",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19124
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Reference(s)</td><td>Year</td><td>Cell source</td><td>Additional ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "251",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79069
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(continued)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 1. (CONTINUED)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19273
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Reference(s)</td><td>Year</td><td>Cell source</td><td>Additional ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "252",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 1. (CONTINUED)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19273
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Reference(s)</td><td>Year</td><td>Cell source</td><td>Additional ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "253",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ACs, articular chondrocytes; BMSC, bone mesenchymal stem cell; beta-TCP, beta tr",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 2. PRIMING IN VITRO CHONDROGENESIS WITH EMBRYONIC STEM CELLS, SYNOVIUM-DER",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19389
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Reference(s)</td><td>Year</td><td>Cell source</td><td>Additional ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "254",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67402
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ADSC, adipose-derived stem cell; ESC, embryonic stem cell; hADSC, human ADSC; hF",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 3. COMPARING IN VITRO CHONDROGENICALLY PRIMED CELL SOURCES FOR IN VIVO END",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19620
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Reference(s)</td><td>Year</td><td>Cell source</td><td>Additional ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "255",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ALP, alkaline phosphatase; BCP, biphasic calcium phosphate; FPSCs, fat-pad deriv",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "256",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "DENNIS ET AL.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "suggesting that only implants directed toward IM ossification will possess regen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19740
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The differences in regenerative potential and developmental pathways seen in the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20859
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collectively, there is significant evidence to suggest that EC ossification can ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22082
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Exploring EC ossification potential in ECM biomaterials. In general, native ECM ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22692
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Traditional bone ECM strategies: ABG intrinsically involves the grafting of nati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23398
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "It is important to note, however, that the functional and structural properties ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24923
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Alternative ECM biomaterial strategies for EC ossification: By instead leveragin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25446
+    },
+    {
+      "block_id": "p10:10",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Characterization of the complex cascade of signaling events and ECM changes invo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26196
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ENDOCHONDRAL OSSIFICATION WITH NATIVE ECM AND DEVELOPMENTAL ENGINEERING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "257",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66699
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ECM biomaterials that correspond to the early and intermediate stages of native ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26794
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Native ECM biomaterials possess both conductive and inductive potential that are",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26888
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To date, a few studies have attempted to coordinate developmental bone engineeri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27801
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Inflammatory stage ECM strategies for EC ossification: Since most tissues primar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28159
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "One strategy to enhance the regenerative response in inflammatory stage ECM stra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29192
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Coupling the evidence of low progenitor count with poor cell survival rate obser",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30688
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collectively, the evidence surrounding the use of inflammatory stage ECM scaffol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31801
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Procallus stage ECM strategies for EC ossification: An intuitive source for enha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32302
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "258",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83698
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "DENNIS ET AL.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 4. MODULATORS OF CHONDROCYTE HYPERTROPHY",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "BMPs, bone morphogenic proteins; MMP, matrix metalloproteinase; TGF, transformin",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "that external chemical, $ ^{9,33,38,41,73,80-85,89,90} $ physical, $ ^{39-42} $ ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, the success of in vivo developmental engineering designs for EC ossi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34451
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Isolating, identifying, and delivering native ECM for EC ossification",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35248
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Utilizing step-wise ECM strategies. Strategies to design scaffolds with incorpor",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35318
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ENDOCHONDRAL OSSIFICATION WITH NATIVE ECM AND DEVELOPMENTAL ENGINEERING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "259",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "“raw” biomaterial re-synthesis, however, is that designs can be modular, which m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37633
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Step-wise designs from both allogeneic and xenogeneic tissue sources have been u",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39252
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Decellularized cartilage for enhancing EC ossification. Intuitively, it follows ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40007
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "DCC, from both allogeneic and xenogeneic sources, is a poorly explored native EC",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41773
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Delivery strategies for decellularized tissues. Crucial to the future success of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43889
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "260",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83497
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "DENNIS ET AL.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "particle size on regenerative capacity of these materials remains unclear. A rec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44658
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "While morselization strategies most often include some form of mechanical breakd",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45293
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, the extent of native ECM processing required to enhance the regenera",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45982
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Incorporating SCBTs into the design",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46792
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Priming chondrogenesis in vitro for EC ossification. While acellular ECM design ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46828
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The bone regeneration community has attempted to harness the advantages of SCBT ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47898
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Within the realm of SCBTs for bone regeneration, a majority of strategies have f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48936
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "While the majority of the tissue priming research aimed at establishing feasibil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50526
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ENDOCHONDRAL OSSIFICATION WITH NATIVE ECM AND DEVELOPMENTAL ENGINEERING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "261",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and could be a worthwhile focus of future investigation in enhancing EC ossifica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51738
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Regardless of the cell source used for priming EC ossification, several generali",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51854
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "(1) Chondrogenic cell priming in vitro was required to elicit EC ossification in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52045
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "(2) Cartilage templates were necessary, but not sufficient to elicit EC ossifica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52132
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(a) Stable or permanent AC templates progressed through EC ossification.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52226
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "(3) Osteogenic priming alternatively favored IM over EC ossification.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52299
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "(4) Hypertrophic chondrocyte priming elicited the most extensive EC ossification",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52369
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "While the collective evidence from these studies suggested that EC ossification ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52451
+    },
+    {
+      "block_id": "p15:10",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Consequently, this contradictory evidence suggests that an intermediate and unde",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52942
+    },
+    {
+      "block_id": "p15:11",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Intraoperative SCBT strategies with native ECM biomaterials. An emerging strateg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53677
+    },
+    {
+      "block_id": "p15:12",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To date, however, no intraoperative SCBT approaches using either BMSCs or ADSCs ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54477
+    },
+    {
+      "block_id": "p15:14",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Emerging evidence in this area suggests that quick stimulation of isolated stem ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55915
+    },
+    {
+      "block_id": "p15:15",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Meanwhile, it should be reiterated and emphasized that native ECM biomaterials f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56547
+    },
+    {
+      "block_id": "p15:16",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, establishing the regenerative potential of acellular ECM biomaterial",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57297
+    },
+    {
+      "block_id": "p15:17",
+      "page": 15,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion: Converging Framework of EC Ossification in the Future of Bone Regene",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57836
+    },
+    {
+      "block_id": "p15:18",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "EC ossification, a process that naturally occurs in almost all bone-healing even",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57923
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "262",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "DENNIS ET AL.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "intervention but can potentially be enhanced by combining in vivo developmental ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58357
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Currently, however, both in vitro priming and DBM strategies face formidable tec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59130
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition, regulatory challenges exist for both strategies. $ ^{118} $ The in ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "An alternative, and underexplored, developmental engineering strategy integrates",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61170
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although significant focus was given to acellular ECM strategies, critical persp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62371
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, native ECM biomaterials inherently possessing ideal conductive, indu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64107
+    },
+    {
+      "block_id": "p16:9",
+      "page": 16,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acknowledgments",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64804
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The authors are grateful for the support from the NIH (R01 DE022472 and R01 AR05",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64820
+    },
+    {
+      "block_id": "p16:11",
+      "page": 16,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Disclosure Statement",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64988
+    },
+    {
+      "block_id": "p16:12",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "No competing financial interests exist.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65009
+    },
+    {
+      "block_id": "p16:13",
+      "page": 16,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65052
+    },
+    {
+      "block_id": "p16:14",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Einhorn, T.A. The science of fracture healing. J Orthop Trauma 19, S4, 2005.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65063
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ENDOCHONDRAL OSSIFICATION WITH NATIVE ECM AND DEVELOPMENTAL ENGINEERING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "263",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Gerstenfeld, L.C., Cullinane, D.M., Barnes, G.L., Graves, D.T., and Einhorn, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65160
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Kalfas, I.H. Principles of bone healing. Neurosurg Focus 10, E1, 2001.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65391
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Meyer, U., and Weismann, H.P. Bone and cartilage. In: Schroeder, G., ed. Bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65465
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Miclau, T., Schneider, R.A., Eames, B.F., and Helms, J.A. Common molecular me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65613
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Sfeir, C., Ho, L., Doll, B.A., Azari, K., and Hollinger, J.O. Fracture repair",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65924
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Schindeler, A., McDonald, M.M., Bokko, P., and Little, D.G. Bone remodeling d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66170
+    },
+    {
+      "block_id": "p17:8",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Mackie, E.J., Ahmed, Y.A., Tatarzuch, L., Chen, K.S., and Mirams, M. Endochon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66330
+    },
+    {
+      "block_id": "p17:9",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Mehta, M., Schmidt-Bleek, K., Duda, G.N., and Mooney, D.J. Biomaterial delive",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66532
+    },
+    {
+      "block_id": "p17:10",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Lu, C., Miclau, T., Hu, D., Hansen, E., Tsui, K., Puttlitz, C., et al. Cellu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66710
+    },
+    {
+      "block_id": "p17:11",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Jaklenec, A., Stamp, A., Deweerd, E., Sherwin, A., and Langer, R. Progress i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66873
+    },
+    {
+      "block_id": "p17:12",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Burg, K.J., Porter, S., and Kellam, J.F. Biomaterial developments for bone t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67058
+    },
+    {
+      "block_id": "p17:13",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Frohlich, M., Grayson, W.L., Wan, L.Q., Marolt, D., Drobnic, M., and Vunjak-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67186
+    },
+    {
+      "block_id": "p17:14",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Mistry, A.S., and Mikos, A.G. Tissue engineering strategies for bone regener",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67413
+    },
+    {
+      "block_id": "p17:15",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Gruskin, E., Doll, B.A., Futrell, F.W., Schmitz, J.P., and Hollinger, J.O. D",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67540
+    },
+    {
+      "block_id": "p17:16",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Bohner, M. Design of ceramic-based cements and putties for bone graft substi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67713
+    },
+    {
+      "block_id": "p17:17",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Badylak, S.F. The extracellular matrix as a biologic scaffold material. Biom",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67830
+    },
+    {
+      "block_id": "p17:18",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Benders, K.E., van Weeren, P.R., Badylak, S.F., Saris, D.B., Dhert, W.J., an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67935
+    },
+    {
+      "block_id": "p17:19",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Gilbert, T.W., Sellaro, T.L., and Badylak, S.F. Decellularization of tissues",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68128
+    },
+    {
+      "block_id": "p17:20",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Renth, A.N., and Detamore, M.S. Leveraging “raw materials” as building block",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68250
+    },
+    {
+      "block_id": "p17:21",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Tsang, K.Y., Cheung, M.C., Chan, D., and Cheah, K.S. The developmental roles",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68417
+    },
+    {
+      "block_id": "p17:22",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Lenas, P., Moos, M., and Luyten, F.P. Developmental engineering: a new parad",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68590
+    },
+    {
+      "block_id": "p17:23",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Lenas, P., Moos, M., and Luyten, F.P. Developmental engineering: a new parad",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68879
+    },
+    {
+      "block_id": "p17:24",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Hollister, S.J., and Murphy, W.L. Scaffold translation: barriers between con",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69139
+    },
+    {
+      "block_id": "p17:25",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Jakob, M., Saxer, F., Scotti, C., Schreiner, S., Studer, P., Scherberich, A.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69273
+    },
+    {
+      "block_id": "p17:26",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Oakes, D.A., Lee, C.C., and Lieberman, J.R. An evaluation of human demineral",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69467
+    },
+    {
+      "block_id": "p17:27",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Montufar-Solis, D., Nguyen, H.C., Nguyen, H.D., Horn, W.N., Cody, D.D., and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69630
+    },
+    {
+      "block_id": "p17:28",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Rabie, A.B., Chay, S.H., and Wong, A.M. Healing of autogenous intramembranou",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69830
+    },
+    {
+      "block_id": "p17:29",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Wang, J., Glimcher, M.J., Mah, J., Zhou, H.Y., and Salih, E. Expression of b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70042
+    },
+    {
+      "block_id": "p17:30",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Rabie, A.B., Dan, Z., and Samman, N. Ultrastructural identification of cells",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70250
+    },
+    {
+      "block_id": "p17:31",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Rabie, A.B., and Lie Ken Jie, R.K. Integration of endochondral bone grafts i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70440
+    },
+    {
+      "block_id": "p17:32",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Rabie, A.B., Wong, R.W., and Hagg, U. Composite autogenous bone and deminera",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70607
+    },
+    {
+      "block_id": "p17:33",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Dimitriou, R., Tsiridis, E., and Giannoudis, P.V. Current concepts of molecu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70804
+    },
+    {
+      "block_id": "p17:34",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Studer, D., Millan, C., Ozturk, E., Maniura-Weber, K., and Zenobi-Wong, M. M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70936
+    },
+    {
+      "block_id": "p17:35",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Carmeliet, P., and Jain, R.K. Molecular mechanisms and clinical applications",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71167
+    },
+    {
+      "block_id": "p17:36",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. Centola, M., Abbruzzese, F., Scotti, C., Barbero, A., Vadala, G., Denaro, V.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71288
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "264",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "DENNIS ET AL.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "clinically relevant anti-angiogenic drug promotes the formation of in vivo stabl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77604
+    },
+    {
+      "block_id": "p18:3",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. des Rieux, A., Ucakar, B., Mupendwa, B.P., Colau, D., Feron, O., Carmeliet, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71423
+    },
+    {
+      "block_id": "p18:4",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Zhou, Z., Apte, S.S., Soininen, R., Cao, R., Baaklini, G.Y., Rauser, R.W., e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71626
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. Malda, J., Klein, T.J., and Upton, Z. The roles of hypoxia in the in vitro e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71868
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40. Sheehy, E.J., Buckley, C.T., and Kelly, D.J. Oxygen tension regulates the os",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71998
+    },
+    {
+      "block_id": "p18:7",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41. Gawlitta, D., Farrell, E., Malda, J., Creemers, L.B., Alblas, J., and Dhert,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72218
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42. Lewis, M.C., Macarthur, B.D., Malda, J., Pettet, G., and Please, C.P. Hetero",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72430
+    },
+    {
+      "block_id": "p18:9",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "43. Scotti, C., Osmokrovic, A., Wolf, F., Miot, S., Peretti, G.M., Barbero, A., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72633
+    },
+    {
+      "block_id": "p18:10",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "44. Scott, C.K., and Hightower, J.A. The matrix of endochondral bone differs fro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72870
+    },
+    {
+      "block_id": "p18:11",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "45. Discher, D.E., Mooney, D.J., and Zandstra, P.W. Growth factors, matrices, an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73021
+    },
+    {
+      "block_id": "p18:12",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "46. Anitua, E., Sanchez, M., and Orive, G. Potential of endogenous regenerative ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73167
+    },
+    {
+      "block_id": "p18:13",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "47. Chen, F.M., Zhang, J., Zhang, M., An, Y., Chen, F., and Wu, Z.F. A review on",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73327
+    },
+    {
+      "block_id": "p18:14",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "48. Dare, E.V., Griffith, M., Poitras, P., Wang, T., Dervin, G.F., Giulivi, A., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73510
+    },
+    {
+      "block_id": "p18:15",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "49. Eyrich, D., Brandl, F., Appel, B., Wiese, H., Maier, G., Wenzel, M., et al. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73741
+    },
+    {
+      "block_id": "p18:16",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "50. Eyrich, D., Gopferich, A., and Blunk, T. Fibrin in tissue engineering. Adv E",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73904
+    },
+    {
+      "block_id": "p18:17",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "51. Grageda, E. Platelet-rich plasma and bone graft materials: a review and a st",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74012
+    },
+    {
+      "block_id": "p18:18",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "52. Kaufman, M.R., Westreich, R., Ammar, S.M., Amirali, A., Iskander, A., and La",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74150
+    },
+    {
+      "block_id": "p18:19",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "53. Mazor, Z., Peleg, M., Garg, A.K., and Luboshitz, J. Platelet-rich plasma for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74392
+    },
+    {
+      "block_id": "p18:20",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "54. Santos, S.G., Lamghari, M., Almeida, C.R., Oliveira, M.I., Neves, N., Ribeir",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74610
+    },
+    {
+      "block_id": "p18:21",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "55. Singh, M., Berkland, C., and Detamore, M.S. Strategies and applications for ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74856
+    },
+    {
+      "block_id": "p18:22",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "56. Lee, S.H., and Shin, H. Matrices and scaffolds for delivery of bioactive mol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75049
+    },
+    {
+      "block_id": "p18:23",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "57. Pelttari, K., Steck, E., and Richter, W. The use of mesenchymal stem cells f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75212
+    },
+    {
+      "block_id": "p18:24",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "58. Jukes, J.M., Moroni, L., van Blitterswijk, C.A., and de Boer, J. Critical St",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75341
+    },
+    {
+      "block_id": "p18:25",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "59. Sundelacruz, S., and Kaplan, D.L. Stem cell- and scaffold-based tissue engin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75531
+    },
+    {
+      "block_id": "p18:26",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "60. Sheehy, E.J., Vinardell, T., Buckley, C.T., and Kelly, D.J. Engineering oste",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75704
+    },
+    {
+      "block_id": "p18:27",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "61. Case, N.D., Duty, A.O., Ratcliffe, A., Muller, R., and Guldberg, R.E. Bone f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75891
+    },
+    {
+      "block_id": "p18:28",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "62. Doan, L., Kelley, C., Luong, H., English, J., Gomez, H., Johnson, E., et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76113
+    },
+    {
+      "block_id": "p18:29",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "63. Farrell, E., Both, S.K., Odorfer, K.I., Koevoet, W., Kops, N., O'Brien, F.J.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76302
+    },
+    {
+      "block_id": "p18:30",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "64. Farrell, E., van der Jagt, O.P., Koevoet, W., Kops, N., van Manen, C.J., Hel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76567
+    },
+    {
+      "block_id": "p18:31",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "65. Janicki, P., Boeuf, S., Steck, E., Egermann, M., Kasten, P., and Richter, W.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76798
+    },
+    {
+      "block_id": "p18:32",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "66. Janicki, P., Kasten, P., Kleinschmidt, K., Luginbuehl, R., and Richter, W. C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77006
+    },
+    {
+      "block_id": "p18:33",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "67. Jukes, J.M., Both, S.K., Leusink, A., Sterk, L.M., van Blitterswijk, C.A., a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77252
+    },
+    {
+      "block_id": "p18:34",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "68. Jukes, J.M., van Blitterswijk, C.A., and de Boer, J. Skeletal tissue enginee",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77454
+    },
+    {
+      "block_id": "p19:0",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ENDOCHONDRAL OSSIFICATION WITH NATIVE ECM AND DEVELOPMENTAL ENGINEERING",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:1",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "265",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:2",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "69. Li, J., and Pei, M. Optimization of an in vitro three-dimensional microenvir",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77748
+    },
+    {
+      "block_id": "p19:3",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "70. Oliveira, S.M., Amaral, I.F., Barbosa, M.A., and Teixeira, C.C. Engineering ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77943
+    },
+    {
+      "block_id": "p19:4",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "71. Oliveira, S.M., Mijares, D.Q., Turner, G., Amaral, I.F., Barbosa, M.A., and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78093
+    },
+    {
+      "block_id": "p19:5",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "72. Pelttari, K., Winter, A., Steck, E., Goetzke, K., Hennig, T., Ochs, B.G., et",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78269
+    },
+    {
+      "block_id": "p19:6",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "73. Scotti, C., Piccinini, E., Takizawa, H., Todorov, A., Bourgine, P., Papadimi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78580
+    },
+    {
+      "block_id": "p19:7",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "74. Scotti, C., Tonnarelli, B., Papadimitropoulos, A., Scherberich, A., Schaeren",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78798
+    },
+    {
+      "block_id": "p19:8",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "75. Vinardell, T., Sheehy, E.J., Buckley, C.T., and Kelly, D.J. A comparison of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79080
+    },
+    {
+      "block_id": "p19:9",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "76. Both, S.K., van Apeldoorn, A.A., Jukes, J.M., Englund, M.C., Hyllner, J., va",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79315
+    },
+    {
+      "block_id": "p19:10",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "77. Dickhut, A., Pelttari, K., Janicki, P., Wagner, W., Eckstein, V., Egermann, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79596
+    },
+    {
+      "block_id": "p19:11",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "78. Gauci, S.J., Golub, S.B., Tutolo, L., Little, C.B., Sims, N.A., Lee, E.R., e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79833
+    },
+    {
+      "block_id": "p19:12",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "79. Hattori, T., Muller, C., Gebhard, S., Bauer, E., Pausch, F., Schlund, B., et",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80048
+    },
+    {
+      "block_id": "p19:13",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "80. Inada, M., Wang, Y., Byrne, M.H., Rahman, M.U., Miyaura, C., Lopez-Otin, C.,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80279
+    },
+    {
+      "block_id": "p19:14",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "81. Mumme, M., Scotti, C., Papadimitropoulos, A., Todorov, A., Hoffmann, W., Boc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80526
+    },
+    {
+      "block_id": "p19:15",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "82. Ortega, N., Behonick, D.J., and Werb, Z. Matrix remodeling during endochondr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80758
+    },
+    {
+      "block_id": "p19:16",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "83. Ortega, N., Wang, K., Ferrara, N., Werb, Z., and Vu, T.H. Complementary inte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80886
+    },
+    {
+      "block_id": "p19:17",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "function drives endochondral bone formation. Dis Models Mech 3, 224, 2010.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84134
+    },
+    {
+      "block_id": "p19:18",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "84. Page-McCaw, A., Ewald, A.J., and Werb, Z. Matrix metalloproteinases and the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81058
+    },
+    {
+      "block_id": "p19:19",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "85. Stickens, D., Behonick, D.J., Ortega, N., Heyer, B., Hartenstein, B., Yu, Y.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81208
+    },
+    {
+      "block_id": "p19:20",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "86. Boskey, A.L., and Roy, R. Cell culture systems for studies of bone and tooth",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81411
+    },
+    {
+      "block_id": "p19:21",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "87. Hessle, L., Johnson, K.A., Anderson, H.C., Narisawa, S., Sali, A., Goding, J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81534
+    },
+    {
+      "block_id": "p19:22",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "88. Johnson, K., Moffa, A., Chen, Y., Pritzker, K., Goding, J., and Terkeltaub, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81807
+    },
+    {
+      "block_id": "p19:23",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "89. Mahmoudifar, N., and Doran, P.M. Chondrogenesis and cartilage tissue enginee",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82034
+    },
+    {
+      "block_id": "p19:24",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "90. Puetzer, J.L., Petitte, J.N., and Loboa, E.G. Comparative review of growth f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82196
+    },
+    {
+      "block_id": "p19:25",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "91. Crapo, P.M., Gilbert, T.W., and Badylak, S.F. An overview of tissue and whol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82457
+    },
+    {
+      "block_id": "p19:26",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "92. Evans, C.H. Barriers to the clinical translation of orthopedic tissue engine",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82603
+    },
+    {
+      "block_id": "p19:27",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "93. Ye, K., Felimban, R., Moulton, S.E., Wallace, G.G., Di Bella, C., Traiandes,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82727
+    },
+    {
+      "block_id": "p19:28",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "94. Schwarz, S., Koerber, L., Elsaesser, A.F., Goldberg-Bockhorn, E., Seitz, A.M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82908
+    },
+    {
+      "block_id": "p19:29",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "95. Sutherland, A.J., Converse, G.L., Hopkins, R.A., and Detamore, M.S. The bioa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83146
+    },
+    {
+      "block_id": "p19:30",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "96. Guvendiren, M., Lu, H.D., and Burdick, J.A. Shear-thinning hydrogels for bio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83380
+    },
+    {
+      "block_id": "p19:31",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "97. Wang, Q., Gu, Z., Jamal, S., Detamore, M.S., and Berkland, C. Hybrid hydroxy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83508
+    },
+    {
+      "block_id": "p19:32",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "98. Wang, Q., Jamal, S., Detamore, M.S., and Berkland, C. PLGA-chitosan/PLGA-alg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83710
+    },
+    {
+      "block_id": "p19:33",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "99. Wang, Q., Wang, J., Lu, Q., Detamore, M.S., and Berkland, C. Injectable PLGA",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83946
+    },
+    {
+      "block_id": "p20:0",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "266",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:1",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "DENNIS ET AL.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:2",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "100. Lin, Y., Boker, A., He, J., Sill, K., Xiang, H., Abetz, C., et al. Self-dir",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:3",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "101. Loh, Q.L., and Choong, C. Three-dimensional scaffolds for tissue engineerin",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:4",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "102. Gamie, Z., Tran, G.T., Vyzas, G., Korres, N., Heliotis, M., Mantalaris, A.,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84526
+    },
+    {
+      "block_id": "p20:5",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "103. Simmons, C.A., Alsberg, E., Hsiong, S., Kim, W.J., and Mooney, D.J. Dual gr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84731
+    },
+    {
+      "block_id": "p20:6",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "104. Yamada, Y., Boo, J.S., Ozawa, R., Nagasaka, T., Okazaki, Y., Hata, K., et a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84962
+    },
+    {
+      "block_id": "p20:7",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "105. Harada, N., Watanabe, Y., Sato, K., Abe, S., Yamanaka, K., Sakai, Y., et al",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85194
+    },
+    {
+      "block_id": "p20:8",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "106. van der Stok, J., Koolen, M.K., Jahr, H., Kops, N., Waarsing, J.H., Weinans",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85464
+    },
+    {
+      "block_id": "p20:9",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "107. Sheehy, E.J., Vinardell, T., Toner, M.E., Buckley, C.T., and Kelly, D.J. Al",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85741
+    },
+    {
+      "block_id": "p20:10",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "108. Shoji, T., Ii, M., Mifune, Y., Matsumoto, T., Kawamoto, A., Kwon, S.M., et ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85986
+    },
+    {
+      "block_id": "p20:11",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "109. Tam, W.L., O, D.F., Hiramatsu, K., Tsumaki, N., Luyten, F.P., and Roberts, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86239
+    },
+    {
+      "block_id": "p20:12",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "110. Bahney, C.S., Hu, D.P., Taylor, A.J., Ferro, F., Britz, H.M., Hallgrimsson,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86483
+    },
+    {
+      "block_id": "p20:13",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "111. Tortelli, F., and Cancedda, R. Three-dimensional cultures of osteogenic and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86699
+    },
+    {
+      "block_id": "p20:14",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "112. Helder, M.N., Knippenberg, M., Klein-Nulend, J., and Wuisman, P.I.J.M. Stem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86897
+    },
+    {
+      "block_id": "p20:15",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "113. Follmar, K.E., Prichard, H.L., DeCroos, F.C., Wang, H.T., Levin, L.S., Klit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87089
+    },
+    {
+      "block_id": "p20:16",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "114. Muller, A.M., Mehrkens, A., Schafer, D.J., Jaquiery, C., Guven, S., Lehmick",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87299
+    },
+    {
+      "block_id": "p20:17",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "115. Mehrkens, A., Saxer, F., Guven, S., Hoffmann, W., Muller, A.M., Jakob, M., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87560
+    },
+    {
+      "block_id": "p20:18",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "116. Evans, C.H., Palmer, G.D., Pascher, A., Porter, R., Kwong, F.N., Gouze, E.,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87840
+    },
+    {
+      "block_id": "p20:19",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "117. Kitamura, S., Ohgushi, H., Hirose, M., Funaoka, H., Takakura, Y., and Ito, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88047
+    },
+    {
+      "block_id": "p20:20",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "118. Lee, M.H., Arcidiacono, J.A., Bilek, A.M., Wille, J.J., Hamill, C.A., Wonna",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88261
+    },
+    {
+      "block_id": "p20:21",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Address correspondence to: Michael S. Detamore, PhD Chemical and Petroleum Engin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84226
+    },
+    {
+      "block_id": "p20:22",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "E-mail: detamore@ku.edu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84409
+    },
+    {
+      "block_id": "p20:23",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Received: July 14, 2014 Accepted: October 20, 2014 Online Publication Date: Dece",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84433
+    }
+  ]
+}

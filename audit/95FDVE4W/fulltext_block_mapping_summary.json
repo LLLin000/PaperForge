@@ -1,0 +1,1807 @@
+{
+  "mappable_block_count": 180,
+  "found_count": 100,
+  "missing_count": 80,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Clin Orthop Relat Res (2024) 482:2239-2255 DOI 10.1097/CORR.0000000000003218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{®} $ A Publication of The Associa",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Basic Research",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "OPEN",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Tissue-engineered Bicipital Autologous Tendon Patch Enhances Massive Rotator Cuf",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Youguo Liao MD $ ^{1,2,3,4,5,6} $, Hengzhi Liu MM $ ^{1,2,3,4,5,6} $, Jiayun Hua",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Questions/purposes Using an in vitro analysis, we first asked: (1) What is the b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5157
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "comprised of fibrin glue and biceps tendon tissue particles? Then, using an in v",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5384
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Methods In vitro experiments were conducted to assess the survival, proliferatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 988
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The first three authors contributed equally to this manuscript. The last three a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5704
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The institution of one or more of the authors (WS) has received, during the stud",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All ICMJE Conflict of Interest Forms for authors and Clinical Orthopaedics and R",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $ neither advocates no",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Ethical approval for this study was obtained from the Laboratory Animal Welfare ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19907
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This work was performed at Department of Orthopedic Surgery, the Second Affiliat",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2240",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Liao et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "control group and 15 rabbits each in the gel and patch groups. Six rabbits were ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1507
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion This animal study demonstrates that the tissue-engineered bicipital a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3949
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $Dr. Li Dak Sum-Yip Yio Chin Center for Stem Cells and Regenerative Medic",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{2} $Institute of Sports Medicine, Zhejiang University, Hangzhou, Zhejiang, P",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{3} $Orthopedics Research Institute of Zhejiang University, Hangzhou, Zhejian",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{4} $Key Laboratory of Motor System Disease Research and Precision Therapy of",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{5} $Clinical Research Center of Motor System Disease of Zhejiang Province, Z",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{6} $Department of Sports Medicine and Orthopedic Surgery, the Second Affilia",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{7} $Department of Orthopedics, Huzhou Central Hospital, Affiliated Huzhou Ho",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{8} $School of Stomatology, Zhejiang University School of Medicine, Hangzhou,",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{9} $Hangzhou Single-Clean Medical Products Co Ltd, Hangzhou, Zhejiang, PR Ch",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{10} $Department of Plastic Surgery, Sir Run Run Shaw Hospital, Zhejiang Univ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:16",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{11} $China Orthopedic Regenerative Medicine Group, CORMed, Hangzhou, Zhejian",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{12} $Ningbo No.2 Hospital, Ningbo, Zhejiang, PR China",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:18",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{13} $Zhejiang University-University of Edinburgh Institute, Zhejiang Univers",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:19",
+      "page": 2,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "W. Shen $ \\otimes $, Department of Sports Medicine and Orthopedic Surgery, the S",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 482, Number 12",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Tissue-engineered Tendon Patch Enhances Tendon Repair",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2241",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Clinical Relevance The tissue-engineered bicipital autologous tendon patch repre",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4176
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5867
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Massive rotator cuff defects are a common shoulder disorder, accounting for 40% ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5880
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Additionally, massive rotator cuff defects often accompany biceps tendon injury ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6547
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Therefore, in this study, we evaluated the use of a tissue-engineered bicipital ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7453
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Materials and Methods Overview of Study Design",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8175
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this study, we evaluated the biocompatibility and collagen synthesis ability ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8222
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Isolation and Expansion of Cells",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8930
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Rabbit tendon stem/progenitor cells were isolated and expanded following establi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8963
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Assessment of Cell Viability",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10416
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The tendon stem/progenitor cells were suspended in the fibrinogen solution of fi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10445
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2242",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Liao et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\textregistered} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "RAAS) at a density of $ 2.5 \\times 10^5 $/mL. Subsequently, an equal volume of t",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Assessment of Cell Proliferation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11223
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The leach liquor of fibrin glue was prepared following established procedures ou",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11256
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell proliferation was evaluated using the cell counting kit-8 (CCK-8, Dojindo) ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11711
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Assessment of Collagen Synthesis Ability",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12407
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We investigated the collagen synthesis ability of tendon stem/progenitor cells i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12448
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Preparation of Autologous Tendon Patch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13183
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We obtained a small segment of the long head of the biceps tendon tissue of New ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13222
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Wolters Kluwer",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 482, Number 12",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Tissue-engineered Tendon Patch Enhances Tendon Repair",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2243",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "rotator cuff defects. The tendon tissue was minced while simultaneously adding f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13453
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Surgical Procedure of Massive Rotator Cuff Defects and Animal Care",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13865
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We selected 42 healthy New Zealand White rabbits (provided by the Laboratory Ani",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13932
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The rabbits were anesthetized with 3% pentobarbital sodium (chemBlink) at a dose",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14977
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All animals survived postoperatively without any adverse reactions, such as infe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16129
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Histological Analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16996
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To evaluate the repair efficacy of the tissue-engineered bicipital autologous te",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17018
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "TEM",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2105
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To assess the repair effectiveness of the tissue-engineered bicipital autologous",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17809
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Bulk RNA-seq",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18688
+    },
+    {
+      "block_id": "p5:14",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To explore the potential mechanisms underlying tendon regeneration facilitated b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18701
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2244",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Liao et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "patches, we conducted bulk RNA-seq analysis. The tendon samples were collected a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18835
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Ethical Approval",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19890
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Ethical approval for this study was obtained from the Laboratory Animal Welfare ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19907
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Statistical Analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20146
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The data on cell proliferation with the CCK-8 assay, collagen synthesis ability ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20167
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results In Vitro Study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20926
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Evaluation of Biocompatibility and Collagen Synthesis Ability of Fibrin Glue",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20954
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Fibrin glue did not substantially influence the viability and enduring prolifera",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21031
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Fibrin glue effectively enhanced the collagen synthesis ability of tendon stem/p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21578
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell Growth and Collagen Deposition Capacity of Tissue-engineered Bicipital Tend",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22066
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "With prolonged cultivation, the number of cells increased (Fig. 3A-B). The cell ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22157
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In Vivo Evaluation of Tendon Regeneration in Tissue-engineered Bicipital Autolog",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23509
+    },
+    {
+      "block_id": "p6:17",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The regenerated tissue in the defect site of the patch group closely approximate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23608
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 482, Number 12",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Tissue-engineered Tendon Patch Enhances Tendon Repair",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2245",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Control",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "tissue, including macroscopic structure, cell nuclear morphology, and collagen f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23744
+    },
+    {
+      "block_id": "p7:17",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Histological staining revealed the following observations: In the control group,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24372
+    },
+    {
+      "block_id": "p7:19",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The collagen fibrils in the gel and patch groups had a larger diameter compared ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25902
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2246",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Liao et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\textregistered} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "notably large diameter collagen fibrils were exhibited in the patch group. The c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26539
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Even 3 months after transplantation, macroscopic observation revealed that in th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27075
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "H&E and Masson trichrome staining sections revealed the microstructural characte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27834
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Wolters Kluwer",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 482, Number 12",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Tissue-engineered Tendon Patch Enhances Tendon Repair",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2247",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "both the control and gel groups. Histological scoring also demonstrated that the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28617
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2248",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Liao et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\textregistered} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "diameter of collagen fibrils in the three groups were $ 53.34 \\pm 6.64 $ nm in t",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The tissue-engineered bicipital autologous tendon patch suppressed immune and in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30236
+    },
+    {
+      "block_id": "p10:11",
+      "page": 10,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31891
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Massive rotator cuff defects present a substantive challenge to the patients' da",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31902
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Volume 482, Number 12",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Tissue-engineered Tendon Patch Enhances Tendon Repair",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2249",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:13",
+      "page": 11,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Orientation in degrees",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:15",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "alternative for the repair of massive rotator cuff defects by facilitating tendo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33128
+    },
+    {
+      "block_id": "p11:16",
+      "page": 11,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Limitations",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33484
+    },
+    {
+      "block_id": "p11:17",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This study has several limitations that warrant consideration. First, in our in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33496
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2250",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liao et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\textregistered} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Volume 482, Number 12",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Tissue-engineered Tendon Patch Enhances Tendon Repair",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2251",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "tendon patch. This discrepancy in cell distribution might result from potential ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33893
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The process of tendon injury regeneration is a complex and lengthy process, incl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34427
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The size and shape of the bones, muscles, and tendons in the shoulder complex ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34964
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition, the influence of extrinsic factors (especially muscle mass) on repa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35469
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion of Key Findings",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36341
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this study, we observed that the patch group exhibited a higher density of ro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36368
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2252",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liao et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\circledR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Orientation in degrees",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:15",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Additionally, the tissue-engineered bicipital autologous tendon patches contain ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37383
+    },
+    {
+      "block_id": "p14:17",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Wolters Kluwer",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Volume 482, Number 12",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Tissue-engineered Tendon Patch Enhances Tendon Repair",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2253",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2254",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Liao et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{\\textregistered} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "have been discarded during previous massive rotator cuff repair procedures, actu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38282
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although the mechanisms of tendon regeneration were not the primary focus of thi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38624
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3949
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this in vivo rabbit study, we propose a clinically feasible novel therapy for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38996
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This is an open access article distributed under the terms of the Creative Commo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40179
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acknowledgments We thank the Core Facilities of Zhejiang University School of Me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40512
+    },
+    {
+      "block_id": "p16:9",
+      "page": 16,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40922
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Bedi A, Bishop J, Keener J, et al. Rotator cuff tears. Nat Rev Dis Primers. 2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40933
+    },
+    {
+      "block_id": "p16:11",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Bedi A, Dines J, Warren RF, Dines DM. Massive tears of the rotator cuff. J Bo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40802
+    },
+    {
+      "block_id": "p16:12",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Bi Y, Ehirchiou D, Kilts TM, et al. Identification of tendon stem/progenitor ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41023
+    },
+    {
+      "block_id": "p16:13",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Bogdanowicz DR, Lu HH. Designing the stem cell microenvironment for guided co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41194
+    },
+    {
+      "block_id": "p16:14",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Chen S, McCarthy A, John JV, Su Y, Xie J. Converting 2D nanofiber membranes t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41338
+    },
+    {
+      "block_id": "p16:15",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Chung SW, Park H, Kwon J, et al. Effect of hypercholesterolemia on fatty infi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41545
+    },
+    {
+      "block_id": "p16:16",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Gladstone JN, Bishop JY, Lo IK, Flatow EL. Fatty infiltration and atrophy of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41822
+    },
+    {
+      "block_id": "p16:17",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Greenspoon JA, Petri M, Warth RJ, Millett PJ. Massive rotator cuff tears: pat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42038
+    },
+    {
+      "block_id": "p16:18",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Guevara JA, Entezari V, Ho JC, et al. An update on surgical management of the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42223
+    },
+    {
+      "block_id": "p16:19",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Hope M, Saxby TS. Tendon healing. Foot Ankle Clin. 2007;12:553-567.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42393
+    },
+    {
+      "block_id": "p16:20",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Kim HM, Galatz LM, Lim C, Havlioglu N, Thomopoulos S. The effect of tear siz",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42465
+    },
+    {
+      "block_id": "p16:21",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Kovacevic D, Suriani RJ Jr, Grawe BM, et al. Management of irreparable massi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42672
+    },
+    {
+      "block_id": "p16:22",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Levy O, Mullett H, Roberts S, Copeland S. The role of anterior deltoid reedu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42928
+    },
+    {
+      "block_id": "p16:23",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Llinás PJ, Bailie DS, Sanchez DA, et al. Partial superior capsular reconstru",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43125
+    },
+    {
+      "block_id": "p16:24",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Mascarenhas R, Verma NN. Editorial Commentary: Muscle atrophy after arthrosc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43363
+    },
+    {
+      "block_id": "p16:25",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Nemirov DA, Herman Z, Paul RW, et al. Evaluation of rotator cuff repair with",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43512
+    },
+    {
+      "block_id": "p16:26",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Osti L, Buda M, Buono AD, Osti R, Massari L. Clinical evidence in the treatm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43718
+    },
+    {
+      "block_id": "p16:27",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Paw E, Vangaveti V, Zonta M, Heal C, Gunnarsson R. Effectiveness of fibrin g",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43891
+    },
+    {
+      "block_id": "p16:28",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Rezakhaniha R, Agianniotis A, Schrauwen JT, et al. Experimental investigatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44074
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Volume 482, Number 12",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Tissue-engineered Tendon Patch Enhances Tendon Repair",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2255",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Shimozaki K, Nakase J, Ohashi Y, et al. Investigating the histological and s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44323
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Yang G, Rothrauff BB, Tuan RS. Tendon and ligament regeneration and repair: ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44531
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Zarins B, Adams M. Knee injuries in sports. N Engl J Med. 1988;318:950-961.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44709
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Zhang C, Wu J, Li X, et al. Current biological strategies to enhance surgica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44789
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Zhang Y, Lei T, Tang C, et al. 3D printing of chemical-empowered tendon stem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44946
+    }
+  ]
+}

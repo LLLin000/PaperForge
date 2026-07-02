@@ -1,0 +1,144 @@
+{
+  "figures": {
+    "matched_count": 10,
+    "ambiguous_count": 0,
+    "unresolved_cluster_count": 0,
+    "unmatched_asset_count": 0,
+    "matched": [
+      {
+        "figure_number": 1,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 4,
+        "match_type": null
+      },
+      {
+        "figure_number": 2,
+        "legend_block_id": 15,
+        "asset_block_ids": [
+          6,
+          7,
+          3,
+          5,
+          4,
+          14,
+          10,
+          13
+        ],
+        "page": 7,
+        "match_type": null
+      },
+      {
+        "figure_number": 3,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 8,
+        "match_type": null
+      },
+      {
+        "figure_number": 4,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          3
+        ],
+        "page": 9,
+        "match_type": null
+      },
+      {
+        "figure_number": 5,
+        "legend_block_id": 7,
+        "asset_block_ids": [
+          5,
+          3
+        ],
+        "page": 10,
+        "match_type": null
+      },
+      {
+        "figure_number": 6,
+        "legend_block_id": 14,
+        "asset_block_ids": [
+          3,
+          4,
+          7,
+          5,
+          6,
+          9,
+          10,
+          12,
+          8
+        ],
+        "page": 11,
+        "match_type": null
+      },
+      {
+        "figure_number": 7,
+        "legend_block_id": 16,
+        "asset_block_ids": [
+          3,
+          5,
+          6,
+          8,
+          7,
+          11,
+          13
+        ],
+        "page": 12,
+        "match_type": null
+      },
+      {
+        "figure_number": 8,
+        "legend_block_id": 5,
+        "asset_block_ids": [
+          4,
+          3
+        ],
+        "page": 13,
+        "match_type": null
+      },
+      {
+        "figure_number": 9,
+        "legend_block_id": 14,
+        "asset_block_ids": [
+          3,
+          4,
+          7,
+          5,
+          6,
+          9,
+          13,
+          11,
+          8
+        ],
+        "page": 14,
+        "match_type": null
+      },
+      {
+        "figure_number": 10,
+        "legend_block_id": 9,
+        "asset_block_ids": [
+          3,
+          4,
+          6,
+          7,
+          8
+        ],
+        "page": 15,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [],
+    "unresolved": []
+  },
+  "tables": {
+    "matched_count": 0,
+    "ambiguous_count": 0,
+    "unmatched_asset_count": 0,
+    "matched": [],
+    "ambiguous": []
+  }
+}

@@ -1,0 +1,7264 @@
+{
+  "mode": "high-risk",
+  "total_blocks": 361,
+  "pages": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17
+  ],
+  "per_page_counts": {
+    "1": 24,
+    "2": 16,
+    "3": 10,
+    "4": 26,
+    "5": 14,
+    "6": 17,
+    "7": 15,
+    "8": 17,
+    "9": 15,
+    "10": 24,
+    "11": 14,
+    "12": 24,
+    "13": 22,
+    "14": 16,
+    "15": 31,
+    "16": 62,
+    "17": 14
+  },
+  "blocks": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "bbox": [
+        98.0,
+        53.0,
+        358.0,
+        82.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "bbox": [
+        1037.0,
+        1.0,
+        1191.0,
+        28.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "bbox": [
+        942.0,
+        44.0,
+        1098.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "raw_label": "doc_title",
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "bbox": [
+        96.0,
+        147.0,
+        992.0,
+        284.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "raw_label": "text",
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "bbox": [
+        96.0,
+        314.0,
+        923.0,
+        386.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "raw_label": "abstract",
+      "role": "abstract_body",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        447.0,
+        739.0,
+        893.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "raw_label": "paragraph_title",
+      "role": "section_heading",
+      "zone": "body_zone",
+      "bbox": [
+        97.0,
+        964.0,
+        246.0,
+        989.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        1002.0,
+        588.0,
+        1094.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        763.0,
+        434.0,
+        1099.0,
+        960.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        962.0,
+        1097.0,
+        1003.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        1005.0,
+        1099.0,
+        1093.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "raw_label": "footnote",
+      "role": "footnote",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        1125.0,
+        564.0,
+        1236.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "raw_label": "footnote",
+      "role": "footnote",
+      "zone": "body_zone",
+      "bbox": [
+        97.0,
+        1240.0,
+        574.0,
+        1332.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "raw_label": "footnote",
+      "role": "footnote",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        1122.0,
+        902.0,
+        1198.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "raw_label": "footnote",
+      "role": "footnote",
+      "zone": "body_zone",
+      "bbox": [
+        607.0,
+        1198.0,
+        705.0,
+        1219.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "raw_label": "footnote",
+      "role": "footnote",
+      "zone": "body_zone",
+      "bbox": [
+        607.0,
+        1214.0,
+        1092.0,
+        1295.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "raw_label": "footnote",
+      "role": "frontmatter_noise",
+      "zone": "body_zone",
+      "bbox": [
+        97.0,
+        1374.0,
+        588.0,
+        1415.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "raw_label": "footnote",
+      "role": "footnote",
+      "zone": "body_zone",
+      "bbox": [
+        608.0,
+        1290.0,
+        907.0,
+        1310.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "raw_label": "footnote",
+      "role": "footnote",
+      "zone": "body_zone",
+      "bbox": [
+        608.0,
+        1312.0,
+        909.0,
+        1386.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        97.0,
+        1420.0,
+        341.0,
+        1443.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "raw_label": "footnote",
+      "role": "footnote",
+      "zone": "body_zone",
+      "bbox": [
+        607.0,
+        1389.0,
+        935.0,
+        1444.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:21",
+      "page": 1,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        1487.0,
+        270.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:22",
+      "page": 1,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        535.0,
+        1484.0,
+        659.0,
+        1508.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p1:23",
+      "page": 1,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        937.0,
+        1487.0,
+        1096.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        92.0,
+        46.0,
+        339.0,
+        117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "bbox": [
+        936.0,
+        45.0,
+        1091.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        89.0,
+        148.0,
+        582.0,
+        522.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        89.0,
+        522.0,
+        582.0,
+        917.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        89.0,
+        916.0,
+        582.0,
+        1160.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "raw_label": "paragraph_title",
+      "role": "section_heading",
+      "zone": "body_zone",
+      "bbox": [
+        91.0,
+        1185.0,
+        345.0,
+        1209.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "raw_label": "paragraph_title",
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "bbox": [
+        90.0,
+        1223.0,
+        581.0,
+        1247.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        89.0,
+        1267.0,
+        582.0,
+        1444.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "raw_label": "text",
+      "role": "ocr_text_missing",
+      "zone": "body_zone",
+      "bbox": [
+        600.0,
+        149.0,
+        1093.0,
+        434.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        599.0,
+        433.0,
+        1093.0,
+        719.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        599.0,
+        719.0,
+        1092.0,
+        1048.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        598.0,
+        1049.0,
+        1093.0,
+        1445.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        93.0,
+        1487.0,
+        264.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        529.0,
+        1484.0,
+        654.0,
+        1508.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        931.0,
+        1486.0,
+        1090.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1533.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        45.0,
+        345.0,
+        117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "bbox": [
+        942.0,
+        44.0,
+        1097.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        160.0,
+        144.0,
+        1036.0,
+        1123.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "raw_label": "figure_title",
+      "role": "figure_caption",
+      "zone": "display_zone",
+      "bbox": [
+        95.0,
+        1134.0,
+        1100.0,
+        1233.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        1266.0,
+        588.0,
+        1445.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "raw_label": "text",
+      "role": "ocr_text_missing",
+      "zone": "body_zone",
+      "bbox": [
+        604.0,
+        1266.0,
+        1099.0,
+        1446.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        1487.0,
+        270.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        535.0,
+        1484.0,
+        659.0,
+        1508.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        937.0,
+        1486.0,
+        1096.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1535.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        92.0,
+        45.0,
+        340.0,
+        117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        936.0,
+        45.0,
+        1092.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        99.0,
+        151.0,
+        119.0,
+        171.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "raw_label": "figure_title",
+      "role": "figure_caption",
+      "zone": "body_zone",
+      "bbox": [
+        109.0,
+        180.0,
+        456.0,
+        201.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        143.0,
+        208.0,
+        444.0,
+        347.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        135.0,
+        357.0,
+        435.0,
+        415.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        468.0,
+        185.0,
+        747.0,
+        347.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        473.0,
+        356.0,
+        758.0,
+        412.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        768.0,
+        150.0,
+        789.0,
+        175.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        786.0,
+        156.0,
+        1087.0,
+        293.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        800.0,
+        304.0,
+        1075.0,
+        405.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        104.0,
+        463.0,
+        124.0,
+        483.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        112.0,
+        468.0,
+        418.0,
+        706.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        466.0,
+        456.0,
+        693.0,
+        678.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        778.0,
+        448.0,
+        1084.0,
+        703.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        106.0,
+        709.0,
+        122.0,
+        734.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        112.0,
+        712.0,
+        461.0,
+        994.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:17",
+      "page": 4,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        465.0,
+        711.0,
+        770.0,
+        923.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:18",
+      "page": 4,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        778.0,
+        709.0,
+        1084.0,
+        960.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:19",
+      "page": 4,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        118.0,
+        988.0,
+        426.0,
+        1231.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:20",
+      "page": 4,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        491.0,
+        1000.0,
+        1052.0,
+        1232.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:21",
+      "page": 4,
+      "raw_label": "figure_title",
+      "role": "figure_caption",
+      "zone": "display_zone",
+      "bbox": [
+        90.0,
+        1243.0,
+        1093.0,
+        1341.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:22",
+      "page": 4,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        93.0,
+        1487.0,
+        264.0,
+        1504.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:23",
+      "page": 4,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        529.0,
+        1485.0,
+        654.0,
+        1508.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:24",
+      "page": 4,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        931.0,
+        1487.0,
+        1090.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p4:25",
+      "page": 4,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1534.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        46.0,
+        345.0,
+        117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "bbox": [
+        942.0,
+        45.0,
+        1097.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        149.0,
+        588.0,
+        303.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        303.0,
+        587.0,
+        501.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "raw_label": "paragraph_title",
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        543.0,
+        587.0,
+        566.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        588.0,
+        588.0,
+        1268.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        1268.0,
+        588.0,
+        1445.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "raw_label": "text",
+      "role": "ocr_text_missing",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        149.0,
+        1098.0,
+        304.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        301.0,
+        1098.0,
+        1050.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        604.0,
+        1048.0,
+        1098.0,
+        1445.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        1487.0,
+        270.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        535.0,
+        1484.0,
+        659.0,
+        1508.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        937.0,
+        1487.0,
+        1096.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1534.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        92.0,
+        45.0,
+        339.0,
+        117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "bbox": [
+        937.0,
+        45.0,
+        1091.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        108.0,
+        156.0,
+        128.0,
+        178.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        138.0,
+        154.0,
+        1058.0,
+        457.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        108.0,
+        460.0,
+        130.0,
+        486.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        136.0,
+        474.0,
+        1075.0,
+        936.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        112.0,
+        956.0,
+        133.0,
+        979.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        157.0,
+        956.0,
+        428.0,
+        1230.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        438.0,
+        951.0,
+        460.0,
+        977.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        463.0,
+        958.0,
+        745.0,
+        1227.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        757.0,
+        955.0,
+        777.0,
+        977.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        784.0,
+        957.0,
+        1068.0,
+        1221.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "raw_label": "figure_title",
+      "role": "figure_caption",
+      "zone": "display_zone",
+      "bbox": [
+        90.0,
+        1238.0,
+        1094.0,
+        1428.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        93.0,
+        1487.0,
+        264.0,
+        1504.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        529.0,
+        1485.0,
+        654.0,
+        1507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        931.0,
+        1487.0,
+        1090.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1154.0,
+        28.0,
+        1172.0,
+        1532.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        46.0,
+        345.0,
+        117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "bbox": [
+        942.0,
+        45.0,
+        1097.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        149.0,
+        587.0,
+        302.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        303.0,
+        588.0,
+        525.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "raw_label": "paragraph_title",
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        566.0,
+        541.0,
+        589.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        609.0,
+        587.0,
+        1290.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        1290.0,
+        588.0,
+        1446.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "raw_label": "text",
+      "role": "ocr_text_missing",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        149.0,
+        1097.0,
+        215.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        215.0,
+        1098.0,
+        655.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        654.0,
+        1098.0,
+        1070.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        1071.0,
+        1098.0,
+        1445.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        1487.0,
+        270.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        535.0,
+        1484.0,
+        659.0,
+        1508.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        937.0,
+        1486.0,
+        1096.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1154.0,
+        31.0,
+        1171.0,
+        1534.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        91.0,
+        45.0,
+        339.0,
+        117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        936.0,
+        45.0,
+        1092.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        147.0,
+        157.0,
+        776.0,
+        478.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        819.0,
+        150.0,
+        1065.0,
+        333.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        818.0,
+        338.0,
+        1066.0,
+        507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        118.0,
+        503.0,
+        137.0,
+        526.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        127.0,
+        505.0,
+        801.0,
+        833.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        811.0,
+        518.0,
+        1064.0,
+        681.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        819.0,
+        694.0,
+        1065.0,
+        874.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        128.0,
+        875.0,
+        801.0,
+        1240.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        837.0,
+        885.0,
+        1064.0,
+        1056.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        814.0,
+        1077.0,
+        1063.0,
+        1231.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "raw_label": "figure_title",
+      "role": "figure_caption",
+      "zone": "display_zone",
+      "bbox": [
+        90.0,
+        1246.0,
+        1093.0,
+        1435.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        93.0,
+        1488.0,
+        264.0,
+        1504.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        529.0,
+        1485.0,
+        654.0,
+        1507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        931.0,
+        1487.0,
+        1090.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1533.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        46.0,
+        345.0,
+        117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "bbox": [
+        942.0,
+        45.0,
+        1097.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        149.0,
+        588.0,
+        564.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        566.0,
+        588.0,
+        851.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        851.0,
+        587.0,
+        1051.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "raw_label": "paragraph_title",
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        1092.0,
+        553.0,
+        1137.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        1157.0,
+        587.0,
+        1376.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        1377.0,
+        588.0,
+        1444.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "raw_label": "text",
+      "role": "ocr_text_missing",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        150.0,
+        1098.0,
+        566.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        566.0,
+        1098.0,
+        786.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        785.0,
+        1098.0,
+        1444.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        1487.0,
+        269.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:12",
+      "page": 9,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        535.0,
+        1484.0,
+        659.0,
+        1508.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:13",
+      "page": 9,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        937.0,
+        1486.0,
+        1096.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p9:14",
+      "page": 9,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1154.0,
+        31.0,
+        1171.0,
+        1532.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        90.0,
+        46.0,
+        323.0,
+        115.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "bbox": [
+        936.0,
+        45.0,
+        1091.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        154.0,
+        153.0,
+        171.0,
+        171.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        176.0,
+        160.0,
+        1010.0,
+        532.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        158.0,
+        543.0,
+        177.0,
+        564.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "raw_label": "table",
+      "role": "media_asset",
+      "zone": "body_zone",
+      "bbox": [
+        169.0,
+        598.0,
+        403.0,
+        761.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        400.0,
+        543.0,
+        1034.0,
+        816.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        159.0,
+        820.0,
+        178.0,
+        840.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        149.0,
+        836.0,
+        517.0,
+        965.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        519.0,
+        827.0,
+        535.0,
+        848.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:10",
+      "page": 10,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        535.0,
+        831.0,
+        709.0,
+        972.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:11",
+      "page": 10,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        716.0,
+        835.0,
+        843.0,
+        974.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        159.0,
+        982.0,
+        177.0,
+        998.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:13",
+      "page": 10,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        519.0,
+        977.0,
+        537.0,
+        999.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:14",
+      "page": 10,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        148.0,
+        980.0,
+        522.0,
+        1255.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:15",
+      "page": 10,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        694.0,
+        978.0,
+        713.0,
+        1000.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:16",
+      "page": 10,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        524.0,
+        1002.0,
+        708.0,
+        1124.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:17",
+      "page": 10,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        523.0,
+        1129.0,
+        704.0,
+        1263.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:18",
+      "page": 10,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "body_zone",
+      "bbox": [
+        717.0,
+        1146.0,
+        848.0,
+        1269.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:19",
+      "page": 10,
+      "raw_label": "figure_title",
+      "role": "figure_caption",
+      "zone": "display_zone",
+      "bbox": [
+        90.0,
+        1281.0,
+        1094.0,
+        1437.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:20",
+      "page": 10,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        93.0,
+        1488.0,
+        264.0,
+        1504.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:21",
+      "page": 10,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        525.0,
+        1485.0,
+        658.0,
+        1507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:22",
+      "page": 10,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        931.0,
+        1487.0,
+        1090.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p10:23",
+      "page": 10,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1535.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        46.0,
+        345.0,
+        117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "bbox": [
+        942.0,
+        45.0,
+        1097.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "raw_label": "paragraph_title",
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        149.0,
+        581.0,
+        195.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        214.0,
+        588.0,
+        654.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        654.0,
+        588.0,
+        984.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        982.0,
+        587.0,
+        1399.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        1399.0,
+        587.0,
+        1443.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "raw_label": "text",
+      "role": "ocr_text_missing",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        149.0,
+        1098.0,
+        785.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        786.0,
+        1098.0,
+        1179.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        605.0,
+        1181.0,
+        1099.0,
+        1445.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        98.0,
+        1487.0,
+        269.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:11",
+      "page": 11,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        530.0,
+        1484.0,
+        664.0,
+        1508.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:12",
+      "page": 11,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        937.0,
+        1486.0,
+        1096.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p11:13",
+      "page": 11,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "body_zone",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1533.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        90.0,
+        45.0,
+        338.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        937.0,
+        45.0,
+        1092.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        141.0,
+        149.0,
+        402.0,
+        451.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        416.0,
+        151.0,
+        762.0,
+        416.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        140.0,
+        452.0,
+        401.0,
+        720.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        766.0,
+        151.0,
+        1042.0,
+        416.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "raw_label": "figure_title",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
+      "bbox": [
+        427.0,
+        421.0,
+        447.0,
+        443.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        410.0,
+        427.0,
+        763.0,
+        692.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        768.0,
+        427.0,
+        1043.0,
+        695.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        148.0,
+        713.0,
+        404.0,
+        942.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        382.0,
+        700.0,
+        775.0,
+        956.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        808.0,
+        702.0,
+        1044.0,
+        899.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        145.0,
+        958.0,
+        320.0,
+        1140.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        320.0,
+        963.0,
+        500.0,
+        1135.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:14",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        506.0,
+        984.0,
+        694.0,
+        1134.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:15",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        146.0,
+        1130.0,
+        321.0,
+        1273.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:16",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        328.0,
+        1138.0,
+        505.0,
+        1273.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:17",
+      "page": 12,
+      "raw_label": "chart",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        505.0,
+        1145.0,
+        693.0,
+        1272.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:18",
+      "page": 12,
+      "raw_label": "image",
+      "role": "figure_asset",
+      "zone": "",
+      "bbox": [
+        737.0,
+        1013.0,
+        1033.0,
+        1267.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:19",
+      "page": 12,
+      "raw_label": "figure_title",
+      "role": "figure_caption",
+      "zone": "display_zone",
+      "bbox": [
+        91.0,
+        1282.0,
+        1093.0,
+        1436.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:20",
+      "page": 12,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        94.0,
+        1487.0,
+        264.0,
+        1504.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:21",
+      "page": 12,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        525.0,
+        1485.0,
+        658.0,
+        1507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:22",
+      "page": 12,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        932.0,
+        1487.0,
+        1090.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p12:23",
+      "page": 12,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1534.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        98.0,
+        46.0,
+        345.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "",
+      "bbox": [
+        942.0,
+        46.0,
+        1097.0,
+        115.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        149.0,
+        586.0,
+        192.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        194.0,
+        587.0,
+        412.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        95.0,
+        413.0,
+        587.0,
+        590.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "raw_label": "paragraph_title",
+      "role": "section_heading",
+      "zone": "body_zone",
+      "bbox": [
+        97.0,
+        625.0,
+        234.0,
+        649.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        663.0,
+        588.0,
+        1170.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "raw_label": "paragraph_title",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        97.0,
+        1215.0,
+        329.0,
+        1240.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "bbox": [
+        96.0,
+        1252.0,
+        586.0,
+        1385.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "bbox": [
+        96.0,
+        1385.0,
+        587.0,
+        1443.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "raw_label": "text",
+      "role": "ocr_text_missing",
+      "zone": "",
+      "bbox": [
+        606.0,
+        151.0,
+        1098.0,
+        285.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        607.0,
+        285.0,
+        1097.0,
+        416.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        417.0,
+        1098.0,
+        625.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        625.0,
+        1098.0,
+        890.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:14",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        891.0,
+        1098.0,
+        1060.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:15",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "bbox": [
+        606.0,
+        1060.0,
+        1097.0,
+        1230.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:16",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "bbox": [
+        606.0,
+        1231.0,
+        1098.0,
+        1401.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:17",
+      "page": 13,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "bbox": [
+        606.0,
+        1401.0,
+        1098.0,
+        1439.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:18",
+      "page": 13,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        99.0,
+        1488.0,
+        269.0,
+        1504.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:19",
+      "page": 13,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        530.0,
+        1485.0,
+        664.0,
+        1507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:20",
+      "page": 13,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        937.0,
+        1487.0,
+        1096.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p13:21",
+      "page": 13,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        1155.0,
+        29.0,
+        1171.0,
+        1533.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        92.0,
+        46.0,
+        338.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "",
+      "bbox": [
+        936.0,
+        45.0,
+        1091.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "",
+      "bbox": [
+        89.0,
+        150.0,
+        582.0,
+        341.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "",
+      "bbox": [
+        89.0,
+        342.0,
+        581.0,
+        795.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "",
+      "bbox": [
+        89.0,
+        795.0,
+        581.0,
+        1021.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "",
+      "bbox": [
+        91.0,
+        1022.0,
+        581.0,
+        1361.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "",
+      "bbox": [
+        91.0,
+        1363.0,
+        581.0,
+        1440.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "raw_label": "figure_title",
+      "role": "table_caption",
+      "zone": "display_zone",
+      "bbox": [
+        602.0,
+        148.0,
+        834.0,
+        168.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "raw_label": "table",
+      "role": "table_html",
+      "zone": "",
+      "bbox": [
+        602.0,
+        187.0,
+        1087.0,
+        340.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "",
+      "bbox": [
+        600.0,
+        400.0,
+        1092.0,
+        552.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "",
+      "bbox": [
+        601.0,
+        552.0,
+        1092.0,
+        704.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:11",
+      "page": 14,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "",
+      "bbox": [
+        600.0,
+        705.0,
+        1092.0,
+        1444.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        93.0,
+        1487.0,
+        264.0,
+        1504.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:13",
+      "page": 14,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        525.0,
+        1484.0,
+        658.0,
+        1507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:14",
+      "page": 14,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        931.0,
+        1487.0,
+        1090.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p14:15",
+      "page": 14,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1534.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        98.0,
+        46.0,
+        345.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "",
+      "bbox": [
+        942.0,
+        46.0,
+        1097.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        150.0,
+        587.0,
+        341.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        342.0,
+        587.0,
+        605.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        97.0,
+        605.0,
+        587.0,
+        776.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        96.0,
+        776.0,
+        588.0,
+        1117.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "bbox": [
+        96.0,
+        1117.0,
+        587.0,
+        1306.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "bbox": [
+        96.0,
+        1306.0,
+        587.0,
+        1440.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "raw_label": "text",
+      "role": "ocr_text_missing",
+      "zone": "",
+      "bbox": [
+        606.0,
+        151.0,
+        1097.0,
+        265.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        265.0,
+        1097.0,
+        437.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:10",
+      "page": 15,
+      "raw_label": "paragraph_title",
+      "role": "backmatter_boundary_candidate",
+      "zone": "",
+      "bbox": [
+        607.0,
+        476.0,
+        839.0,
+        503.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:11",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        514.0,
+        1096.0,
+        553.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:12",
+      "page": 15,
+      "raw_label": "paragraph_title",
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "bbox": [
+        608.0,
+        594.0,
+        800.0,
+        620.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:13",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        632.0,
+        1098.0,
+        786.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:14",
+      "page": 15,
+      "raw_label": "paragraph_title",
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "bbox": [
+        608.0,
+        825.0,
+        792.0,
+        850.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:15",
+      "page": 15,
+      "raw_label": "text",
+      "role": "frontmatter_noise",
+      "zone": "",
+      "bbox": [
+        608.0,
+        862.0,
+        894.0,
+        884.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:16",
+      "page": 15,
+      "raw_label": "paragraph_title",
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "bbox": [
+        608.0,
+        925.0,
+        872.0,
+        950.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:17",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        962.0,
+        1097.0,
+        1003.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:18",
+      "page": 15,
+      "raw_label": "paragraph_title",
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "bbox": [
+        608.0,
+        1042.0,
+        707.0,
+        1068.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:19",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        606.0,
+        1080.0,
+        1096.0,
+        1121.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:20",
+      "page": 15,
+      "raw_label": "text",
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "bbox": [
+        941.0,
+        1142.0,
+        1096.0,
+        1160.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:21",
+      "page": 15,
+      "raw_label": "text",
+      "role": "frontmatter_noise",
+      "zone": "",
+      "bbox": [
+        841.0,
+        1157.0,
+        1096.0,
+        1195.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:22",
+      "page": 15,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        617.0,
+        1264.0,
+        1096.0,
+        1302.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:23",
+      "page": 15,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        619.0,
+        1304.0,
+        1095.0,
+        1341.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:24",
+      "page": 15,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        617.0,
+        1344.0,
+        1077.0,
+        1362.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:25",
+      "page": 15,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        619.0,
+        1364.0,
+        1095.0,
+        1400.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:26",
+      "page": 15,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        617.0,
+        1403.0,
+        1095.0,
+        1441.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:27",
+      "page": 15,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        99.0,
+        1488.0,
+        270.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:28",
+      "page": 15,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        530.0,
+        1485.0,
+        664.0,
+        1507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:29",
+      "page": 15,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        937.0,
+        1487.0,
+        1096.0,
+        1506.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p15:30",
+      "page": 15,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        1155.0,
+        30.0,
+        1171.0,
+        1534.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        93.0,
+        46.0,
+        295.0,
+        115.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        937.0,
+        45.0,
+        1091.0,
+        115.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        100.0,
+        151.0,
+        580.0,
+        207.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        100.0,
+        211.0,
+        541.0,
+        230.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        101.0,
+        230.0,
+        545.0,
+        249.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        99.0,
+        251.0,
+        580.0,
+        289.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        290.0,
+        580.0,
+        348.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        95.0,
+        351.0,
+        580.0,
+        388.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        391.0,
+        579.0,
+        448.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:9",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        93.0,
+        450.0,
+        579.0,
+        488.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        95.0,
+        490.0,
+        579.0,
+        528.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:11",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        95.0,
+        531.0,
+        580.0,
+        646.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:12",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        650.0,
+        580.0,
+        708.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:13",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        709.0,
+        579.0,
+        767.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:14",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        769.0,
+        579.0,
+        827.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:15",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        95.0,
+        829.0,
+        579.0,
+        866.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:16",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        869.0,
+        434.0,
+        888.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:17",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        889.0,
+        580.0,
+        926.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:18",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        929.0,
+        579.0,
+        987.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:19",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        988.0,
+        580.0,
+        1025.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:20",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        1028.0,
+        578.0,
+        1066.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:21",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        1068.0,
+        452.0,
+        1086.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:22",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        95.0,
+        1088.0,
+        580.0,
+        1126.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:23",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        95.0,
+        1128.0,
+        451.0,
+        1147.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:24",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        95.0,
+        1148.0,
+        580.0,
+        1205.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:25",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        95.0,
+        1208.0,
+        580.0,
+        1246.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:26",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        1247.0,
+        579.0,
+        1286.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:27",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        1287.0,
+        578.0,
+        1325.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:28",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        1327.0,
+        580.0,
+        1365.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:29",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        94.0,
+        1367.0,
+        580.0,
+        1426.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:30",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        635.0,
+        151.0,
+        1089.0,
+        189.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:31",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        191.0,
+        1090.0,
+        249.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:32",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        605.0,
+        250.0,
+        955.0,
+        270.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:33",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        605.0,
+        271.0,
+        1090.0,
+        329.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:34",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        605.0,
+        331.0,
+        901.0,
+        350.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:35",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        605.0,
+        350.0,
+        1091.0,
+        388.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:36",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        390.0,
+        1091.0,
+        428.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:37",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        430.0,
+        1090.0,
+        467.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:38",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        470.0,
+        1089.0,
+        508.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:39",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        510.0,
+        1090.0,
+        606.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:40",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        610.0,
+        1091.0,
+        648.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:41",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        650.0,
+        1091.0,
+        689.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:42",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        689.0,
+        1044.0,
+        708.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:43",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        605.0,
+        709.0,
+        1091.0,
+        746.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:44",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        749.0,
+        1090.0,
+        787.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:45",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        789.0,
+        1090.0,
+        827.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:46",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        829.0,
+        1091.0,
+        926.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:47",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        603.0,
+        929.0,
+        1090.0,
+        986.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:48",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        603.0,
+        989.0,
+        1091.0,
+        1045.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:49",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        603.0,
+        1048.0,
+        1091.0,
+        1085.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:50",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        1087.0,
+        1042.0,
+        1107.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:51",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        1109.0,
+        1090.0,
+        1146.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:52",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        1148.0,
+        1090.0,
+        1186.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:53",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        1188.0,
+        1090.0,
+        1226.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:54",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        1228.0,
+        1090.0,
+        1266.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:55",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        1267.0,
+        1090.0,
+        1324.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:56",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        603.0,
+        1327.0,
+        1090.0,
+        1384.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:57",
+      "page": 16,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        604.0,
+        1387.0,
+        1090.0,
+        1425.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:58",
+      "page": 16,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        94.0,
+        1488.0,
+        264.0,
+        1504.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:59",
+      "page": 16,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        525.0,
+        1485.0,
+        658.0,
+        1507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:60",
+      "page": 16,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        932.0,
+        1487.0,
+        1090.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p16:61",
+      "page": 16,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        1156.0,
+        32.0,
+        1171.0,
+        1535.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "raw_label": "header",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        99.0,
+        46.0,
+        343.0,
+        116.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "raw_label": "header_image",
+      "role": "unknown_structural",
+      "zone": "",
+      "bbox": [
+        942.0,
+        46.0,
+        1097.0,
+        115.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        100.0,
+        152.0,
+        584.0,
+        209.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        100.0,
+        211.0,
+        584.0,
+        248.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        100.0,
+        252.0,
+        585.0,
+        288.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        100.0,
+        292.0,
+        585.0,
+        347.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        610.0,
+        151.0,
+        1094.0,
+        189.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        611.0,
+        192.0,
+        1095.0,
+        267.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:8",
+      "page": 17,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        610.0,
+        312.0,
+        1095.0,
+        347.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:9",
+      "page": 17,
+      "raw_label": "reference_content",
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "bbox": [
+        611.0,
+        271.0,
+        1095.0,
+        308.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:10",
+      "page": 17,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        99.0,
+        1488.0,
+        269.0,
+        1504.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:11",
+      "page": 17,
+      "raw_label": "number",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        531.0,
+        1486.0,
+        663.0,
+        1507.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:12",
+      "page": 17,
+      "raw_label": "footer",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        938.0,
+        1488.0,
+        1095.0,
+        1505.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    },
+    {
+      "block_id": "p17:13",
+      "page": 17,
+      "raw_label": "aside_text",
+      "role": "noise",
+      "zone": "",
+      "bbox": [
+        1156.0,
+        34.0,
+        1171.0,
+        1538.0
+      ],
+      "review_status": "pending",
+      "truth_role": null,
+      "truth_zone": null,
+      "truth_order_after": null,
+      "truth_order_before": null,
+      "truth_object_id": null,
+      "truth_reference_membership": null
+    }
+  ]
+}

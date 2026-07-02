@@ -1,0 +1,28 @@
+{
+  "figures": {
+    "matched_count": 1,
+    "ambiguous_count": 0,
+    "unresolved_cluster_count": 0,
+    "unmatched_asset_count": 1,
+    "matched": [
+      {
+        "figure_number": 1,
+        "legend_block_id": 3,
+        "asset_block_ids": [
+          2
+        ],
+        "page": 6,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [],
+    "unresolved": []
+  },
+  "tables": {
+    "matched_count": 0,
+    "ambiguous_count": 0,
+    "unmatched_asset_count": 0,
+    "matched": [],
+    "ambiguous": []
+  }
+}

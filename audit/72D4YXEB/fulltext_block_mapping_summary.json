@@ -1,0 +1,947 @@
+{
+  "mappable_block_count": 94,
+  "found_count": 77,
+  "missing_count": 17,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Electromechanical Assessment of Human Knee Articular Cartilage with Compression-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Christoph Becher $ ^{1} $, Marcel Ricklefs $ ^{1} $, Elmar Willbold $ ^{2} $, Ch",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "structured_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Keywords",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2057
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2069
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage defects are common findings at arthroscopic surgery of the k",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2082
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $Department of Orthopedic Surgery, Hannover Medical School, Hannover, Ger",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Corresponding Author: Christoph Becher, Department of Orthopedic Surgery, Hannov",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Becher et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "63",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24321
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and healing grafts, more reliable and sensitive measurement techniques are neces",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3637
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In recent years, several diagnostic tools capable of objective evaluation of the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3723
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The device investigated herein relies on the fact that streaming potentials are ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4657
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this study, multiuser repeating measurements were performed to assess the lea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6443
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Materials and Methods Specimen Preparation and SPI Measurements",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7066
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "After approval of the local ethics committee (IRB No. 1182-2011), femoral condyl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7130
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "64",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17899
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Cartilage 7(1)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ink-marked on the trochlea (2-3) and medial/lateral condyles (14) according to a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7524
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The testing chamber was filled with phosphate-buffered saline (pH 7.4) and a min",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8145
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Histological and Biochemical Evaluation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8965
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A total of 162 equal osteochondral cylinders of 6-mm diameter and 8-mm height we",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9005
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "General Histology. The cylinders were first fixed in commercial 3.5% formalin fo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9372
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Hematoxylin–Eosin Staining. Rehydrated sections were first rinsed in distilled w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10100
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Safranin-O Staining. Rehydrated sections were incubated for 4 minutes in a solut",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10448
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mankin Score. Mankin scores were determined for the histological evaluation. Val",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10679
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Biochemical Evaluation. The content of sGAG (reported in $ \\mu $g/mL, normalized",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Becher et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "65",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7288
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "the cartilage cylinders, each specimen was dissolved in 1.5-mL microcentrifuge t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11611
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data Evaluation and Statistical Methods",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12800
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To validate the methodologies of the measurements, 3 of the authors (observer 1,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12840
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1309
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The computed ICC was 0.77 (0.70-0.83), indicating good to excellent linear agree",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13899
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mean ICRS score was $ 0.8 \\pm 0.7 $ (range 0-3), and the mean Mankin score w",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "66",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29116
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Cartilage 7(1)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$r = 0.255$, $P = 0.02$, respectively; Fig. 5a and b) together with a significan",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14998
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The purpose of this study was to assess the electromechanical properties of huma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15009
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Standardized methods for evaluating of cartilage defects, cartilage repair tissu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15735
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Becher et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "67",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "from one pilot study from our group published by Abedian et al. $ ^{17} $, the a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the present study, we demonstrated good to excellent linear agreement of SPI ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17538
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The present study revealed statistically significant negative correlations betwe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18806
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "68",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Cartilage 7(1)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "demonstrated comparable findings when correlating the characteristic value (CV) ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19245
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Although the decrease of glycosaminoglycan content is typical for severe cartila",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20673
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "In conclusion, the findings of this study confirm the agreement between the SPI ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21784
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acknowledgment and Funding",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22645
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The author(s) received no financial support for the research, authorship, and/or",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22672
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "backmatter_boundary_candidate",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Declaration of Conflicting Interests",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22782
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The author(s) declared no potential conflicts of interest with respect to the re",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22819
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Ethical Approval",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22960
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The local ethics committee provide ethical approval (IRB No. 1182-2011).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22977
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23053
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Brittberg M, Winalski CS. Evaluation of cartilage injuries and repair. J Bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23064
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Curl WW, Krome J, Gordon ES, Rushing J, Smith BP, Poehling GG. Cartilage inju",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23186
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Recht MP, Kramer J, Marcelis S, Pathria MN, Trudell D, Haghighi P, et al. Abn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23343
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Brittberg M. Cell carriers as the next generation of cell therapy for cartila",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23537
+    },
+    {
+      "block_id": "p7:17",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Gille J, Behrens P, Volpi P, de Girolamo L, Reiss E, Zoch W, et al. Outcome o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23743
+    },
+    {
+      "block_id": "p7:18",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Hunter DJ, Schofield D, Callander E. The individual and socioeconomic impact ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23971
+    },
+    {
+      "block_id": "p7:19",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Kleemann RU, Krocker D, Cedraro A, Tuischer J, Duda GN. Altered cartilage mec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24108
+    },
+    {
+      "block_id": "p7:20",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Spahn G, Klinger H an GO. How valid is the arthroscopic ions? Results of an o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24325
+    },
+    {
+      "block_id": "p7:21",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Gelse K, Olk A, Eichhorn S, Swoboda B, Schoene M, Raum K. Quantitative ultras",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24423
+    },
+    {
+      "block_id": "p7:22",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Quenneville E, Binette JS, Garon M, Legare A, Meunier M, Buschmann MD. Fabri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24610
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Becher et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "69",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23182
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Sato M, Ishihara M, Kikuchi M, Mochida J. A diagnostic system for articular ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24879
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Spahn G, Plettenberg H, Nagel H, Kahl E, Klinger HM, Muckley T, et al. Evalu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25053
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Spahn G, Klinger HM, Baums M, Hoffmann M, Plettenberg H, Kroker A, et al Nea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25250
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Sim S, Chevrier A, Garon M, Quenneville E, Yaroshinsky A, Hoemann CD, et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25498
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Maroudas A, Muir H, Wingham J. The correlation of fixed negative charge with",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25779
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Biomomentum. www.biomomentum.com/en/Arthro-BST.html. Accessed June 9, 2015.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25959
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Abedian R, Willbold E, Becher C, Hurschler C. In vitro electro-mechanical ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26039
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Changoor A, Coutu JP, Garon M, Quenneville E, Hurtig MB, Buschmann MD. Strea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26275
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Garon M, Legare A, Guardo R, Savard P, Buschmann MD. Streaming potentials ma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26526
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Legare A, Garon M, Guardo R, Savard P, Poole AR, Buschmann MD. Detection and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26768
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Mankin HJ. Biochemical and metabolic aspects of osteoarthritis. Orthop Clin ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26961
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Willbold E, Witte F. Histology and research at the hard tissue-implant inter",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27068
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Brismar BH, Wredmark T, Movin T, Leandersson J, Svensson O. Observer reliabi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27234
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "osteoarthritis of the knee. J Bone Joint Surg Br. 2002;84(1):42-7.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29646
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Hunt N, Sanchez-Ballester J, Pandit R, Thomas R, Strachan R. Chondral lesion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27357
+    },
+    {
+      "block_id": "p8:17",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Javed A, Siddique M, Vaghela M, Hui AC. Interobserver variations in intra-ar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27553
+    },
+    {
+      "block_id": "p8:18",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Jerosch J, Castro WH, de Waal Malefijt MC, Busch M, van Kampen A. Interobser",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27723
+    },
+    {
+      "block_id": "p8:19",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Garon M, Legare A, Quenneville E, Sims TJ, Hurtig MB, Shive MS, et al. Arthr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27947
+    },
+    {
+      "block_id": "p8:20",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Changoor A, Quenneville E, Garon M, Cloutier L, Hurtig MB, Buschmann MD. Str",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28178
+    },
+    {
+      "block_id": "p8:21",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Marticke JK, Hosselbarth A, Hoffmeier KL, Marintschev I, Otto S, Lange M, et",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28442
+    },
+    {
+      "block_id": "p8:22",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Pester JK, Stumpfe ST, Steinert S, Marintschev I, Plettenberg HK, Aurich M, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28669
+    },
+    {
+      "block_id": "p8:23",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Bonassar LJ, Jeffries KA, Paguio CG, Grodzinsky AJ. Cartilage degradation an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28935
+    },
+    {
+      "block_id": "p8:24",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Franz T, Hasler EM, Hagg R, Weiler C, Jakob RP, Mainil-Varlet P. In situ com",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29126
+    },
+    {
+      "block_id": "p8:25",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Stumpfe ST, Pester JK, Steinert S, Marintschev I, Plettenberg H, Aurich M, H",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29368
+    }
+  ]
+}

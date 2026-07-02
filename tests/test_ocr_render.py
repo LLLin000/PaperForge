@@ -874,3 +874,50 @@ def test_backmatter_body_with_heading_owner_not_dropped_by_band() -> None:
     ordered, _, _ = _reorder_tail_run([heading, body], None, None, header_band=1100, footer_band=None, page_width=1200)
     texts = [b.get("text") for b in ordered]
     assert texts == ["Acknowledgments", "We thank the lab."]
+
+
+def test_ref_number_sort_key_paren_format() -> None:
+    from paperforge.worker.ocr_render import _ref_number_sort_key
+    block = {"text": "(5) Smith J. Journal Name. 2020."}
+    key = _ref_number_sort_key(block)
+    assert key == (0, 5), f"Expected (0, 5), got {key}"
+
+
+def test_ref_number_sort_key_paren_handles_mixed_formats() -> None:
+    from paperforge.worker.ocr_render import _ref_number_sort_key
+    assert _ref_number_sort_key({"text": "(5) ..."}) == (0, 5)
+    assert _ref_number_sort_key({"text": "5. ..."}) == (0, 5)
+    assert _ref_number_sort_key({"text": "[5] ..."}) == (0, 5)
+
+
+def test_reorder_tail_run_preserves_all_reference_items() -> None:
+    from paperforge.worker.ocr_render import _reorder_tail_run
+
+    ref_heading = {"role": "reference_heading", "text": "References", "bbox": [100, 100, 200, 120]}
+    refs = [
+        {"role": "reference_item", "text": f"{i}. Entry {i}.", "bbox": [100, 120 + i * 20, 500, 140 + i * 20]}
+        for i in range(1, 6)
+    ]
+    tail_blocks = [ref_heading, *refs]
+
+    ordered, _, _ = _reorder_tail_run(tail_blocks, None, None, page_width=1200)
+
+    before = {id(b) for b in tail_blocks if b.get("role") == "reference_item"}
+    after = {id(b) for b in ordered if b.get("role") == "reference_item"}
+    assert before == after, f"Lost refs: {before - after}"
+
+
+def test_reorder_tail_run_preserves_duplicate_numbered_refs() -> None:
+    """Two different refs with the same number must BOTH survive (no dedup by number)."""
+    from paperforge.worker.ocr_render import _reorder_tail_run
+
+    heading = {"role": "reference_heading", "text": "References", "bbox": [100, 100, 200, 120]}
+    ref42a = {"role": "reference_item", "text": "42. Rhee C, Wang R...", "bbox": [100, 200, 500, 220]}
+    ref42b = {"role": "reference_item", "text": "42. Baghdadi JD, Brook RH...", "bbox": [100, 220, 500, 240]}
+    ref43 = {"role": "reference_item", "text": "43. Baghdadi JD, Wong MD...", "bbox": [100, 240, 500, 260]}
+
+    ordered, _, _ = _reorder_tail_run([heading, ref42a, ref42b, ref43], None, None, page_width=1200)
+
+    before = {id(b) for b in [ref42a, ref42b, ref43]}
+    after = {id(b) for b in ordered if b.get("role") == "reference_item"}
+    assert before == after, f"Lost refs: {before - after}"

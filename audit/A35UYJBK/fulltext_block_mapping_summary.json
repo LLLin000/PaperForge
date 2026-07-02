@@ -1,0 +1,1857 @@
+{
+  "mappable_block_count": 185,
+  "found_count": 161,
+  "missing_count": 24,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Current Stem Cell Research & Therapy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 246
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "54",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8820
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Send Orders for Reprints to reprints@benthamscience.net",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "MINI-REVIEW ARTICLE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Current Stem Cell Research & Therapy, 2020, 15, 54-60",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Co-culture and Mechanical Stimulation on Mesenchymal Stem Cells and Chondrocytes",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Current Stem Cell Research & Therapy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 246
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Yawen Chen¹,#, Xinli Ouyang¹,#, Yide Wu¹, Shaojia Guo¹, Yongfang Xie¹,* and Guoh",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $Key Laboratory of Biological Medicines in Universities of Shandong Provi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "DOI:10.2174/1574888X14666191029104249",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1723
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "1. INTRODUCTION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1764
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage defects caused by trauma and various diseases are becoming c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1780
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In recent decades, cartilage repair and reconstruction have been mainly performe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2569
+    },
+    {
+      "block_id": "p1:21",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this review, the role of co-culture and mechanical stimulation in supporting ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3543
+    },
+    {
+      "block_id": "p1:22",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{*} $Address correspondence to these authors at the Key Laboratory of Biologi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:23",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2212-3946/20 $65.00+.00 © 2020 Bentham Science Publishers",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Co-culture and Mechanical Stimulation on Mesenchymal Stem Cells",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Current Stem Cell Research & Therapy, 2020, Vol. 15, No. 1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "55",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9422
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ronment is a potential approach that cannot be ignored in the development of car",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4080
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "2. THE CHONDROCYTES AND MESENCHYMAL STEM CELLS FOR ARTICULAR CARTILAGE TISSUE EN",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The available cells of good quality are the premise for articular cartilage tiss",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4219
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.1. Chondrocytes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4432
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.2. Mesenchymal Stem Cells",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4454
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mesenchymal stem cells are the subpopulations of cells with strong proliferative",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4482
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3. CO-CULTURE OF MESENCHYMAL STEM CELLS WITH CHONDROCYTES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7020
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Recently, the co-culture of stem cells and mature cells was shown to induce stem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7078
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.1. The Effects of Co-Culture on Chondrocytes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8187
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The method of mesenchymal stem cells co-culture with chondrocytes can maintain t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8234
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "56",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9537
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Current Stem Cell Research & Therapy, 2020, Vol. 15, No. 1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chen et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and cartilaginous extracellular matrix secretion by RhoA/ROCK signaling [48]. Th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9243
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.2. The Effects of Co-Culture on Mesenchymal Stem Cells",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9722
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The method of mesenchymal stem cells co-culture with chondrocytes can induce cho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9779
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "However, the function of the co-culture system remains controversial. The reason",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11624
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4. THE EFFECT OF MECHANICAL STIMULATION ON CHONDROCYTES AND MESENCHYMAL STEM CEL",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12197
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mechanical stimulation plays a significant factor in the development of articula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12280
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mechanical stimulation regulates gene expression, thereby promoting chondrog",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14075
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The specific fluid flows shear mechanical stimulation and stretch stress mechani",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14673
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The different forms of compression mechanical stimulation can induce the chondro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15612
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Co-culture and Mechanical Stimulation on Mesenchymal Stem Cells",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Current Stem Cell Research & Therapy, 2020, Vol. 15, No. 1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "57",
+      "found_in_fulltext": true,
+      "fulltext_offset": 320
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mechanical stimulation of cyclic unconfined compressive loading, same as the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15797
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. COMBINED WITH CO-CULTURE AND MECHANICAL STIMULATION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21525
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "As mentioned above, the co-culture of mesenchymal stem cells with chondrocytes c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17245
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CONCLUSION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19042
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage has an important bearing capacity, and damaged cartilage has",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19053
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CONSENT FOR PUBLICATION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20013
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Not applicable.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "FUNDING",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20040
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This study was supported by the National Natural Science Foundation of China (11",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20048
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CONFLICT OF INTEREST",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20324
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ACKNOWLEDGEMENTS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20417
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Declared none.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "REFERENCES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20437
+    },
+    {
+      "block_id": "p4:17",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[1] Correa D, Lietman SA. Articular cartilage repair: Current needs, methods and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20448
+    },
+    {
+      "block_id": "p4:18",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1016/j.semcdb.2016.07.013] [PMID: 27422331]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21938
+    },
+    {
+      "block_id": "p4:19",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[2] Montgomery SR, Foster BD, Ngo SS, et al. Trends in the surgical treatment of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20587
+    },
+    {
+      "block_id": "p4:20",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[3] McCormick F, Harris JD, Abrams GD, et al. Trends in the surgical treatment o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20850
+    },
+    {
+      "block_id": "p4:21",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1016/j.arthro.2013.11.001] [PMID: 24485115]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21872
+    },
+    {
+      "block_id": "p4:22",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[4] Simon TM, Jackson DW. Articular cartilage: Injury pathways and treatment opt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21086
+    },
+    {
+      "block_id": "p4:23",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[5] Liu C, Li T, Yang Z, et al. Kartogenin enhanced chondrogenesis in cocultures",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21287
+    },
+    {
+      "block_id": "p4:24",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1089/ten.tea.2017.0162] [PMID: 29281950]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21462
+    },
+    {
+      "block_id": "p4:25",
+      "page": 4,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[6] Cooke ME, Allon AA, Cheng T, et al. Structured three-dimensional co-culture ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21580
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "58",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10073
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Current Stem Cell Research & Therapy, 2020, Vol. 15, No. 1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Chen et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[7] Mitchell AC, Briquez PS, Hubbell JA, Cochran JR. Engineering growth factors ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22083
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1016/j.actbio.2015.11.007] [PMID: 26555377]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29815
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[8] Middendorf JM, Griffin DJ, Shortkroff S, et al. Mechanical properties and st",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22293
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/jor.23535] [PMID: 28169453]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29643
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[9] Steward AJ, Kelly DJ. Mechanical regulation of mesenchymal stem cell differe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22514
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[10] Xie Y, Liu X, Wang S, Wang M, Wang G. Proper mechanical stimulation improve",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22688
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[11] Baghaban Eslaminejad M, Malakooty Poor E. Mesenchymal stem cells as a poten",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22992
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[nttp://dx.doi.org/10.4252/wjsc.v6.i3.344] [PMID: 25126383]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30001
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[12] Brittberg M, Gomoll AH, Canseco JA, Far J, Lind M, Hui J. Cartilage repair ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23163
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/jcp.26020] [PMID: 28548713]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29533
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[13] Zhang Y, Guo W, Wang M, et al. Co-culture systems-based strategies for arti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23361
+    },
+    {
+      "block_id": "p5:14",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[14] Mall NA, Harris JD, Cole BJ. Clinical evaluation and preoperative planning ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23513
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[15] Shafiee A, Kabiri M, Langroudi L, Soleimani M, Ai J. Evaluation and compari",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23743
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[16] Musumeci G, Castrogiovanni P, Leonardi R, et al. New perspectives for artic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24054
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[17] Mobasheri A, Kalamegam G, Musumeci G, Batt ME. Chondrocyte and mesenchymal ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24308
+    },
+    {
+      "block_id": "p5:18",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[18] Kuo CK, Li WJ, Mauck KL, Tuan RS. Cartilage tissue engineering. Its potenti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24586
+    },
+    {
+      "block_id": "p5:19",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[19] Tuan RS, Chen AF, Klatt BA. Cartilage regeneration. J Am Acad Orthop Surg 2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24791
+    },
+    {
+      "block_id": "p5:20",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[20] de Windt TS, Vonk LA, Slaper-Cortenbach IC, et al. Allogeneic mesenchymal s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24952
+    },
+    {
+      "block_id": "p5:21",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[21] Park YB, Song M, Lee CH, Kim JA, Ha CW. Cartilage repair by human umbilical",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25268
+    },
+    {
+      "block_id": "p5:22",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/jor.22950] [PMID: 26019012]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29588
+    },
+    {
+      "block_id": "p5:23",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[22] Wang L, Hou P, Jiang T, Wang ZB, Zhao YX, Wu K. Different sources of mesenc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25467
+    },
+    {
+      "block_id": "p5:24",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[23] Mishra PJ, Banerjee D. Activation and differentiation of mesenchymal stem c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25672
+    },
+    {
+      "block_id": "p5:25",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[24] Harrell CR, Jankovic MG, Fellabaum C, et al. Molecular mechanisms responsib",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25860
+    },
+    {
+      "block_id": "p5:26",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "effects of mesenchymal stem cell-derived factors. Adv Exp Med Biol 2019; 1084: 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30061
+    },
+    {
+      "block_id": "p5:27",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1007/5584_2018_306] [PMID: 31175638]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29756
+    },
+    {
+      "block_id": "p5:28",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[25] Ullah I, Subbarao RB, Rho GJ. Human mesenchymal stem cells - current trends",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25987
+    },
+    {
+      "block_id": "p5:29",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1042/BSR20150025] [PMID: 25797907]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29881
+    },
+    {
+      "block_id": "p5:30",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[26] Tan AR, Hung CT. Concise review: Mesenchymal stem cells for functional cart",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26120
+    },
+    {
+      "block_id": "p5:31",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/sctm.16-0271] [PMID: 28177194]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29698
+    },
+    {
+      "block_id": "p5:32",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[27] Moghadam FH, Tayebi T, Dehghan M, et al. Differentiation of bone marrow mes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26317
+    },
+    {
+      "block_id": "p5:33",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[28] Szychlinska MA, Castrogiovanni P, Nsir H, et al. Engineered cartilage regen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26549
+    },
+    {
+      "block_id": "p5:34",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[29] Musumeci G, Mobasheri A, Trovato FM, et al. Biosynthesis of collagen I, II,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26865
+    },
+    {
+      "block_id": "p5:35",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[30] Araki S, Imai S, Ishigaki H, et al. Improved quality of cartilage repair by",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27144
+    },
+    {
+      "block_id": "p5:36",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[31] Lee JM, Ko JY, Kim HY, Park JW, Guilak F, Im GI. miR-892b Inhibits Hypertro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27431
+    },
+    {
+      "block_id": "p5:37",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[32] Richardson SM, Kalamegam G, Pushparaj PN, et al. Mesenchymal stem cells in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27624
+    },
+    {
+      "block_id": "p5:38",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[33] Ridge SM, Sullivan FJ, Glynn SA. Mesenchymal stem cells: Key players in can",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27884
+    },
+    {
+      "block_id": "p5:39",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[34] Meretoja VV, Dahlin RL, Kasper FK, Mikos AG. Enhanced chondrogenesis in co-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28072
+    },
+    {
+      "block_id": "p5:40",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[35] Meretoja VV, Dahlin RL, Wright S, Kasper FK, Mikos AG. The effect of hypoxi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28324
+    },
+    {
+      "block_id": "p5:41",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[36] Meretoja VV, Dahlin RL, Wright S, Kasper FK, Mikos AG. Articular chondrocyt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28629
+    },
+    {
+      "block_id": "p5:42",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1089/ten.tec.2013.0532] [PMID: 24387702]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29938
+    },
+    {
+      "block_id": "p5:43",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[37] Dahlin RL, Kinard LA, Lam J, et al. Articular chondrocytes and mesenchymal ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28821
+    },
+    {
+      "block_id": "p5:44",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[38] Dahlin RL, Ni M, Meretoja VV, Kasper FK, Mikos AG. TGF- $ \\beta $3-induced ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:45",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[39] Amann E, Wolff P, Breel E, van Griensven M, Balmayor ER. Hyaluronic acid fa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29403
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Co-culture and Mechanical Stimulation on Mesenchymal Stem Cells",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Current Stem Cell Research & Therapy, 2020, Vol. 15, No. 1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "59",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10539
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "human adipose derived mesenchymal stem cells and human chondrocytes co-cultures.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38357
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1016/j.actbio.2017.01.064] [PMID: 28131943]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37921
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[40] Liu Y, Chan JK, Teoh SH. Review of vascularised bone tissue engineering str",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30165
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/term.1617] [PMID: 23166000]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37693
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[41] Hong S, Pan Q, Lee LP. Single-cell level co-culture platform for intercellu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30332
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[42] Paschos NK, Brown WE, Eswaramoorthy R, Hu JC, Athanasiou KA. Advances in ti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30519
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[43] Shi S, Xie J, Zhong J, et al. Effects of low oxygen tension on gene profile",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30750
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[44] Zhang F, Su K, Fang Y, Sandhya S, Wang DA. A mixed co-culture of mesenchyma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31008
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/term.1641] [PMID: 23166064]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37748
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[45] Wu L, Leijten JC, Georgi N, Post JN, van Blitterswijk CA, Karperien M. Trop",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31226
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1089/ten.tea.2010.0517] [PMID: 21247341]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37987
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[46] Acharya C, Adesida A, Zajac P, et al. Enhanced chondrocyte proliferation an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31442
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/jcp.22706] [PMID: 22025108]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37638
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[47] Wu L, Leijten J, van Blitterswijk CA, Karperien M. Fibroblast growth factor",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31660
+    },
+    {
+      "block_id": "p6:17",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[48] Xu L, Wu Y, Xiong Z, Zhou Y, Ye Z, Tan WS. Mesenchymal Stem Cells Reshape a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31958
+    },
+    {
+      "block_id": "p6:18",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[49] Nazempour A, Van Wie BJ. Chondrocytes, mesenchymal stem cells, and their co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32192
+    },
+    {
+      "block_id": "p6:19",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[50] Shi J, Liang J, Guo B, et al. Adipose-derived stem cells cocultured with ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32428
+    },
+    {
+      "block_id": "p6:20",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1155/2017/1709582] [PMID: 28133485]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38168
+    },
+    {
+      "block_id": "p6:21",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[51] Hubka KM, Dahlin RL, Meretoja VV, Kasper FK, Mikos AG. Enhancing chondrogen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32595
+    },
+    {
+      "block_id": "p6:22",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[52] McCorry MC, Puetzer JL, Bonassar LJ. Characterization of mesenchymal stem c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32908
+    },
+    {
+      "block_id": "p6:23",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1186/s13287-016-0301-8] [PMID: 26971202]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38226
+    },
+    {
+      "block_id": "p6:24",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[53] Sabatino MA, Santoro R, Gueven S, et al. Cartilage graft engineering by co-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33150
+    },
+    {
+      "block_id": "p6:25",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/term.1661] [PMID: 23225781]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37803
+    },
+    {
+      "block_id": "p6:26",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[54] Wu L, Prins HJ, Helder MN, van Blitterswijk CA, Karperien M. Trophic effect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33359
+    },
+    {
+      "block_id": "p6:27",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "JAN",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37579
+    },
+    {
+      "block_id": "p6:28",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[55] Liu Y, Zou R, Wang Z, Wen C, Zhang F, Lin F. Exosomal KLF3-AS1 from hMSCs p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33594
+    },
+    {
+      "block_id": "p6:29",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[56] Zahari W, Hashim SN, Yusof MF, et al. Immunomodulatory effect of cytokines ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33839
+    },
+    {
+      "block_id": "p6:30",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[57] Fontaine MJ, Shih H, Schäfer R, Pittenger MF. Unraveling the Mesenchymal St",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34096
+    },
+    {
+      "block_id": "p6:31",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[58] Qing C, Wei-ding C, Wei-min F. Co-culture of chondrocytes and bone marrow m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34326
+    },
+    {
+      "block_id": "p6:32",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1590/S0100-879X2011000400006] [PMID:21487642]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38289
+    },
+    {
+      "block_id": "p6:33",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[59] Li X, Duan L, Liang Y, Zhu W, Xiong J, Wang D. Human umbilical cord blood-d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34552
+    },
+    {
+      "block_id": "p6:34",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1155/2016/3827057] [PMID: 27446948]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34755
+    },
+    {
+      "block_id": "p6:35",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[60] Tang X, Sheng L, Xie F, Zhang Q. Differentiation of bone marrow-derived mes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34813
+    },
+    {
+      "block_id": "p6:36",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[61] Aung A, Gupta G, Majid G, Varghese S. Osteoarthritic chondrocyte-secreted m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35047
+    },
+    {
+      "block_id": "p6:37",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/art.30086] [PMID: 20954186]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37583
+    },
+    {
+      "block_id": "p6:38",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[62] Zhong L, Huang X, Karperien M, Post JN. The regulatory role of signaling cr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35243
+    },
+    {
+      "block_id": "p6:39",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[63] Nasrabadi D, Rezaeiani S, Eslaminejad MB, Shabani A. Improved protocol for ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35484
+    },
+    {
+      "block_id": "p6:40",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1007/s12015-018-9816-y] [PMID: 29691795]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37858
+    },
+    {
+      "block_id": "p6:41",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[64] Pleumeekers MM, Nimeskern L, Koevoet JLM, Karperien M, Stok KS, van Osch GJ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35753
+    },
+    {
+      "block_id": "p6:42",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[65] Goers L, Freemont P, Polizzi KM. Co-culture systems and technologies: takin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36015
+    },
+    {
+      "block_id": "p6:43",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1098/rsif.2014.0065] [PMID: 24829281]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38050
+    },
+    {
+      "block_id": "p6:44",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[66] Juhász T, Matta C, Somogyi C, et al. Mechanical loading stimulates chondrog",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36234
+    },
+    {
+      "block_id": "p6:45",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[67] Khozoee B, Mafi P, Mafi R, Khan WS. Mechanical stimulation protocols of hum",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36492
+    },
+    {
+      "block_id": "p6:46",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[68] Fahy N, Alini M, Stoddart MJ. Mechanical stimulation of mesenchymal stem ce",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36767
+    },
+    {
+      "block_id": "p6:47",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[69] O'Conor CJ, Case N, Guilak F. Mechanical regulation of chondrogenesis. Stem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36949
+    },
+    {
+      "block_id": "p6:48",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[70] Musumeci G, Loreto C, Imbesi R, et al. Advantages of exercise in rehabilita",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37113
+    },
+    {
+      "block_id": "p6:49",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[71] Ford CA, Nowlan NC, Thomopoulos S, Killian ML. Effects of imbalanced muscle",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37359
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "60",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10636
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Current Stem Cell Research & Therapy, 2020, Vol. 15, No. 1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Chen et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[72] Steinecker-Frohnwieser B, Kaltenegger H, Weigl L, et al. Pharmacological tr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38486
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1016/j.bbrep.2017.06.006] [PMID: 28955780]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41831
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[73] Ouyang X, Xie Y, Wang G. Mechanical stimulation promotes the proliferation ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38728
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1016/j.biopha.2019.109146] [PMID: 31387186] [74] Szychlins",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41896
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[74] Szychlinska MA, Stoddart MJ, D'Amora U, Ambrosio L, Alini M, Musumeci G. Me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38938
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[75] Zhong W, Tian K, Zheng X, et al. Mesenchymal stem cell and chondrocyte fate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39246
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "http://dx.doi.org/10.1089/scd.2012.0685 [PMID: 23442010]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42147
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[76] Hosseini MS, Tafazzoli-Shadpour M, Haghighipour N, Aghdami N, Goodarzi A. T",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39435
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[77] Bao X, Li Z, Liu H, et al. Stimulation of chondrocytes and chondroinduced m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39750
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[78] Yang ZQ, Men YX. [Effect of equiaxial tensile strain in early differentiati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40008
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[79] Huang CY, Hagar KL, Frost LE, Sun Y, Cheung HS. Effects of cyclic compressi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40196
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1634/stemcells.22-3-313][PMID:15153608]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42085
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[80] Guo T, Yu L, Lim CG, et al. Effect of dynamic culture and periodic compress",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40391
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[81] Remya NS, Nair PD. Mechanoresponsiveness of human umbilical cord mesenchyma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40640
+    },
+    {
+      "block_id": "p7:17",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1002/jbm.a.35792] [PMID: 27227673]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41774
+    },
+    {
+      "block_id": "p7:18",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[82] Zamanlui S, Amirabad LM, Soleimani M, Faghihi S. Influence of hydrodynamic ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40855
+    },
+    {
+      "block_id": "p7:19",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[83] Vining KH, Mooney DJ. Mechanical forces direct stem cell behaviour in devel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41148
+    },
+    {
+      "block_id": "p7:20",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[http://dx.doi.org/10.1038/nrm.2017.108] [PMID: 29115301]",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42027
+    },
+    {
+      "block_id": "p7:21",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[84] Jeong JY, Park SH, Shin JW, Kang YG, Han KH, Shin JW. Effects of intermitte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41295
+    },
+    {
+      "block_id": "p7:22",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[85] Chen CH, Kuo CY, Chen JP. Effect of cyclic dynamic compressive loading on c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41532
+    }
+  ]
+}

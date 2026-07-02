@@ -1,0 +1,2197 @@
+{
+  "mappable_block_count": 219,
+  "found_count": 179,
+  "missing_count": 40,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239 https://doi.org/10.1186/s1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Journal of Nanobiotechnology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 321
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "RESEARCH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Piezoelectric scaffold with enhanced effect drives the healing of osteochondral ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Xin Liu $ ^{1,2*} $ $ ^{\\dagger} $, Congyang Xue $ ^{1,2} $ $ ^{\\dagger} $, Jun ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{\\dagger} $Xin Liu, Congyang Xue and Jun Guo contributed equally to this work",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "footnote",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Full list of author information is available at the end of the article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "© The Author(s) 2026. Open Access This article is licensed under a Creative Comm",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 2 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Keywords Magnetic nanoparticles, Silk fibroin scaffold, Piezoelectric effect, Os",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2540
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteochondral defects (OCD) are one of the leading causes of pain, disability an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2553
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "At present, a number of naturals or synthetic polymers have been used to develop",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3924
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In recent years, piezoelectric materials with force-electric conversion function",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6027
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 3 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "crystal units indicates that the silk fibroin has a piezoelectric effect [26]. P",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8193
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Based on this, we innovatively propose combining magnetic nanoparticles (MNPs) w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9592
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Materials and materials γ-Fe₂O₃@PSC preparation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12135
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "First, 168 mg of Polyethylene sorbitol carboxymethyl ether is weighed and added ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12183
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 4 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Silk fibroin scaffold (SFC) preparation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13808
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The SF solution was extracted, purified and concentrated according to the previo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13848
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Preparation of SFC with enhanced piezoelectric effect",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14916
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The $ \\gamma $-Fe $ _{2} $O $ _{3} $@PSC (121.4 mg, Jiangsu Key Laboratory of Bi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 5 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "in the mixture for 12 h, forming a stable amide-bonded structure through covalen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15411
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Structural characterization of enhanced SF piezoelectric scaffold",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15836
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The surface morphology of the enhanced piezoelectric scaffold was observed by sc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15902
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1 Composition and abbreviation of each samples",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition, XRD patterns of SFC, FENS and FENS@MF were tested by XRD diffractom",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17512
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cytological research of SF enhanced piezoelectric scaffold optimization",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17838
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The $ \\gamma $-Fe $ _{2} $O $ _{3} $@PSC, FEN20, FEN50, FEN100 samples were firs",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 6 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mechanical properties",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20305
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "An MTS Criterion Test system (MTS, Model 42, USA) was used to test the mechanica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20327
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In vitro degradation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20798
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Each sample was prepared in 24-well cell culture plates, and 1 mL (8%) sample so",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20819
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ Weight remaining(\\%)=W2/W1\\times100\\% $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(1)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21942
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Swelling behavior",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21951
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Refer to 2.7 for the preparation model of sample scaffolds for each group. The s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21969
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ Swelling ratio (\\%)=(W2-W1)/W1\\times100\\% $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(2)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22522
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Magnetic responsiveness",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22531
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The magnetic responses of SFC and FENS were evaluated using a vibrating sample m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22555
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Piezoelectric properties",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22904
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The piezoelectric properties of each scaffold were measured by D33 and homemade ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22929
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cytotoxicity test in vitro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24254
+    },
+    {
+      "block_id": "p6:17",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The piezoelectric scaffold for each group (SFC, FENS, FENS@MF) was prepared by a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24281
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 7 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and cytoskeleton system, respectively. For Edu staining, follow the manufacturer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25231
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "For the BMSCs experiment, the suspension of BMSCs with a density of $ 1 \\times 1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Chondrogenic and osteogenic differentiation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27073
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The cell supernatant (2 d) was collected using the 2.11 culture method described",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27117
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Furthermore, BMSCs were co-cultured with different piezoelectric scaffolds (SFC,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27698
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Angiogenesis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28732
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Rat vascular endothelial cells (ECs) were co-cultured in a 6-well plate with a d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28745
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Animal experiment",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30344
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Animal model construction and processing: All animal experiments were performed ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30362
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 8 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Hospital (Ethical Lot Number: 2022-LWKYS-046). The experimental procedures were ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30747
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Macroscopic observation, microscopic computed tomography (Micro-CT), and histolo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31403
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Statistical analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33256
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All quantitative data are expressed as the mean±standard deviation (SD). Differe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33277
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results Optimization analysis of the concentration of f magnetic nanoparticles (",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33655
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "screened so that the constructed piezoelectric scaffold can perform the best rep",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33741
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 9 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "performed SEM-EDS analysis of the spatial structure of the scaffold. As shown in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36336
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Preparation and characterization of silk fibroin enhanced piezoelectric scaffold",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37300
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The piezoelectric scaffolds were prepared by freeze-drying technology and includ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37382
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 10 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "are consistent with SFC and $ \\gamma $-Fe $ _{2} $O $ _{3} $@PSC. After the acti",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The osteochondral repair period is usually longer, generally more than 3 months.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40270
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 11 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "of each group of piezoelectric scaffolds was evaluated by immersing them in a co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40704
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Piezoelectric effect analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42302
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To investigate the enhanced piezoelectricity of FENS@MF, we measured it with a D",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42332
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In vitro cytotoxicity evaluation analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43739
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Chondrocytes (ATDC5) and bone marrow mesenchymal stem cells (BMSCs), as importan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43781
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Furthermore, BMSCs cells were used to investigate the toxic effects of piezoelec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45044
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Finally, we further evaluate enhanced piezoelectric scaffolds' safety and potent",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46085
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 12 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "d, the cell proliferation was not obvious, which may be due to the fast growth r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46434
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Analysis of regulating chondrogenic and osteogenic differentiation of BMSCs thro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46915
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Subsequently, we further investigated the effect of piezoelectric scaffolds on c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47007
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Next, the osteogenic differentiation of BMSCs via piezoelectric scaffolds was fu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49137
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Angiogenesis analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50854
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Bone cartilage consists of hard bone tissue and cartilage tissue, in which the s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50876
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 13 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:21",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "proliferating cell nuclear antigen (PCNA) (Fig. 5H–I) expression is higher than ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52048
+    },
+    {
+      "block_id": "p13:22",
+      "page": 13,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Phenotypic analysis of macrophages",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52220
+    },
+    {
+      "block_id": "p13:23",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "OCD are usually accompanied by a sharp deterioration of the inflammatory microen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52255
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 14 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:13",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "expression level of TNF- $ \\alpha $ decreased in SFC, FENS, and FENS@MF samples,",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 15 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "conditions, while sham surgery, models, and autologous transplantation (ATPT) gr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54458
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Macroscopic observation In general, at 4 w after the operation, the structure of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54561
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 16 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "non-degradation state of the piezoelectric scaffolds can be observed in the SFC,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55054
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Micro-CT analyses The 1.5 mm profound osteochondral defect in rats involved the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55761
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Histological analyses Histological staining (HE, Safranin O&Fast Green, Masson, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58426
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "At 4 w after the operation, large defect space and less new tissue were still ob",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59863
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 17 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "obviously observed that a large number of new collagen fibers represent new bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60978
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 18 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "in the SFC and FENS groups (yellow region) than in the other groups (Model, ATPT",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61703
+    },
+    {
+      "block_id": "p18:3",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Immunohistochemistry analyses Type I and type II collagen immunohistochemical st",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64036
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65683
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Bone tissue engineering is considered to be one of the most promising therapeuti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65694
+    },
+    {
+      "block_id": "p18:7",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Among the many electroactive materials [42], piezoelectric materials have attrac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66336
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MNPs are widely used in clinical and preclinical experimental studies due to the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67340
+    },
+    {
+      "block_id": "p19:0",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p19:1",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 19 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:16",
+      "page": 19,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "the composite scaffold [33]. We successfully constructed FENS@MF scaffolds by mi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67580
+    },
+    {
+      "block_id": "p19:17",
+      "page": 19,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The SFC itself have a weak piezoelectric effect, and although many researchers h",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68299
+    },
+    {
+      "block_id": "p20:0",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p20:1",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 20 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:2",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "form a local electromagnetic field in the magnetic field (MF), which generates a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69578
+    },
+    {
+      "block_id": "p20:3",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "With these methods from in vitro studies, we expected that the FENS@MF scaffold ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72377
+    },
+    {
+      "block_id": "p20:5",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To the best of our knowledge, this is the first time that the combination of SFC",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74058
+    },
+    {
+      "block_id": "p20:6",
+      "page": 20,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75153
+    },
+    {
+      "block_id": "p20:7",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This study developed a magnetic nanoparticle-enhanced silk fibroin scaffold (FEN",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75164
+    },
+    {
+      "block_id": "p21:0",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p21:1",
+      "page": 21,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 21 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:2",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "via EDC/NHS crosslinking, FENS@MF achieved a 3-fold increase in tensile strength",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75467
+    },
+    {
+      "block_id": "p21:3",
+      "page": 21,
+      "role": "backmatter_boundary_candidate",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Supplementary Information",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76707
+    },
+    {
+      "block_id": "p21:4",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "The online version contains supplementary material available at https://doi.org/",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76733
+    },
+    {
+      "block_id": "p21:5",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Supplementary Material 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76841
+    },
+    {
+      "block_id": "p21:6",
+      "page": 21,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Author contributions",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:7",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Xin Liu: Experimental procedures included material characterization and cell cul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76866
+    },
+    {
+      "block_id": "p21:8",
+      "page": 21,
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Funding",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77005
+    },
+    {
+      "block_id": "p21:9",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The research was supported by the Natural Science Foundation of Jiangsu Province",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77705
+    },
+    {
+      "block_id": "p21:10",
+      "page": 21,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Data availability",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:11",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Data will be made available on request.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78621
+    },
+    {
+      "block_id": "p21:12",
+      "page": 21,
+      "role": "backmatter_boundary_candidate",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Declarations Ethics approval and consent to participate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78661
+    },
+    {
+      "block_id": "p21:14",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The handling of animals followed the relevant provisions of the Regulations on t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78717
+    },
+    {
+      "block_id": "p21:15",
+      "page": 21,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Consent for publication",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79031
+    },
+    {
+      "block_id": "p21:16",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All authors have provided consent for the manuscript to be published in Journal ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79055
+    },
+    {
+      "block_id": "p21:17",
+      "page": 21,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Competing interests",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79162
+    },
+    {
+      "block_id": "p21:18",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The authors declare no competing interests.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79182
+    },
+    {
+      "block_id": "p21:19",
+      "page": 21,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Author details",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79231
+    },
+    {
+      "block_id": "p21:20",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "¹The Third Clinical Medical College, Nanjing University of Chinese Medicine, Nan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79246
+    },
+    {
+      "block_id": "p21:21",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Received: 31 July 2025 / Accepted: 31 January 2026",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79956
+    },
+    {
+      "block_id": "p21:23",
+      "page": 21,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80045
+    },
+    {
+      "block_id": "p21:24",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Li Y, Zhang H, Jiang Y, Yang J, Cai D, Bai X. The application of extracellula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80056
+    },
+    {
+      "block_id": "p21:25",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Peng Y, Zhuang Y, Liu Y, Le H, Li D, Zhang M, et al. Bioinspired gradient sca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80215
+    },
+    {
+      "block_id": "p21:26",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Yao K, Gong G, Fu Z, Wang Y, Zhang L, Li G, et al. Synthesis and evaluation o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80378
+    },
+    {
+      "block_id": "p21:27",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Rui K, Tang X, Shen Z, Jiang C, Zhu Q, Liu S, et al. Exosome inspired photodi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80601
+    },
+    {
+      "block_id": "p21:28",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Zhang MN, Wei SS, Huang HQ, Sun HH, Zhang LP, Zhang WH et al. Tailorable fabr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80819
+    },
+    {
+      "block_id": "p21:29",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. H.Liu JCS. Organoid and organoid extracellular vesicles for osteoporotic frac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80995
+    },
+    {
+      "block_id": "p21:30",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Guo L, Liang Z, Yang L, Du W, Yu T, Tang H, et al. The role of natural polyme",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81171
+    },
+    {
+      "block_id": "p21:31",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Lv B, Lu L, Hu L, Cheng P, Hu Y, Xie X, et al. Recent advances in GelMA hydro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81318
+    },
+    {
+      "block_id": "p21:32",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Xue CY, Chen LP, Wang N, Chen H, Xu WQ. Stimulus-responsive hydrogels in bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81513
+    },
+    {
+      "block_id": "p21:33",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Titorencu I, Albu MG, Nemecz M, Jinga W. Natural Polymer-Cell bioconstructs ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81657
+    },
+    {
+      "block_id": "p21:34",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Hong H, Seo YB, Kim DY, Lee JS, Lee YJ, Lee H, et al. Digital light processi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81810
+    },
+    {
+      "block_id": "p21:35",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Mottaghitalab F, Hosseinkhani H, Shokrgozar MA, Mao C, Yang M, Farokhi M. Si",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81991
+    },
+    {
+      "block_id": "p21:36",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Wang Y, Kim HJ, Vunjak-Novakovic G, Kaplan DL. Stem cell-based tissue engine",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82164
+    },
+    {
+      "block_id": "p22:0",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Liu et al. Journal of Nanobiotechnology (2026) 24:239",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75413
+    },
+    {
+      "block_id": "p22:1",
+      "page": 22,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 22 of 22",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:2",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Lai GJ, Shalumon KT, Chen SH, Chen JP. Composite chitosan/silk fibroin nanof",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82445
+    },
+    {
+      "block_id": "p22:3",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Zheng H, Zuo B. Functional silk fibroin hydrogels: preparation, properties a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82661
+    },
+    {
+      "block_id": "p22:4",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Li F. Breaking symmetry for piezoelectricity. Science. 2022;375(6581):618–9.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82793
+    },
+    {
+      "block_id": "p22:5",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Yucel T, Cebe P, Kaplan DL. Structural origins of silk piezoelectricity. Adv",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:6",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Baker B, Spadaro J, Marino A, Becker RO. Electrical stimulation of articular",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:7",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Brighton CT, Wang W, Clark CC. The effect of electrical fields on gene and p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82874
+    },
+    {
+      "block_id": "p22:8",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Zuzzi DC, Ciccone Cde C, Neves LM, Mendonca JS, Joazeiro PP, Esquisatto MA. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83057
+    },
+    {
+      "block_id": "p22:9",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. de Campos Ciccone C, Zuzzi DC, Neves LM, Mendonca JS, Joazeiro PP, Esquisatt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83261
+    },
+    {
+      "block_id": "p22:10",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Zhang C, Zuo Y, Zhang T, Zhang X, Ling J, Liu C, et al. Advances in nanoscal",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83493
+    },
+    {
+      "block_id": "p22:11",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Haddad JB, Obolensky AG, Shinnick P. The biologic effects and the therapeuti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83696
+    },
+    {
+      "block_id": "p22:12",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Yi HG, Kang KS, Hong JM, Jang J, Park MN, Jeong YH, et al. Effects of electr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83958
+    },
+    {
+      "block_id": "p22:13",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Ferrigno B, Bordett R, Duraisamy N, Moskow J, Arul MR, Rudraiah S, et al. Bi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84167
+    },
+    {
+      "block_id": "p22:14",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Sencadas V, Garvey C, Mudie S, Kirkensgaard JJK, Gouadec G, Hauser S. Electr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84397
+    },
+    {
+      "block_id": "p22:15",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Maroudas A, Muir H, Wingham J. The correlation of fixed negative charge with",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84589
+    },
+    {
+      "block_id": "p22:16",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Lu Q, Huang Y, Li M, Zuo B, Lu S, Wang J, et al. Silk fibroin electrogelatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84769
+    },
+    {
+      "block_id": "p22:17",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Zhang D, Song J, Jing Z, Qin H, Wu Y, Zhou J, et al. Stimulus responsive nan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84898
+    },
+    {
+      "block_id": "p22:18",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Bai X, Zhou T, Wu X, Chang J, Wu X. Synthesis and application of selenium na",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85088
+    },
+    {
+      "block_id": "p22:19",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Chen B, Sun J, Fan F, Zhang X, Qin Z, Wang P, et al. Ferumoxytol of ultrahig",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85262
+    },
+    {
+      "block_id": "p22:20",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Zhong SY, Ribis J, Klosek V, de Carlan Y, Lochet N, Ji V, et al. Study of th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85467
+    },
+    {
+      "block_id": "p22:21",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Liu X, Sun Y, Chen B, Li Y, Zhu P, Wang P, et al. Novel magnetic silk fibroi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85691
+    },
+    {
+      "block_id": "p22:22",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Wang Q, Chen B, Ma F, Lin S, Cao M, Li Y, et al. Erratum to: Magnetic iron o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85882
+    },
+    {
+      "block_id": "p22:23",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Zanganeh S, Hutter G, Spitler R, Lenkov O, Mahmoudi M, Shaw A, et al. Iron o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86117
+    },
+    {
+      "block_id": "p22:24",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. Ling TT, et al. Cell development enhanced bionic silk hydrogel on remodeling",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86347
+    },
+    {
+      "block_id": "p22:25",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. Wang Z, Wang L, Li S, Chen X, Chen B, Lou Z, et al. Crosslinking stabilizati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86543
+    },
+    {
+      "block_id": "p22:26",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Chen K, Wang F, Sun X, Ge W, Zhang M, Wang L, et al. 3D-printed zinc oxide n",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86745
+    },
+    {
+      "block_id": "p22:27",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. Mazziotti G, Lania AG, Canalis E. Skeletal disorders associated with the gro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87007
+    },
+    {
+      "block_id": "p22:28",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40. Jarkov V, Allan S, Bowen C, Khanbareh H. Piezoelectric materials and systems",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87177
+    },
+    {
+      "block_id": "p22:29",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41. Li B, Ma Y, Fatima K, Zhou X, Gu X, Chen S, et al. 3D printed shape-memory p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87385
+    },
+    {
+      "block_id": "p22:30",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42. Wu Y, Zou J, Tang K, Xia Y, Wang X, Song L, et al. From electricity to vital",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87581
+    },
+    {
+      "block_id": "p22:31",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "43. Yue X, Wang Z, Shi H, Wu R, Feng Y, Yuan L, et al. Silk fibroin-based piezoe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87765
+    },
+    {
+      "block_id": "p22:32",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "44. Wang N, Xie Y, Xi Z, Mi Z, Deng R, Liu X, et al. Hope for bone regeneration:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87938
+    },
+    {
+      "block_id": "p22:33",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "45. Caspani S, Fernández-Alonso FJ, Gonçalves SM, Martín-Morales C, Cortes-Llano",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88105
+    },
+    {
+      "block_id": "p22:34",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "46. Xu F, Zhao G, Gong Y, Liang X, Yu M, Cui H, et al. Enhancement of osseointeg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88431
+    },
+    {
+      "block_id": "p22:35",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "47. Wu D, Chang X, Tian J, Kang L, Wu Y, Liu J, et al. Bone mesenchymal stem cel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88648
+    },
+    {
+      "block_id": "p22:36",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "48. Zhang X, Li Q, Li L, Ouyang J, Wang T, Chen J, et al. Bioinspired mild photo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88902
+    },
+    {
+      "block_id": "p22:37",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "49. Yao Y, Cui X, Ding S, Wang K, Zhang M. Advances in electrical materials for ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89097
+    },
+    {
+      "block_id": "p22:38",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "50. Tian G, Yin H, Zheng J, Yu R, Ding Z, Yan Z, et al. Promotion of osteochondr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89293
+    },
+    {
+      "block_id": "p22:39",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "51. Liu D, Liu J, Zhao P, Peng Z, Geng Z, Zhang J, et al. 3D bioprinted Tissue-E",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89555
+    },
+    {
+      "block_id": "p22:40",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "52. Liu X, Li Y, Sun Y, Chen B, Du W, Li Y, et al. Construction of functional ma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89824
+    },
+    {
+      "block_id": "p22:41",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "53. Wang N, Yang S, Shi H, Song Y, Sun H, Wang Q, et al. Magnesium alloys for or",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90018
+    },
+    {
+      "block_id": "p22:42",
+      "page": 22,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "54. Wang Y, Chen Y, Zhou T, Li J, Zhang N, Liu N, et al. A novel multifunctional",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90211
+    },
+    {
+      "block_id": "p22:43",
+      "page": 22,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Publisher's note",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90499
+    },
+    {
+      "block_id": "p22:44",
+      "page": 22,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Springer Nature remains neutral with regard to jurisdictional claims in publishe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82326
+    }
+  ]
+}

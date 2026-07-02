@@ -34,7 +34,7 @@ def score_reference_entry(text: str) -> dict:
     has_vol_pages = bool(re.search(r"\b\d+\s*\(\d+\)\s*:\s*[A-Za-z0-9\-]+", text) or re.search(r"\b\d+\s*:\s*[A-Za-z0-9\-]+", text))
     has_online = any(token in lower for token in ("[internet]", "available from", "doi:", "pmid:", "pmcid:", "published online", "cited "))
     has_report_markers = any(token in lower for token in ("guideline", "organization", "committee", "available from")) or "[internet]" in lower
-    has_number_lead = bool(re.match(r"^\s*(\[\d+\]|\d+[\.)]?)(\s+|$)", text))
+    has_number_lead = bool(re.match(r"^\s*(\(\d+\)|\[\d+\]|\d+[\.\)]?)(\s+|$)", text))
     journal_match = _has_journal_match(text)
 
     family = "unknown"
@@ -57,5 +57,6 @@ def score_reference_entry(text: str) -> dict:
             "volume_issue_pages_signature": has_vol_pages,
             "online_marker_signature": has_online,
             "journal_lexicon_match": journal_match,
+            "number_lead": has_number_lead,
         },
     }

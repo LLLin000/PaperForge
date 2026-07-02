@@ -1,0 +1,2497 @@
+{
+  "mappable_block_count": 249,
+  "found_count": 210,
+  "missing_count": 39,
+  "rows": [
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Review",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40253
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Electrically Conductive Hydrogels for Articular Cartilage Tissue Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25454
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Filipe Miguel $ ^{1,2} $, Frederico Barbosa $ ^{1,2} $, Frederico Castelo Ferrei",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "iBB—Institute for Bioengineering and Biosciences and Department of Bioengineerin",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2 Associate Laboratory i4HB—Institute for Health and Bioeconomy, Instituto Super",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Academic Editors: Junfeng Shi and Fei Xu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "1. Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1611
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage (AC) is a highly complex and specialized connective tissue p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1627
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710. https://doi.org/10.3390/gels8110710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "https://www.mdpi.com/journal/gels",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "2 of 18",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "AC has a complex, multilayered structure, with each zone having different densit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3297
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The intrafibrillar water present within the tissue is able to move through the E",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3985
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteoarthritis (OA) is the most common degenerative joint disorder, characterize",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4935
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Pharmaceutical therapy is the most common option for OA treatment, and largely c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5643
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Considering the unmet medical need for the effective treatment of OA, cartilage ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6418
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Concerning the main cell sources used in CTE strategies, mesenchymal stem/stroma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7252
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "3 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38923
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "when compared to MSCs isolated from non-joint tissues [21–23]. Moreover, in rece",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7973
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Various growth factors and other bioactive molecules have been used as candidate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8339
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Hydrogels are highly absorbent polymer networks swollen in large quantities of w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9421
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Hydrogels for CTE strategies have been fabricated using both natural and synthet",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11897
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "4 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50607
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "mechanical loading), batch-to-batch variability, and difficult processability an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12609
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "These extensive customizable features alongside their native-like swelling prope",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12756
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1. Examples of hydrogels materials used as injectable systems for CTE appl",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "5 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56557
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1. Cont.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "One of the abovementioned biophysical cues is electrical stimulation, which has ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15277
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this review, a summary of the conductive biomaterials that have been utilized",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16090
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "6 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62735
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2. Electrical Properties of Articular Cartilage Tissue",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16469
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "AC has intrinsic electrical/electrochemical properties, derived from the flow of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16524
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3. Conductive Materials for Tissue Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17533
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A great variety of conductive materials can be implemented with hydrogels in ord",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17580
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "7 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68994
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "provide not only native-like physical properties, but are responsive to relevant",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17809
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.1. Metallic Nanoparticles",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18372
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Metallic nanoparticles are electrically conductive nanosized particles, with a m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18400
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 2. Properties and applications of metallic nanoparticles.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "8 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70932
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.2. Graphene-Based Materials and Carbon Nanotubes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20888
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Both graphene and carbon nanotubes (CNTs) are conductive materials with high ten",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20939
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CNTs are cylindrical shaped tubes with nanosized diameters. Due to their high te",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21895
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 3. Properties and applications of graphene and carbon nanotubes.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.3. Conductive Polymers",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23276
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conductive polymers are organic polymers with unique mechanical and optical prop",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23301
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "9 of 18",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "gies both as coating material and mixed with other biomaterials [123–126]. Our g",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24553
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 4. Properties and applications of main conductive polymers.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4. Electrically Conductive Hydrogels for Articular Cartilage Tissue Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25451
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The fabrication of hydrogels with different materials and properties as cartilag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25531
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The underlying mechanisms through which endogenous or external electrical stimul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26240
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "When designing conductive hydrogel scaffolds as cartilage substitutes, some para",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27632
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "10 of 18",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ibility. Despite literature on this topic being scarce, the existing results are",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27916
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Zhang et al., produced a poly(vinyl alcohol) (PVA) hydrogel combined with sodium",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28118
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In a different study, Shen and colleagues investigated the chondrogenic inducing",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29440
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3D printing allows layer-by-layer development of 3D structures and the fabricati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30906
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "11 of 18",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 5. Summary of research studies on electrically conductive hydrogels for AC",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "5. Challenges and Future Perspectives",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32558
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The promising results observed in the few studies developing electrically conduc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32596
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Another challenge limiting the application of conductive hydrogels in regenerati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34218
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "12 of 18",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "structures should be explored with high potential for introducing major advances",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34753
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Furthermore, a deeper understanding of the tissue's electrical properties is nec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34878
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "6. Conclusions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36579
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CTE has emerged as an exciting alternative to the current ineffective treatments",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36594
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, this review provides an overview of the most common conductive mater",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37039
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Author Contributions: Conceptualization: F.M., F.C.F. and J.C.S.; investigation:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38111
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Funding: The authors acknowledge funding from FCT—Portuguese Foundation for Scie",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38475
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data Availability Statement: Not applicable.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38860
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38922
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38934
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Bhosale, A.M.; Richardson, J.B. Articular cartilage: Structure, injuries and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38945
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Farooqi, A.R.; Bader, R.; van Rienen, U. Numerical Study on Electromechanics ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39099
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Brady, M.A.; Waldman, S.D.; Ethier, C.R. The Application of Multiple Biophysi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39305
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Sophia Fox, A.J.; Bedi, A.; Rodeo, S.A. The Basic Science of Articular Cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39550
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Sarma, A.V.; Powell, G.L.; LaBerge, M. Phospholipid composition of articular ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39716
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Weifeng, L.; Klein, J. Recent Progress in Cartilage Lubrication. Adv. Mater. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39872
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Mow, V.C.; Ratcliffe, A.; Robin Poole, A. Cartilage and diarthrodial joints a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39971
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Mow, V.C.; Holmes, M.H.; Lai, W.M. Fluid Transport and Mechanical Properties ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40147
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Wang, M.L.; Peng, Z.X. Wear in human knees. Biosurf. Biotribol. 2015, 1, 98–1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40303
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Goldring, S.R.; Goldring, M.B.; Goldring, S.R. Clinical aspects, pathology a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40398
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Plotnikoff, R.; Karunamuni, N.; Lytvyak, E.; Penfold, C.; Schopflocher, D.; ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40571
+    },
+    {
+      "block_id": "p13:14",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Gu, Y.-T.; Chen, J.; Meng, Z.-L.; Ge, W.-Y.; Bian, Y.-Y.; Cheng, S.-W.; Xing",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40804
+    },
+    {
+      "block_id": "p13:15",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Hunter, D.J.; Bierma-Zeinstra, S. Osteoarthritis. Lancet 2019, 393, 1745–175",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41034
+    },
+    {
+      "block_id": "p13:16",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Turkiewicz, A.; Petersson, I.F.; Björk, J.; Hawker, G.; Dahlberg, L.E.; Lohm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41128
+    },
+    {
+      "block_id": "p13:17",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Zhang, W.; Ouyang, H.; Dass, C.R.; Xu, J. Current research on pharmacologic ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41401
+    },
+    {
+      "block_id": "p13:18",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Bentley, G.; Biant, L.C.; Vijayan, S.; Macmull, S.; Skinner, J.A.; Carringto",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41565
+    },
+    {
+      "block_id": "p13:19",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Daher, R.J.; Chahine, N.O.; Greenberg, A.S.; Sgaglione, N.A.; Grande, D.A. N",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41884
+    },
+    {
+      "block_id": "p13:20",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Tuli, R.; Li, W.J.; Tuan, R.S. Current state of cartilage tissue engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42071
+    },
+    {
+      "block_id": "p13:21",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Tan, A.R.; Hung, C.T. Concise Review: Mesenchymal Stem Cells for Functional ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42203
+    },
+    {
+      "block_id": "p13:22",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Fellows, C.R.; Matta, C.; Zakany, R.; Khan, I.M.; Mobasheri, A. Adipose, bon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42415
+    },
+    {
+      "block_id": "p13:23",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Sakaguchi, Y.; Sekiya, I.; Yagishita, K.; Muneta, T. Comparison of Human Ste",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42615
+    },
+    {
+      "block_id": "p13:24",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Fan, J.; Varshney, R.R.; Ren, L.; Cai, D.; Wang, D.A. Synovium-Derived Mesen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42845
+    },
+    {
+      "block_id": "p13:25",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Silva, J.C.; Moura, C.S.; Borrecho, G.; Alves de Matos, A.P.; Cabral, J.M.S.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43057
+    },
+    {
+      "block_id": "p13:26",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Vinod, E.; Parameswaran, R.; Amirtham, S.M.; Rebekah, G.; Kachroo, U. Compar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43419
+    },
+    {
+      "block_id": "p13:27",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Diederichs, S.; Klampfleuthner, F.A.M.; Moradi, B.; Richter, W. Chondral Dif",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43736
+    },
+    {
+      "block_id": "p13:28",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Kim, M.; Erickson, I.E.; Choudhury, M.; Pleshko, N.; Mauck, R.L. Transient e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43962
+    },
+    {
+      "block_id": "p13:29",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Patel, J.M.; Saleh, K.S.; Burdick, J.A.; Mauck, R.L. Bioactive Factors for C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44199
+    },
+    {
+      "block_id": "p13:30",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Johnson, K.; Zhu, S.; Tremblay, M.S.; Payette, J.N.; Wang, J.; Bouchez, L.C.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44403
+    },
+    {
+      "block_id": "p13:31",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Van Beuningen, H.M.; Glansbeek, H.L.; van der Kraan, P.M.; van den Berg, W.B",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44624
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50606
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Spiller, K.L.; Maher, S.A.; Lowman, A.M. Hydrogels for the repair of articul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44904
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Wichterle, O.; Lim, D. Hydrophilic Gels for Biological Use. Nature 1960, 185",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45060
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Gong, J.P. Friction and lubrication of hydrogels—its richness and complexity",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45162
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Cukierman, E.; Pankov, R.; Stevens, D.R.; Yamada, K.M. Taking cell-matrix ad",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45286
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Izadifar, Z.; Chen, X.; Kulyk, W. Strategic Design and Fabrication of Engine",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45439
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Mow, V.C.; Guo, X. Mechano-electrical properties of articular cartilage: The",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45614
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. Lien, S.M.; Ko, L.Y.; Huang, T.J. Effect of pore size on ECM secretion and c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45784
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. Nava, M.M.; Draghi, L.; Giordano, C.; Pietrabissa, R. The effect of scaffold",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45983
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Bao, W.; Li, M.; Yang, Y.; Wan, Y.; Wang, X.; Bi, N.; Li, C.J. Advancements ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46172
+    },
+    {
+      "block_id": "p14:11",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. Sivashanmugam, A.; Kumar, R.A.; Priya, M.V.; Nair, S.V.; Jayakumar, R. An ov",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46382
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40. Lee, K.Y.; Mooney, D.J. Hydrogels for tissue engineering. Chem. Rev. 2001, 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46572
+    },
+    {
+      "block_id": "p14:13",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41. Melrose, J.; Chuang, C.; Whitelock, J. Tissue engineering of cartilages usin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46678
+    },
+    {
+      "block_id": "p14:14",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42. Bidarra, S.J.; Barrias, C.C.; Granja, P.L. Injectable alginate hydrogels for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46833
+    },
+    {
+      "block_id": "p14:15",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "43. Fedorovich, N.E.; Swennen, I.; Girones, J.; Moroni, L.; van Blitterswijk, C.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46998
+    },
+    {
+      "block_id": "p14:16",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "44. Huang, Y.; Ma, Y.; Chen, Y.; Wu, X.; Fang, L.; Zhu, Z.; Yang, C.J. Target-re",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47252
+    },
+    {
+      "block_id": "p14:17",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "45. Xu, J.; Liu, Y.; Hsu, S.-h. Hydrogels based on Schiff base linkages for biom",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47460
+    },
+    {
+      "block_id": "p14:18",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "46. Konieczynska, M.D.; Grinstaff, M.W. On-Demand Dissolution of Chemically Cros",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47598
+    },
+    {
+      "block_id": "p14:19",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "47. Atala, A.; Cima, L.G.; Kim, W.; Paige, K.T.; Vacanti, J.P.; Retik, A.B.; Vac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47744
+    },
+    {
+      "block_id": "p14:20",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "48. Shu, X.Z.; Liu, Y.; Luo, Y.; Roberts, M.C.; Prestwich, G.D. Disulfide cross-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47970
+    },
+    {
+      "block_id": "p14:21",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "49. Skrabania, K.; Kristen, J.; Laschewsky, A.; Akdemir, O.; Hoth, A.; Lutz, J.F",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48128
+    },
+    {
+      "block_id": "p14:22",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "50. Wu, J.; Su, Z.-G.; Ma, G.-H. A thermo-and pH-sensitive hydrogel composed of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48357
+    },
+    {
+      "block_id": "p14:23",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "51. Chiu, Y.-L.; Chen, S.-C.; Su, C.-J.; Hsiao, C.-W.; Chen, Y.-M.; Chen, H.-L.;",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48519
+    },
+    {
+      "block_id": "p14:24",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "52. Jin, R.; Moreira Teixeira, L.S.; Dijkstra, P.J.; van Blitterswijk, C.A.; Kar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48799
+    },
+    {
+      "block_id": "p14:25",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "53. Kim, M.; Shin, Y.; Hong, B.-H.; Kim, Y.-J.; Chun, J.-S.; Kim, Y.H. In vitro ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49044
+    },
+    {
+      "block_id": "p14:26",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "54. Funayama, A.; Niki, Y.; Matsumoto, H.; Maeno, S.; Yatabe, T.; Morioka, H.; Y",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49258
+    },
+    {
+      "block_id": "p14:27",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "55. Rigogliuso, S.; Salamone, M.; Barbarino, E.; Barbarino, M.; Nicosia, A.; Ghe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49577
+    },
+    {
+      "block_id": "p14:28",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "56. Gu, L.; Li, T.; Song, X.; Yang, X.; Li, S.; Chen, L.; Liu, P.; Gong, X.; Che",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49853
+    },
+    {
+      "block_id": "p14:29",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "57. Balakrishnan, B.; Joshi, N.; Jayakrishnan, A.; Banerjee, R. Self-crosslinked",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50122
+    },
+    {
+      "block_id": "p14:30",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "58. Zhang, Y.; Cao, Y.; Zhang, L.; Zhao, H.; Ni, T.; Liu, Y.; An, Z.; Liu, M.; P",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50358
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56556
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "59. Skaalure, S.C.; Chu, S.; Bryant, S.J. An Enzyme-Sensitive PEG Hydrogel Based",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50632
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "60. Li, X.; Xu, Q.; Johnson, M.; Wang, X.; Lyu, J.; Li, Y.; McMahon, S.; Greiser",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50820
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "61. Wang, G.; Cao, X.; Dong, H.; Zeng, L.; Yu, C.; Chen, X. A Hyaluronic Acid Ba",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51074
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "62. Chen, J.; Yang, J.; Wang, L.; Zhang, X.; Heng, B.C.; Wang, D.-A.; Ge, Z. Mod",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51327
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "63. Shen, Z.-S.; Cui, X.; Hou, R.-X.; Li, Q.; Deng, H.-X.; Fu, J. Tough biodegra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51579
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "64. Jin, R.; Teixeira, L.S.M.; Dijkstra, P.J.; Karperien, M.; van Blitterswijk, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51804
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "65. Yu, Y.; Brouillette, M.J.; Seol, D.; Zheng, H.; Buckwalter, J.A.; Martin, J.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52029
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "66. Lim, S.M.; Oh, S.H.; Lee, H.H.; Yuk, S.H.; Im, G.I.; Lee, J.H. Dual growth f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52388
+    },
+    {
+      "block_id": "p15:10",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "67. Dehghan-Baniani, D.; Chen, Y.; Wang, D.; Bagheri, R.; Solouk, A.; Wu, H. Inj",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52606
+    },
+    {
+      "block_id": "p15:11",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "68. Zuzzi, D.C.; Ciccone, C.C.; Neves, L.M.G.; Mendonça, J.S.; Joazeiro, P.P.; E",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52877
+    },
+    {
+      "block_id": "p15:12",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "69. Kwon, H.J.; Lee, G.S.; Chun, H. Electrical stimulation drives chondrogenesis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53110
+    },
+    {
+      "block_id": "p15:13",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "70. Jahr, H.; Matta, C.; Mobasheri, A. Physicochemical and Biomechanical Stimuli",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53298
+    },
+    {
+      "block_id": "p15:14",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "71. Xu, J.; Wang, W.; Clark, C.C.; Brighton, C.T. Signal transduction in electri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53468
+    },
+    {
+      "block_id": "p15:15",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "72. Matta, C.; Zákány, R.; Mobasheri, A. Voltage-dependent calcium channels in c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53718
+    },
+    {
+      "block_id": "p15:16",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "73. Amina, S.J.; Guo, B. A Review on the Synthesis and Functionalization of Gold",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53887
+    },
+    {
+      "block_id": "p15:17",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "74. Zhao, X.; Ding, X.; Deng, Z.; Zheng, Z.; Peng, Y.; Long, X. Thermoswitchable",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54059
+    },
+    {
+      "block_id": "p15:18",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "75. Kumar, A.; Behl, T.; Chadha, S. Synthesis of physically crosslinked PVA/Chit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54261
+    },
+    {
+      "block_id": "p15:19",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "76. Thirumalraj, B.; Sakthivel, R.; Chen, S.-M.; Rajkumar, C.; Yu, L.-K.; Kubend",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54512
+    },
+    {
+      "block_id": "p15:20",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "77. Deng, Y.; Zhang, H. The synergistic effect and mechanism of doxorubicin-ZnO ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54795
+    },
+    {
+      "block_id": "p15:21",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "78. Fan, Z.; Lu, J.G. Zinc Oxide Nanostructures: Synthesis and Properties. J. Na",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54988
+    },
+    {
+      "block_id": "p15:22",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "79. Tan, H.W.; An, J.; Chua, C.K.; Tran, T. Metallic Nanoparticle Inks for 3D Pr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55111
+    },
+    {
+      "block_id": "p15:23",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "80. Baei, P.; Jalili-Firoozinezhad, S.; Rajabi-Zeleti, S.; Tafazzoli-Shadpour, M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55265
+    },
+    {
+      "block_id": "p15:24",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "81. Sohaebuddin, S.K.; Thevenot, P.T.; Baker, D.; Eaton, J.W.; Tang, L. Nanomate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55533
+    },
+    {
+      "block_id": "p15:25",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "82. Schröfel, A.; Kratošová, G.; Šafařík, I.; Šafaříková, M.; Raška, I.; Shor, L",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55723
+    },
+    {
+      "block_id": "p15:26",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "83. Augustine, R.; Hasan, A. Emerging applications of biocompatible phytosynthes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55919
+    },
+    {
+      "block_id": "p15:27",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "84. Binette, J.S.; Garon, M.; Savard, P.; Mckee, M.D.; Buschmann, M.D. Tetrapola",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56103
+    },
+    {
+      "block_id": "p15:28",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "85. Zimmermann, J.; Distler, T.; Boccaccini, A.R.; van Rienen, U. Numerical Simu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56310
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62734
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "86. Alarcon, E.I.; Udekwu, K.I.; Noel, C.W.; Gagnon, L.B.-P.; Taylor, P.K.; Vule",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56582
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "87. Lee, K.; Lee, H.; Bae, K.H.; Park, T.G. Heparin immobilized gold nanoparticl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56877
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "88. Narang, J.; Malhotra, N.; Singh, G.; Pundir, C.S. Electrochemical impediomet",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57076
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "89. Yin, D.; Li, X.; Ma, Y.; Liu, Z. Targeted cancer imaging and photothermal th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57284
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "90. Bharti, A.; Singh, S.; Meena, V.K.; Goyal, N. Structural Characterization of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57460
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "91. Yang, H.; Zhang, J.; Tian, Q.; Hu, H.; Fang, Y.; Wu, H.; Yang, S. One-pot sy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57655
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "92. Fuchigami, T.; Kawamura, R.; Kitamoto, Y.; Nakagawa, M.; Namiki, Y. A magnet",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57889
+    },
+    {
+      "block_id": "p16:9",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "93. Chen, C.-L.; Kuo, L.-R.; Lee, S.-Y.; Hwu, Y.-K.; Chou, S.-W.; Chen, C.-C.; C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58089
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "94. Xiong, H.M. ZnO Nanoparticles Applied to Bioimaging and Drug Delivery. Adv. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58342
+    },
+    {
+      "block_id": "p16:11",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "95. Ilves, M.; Palomäki, J.; Vippola, M.; Lehto, M.; Savolainen, K.; Savinko, T.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58461
+    },
+    {
+      "block_id": "p16:12",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "96. Nazarizadeh, A.; Asri-Rezaie, S. Comparative Study of Antidiabetic Activity ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58754
+    },
+    {
+      "block_id": "p16:13",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "97. Moghaddam, A.B.; Moniri, M.; Azizi, S.; Rahim, R.A.; Ariff, A.B.; Navaderi, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58979
+    },
+    {
+      "block_id": "p16:14",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "98. Fan, Z.; Liu, B.; Wang, J.; Zhang, S.; Lin, Q.; Gong, P.; Ma, L.; Yang, S. A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59232
+    },
+    {
+      "block_id": "p16:15",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "99. Dong, C.; Lu, J.; Qiu, B.; Shen, B.; Xing, M.; Zhang, J. Developing stretcha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59480
+    },
+    {
+      "block_id": "p16:16",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "100. Zhang, L.; Shi, G. Preparation of highly conductive graphene hydrogels for ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59698
+    },
+    {
+      "block_id": "p16:17",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "101. Lee, W.C.; Lim, C.H.Y.X.; Shi, H.; Tang, L.A.L.; Wang, Y.; Lim, C.T.; Loh, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59885
+    },
+    {
+      "block_id": "p16:18",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "102. Sayyar, S.; Murray, E.; Thompson, B.C.; Chung, J.; Officer, D.L.; Gambhir, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60107
+    },
+    {
+      "block_id": "p16:19",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "103. Comba, F.N.; Romero, M.R.; Garay, F.S.; Baruzzi, A.M. Mucin and carbon nano",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60350
+    },
+    {
+      "block_id": "p16:20",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "104. Cirillo, G.; Hampel, S.; Spizzirri, U.G.; Parisi, O.I.; Picci, N.; Iemma, F",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60546
+    },
+    {
+      "block_id": "p16:21",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "105. Spizzirri, U.G.; Hampel, S.; Cirillo, G.; Nicoletta, F.P.; Hassan, A.; Vitt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60760
+    },
+    {
+      "block_id": "p16:22",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "106. Li, H.; He, J.; Zhao, Y.; Wang, G.; Wei, Q. The Effect of Carbon Nanotubes ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61011
+    },
+    {
+      "block_id": "p16:23",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "107. Zhang, F.; Weidmann, A.; Nebe, J.B.; Burkel, E. Osteoblast cell response to",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61236
+    },
+    {
+      "block_id": "p16:24",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "108. Sanjuan-Alberte, P.; Whitehead, C.; Jones, J.N.; Silva, J.C.; Carter, N.; K",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61403
+    },
+    {
+      "block_id": "p16:25",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "109. Madani, S.Y.; Mandel, A.; Seifalian, A.M. A concise review of carbon nanotu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61679
+    },
+    {
+      "block_id": "p16:26",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "110. Liu, Z.; Robinson, J.T.; Sun, X.; Dai, H. PEGylated Nano-Graphene Oxide for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61813
+    },
+    {
+      "block_id": "p16:27",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "111. Zhang, W.; Guo, Z.; Huang, D.; Liu, Z.; Guo, X.; Zhong, H. Synergistic effe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61983
+    },
+    {
+      "block_id": "p16:28",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "112. Fan, H.; Wang, L.; Zhao, K.; Li, N.; Shi, Z.; Ge, Z.; Jin, Z. Fabrication, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62173
+    },
+    {
+      "block_id": "p16:29",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "113. Zhang, L.; Xing, Y.; He, N.; Zhang, Y.; Lu, Z.; Zhang, J.; Zhang, Z. Prepar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62391
+    },
+    {
+      "block_id": "p16:30",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "114. Nambiar, S.; Yeow, J.T.W. Conductive polymer-based sensors for biomedical a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62587
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68993
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "115. Palza, H.; Zapata, P.A.; Angulo-Pineda, C. Electroactive Smart Polymers for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62760
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "116. Criado-Gonzalez, M.; Dominguez-Alfaro, A.; Lopez-Larrea, N.; Alegret, N.; M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62902
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "117. Rastin, H.; Zhang, B.; Bi, J.; Hassan, K.; Tung, T.T.; Losic, D. 3D printin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63146
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "118. Xue, J.; Liu, Y.; Darabi, M.A.; Tu, G.; Huang, L.; Ying, L.; Xiao, B.; Xing",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63354
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "119. Spencer, A.R.; Primbetova, A.; Koppes, A.N.; Koppes, R.A.; Fenniri, H.; Ann",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63647
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "120. Niemczyk-Soczynska, B.; Zaszczynska, A.; Zabielski, K.; Sajkiewicz, P. Hydr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63885
+    },
+    {
+      "block_id": "p17:8",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "121. Distler, T.; Polley, C.; Shi, F.; Schneidereit, D.; Ashton, M.D.; Friedrich",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64094
+    },
+    {
+      "block_id": "p17:9",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "122. Yang, S.; Jang, L.K.; Kim, S.; Yang, J.; Yang, K.; Cho, S.-W.; Lee, J.Y. Po",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64412
+    },
+    {
+      "block_id": "p17:10",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "123. Pires, F.; Ferreira, Q.; Rodrigues, C.A.; Morgado, J.; Ferreira, F.C. Neura",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64728
+    },
+    {
+      "block_id": "p17:11",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "124. Sordini, L.; Silva, J.C.; Garrudo, F.F.F.; Rodrigues, C.A.; Marques, A.C.; ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65060
+    },
+    {
+      "block_id": "p17:12",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "125. Heo, D.N.; Lee, S.-J.; Timsina, R.; Qiu, X.; Castro, N.J.; Zhang, L.G. Deve",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65338
+    },
+    {
+      "block_id": "p17:13",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "126. Guex, A.G.; Puetzer, J.L.; Armgarth, A.; Littmann, E.; Stavrinidou, E.; Gia",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65571
+    },
+    {
+      "block_id": "p17:14",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "127. Xia, B.; Wang, B.; Shi, J.; Zhang, Y.; Zhang, Q.; Chen, Z.; Li, J. Photothe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65806
+    },
+    {
+      "block_id": "p17:15",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "128. Nguyen, H.T.; Phung, C.D.; Thapa, R.K.; Pham, T.T.; Tran, T.H.; Jeong, J.-H",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66071
+    },
+    {
+      "block_id": "p17:16",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "129. Chen, J.; Yu, M.; Guo, B.; Ma, P.X.; Yin, Z. Conductive nanofibrous composi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66398
+    },
+    {
+      "block_id": "p17:17",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "130. Abidian, M.R.; Kim, D.H.; Martin, D.C. Conducting-Polymer Nanotubes for Con",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66636
+    },
+    {
+      "block_id": "p17:18",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "131. Chan, E.W.C.; Bennet, D.; Baek, P.; Barker, D.; Kim, S.; Travas-Sejdic, M. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66780
+    },
+    {
+      "block_id": "p17:19",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "132. Mousavi, S.M.; Hashemi, S.A.; Bahrani, S.; Yousefi, K.; Behudi, G.; Babapoo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66980
+    },
+    {
+      "block_id": "p17:20",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "133. Ma, X.; Li, X.; Shi, J.; Yao, M.; Zhang, X.; Hou, R.; Shao, N.; Luo, Q.; Ga",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67279
+    },
+    {
+      "block_id": "p17:21",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "134. Zhao, Y.; Liang, Y.; Ding, S.; Zhang, K.; Mao, H.-Q.; Yang, Y. Application ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67605
+    },
+    {
+      "block_id": "p17:22",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "135. Lee, J.H.; Yoon, Y.C.; Kim, H.S.; Lee, J.; Kim, E.; Findeklee, C.; Katscher",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67835
+    },
+    {
+      "block_id": "p17:23",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "136. Vaca-González, J.J.; Clara-Trujillo, S.; Guillot-Ferriols, M.; Ródenas-Roch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68103
+    },
+    {
+      "block_id": "p17:24",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "137. Hernández-Bulle, M.L.; Trillo, M.A.; Martínez-Garcia, M.A.; Abilahoud, C.; ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68460
+    },
+    {
+      "block_id": "p17:25",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "138. Vaca-González, J.J.; Guevara, J.M.; Vega, J.F.; Garzón-Alvarado, D.A. An In",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68698
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Gels 2022, 8, 710",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18 of 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70931
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "139. Thrivikraman, G.; Boda, S.K.; Basu, B. Unraveling the mechanistic effects o",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:3",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "140. Sun, Y.; Liu, W.-Z.; Liu, T.; Feng, X.; Yang, N.; Zhou, H.-F. Signaling pat",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:4",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "141. Zhang, S.; Li, Y.; Zhang, H.; Wang, G.; Wei, H.; Zhang, X.; Ma, N. Bioinspi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "142. Snen, H.; Lin, H.; Sun, A.X.; Song, S.; Zhang, Z.; Dai, J.; Tuan, R.S. Chon",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "143. Huang, J.; Xiong, J.; Wang, D.; Zhang, J.; Yang, L.; Sun, S.; Liang, Y. 3D ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:7",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "144. Kashi, M.; Baghbani, F.; Mozartzadeh, F.; Mobasheri, H.; Kowsari, E. Green ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69019
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "145. Vijayavenkataraman, S.; Vialli, N.; Fuh, J.Y.H.; Lu, W.F. Conductive collag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69281
+    },
+    {
+      "block_id": "p18:9",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "146. Shang, Y.; Liang, W.; Tan, B.; Xiao, M.; Zou, Y.; Liu, W.; Wang, W. A condu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69485
+    },
+    {
+      "block_id": "p18:10",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "147. Wang, W.; Chang, L.; Shao, Y.; Yu, D.; Parajuli, J.; Xu, C.; Ying, G.; Yeti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69708
+    },
+    {
+      "block_id": "p18:11",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "148. Xu, C.; Xu, Y.; Yang, M.; Chang, Y.; Nie, A.; Liu, Z.; Wang, J.; Luo, Z. Bl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69931
+    },
+    {
+      "block_id": "p18:12",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "149. Da Silva, L.P.; Kundu, S.C.; Reis, R.L.; Correlo, V.M. Electric Phenomenon:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70213
+    },
+    {
+      "block_id": "p18:13",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "150. Bansal, M.; Dravid, A.; Aqrawe, Z.; Montgomery, J.; Wu, Z.; Svirskis, D. Co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70409
+    },
+    {
+      "block_id": "p18:14",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "151. Gelmi, A.; Schutt, C.E. Stimuli-Responsive Biomaterials: Scaffolds for Stem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70610
+    },
+    {
+      "block_id": "p18:15",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "152. Maeng, W.-Y.; Tseng, W.-L.; Li, S.; Koo, J.; Hsueh, Y.-Y. Electrocuticals f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70765
+    }
+  ]
+}

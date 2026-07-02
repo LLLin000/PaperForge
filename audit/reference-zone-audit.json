@@ -1,0 +1,991 @@
+[
+  {
+    "key": "9QKBD38Z",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "DLVSVU49",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "37LK5T97",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 116,
+      "numbered_count": 116,
+      "expected_last": 116,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 2,
+          "missing": [
+            100,
+            101
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "B43QSAJP",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 52,
+      "numbered_count": 52,
+      "expected_last": 52,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 2,
+          "missing": [
+            17,
+            18
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "A35UYJBK",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "95FDVE4W",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 23,
+      "numbered_count": 23,
+      "expected_last": 23,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 1,
+          "missing": [
+            2
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "82W2IJIP",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "72D4YXEB",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 33,
+      "numbered_count": 33,
+      "expected_last": 33,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "62LTMCI8",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 147,
+      "numbered_count": 147,
+      "expected_last": 147,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 5,
+          "missing": [
+            139,
+            140,
+            141,
+            142,
+            143
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "53B47JM8",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 2 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 65,
+      "numbered_count": 65,
+      "expected_last": 65,
+      "issues": [
+        {
+          "type": "duplicate_number",
+          "number": 36,
+          "text": "[36] K.C. Gupta, A. Haider, Y.-R. Choi, I.-K. Kang, Biomater. Res. 18 (2014), 5-"
+        },
+        {
+          "type": "missing_numbers",
+          "count": 3,
+          "missing": [
+            18,
+            19,
+            20
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "49NUE2G7",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 52,
+      "numbered_count": 52,
+      "expected_last": 52,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 1,
+          "missing": [
+            22
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "24A2QUAH",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 90,
+      "numbered_count": 90,
+      "expected_last": 90,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 4,
+          "missing": [
+            84,
+            85,
+            86,
+            87
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "U746UJ7G",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "KUR9PBJC",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "YGH7VEX6",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "X6PQAH4V",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 247,
+      "numbered_count": 247,
+      "expected_last": 247,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 3,
+          "missing": [
+            14,
+            220,
+            221
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "V4UTP5X7",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 6,
+      "numbered_count": 6,
+      "expected_last": 6,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "9EQV3ABQ",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "CGGYTEEQ",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "LGGZ9SKS",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "N6XCZD25",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 0,
+      "numbered_count": 0,
+      "expected_last": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "2YW2MJBL",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "7FNV9AW2",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 53,
+      "numbered_count": 53,
+      "expected_last": 53,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "2HEUD5P9",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "KKV573J4",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 0,
+      "numbered_count": 0,
+      "expected_last": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "WV2FF4NV",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 76,
+      "numbered_count": 76,
+      "expected_last": 76,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 1,
+          "missing": [
+            9
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "4KCHGV2Z",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 17,
+      "numbered_count": 17,
+      "expected_last": 17,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 8,
+          "missing": [
+            3,
+            4,
+            5,
+            7,
+            8,
+            20,
+            21,
+            22
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "H84PP2IW",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "NSV8KBJY",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 70,
+      "numbered_count": 70,
+      "expected_last": 70,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "58UFL9UN",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 125,
+      "numbered_count": 125,
+      "expected_last": 125,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 7,
+          "missing": [
+            9,
+            30,
+            31,
+            115,
+            116,
+            120,
+            121
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "MYWRV652",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 0,
+      "numbered_count": 0,
+      "expected_last": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "HDJE9353",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "BDMLFC4B",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "7CIULR7G",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 70,
+      "numbered_count": 70,
+      "expected_last": 70,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "8LZUYXMH",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "9ZIJTI6J",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "4IG7M4FI",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "UV6IVNUE",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "TXMVULD7",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 72,
+      "numbered_count": 72,
+      "expected_last": 72,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 1,
+          "missing": [
+            39
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "TS623M5V",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "PP76T2EY",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 214,
+      "numbered_count": 214,
+      "expected_last": 214,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 17,
+          "missing": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            188,
+            226
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "PMFECT33",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "M23R849F",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "JQMRCEXY",
+    "errors": [],
+    "warnings": [
+      "ref_ordering: 1 issues"
+    ],
+    "reference": {
+      "status": "issues",
+      "count": 16,
+      "numbered_count": 16,
+      "expected_last": 16,
+      "issues": [
+        {
+          "type": "missing_numbers",
+          "count": 5,
+          "missing": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ]
+        }
+      ]
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "IPVHC44X",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "EUXKIYZM",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "BKKR4KIV",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 53,
+      "numbered_count": 53,
+      "expected_last": 53,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "99JVAPSV",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "2BB8VM5W",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "ok",
+      "count": 53,
+      "numbered_count": 53,
+      "expected_last": 53,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  },
+  {
+    "key": "W33NLVJ2",
+    "errors": [],
+    "warnings": [],
+    "reference": {
+      "status": "no_ref_section",
+      "count": 0,
+      "issues": []
+    },
+    "block_stats": {},
+    "reference_zone": {
+      "status": "no_structure"
+    },
+    "inventory": {}
+  }
+]

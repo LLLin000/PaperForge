@@ -70,8 +70,10 @@ FRONTMATTER_NOISE = {
 }
 
 _REFERENCE_PATTERN = re.compile(
-    r"^\s*(?:\d+\.\s|[A-Z][A-Za-z'’\-]+\s+et al\.\s*\(\d{4}[a-z]?\)|\([A-Z][A-Za-z'’\-]+\s+et al\.,\s*\d{4}[a-z]?\))",
+    r"^\s*(?:\(\d+\)\s|\d+\.\s|[A-Z][A-Za-z'’\-]+\s+et al\.\s*\(\d{4}[a-z]?\)|\([A-Z][A-Za-z'’\-]+\s+et al\.,\s*\d{4}[a-z]?\))",
 )
+
+_PAREN_REF_PREFIX = re.compile(r"^\s*\(\d+\)\s*")
 
 _FRONTIERS_FIGURE_TITLE_PATTERN = re.compile(
     r"^FIGURE\s+\d+[A-Za-z]?\s*\|\s+.+",
@@ -99,6 +101,27 @@ _FIGURE_DESCRIPTION_OPENING_PATTERN = re.compile(
     r"Figure\s+\d+|Fig\.?\s+\d+)\b",
     flags=re.IGNORECASE,
 )
+
+_REFERENCE_HEADING_PATTERN = re.compile(
+    r"^(?:"
+    r"references?"
+    r"|references?\s+and\s+(?:notes?|further\s+reading)"
+    r"|bibliography"
+    r"|cited\s+references?"
+    r")$",
+    re.IGNORECASE,
+)
+
+
+def _normalize_heading_text(text: str) -> str:
+    text = text.strip().rstrip(":")
+    text = re.sub(r"\.{2,}\s*\d+\s*$", "", text)
+    text = re.sub(r"\s+\d+\s*$", "", text)
+    return text.strip()
+
+
+def _is_reference_heading_text(text: str) -> bool:
+    return bool(_REFERENCE_HEADING_PATTERN.fullmatch(_normalize_heading_text(text)))
 
 
 def _looks_like_figure_description_opening(text: str) -> bool:
@@ -1259,6 +1282,13 @@ def assign_block_role(
                 confidence=0.5,
                 evidence=[f"unnumbered paragraph_title on page 1 outside title zone: {text[:60]}"],
             )
+        heading_text = text.strip()
+        if _is_reference_heading_text(heading_text):
+            return RoleAssignment(
+                role="reference_heading",
+                confidence=0.85,
+                evidence=[f"reference heading text match: {heading_text[:60]}"],
+            )
         level = _infer_heading_level(text, block=block)
         return RoleAssignment(
             role=level,
@@ -1362,11 +1392,16 @@ def assign_block_role(
     if _looks_like_reference(text):
         first_word = text.strip().split(",")[0].strip().lower()
         if first_word not in _BODY_ORDINAL_OPENINGS:
-            return RoleAssignment(
-                role="reference_item",
-                confidence=0.6,
-                evidence=[f"reference-like pattern: {text[:60]}"],
-            )
+            # Length guard: (N) prefix with very short body → likely a heading, not a ref
+            stripped = _PAREN_REF_PREFIX.sub("", text).strip()
+            if text.lstrip().startswith("(") and len(stripped) < 25:
+                pass  # skip — short (N) text is not a reference item
+            else:
+                return RoleAssignment(
+                    role="reference_item",
+                    confidence=0.6,
+                    evidence=[f"reference-like pattern: {text[:60]}"],
+                )
 
     # text -> body paragraph by default, but with lower confidence
     if raw_label == "text":

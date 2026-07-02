@@ -1,0 +1,252 @@
+{
+  "pages": [
+    {
+      "page": 1,
+      "risk_score": 8,
+      "risk_reasons": [
+        "frontmatter_page",
+        "reader_object_gap"
+      ],
+      "recommended_audit_targets": [
+        "frontmatter",
+        "object_ownership"
+      ],
+      "counts": {
+        "body_paragraph": 3,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 1,
+        "table_like": 0,
+        "captions": 0,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 0,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 2,
+      "risk_score": 3,
+      "risk_reasons": [
+        "reader_object_gap"
+      ],
+      "recommended_audit_targets": [
+        "object_ownership"
+      ],
+      "counts": {
+        "body_paragraph": 7,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 1,
+        "table_like": 0,
+        "captions": 1,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 1,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 3,
+      "risk_score": 0,
+      "risk_reasons": [],
+      "recommended_audit_targets": [],
+      "counts": {
+        "body_paragraph": 8,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 0,
+        "table_like": 0,
+        "captions": 0,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 0,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 4,
+      "risk_score": 0,
+      "risk_reasons": [],
+      "recommended_audit_targets": [],
+      "counts": {
+        "body_paragraph": 10,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 0,
+        "table_like": 0,
+        "captions": 0,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 0,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 5,
+      "risk_score": 0,
+      "risk_reasons": [],
+      "recommended_audit_targets": [],
+      "counts": {
+        "body_paragraph": 10,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 0,
+        "table_like": 0,
+        "captions": 0,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 0,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 6,
+      "risk_score": 10,
+      "risk_reasons": [
+        "multi_asset_page",
+        "caption_asset_mismatch",
+        "reader_object_gap"
+      ],
+      "recommended_audit_targets": [
+        "object_ownership"
+      ],
+      "counts": {
+        "body_paragraph": 2,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 9,
+        "table_like": 0,
+        "captions": 2,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 2,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 7,
+      "risk_score": 10,
+      "risk_reasons": [
+        "multi_asset_page",
+        "caption_asset_mismatch",
+        "reader_object_gap"
+      ],
+      "recommended_audit_targets": [
+        "object_ownership"
+      ],
+      "counts": {
+        "body_paragraph": 2,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 3,
+        "table_like": 0,
+        "captions": 1,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 1,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 8,
+      "risk_score": 10,
+      "risk_reasons": [
+        "multi_asset_page",
+        "caption_asset_mismatch",
+        "reader_object_gap"
+      ],
+      "recommended_audit_targets": [
+        "object_ownership"
+      ],
+      "counts": {
+        "body_paragraph": 2,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 8,
+        "table_like": 0,
+        "captions": 1,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 1,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 9,
+      "risk_score": 13,
+      "risk_reasons": [
+        "reference_heading_present",
+        "mixed_body_reference",
+        "same_page_boundary"
+      ],
+      "recommended_audit_targets": [
+        "reading_order",
+        "reference_span",
+        "same_page_boundary"
+      ],
+      "counts": {
+        "body_paragraph": 9,
+        "reference_item": 21,
+        "tail_like": 3,
+        "media_assets": 0,
+        "table_like": 0,
+        "captions": 0,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 0,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 10,
+      "risk_score": 0,
+      "risk_reasons": [],
+      "recommended_audit_targets": [],
+      "counts": {
+        "body_paragraph": 0,
+        "reference_item": 48,
+        "tail_like": 0,
+        "media_assets": 0,
+        "table_like": 0,
+        "captions": 2,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 0,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 11,
+      "risk_score": 7,
+      "risk_reasons": [
+        "multi_asset_page",
+        "reader_object_gap"
+      ],
+      "recommended_audit_targets": [
+        "object_ownership"
+      ],
+      "counts": {
+        "body_paragraph": 0,
+        "reference_item": 2,
+        "tail_like": 1,
+        "media_assets": 10,
+        "table_like": 0,
+        "captions": 10,
+        "hold": 0,
+        "unknown_structural": 0,
+        "matched_figures": 2,
+        "ambiguous_figures": 0
+      }
+    }
+  ],
+  "selected_pages": [
+    1,
+    2,
+    6,
+    7,
+    8,
+    9,
+    11
+  ]
+}

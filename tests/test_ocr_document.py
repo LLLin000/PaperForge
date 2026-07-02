@@ -5373,3 +5373,90 @@ def test_reference_item_bypasses_usable_content_gate_even_above_header_band() ->
     decision = decide_usable_content(block, estimate, context="tail_render")
     assert decision.usable is True
     assert decision.policy == "role_bypass"
+
+
+def test_score_reference_entry_has_number_lead_paren() -> None:
+    from paperforge.worker.ocr_reference_signals import score_reference_entry
+    result = score_reference_entry(
+        "(1) Smith AB, Jones CD. Journal Name. 2020;10(3):100-10."
+    )
+    assert result["signals"].get("number_lead") is True
+    assert result["family"] == "vancouver_structured_numbered"
+
+
+def test_reference_completeness_accepts_parenthetical_numbers() -> None:
+    from paperforge.worker.ocr_document import _check_reference_completeness
+    blocks = [
+        {"role": "reference_item", "zone": "reference_zone", "text": "(1) A."},
+        {"role": "reference_item", "zone": "reference_zone", "text": "(2) B."},
+        {"role": "reference_item", "zone": "reference_zone", "text": "(3) C."},
+    ]
+    result = _check_reference_completeness(blocks)
+    assert result["status"] == "OK"
+    assert result["expected_count"] == 3
+    assert result["missing_numbers"] == []
+
+
+def test_normalize_document_structure_preserves_heading_page_reference_items() -> None:
+    """Heading-page reference_item blocks excluded from partition must be
+    restored. Verifies end-to-end role preservation for pre-ref blocks with
+    reference signals — regardless of mechanism (partition or fallback guard)."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "b1", "page": 1, "role": "body_paragraph",
+         "text": "This is body text to form a body anchor. " * 3,
+         "bbox": [100, 120, 460, 280],
+         "page_width": 1200, "page_height": 1600,
+         "marker_signature": {"type": "none"},
+         "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+         "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 230, "x_center_bucket": 250}},
+        {"block_id": "b2", "page": 2, "role": "body_paragraph",
+         "text": "More body text for a stable body anchor. " * 3,
+         "bbox": [100, 120, 460, 280],
+         "page_width": 1200, "page_height": 1600,
+         "marker_signature": {"type": "none"},
+         "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+         "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 230, "x_center_bucket": 250}},
+        {"block_id": "h1", "page": 3, "role": "reference_heading",
+         "raw_label": "paragraph_title", "text": "References",
+         "bbox": [100, 100, 200, 120],
+         "page_width": 1200, "page_height": 1600,
+         "marker_signature": {"type": "canonical_section_name"}},
+        {"block_id": "r1", "page": 3, "role": "body_paragraph",
+         "seed_role": "reference_item", "raw_label": "reference_content",
+         "text": "1. Author A. Journal. 2020.",
+         "bbox": [100, 130, 500, 150],
+         "page_width": 1200, "page_height": 1600,
+         "marker_signature": {"type": "reference_numeric_bracket"},
+         "span_signature": {"font_size_median": 8.5, "font_size_bucket": 8.5, "font_family_norm": "Times"},
+         "layout_signature": {"width": 250, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250}},
+        {"block_id": "r2", "page": 4, "role": "body_paragraph",
+         "seed_role": "reference_item", "raw_label": "reference_content",
+         "text": "2. Author B. Journal. 2021.",
+         "bbox": [100, 130, 500, 150],
+         "page_width": 1200, "page_height": 1600,
+         "marker_signature": {"type": "reference_numeric_bracket"},
+         "span_signature": {"font_size_median": 8.5, "font_size_bucket": 8.5, "font_family_norm": "Times"},
+         "layout_signature": {"width": 250, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250}},
+        {"block_id": "r3", "page": 5, "role": "reference_item",
+         "seed_role": "reference_item", "raw_label": "reference_content",
+         "text": "3. Author C. Journal. 2022.",
+         "bbox": [100, 130, 500, 150],
+         "page_width": 1200, "page_height": 1600,
+         "marker_signature": {"type": "reference_numeric_bracket"},
+         "span_signature": {"font_size_median": 8.5, "font_size_bucket": 8.5, "font_family_norm": "Times"},
+         "layout_signature": {"width": 250, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250}},
+    ]
+
+    doc, normalized = normalize_document_structure(blocks)
+
+    # ALL reference-item blocks (r1, r2, r3) must be preserved as reference_item
+    for bid in ("r1", "r2", "r3"):
+        found = [b for b in normalized if b.get("block_id") == bid]
+        assert found, f"Block {bid} not found in output"
+        b = found[0]
+        assert b.get("role") == "reference_item", \
+            f"Block {bid} demoted to {b.get('role')}"
+        assert b.get("zone") == "reference_zone", \
+            f"Block {bid} zone={b.get('zone')} not reference_zone"
