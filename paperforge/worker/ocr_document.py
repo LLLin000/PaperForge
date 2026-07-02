@@ -4332,6 +4332,27 @@ def _check_caption_style_match(block: dict, blocks: list[dict]) -> bool:
     return size_match and font_match
 
 
+def _is_sidecar_candidate(block: dict, page_blocks: list[dict]) -> bool:
+    """Check if a figure_caption_candidate is a sidecar: no x_overlap but y_overlap
+    with a media_asset on the same page (adjacent columns layout)."""
+    bb = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+    if len(bb) < 4:
+        return False
+    bx1, by1, bx2, by2 = bb[:4]
+    for other in page_blocks:
+        label = str(other.get("block_label") or other.get("raw_label") or "").strip()
+        if label not in {"image", "chart", "figure"}:
+            continue
+        ob = other.get("bbox") or other.get("block_bbox") or []
+        if len(ob) < 4:
+            continue
+        ox1, oy1, ox2, oy2 = ob[:4]
+        # Adjacent columns: no horizontal overlap but vertical overlap
+        if not (bx1 < ox2 and ox1 < bx2) and (by1 < oy2 and oy1 < by2):
+            return True
+    return False
+
+
 def _resolve_ambiguous_candidates(
     blocks: list[dict],
     doc_structure: DocumentStructure,
@@ -4535,6 +4556,7 @@ def _resolve_ambiguous_candidates(
                     reason="backmatter heading candidate in backmatter region, promoted to backmatter heading",
                 )
 
+
         # ---- 2.2 Resolve figure_caption_candidate ----
         if role == "figure_caption_candidate":
             text = block.get("text", "") or ""
@@ -4556,6 +4578,9 @@ def _resolve_ambiguous_candidates(
             if (
                 in_body_spine
                 and is_prose
+                # Sidecar figure captions (caption in one column, image adjacent)
+                # must survive prose detection — they are long by nature.
+                and not _is_sidecar_candidate(block, page_blocks)
                 and not (zone == "display_zone" and style_family == "legend_like" and raw_label == "figure_title")
                 # Vision-footnote figure descriptions already validated by dedicated rescue
                 and not (raw_label == "vision_footnote" and _looks_like_figure_description_opening(text))

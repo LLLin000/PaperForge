@@ -65,6 +65,37 @@ def score_table_match(caption: dict, asset: dict, *, is_continuation: bool = Fal
     if _bbox_x_overlap_ratio(caption_bbox, asset_bbox) >= 0.5:
         score += 0.25
         evidence.append("x_overlap")
+    elif len(caption_bbox) >= 4 and len(asset_bbox) >= 4:
+        # Check if caption has rotated text (dir != [1,0]) — vertical caption
+        # placed beside the table body, not above it.
+        span = caption.get("span_metadata") or []
+        if isinstance(span, dict):
+            span = [span]
+        _is_rotated = False
+        if isinstance(span, list):
+            for _entry in span:
+                if not isinstance(_entry, dict):
+                    continue
+                _dir = _entry.get("dir")
+                if isinstance(_dir, (list, tuple)) and len(_dir) == 2:
+                    if abs(float(_dir[1])) > abs(float(_dir[0])):
+                        _is_rotated = True
+                        break
+        if _is_rotated:
+            # Adjacent-column check: caption beside table, no x_overlap
+            _gap = max(0.0, asset_bbox[0] - caption_bbox[2], caption_bbox[0] - asset_bbox[2])
+            _narrow_w = min(caption_bbox[2] - caption_bbox[0], asset_bbox[2] - asset_bbox[0])
+            if _gap < _narrow_w * 0.3 and _gap < 80:
+                score += 0.20
+                evidence.append("adjacent_x")
+            # y_overlap: caption and table share vertical band
+            _by1, _by2 = caption_bbox[1], caption_bbox[3]
+            _oy1, _oy2 = asset_bbox[1], asset_bbox[3]
+            _y_overlap = max(0.0, min(_by2, _oy2) - max(_by1, _oy1))
+            _min_span = min(_by2 - _by1, _oy2 - _oy1)
+            if _min_span > 0 and _y_overlap / _min_span >= 0.3:
+                score += 0.15
+                evidence.append("y_overlap_with_asset")
     if len(caption_bbox) >= 4 and len(asset_bbox) >= 4:
         if same_page and asset_bbox[1] >= caption_bbox[3]:
             score += 0.25
