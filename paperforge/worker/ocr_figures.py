@@ -3049,7 +3049,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 and _looks_like_figure_description_opening(text)
             )
             if role == "figure_caption_candidate" and (
-                str(block.get("zone") or "") == "body_zone"
+                (str(block.get("zone") or "") == "body_zone"
+                 and _extract_figure_number(block.get("text", "")) is None)  # skips recovery-rescued captions
                 or (
                     str(block.get("zone") or "") != "display_zone"
                     and str(block.get("style_family") or "") != "legend_like"
