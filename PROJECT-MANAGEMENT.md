@@ -1,7 +1,7 @@
 # OCR-v2 Project Management Log
 
 > **Branch:** `master` | **Last Updated:** 2026-07-02
-> **Active work:** Round 2 truth audit complete. 3 targeted fixes for 37LK5T97 (sidecar, table matching, table render). **428 regression tests pass, 0 failures.**
+> **Active work:** Figure caption prefix recovery + inline <table> HTML fix + table matching verification completed. 585 regression tests pass.
 
 ---
 
@@ -322,6 +322,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-01 | Audit fix commits + orientation-aware rotated figure normalization | Commit 1 (`2d40ad9`) + Commit 2 (`21bdfd0`) + Commit 4 (`7670227`) landed, then refactored rotated-caption handling out of synthetic fallback into normal figure pre-match. Added PyMuPDF `dir/wmode` capture, same-page rotated settlement, rotated crop render. U746UJ7G now matches via `same_page_rotated`; KUR9PBJC unchanged. 422 regression tests pass. | §9.18 |
 | 2026-07-01 | Asset-internal figure number recovery implementation | Added `extract_pdf_lines_normalized` helper, `_recover_missing_figure_numbers_from_assets` pass in `build_figure_inventory`, 5 gate functions, 2 pattern constants. U746UJ7G `figure_unknown_000` → `figure_002` with recovered label "Plot of Criteria Time". 6 new tests. 428 regression tests pass. | §9.19 |
 | 2026-07-02 | Round 2 truth audit + 3 targeted bug fixes for 37LK5T97 | Batch-audited 10 fresh papers (5 GREEN / 4 YELLOW / 1 RED). 37LK5T97 found with Figure 1 broken (sidecar caption demoted) + 6 unmatched rotated tables. Fixes: (1) `_is_sidecar_candidate` guard in candidate_resolution, (2) `adjacent_x`+`y_overlap` in score_table_match for rotated captions, (3) rotated table render bbox+270° correction. Also: rotated figure crop quality fix (4x zoom + coordinate normalization in `_crop_asset_from_pdf`). Commits: `59cd01a`, `bd3f3b6`, `86e0d14`. 428 regression tests pass. | §9.20 |
+| 2026-07-02 | Zone/role robustness completion — Figure caption prefix recovery + inline table fix + table matching audit | Figure caption prefix recovery from PDF text layer (`_recover_figure_heading_prefix`): 5S7UI34M 4→9 matched figures, 33→1 unmatched. Inline `<table>` HTML role fix: 650 blocks now `table_html` after rebuild (priority bug: raw_label=table fired before `<table>` check). Table matching audit: 620 remaining `media_asset` pending full rebuild. 585 figure/table/role tests pass. | §9.21 |
 
 ## 9. Historical Detail Archive
 
@@ -571,3 +572,23 @@ Full-day debugging session across 8 gold papers. 98 bug annotations, 8 pipeline 
 **Tests:** 428 regression tests pass (no new tests added, existing cover the affected paths)  
 **Analysis:** `docs/superpowers/analysis/2026-07-02-37lk5t97-figure1-sidecar-bug-analysis.md`  
 **Audit findings:** `docs/superpowers/specs/2026-07-02-ocr-truth-audit-round2-findings.md`
+
+### 9.21 Figure Caption Prefix Recovery + Inline Table Fix (2026-07-02)
+
+**Problem 1:** PaddleOCR fails to detect standalone "Figure N" / "FIGURE N" headings in bold/small-caps fonts. Caption body is captured as `figure_caption_candidate` but lacks the figure number prefix → `_is_formal_legend()` fails → caption never enters matching pool.
+
+**Fix:** `_recover_figure_heading_prefix()` in `ocr_figures.py` checks the PDF text layer (via existing `page_pdf_lines_by_page` infrastructure — no extra PDF open) for "Figure N" lines. If the next PDF line (by y-order) shares ≥15 common-prefix chars with the OCR caption text, the heading is prepended. Runs BEFORE the zone/style filter so recovered captions pass through to legend matching.
+
+**Result:** 5S7UI34M (PVA综述): 4→9 matched figures, 33→1 unmatched (p1 logo). HQAQBSBP: Figure 5 recovered. 372 figure tests pass.
+
+**Problem 2:** Inline `<table>` HTML blocks with `raw_label=table` hit the `raw_label="table" → media_asset` fallback (ocr_roles.py:1355) before reaching the `<table>` → `table_html` check (line 1456, gated by `raw_label="text"`). Plus `ocr_document.py:6120-6121` converted `table_html` to `table_html_candidate` — a role with no downstream handler → structural gate downgraded to `unknown_structural`.
+
+**Fix:** (1) Moved inline `<table>` check before `raw_label=table` fallback in `assign_block_role()`. (2) Added `table_html` verifier in structural gate (self-identifying, accepts if text starts with `<table>`). (3) Removed dead `table_html → table_html_candidate` conversion.
+
+**Result:** AH6Q7DLC (worst case, 30 blocks): 29/30 → `table_html` (1 = reference_item). 585 figure/table/role tests pass.
+
+**Files changed:**
+- `paperforge/worker/ocr_figures.py` — `_recover_figure_heading_prefix()` + body_zone filter guard
+- `paperforge/worker/ocr_roles.py` — inline `<table>` before raw_label=table
+- `paperforge/worker/ocr_document.py` — removed `table_html_candidate` dead path
+- `paperforge/worker/ocr_structural_gate.py` — `table_html` verifier
