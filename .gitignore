@@ -43,6 +43,18 @@ paperforge/plugin/node_modules/
 .opencode/tmp/
 .ai-bridge/
 
-# Audit page screenshots (keep structured JSON/CSV)
-audit/*/annotated_pages/
+# Audit per-paper artifacts (keep root-level summary files)
+audit/*/
+!audit/*.json
+!audit/*.md
+
+# Temp / generated files
+.git-rewrite/
+.tmp/
+local-*.md
+loss_*.md
+audit/tmp_pdf/
+audit/media_asset_samples/
+
+# OpenCode MCP binaries
 .opencode/mcp/

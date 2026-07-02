@@ -257,7 +257,24 @@ python -m pytest tests/test_skill_graph_contracts.py tests/test_skill_graph_layo
 
 ---
 
-## 10. PROJECT-MANAGEMENT 实时更新规则
+
+## 10. Role Pipeline Notes
+
+### `table_html` 来源
+
+`table_html` 不仅可以由 `write_back_table_roles()`（table matching 后）产生，现在也由 `assign_block_role()` 对 inline `<table>` HTML 块直接分配。`ocr_document.py:6120-6121` 的 `table_html → table_html_candidate` 转换已删除（无下游处理）。
+
+### `_recover_figure_heading_prefix()`
+
+位于 `ocr_figures.py` 末尾，当 PaddleOCR 漏掉 "Figure N" 前缀时从 PDF 文本层恢复 caption heading。在 `build_figure_inventory()` 的 zone/style filter 前调用，前置恢复 prefix 使 `_extract_figure_number()` 能识别。
+
+### 修改文件清单
+此会话修改了 4 个文件:
+- `paperforge/worker/ocr_figures.py` — `_recover_figure_heading_prefix()` + `body_zone` filter guard
+- `paperforge/worker/ocr_roles.py` — inline `<table>` 在 raw_label=table 前检查
+- `paperforge/worker/ocr_document.py` — 删除 `table_html_candidate` 死路径
+- `paperforge/worker/ocr_structural_gate.py` — `table_html` 验证器
+## 11. PROJECT-MANAGEMENT 实时更新规则
 
 每个开发会话结束时（或阶段性完成后），必须更新 `PROJECT-MANAGEMENT.md`。规则：
 
