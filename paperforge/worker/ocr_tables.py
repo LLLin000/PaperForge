@@ -41,6 +41,29 @@ def _roman_to_int(roman: str) -> int | None:
     return total
 
 
+def _table_has_rotated_content(asset: dict) -> int:
+    """Check if a table asset has rotated text content.
+    Returns rotation_deg (270) to correct, or 0 if not rotated.
+    """
+    if not asset:
+        return 0
+    span = asset.get("span_metadata") or []
+    if isinstance(span, dict):
+        span = [span]
+    if not isinstance(span, list):
+        return 0
+    for entry in span:
+        if not isinstance(entry, dict):
+            continue
+        d = entry.get("dir")
+        if not isinstance(d, (list, tuple)) or len(d) != 2:
+            continue
+        # dir=[0,-1] → text rotated 90° CW → need 270° to correct
+        if abs(float(d[1])) > abs(float(d[0])):
+            return 270
+    return 0
+
+
 def _parse_table_number_token(token: str) -> int | None:
     token = token.strip().rstrip(".")
     if re.fullmatch(r"\d+(?:\.\d+)?", token):
@@ -519,6 +542,21 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             and block.get("block_id")
         ]
 
+        # Compute rotated table render bbox (if content is rotated)
+        _render_bbox = None
+        _render_rotation_deg = 0
+        if matched_asset:
+            _rot = _table_has_rotated_content(matched_asset)
+            if _rot:
+                cb = caption.get("bbox") or caption.get("block_bbox") or []
+                ab = matched_asset.get("bbox") or matched_asset.get("block_bbox") or []
+                if len(cb) >= 4 and len(ab) >= 4:
+                    _render_bbox = [
+                        min(cb[0], ab[0]), min(cb[1], ab[1]),
+                        max(cb[2], ab[2]), max(cb[3], ab[3]),
+                    ]
+                    _render_rotation_deg = _rot
+
         tables.append(
             {
                 "caption_block_id": caption.get("block_id", ""),
@@ -553,6 +591,8 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                         else {"score": 0.0, "matched_asset_id": "", "decision": "ambiguous", "evidence": []}
                     )
                 ),
+                "render_bbox": _render_bbox,
+                "render_rotation_deg": _render_rotation_deg,
                 "asset_family_hint": (matched_asset.get("asset_family_hint") if matched_asset else None),
                 "asset_family_confidence": (matched_asset.get("asset_family_confidence") if matched_asset else None),
                 "asset_family_evidence": (matched_asset.get("asset_family_evidence") if matched_asset else None),

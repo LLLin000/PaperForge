@@ -394,16 +394,20 @@ def extract_and_write_objects(
             asset_path_abs = tables_asset_dir / f"{tbl_id}.jpg"
 
             was_cropped = False
-            if table.get("has_asset") and pdf_path and asset_bbox and all(v > 0 for v in asset_bbox):
+            # Use render_bbox + render_rotation_deg for rotated tables
+            _crop_bbox = table.get("render_bbox") or asset_bbox
+            _rot_deg = table.get("render_rotation_deg", 0) or 0
+            if table.get("has_asset") and pdf_path and _crop_bbox and all(v > 0 for v in _crop_bbox):
                 was_cropped = _crop_asset_from_pdf(
                     pdf_path,
                     page,
-                    asset_bbox,
+                    _crop_bbox,
                     asset_path_abs,
                     page_width=page_width,
                     page_height=page_height,
                     page_cache_dir=page_cache_dir,
                     pdf_doc_provider=_get_shared_pdf_doc,
+                    rotation_deg=_rot_deg,
                 )
 
             md = render_table_object_markdown(
