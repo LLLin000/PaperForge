@@ -3033,6 +3033,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         is_validation_first_candidate = _is_validation_first_legend_candidate(block)
         if role in ("figure_caption", "figure_caption_candidate") or is_validation_first_candidate:
             text = str(block.get("text", "") or "")
+
+            # PDF prefix recovery: restore "Figure N" heading missed by OCR
+            # Must run BEFORE the zone/style filter that checks _extract_figure_number()
+            if page_pdf_lines_by_page and _extract_figure_number(text) is None:
+                recovered = _recover_figure_heading_prefix(block, page_pdf_lines_by_page)
+                if recovered:
+                    block["text"] = recovered
+                    text = recovered
             raw_label = str(block.get("raw_label") or "")
             rotated_orientation_prematch = (
                 role == "figure_caption_candidate"
@@ -3063,12 +3071,6 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                         }
                         rejected_legends.append(block)
                 continue
-            # PDF prefix recovery: restore "Figure N" heading missed by OCR
-            if page_pdf_lines_by_page and _extract_figure_number(text) is None:
-                recovered = _recover_figure_heading_prefix(block, page_pdf_lines_by_page)
-                if recovered:
-                    block["text"] = recovered
-                    text = recovered
             if not _is_formal_legend(text, block, page_width):
                 if rotated_orientation_prematch:
                     block["_rotated_caption_prematch"] = True
