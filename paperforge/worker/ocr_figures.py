@@ -3063,6 +3063,12 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                         }
                         rejected_legends.append(block)
                 continue
+            # PDF prefix recovery: restore "Figure N" heading missed by OCR
+            if page_pdf_lines_by_page and _extract_figure_number(text) is None:
+                recovered = _recover_figure_heading_prefix(block, page_pdf_lines_by_page)
+                if recovered:
+                    block["text"] = recovered
+                    text = recovered
             if not _is_formal_legend(text, block, page_width):
                 if rotated_orientation_prematch:
                     block["_rotated_caption_prematch"] = True
@@ -6035,3 +6041,62 @@ def _recover_missing_figure_numbers_from_assets(
         fig["flags"] = list(dict.fromkeys((fig.get("flags") or []) + [
             "figure_number_recovered_from_asset_text",
         ]))
+
+
+def _recover_figure_heading_prefix(
+    block: dict,
+    page_pdf_lines_by_page: dict[int, list[dict]],
+) -> str | None:
+    """Recover 'FIGURE N' heading prefix from PDF text layer for OCR-missed captions.
+
+    When PaddleOCR fails to detect a standalone 'Figure N' / 'FIGURE N' heading
+    (e.g. rendered in a bold/small-caps font that the OCR engine doesn't read),
+    the caption body is captured as figure_caption_candidate but lacks the
+    figure number prefix. This function checks the PDF text layer for the
+    heading on the same page and prepends it if the line immediately after
+    the heading matches the start of the caption text.
+
+    Returns the complete caption text with prefix, or None if no recovery.
+    """
+    page = int(block.get("page", 0) or 0)
+    pdf_lines = page_pdf_lines_by_page.get(page)
+    if not pdf_lines:
+        return None
+
+    block_text = str(block.get("text", "") or "").strip()
+    if not block_text or len(block_text) < 20:
+        return None
+
+    # Sort PDF lines top-to-bottom by y-center
+    sorted_lines = sorted(
+        pdf_lines,
+        key=lambda l: (l.get("bbox") or [0, 0, 0, 0])[1],
+    )
+
+    for i, line in enumerate(sorted_lines):
+        line_text = str(line.get("text", "") or "").strip()
+        # Check: line starts with Figure N heading (short heading, not in-text ref)
+        m = _FIGURE_NUMBER_PATTERN.match(line_text)
+        if not m or m.start() != 0:
+            continue
+        if len(line_text) > 40:
+            continue  # too long for a heading — probably in-text reference
+
+        # Check the next PDF line (by y-order) matches the start of block text
+        if i + 1 >= len(sorted_lines):
+            continue
+        next_text = str(sorted_lines[i + 1].get("text", "") or "").strip()
+        if not next_text or len(next_text) < 10:
+            continue
+
+        # Common-prefix match: at least 15 chars case-insensitive
+        common = 0
+        for a, b in zip(next_text.lower(), block_text.lower()):
+            if a == b:
+                common += 1
+            else:
+                break
+        if common >= 15:
+            return line_text + "\n" + block_text
+
+    return None
