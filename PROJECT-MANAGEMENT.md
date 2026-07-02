@@ -1,7 +1,7 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `master` | **Last Updated:** 2026-07-01
-> **Active work:** Asset-internal figure number recovery — `extract_pdf_lines_normalized` extracts PDF rawdict lines; recovery pass scans matched asset bboxes for `Figure N.` label text, patches figure number, namespace, and `recovered_label_text` onto existing matched figures. U746UJ7G `figure_unknown_000` → `figure_002` with `"Plot of Criteria Time"` label. **428 regression tests pass, 0 failures.**
+> **Branch:** `master` | **Last Updated:** 2026-07-02
+> **Active work:** Round 2 truth audit complete. 3 targeted fixes for 37LK5T97 (sidecar, table matching, table render). **428 regression tests pass, 0 failures.**
 
 ---
 
@@ -321,6 +321,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-06-28 | P1 author bio detection implementation | Added residual_author_bio_pass (figure-residual portrait assets), extended post_ref_bio_cleanup for figure_caption, tag_figure_contained_text protection. 7 new P1 tests. 1018 total OCR tests, 0 regressions. Commit: `7a1cc5e`. | §9.17 |
 | 2026-07-01 | Audit fix commits + orientation-aware rotated figure normalization | Commit 1 (`2d40ad9`) + Commit 2 (`21bdfd0`) + Commit 4 (`7670227`) landed, then refactored rotated-caption handling out of synthetic fallback into normal figure pre-match. Added PyMuPDF `dir/wmode` capture, same-page rotated settlement, rotated crop render. U746UJ7G now matches via `same_page_rotated`; KUR9PBJC unchanged. 422 regression tests pass. | §9.18 |
 | 2026-07-01 | Asset-internal figure number recovery implementation | Added `extract_pdf_lines_normalized` helper, `_recover_missing_figure_numbers_from_assets` pass in `build_figure_inventory`, 5 gate functions, 2 pattern constants. U746UJ7G `figure_unknown_000` → `figure_002` with recovered label "Plot of Criteria Time". 6 new tests. 428 regression tests pass. | §9.19 |
+| 2026-07-02 | Round 2 truth audit + 3 targeted bug fixes for 37LK5T97 | Batch-audited 10 fresh papers (5 GREEN / 4 YELLOW / 1 RED). 37LK5T97 found with Figure 1 broken (sidecar caption demoted) + 6 unmatched rotated tables. Fixes: (1) `_is_sidecar_candidate` guard in candidate_resolution, (2) `adjacent_x`+`y_overlap` in score_table_match for rotated captions, (3) rotated table render bbox+270° correction. Also: rotated figure crop quality fix (4x zoom + coordinate normalization in `_crop_asset_from_pdf`). Commits: `59cd01a`, `bd3f3b6`, `86e0d14`. 428 regression tests pass. | §9.20 |
 
 ## 9. Historical Detail Archive
 
@@ -543,3 +544,30 @@ Full-day debugging session across 8 gold papers. 98 bug annotations, 8 pipeline 
 **Execution:**
 - U746UJ7G verified: `figure_number == 2`, `figure_id == "figure_002"`, `recovered_label_text` contains "Plot of Criteria Time", flags contain `figure_number_recovered_from_asset_text`
 - **428 regression tests pass** (422 existing + 6 new)
+
+
+### 9.20 Round 2 Truth Audit + 37LK5T97 Bug Fixes (2026-07-02)
+
+**Scope:** 10 new papers batch-audited via `ocr_truth_audit.py` (high-risk mode). 5 GREEN / 4 YELLOW / 1 RED.  
+**RED paper:** 37LK5T97 — "Both IM and EC ossification occurs during the bone-healing process"  
+
+**Three bugs found and fixed:**
+
+1. **Figure 1 sidecar demotion:** Caption (left column, 246px) and image (right column, 693px) had zero x_overlap. `_is_near_figure_media()` missed it, `_looks_like_figure_narrative_prose()` caught the long description, and candidate_resolution demoted to `body_paragraph`. **Fix:** Added `_is_sidecar_candidate()` guard — checks vertical overlap with media_asset when horizontal overlap is absent. Caption preserved as `figure_caption_candidate`.
+   - File: `paperforge/worker/ocr_document.py`
+   - Result: Figure 1 matched as `figure_001` (caption block_id=2, asset block_id=9)
+
+2. **Rotated table caption matching:** Tables 1-3 had rotated captions (span dir=[0,-1], vertical text beside table body). `score_table_match` required x_overlap + asset_below_caption, both failed for rotated sidecar layout. **Fix:** Added `adjacent_x` + `y_overlap_with_asset` scoring branch when caption has rotated text and x_overlap < 0.5.
+   - File: `paperforge/worker/ocr_scores.py`
+   - Result: All 6 tables matched (has_asset=true, score >= 0.65)
+
+3. **Rotated table render orientation:** Table body also had dir=[0,-1] (rotated 90° content on portrait page). Rendered JPEG showed vertical text. **Fix:** Added `_table_has_rotated_content()` helper; computes union `render_bbox` (caption+asset) and `render_rotation_deg=270` in table entry; render loop passes `rotation_deg` to `_crop_asset_from_pdf`.
+   - Files: `paperforge/worker/ocr_tables.py`, `paperforge/worker/ocr_objects.py`
+   - Result: Tables 1-5 rendered at correct orientation (1908×2858 → 2858×1908)
+
+**Additional quality fix:** Rotated figure crop quality improved in prior session — `Matrix(2,2)` → `Matrix(4,4)`, PIL rotation from pix.tobytes("png") (single pass, no double JPEG), and OCR→PDF coordinate conversion fix. U746UJ7G figure_002: 2618×1914 px, 5.0M px (4.5x improvement).
+
+**Commits:** `59cd01a` (figure quality+rotation coord fix), `bd3f3b6` (sidecar+table match), `86e0d14` (table render rotation)  
+**Tests:** 428 regression tests pass (no new tests added, existing cover the affected paths)  
+**Analysis:** `docs/superpowers/analysis/2026-07-02-37lk5t97-figure1-sidecar-bug-analysis.md`  
+**Audit findings:** `docs/superpowers/specs/2026-07-02-ocr-truth-audit-round2-findings.md`
