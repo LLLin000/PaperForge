@@ -26,6 +26,7 @@ _SAFE_PRESERVED_ROLES = {
     "backmatter_body",
     "body_paragraph",
     "ocr_raw_error",
+    "table_html",  # inline <table> HTML is self-identifying, no verification needed
 }
 
 
@@ -357,6 +358,16 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             role_candidate="table_caption",
             render_default=False,
         )
+
+    if proposal == "table_html":
+        # Inline <table> HTML is self-identifying — no structural verifier needed.
+        # The seed_role is reliable when the block text starts with <table>.
+        if str(block.get("text", "") or "").strip().lower().startswith("<table"):
+            return accept_role(
+                "table_html", seed_role, "inline_table_html",
+                ["inline <table> HTML — self-identifying, accepted without verification"],
+            )
+        return hold_role(seed_role, "table_html seed without inline <table> text")
 
     if proposal in VERIFY_REQUIRED or seed_role in VERIFY_REQUIRED:
         return hold_role(seed_role, f"{proposal} requires structural verifier")

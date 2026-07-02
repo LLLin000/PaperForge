@@ -5989,12 +5989,6 @@ def normalize_document_structure(
         for block in blocks:
             if block.get("seed_role") == "figure_caption" and not _should_keep_formal_caption_seed(block):
                 block["role"] = "figure_caption_candidate"
-    if not gate_context.accepted_table_block_ids:
-        for block in blocks:
-            if block.get("seed_role") == "table_caption" and not _should_keep_formal_caption_seed(block):
-                block["role"] = "table_caption_candidate"
-            if block.get("seed_role") == "table_html":
-                block["role"] = "table_html_candidate"
 
     decisions = []
     for block in blocks:

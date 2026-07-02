@@ -1318,6 +1318,15 @@ def assign_block_role(
             evidence=[f"textual table (bullet list) not media_asset: {text[:60]}"],
         )
 
+
+    # Inline table HTML check: applies to all raw_labels, not just "text"
+    if text.strip().lower().startswith("<table"):
+        return RoleAssignment(
+            role="table_html",
+            confidence=0.95,
+            evidence=["inline table HTML"],
+        )
+
     if raw_label in {"image", "chart", "table"}:
         return RoleAssignment(
             role="media_asset",
