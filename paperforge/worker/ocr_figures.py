@@ -6085,25 +6085,21 @@ def _recover_figure_heading_prefix(
         if len(line_text) > 40:
             continue  # too long for a heading — probably in-text reference
 
-        # Scan lines below the heading (by y-order) for a caption text match
-        heading_y = (line.get("bbox") or [0, 0, 0, 0])[1]
-        found = False
-        for j in range(i + 1, min(i + 10, len(sorted_lines))):
-            nxt = sorted_lines[j]
-            nxt_y = (nxt.get("bbox") or [0, 0, 0, 0])[1]
-            if nxt_y - heading_y > 100:
-                break  # too far down — not the same caption block
-            next_text = str(nxt.get("text", "") or "").strip()
-            if not next_text or len(next_text) < 10:
-                continue
+        # Check the next PDF line (by y-order) matches the start of block text
+        if i + 1 >= len(sorted_lines):
+            continue
+        next_text = str(sorted_lines[i + 1].get("text", "") or "").strip()
+        if not next_text or len(next_text) < 10:
+            continue
 
-            # Common-prefix match: at least 15 chars case-insensitive
-            common = 0
-            for a, b in zip(next_text.lower(), block_text.lower()):
-                if a == b:
-                    common += 1
-                else:
-                    break
-            if common >= 15 or next_text in block_text:
-                return line_text + "\n" + block_text
+        # Common-prefix match: at least 15 chars case-insensitive
+        common = 0
+        for a, b in zip(next_text.lower(), block_text.lower()):
+            if a == b:
+                common += 1
+            else:
+                break
+        if common >= 15:
+            return line_text + "\n" + block_text
+
     return None
