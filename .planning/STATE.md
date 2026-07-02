@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: annotation v0.2
-milestone_name: milestone
-status: verifying
-stopped_at: Annotation Phase 9 automated verification complete; live Obsidian PDF viewer harness pending
-last_updated: "2026-07-02T22:28:00.000+08:00"
-last_activity: 2026-07-02 - Annotation Phase 9 automated display-layer gate passed: node syntax check and 230/230 focused annotation plugin tests pass; live Obsidian viewer harness remains pending.
+milestone: annotation v0.3
+milestone_name: Visual Reading Canvas
+status: planning
+last_updated: "2026-07-02T14:47:40.961Z"
+last_activity: 2026-07-02
 progress:
-  total_phases: 69
-  completed_phases: 51
-  total_plans: 126
-  completed_plans: 119
-  percent: 94
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-18)
 
 ## Current Position
 
-Phase: Annotation Phase 9 of 9 (Display Layer Verification Gate)
-Plans: annotation-08-01 through annotation-08-04 complete; annotation-09-VERIFICATION.md created.
-Status: Automated v0.2 display-layer gate passed. `node --check main.js` passes and focused annotation plugin tests pass (230/230). The remaining gate is live Obsidian PDF viewer manual verification in annotation-08-OBSIDIAN-OVERLAY-HARNESS.md.
-Last activity: 2026-07-02 - Annotation Phase 9 automated verification gate recorded.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-07-02 — Milestone annotation v0.3 started
 
 ## Performance Metrics
 

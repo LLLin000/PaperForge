@@ -4,17 +4,32 @@
 
 PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.9 consolidated the fragmented tracking layers (library-records + formal notes) into a single per-workspace structure with slim frontmatter and paper-meta.json for internal state. v1.10 fixed cross-cutting dependency drift. v1.11 resolved all v1.9 ripple effects (index paths, library-records cleanup, TUI removal, module hardening, repair blind spots).
 
-## Current Milestone: annotation v0.2 Obsidian PDF Annotation Display Layer
+## Current Milestone: annotation v0.3 Visual Reading Canvas
 
-**Goal:** Make the verified annotation backend visible and useful inside Obsidian through a sidebar/list surface, PDF jump navigation, and a risk-gated PDF overlay.
+**Goal:** Turn the annotation display layer into a PaperForge-controlled visual reading canvas: central reading content, side annotation cards, read-only grounding, and a path toward connector lines and richer cards inspired by the target reading UI.
 
 **Target features:**
+- PaperForge Reading Canvas view with a central text/PDF reading surface and left/right annotation card lanes
+- Reuse v0.2 annotation data, page jump, overlay, and popover contracts as the read-only source of truth
+- Card view-models for selected text, comments, source/page identity, color/type, and future rich media
+- Anchor-aware navigation between canvas cards and source text/PDF locations
+- Visual foundation for connector lines between highlighted source spans and side cards
+- Safe fallback to the existing annotation list/PDF overlay when canvas prerequisites are unavailable
+
+**Important carry-over:** annotation v0.2 has passed the automated display-layer gate, but the live Obsidian PDF viewer harness remains pending. v0.3 planning may proceed, but canvas work must preserve the v0.2 safety boundary and should not claim live PDF overlay completion until that harness is recorded.
+
+## Previous Milestone: annotation v0.2 Obsidian PDF Annotation Display Layer
+
+**Status:** AUTOMATED GATE PASSED (2026-07-02), live Obsidian PDF viewer harness pending
+
+**Delivered:**
 - Obsidian plugin bridge to `paperforge annotation list/export --json`
 - Paper-scoped annotation sidebar/list with page, color/type, selected text, comment, source, and read-only state
 - Refresh and empty/error states for missing DB, missing paper identity, missing PDF, and command failures
 - Jump from annotation list items to the source PDF/page where Obsidian supports it
 - PDF overlay rendering over the native Obsidian PDF viewer when viewer internals are available
-- Safe overlay fallback to the sidebar/list when Obsidian PDF internals are unavailable
+- Read-only overlay popover and safe fallback to the sidebar/list when Obsidian PDF internals are unavailable
+- Focused annotation gate: `node --check main.js` and 230/230 plugin annotation tests passing
 
 ## Completed Milestone: annotation v0.1 PDF Annotation Backend & CLI Foundation
 
@@ -323,6 +338,8 @@ Key gaps identified on feature branch:
 | Continue annotation v0.2 phase numbering after Phase 4 | The annotation feature line is continuous: v0.1 built backend/CLI, v0.2 builds Obsidian display/overlay. Continuing at Phase 5 preserves that lineage. | Active for annotation v0.2 |
 | v0.2 prioritizes display before editing/evidence | Users first need to see and navigate imported annotations in Obsidian before local editing or concept-card evidence integration becomes useful. | Active for annotation v0.2 |
 | Overlay is risk-gated behind sidebar/list fallback | Obsidian PDF viewer internals may change; v0.2 must remain useful through the annotation list even if overlay hooks fail. | Active for annotation v0.2 |
+| Build v0.3 as a PaperForge-controlled reading canvas | The target UI needs central reading content, side annotation card lanes, and connector geometry that native Obsidian PDF internals cannot reliably own. | Active for annotation v0.3 |
+| Keep v0.3 MVP read-only | The first canvas milestone should prove reading, grounding, navigation, and card layout before local editing, Zotero write-back, or evidence-card mutation. | Active for annotation v0.3 |
 
 ## Research Lock
 
@@ -361,4 +378,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-18 after annotation v0.2 initiation*
+*Last updated: 2026-07-02 after annotation v0.3 initiation*

@@ -1,5 +1,23 @@
 # Milestones: PaperForge Lite Release Hardening
 
+## annotation v0.3 Visual Reading Canvas (Initiated: 2026-07-02)
+
+**Status:** Planning
+**Roadmap:** `.planning/ROADMAP.md`
+**Requirements:** `.planning/REQUIREMENTS.md`
+
+**Goal:** Build a PaperForge-controlled visual reading canvas that moves beyond a sidebar/list into a central reading surface with left/right annotation card lanes, read-only grounding, and a foundation for connector lines and richer card content.
+
+**Initial scope:** Canvas MVP with research first.
+
+**Key boundaries:**
+- v0.3 reuses v0.2 annotation data/loading/navigation contracts rather than creating a second annotation backend.
+- v0.3 remains read-only for Zotero-sourced annotations.
+- v0.3 does not claim v0.2 live PDF overlay completion until the Obsidian harness is recorded.
+- Local annotation editing, Zotero write-back, and concept-card evidence mutation remain deferred unless explicitly promoted in requirements.
+
+---
+
 ## annotation v0.2 Obsidian PDF Annotation Display Layer (Initiated: 2026-06-18)
 
 **Status:** Planning
