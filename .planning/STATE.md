@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: annotation v0.2
 milestone_name: milestone
-status: planned
-stopped_at: Annotation Phase 7 planned
-last_updated: "2026-06-28T16:50:00.000Z"
-last_activity: 2026-06-28 - Annotation Phase 8 Plan 03 executed: overlay lifecycle, CSS, and runtime/DOM tests (356/359 pass).
+status: verifying
+stopped_at: Annotation Phase 9 automated verification complete; live Obsidian PDF viewer harness pending
+last_updated: "2026-07-02T22:28:00.000+08:00"
+last_activity: 2026-07-02 - Annotation Phase 9 automated display-layer gate passed: node syntax check and 230/230 focused annotation plugin tests pass; live Obsidian viewer harness remains pending.
 progress:
   total_phases: 69
   completed_phases: 51
-  total_plans: 125
-  completed_plans: 117
+  total_plans: 126
+  completed_plans: 119
   percent: 94
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-18)
 
 ## Current Position
 
-Phase: Annotation Phase 8 of 9 (PDF Overlay Rendering Spike and Implementation) — Plan 03 of 4
-Plans: annotation-08-01-PLAN.md (spike, done) -> annotation-08-02-PLAN.md (pure helpers, done) -> annotation-08-03-PLAN.md (overlay lifecycle, done) -> annotation-08-04-PLAN.md (popover, pending)
-Status: Plan 03 complete — Runtime overlay lifecycle with session-only state, fail-closed attach/teardown, PaperForge-owned mark DOM, SECTION 41 CSS; 356/359 tests pass (3 pre-existing baseline failures in errors.test.mjs, runtime.test.mjs).
-Last activity: 2026-06-28 - Annotation Phase 8 Plan 03 executed: overlay lifecycle implementation.
+Phase: Annotation Phase 9 of 9 (Display Layer Verification Gate)
+Plans: annotation-08-01 through annotation-08-04 complete; annotation-09-VERIFICATION.md created.
+Status: Automated v0.2 display-layer gate passed. `node --check main.js` passes and focused annotation plugin tests pass (230/230). The remaining gate is live Obsidian PDF viewer manual verification in annotation-08-OBSIDIAN-OVERLAY-HARNESS.md.
+Last activity: 2026-07-02 - Annotation Phase 9 automated verification gate recorded.
 
 ## Performance Metrics
 
@@ -115,7 +115,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-28T00:00:00.000Z
-Stopped at: Annotation Phase 7 executed — plans 03-04 complete
-Resume file: .planning/phases/annotation-08-*/annotation-08-01-PLAN.md (Not yet created)
-Next phase: Annotation Phase 8 (PDF Overlay Rendering) — pending planning
+Last session: 2026-07-02T22:28:00.000+08:00
+Stopped at: Annotation Phase 9 automated verification gate complete; live Obsidian PDF viewer harness pending
+Resume file: .planning/phases/annotation-08-pdf-overlay-rendering-spike-and-implementation/annotation-08-OBSIDIAN-OVERLAY-HARNESS.md
+Next phase: Complete live Obsidian overlay/fallback harness, then archive annotation v0.2

@@ -11,8 +11,8 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 - [x] **Annotation Phase 5: Plugin Annotation Data Bridge** - Connect the Obsidian plugin to v0.1 annotation CLI JSON and normalize UI-ready state.
 - [x] **Annotation Phase 6: Annotation Sidebar and List View** - Display paper-scoped annotations in Obsidian with scanning, filtering, refresh, and empty/error states. (completed 2026-06-20)
 - [x] **Annotation Phase 7: PDF Jump Navigation** - Jump from an annotation row to the source PDF/page using existing paper/PDF path resolution. (completed 2026-06-28 — 4/4 plans, 142 tests passing)
-- [ ] **Annotation Phase 8: PDF Overlay Rendering Spike and Implementation** - Render imported annotations over the native PDF viewer when available, with graceful fallback.
-- [ ] **Annotation Phase 9: Display Layer Verification Gate** - Verify plugin parsing/rendering/navigation/overlay fallback and document known baseline failures separately.
+- [x] **Annotation Phase 8: PDF Overlay Rendering Spike and Implementation** - Render imported annotations over the native PDF viewer when available, with graceful fallback. (implemented 2026-06-28; live Obsidian harness pending)
+- [ ] **Annotation Phase 9: Display Layer Verification Gate** - Verify plugin parsing/rendering/navigation/overlay fallback and document known baseline failures separately. (automated gate passed 2026-07-02; live Obsidian harness pending)
 
 ## Phase Details
 
@@ -102,7 +102,7 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 - [x] `annotation-08-01-PLAN.md` completed — PDF viewer spike document and attach contract (Wave 1).
 - [x] `annotation-08-02-PLAN.md` completed — Overlay pure helpers (state, position parsing, color, mark and popover view-models) (Wave 2).
 - [x] `annotation-08-03-PLAN.md` completed — Runtime overlay lifecycle, CSS, and runtime/DOM tests (Wave 3).
-- [ ] `annotation-08-04-PLAN.md` — Popover interaction layer (Wave 4, pending).
+- [x] `annotation-08-04-PLAN.md` completed - Popover interaction layer and automated gate harness (Wave 4; live Obsidian harness pending).
 
 ### Annotation Phase 9: Display Layer Verification Gate
 
@@ -120,7 +120,9 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 4. Overlay verification proves either correct rendering or safe fallback.
 5. Final notes confirm v0.2 does not add Zotero write-back or local editing as a primary workflow.
 
-**Plans:** TBD
+**Plans:** 1 verification report
+
+- [x] `annotation-09-VERIFICATION.md` - Focused automated display-layer verification gate, baseline-failure separation, and live Obsidian manual gate record.
 
 ## Progress
 
@@ -131,8 +133,8 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 | Annotation Phase 5. Plugin Annotation Data Bridge | 2/2 | Executed | 2026-06-19 |
 | Annotation Phase 6. Annotation Sidebar and List View | 4/4 | Executed | 2026-06-20 |
 | Annotation Phase 7. PDF Jump Navigation | 4/4 | Executed | 2026-06-28 |
-| Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 3/4 | In progress | - |
-| Annotation Phase 9. Display Layer Verification Gate | 0/TBD | Not started | - |
+| Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 4/4 | Implemented; live harness pending | 2026-06-28 |
+| Annotation Phase 9. Display Layer Verification Gate | 1/1 | Automated gate passed; live harness pending | 2026-07-02 |
 
 ---
 *Roadmap created: 2026-06-18*

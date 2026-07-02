@@ -9,10 +9,10 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 
 ### Plugin Data Bridge (BRDG)
 
-- [ ] **BRDG-01**: User can load annotation data for the active paper in Obsidian through the existing PaperForge plugin without manually running shell commands.
-- [ ] **BRDG-02**: Plugin calls the v0.1 annotation CLI/contracts as the source of truth rather than reimplementing annotation database queries in TypeScript.
-- [ ] **BRDG-03**: Plugin handles missing `annotations.db`, missing paper identity, empty annotations, and CLI failure states with clear user-facing messages.
-- [ ] **BRDG-04**: Annotation rows preserve provenance fields needed for display: page, selected text, comment, color, type, read-only state, source, and source attachment identity.
+- [x] **BRDG-01**: User can load annotation data for the active paper in Obsidian through the existing PaperForge plugin without manually running shell commands.
+- [x] **BRDG-02**: Plugin calls the v0.1 annotation CLI/contracts as the source of truth rather than reimplementing annotation database queries in TypeScript.
+- [x] **BRDG-03**: Plugin handles missing `annotations.db`, missing paper identity, empty annotations, and CLI failure states with clear user-facing messages.
+- [x] **BRDG-04**: Annotation rows preserve provenance fields needed for display: page, selected text, comment, color, type, read-only state, source, and source attachment identity.
 
 ### Annotation Sidebar/List (LIST)
 
@@ -24,26 +24,26 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 
 ### PDF Navigation and Overlay (OVLY)
 
-- [ ] **OVLY-01**: User can jump from an annotation list item to the corresponding PDF and page when the source PDF is available.
+- [x] **OVLY-01**: User can jump from an annotation list item to the corresponding PDF and page when the source PDF is available.
 - [x] **OVLY-02**: User can see imported annotations as highlights or marks over the native Obsidian PDF viewer when viewer internals are available.
 - [x] **OVLY-03**: Overlay positioning uses stored annotation position/page data and remains scoped to the active PDF/paper.
-- [ ] **OVLY-04**: User can inspect annotation text/comment from the overlay through a lightweight popover or selection detail.
+- [x] **OVLY-04**: User can inspect annotation text/comment from the overlay through a lightweight popover or selection detail.
 - [x] **OVLY-05**: Overlay degrades safely when Obsidian PDF.js internals change or are unavailable, falling back to the sidebar/list without breaking the plugin.
 
 ### Safety and Scope (SAFE)
 
-- [ ] **SAFE-01**: v0.2 remains read-only for Zotero-sourced annotations; it does not add Zotero write-back.
-- [ ] **SAFE-02**: v0.2 does not make local annotation creation/editing/deletion a primary workflow.
-- [ ] **SAFE-03**: Plugin display code does not mutate `annotations.db` except through existing explicit import/apply commands if surfaced later.
-- [ ] **SAFE-04**: Errors never expose raw Python tracebacks or shell noise in the Obsidian UI.
+- [x] **SAFE-01**: v0.2 remains read-only for Zotero-sourced annotations; it does not add Zotero write-back.
+- [x] **SAFE-02**: v0.2 does not make local annotation creation/editing/deletion a primary workflow.
+- [x] **SAFE-03**: Plugin display code does not mutate `annotations.db` except through existing explicit import/apply commands if surfaced later.
+- [x] **SAFE-04**: Errors never expose raw Python tracebacks or shell noise in the Obsidian UI.
 
 ### Verification (TEST)
 
-- [ ] **TEST-01**: Tests cover plugin-side parsing of annotation CLI JSON success and failure payloads.
-- [ ] **TEST-02**: Tests cover annotation list rendering states: loaded rows, empty rows, missing DB, missing paper, and command failure.
-- [ ] **TEST-03**: Tests or a documented manual harness cover jump-to-PDF/page behavior.
-- [ ] **TEST-04**: Overlay work includes a risk-gated verification path that proves either the overlay renders correctly or the fallback list remains usable.
-- [ ] **TEST-05**: Final verification distinguishes v0.2 failures from known unrelated baseline failures inherited from v0.1.
+- [x] **TEST-01**: Tests cover plugin-side parsing of annotation CLI JSON success and failure payloads.
+- [x] **TEST-02**: Tests cover annotation list rendering states: loaded rows, empty rows, missing DB, missing paper, and command failure.
+- [x] **TEST-03**: Tests or a documented manual harness cover jump-to-PDF/page behavior.
+- [ ] **TEST-04**: Overlay work includes a risk-gated verification path that proves either the overlay renders correctly or the fallback list remains usable. Automated gate passed; live Obsidian viewer check pending.
+- [x] **TEST-05**: Final verification distinguishes v0.2 failures from known unrelated baseline failures inherited from v0.1.
 
 ## Future Requirements
 
@@ -78,10 +78,10 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BRDG-01 | Annotation Phase 5 | Pending |
-| BRDG-02 | Annotation Phase 5 | Pending |
-| BRDG-03 | Annotation Phase 5 | Pending |
-| BRDG-04 | Annotation Phase 5 | Pending |
+| BRDG-01 | Annotation Phase 5 | Complete |
+| BRDG-02 | Annotation Phase 5 | Complete |
+| BRDG-03 | Annotation Phase 5 | Complete |
+| BRDG-04 | Annotation Phase 5 | Complete |
 | LIST-01 | Annotation Phase 6 | Complete |
 | LIST-02 | Annotation Phase 6 | Complete |
 | LIST-03 | Annotation Phase 6 | Complete |
@@ -90,17 +90,17 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 | OVLY-01 | Annotation Phase 7 | Complete |
 | OVLY-02 | Annotation Phase 8 | Complete |
 | OVLY-03 | Annotation Phase 8 | Complete |
-| OVLY-04 | Annotation Phase 8 | Pending |
+| OVLY-04 | Annotation Phase 8 | Complete |
 | OVLY-05 | Annotation Phase 8 | Complete |
-| SAFE-01 | Annotation Phase 9 | Pending |
-| SAFE-02 | Annotation Phase 9 | Pending |
-| SAFE-03 | Annotation Phase 9 | Pending |
-| SAFE-04 | Annotation Phase 9 | Pending |
-| TEST-01 | Annotation Phase 9 | Pending |
-| TEST-02 | Annotation Phase 9 | Pending |
-| TEST-03 | Annotation Phase 9 | Pending |
-| TEST-04 | Annotation Phase 9 | Pending |
-| TEST-05 | Annotation Phase 9 | Pending |
+| SAFE-01 | Annotation Phase 9 | Complete |
+| SAFE-02 | Annotation Phase 9 | Complete |
+| SAFE-03 | Annotation Phase 9 | Complete |
+| SAFE-04 | Annotation Phase 9 | Complete |
+| TEST-01 | Annotation Phase 9 | Complete |
+| TEST-02 | Annotation Phase 9 | Complete |
+| TEST-03 | Annotation Phase 9 | Complete |
+| TEST-04 | Annotation Phase 9 | Partial - automated gate passed, live Obsidian viewer check pending |
+| TEST-05 | Annotation Phase 9 | Complete |
 
 **Coverage:**
 
@@ -110,4 +110,4 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 
 ---
 *Requirements defined: 2026-06-18*
-*Last updated: 2026-06-18 after annotation v0.2 initiation*
+*Last updated: 2026-07-02 after annotation v0.2 automated verification gate*
