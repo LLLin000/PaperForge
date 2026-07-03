@@ -2982,21 +2982,30 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     return build_figure_inventory_legacy(structured_blocks, page_width, page_pdf_lines_by_page)
 
 def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
+    from .ocr_figure_vnext_bundle_pass import LegendBundlePass
     from .ocr_figure_vnext_corpus import FigureCandidateIndex, FigureCorpus
-
+    from .ocr_figure_vnext_locator_pass import LocatorBridgePass
     from .ocr_figure_vnext_passes import (
         CrossPageReservationPass,
         CrossPageSettlementPass,
         PrimarySamePagePass,
         _resource_page,
     )
+    from .ocr_figure_vnext_sidecar_pass import SidecarPass
     from .ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
 
     corpus = FigureCorpus.from_blocks(structured_blocks, page_width=page_width)
     candidate_index = FigureCandidateIndex.from_corpus(corpus)
     state = FigurePipelineState(corpus=corpus, candidate_index=candidate_index, ledger=OwnershipLedger())
     reports = []
-    for pass_cls in (PrimarySamePagePass, CrossPageReservationPass, CrossPageSettlementPass):
+    for pass_cls in (
+        PrimarySamePagePass,
+        SidecarPass,
+        LocatorBridgePass,
+        CrossPageReservationPass,
+        CrossPageSettlementPass,
+        LegendBundlePass,
+    ):
         reports.append(pass_cls().run(state))
     matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
 
