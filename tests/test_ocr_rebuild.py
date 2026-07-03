@@ -188,7 +188,7 @@ def test_run_derived_rebuild_skips_span_backfill_when_valid(tmp_path: Path, monk
         encoding="utf-8",
     )
     (paper_root / "meta.json").write_text(
-        '{"source_pdf":"sample.pdf","span_backfill_version":"2026-06-22.1","span_visual_container_version":"2026-06-26.6","span_pdf_fingerprint":"fp-1","span_backfill_coverage":1.0}',
+        '{"source_pdf":"sample.pdf","span_backfill_version":"2026-07-01.1","span_visual_container_version":"2026-06-26.6","span_pdf_fingerprint":"fp-1","span_backfill_coverage":1.0}',
         encoding="utf-8",
     )
     pdf_path = tmp_path / "sample.pdf"
@@ -242,7 +242,7 @@ def test_run_derived_rebuild_records_unavailable_pdf_missing_without_rerun(tmp_p
     paper_root = tmp_path / "System" / "PaperForge" / "ocr" / key
     (paper_root / "canonical").mkdir(parents=True)
     (paper_root / "raw").mkdir(parents=True)
-    (paper_root / "meta.json").write_text('{"span_backfill_version":"2026-06-22.1"}', encoding="utf-8")
+    (paper_root / "meta.json").write_text('{"span_backfill_version":"2026-07-01.1"}', encoding="utf-8")
     (paper_root / "canonical" / "blocks.raw.jsonl").write_text('{"paper_id":"TESTKEY1","page":1,"block_id":"p1_b1","raw_label":"text","raw_order":0,"text":"A","bbox":[0,0,10,10],"page_width":600,"page_height":800,"span_metadata":[{"size":10}]}\n', encoding="utf-8")
     (paper_root / "raw" / "source_metadata.json").write_text('{"title":"Example Title"}', encoding="utf-8")
 
@@ -292,8 +292,8 @@ def test_run_derived_rebuild_does_not_skip_when_current_fingerprint_is_unknown()
     from paperforge.worker.ocr_rebuild import _span_backfill_is_valid
 
     meta = {
-        "span_backfill_version": "2026-06-22.1",
-        "span_visual_container_version": "2026-06-22.1",
+        "span_backfill_version": "2026-07-01.1",
+        "span_visual_container_version": "2026-06-26.6",
         "span_pdf_fingerprint": "unknown",
         "span_backfill_coverage": 1.0,
     }
@@ -306,7 +306,7 @@ def test_span_backfill_invalid_when_version_mismatch() -> None:
 
     meta = {
         "span_backfill_version": "old",
-        "span_visual_container_version": "2026-06-22.1",
+        "span_visual_container_version": "2026-06-26.6",
         "span_pdf_fingerprint": "fp-1",
     }
 
@@ -317,7 +317,7 @@ def test_span_backfill_invalid_when_visual_container_version_mismatch() -> None:
     from paperforge.worker.ocr_rebuild import _span_backfill_is_valid
 
     meta = {
-        "span_backfill_version": "2026-06-22.1",
+        "span_backfill_version": "2026-07-01.1",
         "span_visual_container_version": "old",
         "span_pdf_fingerprint": "fp-1",
     }
@@ -329,8 +329,8 @@ def test_span_backfill_invalid_when_fingerprint_mismatch() -> None:
     from paperforge.worker.ocr_rebuild import _span_backfill_is_valid
 
     meta = {
-        "span_backfill_version": "2026-06-22.1",
-        "span_visual_container_version": "2026-06-22.1",
+        "span_backfill_version": "2026-07-01.1",
+        "span_visual_container_version": "2026-06-26.6",
         "span_pdf_fingerprint": "fp-old",
     }
 
@@ -341,8 +341,8 @@ def test_span_backfill_invalid_when_coverage_below_threshold() -> None:
     from paperforge.worker.ocr_rebuild import _span_backfill_is_valid
 
     meta = {
-        "span_backfill_version": "2026-06-22.1",
-        "span_visual_container_version": "2026-06-22.1",
+        "span_backfill_version": "2026-07-01.1",
+        "span_visual_container_version": "2026-06-26.6",
         "span_pdf_fingerprint": "fp-1",
     }
 
