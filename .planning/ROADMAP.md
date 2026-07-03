@@ -1,140 +1,145 @@
-# Roadmap: PaperForge annotation v0.2 - Obsidian PDF Annotation Display Layer
+# Roadmap: PaperForge annotation v0.3 - Visual Reading Canvas
 
 ## Overview
 
-annotation v0.2 builds on the completed annotation v0.1 backend and CLI foundation. v0.1 proved PaperForge can safely import Zotero PDF annotations into `annotations.db` and expose them through stable `paperforge annotation import/list/status/export --json` commands.
+annotation v0.3 builds a PaperForge-controlled visual reading canvas for one active paper. The target experience is a central reading surface with left/right annotation cards, source anchors, bidirectional focus, and guarded connector lines that show evidence relationships without implying unsupported precision.
 
-v0.2 makes those annotations visible and useful inside Obsidian. The milestone starts with a plugin data bridge and sidebar/list view, then adds PDF navigation and overlay support. The overlay is intentionally risk-gated because Obsidian PDF viewer internals can change.
+The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/list/navigation/overlay contracts, avoids native Obsidian PDF viewer internals as the canvas foundation, and preserves v0.2 fallback paths when canvas prerequisites are missing.
 
 ## Phases
 
-- [x] **Annotation Phase 5: Plugin Annotation Data Bridge** - Connect the Obsidian plugin to v0.1 annotation CLI JSON and normalize UI-ready state.
-- [x] **Annotation Phase 6: Annotation Sidebar and List View** - Display paper-scoped annotations in Obsidian with scanning, filtering, refresh, and empty/error states. (completed 2026-06-20)
-- [x] **Annotation Phase 7: PDF Jump Navigation** - Jump from an annotation row to the source PDF/page using existing paper/PDF path resolution. (completed 2026-06-28 — 4/4 plans, 142 tests passing)
-- [x] **Annotation Phase 8: PDF Overlay Rendering Spike and Implementation** - Render imported annotations over the native PDF viewer when available, with graceful fallback. (implemented 2026-06-28; live Obsidian harness pending)
-- [ ] **Annotation Phase 9: Display Layer Verification Gate** - Verify plugin parsing/rendering/navigation/overlay fallback and document known baseline failures separately. (automated gate passed 2026-07-02; live Obsidian harness pending)
+- [ ] **Annotation Phase 10: Canvas Data Contract and View Registration** - Add a PaperForge Reading Canvas view shell with explicit paper identity and reusable module seams.
+- [ ] **Annotation Phase 11: Annotation Card View-Models and Layout** - Project existing annotations into read-only card models and deterministic side lanes.
+- [ ] **Annotation Phase 12: Controlled Reading Surface and Source Anchors** - Render a PaperForge-owned central source surface with exact, page-level, and unresolved anchors.
+- [ ] **Annotation Phase 13: Bidirectional Navigation and Fallback Paths** - Connect cards and source anchors through focus/scroll behavior while preserving v0.2 PDF navigation fallback.
+- [ ] **Annotation Phase 14: Focused Connector Layer and Visual Polish** - Draw guarded focused connectors and harden responsive/readable canvas presentation.
+- [ ] **Annotation Phase 15: Canvas Verification Gate and Live Harness Record** - Prove automated canvas behavior, preserve v0.2 gates, and record live Obsidian confidence.
 
 ## Phase Details
 
-### Annotation Phase 5: Plugin Annotation Data Bridge
+### Annotation Phase 10: Canvas Data Contract and View Registration
 
-**Goal:** Let the Obsidian plugin load annotation data through the v0.1 CLI contracts without reimplementing annotation storage in TypeScript.
+**Goal:** Establish a PaperForge-owned Reading Canvas entry point with stable paper identity before visual work begins.
 
-**Depends on:** Annotation Phase 4
+**Depends on:** Annotation Phase 9 automated verification gate
 
-**Requirements:** BRDG-01, BRDG-02, BRDG-03, BRDG-04
-
-**Success Criteria:**
-
-1. Plugin has a single annotation data-loading path that calls or reuses `paperforge annotation list/export --json`.
-2. CLI JSON parsing preserves page, selected text, comment, color, type, source, read-only state, and attachment identity.
-3. Missing DB, missing paper identity, empty annotation list, and command failures produce structured UI states.
-4. The bridge is covered by tests using representative PFResult success/error fixtures.
-
-**Plans:**
-
-- `annotation-05-01-PLAN.md` - Testable annotation bridge helpers and state normalization (Wave 1).
-- `annotation-05-02-PLAN.md` - Obsidian runtime integration with active-paper annotation state (Wave 2, depends on Wave 1).
-
-### Annotation Phase 6: Annotation Sidebar and List View
-
-**Goal:** Show paper-scoped annotations in an Obsidian UI surface that is useful even before overlay rendering is stable.
-
-**Depends on:** Annotation Phase 5
-
-**Requirements:** LIST-01, LIST-02, LIST-03, LIST-04, LIST-05
+**Requirements:** CANVAS-01, CANVAS-02
 
 **Success Criteria:**
 
-1. User can open a paper annotation list from the PaperForge plugin UI.
-2. Rows show page, type/color, selected text, comment, source, and read-only status in a compact readable layout.
-3. User can filter or group by page and type/color.
-4. User can refresh annotation data after import without restarting Obsidian.
-5. Empty, missing PDF, missing DB, and unsupported field states are visible and non-crashing.
+1. Plugin registers a dedicated PaperForge Reading Canvas `ItemView` and an open command/button.
+2. The canvas opens with explicit `paperKey`/paper identity and does not infer stale state from unrelated panes.
+3. `paperforge/plugin/src/canvas/*` modules define context, annotation loading, view-model, layout, surface, render, and controller seams.
+4. Canvas annotation loading reuses v0.2 contracts and has no direct SQLite/Zotero reads or new Python subprocess API.
+5. `main.js` remains a thin runtime integration point with parity/runtime coverage if imports require temporary inlining.
 
-**Plans:**
+**Plans:** TBD during phase planning.
 
-- `annotation-06-01-PLAN.md` completed - Phase 5 bridge hard preflight and dependency gate (Wave 1).
-- `annotation-06-02-PLAN.md` completed - Pure annotation list view-model helpers and tests (Wave 2, depends on Wave 1).
-- `annotation-06-03-PLAN.md` completed - Paper-mode annotation section runtime integration (Wave 3, depends on Wave 2).
-- `annotation-06-04-PLAN.md` ✅ completed — Bounded compact styling and DOM/regression coverage (Wave 4, depends on Wave 3).
+### Annotation Phase 11: Annotation Card View-Models and Layout
 
-### Annotation Phase 7: PDF Jump Navigation
+**Goal:** Turn existing annotation state into safe, deterministic side-lane cards.
 
-**Goal:** Let the user jump from a list item to the corresponding PDF and page.
+**Depends on:** Annotation Phase 10
 
-**Depends on:** Annotation Phase 6
-
-**Requirements:** OVLY-01
+**Requirements:** CANVAS-03, CANVAS-04, CARD-01, CARD-02, CARD-03, CARD-04
 
 **Success Criteria:**
 
-1. Annotation list rows expose a jump/open action.
-2. Jump action resolves the correct paper/PDF path using existing PaperForge metadata/path conventions.
-3. Jump action opens the PDF and lands on or near the annotation page where Obsidian supports page fragments or viewer commands.
-4. Unsupported jump cases show a clear fallback message and keep the annotation list usable.
+1. Card view-models display selected text, comment, page, color/type, source, attachment/provenance, and read-only status.
+2. Long, missing, and CJK-heavy text/comment values remain readable without overlapping card controls or resizing the canvas unexpectedly.
+3. Lane assignment is deterministic by reading/source order and does not depend on random or persisted layout state.
+4. Loaded, empty, missing paper, missing DB, missing source, command failure, refresh, and stale-result states are represented explicitly.
+5. No card interaction exposes create, edit, delete, save, import, apply, or write-back controls.
 
-**Plans:** 4 plans
+**Plans:** TBD during phase planning.
 
-- [x] `annotation-07-01-PLAN.md` completed - Pure fail-closed attachment/PDF target resolver and helper tests (Wave 1).
-- [x] `annotation-07-02-PLAN.md` completed - Obsidian runtime page opening, fallback, state isolation, and read-only tests (Wave 2).
-- [x] `annotation-07-03-PLAN.md` completed — Accessible page-badge jump affordance, styling, and DOM regressions (Wave 3).
-- [x] `annotation-07-04-PLAN.md` completed — Focused automated gate and manual Obsidian navigation checkpoint (Wave 4).
+### Annotation Phase 12: Controlled Reading Surface and Source Anchors
 
-### Annotation Phase 8: PDF Overlay Rendering Spike and Implementation
+**Goal:** Provide a PaperForge-owned central reading surface where source grounding can be measured and tested.
 
-**Goal:** Render imported annotations over the native Obsidian PDF viewer when viewer internals are available, while falling back safely to the sidebar/list when they are not.
+**Depends on:** Annotation Phase 11
 
-**Depends on:** Annotation Phase 7
-
-**Requirements:** OVLY-02, OVLY-03, OVLY-04, OVLY-05
+**Requirements:** ANCHOR-01, ANCHOR-02
 
 **Success Criteria:**
 
-1. A spike identifies the current Obsidian PDF viewer hooks/DOM structure used for overlay attachment.
-2. Overlay marks are scoped to the active PDF/paper and use stored page/position data.
-3. User can inspect selected text/comment from an overlay mark through a lightweight popover or detail surface.
-4. Overlay teardown and refresh do not leave stale marks when switching files or panes.
-5. If PDF viewer internals are unavailable, the plugin disables overlay and preserves the annotation list workflow.
+1. The central surface renders available source text/page content inside the PaperForge canvas, with clear fallback copy when exact source content is unavailable.
+2. Supported annotations render source anchors from PaperForge-owned position, text, or page data.
+3. Exact text anchors appear only when matching is unambiguous; otherwise the canvas uses page-level or unresolved fallback anchors.
+4. Anchor rendering uses safe text insertion and namespaced classes.
+5. The implementation avoids native PDF DOM selectors and treats any future PDF-aware surface as a separate hidden seam.
 
-**Plans:** 4 plans
+**Plans:** TBD during phase planning.
 
-- [x] `annotation-08-01-PLAN.md` completed — PDF viewer spike document and attach contract (Wave 1).
-- [x] `annotation-08-02-PLAN.md` completed — Overlay pure helpers (state, position parsing, color, mark and popover view-models) (Wave 2).
-- [x] `annotation-08-03-PLAN.md` completed — Runtime overlay lifecycle, CSS, and runtime/DOM tests (Wave 3).
-- [x] `annotation-08-04-PLAN.md` completed - Popover interaction layer and automated gate harness (Wave 4; live Obsidian harness pending).
+### Annotation Phase 13: Bidirectional Navigation and Fallback Paths
 
-### Annotation Phase 9: Display Layer Verification Gate
+**Goal:** Make the canvas useful for reading by letting users move between annotation cards and grounded source positions.
 
-**Goal:** Prove annotation v0.2 works as an Obsidian-facing display layer and distinguish display-layer regressions from unrelated baseline failures.
+**Depends on:** Annotation Phase 12
 
-**Depends on:** Annotation Phase 8
+**Requirements:** NAV-01, NAV-02, NAV-03
+
+**Success Criteria:**
+
+1. Selecting a card focuses or scrolls to its supported source anchor.
+2. Selecting a source anchor focuses the corresponding card.
+3. Unsupported or unresolved source navigation presents a safe explanation and can fall back to v0.2 PDF page navigation when a source PDF is available.
+4. Selection state clears correctly on paper change, refresh, stale load, and teardown.
+5. Keyboard focus order and basic accessibility states work for cards, anchors, and fallback actions.
+
+**Plans:** TBD during phase planning.
+
+### Annotation Phase 14: Focused Connector Layer and Visual Polish
+
+**Goal:** Add the visual relationship layer from the target UI without overstating evidence precision.
+
+**Depends on:** Annotation Phase 13
+
+**Requirements:** CANVAS-05, CONN-01, CONN-02, CONN-03
+
+**Success Criteria:**
+
+1. SVG connector lines appear only for selected or hovered card-anchor pairs with confirmed PaperForge-owned geometry.
+2. Connectors are hidden for page-only, unresolved, stale, offscreen-unmeasured, or unsupported anchors.
+3. Connector geometry updates or clears on scroll, resize, refresh, paper change, and teardown.
+4. The canvas remains visually scan-friendly across desktop-sized panes with a dark, restrained reading UI aligned to the reference direction.
+5. v0.2 annotation list, page jump, and overlay/fallback paths remain available and unregressed.
+
+**Plans:** TBD during phase planning.
+
+### Annotation Phase 15: Canvas Verification Gate and Live Harness Record
+
+**Goal:** Verify the full read-only canvas and document exactly what confidence exists in automated tests versus live Obsidian behavior.
+
+**Depends on:** Annotation Phase 14
 
 **Requirements:** SAFE-01, SAFE-02, SAFE-03, SAFE-04, TEST-01, TEST-02, TEST-03, TEST-04, TEST-05
 
 **Success Criteria:**
 
-1. Tests cover plugin parsing of annotation PFResult success/error payloads.
-2. Tests cover list rendering states: loaded, empty, missing DB, missing paper, and command failure.
-3. Jump-to-PDF/page behavior is verified through tests or a documented manual harness.
-4. Overlay verification proves either correct rendering or safe fallback.
-5. Final notes confirm v0.2 does not add Zotero write-back or local editing as a primary workflow.
+1. Canvas helper/controller tests cover loaded, empty, missing, unsupported, command-failure, refresh, stale-result, and teardown states.
+2. DOM/runtime tests cover shell rendering, card lane rendering, anchor rendering, selection/focus, fallback actions, connector planning/teardown, and absence of forbidden write controls.
+3. Existing v0.2 focused annotation tests still pass.
+4. `node --check main.js` passes.
+5. A live Obsidian harness note records canvas behavior and explicitly separates v0.3 PaperForge canvas confidence from the still-pending v0.2 native PDF overlay harness if it remains unresolved.
 
-**Plans:** 1 verification report
+**Plans:** TBD during phase planning.
 
-- [x] `annotation-09-VERIFICATION.md` - Focused automated display-layer verification gate, baseline-failure separation, and live Obsidian manual gate record.
+## Phase Ordering Rationale
 
-## Progress
+1. View registration and data contracts come first because every visual surface depends on explicit paper identity and existing annotation source-of-truth reuse.
+2. Cards and lanes come before source anchors/connectors because the visual geometry should be derived from tested view-models.
+3. The controlled reading surface comes before connectors because connector claims require owned and measurable anchors.
+4. Bidirectional navigation comes before visual connector polish because the core workflow is round-tripping between evidence card and source.
+5. Verification is a standalone gate because automated jsdom confidence and live Obsidian pane confidence are different, especially after the v0.2 overlay harness gap.
 
-**Execution Order:** Annotation Phase 5 -> Annotation Phase 6 -> Annotation Phase 7 -> Annotation Phase 8 -> Annotation Phase 9
+## Research Flags
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| Annotation Phase 5. Plugin Annotation Data Bridge | 2/2 | Executed | 2026-06-19 |
-| Annotation Phase 6. Annotation Sidebar and List View | 4/4 | Executed | 2026-06-20 |
-| Annotation Phase 7. PDF Jump Navigation | 4/4 | Executed | 2026-06-28 |
-| Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 4/4 | Implemented; live harness pending | 2026-06-28 |
-| Annotation Phase 9. Display Layer Verification Gate | 1/1 | Automated gate passed; live harness pending | 2026-07-02 |
+- Phase 10: Confirm whether shipped Obsidian runtime can require `src/canvas/*` modules directly; otherwise keep temporary inlining debt covered by parity tests.
+- Phase 12: Re-check source/fulltext shapes if anchor matching needs more than page-level fallback.
+- Phase 14: Run focused connector geometry review before expanding beyond selected/hovered lines.
+- Phase 15: Do not skip live Obsidian harness recording.
 
 ---
-*Roadmap created: 2026-06-18*
+*Roadmap created: 2026-07-03*
+*Research basis: .planning/research/SUMMARY.md*

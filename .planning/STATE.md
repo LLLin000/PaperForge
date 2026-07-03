@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: annotation v0.3
 milestone_name: Visual Reading Canvas
 status: planning
-last_updated: "2026-07-02T14:47:40.961Z"
-last_activity: 2026-07-02
+last_updated: "2026-07-03T00:00:00.000Z"
+last_activity: 2026-07-03
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-18)
+See: .planning/PROJECT.md (updated 2026-07-02)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** annotation v0.2 - Obsidian PDF Annotation Display Layer
+**Current focus:** annotation v0.3 - Visual Reading Canvas
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-07-02 — Milestone annotation v0.3 started
+Phase: Annotation Phase 10 - Canvas Data Contract and View Registration
+Plan: None yet
+Status: Requirements and roadmap defined; ready for phase discussion/planning
+Last activity: 2026-07-03 - annotation v0.3 research, requirements, and roadmap prepared
 
 ## Performance Metrics
 
@@ -36,35 +36,15 @@ Last activity: 2026-07-02 — Milestone annotation v0.3 started
 - Total plans completed before v0.2: 17
 - Total plans planned before v0.2: 18
 - v0.2 planned phases: 5
+- v0.3 planned phases: 6
 
-**Previous Annotation Milestone:**
+**Previous Annotation Milestones:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| Annotation Phase 1 | 3/3 | 100% | ~3.5 min |
-| Annotation Phase 2 | 4/4 | 100% | ~5.5 min |
-| Annotation Phase 3 | 4/4 | 100% | ~10 min |
-| Annotation Phase 4 | 3/3 | 100% | ~8 min |
-
-**Recent Trend:**
-
-- Annotation v0.1 complete: backend and CLI foundation delivered across Annotation Phases 1-4.
-- Annotation Phase 4 verification recorded 140 tests passing (88 unit + 52 CLI), safety audit confirms zero Zotero write-back, and known unrelated baseline failures are separated from annotation status.
-- Annotation v0.2 initialized: Obsidian display layer with plugin data bridge, annotation sidebar/list, PDF jump navigation, risk-gated overlay, and verification gate.
-- Annotation Phase 5 executed: plugin runtime now stores active-paper annotation bridge state for Phase 6 UI consumption.
-- Annotation Phase 6 Plan 01 executed: Phase 5 bridge hard preflight passed — all required exports confirmed, plugin test environment ready.
-- Annotation Phase 6 Plan 02 executed: 11 pure annotation list view-model helpers with 78 Vitest tests.
-- Annotation Phase 7 planned: PDF jump navigation split into resolver, Obsidian runtime open/fallback, page-badge UI, and final automated/manual verification plans.
-- Annotation Phase 7 executed: Plans 03-04 completed — accessible page-badge jump button with disabled/fallback semantics, CSS hover/focus/disabled styling, DOM regression tests (20 tests, +5 new), 142/142 Phase 7 tests pass.
-
-*Updated after each plan completion*
-| Phase annotation-06 P01 | 2min | 2 tasks | 0 files |
-| Phase annotation-06 P02 | 15min | 2 tasks | 2 files |
-| Phase annotation-06-annotation-sidebar-and-list-view P03 | 22min | 2 tasks | 2 files |
-| Phase annotation-06-annotation-sidebar-and-list-view P04 | 5min | 2 tasks | 2 files |
-| Phase annotation-07 P03 | 15min | 2 tasks | 3 files |
-| Phase annotation-07 P04 | 1min | 1 task | 1 file |
-| Phase annotation-08 P03 | ~3h30min | 2 tasks | 4 files |
+| Milestone | Phases | Status | Notes |
+|-----------|--------|--------|-------|
+| annotation v0.1 | Annotation Phases 1-4 | Complete | Backend/CLI annotation import, storage, and export foundation. |
+| annotation v0.2 | Annotation Phases 5-9 | Mostly complete | Automated display-layer gate passed; live Obsidian native PDF overlay harness remains pending. |
+| annotation v0.3 | Annotation Phases 10-15 | Planning | Visual Reading Canvas requirements and roadmap defined. |
 
 ## Accumulated Context
 
@@ -73,33 +53,30 @@ Last activity: 2026-07-02 — Milestone annotation v0.3 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v2.1]: Incremental extraction from sync.py - adapters first, then SyncService, keeping sync.py as thin shell. No full rewrite.
-- [v2.1]: Dual JSON output during contract transition - old format + new PFResult side-by-side until 2 release cycles of stability.
-- [v2.1]: Plugin keeps fallback to direct index reading during PFResult transition - removed after 2 stable release cycles.
 - [annotation v0.1]: Build PDF annotation as a parallel feature line from current upstream/master, not from the stale old branch directly.
 - [annotation v0.1]: Import only backend/CLI annotation capabilities first; defer Obsidian PDF overlay to a later annotation milestone.
 - [annotation v0.1]: Zotero SQLite is read-only input; PaperForge writes annotation state only to its own `annotations.db`.
 - [annotation v0.1]: Paper-scoped imports must not mark unrelated paper annotations as stale/deleted.
-- [annotation v0.1]: `annotations.db` schema source fields use generic names (source, source_library_id, etc.) - not Zotero-specific names.
-- [annotation v0.1]: Annotation schema tables are defined in `paperforge.annotation.schema.ANNOTATION_TABLES`, not in `paperforge.memory.schema.ALL_TABLES`.
-- [v2.1]: Tests must not be modified to pass if code is broken - tests verify contracts, not implementation convenience.
-- [annotation v0.1]: Annotation Phase 2 prioritizes paper-scoped Zotero import first; lower-level code may stay extensible for full-library import later.
-- [annotation v0.1]: Zotero reads default to temp-copy mode and treat imported Zotero rows as read-only PaperForge source rows.
-- [annotation v0.1]: Zotero annotation identity must include source, library scope, parent item, attachment, and annotation key.
 - [annotation v0.1]: Annotation CLI commands use a dedicated `paperforge annotation ...` namespace.
 - [annotation v0.1]: Annotation import defaults to preview mode; writes require explicit `--apply`.
-- [annotation v0.1]: Annotation JSON commands use the existing PFResult-style envelope with stable error codes for `--json` failures.
 - [annotation v0.2]: Continue annotation phase numbering after Phase 4; v0.2 starts at Annotation Phase 5.
 - [annotation v0.2]: Prioritize Obsidian display/navigation/overlay before local editing or concept-card evidence integration.
 - [annotation v0.2]: PDF overlay is risk-gated; the sidebar/list remains the safe fallback.
-- [annotation v0.2 Plan 02]: Sorting uses pageIndex (numerical), not pageLabel — null/missing pages sort last.
-- [annotation v0.2 Plan 02]: Type/color filter uses `type|color` pipeline syntax; null color is `"null"` in composite key.
-- [annotation v0.2 Plan 02]: Preview limits: 140 chars (selected-text, ~2 lines) and 70 chars (comment, ~1 line) — generous for CJK.
-- [annotation v0.2 Plan 02]: View-model passes through annotation state `message` when available, with action-suggesting fallbacks.
-- [Phase annotation-06-03]: Inlined Plan 02 view-model helpers directly in main.js instead of importing from a shared module to avoid Node-only test module dependencies in the Obsidian bundle — Helpers are pure functions with no DOM/Node dependencies, safe to compile into plugin bundle
-- [Phase annotation-06-03]: Used section.empty() + full rebuild for rerender to preserve DOM ordering guarantees — Annotation section is leaf-level with no child state to preserve; clearing and rebuilding is simpler and more reliable than DOM replacement
-- [Phase annotation-06-03]: Session-only _annotationUiState with query, groupMode, typeColorFilter, expandedIds fields — never persisted — Annotation list UI state is ephemeral and resets with the view instance; no settings, localStorage, or file writes
-- [Phase annotation-06-03]: Recursive createEl in test DOM mocks so createEl returns elements that also have createEl — Obsidian's real createEl API is recursive; test mocks must match this behavior to avoid view.createEl is not a function failures
+- [annotation v0.2 Phase 9]: Automated verification gate passed for bridge/list/navigation/overlay-focused tests; live Obsidian native PDF viewer harness remains pending.
+- [annotation v0.3]: Build v0.3 as a PaperForge-controlled Visual Reading Canvas instead of a generic Obsidian Canvas clone or native PDF overlay extension.
+- [annotation v0.3]: Keep v0.3 MVP read-only: no local annotation editing, Zotero write-back, persistent freeform layout, or AI-generated cards.
+- [annotation v0.3]: Use existing Obsidian ItemView/CommonJS/plugin test stack plus plain DOM/SVG; do not add React/Svelte, D3/Cytoscape, PDF.js, Obsidian `.canvas` persistence, or new Python APIs for MVP.
+- [annotation v0.3]: Connector lines are evidence claims and must appear only for focused card-anchor pairs with confirmed PaperForge-owned geometry.
+
+### Research Summary
+
+Research files live under `.planning/research/`:
+
+- `FEATURES.md`: table-stakes and deferred Visual Reading Canvas features.
+- `PITFALLS.md`: risks around duplicate annotation runtime, helper drift, native PDF internals, read-only safety, stale async loads, and misleading connectors.
+- `ARCHITECTURE.md`: PaperForge-owned `ItemView` recommendation and `src/canvas/*` module seams.
+- `STACK.md`: stack additions/non-additions and test strategy.
+- `SUMMARY.md`: synthesized milestone direction and six-phase roadmap basis.
 
 ### Pending Todos
 
@@ -107,14 +84,24 @@ None yet.
 
 ### Blockers/Concerns
 
-- **`test_config.py` Windows tmp_path failures**: 4 config tests fail with `PermissionError` on Windows when using the `tmp_path` pytest fixture. These are pre-existing and unrelated to annotation code; they affect all tests that create vault subdirectories in temp dirs. Not a blocker for annotation work.
-- **`test_paperforge_paths_returns_exact_keys` key mismatch**: Test expects `ld_deep_script` but config returns `pf_deep_script`. Pre-existing baseline mismatch unrelated to annotation.
-- **Missing `filelock` dependency**: `paperforge/memory/builder.py` transitively imports `filelock` via `worker/asset_index.py`. The `build_from_index` integration test in plan 03 is skipped due to this missing package. Direct `drop_all_tables` regression provides equivalent coverage.
-- **Plugin baseline Vitest failures**: full `paperforge/plugin` suite currently has 3 known unrelated failures outside annotation runtime wiring: 2 `buildRuntimeInstallCommand` expectations in `tests/errors.test.mjs`, and 1 Windows `resolvePythonExecutable` `py -3` expectation in `tests/runtime.test.mjs`. Annotation-specific bridge/lifecycle/runtime tests pass.
+- **v0.2 live Obsidian native PDF overlay harness pending**: v0.3 can proceed because it does not depend on native PDF internals as the canvas foundation, but final verification must not claim native overlay reliability without the harness.
+- **Shipped-source module boundary**: Phase 10 must confirm whether `main.js` can require `src/canvas/*` modules in the Obsidian runtime; if not, temporary inlining requires parity/runtime tests.
+- **Fulltext/source anchoring uncertainty**: Phase 12 may need focused research if central fulltext/formal-note source shapes vary more than current docs imply.
+- **Connector precision risk**: Phase 14 must hide connectors for page-only, unresolved, stale, or unmeasured anchors.
+- **Known baseline failures**: full non-focused test suites may still include unrelated baseline issues; v0.3 verification should keep focused gates explicit.
 
 ## Session Continuity
 
-Last session: 2026-07-02T22:28:00.000+08:00
-Stopped at: Annotation Phase 9 automated verification gate complete; live Obsidian PDF viewer harness pending
-Resume file: .planning/phases/annotation-08-pdf-overlay-rendering-spike-and-implementation/annotation-08-OBSIDIAN-OVERLAY-HARNESS.md
-Next phase: Complete live Obsidian overlay/fallback harness, then archive annotation v0.2
+Last session: 2026-07-03T00:00:00.000+08:00
+Stopped at: annotation v0.3 requirements and roadmap defined
+Resume file: .planning/ROADMAP.md
+Next phase: Annotation Phase 10 - Canvas Data Contract and View Registration
+
+## Next Suggested Command
+
+Use GSD phase discussion/planning for Annotation Phase 10:
+
+`$gsd-discuss-phase Annotation Phase 10`
+
+---
+*Updated: 2026-07-03*
