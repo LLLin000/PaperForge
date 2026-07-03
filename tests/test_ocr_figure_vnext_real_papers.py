@@ -12,3 +12,14 @@ def test_real_paper_same_page_milestone_reports_diff_shape():
     assert "vnext_matched_count" in diff
     assert "legacy_consumed_block_ids" in diff
     assert "vnext_consumed_block_ids" in diff
+
+
+def test_real_paper_cross_page_milestone_reports_diff_shape():
+    blocks_path = Path("tests/fixtures/ocr_vnext_real_papers/DWQQK2YB/blocks.structured.jsonl")
+    diff = compare_blocks_file(blocks_path)
+
+    assert diff["paper"] == "DWQQK2YB"
+    assert "legacy_matched_count" in diff
+    assert "vnext_matched_count" in diff
+    assert "legacy_consumed_block_ids" in diff
+    assert "vnext_consumed_block_ids" in diff
