@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import itertools
 import re
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -2980,23 +2981,37 @@ def _infer_missing_main_figure_numbers(
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
     return build_figure_inventory_legacy(structured_blocks, page_width, page_pdf_lines_by_page)
 
+def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
+    from .ocr_figure_vnext_corpus import FigureCandidateIndex, FigureCorpus
+    from .ocr_figure_vnext_passes import PrimarySamePagePass, _resource_page
+    from .ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
 
-def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
+    corpus = FigureCorpus.from_blocks(structured_blocks, page_width=page_width)
+    candidate_index = FigureCandidateIndex.from_corpus(corpus)
+    state = FigurePipelineState(corpus=corpus, candidate_index=candidate_index, ledger=OwnershipLedger())
+    report = PrimarySamePagePass().run(state)
+    matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
+
     return {
         "pipeline_mode": "vnext",
-        "matched_figures": [],
+        "matched_figures": state.matches,
         "ambiguous_figures": [],
-        "unmatched_legends": [],
-        "unmatched_assets": [],
+        "unmatched_legends": [b for b in candidate_index.deduped_legends if str(b.get("block_id", "")) not in matched_ids],
+        "unmatched_assets": [
+            a for a in corpus.raw_assets
+            if (_resource_page(a) is not None
+                and state.ledger.owner_of_asset(page=_resource_page(a), block_id=a.get("block_id")) is None)
+        ],
         "unresolved_clusters": [],
-        "held_figures": [],
-        "rejected_legends": [],
+        "held_figures": list(candidate_index.held_legends),
+        "rejected_legends": list(candidate_index.rejected_legends),
         "page_ledger": {},
         "residual_ledger": {},
         "local_pairing_hypotheses": [],
+        "pass_reports": [asdict(report)],
         "completeness": {
-            "total_numbered_legends": 0,
-            "accounted_for": 0,
+            "total_numbered_legends": len(candidate_index.deduped_legends),
+            "accounted_for": len(state.matches),
             "details": [],
         },
     }
