@@ -7,6 +7,7 @@ from .ocr_figure_vnext_types import ClaimProposal, OwnershipConflict, ResourceRe
 
 class OwnershipLedger:
     def __init__(self) -> None:
+        self._reserved_groups: set[ResourceRef] = set()
         self._owners: dict[ResourceRef, ResourceRef] = {}
         self._journal: list[dict[str, object]] = []
 
@@ -46,6 +47,24 @@ class OwnershipLedger:
     def owner_of_asset(self, *, page: int, block_id: int | str) -> ResourceRef | None:
         return self.owner_of(ResourceRef(kind="asset", page=page, block_id=block_id))
 
+    def reserve_group(self, group: ResourceRef, *, reason: str) -> None:
+        self._reserved_groups.add(group)
+        self._journal.append({"action": "reserve_group", "resource": group, "reason": reason})
+
+    def can_claim_group(self, group: ResourceRef) -> bool:
+        return group not in self._reserved_groups
+
+    def transition_reserved_group_to_claimed(
+        self, group: ResourceRef, *, owner: ResourceRef, reason: str
+    ) -> None:
+        self._reserved_groups.discard(group)
+        self._journal.append({
+            "action": "transition_to_claimed",
+            "resource": group,
+            "owner": owner,
+            "reason": reason,
+        })
+
     def snapshot(self) -> list[dict[str, object]]:
         return list(self._journal)
 
@@ -59,6 +78,7 @@ class FigurePipelineState:
     unresolved: list[dict] = field(default_factory=list)
     hypotheses: list[dict] = field(default_factory=list)
     diagnostics: list[dict] = field(default_factory=list)
+    reservations: list[dict] = field(default_factory=list)
 
     def accept_match(self, proposal: ClaimProposal, match_record: dict) -> None:
         self.matches.append(match_record)
@@ -72,4 +92,19 @@ class FigurePipelineState:
                 "assets": proposal.assets,
                 "groups": proposal.groups,
             },
+        })
+
+    def accept_reservation(self, proposal: ClaimProposal) -> None:
+        self.reservations.append({
+            "pass_name": proposal.pass_name,
+            "figure_no": proposal.figure_no,
+            "reason": proposal.reason,
+            "groups": proposal.groups,
+        })
+        self.diagnostics.append({
+            "event": "reservation_accepted",
+            "pass_name": proposal.pass_name,
+            "figure_no": proposal.figure_no,
+            "reason": proposal.reason,
+            "resources": {"groups": proposal.groups},
         })
