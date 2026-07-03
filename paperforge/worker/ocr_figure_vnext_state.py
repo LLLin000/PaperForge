@@ -79,6 +79,7 @@ class FigurePipelineState:
     hypotheses: list[dict] = field(default_factory=list)
     diagnostics: list[dict] = field(default_factory=list)
     reservations: list[dict] = field(default_factory=list)
+    completeness: dict = field(default_factory=dict)
 
     def accept_match(self, proposal: ClaimProposal, match_record: dict) -> None:
         self.matches.append(match_record)
