@@ -109,3 +109,44 @@ class PrimarySamePagePass:
             report.accepted.append(proposal)
 
         return report
+
+
+class CrossPageReservationPass:
+    name = "cross_page_reservation"
+
+    def run(self, state):
+        report = PassReport(pass_name=self.name)
+        for legend in state.candidate_index.deduped_legends:
+            page = _resource_page(legend)
+            if page is None:
+                continue
+            # Skip legends already matched by same-page primary
+            if any(str(m.get("legend_block_id", "")) == str(legend.get("block_id", "")) for m in state.matches):
+                continue
+            # Find forward groups (page > legend page)
+            forward_groups = [
+                g for g in state.candidate_index.candidate_groups
+                if _resource_page(g) is not None and _resource_page(g) > page
+            ]
+            for group in forward_groups[:1]:
+                group_ref = ResourceRef(kind="group", page=_resource_page(group), block_id=None, group_id=group.get("group_id"))
+                if not state.ledger.can_claim_group(group_ref):
+                    continue
+                proposal = ClaimProposal(
+                    pass_name=self.name,
+                    figure_no=None,
+                    claim_type="reserve",
+                    legends=[ResourceRef(kind="legend", page=page, block_id=legend.get("block_id"), figure_no=None)],
+                    assets=[],
+                    groups=[group_ref],
+                    confidence=0.6,
+                    evidence_rank=2,
+                    reason="forward_cross_page_candidate",
+                    diagnostics={"evidence": ["page_gap", "same_page_miss"]},
+                )
+                report.proposals.append(proposal)
+                state.ledger.reserve_group(group_ref, reason=proposal.reason)
+                state.accept_reservation(proposal)
+                report.accepted.append(proposal)
+                break
+        return report
