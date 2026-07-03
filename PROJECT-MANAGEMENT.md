@@ -1,13 +1,13 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `master` | **Last Updated:** 2026-07-02
-> **Active work:** Figure caption prefix recovery + inline <table> HTML fix + table matching verification completed. 585 regression tests pass.
+> **Branch:** `feat/figure-pipeline-vnext` | **Last Updated:** 2026-07-03
+> **Active work:** Figure pipeline vnext cutover completed in worktree. Wrapper now points to vnext by default. 346 tests pass. Next: merge branch back to `master`.
 
 ---
 
 ## 0. Executive Summary
 
-**Current state:** All 10-paper audit issues resolved (3 audit fix commits + rotated prematch refactor + asset-internal figure number recovery). U746UJ7G `figure_unknown_000` → `figure_002` with recovered label "Plot of Criteria Time". 428 targeted tests pass. Next: Monitor production OCR for regressions, archive stale project docs.
+**Current state:** Figure pipeline vnext is now fully implemented (11 passes incl. accounting), cutover corpus reviewed on 5 papers with 0 consumed-asset regressions, and the public wrapper has been switched to vnext on this branch. 346 tests pass (`59` vnext + `258` figure + `29` render). Next: merge `feat/figure-pipeline-vnext` back to `master`.
 ---
 
 ## 1. Architecture
@@ -70,6 +70,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | State machine | ✅ Accepts done_degraded as terminal |
 | Rebuild (span backfill skip) | ✅ Version match check fixed |
 | Author bio detection (Passes B+C) | ✅ P0: post-ref text-only bios as backmatter_body. P1: figure-residual portrait assets as author_bio_asset + figure_caption support |
+| Figure pipeline vnext | ✅ Default wrapper switched; 11-pass pipeline active; cutover corpus reviewed (5 papers, 0 regressions) |
 
 ### 2.3 Fix Status
 
@@ -125,17 +126,17 @@ WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to ful
 5. ✅ All stale test expectations reconciled (non_body_insert, caffard, legend_like, structural gate, render, state machine, rebuild, truth docs)
 6. ✅ P0 author bio detection (post_ref_bio_cleanup for reference_item)
 7. ✅ P1 author bio detection (residual_author_bio_pass + figure_caption support + tag_figure_contained_text protection)
-8. **NEXT: Run lint (ruff) then merge ocr-v2 → master**
+8. **NEXT: Merge `feat/figure-pipeline-vnext` → `master`**
 
 ### 4.1 Immediate Next Steps
 
-- [x] 25 fixed tests (10 distinct issues)
-- [x] Full OCR regression sweep: 1018 passed, 0 failed
-- [x] P0 bio detection: 30 new tests, 0 regressions
-- [x] P1 bio detection: 7 new tests, 0 regressions
-- [x] tag_figure_contained_text author_bio protection
-- [ ] Run lint (ruff)
-- [ ] Merge `ocr-v2` into `master`
+- [x] Phase 0-4 vnext implementation complete
+- [x] Phase 5 cutover evaluation complete
+- [x] Cutover corpus: 5 papers, all 9 spec categories covered
+- [x] Cutover diff review: improvement=2, equivalent=2, parity=1, regression=0
+- [x] Wrapper switched to vnext in branch
+- [x] Full verification: 346 passed
+- [ ] Merge `feat/figure-pipeline-vnext` into `master`
 
 ---
 
@@ -233,6 +234,8 @@ WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to ful
 | 2026-06-28 | author_bio_asset role: non-rendered, non-indexed | Bio artifacts removed from figure_inventory entirely, never returned to unmatched_assets. Clean prune before reader. |
 | 2026-07-01 | Asset-internal figure number recovery: metadata-only pass | Recovery must NOT split OCR blocks or mutate chart text — only patches figure_number, figure_id, recovered_label_text on existing matched figures. Coordinate normalization is caller responsibility. |
 | 2026-07-01 | Broaden recovery gate to handle normal prematch unknown figures | Synthetic-figure gate (`bbox_only_asset` flag) excluded `figure_unknown_NNN` from normal rotated prematch path. Gate now allows figure_unknown figures without synthetic flags. |
+| 2026-07-03 | Cutover uses evidence gates, not code confidence | VNext matched or improved on the full cutover corpus with identical consumed asset sets; wrapper switch became a release decision only after diff review + gate verification. |
+| 2026-07-03 | Legacy schema tests must be upgraded before wrapper switch | Real-paper behavior was cutover-ready earlier, but `test_ocr_figures.py` still asserted legacy-only inventory keys. Updating the test contract was required to make wrapper switch honest. |
 
 ---
 
@@ -323,6 +326,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-01 | Asset-internal figure number recovery implementation | Added `extract_pdf_lines_normalized` helper, `_recover_missing_figure_numbers_from_assets` pass in `build_figure_inventory`, 5 gate functions, 2 pattern constants. U746UJ7G `figure_unknown_000` → `figure_002` with recovered label "Plot of Criteria Time". 6 new tests. 428 regression tests pass. | §9.19 |
 | 2026-07-02 | Round 2 truth audit + 3 targeted bug fixes for 37LK5T97 | Batch-audited 10 fresh papers (5 GREEN / 4 YELLOW / 1 RED). 37LK5T97 found with Figure 1 broken (sidecar caption demoted) + 6 unmatched rotated tables. Fixes: (1) `_is_sidecar_candidate` guard in candidate_resolution, (2) `adjacent_x`+`y_overlap` in score_table_match for rotated captions, (3) rotated table render bbox+270° correction. Also: rotated figure crop quality fix (4x zoom + coordinate normalization in `_crop_asset_from_pdf`). Commits: `59cd01a`, `bd3f3b6`, `86e0d14`. 428 regression tests pass. | §9.20 |
 | 2026-07-02 | Zone/role robustness completion — Figure caption prefix recovery + inline table fix + table matching audit | Figure caption prefix recovery from PDF text layer (`_recover_figure_heading_prefix`): 5S7UI34M 4→9 matched figures, 33→1 unmatched. Inline `<table>` HTML role fix: 650 blocks now `table_html` after rebuild (priority bug: raw_label=table fired before `<table>` check). Table matching audit: 620 remaining `media_asset` pending full rebuild. 585 figure/table/role tests pass. | §9.21 |
+| 2026-07-03 | Figure pipeline vnext cutover completed | Implemented all remaining vnext passes (composite parent, group/classic sequential, unresolved consolidation, accounting), expanded compare harness, curated 5-paper cutover corpus covering all 9 spec categories, generated diff review (improvement=2 / equivalent=2 / parity=1 / regression=0), updated legacy figure tests for vnext contract, and switched `build_figure_inventory(...)` wrapper to vnext on branch `feat/figure-pipeline-vnext`. Verification: 346 tests passed. | §9.22 |
 
 ## 9. Historical Detail Archive
 
