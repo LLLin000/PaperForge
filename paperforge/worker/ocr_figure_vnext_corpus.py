@@ -87,6 +87,22 @@ class FigureCandidateIndex:
             and ocr_figures._extract_figure_number(str(leg.get("text", "")))
             is not None
         }
+        # Populate sidecar_candidates: pages with ≥2 aligned narrow captions.
+        sidecar_candidates: dict[int, list[dict]] = {}
+        _legends_by_page: dict[int, list[dict]] = {}
+        for leg in formal_legends:
+            _legends_by_page.setdefault(int(leg.get("page", 0) or 0), []).append(leg)
+        for sp, spl in _legends_by_page.items():
+            narrow_set = ocr_figures._same_page_narrow_caption_column(spl, corpus.page_width)
+            if len(narrow_set) >= 2:
+                sidecar_candidates[sp] = narrow_set
+
+        # Populate bundle_source_legend_ids: legends on pages with ≥3 numbered legends
+        # and zero assets on that page.
+        bundle_source_legend_ids = ocr_figures._identify_bundle_source_legend_ids(
+            formal_legends, corpus.raw_assets
+        )
+
         return cls(
             formal_legends=formal_legends,
             held_legends=[],
@@ -94,7 +110,7 @@ class FigureCandidateIndex:
             deduped_legends=formal_legends,
             candidate_groups=candidate_groups,
             competing_caption_pages=competing_caption_pages,
-            sidecar_candidates={},
-            bundle_source_legend_ids=set(),
+            sidecar_candidates=sidecar_candidates,
+            bundle_source_legend_ids=bundle_source_legend_ids,
             locator_candidates=corpus.locator_candidates,
         )
