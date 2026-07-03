@@ -1,14 +1,12 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `feat/ocr-pairing-framework` | **Last Updated:** 2026-07-03
-> **Active work:** Generic OCR pairing framework extracted; figure and table now both run on the shared pairing core in worktree. Targeted merge-unblock verification passed: 357 tests green, touched-file `ruff check`/`ruff format --check` green, 6 runnable real-paper table fixtures validated. Next: merge branch back to `master`.
+> **Branch:** `master` | **Last Updated:** 2026-07-03
+> **Active work:** Appendix numbering + table appendix support merged. All appendix figures (Figure A1-A3) and tables (Table 1,2,A1,A2) match correctly in M84CTEM9. 302 tests green, `ruff check`/`ruff format --check` clean.
 
 ---
 
 ## 0. Executive Summary
-
-**Current state:** The OCR pairing framework branch is merge-ready. Figure and table pipelines now share `ocr_pairing_types.py` / `ocr_pairing_state.py` / `ocr_pairing_framework.py`, while domain-specific logic stays in `ocr_figure_domain.py` and `ocr_table_domain.py`. The last merge blockers were cleared by (1) moving figure-only rotation enrichment out of generic state into a figure-domain hook, (2) hardening table semantic parity validation across all runnable real-paper fixtures including `37LK5T97`, and (3) cleaning touched-file lint/format issues. Verification: 357 targeted tests passed. Next: merge `feat/ocr-pairing-framework` back to `master`.
----
+**Current state:** Appendix extraction and matching fully operational. Three cross-cutting bugs fixed: (1) TABLE removed from figure regex (was causing table captions to enter figure pipeline), (2) int block_id type mismatches in cross-page settlement and table continuation, (3) table alpha prefix support (TABLE A1→recognized via `_TABLE_PREFIX_PATTERN` + `_parse_table_number_token`). Weak-caption tie-break ported to vnext same-page pass for vertically stacked tables. `master` at `3cda942`.
 
 ## 1. Architecture
 
