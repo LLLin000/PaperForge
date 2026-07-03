@@ -1305,3 +1305,55 @@ def test_extract_table_number_supports_roman_and_s_prefix(text, expected_number)
     from paperforge.worker.ocr_tables import _extract_table_number
 
     assert _extract_table_number(text) == expected_number
+
+
+def test_build_table_inventory_delegates_to_legacy_during_plan_b(monkeypatch) -> None:
+    from paperforge.worker import ocr_tables
+
+    called = {}
+
+    def fake_legacy(structured_blocks):
+        called["blocks"] = structured_blocks
+        return {
+            "tables": [],
+            "held_tables": [],
+            "unmatched_captions": [],
+            "unmatched_assets": [],
+            "official_table_count": 0,
+        }
+
+    monkeypatch.setattr(ocr_tables, "build_table_inventory_legacy", fake_legacy, raising=False)
+
+    blocks = [{"block_id": "cap1", "page": 1, "role": "table_caption", "text": "Table 1. Example"}]
+    result = ocr_tables.build_table_inventory(blocks)
+
+    assert called["blocks"] == blocks
+    assert result["official_table_count"] == 0
+
+
+def test_public_table_inventory_contract_preserves_resolver_fields() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "block_id": "cap1",
+            "page": 3,
+            "role": "table_caption",
+            "text": "Table 1. Example caption",
+            "bbox": [100, 100, 800, 140],
+        },
+        {
+            "block_id": "asset1",
+            "page": 3,
+            "role": "table_html",
+            "raw_label": "table",
+            "text": "<table><tr><td>x</td></tr></table>",
+            "bbox": [100, 160, 800, 520],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+
+    assert {"tables", "held_tables", "unmatched_captions", "unmatched_assets", "official_table_count"} <= set(inventory)
+    assert {"page", "caption_text", "has_asset", "asset_block_id", "match_status", "consumed_block_ids"} <= set(table)

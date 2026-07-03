@@ -232,8 +232,11 @@ def _table_note_falls_into_page_footnote_prior(
         return False
     return float(note_bbox[1]) >= float(prior_by_page[page])
 
-
 def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
+    return build_table_inventory_legacy(structured_blocks)
+
+
+def build_table_inventory_legacy(structured_blocks: list[dict]) -> dict[str, Any]:
     tables: list[dict] = []
     captions: list[dict] = []
     assets: list[dict] = []
