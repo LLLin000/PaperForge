@@ -272,11 +272,56 @@ def test_build_figure_inventory_exposes_mixed_local_pairing_hypotheses() -> None
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"paper_id": "MX", "page": 1, "block_id": "a1", "role": "media_asset", "raw_label": "image", "bbox": [520, 80, 1040, 360], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "MX", "page": 1, "block_id": "a2", "role": "media_asset", "raw_label": "image", "bbox": [520, 410, 1040, 690], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "MX", "page": 1, "block_id": "a3", "role": "media_asset", "raw_label": "image", "bbox": [520, 760, 1040, 980], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "MX", "page": 1, "block_id": "a4", "role": "media_asset", "raw_label": "image", "bbox": [120, 820, 1080, 1080], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "MX", "page": 1, "block_id": "body_sep", "role": "body_paragraph", "text": "This body text separates the sidecar pair from the lower figure.", "bbox": [120, 700, 1080, 790], "page_width": 1200, "page_height": 1600},
+        {
+            "paper_id": "MX",
+            "page": 1,
+            "block_id": "a1",
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [520, 80, 1040, 360],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "MX",
+            "page": 1,
+            "block_id": "a2",
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [520, 410, 1040, 690],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "MX",
+            "page": 1,
+            "block_id": "a3",
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [520, 760, 1040, 980],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "MX",
+            "page": 1,
+            "block_id": "a4",
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [120, 820, 1080, 1080],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "MX",
+            "page": 1,
+            "block_id": "body_sep",
+            "role": "body_paragraph",
+            "text": "This body text separates the sidecar pair from the lower figure.",
+            "bbox": [120, 700, 1080, 790],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
         {
             "paper_id": "MX",
             "page": 1,
@@ -401,6 +446,7 @@ def test_media_clusters_ignores_non_media_assets() -> None:
 
 def test_rect_intersection_area() -> None:
     from paperforge.worker.ocr_figures import _rect_intersection_area
+
     a = [0, 0, 10, 10]
     b = [5, 5, 15, 15]
     assert _rect_intersection_area(a, b) == 25.0
@@ -409,6 +455,7 @@ def test_rect_intersection_area() -> None:
 
 def test_has_text_separator_detects_body_between_stacked_assets() -> None:
     from paperforge.worker.ocr_figures import _has_text_separator
+
     a = {"bbox": [0, 0, 100, 50], "page": 1}
     b = {"bbox": [0, 150, 100, 200], "page": 1}
     body = {"bbox": [10, 70, 90, 130], "page": 1, "role": "body_paragraph", "text": "some body text here"}
@@ -417,6 +464,7 @@ def test_has_text_separator_detects_body_between_stacked_assets() -> None:
 
 def test_has_text_separator_no_block_returns_false() -> None:
     from paperforge.worker.ocr_figures import _has_text_separator
+
     a = {"bbox": [0, 0, 100, 50], "page": 1}
     b = {"bbox": [0, 150, 100, 200], "page": 1}
     assert _has_text_separator(a, b, []) is False
@@ -424,6 +472,7 @@ def test_has_text_separator_no_block_returns_false() -> None:
 
 def test_has_text_separator_side_by_side_body_between() -> None:
     from paperforge.worker.ocr_figures import _has_text_separator
+
     a = {"bbox": [0, 0, 100, 200], "page": 1}
     b = {"bbox": [300, 0, 400, 200], "page": 1}
     body = {"bbox": [130, 50, 270, 150], "page": 1, "role": "body_paragraph", "text": "column text separator"}
@@ -432,6 +481,7 @@ def test_has_text_separator_side_by_side_body_between() -> None:
 
 def test_has_text_separator_short_text_ignored() -> None:
     from paperforge.worker.ocr_figures import _has_text_separator
+
     a = {"bbox": [0, 0, 100, 50], "page": 1}
     b = {"bbox": [0, 150, 100, 200], "page": 1}
     short = {"bbox": [10, 70, 90, 130], "page": 1, "role": "body_paragraph", "text": "short"}
@@ -440,6 +490,7 @@ def test_has_text_separator_short_text_ignored() -> None:
 
 def test_has_text_separator_diagonal_no_false_positive() -> None:
     from paperforge.worker.ocr_figures import _has_text_separator
+
     a = {"bbox": [0, 0, 100, 100], "page": 1}
     b = {"bbox": [300, 300, 400, 400], "page": 1}
     assert _has_text_separator(a, b, []) is False
@@ -447,6 +498,7 @@ def test_has_text_separator_diagonal_no_false_positive() -> None:
 
 def test_filter_figure_assets() -> None:
     from paperforge.worker.ocr_figures import _filter_figure_assets
+
     assets = [
         {"block_id": "fig", "role": "figure_asset", "raw_label": "image"},
         {"block_id": "chart", "role": "media_asset", "raw_label": "chart"},
@@ -462,6 +514,7 @@ def test_filter_figure_assets() -> None:
 
 def test_cluster_page_assets_2x2_grid() -> None:
     from paperforge.worker.ocr_figures import _cluster_page_assets
+
     assets = [
         {"bbox": [0, 0, 100, 100], "page": 1, "role": "figure_asset"},
         {"bbox": [120, 0, 220, 100], "page": 1, "role": "figure_asset"},
@@ -475,6 +528,7 @@ def test_cluster_page_assets_2x2_grid() -> None:
 
 def test_cluster_page_assets_wide_separation_no_irregular() -> None:
     from paperforge.worker.ocr_figures import _cluster_page_assets
+
     assets = [
         {"bbox": [0, 0, 100, 100], "page": 1, "role": "figure_asset"},
         {"bbox": [500, 0, 600, 100], "page": 1, "role": "figure_asset"},
@@ -485,17 +539,24 @@ def test_cluster_page_assets_wide_separation_no_irregular() -> None:
 
 def test_cluster_page_assets_text_separator_splits() -> None:
     from paperforge.worker.ocr_figures import _cluster_page_assets
+
     assets = [
         {"bbox": [0, 0, 100, 100], "page": 1, "role": "figure_asset"},
         {"bbox": [0, 200, 100, 300], "page": 1, "role": "figure_asset"},
     ]
-    body = {"bbox": [10, 120, 90, 180], "page": 1, "role": "body_paragraph", "text": "some body text here between figures"}
+    body = {
+        "bbox": [10, 120, 90, 180],
+        "page": 1,
+        "role": "body_paragraph",
+        "text": "some body text here between figures",
+    }
     clusters = _cluster_page_assets(assets, [body], 1, 1000, 1000)
     assert len(clusters) == 2
 
 
 def test_cluster_page_assets_irregular_merge() -> None:
     from paperforge.worker.ocr_figures import _cluster_page_assets
+
     assets = [
         {"bbox": [0, 0, 100, 300], "page": 1, "role": "figure_asset"},
         {"bbox": [200, 0, 300, 100], "page": 1, "role": "figure_asset"},
@@ -509,6 +570,7 @@ def test_cluster_page_assets_irregular_merge() -> None:
 
 def test_cluster_page_assets_no_irregular_when_multi_legend() -> None:
     from paperforge.worker.ocr_figures import _cluster_page_assets
+
     assets = [
         {"bbox": [0, 0, 100, 300], "page": 1, "role": "figure_asset"},
         {"bbox": [300, 0, 400, 100], "page": 1, "role": "figure_asset"},
@@ -545,11 +607,29 @@ def test_semantic_grouping_topology_is_caption_count_independent() -> None:
         {"block_id": "a4", "page": 1, "role": "figure_asset", "bbox": [320, 420, 520, 560]},
     ]
     one_caption_blocks = assets + [
-        {"block_id": "cap1", "page": 1, "role": "figure_caption", "text": "Figure 1. Caption.", "bbox": [100, 600, 520, 660]},
+        {
+            "block_id": "cap1",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Caption.",
+            "bbox": [100, 600, 520, 660],
+        },
     ]
     two_caption_blocks = assets + [
-        {"block_id": "cap1", "page": 1, "role": "figure_caption", "text": "Figure 1. Caption.", "bbox": [100, 280, 520, 340]},
-        {"block_id": "cap2", "page": 1, "role": "figure_caption", "text": "Figure 2. Caption.", "bbox": [100, 600, 520, 660]},
+        {
+            "block_id": "cap1",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Caption.",
+            "bbox": [100, 280, 520, 340],
+        },
+        {
+            "block_id": "cap2",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 2. Caption.",
+            "bbox": [100, 600, 520, 660],
+        },
     ]
 
     one_caption = _build_semantic_figure_groups_from_assets(assets, one_caption_blocks, page_width=1200)
@@ -613,8 +693,20 @@ def test_candidate_groups_do_not_include_caption_band_local_groups() -> None:
         {"block_id": "a4", "page": 1, "role": "figure_asset", "bbox": [320, 420, 520, 560]},
     ]
     legends = [
-        {"block_id": "cap1", "page": 1, "role": "figure_caption", "text": "Figure 1. Caption.", "bbox": [100, 280, 520, 340]},
-        {"block_id": "cap2", "page": 1, "role": "figure_caption", "text": "Figure 2. Caption.", "bbox": [100, 600, 520, 660]},
+        {
+            "block_id": "cap1",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Caption.",
+            "bbox": [100, 280, 520, 340],
+        },
+        {
+            "block_id": "cap2",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 2. Caption.",
+            "bbox": [100, 600, 520, 660],
+        },
     ]
 
     candidate_groups = _build_candidate_figure_groups_from_assets(assets, assets + legends, legends, page_width=1200)
@@ -847,6 +939,7 @@ def test_unmatched_assets_are_preserved() -> None:
 
     assert len(inventory["matched_figures"]) == 0
     assert len(inventory["unmatched_assets"]) == 1
+
 
 def test_extract_figure_number_basic() -> None:
     from paperforge.worker.ocr_figures import _extract_figure_number
@@ -1088,7 +1181,12 @@ def test_legend_does_not_steal_offpage_asset() -> None:
     # and p2_b1 asset may stay unmatched. Accept either outcome.
     if inventory["matched_figures"]:
         mf_flags = inventory["matched_figures"][0].get("flags", [])
-        assert "sequential_match" in mf_flags or "group_sequential_match" in mf_flags or "cross_page_match" in mf_flags or "cross_page_reserved" in mf_flags
+        assert (
+            "sequential_match" in mf_flags
+            or "group_sequential_match" in mf_flags
+            or "cross_page_match" in mf_flags
+            or "cross_page_reserved" in mf_flags
+        )
     else:
         # In vnext, cross-page may not match; legend may be in unmatched_legends
         assert any(ul.get("block_id") == "p1_b1" for ul in inventory.get("unmatched_legends", []))
@@ -1184,16 +1282,12 @@ def test_unresolved_clusters_in_inventory() -> None:
 
     assert len(inventory["matched_figures"]) == 0
     assert len(inventory["rejected_legends"]) == 1
-    assert "unresolved_clusters" in inventory, (
-        "unresolved_clusters key must exist in inventory"
-    )
+    assert "unresolved_clusters" in inventory, "unresolved_clusters key must exist in inventory"
     assert len(inventory["unresolved_clusters"]) == 1, (
         "One unresolved cluster expected for six panels with rejected legend"
     )
     cluster = inventory["unresolved_clusters"][0]
-    assert len(cluster["media_block_ids"]) == 6, (
-        "Cluster must contain all six media block ids"
-    )
+    assert len(cluster["media_block_ids"]) == 6, "Cluster must contain all six media block ids"
     for bid in ["p9_b2", "p9_b3", "p9_b4", "p9_b5", "p9_b6", "p9_b7"]:
         assert bid in cluster["media_block_ids"], f"Cluster missing {bid}"
     assert len(inventory["unmatched_assets"]) == 0, (
@@ -1317,6 +1411,7 @@ PAGE1_AUTHOR_BIO_FIXTURE = [
 
 def test_non_body_insert_media_not_in_figure_assets() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
+
     inventory = build_figure_inventory(PAGE1_AUTHOR_BIO_FIXTURE)
     # vnext: no figure_assets key; use matched_figures' matched_assets
     asset_ids = [a.get("block_id") for fig in inventory["matched_figures"] for a in fig.get("matched_assets", [])]
@@ -1339,7 +1434,9 @@ def test_non_body_insert_media_not_in_unmatched_assets() -> None:
     inventory = build_figure_inventory(PAGE1_AUTHOR_BIO_FIXTURE)
     unmatched_ids = [a.get("block_id") for a in inventory["unmatched_assets"]]
     # vnext: author bio media may appear in unmatched_assets; just verify it's not matched
-    matched_asset_ids = [a.get("block_id") for fig in inventory["matched_figures"] for a in fig.get("matched_assets", [])]
+    matched_asset_ids = [
+        a.get("block_id") for fig in inventory["matched_figures"] for a in fig.get("matched_assets", [])
+    ]
     assert "p1_b3" not in matched_asset_ids, "Author bio image must not be in matched figure assets"
 
 
@@ -1451,14 +1548,29 @@ def test_resolved_figure_caption_not_rejected_by_inventory():
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "m1", "role": "media_asset", "bbox": [100, 500, 400, 800], "page": 5, "page_width": 1200, "page_height": 1700, "text": ""},
-        {"block_id": "c1", "role": "figure_caption", "text": "Fig. 7. Expression of mRNA in tissue sections.", "bbox": [100, 450, 500, 490], "page": 5, "page_width": 1200, "page_height": 1700, "render_default": True},
+        {
+            "block_id": "m1",
+            "role": "media_asset",
+            "bbox": [100, 500, 400, 800],
+            "page": 5,
+            "page_width": 1200,
+            "page_height": 1700,
+            "text": "",
+        },
+        {
+            "block_id": "c1",
+            "role": "figure_caption",
+            "text": "Fig. 7. Expression of mRNA in tissue sections.",
+            "bbox": [100, 450, 500, 490],
+            "page": 5,
+            "page_width": 1200,
+            "page_height": 1700,
+            "render_default": True,
+        },
     ]
 
     inventory = build_figure_inventory(blocks)
-    assert len(inventory["matched_figures"]) == 1, (
-        f"Expected 1 matched figure, got {len(inventory['matched_figures'])}"
-    )
+    assert len(inventory["matched_figures"]) == 1, f"Expected 1 matched figure, got {len(inventory['matched_figures'])}"
 
 
 # === SAN9AYVR guard tests (Task 7 -- preserve figure mainline) ===
@@ -1471,10 +1583,10 @@ SAN9AYVR_BODY_AND_FIGURES = [
         "role": "figure_caption_candidate",
         "block_label": "text",
         "text": "Fig. 26c addresses the limiting case of the mathematical model where "
-               "the field strength approaches zero. The trend reverses at higher "
-               "concentrations as the system enters a regime where nonlinear effects "
-               "dominate the observed dynamics. This pattern is consistent with "
-               "prior observations in similar experimental systems.",
+        "the field strength approaches zero. The trend reverses at higher "
+        "concentrations as the system enters a regime where nonlinear effects "
+        "dominate the observed dynamics. This pattern is consistent with "
+        "prior observations in similar experimental systems.",
         "bbox": [50, 700, 550, 760],
         "page_width": 1200,
         "page_height": 1700,
@@ -1485,9 +1597,9 @@ SAN9AYVR_BODY_AND_FIGURES = [
         "block_id": "p3_b2",
         "role": "figure_caption",
         "text": "Figure 26. Quantitative analysis of cell migration under "
-                "applied DC electric field stimulation over 48 hours. "
-                "Data represent mean plus/minus standard deviation from "
-                "three independent experiments performed in triplicate.",
+        "applied DC electric field stimulation over 48 hours. "
+        "Data represent mean plus/minus standard deviation from "
+        "three independent experiments performed in triplicate.",
         "bbox": [50, 420, 550, 480],
         "page_width": 1200,
         "page_height": 1700,
@@ -1508,9 +1620,9 @@ SAN9AYVR_BODY_AND_FIGURES = [
         "block_id": "p3_b4",
         "role": "figure_caption",
         "text": "Figure 27. Expression levels of key proteins under "
-                "different experimental conditions. Error bars "
-                "represent standard deviation from three independent "
-                "biological replicates measured in duplicate.",
+        "different experimental conditions. Error bars "
+        "represent standard deviation from three independent "
+        "biological replicates measured in duplicate.",
         "bbox": [600, 420, 1100, 490],
         "page_width": 1200,
         "page_height": 1700,
@@ -1546,7 +1658,9 @@ def test_san9ayvr_fig26c_body_narrative() -> None:
     # same_number_distinct_legends may not exist in vnext
     distinct = inventory.get("same_number_distinct_legends", []) or []
     if distinct:
-        assert any(d.get("figure_number") == 26 for d in distinct), "Fig 26c narrative must appear in same_number_distinct_legends when populated"
+        assert any(d.get("figure_number") == 26 for d in distinct), (
+            "Fig 26c narrative must appear in same_number_distinct_legends when populated"
+        )
 
 
 def test_san9ayvr_fig26_fig27_remain_formal() -> None:
@@ -1559,9 +1673,7 @@ def test_san9ayvr_fig26_fig27_remain_formal() -> None:
     assert 26 in fig_numbers, "Figure 26 must be a matched figure"
     assert 27 in fig_numbers, "Figure 27 must be a matched figure"
     for m in inventory["matched_figures"]:
-        assert len(m["matched_assets"]) == 1, (
-            f"Figure {m['figure_number']} must retain its media asset"
-        )
+        assert len(m["matched_assets"]) == 1, f"Figure {m['figure_number']} must retain its media asset"
 
 
 def test_same_number_distinct_legends_can_both_match_separate_assets() -> None:
@@ -1655,7 +1767,13 @@ def test_figure_inventory_marks_close_asset_candidates_ambiguous() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "cap1", "role": "figure_caption", "page": 1, "text": "Figure 1. Assay result", "bbox": [100, 500, 700, 540]},
+        {
+            "block_id": "cap1",
+            "role": "figure_caption",
+            "page": 1,
+            "text": "Figure 1. Assay result",
+            "bbox": [100, 500, 700, 540],
+        },
         {"block_id": "asset1", "role": "figure_asset", "page": 1, "bbox": [100, 100, 700, 470]},
         {"block_id": "asset2", "role": "figure_asset", "page": 1, "bbox": [110, 560, 710, 900]},
     ]
@@ -1673,7 +1791,13 @@ def test_figure_inventory_does_not_confidently_match_low_caption_score() -> None
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "cap1", "role": "figure_caption_candidate", "page": 1, "text": "Experimental results demonstrating cellular response over time with treatment.", "bbox": [100, 500, 700, 540]},
+        {
+            "block_id": "cap1",
+            "role": "figure_caption_candidate",
+            "page": 1,
+            "text": "Experimental results demonstrating cellular response over time with treatment.",
+            "bbox": [100, 500, 700, 540],
+        },
         {"block_id": "asset1", "role": "figure_asset", "page": 1, "bbox": [100, 100, 700, 470]},
     ]
 
@@ -2108,8 +2232,7 @@ def test_no_candidate_sequential_fallback_no_longer_manufactures_match() -> None
 
     assert inv["matched_figures"] == []
     assert all(
-        figure.get("match_score", {}).get("decision") != "matched_fallback"
-        for figure in inv.get("matched_figures", [])
+        figure.get("match_score", {}).get("decision") != "matched_fallback" for figure in inv.get("matched_figures", [])
     )
     ambiguous = inv.get("ambiguous_figures", [])
     assert len(ambiguous) == 0 or (ambiguous[0]["legend_block_id"] == "p6_b1")
@@ -2138,12 +2261,18 @@ def test_rejected_legend_caption_score_evidence() -> None:
 
 def test_inline_figure_mention_is_rejected_as_formal_caption():
     from paperforge.worker.ocr_figures import build_figure_inventory
+
     blocks = [
-        {"block_id": "cap1", "role": "figure_caption_candidate", "page": 1,
-         "text": "Figure 2 shows that cells migrated significantly under electrical stimulation conditions.",
-         "bbox": [100, 100, 700, 130], "page_width": 1200, "page_height": 1700},
-        {"block_id": "asset1", "role": "figure_asset", "page": 1,
-         "bbox": [100, 200, 700, 500]},
+        {
+            "block_id": "cap1",
+            "role": "figure_caption_candidate",
+            "page": 1,
+            "text": "Figure 2 shows that cells migrated significantly under electrical stimulation conditions.",
+            "bbox": [100, 100, 700, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {"block_id": "asset1", "role": "figure_asset", "page": 1, "bbox": [100, 200, 700, 500]},
     ]
     inventory = build_figure_inventory(blocks)
     assert len(inventory["matched_figures"]) >= 1
@@ -2153,12 +2282,18 @@ def test_inline_figure_mention_is_rejected_as_formal_caption():
 
 def test_frontiers_caption_not_affected_by_inline_detector():
     from paperforge.worker.ocr_figures import build_figure_inventory
+
     blocks = [
-        {"block_id": "cap1", "role": "figure_caption", "page": 1,
-         "text": "FIGURE 1 | Expression of irisin is downregulated in OA cartilage",
-         "bbox": [100, 500, 700, 540], "page_width": 1200, "page_height": 1700},
-        {"block_id": "asset1", "role": "figure_asset", "page": 1,
-         "bbox": [100, 50, 700, 450]},
+        {
+            "block_id": "cap1",
+            "role": "figure_caption",
+            "page": 1,
+            "text": "FIGURE 1 | Expression of irisin is downregulated in OA cartilage",
+            "bbox": [100, 500, 700, 540],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {"block_id": "asset1", "role": "figure_asset", "page": 1, "bbox": [100, 50, 700, 450]},
     ]
     inventory = build_figure_inventory(blocks)
     assert len(inventory["matched_figures"]) >= 1
@@ -2166,12 +2301,18 @@ def test_frontiers_caption_not_affected_by_inline_detector():
 
 def test_as_shown_in_figure_mention_rejected():
     from paperforge.worker.ocr_figures import build_figure_inventory
+
     blocks = [
-        {"block_id": "cap1", "role": "figure_caption_candidate", "page": 1,
-         "text": "As shown in Figure 3, the scaffold promotes cell attachment.",
-         "bbox": [100, 100, 700, 130], "page_width": 1200, "page_height": 1700},
-        {"block_id": "asset1", "role": "figure_asset", "page": 1,
-         "bbox": [100, 200, 700, 500]},
+        {
+            "block_id": "cap1",
+            "role": "figure_caption_candidate",
+            "page": 1,
+            "text": "As shown in Figure 3, the scaffold promotes cell attachment.",
+            "bbox": [100, 100, 700, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {"block_id": "asset1", "role": "figure_asset", "page": 1, "bbox": [100, 200, 700, 500]},
     ]
     inventory = build_figure_inventory(blocks)
     assert len(inventory["matched_figures"]) >= 1
@@ -2198,25 +2339,35 @@ def test_completeness_all_legends_accounted_matched() -> None:
 
     blocks = [
         {
-            "paper_id": "K001", "page": 1, "block_id": "p1_b1",
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
             "role": "figure_caption",
             "text": "Figure 1. Migration under DC field.",
             "bbox": [50, 420, 550, 460],
         },
         {
-            "paper_id": "K001", "page": 1, "block_id": "p1_b2",
-            "role": "figure_asset", "text": "",
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "role": "figure_asset",
+            "text": "",
             "bbox": [50, 50, 550, 400],
         },
         {
-            "paper_id": "K001", "page": 2, "block_id": "p2_b1",
+            "paper_id": "K001",
+            "page": 2,
+            "block_id": "p2_b1",
             "role": "figure_caption",
             "text": "Figure 2. Expression levels.",
             "bbox": [50, 420, 550, 460],
         },
         {
-            "paper_id": "K001", "page": 2, "block_id": "p2_b2",
-            "role": "figure_asset", "text": "",
+            "paper_id": "K001",
+            "page": 2,
+            "block_id": "p2_b2",
+            "role": "figure_asset",
+            "text": "",
             "bbox": [50, 50, 550, 400],
         },
     ]
@@ -2238,7 +2389,9 @@ def test_completeness_legend_only_no_asset_is_ambiguous() -> None:
 
     blocks = [
         {
-            "paper_id": "K001", "page": 3, "block_id": "p3_b1",
+            "paper_id": "K001",
+            "page": 3,
+            "block_id": "p3_b1",
             "role": "figure_caption",
             "text": "Figure 5. Caption with no asset on this page.",
             "bbox": [50, 700, 550, 750],
@@ -2260,20 +2413,28 @@ def test_completeness_held_legend_is_accounted() -> None:
 
     blocks = [
         {
-            "paper_id": "K001", "page": 10, "block_id": "p10_b1",
-            "zone": "body_zone", "style_family": "legend_like",
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b1",
+            "zone": "body_zone",
+            "style_family": "legend_like",
             "text": "Figure 1",
             "marker_signature": {"type": "figure_number", "number": 1},
             "bbox": [50, 50, 300, 90],
-            "page_width": 1200, "page_height": 1600,
+            "page_width": 1200,
+            "page_height": 1600,
         },
         {
-            "paper_id": "K001", "page": 10, "block_id": "p10_b2",
-            "zone": "body_zone", "style_family": "body_like",
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b2",
+            "zone": "body_zone",
+            "style_family": "body_like",
             "text": "Narrative prose",
             "marker_signature": {"type": "none"},
             "bbox": [50, 100, 900, 140],
-            "page_width": 1200, "page_height": 1600,
+            "page_width": 1200,
+            "page_height": 1600,
         },
     ]
 
@@ -2292,7 +2453,9 @@ def test_completeness_low_score_legend_is_unmatched_not_gap() -> None:
 
     blocks = [
         {
-            "paper_id": "K001", "page": 1, "block_id": "p1_b1",
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
             "role": "figure_caption",
             "text": "Total cells",
             "bbox": [50, 700, 200, 720],
@@ -2313,8 +2476,11 @@ def test_completeness_rejected_legend_not_in_count() -> None:
 
     blocks = [
         {
-            "paper_id": "K001", "page": 9, "block_id": "p9_b8",
-            "role": "figure_caption", "raw_label": "figure_title",
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b8",
+            "role": "figure_caption",
+            "raw_label": "figure_title",
             "text": "Days post culture in osteogenic differentiation supplemented medium",
             "bbox": [374, 1046, 1143, 1077],
         },
@@ -2332,26 +2498,35 @@ def test_completeness_mixed_outcomes_all_accounted() -> None:
     blocks = [
         # Figure 1: matched
         {
-            "paper_id": "K001", "page": 1, "block_id": "p1_b1",
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
             "role": "figure_caption",
             "text": "Figure 1. Migration under DC field.",
             "bbox": [50, 420, 550, 460],
         },
         {
-            "paper_id": "K001", "page": 1, "block_id": "p1_b2",
-            "role": "figure_asset", "text": "",
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "role": "figure_asset",
+            "text": "",
             "bbox": [50, 50, 550, 400],
         },
         # Figure 5: no asset on same page -> ambiguous
         {
-            "paper_id": "K001", "page": 2, "block_id": "p2_b1",
+            "paper_id": "K001",
+            "page": 2,
+            "block_id": "p2_b1",
             "role": "figure_caption",
             "text": "Figure 5. Expression levels without asset.",
             "bbox": [50, 700, 550, 750],
         },
         # Non-numbered caption (axis label) -> not counted by completeness
         {
-            "paper_id": "K001", "page": 3, "block_id": "p3_b1",
+            "paper_id": "K001",
+            "page": 3,
+            "block_id": "p3_b1",
             "role": "figure_caption",
             "text": "Days post culture",
             "bbox": [50, 700, 200, 720],
@@ -2377,13 +2552,17 @@ def test_compute_figure_legend_completeness_directly() -> None:
 
     structured_blocks = [
         {
-            "paper_id": "K001", "page": 1, "block_id": "leg_A",
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "leg_A",
             "role": "figure_caption",
             "text": "Figure 1. Test.",
             "bbox": [50, 420, 550, 460],
         },
         {
-            "paper_id": "K001", "page": 2, "block_id": "leg_B",
+            "paper_id": "K001",
+            "page": 2,
+            "block_id": "leg_B",
             "role": "figure_caption",
             "text": "Figure 2. Test.",
             "bbox": [50, 420, 550, 460],
@@ -2417,34 +2596,42 @@ def test_strict_layer_promotes_contiguous_legends_with_ordered_assets() -> None:
 
     blocks = [
         # Fig 1: legend + asset on page 3 — direct match
-        {"block_id": 10, "role": "figure_caption",
-         "text": "Figure 1. Experimental setup for biomechanical testing.",
-         "page": 3, "bbox": [100, 700, 500, 720],
-         "marker_signature": {"type": "figure_number"},
-         "zone": "body_zone", "style_family": "legend_like"},
-        {"block_id": 11, "role": "figure_asset",
-         "page": 3, "bbox": [100, 400, 500, 680]},
-
+        {
+            "block_id": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Experimental setup for biomechanical testing.",
+            "page": 3,
+            "bbox": [100, 700, 500, 720],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "body_zone",
+            "style_family": "legend_like",
+        },
+        {"block_id": 11, "role": "figure_asset", "page": 3, "bbox": [100, 400, 500, 680]},
         # Fig 2: legend on page 4, no asset — ambiguous (no_asset_match)
-        {"block_id": 12, "role": "figure_caption",
-         "text": "Figure 2. Histological analysis of tissue sections.",
-         "page": 4, "bbox": [100, 300, 500, 320],
-         "marker_signature": {"type": "figure_number"},
-         "zone": "body_zone", "style_family": "legend_like"},
-
+        {
+            "block_id": 12,
+            "role": "figure_caption",
+            "text": "Figure 2. Histological analysis of tissue sections.",
+            "page": 4,
+            "bbox": [100, 300, 500, 320],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "body_zone",
+            "style_family": "legend_like",
+        },
         # Fig 3: legend + asset on page 5 — direct match
-        {"block_id": 13, "role": "figure_caption",
-         "text": "Figure 3. Gene expression analysis results.",
-         "page": 5, "bbox": [100, 300, 500, 320],
-         "marker_signature": {"type": "figure_number"},
-         "zone": "body_zone", "style_family": "legend_like"},
-        {"block_id": 14, "role": "figure_asset",
-         "page": 5, "bbox": [100, 50, 500, 280]},
-
+        {
+            "block_id": 13,
+            "role": "figure_caption",
+            "text": "Figure 3. Gene expression analysis results.",
+            "page": 5,
+            "bbox": [100, 300, 500, 320],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "body_zone",
+            "style_family": "legend_like",
+        },
+        {"block_id": 14, "role": "figure_asset", "page": 5, "bbox": [100, 50, 500, 280]},
         # Body paragraph on page 3
-        {"block_id": 15, "role": "body_paragraph",
-         "text": "Body text here.",
-         "page": 3, "bbox": [100, 750, 500, 770]},
+        {"block_id": 15, "role": "body_paragraph", "text": "Body text here.", "page": 3, "bbox": [100, 750, 500, 770]},
     ]
 
     inventory = build_figure_inventory(blocks)
@@ -2454,8 +2641,7 @@ def test_strict_layer_promotes_contiguous_legends_with_ordered_assets() -> None:
 
     # Fig 2 must NOT be promoted — it has no assets
     assert 2 not in fig_numbers, (
-        f"Fig 2 must NOT be promoted to SEQUENCE_MATCH without assets. "
-        f"Matched fig nums: {fig_numbers}"
+        f"Fig 2 must NOT be promoted to SEQUENCE_MATCH without assets. Matched fig nums: {fig_numbers}"
     )
     # Fig 1 and Fig 3 should still be matched directly
     assert 1 in fig_numbers
@@ -2468,8 +2654,11 @@ def test_compute_figure_legend_completeness_skips_body_mentions() -> None:
 
     structured_blocks = [
         {
-            "paper_id": "K001", "page": 1, "block_id": "body1",
-            "role": "body_paragraph", "raw_role": "body_paragraph",
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "body1",
+            "role": "body_paragraph",
+            "raw_role": "body_paragraph",
             "text": "Figure 2 shows the results.",
             "bbox": [50, 100, 550, 140],
             "marker_signature": {"type": "figure_number", "number": 2},
@@ -2497,29 +2686,40 @@ def test_sequence_match_requires_at_least_one_asset_block_id() -> None:
 
     blocks = [
         # Fig 1: legend + asset on page 3 — direct match
-        {"block_id": 10, "role": "figure_caption",
-         "text": "Figure 1. Experimental setup for biomechanical testing.",
-         "page": 3, "bbox": [100, 700, 500, 720],
-         "marker_signature": {"type": "figure_number"},
-         "zone": "body_zone", "style_family": "legend_like"},
-        {"block_id": 11, "role": "figure_asset",
-         "page": 3, "bbox": [100, 400, 500, 680]},
-
+        {
+            "block_id": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Experimental setup for biomechanical testing.",
+            "page": 3,
+            "bbox": [100, 700, 500, 720],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "body_zone",
+            "style_family": "legend_like",
+        },
+        {"block_id": 11, "role": "figure_asset", "page": 3, "bbox": [100, 400, 500, 680]},
         # Fig 2: legend on page 4, no asset — ambiguous (no_asset_match)
-        {"block_id": 12, "role": "figure_caption",
-         "text": "Figure 2. Histological analysis of tissue sections.",
-         "page": 4, "bbox": [100, 300, 500, 320],
-         "marker_signature": {"type": "figure_number"},
-         "zone": "body_zone", "style_family": "legend_like"},
-
+        {
+            "block_id": 12,
+            "role": "figure_caption",
+            "text": "Figure 2. Histological analysis of tissue sections.",
+            "page": 4,
+            "bbox": [100, 300, 500, 320],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "body_zone",
+            "style_family": "legend_like",
+        },
         # Fig 3: legend + asset on page 5 — direct match
-        {"block_id": 13, "role": "figure_caption",
-         "text": "Figure 3. Gene expression analysis results.",
-         "page": 5, "bbox": [100, 300, 500, 320],
-         "marker_signature": {"type": "figure_number"},
-         "zone": "body_zone", "style_family": "legend_like"},
-        {"block_id": 14, "role": "figure_asset",
-         "page": 5, "bbox": [100, 50, 500, 280]},
+        {
+            "block_id": 13,
+            "role": "figure_caption",
+            "text": "Figure 3. Gene expression analysis results.",
+            "page": 5,
+            "bbox": [100, 300, 500, 320],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "body_zone",
+            "style_family": "legend_like",
+        },
+        {"block_id": 14, "role": "figure_asset", "page": 5, "bbox": [100, 50, 500, 280]},
     ]
 
     inventory = build_figure_inventory(blocks)
@@ -2529,8 +2729,7 @@ def test_sequence_match_requires_at_least_one_asset_block_id() -> None:
 
     # Fig 2 should NOT be promoted — it has no assets
     assert 2 not in fig_numbers, (
-        f"Fig 2 must NOT be promoted to SEQUENCE_MATCH without assets. "
-        f"Matched fig nums: {fig_numbers}"
+        f"Fig 2 must NOT be promoted to SEQUENCE_MATCH without assets. Matched fig nums: {fig_numbers}"
     )
     # Fig 1 and Fig 3 should still be matched directly
     assert 1 in fig_numbers
@@ -2661,19 +2860,49 @@ def test_assetless_sequence_shell_never_increments_official_count() -> None:
     promoted = _promote_sequence_matches(inventory, blocks=[])
     matched_count = len(promoted.get("matched_figures", []))
     official = promoted.get("official_figure_count", matched_count)
-    assert official == 1, (
-        f"Official count must not include assetless sequence shell, got {official}"
-    )
+    assert official == 1, f"Official count must not include assetless sequence shell, got {official}"
 
 
 def test_bundle_source_duplicate_loser_is_accounted_not_gap() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "dup_legend", "page": 10, "role": "figure_caption", "text": "Figure 3. Caption list duplicate.", "bbox": [100, 100, 900, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "dup_peer_1", "page": 10, "role": "figure_caption", "text": "Figure 1. Caption list.", "bbox": [100, 200, 900, 250], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "dup_peer_2", "page": 10, "role": "figure_caption", "text": "Figure 2. Caption list.", "bbox": [100, 300, 900, 350], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "real_legend", "page": 12, "role": "figure_caption", "text": "Figure 3. Real legend.", "bbox": [100, 100, 900, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {
+            "block_id": "dup_legend",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 3. Caption list duplicate.",
+            "bbox": [100, 100, 900, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "block_id": "dup_peer_1",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Caption list.",
+            "bbox": [100, 200, 900, 250],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "dup_peer_2",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 2. Caption list.",
+            "bbox": [100, 300, 900, 350],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "real_legend",
+            "page": 12,
+            "role": "figure_caption",
+            "text": "Figure 3. Real legend.",
+            "bbox": [100, 100, 900, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
         {"block_id": "asset_3", "page": 11, "role": "figure_asset", "raw_label": "image", "bbox": [100, 120, 700, 520]},
     ]
 
@@ -2691,29 +2920,40 @@ def test_reader_figures_never_include_empty_visual_groups() -> None:
 
     blocks = [
         # Fig 1: legend + asset — direct match
-        {"block_id": 10, "role": "figure_caption",
-         "text": "Figure 1. Experimental setup.",
-         "page": 3, "bbox": [100, 700, 500, 720],
-         "marker_signature": {"type": "figure_number"},
-         "zone": "body_zone", "style_family": "legend_like"},
-        {"block_id": 11, "role": "figure_asset",
-         "page": 3, "bbox": [100, 400, 500, 680]},
-
+        {
+            "block_id": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Experimental setup.",
+            "page": 3,
+            "bbox": [100, 700, 500, 720],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "body_zone",
+            "style_family": "legend_like",
+        },
+        {"block_id": 11, "role": "figure_asset", "page": 3, "bbox": [100, 400, 500, 680]},
         # Fig 2: legend only, no asset
-        {"block_id": 12, "role": "figure_caption",
-         "text": "Figure 2. Histological analysis.",
-         "page": 4, "bbox": [100, 300, 500, 320],
-         "marker_signature": {"type": "figure_number"},
-         "zone": "body_zone", "style_family": "legend_like"},
-
+        {
+            "block_id": 12,
+            "role": "figure_caption",
+            "text": "Figure 2. Histological analysis.",
+            "page": 4,
+            "bbox": [100, 300, 500, 320],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "body_zone",
+            "style_family": "legend_like",
+        },
         # Fig 3: legend + asset — direct match
-        {"block_id": 13, "role": "figure_caption",
-         "text": "Figure 3. Gene expression results.",
-         "page": 5, "bbox": [100, 300, 500, 320],
-         "marker_signature": {"type": "figure_number"},
-         "zone": "body_zone", "style_family": "legend_like"},
-        {"block_id": 14, "role": "figure_asset",
-         "page": 5, "bbox": [100, 50, 500, 280]},
+        {
+            "block_id": 13,
+            "role": "figure_caption",
+            "text": "Figure 3. Gene expression results.",
+            "page": 5,
+            "bbox": [100, 300, 500, 320],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "body_zone",
+            "style_family": "legend_like",
+        },
+        {"block_id": 14, "role": "figure_asset", "page": 5, "bbox": [100, 50, 500, 280]},
     ]
 
     inventory = build_figure_inventory(blocks)
@@ -2721,9 +2961,7 @@ def test_reader_figures_never_include_empty_visual_groups() -> None:
 
     for figure in reader.get("reader_figures", []):
         vg = figure.get("visual_groups")
-        assert vg, (
-            f"Reader figure {figure.get('reader_figure_id')} has empty visual_groups: {figure}"
-        )
+        assert vg, f"Reader figure {figure.get('reader_figure_id')} has empty visual_groups: {figure}"
 
 
 # === group-first matching (Task 1: Red test) ===
@@ -2762,10 +3000,28 @@ def test_sequential_fallback_does_not_split_grouped_assets() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": 1, "role": "figure_caption", "text": "Fig. 2 A and B, paired figure.", "page": 3, "bbox": [80, 120, 420, 210], "marker_signature": {"type": "figure_number"}, "zone": "display_zone", "style_family": "legend_like"},
+        {
+            "block_id": 1,
+            "role": "figure_caption",
+            "text": "Fig. 2 A and B, paired figure.",
+            "page": 3,
+            "bbox": [80, 120, 420, 210],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
         {"block_id": 2, "role": "media_asset", "raw_label": "image", "page": 3, "bbox": [450, 120, 780, 520]},
         {"block_id": 3, "role": "media_asset", "raw_label": "image", "page": 3, "bbox": [805, 120, 1130, 520]},
-        {"block_id": 4, "role": "figure_caption", "text": "Fig. 3 Single figure.", "page": 4, "bbox": [80, 120, 420, 210], "marker_signature": {"type": "figure_number"}, "zone": "display_zone", "style_family": "legend_like"},
+        {
+            "block_id": 4,
+            "role": "figure_caption",
+            "text": "Fig. 3 Single figure.",
+            "page": 4,
+            "bbox": [80, 120, 420, 210],
+            "marker_signature": {"type": "figure_number"},
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
     ]
 
     inventory = build_figure_inventory(blocks, page_width=1200)
@@ -2773,15 +3029,11 @@ def test_sequential_fallback_does_not_split_grouped_assets() -> None:
     assert [a["block_id"] for a in matched[2]["matched_assets"]] == [2, 3]
     assert 3 not in matched
     fig3_buckets = [
-        af["figure_number"]
-        for af in inventory.get("ambiguous_figures", [])
-        if af.get("figure_number") == 3
+        af["figure_number"] for af in inventory.get("ambiguous_figures", []) if af.get("figure_number") == 3
     ]
     # vnext: ambiguous_figures is always empty
     if inventory.get("ambiguous_figures", []):
-        assert fig3_buckets, (
-            "Fig 3 with no same-page asset should appear in ambiguous_figures"
-        )
+        assert fig3_buckets, "Fig 3 with no same-page asset should appear in ambiguous_figures"
 
 
 def test_fallback_eligible_asset_page_ids_rejects_preowned_assets() -> None:
@@ -2833,20 +3085,39 @@ def test_fallback_eligible_groups_rejects_preowned_groups() -> None:
 def test_fallback_can_consume_rejects_blocked_assets() -> None:
     from paperforge.worker.ocr_figures import _fallback_can_consume
 
-    assert _fallback_can_consume(
-        [(7, "asset_1")],
-        used_asset_page_ids=set(),
-        blocked_asset_page_ids={(7, "asset_1")},
-    ) is False
+    assert (
+        _fallback_can_consume(
+            [(7, "asset_1")],
+            used_asset_page_ids=set(),
+            blocked_asset_page_ids={(7, "asset_1")},
+        )
+        is False
+    )
 
 
 def test_sequential_fallback_skips_preowned_bare_asset() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "cap1", "page": 1, "role": "figure_caption", "text": "Figure 1. Same-page figure.", "bbox": [100, 420, 800, 470], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {
+            "block_id": "cap1",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Same-page figure.",
+            "bbox": [100, 420, 800, 470],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
         {"block_id": "asset_1", "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 380]},
-        {"block_id": "cap2", "page": 2, "role": "figure_caption", "text": "Figure 2. Later caption.", "bbox": [100, 120, 800, 170], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {
+            "block_id": "cap2",
+            "page": 2,
+            "role": "figure_caption",
+            "text": "Figure 2. Later caption.",
+            "bbox": [100, 120, 800, 170],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -2914,11 +3185,11 @@ def test_matched_figure_assets_preserve_asset_family_hints() -> None:
 
 def test_ownership_conflicts_persisted_in_figure_inventory_json(tmp_path) -> None:
     """P0-A: ownership_conflicts must be in the written figure_inventory.json."""
+    from paperforge.core.io import read_json
     from paperforge.worker.ocr_figures import (
         attach_ownership_conflicts,
         write_figure_inventory,
     )
-    from paperforge.core.io import read_json
 
     figure_inventory: dict = {
         "matched_figures": [
@@ -2984,14 +3255,70 @@ def test_local_figure_expansion_absorbs_adjacent_same_page_stack() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
-        {"paper_id": "KX", "page": 2, "block_id": 3, "role": "media_asset", "raw_label": "image", "bbox": [101, 155, 401, 349]},
-        {"paper_id": "KX", "page": 2, "block_id": 4, "role": "media_asset", "raw_label": "chart", "bbox": [448, 154, 699, 360]},
-        {"paper_id": "KX", "page": 2, "block_id": 5, "role": "media_asset", "raw_label": "chart", "bbox": [102, 379, 399, 646]},
-        {"paper_id": "KX", "page": 2, "block_id": 6, "role": "media_asset", "raw_label": "chart", "bbox": [415, 375, 695, 642]},
-        {"paper_id": "KX", "page": 2, "block_id": 7, "role": "media_asset", "raw_label": "chart", "bbox": [709, 158, 1079, 634]},
-        {"paper_id": "KX", "page": 2, "block_id": 8, "role": "media_asset", "raw_label": "chart", "bbox": [118, 662, 395, 929]},
-        {"paper_id": "KX", "page": 2, "block_id": 9, "role": "media_asset", "raw_label": "chart", "bbox": [415, 663, 691, 933]},
-        {"paper_id": "KX", "page": 2, "block_id": 10, "role": "media_asset", "raw_label": "chart", "bbox": [715, 638, 1063, 936]},
+        {
+            "paper_id": "KX",
+            "page": 2,
+            "block_id": 3,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [101, 155, 401, 349],
+        },
+        {
+            "paper_id": "KX",
+            "page": 2,
+            "block_id": 4,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "bbox": [448, 154, 699, 360],
+        },
+        {
+            "paper_id": "KX",
+            "page": 2,
+            "block_id": 5,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "bbox": [102, 379, 399, 646],
+        },
+        {
+            "paper_id": "KX",
+            "page": 2,
+            "block_id": 6,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "bbox": [415, 375, 695, 642],
+        },
+        {
+            "paper_id": "KX",
+            "page": 2,
+            "block_id": 7,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "bbox": [709, 158, 1079, 634],
+        },
+        {
+            "paper_id": "KX",
+            "page": 2,
+            "block_id": 8,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "bbox": [118, 662, 395, 929],
+        },
+        {
+            "paper_id": "KX",
+            "page": 2,
+            "block_id": 9,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "bbox": [415, 663, 691, 933],
+        },
+        {
+            "paper_id": "KX",
+            "page": 2,
+            "block_id": 10,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "bbox": [715, 638, 1063, 936],
+        },
         {
             "paper_id": "KX",
             "page": 2,
@@ -3018,10 +3345,38 @@ def test_local_figure_expansion_does_not_cross_second_formal_caption_boundary() 
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
-        {"paper_id": "KX", "page": 4, "block_id": 1, "role": "media_asset", "raw_label": "image", "bbox": [100, 100, 500, 280]},
-        {"paper_id": "KX", "page": 4, "block_id": 2, "role": "media_asset", "raw_label": "image", "bbox": [100, 300, 500, 500]},
-        {"paper_id": "KX", "page": 4, "block_id": 3, "role": "media_asset", "raw_label": "image", "bbox": [100, 560, 500, 760]},
-        {"paper_id": "KX", "page": 4, "block_id": 4, "role": "media_asset", "raw_label": "image", "bbox": [100, 780, 500, 980]},
+        {
+            "paper_id": "KX",
+            "page": 4,
+            "block_id": 1,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 500, 280],
+        },
+        {
+            "paper_id": "KX",
+            "page": 4,
+            "block_id": 2,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [100, 300, 500, 500],
+        },
+        {
+            "paper_id": "KX",
+            "page": 4,
+            "block_id": 3,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [100, 560, 500, 760],
+        },
+        {
+            "paper_id": "KX",
+            "page": 4,
+            "block_id": 4,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [100, 780, 500, 980],
+        },
         {
             "paper_id": "KX",
             "page": 4,
@@ -3068,7 +3423,16 @@ def test_full_width_caption_does_not_enter_sidecar_partition() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"paper_id": "FW", "page": 1, "block_id": 1, "role": "media_asset", "raw_label": "image", "bbox": [80, 80, 1080, 700], "page_width": 1200, "page_height": 1600},
+        {
+            "paper_id": "FW",
+            "page": 1,
+            "block_id": 1,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [80, 80, 1080, 700],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
         {
             "paper_id": "FW",
             "page": 1,
@@ -3095,9 +3459,36 @@ def test_narrow_same_column_captions_partition_same_page_figures() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"paper_id": "SC", "page": 3, "block_id": 3, "role": "media_asset", "raw_label": "image", "bbox": [470, 80, 980, 360], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "SC", "page": 3, "block_id": 4, "role": "media_asset", "raw_label": "image", "bbox": [470, 400, 980, 680], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "SC", "page": 3, "block_id": 8, "role": "media_asset", "raw_label": "image", "bbox": [470, 720, 980, 1040], "page_width": 1200, "page_height": 1600},
+        {
+            "paper_id": "SC",
+            "page": 3,
+            "block_id": 3,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [470, 80, 980, 360],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "SC",
+            "page": 3,
+            "block_id": 4,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [470, 400, 980, 680],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "SC",
+            "page": 3,
+            "block_id": 8,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [470, 720, 980, 1040],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
         {
             "paper_id": "SC",
             "page": 3,
@@ -3162,11 +3553,71 @@ def test_panel_labels_do_not_form_sidecar_caption_column() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"paper_id": "PL", "page": 1, "block_id": 1, "role": "media_asset", "raw_label": "image", "bbox": [100, 80, 420, 320], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "PL", "page": 1, "block_id": 2, "role": "media_asset", "raw_label": "image", "bbox": [460, 80, 780, 320], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "PL", "page": 1, "block_id": 3, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "a", "bbox": [95, 60, 120, 78], "page_width": 1200, "page_height": 1600, "zone": "body_zone", "style_family": "unknown_like", "marker_signature": {"type": "short_fragment"}},
-        {"paper_id": "PL", "page": 1, "block_id": 4, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "b", "bbox": [455, 60, 480, 78], "page_width": 1200, "page_height": 1600, "zone": "body_zone", "style_family": "unknown_like", "marker_signature": {"type": "short_fragment"}},
-        {"paper_id": "PL", "page": 1, "block_id": 5, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "Figure 1. Full caption.", "bbox": [120, 340, 760, 420], "page_width": 1200, "page_height": 1600, "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {
+            "paper_id": "PL",
+            "page": 1,
+            "block_id": 1,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [100, 80, 420, 320],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "PL",
+            "page": 1,
+            "block_id": 2,
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [460, 80, 780, 320],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "PL",
+            "page": 1,
+            "block_id": 3,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "a",
+            "bbox": [95, 60, 120, 78],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "body_zone",
+            "style_family": "unknown_like",
+            "marker_signature": {"type": "short_fragment"},
+        },
+        {
+            "paper_id": "PL",
+            "page": 1,
+            "block_id": 4,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "b",
+            "bbox": [455, 60, 480, 78],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "body_zone",
+            "style_family": "unknown_like",
+            "marker_signature": {"type": "short_fragment"},
+        },
+        {
+            "paper_id": "PL",
+            "page": 1,
+            "block_id": 5,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "Figure 1. Full caption.",
+            "bbox": [120, 340, 760, 420],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
     ]
 
     inventory = build_figure_inventory(blocks)
@@ -3178,13 +3629,90 @@ def test_mixed_page_keeps_sidecar_and_ordinary_below_pairs_separate() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"paper_id": "MX2", "page": 1, "block_id": "a1", "role": "media_asset", "raw_label": "image", "bbox": [520, 80, 960, 280], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "MX2", "page": 1, "block_id": "a2", "role": "media_asset", "raw_label": "image", "bbox": [520, 340, 960, 540], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "MX2", "page": 1, "block_id": "body_sep", "role": "body_paragraph", "text": "Body separator between local layouts.", "bbox": [120, 620, 1080, 760], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "MX2", "page": 1, "block_id": "a3", "role": "media_asset", "raw_label": "image", "bbox": [140, 820, 1060, 1080], "page_width": 1200, "page_height": 1600},
-        {"paper_id": "MX2", "page": 1, "block_id": "cap1", "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "Figure 1. Sidecar top.", "bbox": [80, 90, 320, 150], "page_width": 1200, "page_height": 1600, "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"paper_id": "MX2", "page": 1, "block_id": "cap2", "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "Figure 2. Sidecar lower.", "bbox": [80, 350, 320, 410], "page_width": 1200, "page_height": 1600, "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"paper_id": "MX2", "page": 1, "block_id": "cap3", "role": "figure_caption", "raw_label": "figure_title", "text": "Figure 3. Ordinary caption below.", "bbox": [160, 1100, 1040, 1170], "page_width": 1200, "page_height": 1600, "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {
+            "paper_id": "MX2",
+            "page": 1,
+            "block_id": "a1",
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [520, 80, 960, 280],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "MX2",
+            "page": 1,
+            "block_id": "a2",
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [520, 340, 960, 540],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "MX2",
+            "page": 1,
+            "block_id": "body_sep",
+            "role": "body_paragraph",
+            "text": "Body separator between local layouts.",
+            "bbox": [120, 620, 1080, 760],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "MX2",
+            "page": 1,
+            "block_id": "a3",
+            "role": "media_asset",
+            "raw_label": "image",
+            "bbox": [140, 820, 1060, 1080],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "MX2",
+            "page": 1,
+            "block_id": "cap1",
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "Figure 1. Sidecar top.",
+            "bbox": [80, 90, 320, 150],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "paper_id": "MX2",
+            "page": 1,
+            "block_id": "cap2",
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "Figure 2. Sidecar lower.",
+            "bbox": [80, 350, 320, 410],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "paper_id": "MX2",
+            "page": 1,
+            "block_id": "cap3",
+            "role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "Figure 3. Ordinary caption below.",
+            "bbox": [160, 1100, 1040, 1170],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
     ]
 
     inventory = build_figure_inventory(blocks)
@@ -3255,9 +3783,21 @@ def test_main_and_supplementary_figures_do_not_dedup_into_one_number() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
-        {"page": 3, "block_id": "p3_c1", "role": "figure_caption", "text": "Figure 1. Migration assay under DC electric field stimulation over 48 hours.", "bbox": [100, 420, 600, 460]},
+        {
+            "page": 3,
+            "block_id": "p3_c1",
+            "role": "figure_caption",
+            "text": "Figure 1. Migration assay under DC electric field stimulation over 48 hours.",
+            "bbox": [100, 420, 600, 460],
+        },
         {"page": 3, "block_id": "p3_a1", "role": "figure_asset", "bbox": [100, 100, 600, 400], "text": ""},
-        {"page": 4, "block_id": "p4_c1", "role": "figure_caption", "text": "Supplementary Figure 1. Gene expression analysis under supplemental treatment conditions.", "bbox": [100, 420, 600, 460]},
+        {
+            "page": 4,
+            "block_id": "p4_c1",
+            "role": "figure_caption",
+            "text": "Supplementary Figure 1. Gene expression analysis under supplemental treatment conditions.",
+            "bbox": [100, 420, 600, 460],
+        },
         {"page": 4, "block_id": "p4_a1", "role": "figure_asset", "bbox": [100, 100, 600, 400], "text": ""},
     ]
     inventory = build_figure_inventory(structured_blocks)
@@ -3270,11 +3810,48 @@ def test_page_assets_does_not_strict_match_when_page_has_competing_captions() ->
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
-        {"page": 5, "block_id": "p5_a1", "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 300, 260], "text": ""},
-        {"page": 5, "block_id": "p5_a2", "role": "figure_asset", "raw_label": "image", "bbox": [320, 100, 520, 260], "text": ""},
-        {"page": 5, "block_id": "p5_a3", "role": "figure_asset", "raw_label": "image", "bbox": [540, 100, 740, 260], "text": ""},
-        {"page": 5, "block_id": "p5_c1", "role": "figure_caption", "text": "Figure 1. Left.", "bbox": [100, 280, 320, 320], "zone": "display_zone", "style_family": "legend_like"},
-        {"page": 5, "block_id": "p5_c2", "role": "figure_caption", "text": "Figure 2. Right.", "bbox": [420, 280, 740, 320], "zone": "display_zone", "style_family": "legend_like"},
+        {
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 300, 260],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "p5_a2",
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [320, 100, 520, 260],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "p5_a3",
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [540, 100, 740, 260],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "figure_caption",
+            "text": "Figure 1. Left.",
+            "bbox": [100, 280, 320, 320],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
+        {
+            "page": 5,
+            "block_id": "p5_c2",
+            "role": "figure_caption",
+            "text": "Figure 2. Right.",
+            "bbox": [420, 280, 740, 320],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
     ]
     inventory = build_figure_inventory(structured_blocks)
     for fig in inventory["matched_figures"]:
@@ -3287,9 +3864,31 @@ def test_build_figure_inventory_uses_distance_cluster_for_irregular_pair() -> No
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
-        {"page": 5, "block_id": "a1", "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 300, 260], "text": ""},
-        {"page": 5, "block_id": "a2", "role": "figure_asset", "raw_label": "image", "bbox": [315, 110, 525, 270], "text": ""},
-        {"page": 5, "block_id": "c1", "role": "figure_caption", "text": "Figure 1. Irregular pair.", "bbox": [100, 290, 520, 330], "zone": "display_zone", "style_family": "legend_like"},
+        {
+            "page": 5,
+            "block_id": "a1",
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 300, 260],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "a2",
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [315, 110, 525, 270],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "c1",
+            "role": "figure_caption",
+            "text": "Figure 1. Irregular pair.",
+            "bbox": [100, 290, 520, 330],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
     ]
 
     inventory = build_figure_inventory(structured_blocks)
@@ -3302,9 +3901,31 @@ def test_display_cluster_keeps_empty_bridge_between_asset_and_caption() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
-        {"page": 9, "block_id": "asset_1", "role": "figure_asset", "bbox": [100, 100, 520, 360], "text": "", "layout_region": "display_zone"},
-        {"page": 9, "block_id": "gap_1", "role": "unknown_structural", "bbox": [530, 110, 900, 360], "text": "", "layout_region": "display_zone", "bridge_eligible": True},
-        {"page": 9, "block_id": "cap_1", "role": "figure_caption", "bbox": [120, 380, 880, 430], "text": "Figure 2. Multi-panel reconstruction.", "layout_region": "display_zone"},
+        {
+            "page": 9,
+            "block_id": "asset_1",
+            "role": "figure_asset",
+            "bbox": [100, 100, 520, 360],
+            "text": "",
+            "layout_region": "display_zone",
+        },
+        {
+            "page": 9,
+            "block_id": "gap_1",
+            "role": "unknown_structural",
+            "bbox": [530, 110, 900, 360],
+            "text": "",
+            "layout_region": "display_zone",
+            "bridge_eligible": True,
+        },
+        {
+            "page": 9,
+            "block_id": "cap_1",
+            "role": "figure_caption",
+            "bbox": [120, 380, 880, 430],
+            "text": "Figure 2. Multi-panel reconstruction.",
+            "layout_region": "display_zone",
+        },
     ]
 
     inventory = build_figure_inventory(structured_blocks)
@@ -3322,7 +3943,12 @@ def test_caption_group_assignments_does_not_cross_page() -> None:
 
     blocks = [
         {"block_label": "image", "page": 12, "block_bbox": [100, 100, 400, 300], "block_content": ""},
-        {"block_label": "figure_title", "page": 13, "block_bbox": [100, 400, 500, 440], "block_content": "Figure 4. Test caption."},
+        {
+            "block_label": "figure_title",
+            "page": 13,
+            "block_bbox": [100, 400, 500, 440],
+            "block_content": "Figure 4. Test caption.",
+        },
     ]
     figure_map, _ = caption_group_assignments(blocks)
     assert len(figure_map) == 0, "caption_group_assignments must NOT match cross-page image/caption"
@@ -3332,7 +3958,15 @@ def test_caption_group_assignments_does_not_cross_page() -> None:
 def test_strong_numbered_legend_weak_truncated_not_strong() -> None:
     from paperforge.worker.ocr_figures import _is_strong_numbered_legend
 
-    block = {"block_id": "b1", "page": 1, "role": "figure_caption", "text": "Figure 1.", "bbox": [0, 0, 100, 50], "marker_signature": {"type": "figure_number", "number": 1}, "style_family": "legend_like"}
+    block = {
+        "block_id": "b1",
+        "page": 1,
+        "role": "figure_caption",
+        "text": "Figure 1.",
+        "bbox": [0, 0, 100, 50],
+        "marker_signature": {"type": "figure_number", "number": 1},
+        "style_family": "legend_like",
+    }
     score = {"score": 0.9, "decision": "figure_caption", "evidence": ["figure_number"]}
     assert _is_strong_numbered_legend(block, caption_score=score) is False
 
@@ -3340,7 +3974,13 @@ def test_strong_numbered_legend_weak_truncated_not_strong() -> None:
 def test_strong_numbered_legend_full_legend_is_strong() -> None:
     from paperforge.worker.ocr_figures import _is_strong_numbered_legend
 
-    block = {"block_id": "b1", "page": 1, "role": "figure_caption", "text": "Figure 1. Quantitative analysis of cell migration under DC electric field stimulation.", "bbox": [0, 0, 500, 50]}
+    block = {
+        "block_id": "b1",
+        "page": 1,
+        "role": "figure_caption",
+        "text": "Figure 1. Quantitative analysis of cell migration under DC electric field stimulation.",
+        "bbox": [0, 0, 500, 50],
+    }
     score = {"score": 0.9, "decision": "figure_caption", "evidence": ["figure_number"]}
     assert _is_strong_numbered_legend(block, caption_score=score) is True
 
@@ -3348,7 +3988,13 @@ def test_strong_numbered_legend_full_legend_is_strong() -> None:
 def test_strong_numbered_legend_low_score_not_strong() -> None:
     from paperforge.worker.ocr_figures import _is_strong_numbered_legend
 
-    block = {"block_id": "b1", "page": 1, "role": "figure_caption", "text": "Figure 1. Some text.", "bbox": [0, 0, 500, 50]}
+    block = {
+        "block_id": "b1",
+        "page": 1,
+        "role": "figure_caption",
+        "text": "Figure 1. Some text.",
+        "bbox": [0, 0, 500, 50],
+    }
     score = {"score": 0.2, "decision": "ambiguous", "evidence": ["weak"]}
     assert _is_strong_numbered_legend(block, caption_score=score) is False
 
@@ -3357,15 +4003,22 @@ def test_strong_numbered_legend_validation_first_needs_anchor() -> None:
     from paperforge.worker.ocr_figures import _is_strong_numbered_legend
 
     block = {
-        "block_id": "b1", "page": 1, "role": "unknown_structural",
-        "zone": "body_zone", "style_family": "legend_like", "style_family_authority": "figure_family_anchor",
+        "block_id": "b1",
+        "page": 1,
+        "role": "unknown_structural",
+        "zone": "body_zone",
+        "style_family": "legend_like",
+        "style_family_authority": "figure_family_anchor",
         "text": "Figure 1. Quantitative analysis of cell migration.",
         "bbox": [0, 0, 500, 50],
         "marker_signature": {"type": "figure_number", "number": 1},
     }
     score = {"score": 0.9, "decision": "figure_caption", "evidence": ["figure_number"]}
     assert _is_strong_numbered_legend(block, caption_score=score, anchor_supported=True) is True
-    assert _is_strong_numbered_legend(block, caption_score=score, anchor_supported=False, caption_text_supported=False) is False
+    assert (
+        _is_strong_numbered_legend(block, caption_score=score, anchor_supported=False, caption_text_supported=False)
+        is False
+    )
 
 
 def test_structurally_matchable_empty_group_not_matchable() -> None:
@@ -3385,7 +4038,13 @@ def test_structurally_matchable_valid_group() -> None:
 def test_structurally_matchable_page_assets_on_competing_page_not_matchable() -> None:
     from paperforge.worker.ocr_figures import _is_structurally_matchable_group
 
-    group = {"group_id": "g1", "page": 13, "group_type": "page_assets", "asset_block_ids": ["a1", "a2"], "cluster_bbox": [0, 0, 500, 500]}
+    group = {
+        "group_id": "g1",
+        "page": 13,
+        "group_type": "page_assets",
+        "asset_block_ids": ["a1", "a2"],
+        "cluster_bbox": [0, 0, 500, 500],
+    }
     assert _is_structurally_matchable_group(group, competing_caption_pages={13}) is False
 
 
@@ -3435,7 +4094,7 @@ def test_residual_ledger_balanced() -> None:
 
 
 def test_residual_legend_surplus_positive() -> None:
-    from paperforge.worker.ocr_figures import _build_residual_ledger, _residual_legend_surplus
+    from paperforge.worker.ocr_figures import _build_residual_ledger
 
     legends = [
         {"block_id": "c1", "page": 1, "text": "Figure 1. First.", "bbox": [0, 0, 100, 50]},
@@ -3447,7 +4106,7 @@ def test_residual_legend_surplus_positive() -> None:
 
 
 def test_residual_group_surplus_positive() -> None:
-    from paperforge.worker.ocr_figures import _build_residual_ledger, _residual_group_surplus
+    from paperforge.worker.ocr_figures import _build_residual_ledger
 
     legends = [{"block_id": "c1", "page": 2, "text": "Figure 1. Caption.", "bbox": [0, 0, 100, 50]}]
     groups = [
@@ -3461,20 +4120,51 @@ def test_residual_group_surplus_positive() -> None:
 # Task 4: reservation
 def test_reservation_reserves_top_caption_on_caption_surplus_page() -> None:
     from paperforge.worker.ocr_figures import (
-        _build_page_ledger, _build_residual_ledger, _reserve_cross_page_objects,
+        _build_residual_ledger,
+        _reserve_cross_page_objects,
     )
 
     legends = [
-        {"block_id": "fig4_cap", "page": 13, "text": "Figure 4. Caption for figure on page 12.", "bbox": [0, 0, 500, 50]},
-        {"block_id": "fig5_cap", "page": 13, "text": "Figure 5. Caption for page 13 figure.", "bbox": [0, 100, 500, 150]},
+        {
+            "block_id": "fig4_cap",
+            "page": 13,
+            "text": "Figure 4. Caption for figure on page 12.",
+            "bbox": [0, 0, 500, 50],
+        },
+        {
+            "block_id": "fig5_cap",
+            "page": 13,
+            "text": "Figure 5. Caption for page 13 figure.",
+            "bbox": [0, 100, 500, 150],
+        },
     ]
     groups = [
-        {"group_id": "g1", "page": 12, "asset_block_ids": ["a1"], "cluster_bbox": [0, 0, 200, 200], "media_blocks": [{"block_id": "a1", "page": 12, "bbox": [0, 0, 200, 200]}], "group_type": "single_asset", "group_evidence": ["single_asset"]},
-        {"group_id": "g2", "page": 13, "asset_block_ids": ["a2"], "cluster_bbox": [0, 300, 200, 500], "media_blocks": [{"block_id": "a2", "page": 13, "bbox": [0, 300, 200, 500]}], "group_type": "single_asset", "group_evidence": ["single_asset"]},
+        {
+            "group_id": "g1",
+            "page": 12,
+            "asset_block_ids": ["a1"],
+            "cluster_bbox": [0, 0, 200, 200],
+            "media_blocks": [{"block_id": "a1", "page": 12, "bbox": [0, 0, 200, 200]}],
+            "group_type": "single_asset",
+            "group_evidence": ["single_asset"],
+        },
+        {
+            "group_id": "g2",
+            "page": 13,
+            "asset_block_ids": ["a2"],
+            "cluster_bbox": [0, 300, 200, 500],
+            "media_blocks": [{"block_id": "a2", "page": 13, "bbox": [0, 300, 200, 500]}],
+            "group_type": "single_asset",
+            "group_evidence": ["single_asset"],
+        },
     ]
     residual = _build_residual_ledger(legends, groups, competing_caption_pages={13})
     reserved_legend_ids, reserved_group_ids = _reserve_cross_page_objects(
-        legends, groups, residual, competing_caption_pages={13}, sidecar_pages=set(),
+        legends,
+        groups,
+        residual,
+        competing_caption_pages={13},
+        sidecar_pages=set(),
     )
     assert (13, "fig4_cap") in reserved_legend_ids
     assert "fig5_cap" not in reserved_legend_ids
@@ -3482,16 +4172,30 @@ def test_reservation_reserves_top_caption_on_caption_surplus_page() -> None:
 
 def test_reservation_skips_sidecar_pages() -> None:
     from paperforge.worker.ocr_figures import (
-        _build_residual_ledger, _reserve_cross_page_objects,
+        _build_residual_ledger,
+        _reserve_cross_page_objects,
     )
+
     legends = [
         {"block_id": "c1", "page": 5, "text": "Figure 1. Narrow sidecar caption.", "bbox": [0, 0, 200, 50]},
         {"block_id": "c2", "page": 5, "text": "Figure 2. Another narrow caption.", "bbox": [0, 100, 200, 150]},
     ]
-    groups = [{"group_id": "g1", "page": 5, "asset_block_ids": ["a1"], "cluster_bbox": [0, 0, 100, 100], "group_type": "single_asset"}]
+    groups = [
+        {
+            "group_id": "g1",
+            "page": 5,
+            "asset_block_ids": ["a1"],
+            "cluster_bbox": [0, 0, 100, 100],
+            "group_type": "single_asset",
+        }
+    ]
     residual = _build_residual_ledger(legends, groups, competing_caption_pages={5})
     reserved_legend_ids, reserved_group_ids = _reserve_cross_page_objects(
-        legends, groups, residual, competing_caption_pages={5}, sidecar_pages={5},
+        legends,
+        groups,
+        residual,
+        competing_caption_pages={5},
+        sidecar_pages={5},
     )
     assert len(reserved_legend_ids) == 0
 
@@ -3506,12 +4210,56 @@ def test_cross_page_backward_settlement() -> None:
     # Ledger: page 12 = -1 (0 legends, 1 group), page 13 = +1 (2 strong legends, 1 group)
     # Reservation: Fig4 caption reserved, matched backward to page 12 group
     blocks = [
-        {"block_id": "p12_a1", "page": 12, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [100, 100, 300, 300]},
-        {"block_id": "p12_a2", "page": 12, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [100, 320, 300, 520]},
-        {"block_id": "p13_c4", "page": 13, "role": "figure_caption", "text": "Figure 4. DC electric field stimulation results showing cell migration patterns over 48 hours.", "bbox": [100, 100, 880, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 4}},
-        {"block_id": "p13_f5a", "page": 13, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [100, 300, 500, 370]},
-        {"block_id": "p13_f5b", "page": 13, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [100, 390, 500, 460]},
-        {"block_id": "p13_c5", "page": 13, "role": "figure_caption", "text": "Figure 5. Quantitative analysis of migration speed under different field strengths.", "bbox": [100, 500, 880, 550], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 5}},
+        {
+            "block_id": "p12_a1",
+            "page": 12,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [100, 100, 300, 300],
+        },
+        {
+            "block_id": "p12_a2",
+            "page": 12,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [100, 320, 300, 520],
+        },
+        {
+            "block_id": "p13_c4",
+            "page": 13,
+            "role": "figure_caption",
+            "text": "Figure 4. DC electric field stimulation results showing cell migration patterns over 48 hours.",
+            "bbox": [100, 100, 880, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 4},
+        },
+        {
+            "block_id": "p13_f5a",
+            "page": 13,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [100, 300, 500, 370],
+        },
+        {
+            "block_id": "p13_f5b",
+            "page": 13,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [100, 390, 500, 460],
+        },
+        {
+            "block_id": "p13_c5",
+            "page": 13,
+            "role": "figure_caption",
+            "text": "Figure 5. Quantitative analysis of migration speed under different field strengths.",
+            "bbox": [100, 500, 880, 550],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 5},
+        },
     ]
     inv = build_figure_inventory(blocks)
     fig4 = [m for m in inv["matched_figures"] if m.get("figure_number") == 4]
@@ -3528,12 +4276,56 @@ def test_reserved_same_page_hypothesis_is_deferred_from_commit() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "p12_a1", "page": 12, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [100, 100, 300, 300]},
-        {"block_id": "p12_a2", "page": 12, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [100, 320, 300, 520]},
-        {"block_id": "p13_c4", "page": 13, "role": "figure_caption", "text": "Figure 4. DC electric field stimulation results showing cell migration patterns over 48 hours.", "bbox": [100, 100, 880, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 4}},
-        {"block_id": "p13_f5a", "page": 13, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [100, 300, 500, 370]},
-        {"block_id": "p13_f5b", "page": 13, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [100, 390, 500, 460]},
-        {"block_id": "p13_c5", "page": 13, "role": "figure_caption", "text": "Figure 5. Quantitative analysis of migration speed under different field strengths.", "bbox": [100, 500, 880, 550], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 5}},
+        {
+            "block_id": "p12_a1",
+            "page": 12,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [100, 100, 300, 300],
+        },
+        {
+            "block_id": "p12_a2",
+            "page": 12,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [100, 320, 300, 520],
+        },
+        {
+            "block_id": "p13_c4",
+            "page": 13,
+            "role": "figure_caption",
+            "text": "Figure 4. DC electric field stimulation results showing cell migration patterns over 48 hours.",
+            "bbox": [100, 100, 880, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 4},
+        },
+        {
+            "block_id": "p13_f5a",
+            "page": 13,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [100, 300, 500, 370],
+        },
+        {
+            "block_id": "p13_f5b",
+            "page": 13,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [100, 390, 500, 460],
+        },
+        {
+            "block_id": "p13_c5",
+            "page": 13,
+            "role": "figure_caption",
+            "text": "Figure 5. Quantitative analysis of migration speed under different field strengths.",
+            "bbox": [100, 500, 880, 550],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 5},
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3568,9 +4360,7 @@ def test_non_reserved_same_page_pair_still_commits_normally() -> None:
     matched = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
     assert len(matched) == 1
     assert matched[0]["settlement_type"] == "same_page"
-    hypotheses = [
-        h for h in inv.get("local_pairing_hypotheses", []) if h.get("legend_block_id") == "cap_1"
-    ]
+    hypotheses = [h for h in inv.get("local_pairing_hypotheses", []) if h.get("legend_block_id") == "cap_1"]
     if hypotheses:
         assert any(h.get("mode") == "caption_below" for h in hypotheses)
         assert all("reserved_same_page_commit_deferred" not in h.get("conflicts", []) for h in hypotheses)
@@ -3580,8 +4370,20 @@ def test_cross_page_settlement_two_captions_one_group_ambiguous() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "c1", "page": 12, "role": "figure_caption", "text": "Figure 4. First caption.", "bbox": [100, 100, 500, 150]},
-        {"block_id": "c2", "page": 12, "role": "figure_caption", "text": "Figure 5. Second caption.", "bbox": [100, 200, 500, 250]},
+        {
+            "block_id": "c1",
+            "page": 12,
+            "role": "figure_caption",
+            "text": "Figure 4. First caption.",
+            "bbox": [100, 100, 500, 150],
+        },
+        {
+            "block_id": "c2",
+            "page": 12,
+            "role": "figure_caption",
+            "text": "Figure 5. Second caption.",
+            "bbox": [100, 200, 500, 250],
+        },
         {"block_id": "a1", "page": 12, "role": "figure_asset", "text": "", "bbox": [100, 400, 500, 700]},
     ]
     inv = build_figure_inventory(blocks)
@@ -3594,7 +4396,13 @@ def test_legacy_fallback_does_not_consume_grouped_asset() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "c1", "page": 10, "role": "figure_caption", "text": "Figure 1. Caption on page before assets.", "bbox": [100, 100, 500, 150]},
+        {
+            "block_id": "c1",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Caption on page before assets.",
+            "bbox": [100, 100, 500, 150],
+        },
         {"block_id": "a1", "page": 11, "role": "figure_asset", "text": "", "bbox": [100, 100, 500, 400]},
         {"block_id": "a2", "page": 11, "role": "figure_asset", "text": "", "bbox": [100, 500, 500, 800]},
     ]
@@ -3609,9 +4417,27 @@ def test_legend_bundle_fallback_does_not_consume_grouped_assets() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "c1", "page": 10, "role": "figure_caption", "text": "Figure 1. First caption.", "bbox": [100, 100, 700, 150]},
-        {"block_id": "c2", "page": 10, "role": "figure_caption", "text": "Figure 2. Second caption.", "bbox": [100, 180, 700, 230]},
-        {"block_id": "c3", "page": 10, "role": "figure_caption", "text": "Figure 3. Third caption.", "bbox": [100, 260, 700, 310]},
+        {
+            "block_id": "c1",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. First caption.",
+            "bbox": [100, 100, 700, 150],
+        },
+        {
+            "block_id": "c2",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 2. Second caption.",
+            "bbox": [100, 180, 700, 230],
+        },
+        {
+            "block_id": "c3",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 3. Third caption.",
+            "bbox": [100, 260, 700, 310],
+        },
         {"block_id": "a11_1", "page": 11, "role": "figure_asset", "text": "", "bbox": [100, 100, 420, 320]},
         {"block_id": "a11_2", "page": 11, "role": "figure_asset", "text": "", "bbox": [100, 340, 420, 560]},
         {"block_id": "a12_1", "page": 12, "role": "figure_asset", "text": "", "bbox": [100, 100, 420, 320]},
@@ -3619,28 +4445,73 @@ def test_legend_bundle_fallback_does_not_consume_grouped_assets() -> None:
 
     inv = build_figure_inventory(blocks)
 
-    legend_bundle_matches = [
-        m for m in inv["matched_figures"] if m.get("settlement_type") == "legend_bundle"
-    ]
+    legend_bundle_matches = [m for m in inv["matched_figures"] if m.get("settlement_type") == "legend_bundle"]
     bundled_asset_ids = {
-        str(asset.get("block_id", ""))
-        for match in legend_bundle_matches
-        for asset in match.get("matched_assets", [])
+        str(asset.get("block_id", "")) for match in legend_bundle_matches for asset in match.get("matched_assets", [])
     }
-
 
 
 def test_legend_bundle_fallback_skips_preowned_asset_pages() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "pre_cap", "page": 9, "role": "figure_caption", "text": "Figure 1. Same-page owned figure.", "bbox": [100, 100, 700, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "pre_asset", "page": 9, "role": "figure_asset", "raw_label": "image", "bbox": [100, 180, 700, 500]},
-        {"block_id": "c2", "page": 10, "role": "figure_caption", "text": "Figure 2. First bundled caption.", "bbox": [100, 100, 700, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "c3", "page": 10, "role": "figure_caption", "text": "Figure 3. Second bundled caption.", "bbox": [100, 200, 700, 250], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "c4", "page": 10, "role": "figure_caption", "text": "Figure 4. Third bundled caption.", "bbox": [100, 300, 700, 350], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 4}},
-        {"block_id": "future_1", "page": 11, "role": "figure_asset", "raw_label": "image", "bbox": [100, 200, 600, 500]},
-        {"block_id": "future_2", "page": 12, "role": "figure_asset", "raw_label": "image", "bbox": [100, 200, 600, 500]},
+        {
+            "block_id": "pre_cap",
+            "page": 9,
+            "role": "figure_caption",
+            "text": "Figure 1. Same-page owned figure.",
+            "bbox": [100, 100, 700, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "pre_asset",
+            "page": 9,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 180, 700, 500],
+        },
+        {
+            "block_id": "c2",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 2. First bundled caption.",
+            "bbox": [100, 100, 700, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "c3",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 3. Second bundled caption.",
+            "bbox": [100, 200, 700, 250],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "block_id": "c4",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 4. Third bundled caption.",
+            "bbox": [100, 300, 700, 350],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 4},
+        },
+        {
+            "block_id": "future_1",
+            "page": 11,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 200, 600, 500],
+        },
+        {
+            "block_id": "future_2",
+            "page": 12,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 200, 600, 500],
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3654,13 +4525,61 @@ def test_legend_bundle_fallback_respects_body_interruption() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "c2", "page": 10, "role": "figure_caption", "text": "Figure 2. First bundled caption.", "bbox": [100, 100, 700, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "c3", "page": 10, "role": "figure_caption", "text": "Figure 3. Second bundled caption.", "bbox": [100, 200, 700, 250], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "c4", "page": 10, "role": "figure_caption", "text": "Figure 4. Third bundled caption.", "bbox": [100, 300, 700, 350], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 4}},
-        {"block_id": "body_break", "page": 11, "role": "body_paragraph", "text": "This body text interrupts bundle recovery.", "bbox": [100, 100, 1000, 240]},
-        {"block_id": "future_1", "page": 12, "role": "figure_asset", "raw_label": "image", "bbox": [100, 200, 600, 500]},
-        {"block_id": "future_2", "page": 13, "role": "figure_asset", "raw_label": "image", "bbox": [100, 200, 600, 500]},
-        {"block_id": "future_3", "page": 14, "role": "figure_asset", "raw_label": "image", "bbox": [100, 200, 600, 500]},
+        {
+            "block_id": "c2",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 2. First bundled caption.",
+            "bbox": [100, 100, 700, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "c3",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 3. Second bundled caption.",
+            "bbox": [100, 200, 700, 250],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "block_id": "c4",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 4. Third bundled caption.",
+            "bbox": [100, 300, 700, 350],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 4},
+        },
+        {
+            "block_id": "body_break",
+            "page": 11,
+            "role": "body_paragraph",
+            "text": "This body text interrupts bundle recovery.",
+            "bbox": [100, 100, 1000, 240],
+        },
+        {
+            "block_id": "future_1",
+            "page": 12,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 200, 600, 500],
+        },
+        {
+            "block_id": "future_2",
+            "page": 13,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 200, 600, 500],
+        },
+        {
+            "block_id": "future_3",
+            "page": 14,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 200, 600, 500],
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3672,12 +4591,56 @@ def test_dwqq_style_duplicate_legend_prefers_real_cross_page_instance() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "c1", "page": 35, "role": "figure_caption", "text": "Figure 1. Caption list peer.", "bbox": [100, 100, 900, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "c2", "page": 35, "role": "figure_caption", "text": "Figure 2. Caption list peer.", "bbox": [100, 200, 900, 250], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "dup_fig3", "page": 35, "role": "figure_caption", "text": "Figure 3. Caption list duplicate.", "bbox": [100, 300, 900, 350], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "asset_39a", "page": 39, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 400]},
-        {"block_id": "asset_39b", "page": 39, "role": "figure_asset", "raw_label": "image", "bbox": [520, 100, 920, 400]},
-        {"block_id": "real_fig3", "page": 40, "role": "figure_caption", "text": "Figure 3. Real cross-page legend.", "bbox": [100, 100, 900, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {
+            "block_id": "c1",
+            "page": 35,
+            "role": "figure_caption",
+            "text": "Figure 1. Caption list peer.",
+            "bbox": [100, 100, 900, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "c2",
+            "page": 35,
+            "role": "figure_caption",
+            "text": "Figure 2. Caption list peer.",
+            "bbox": [100, 200, 900, 250],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "dup_fig3",
+            "page": 35,
+            "role": "figure_caption",
+            "text": "Figure 3. Caption list duplicate.",
+            "bbox": [100, 300, 900, 350],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "block_id": "asset_39a",
+            "page": 39,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 500, 400],
+        },
+        {
+            "block_id": "asset_39b",
+            "page": 39,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [520, 100, 920, 400],
+        },
+        {
+            "block_id": "real_fig3",
+            "page": 40,
+            "role": "figure_caption",
+            "text": "Figure 3. Real cross-page legend.",
+            "bbox": [100, 100, 900, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3689,21 +4652,62 @@ def test_dwqq_style_duplicate_legend_prefers_real_cross_page_instance() -> None:
         assert fig3[0].get("page") == 40
         assert fig3[0]["settlement_type"] == "cross_page_backward"
         assert {a["block_id"] for a in fig3[0]["matched_assets"]} == {"asset_39a", "asset_39b"}
-    assert any(
-        item.get("block_id") == "dup_fig3" and item.get("dedup_reason") == "bundle_source_duplicate_loser"
-        for item in inv.get("deduped_legend_ids", [])
-    ) or True  # vnext: deduped_legend_ids may be empty
+    assert (
+        any(
+            item.get("block_id") == "dup_fig3" and item.get("dedup_reason") == "bundle_source_duplicate_loser"
+            for item in inv.get("deduped_legend_ids", [])
+        )
+        or True
+    )  # vnext: deduped_legend_ids may be empty
 
 
 def test_same_page_real_legend_outranks_bundle_duplicate() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "c1", "page": 10, "role": "figure_caption", "text": "Figure 1. Caption list peer.", "bbox": [100, 100, 700, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "dup_fig2", "page": 10, "role": "figure_caption", "text": "Figure 2. Caption list duplicate.", "bbox": [100, 200, 700, 250], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "c3", "page": 10, "role": "figure_caption", "text": "Figure 3. Caption list peer.", "bbox": [100, 300, 700, 350], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "real_fig2", "page": 20, "role": "figure_caption", "text": "Figure 2. Real same-page legend.", "bbox": [100, 500, 800, 560], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "asset_20", "page": 20, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 700, 460]},
+        {
+            "block_id": "c1",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Caption list peer.",
+            "bbox": [100, 100, 700, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "dup_fig2",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 2. Caption list duplicate.",
+            "bbox": [100, 200, 700, 250],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "c3",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 3. Caption list peer.",
+            "bbox": [100, 300, 700, 350],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "block_id": "real_fig2",
+            "page": 20,
+            "role": "figure_caption",
+            "text": "Figure 2. Real same-page legend.",
+            "bbox": [100, 500, 800, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "asset_20",
+            "page": 20,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 700, 460],
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3717,8 +4721,21 @@ def test_final_unmatched_assets_recomputed_after_late_fallback_match() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "c1", "page": 1, "role": "figure_caption", "text": "Figure 1. Caption with no same-page asset.", "bbox": [100, 100, 700, 150]},
-        {"block_id": "a2", "page": 2, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [100, 120, 500, 420]},
+        {
+            "block_id": "c1",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Caption with no same-page asset.",
+            "bbox": [100, 100, 700, 150],
+        },
+        {
+            "block_id": "a2",
+            "page": 2,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [100, 120, 500, 420],
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3737,38 +4754,55 @@ def test_bundle_only_source_legends_remain_eligible_for_legend_bundle_fallback()
 
     blocks = [
         # Bundle-source page (p10): three captions, zero assets
-        {"block_id": "bs_fig1", "page": 10, "role": "figure_caption",
-         "text": "Figure 1. Bundle caption.", "bbox": [100, 100, 700, 140],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "bs_fig2", "page": 10, "role": "figure_caption",
-         "text": "Figure 2. Bundle-only caption.", "bbox": [100, 160, 700, 200],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "bs_fig3", "page": 10, "role": "figure_caption",
-         "text": "Figure 3. Bundle caption.", "bbox": [100, 220, 700, 260],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {
+            "block_id": "bs_fig1",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Bundle caption.",
+            "bbox": [100, 100, 700, 140],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "bs_fig2",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 2. Bundle-only caption.",
+            "bbox": [100, 160, 700, 200],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "bs_fig3",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 3. Bundle caption.",
+            "bbox": [100, 220, 700, 260],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
         # Real duplicate for Fig 1 on page 11 (outranks bundle)
-        {"block_id": "real_fig1", "page": 11, "role": "figure_caption",
-         "text": "Figure 1. Real legend on asset page.", "bbox": [100, 520, 700, 560],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "a11", "page": 11, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 700, 500]},
+        {
+            "block_id": "real_fig1",
+            "page": 11,
+            "role": "figure_caption",
+            "text": "Figure 1. Real legend on asset page.",
+            "bbox": [100, 520, 700, 560],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "a11", "page": 11, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 700, 500]},
         # Asset for Fig 2 on page 12 (no same-page caption)
-        {"block_id": "a12", "page": 12, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 700, 500]},
+        {"block_id": "a12", "page": 12, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 700, 500]},
         # Asset for Fig 3 on page 13 (no same-page caption)
-        {"block_id": "a13", "page": 13, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 700, 500]},
+        {"block_id": "a13", "page": 13, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 700, 500]},
     ]
 
     inv = build_figure_inventory(blocks)
     matched = {m.get("figure_number"): m for m in inv["matched_figures"]}
 
-    assert 2 in matched, (
-        "Fig 2 (bundle-only) must be matched via legend_bundle fallback"
-    )
-    assert 3 in matched, (
-        "Fig 3 (bundle-only) must be matched via legend_bundle fallback"
-    )
+    assert 2 in matched, "Fig 2 (bundle-only) must be matched via legend_bundle fallback"
+    assert 3 in matched, "Fig 3 (bundle-only) must be matched via legend_bundle fallback"
     fig2 = matched[2]
     assert fig2["settlement_type"] == "legend_bundle"
     assert fig2["legend_block_id"] == "bs_fig2"
@@ -3782,12 +4816,12 @@ def test_bundle_only_source_legends_remain_eligible_for_legend_bundle_fallback()
             item.get("block_id") == "bs_fig1" and item.get("dedup_reason") == "bundle_source_duplicate_loser"
             for item in deduped
         ), "Fig 1 bundle-source must be deduped loser"
-        assert not any(
-            item.get("block_id") == "bs_fig3" for item in deduped
-        ), "Fig 3 must NOT be deduped (no stronger duplicate exists)"
-        assert not any(
-            item.get("block_id") == "bs_fig2" for item in deduped
-        ), "Fig 2 must NOT be deduped (bundle-only, no stronger duplicate)"
+        assert not any(item.get("block_id") == "bs_fig3" for item in deduped), (
+            "Fig 3 must NOT be deduped (no stronger duplicate exists)"
+        )
+        assert not any(item.get("block_id") == "bs_fig2" for item in deduped), (
+            "Fig 2 must NOT be deduped (bundle-only, no stronger duplicate)"
+        )
 
     # vnext: no gap_count in completeness
     _ = inv["completeness"]
@@ -3798,7 +4832,13 @@ def test_matched_figure_has_legend_page_and_asset_pages_and_settlement_type() ->
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "c1", "page": 1, "role": "figure_caption", "text": "Figure 1. Test caption.", "bbox": [100, 420, 500, 460]},
+        {
+            "block_id": "c1",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Test caption.",
+            "bbox": [100, 420, 500, 460],
+        },
         {"block_id": "a1", "page": 1, "role": "figure_asset", "text": "", "bbox": [100, 50, 500, 400]},
     ]
     inv = build_figure_inventory(blocks)
@@ -3818,12 +4858,56 @@ def test_2heud5p9_ownership_pattern() -> None:
     # Page 12: 2 Fig4 panels close together (1 distance_cluster)
     # Page 13: wide Fig4 caption (top), 2 Fig5 panels stacked in Fig5's caption band (1 group), wide Fig5 caption (bottom)
     blocks = [
-        {"block_id": "p12_a1", "page": 12, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [50, 50, 300, 350]},
-        {"block_id": "p12_a2", "page": 12, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [50, 370, 300, 670]},
-        {"block_id": "p13_c4", "page": 13, "role": "figure_caption", "text": "Figure 4. DC electric field stimulation results showing cell migration patterns over 48 hours.", "bbox": [50, 50, 800, 100], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 4}},
-        {"block_id": "p13_f5a", "page": 13, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [50, 220, 500, 340]},
-        {"block_id": "p13_f5b", "page": 13, "role": "figure_asset", "raw_label": "image", "text": "", "bbox": [50, 360, 500, 470]},
-        {"block_id": "p13_c5", "page": 13, "role": "figure_caption", "text": "Figure 5. Quantitative analysis of migration speed under different field strengths.", "bbox": [50, 520, 800, 570], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 5}},
+        {
+            "block_id": "p12_a1",
+            "page": 12,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [50, 50, 300, 350],
+        },
+        {
+            "block_id": "p12_a2",
+            "page": 12,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [50, 370, 300, 670],
+        },
+        {
+            "block_id": "p13_c4",
+            "page": 13,
+            "role": "figure_caption",
+            "text": "Figure 4. DC electric field stimulation results showing cell migration patterns over 48 hours.",
+            "bbox": [50, 50, 800, 100],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 4},
+        },
+        {
+            "block_id": "p13_f5a",
+            "page": 13,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [50, 220, 500, 340],
+        },
+        {
+            "block_id": "p13_f5b",
+            "page": 13,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [50, 360, 500, 470],
+        },
+        {
+            "block_id": "p13_c5",
+            "page": 13,
+            "role": "figure_caption",
+            "text": "Figure 5. Quantitative analysis of migration speed under different field strengths.",
+            "bbox": [50, 520, 800, 570],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 5},
+        },
     ]
     inv = build_figure_inventory(blocks)
     fig4 = [m for m in inv["matched_figures"] if m.get("figure_number") == 4]
@@ -3855,17 +4939,25 @@ def test_composite_parent_candidates_appear_for_dense_grid_page() -> None:
         # produces separate single_asset groups. Composite parent should re-group them.
         # Column A at x=[100,500]: pan_a (top), pan_b (bottom)
         # Column B at x=[600,1000]: pan_c (wider top-right), fig2_asset (separate)
-        {"block_id": "leg_1a", "page": 5, "role": "figure_caption",
-         "text": "Figure 1. Composite figure legend.", "bbox": [100, 880, 700, 920],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "pan_a", "page": 5, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 500, 250]},
-        {"block_id": "pan_b", "page": 5, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 380, 500, 530]},
-        {"block_id": "pan_c", "page": 5, "role": "figure_asset", "raw_label": "image",
-         "bbox": [600, 100, 1000, 350]},
-        {"block_id": "fig2_asset", "page": 5, "role": "figure_asset", "raw_label": "image",
-         "bbox": [600, 480, 1000, 800]},
+        {
+            "block_id": "leg_1a",
+            "page": 5,
+            "role": "figure_caption",
+            "text": "Figure 1. Composite figure legend.",
+            "bbox": [100, 880, 700, 920],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "pan_a", "page": 5, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 250]},
+        {"block_id": "pan_b", "page": 5, "role": "figure_asset", "raw_label": "image", "bbox": [100, 380, 500, 530]},
+        {"block_id": "pan_c", "page": 5, "role": "figure_asset", "raw_label": "image", "bbox": [600, 100, 1000, 350]},
+        {
+            "block_id": "fig2_asset",
+            "page": 5,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [600, 480, 1000, 800],
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3886,15 +4978,18 @@ def test_composite_parent_candidates_for_stacked_vertical_panels() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_stacked", "page": 6, "role": "figure_caption",
-         "text": "Figure 1. Stacked panels.", "bbox": [100, 800, 700, 840],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "top", "page": 6, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 800, 250]},
-        {"block_id": "mid", "page": 6, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 380, 800, 530]},
-        {"block_id": "bot", "page": 6, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 660, 800, 810]},
+        {
+            "block_id": "leg_stacked",
+            "page": 6,
+            "role": "figure_caption",
+            "text": "Figure 1. Stacked panels.",
+            "bbox": [100, 800, 700, 840],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "top", "page": 6, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 800, 250]},
+        {"block_id": "mid", "page": 6, "role": "figure_asset", "raw_label": "image", "bbox": [100, 380, 800, 530]},
+        {"block_id": "bot", "page": 6, "role": "figure_asset", "raw_label": "image", "bbox": [100, 660, 800, 810]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3909,7 +5004,7 @@ def test_composite_parent_candidates_for_stacked_vertical_panels() -> None:
                 assert panel_ids <= child_asset_ids, f"Parent must cover all panels, got {child_asset_ids}"
                 break
         else:
-            assert False, "No composite parent candidate covers all 3 stacked panels"
+            raise AssertionError("No composite parent candidate covers all 3 stacked panels")
 
 
 def test_ordinary_multi_figure_page_does_not_mega_merge() -> None:
@@ -3917,16 +5012,26 @@ def test_ordinary_multi_figure_page_does_not_mega_merge() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_7a", "page": 7, "role": "figure_caption",
-         "text": "Figure 1. Top-left figure.", "bbox": [100, 420, 400, 450],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "a7_1", "page": 7, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 400, 400]},
-        {"block_id": "leg_7b", "page": 7, "role": "figure_caption",
-         "text": "Figure 2. Bottom-right figure.", "bbox": [520, 780, 900, 810],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "a7_2", "page": 7, "role": "figure_asset", "raw_label": "image",
-         "bbox": [520, 520, 900, 760]},
+        {
+            "block_id": "leg_7a",
+            "page": 7,
+            "role": "figure_caption",
+            "text": "Figure 1. Top-left figure.",
+            "bbox": [100, 420, 400, 450],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "a7_1", "page": 7, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 400, 400]},
+        {
+            "block_id": "leg_7b",
+            "page": 7,
+            "role": "figure_caption",
+            "text": "Figure 2. Bottom-right figure.",
+            "bbox": [520, 780, 900, 810],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {"block_id": "a7_2", "page": 7, "role": "figure_asset", "raw_label": "image", "bbox": [520, 520, 900, 760]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3945,20 +5050,28 @@ def test_composite_parent_detection_preserves_ownership_counts() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "c1", "page": 8, "role": "figure_caption",
-         "text": "Figure 1. Grid layout.", "bbox": [100, 850, 700, 890],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "g1_a", "page": 8, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 450, 250]},
-        {"block_id": "g1_b", "page": 8, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 380, 450, 530]},
-        {"block_id": "g1_c", "page": 8, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 660, 450, 810]},
-        {"block_id": "c2", "page": 8, "role": "figure_caption",
-         "text": "Figure 2. Simple single figure.", "bbox": [600, 850, 1000, 890],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "g2", "page": 8, "role": "figure_asset", "raw_label": "image",
-         "bbox": [600, 100, 1000, 600]},
+        {
+            "block_id": "c1",
+            "page": 8,
+            "role": "figure_caption",
+            "text": "Figure 1. Grid layout.",
+            "bbox": [100, 850, 700, 890],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "g1_a", "page": 8, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 450, 250]},
+        {"block_id": "g1_b", "page": 8, "role": "figure_asset", "raw_label": "image", "bbox": [100, 380, 450, 530]},
+        {"block_id": "g1_c", "page": 8, "role": "figure_asset", "raw_label": "image", "bbox": [100, 660, 450, 810]},
+        {
+            "block_id": "c2",
+            "page": 8,
+            "role": "figure_caption",
+            "text": "Figure 2. Simple single figure.",
+            "bbox": [600, 850, 1000, 890],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {"block_id": "g2", "page": 8, "role": "figure_asset", "raw_label": "image", "bbox": [600, 100, 1000, 600]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -3969,9 +5082,7 @@ def test_composite_parent_detection_preserves_ownership_counts() -> None:
 
     # Verify the composite parent hasn't consumed assets that should be matched
     matched_asset_ids = {
-        str(a.get("block_id", ""))
-        for mf in inv["matched_figures"]
-        for a in mf.get("matched_assets", [])
+        str(a.get("block_id", "")) for mf in inv["matched_figures"] for a in mf.get("matched_assets", [])
     }
     # Figure 1 legend should own its composite 4-panel group
     fig1 = [mf for mf in inv["matched_figures"] if mf.get("figure_number") == 1]
@@ -3992,15 +5103,18 @@ def test_composite_parent_acceptance_consumes_children() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_cp", "page": 10, "role": "figure_caption",
-         "text": "Figure 1. Composite multi-panel legend.", "bbox": [100, 880, 700, 920],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "top", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 800, 250]},
-        {"block_id": "mid", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 380, 800, 530]},
-        {"block_id": "bot", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 660, 800, 810]},
+        {
+            "block_id": "leg_cp",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Composite multi-panel legend.",
+            "bbox": [100, 880, 700, 920],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "top", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 800, 250]},
+        {"block_id": "mid", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 380, 800, 530]},
+        {"block_id": "bot", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 660, 800, 810]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4016,9 +5130,7 @@ def test_composite_parent_acceptance_consumes_children() -> None:
     assert "bot" in all_assets, "Bot panel must be owned"
     # Accept any settlement type (vnext may use same_page instead of composite_parent)
     settlement = fig1[0].get("settlement_type")
-    assert settlement in ("composite_parent", "same_page", "sidecar"), (
-        f"Unexpected settlement type: {settlement}"
-    )
+    assert settlement in ("composite_parent", "same_page", "sidecar"), f"Unexpected settlement type: {settlement}"
 
 
 def test_scoped_composite_parent_keeps_neighboring_single_figure_separate() -> None:
@@ -4026,13 +5138,65 @@ def test_scoped_composite_parent_keeps_neighboring_single_figure_separate() -> N
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "asset_fig3", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [377, 155, 813, 440]},
-        {"block_id": "leg_fig3", "page": 18, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "图 3 AIHIP 系统自动匹配假体型号", "bbox": [436, 466, 754, 493], "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "asset_fig4_a", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [381, 556, 573, 742]},
-        {"block_id": "asset_fig4_b", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [618, 554, 811, 742]},
-        {"block_id": "asset_fig4_c", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [381, 753, 573, 942]},
-        {"block_id": "asset_fig4_d", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [618, 754, 811, 941]},
-        {"block_id": "leg_fig4", "page": 18, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "图 4 AIHIP 系统安放髋臼假体并展示三维模拟位置", "bbox": [360, 963, 828, 990], "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 4}},
+        {
+            "block_id": "asset_fig3",
+            "page": 18,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [377, 155, 813, 440],
+        },
+        {
+            "block_id": "leg_fig3",
+            "page": 18,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "图 3 AIHIP 系统自动匹配假体型号",
+            "bbox": [436, 466, 754, 493],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "block_id": "asset_fig4_a",
+            "page": 18,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [381, 556, 573, 742],
+        },
+        {
+            "block_id": "asset_fig4_b",
+            "page": 18,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [618, 554, 811, 742],
+        },
+        {
+            "block_id": "asset_fig4_c",
+            "page": 18,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [381, 753, 573, 942],
+        },
+        {
+            "block_id": "asset_fig4_d",
+            "page": 18,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [618, 754, 811, 941],
+        },
+        {
+            "block_id": "leg_fig4",
+            "page": 18,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "图 4 AIHIP 系统安放髋臼假体并展示三维模拟位置",
+            "bbox": [360, 963, 828, 990],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 4},
+        },
     ]
 
     inv = build_figure_inventory(blocks, page_width=1191)
@@ -4042,9 +5206,14 @@ def test_scoped_composite_parent_keeps_neighboring_single_figure_separate() -> N
     assert matched[4].get("settlement_type") in ("composite_parent", "sidecar"), (
         f"Expected composite_parent or sidecar, got {matched[4].get('settlement_type')}"
     )
-    assert {str(a.get('block_id', '')) for a in matched[3].get('matched_assets', [])} == {"asset_fig3"}
+    assert {str(a.get("block_id", "")) for a in matched[3].get("matched_assets", [])} == {"asset_fig3"}
     assert matched[3].get("settlement_type") == "same_page"
-    assert {str(a.get('block_id', '')) for a in matched[4].get('matched_assets', [])} == {"asset_fig4_a", "asset_fig4_b", "asset_fig4_c", "asset_fig4_d"}
+    assert {str(a.get("block_id", "")) for a in matched[4].get("matched_assets", [])} == {
+        "asset_fig4_a",
+        "asset_fig4_b",
+        "asset_fig4_c",
+        "asset_fig4_d",
+    }
 
 
 def test_caption_nearest_trap_prefers_interval_scoped_composite() -> None:
@@ -4052,21 +5221,78 @@ def test_caption_nearest_trap_prefers_interval_scoped_composite() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "asset_top", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [380, 120, 820, 400]},
-        {"block_id": "leg_top", "page": 30, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "图 3 上方单图", "bbox": [430, 430, 760, 460], "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "asset_bl", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [390, 520, 575, 720]},
-        {"block_id": "asset_br", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [620, 520, 805, 720]},
-        {"block_id": "asset_cl", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [390, 740, 575, 930]},
-        {"block_id": "asset_cr", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [620, 740, 805, 930]},
-        {"block_id": "leg_bottom", "page": 30, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "图 4 下方复合图", "bbox": [360, 955, 830, 985], "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 4}},
+        {
+            "block_id": "asset_top",
+            "page": 30,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [380, 120, 820, 400],
+        },
+        {
+            "block_id": "leg_top",
+            "page": 30,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "图 3 上方单图",
+            "bbox": [430, 430, 760, 460],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "block_id": "asset_bl",
+            "page": 30,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [390, 520, 575, 720],
+        },
+        {
+            "block_id": "asset_br",
+            "page": 30,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [620, 520, 805, 720],
+        },
+        {
+            "block_id": "asset_cl",
+            "page": 30,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [390, 740, 575, 930],
+        },
+        {
+            "block_id": "asset_cr",
+            "page": 30,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [620, 740, 805, 930],
+        },
+        {
+            "block_id": "leg_bottom",
+            "page": 30,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "图 4 下方复合图",
+            "bbox": [360, 955, 830, 985],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 4},
+        },
     ]
 
     inv = build_figure_inventory(blocks, page_width=1191)
     matched = {m.get("figure_number"): m for m in inv.get("matched_figures", [])}
 
-    assert {str(a.get('block_id', '')) for a in matched[3].get('matched_assets', [])} == {"asset_top"}
+    assert {str(a.get("block_id", "")) for a in matched[3].get("matched_assets", [])} == {"asset_top"}
     assert matched[3].get("settlement_type") == "same_page"
-    assert {str(a.get('block_id', '')) for a in matched[4].get('matched_assets', [])} == {"asset_bl", "asset_br", "asset_cl", "asset_cr"}
+    assert {str(a.get("block_id", "")) for a in matched[4].get("matched_assets", [])} == {
+        "asset_bl",
+        "asset_br",
+        "asset_cl",
+        "asset_cr",
+    }
     assert matched[4].get("settlement_type") in ("composite_parent", "sidecar"), (
         f"Expected composite_parent or sidecar, got {matched[4].get('settlement_type')}"
     )
@@ -4077,13 +5303,17 @@ def test_weak_parent_candidate_does_not_consume_children() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_wp", "page": 11, "role": "figure_caption",
-         "text": "Figure 1. Weak parent legend.", "bbox": [100, 880, 700, 920],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "wp_a", "page": 11, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 500, 250]},
-        {"block_id": "wp_b", "page": 11, "role": "figure_asset", "raw_label": "image",
-         "bbox": [600, 380, 1000, 530]},
+        {
+            "block_id": "leg_wp",
+            "page": 11,
+            "role": "figure_caption",
+            "text": "Figure 1. Weak parent legend.",
+            "bbox": [100, 880, 700, 920],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "wp_a", "page": 11, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 250]},
+        {"block_id": "wp_b", "page": 11, "role": "figure_asset", "raw_label": "image", "bbox": [600, 380, 1000, 530]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4104,18 +5334,27 @@ def test_competing_caption_veto_blocks_parent_promotion() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_cv_1", "page": 12, "role": "figure_caption",
-         "text": "Figure 1. First caption in shared region.", "bbox": [100, 880, 400, 920],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "leg_cv_2", "page": 12, "role": "figure_caption",
-         "text": "Figure 2. Second caption in shared region.", "bbox": [500, 880, 800, 920],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "cv_a", "page": 12, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 450, 250]},
-        {"block_id": "cv_b", "page": 12, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 380, 450, 530]},
-        {"block_id": "cv_c", "page": 12, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 660, 450, 810]},
+        {
+            "block_id": "leg_cv_1",
+            "page": 12,
+            "role": "figure_caption",
+            "text": "Figure 1. First caption in shared region.",
+            "bbox": [100, 880, 400, 920],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "leg_cv_2",
+            "page": 12,
+            "role": "figure_caption",
+            "text": "Figure 2. Second caption in shared region.",
+            "bbox": [500, 880, 800, 920],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {"block_id": "cv_a", "page": 12, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 450, 250]},
+        {"block_id": "cv_b", "page": 12, "role": "figure_asset", "raw_label": "image", "bbox": [100, 380, 450, 530]},
+        {"block_id": "cv_c", "page": 12, "role": "figure_asset", "raw_label": "image", "bbox": [100, 660, 450, 810]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4129,15 +5368,11 @@ def test_competing_caption_veto_blocks_parent_promotion() -> None:
         assert all(m.get("settlement_type") != "composite_parent" for m in fig2)
     # Cross-caption composite_parent is not allowed: any composite_parent here should
     # be band-scoped within one caption's legend interval
-    _composite_parents = [
-        m for m in inv["matched_figures"]
-        if m.get("settlement_type") == "composite_parent"
-    ]
+    _composite_parents = [m for m in inv["matched_figures"] if m.get("settlement_type") == "composite_parent"]
     if _composite_parents:
-        assert all(
-            m.get("flags") == ["composite_parent_match"]
-            for m in _composite_parents
-        ), "Composite parent must have composite_parent_match flag"
+        assert all(m.get("flags") == ["composite_parent_match"] for m in _composite_parents), (
+            "Composite parent must have composite_parent_match flag"
+        )
 
 
 def test_parent_candidate_never_enters_legacy_fallback_directly() -> None:
@@ -4145,15 +5380,18 @@ def test_parent_candidate_never_enters_legacy_fallback_directly() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_nl", "page": 13, "role": "figure_caption",
-         "text": "Figure 1. Legend for composite.", "bbox": [100, 880, 700, 920],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "nl_a", "page": 13, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 500, 300]},
-        {"block_id": "nl_b", "page": 13, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 430, 500, 630]},
-        {"block_id": "nl_c", "page": 13, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 760, 500, 960]},
+        {
+            "block_id": "leg_nl",
+            "page": 13,
+            "role": "figure_caption",
+            "text": "Figure 1. Legend for composite.",
+            "bbox": [100, 880, 700, 920],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "nl_a", "page": 13, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 300]},
+        {"block_id": "nl_b", "page": 13, "role": "figure_asset", "raw_label": "image", "bbox": [100, 430, 500, 630]},
+        {"block_id": "nl_c", "page": 13, "role": "figure_asset", "raw_label": "image", "bbox": [100, 760, 500, 960]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4176,11 +5414,16 @@ def test_page_local_grammar_annotations_include_status_reason_evidence() -> None
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_ga", "page": 20, "role": "figure_caption",
-         "text": "Figure 1. Consistent grammar page.", "bbox": [100, 700, 700, 740],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "ga_1", "page": 20, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 700, 650]},
+        {
+            "block_id": "leg_ga",
+            "page": 20,
+            "role": "figure_caption",
+            "text": "Figure 1. Consistent grammar page.",
+            "bbox": [100, 700, 700, 740],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "ga_1", "page": 20, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 700, 650]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4205,16 +5448,26 @@ def test_incompatible_local_grammar_marks_conflict() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_mx1", "page": 21, "role": "figure_caption",
-         "text": "Figure 1. Mixed-grammar page A.", "bbox": [100, 400, 450, 440],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "mx1_a", "page": 21, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 450, 380]},
-        {"block_id": "leg_mx2", "page": 21, "role": "figure_caption",
-         "text": "Fig 2. Different grammar style.", "bbox": [550, 400, 900, 440],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "mx2_a", "page": 21, "role": "figure_asset", "raw_label": "image",
-         "bbox": [550, 100, 900, 380]},
+        {
+            "block_id": "leg_mx1",
+            "page": 21,
+            "role": "figure_caption",
+            "text": "Figure 1. Mixed-grammar page A.",
+            "bbox": [100, 400, 450, 440],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "mx1_a", "page": 21, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 450, 380]},
+        {
+            "block_id": "leg_mx2",
+            "page": 21,
+            "role": "figure_caption",
+            "text": "Fig 2. Different grammar style.",
+            "bbox": [550, 400, 900, 440],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {"block_id": "mx2_a", "page": 21, "role": "figure_asset", "raw_label": "image", "bbox": [550, 100, 900, 380]},
     ]
     inv = build_figure_inventory(blocks)
 
@@ -4229,16 +5482,26 @@ def test_mixed_page_can_be_self_consistent_without_one_global_mode() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_u1", "page": 22, "role": "figure_caption",
-         "text": "Figure 1. Uniform style.", "bbox": [100, 400, 450, 440],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "u1_a", "page": 22, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 450, 380]},
-        {"block_id": "leg_u2", "page": 22, "role": "figure_caption",
-         "text": "Figure 2. Same style family.", "bbox": [550, 400, 900, 440],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "u2_a", "page": 22, "role": "figure_asset", "raw_label": "image",
-         "bbox": [550, 100, 900, 380]},
+        {
+            "block_id": "leg_u1",
+            "page": 22,
+            "role": "figure_caption",
+            "text": "Figure 1. Uniform style.",
+            "bbox": [100, 400, 450, 440],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "u1_a", "page": 22, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 450, 380]},
+        {
+            "block_id": "leg_u2",
+            "page": 22,
+            "role": "figure_caption",
+            "text": "Figure 2. Same style family.",
+            "bbox": [550, 400, 900, 440],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {"block_id": "u2_a", "page": 22, "role": "figure_asset", "raw_label": "image", "bbox": [550, 100, 900, 380]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4258,13 +5521,17 @@ def test_asset_family_hint_populated_on_figure_assets() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_ah", "page": 30, "role": "figure_caption",
-         "text": "Figure 1. Asset family test.", "bbox": [100, 700, 700, 740],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "img1", "page": 30, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 500, 600]},
-        {"block_id": "img2", "page": 30, "role": "media_asset", "raw_label": "chart",
-         "bbox": [520, 100, 900, 600]},
+        {
+            "block_id": "leg_ah",
+            "page": 30,
+            "role": "figure_caption",
+            "text": "Figure 1. Asset family test.",
+            "bbox": [100, 700, 700, 740],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "img1", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 600]},
+        {"block_id": "img2", "page": 30, "role": "media_asset", "raw_label": "chart", "bbox": [520, 100, 900, 600]},
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4281,13 +5548,9 @@ def test_asset_family_hint_populated_on_figure_assets() -> None:
         )
         # vnext: asset_family_confidence/evidence may not be present on matched assets
         conf = a.get("asset_family_confidence")
-        assert conf is None or isinstance(conf, (int, float)), (
-            f"asset_family_confidence missing or not numeric"
-        )
+        assert conf is None or isinstance(conf, (int, float)), "asset_family_confidence missing or not numeric"
         ev = a.get("asset_family_evidence")
-        assert ev is None or isinstance(ev, list), (
-            f"asset_family_evidence missing or not list"
-        )
+        assert ev is None or isinstance(ev, list), "asset_family_evidence missing or not list"
 
 
 # === P3B/P3C: Figure/Table Separator Veto ===
@@ -4298,14 +5561,26 @@ def test_figure_matcher_skips_strong_table_like_region() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_fv", "page": 31, "role": "figure_caption",
-         "text": "Figure 1. Should NOT own table assets.", "bbox": [100, 700, 700, 740],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "img", "page": 31, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 400, 600]},
-        {"block_id": "tbl_like", "page": 31, "role": "figure_asset", "raw_label": "table",
-         "bbox": [500, 100, 900, 600], "asset_family_hint": "table_like",
-         "asset_family_confidence": 0.85, "asset_family_evidence": ["raw_label:table"]},
+        {
+            "block_id": "leg_fv",
+            "page": 31,
+            "role": "figure_caption",
+            "text": "Figure 1. Should NOT own table assets.",
+            "bbox": [100, 700, 700, 740],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "img", "page": 31, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 400, 600]},
+        {
+            "block_id": "tbl_like",
+            "page": 31,
+            "role": "figure_asset",
+            "raw_label": "table",
+            "bbox": [500, 100, 900, 600],
+            "asset_family_hint": "table_like",
+            "asset_family_confidence": 0.85,
+            "asset_family_evidence": ["raw_label:table"],
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4313,9 +5588,7 @@ def test_figure_matcher_skips_strong_table_like_region() -> None:
     fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
     assert fig1, "Figure 1 must be matched"
     matched_assets = {str(a.get("block_id", "")) for a in fig1[0].get("matched_assets", [])}
-    assert "tbl_like" not in matched_assets, (
-        "Table-like asset with strong hint must NOT be claimed by figure matcher"
-    )
+    assert "tbl_like" not in matched_assets, "Table-like asset with strong hint must NOT be claimed by figure matcher"
 
 
 def test_ambiguous_region_is_not_hard_forced() -> None:
@@ -4323,12 +5596,25 @@ def test_ambiguous_region_is_not_hard_forced() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_amb", "page": 32, "role": "figure_caption",
-         "text": "Figure 1. Ambiguous region test.", "bbox": [100, 700, 700, 740],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "amb_img", "page": 32, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 500, 600], "asset_family_hint": "ambiguous",
-         "asset_family_confidence": 0.40, "asset_family_evidence": []},
+        {
+            "block_id": "leg_amb",
+            "page": 32,
+            "role": "figure_caption",
+            "text": "Figure 1. Ambiguous region test.",
+            "bbox": [100, 700, 700, 740],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "amb_img",
+            "page": 32,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 500, 600],
+            "asset_family_hint": "ambiguous",
+            "asset_family_confidence": 0.40,
+            "asset_family_evidence": [],
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4336,9 +5622,7 @@ def test_ambiguous_region_is_not_hard_forced() -> None:
     fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
     assert fig1, "Figure 1 must be matched"
     matched_assets = {str(a.get("block_id", "")) for a in fig1[0].get("matched_assets", [])}
-    assert "amb_img" in matched_assets, (
-        "Ambiguous asset must NOT be hard-excluded from figure matching"
-    )
+    assert "amb_img" in matched_assets, "Ambiguous asset must NOT be hard-excluded from figure matching"
 
 
 def test_table_labeled_img_figure_grids_still_separate_by_caption_when_caption_is_figure() -> None:
@@ -4519,10 +5803,9 @@ def test_same_number_internal_punctuation_difference_stays_distinct() -> None:
     assert {m.get("legend_block_id") for m in matched} == {"fig7_range", "fig7_plain"}
     distinct = inv.get("same_number_distinct_legends", [])
     if distinct:
-        assert any(
-            item.get("block_id") in {"fig7_range", "fig7_plain"}
-            for item in distinct
-        ), "One Figure 7 caption should remain surfaced as same_number_distinct"
+        assert any(item.get("block_id") in {"fig7_range", "fig7_plain"} for item in distinct), (
+            "One Figure 7 caption should remain surfaced as same_number_distinct"
+        )
 
 
 # === P1B: Panel-Title Suppression (Task 3) ===
@@ -4534,14 +5817,31 @@ def test_short_unnumbered_panel_title_does_not_compete_with_numbered_caption() -
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "fig1_legend", "page": 10, "role": "figure_caption",
-         "text": "Figure 1. Main experimental results.", "bbox": [100, 900, 900, 950],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "fig1_asset", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 900, 500]},
-        {"block_id": "panel_title", "page": 10, "role": "figure_caption_candidate",
-         "text": "RND", "bbox": [100, 520, 500, 540],
-         "zone": "display_zone", "style_family": "legend_like"},
+        {
+            "block_id": "fig1_legend",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Main experimental results.",
+            "bbox": [100, 900, 900, 950],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {
+            "block_id": "fig1_asset",
+            "page": 10,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 900, 500],
+        },
+        {
+            "block_id": "panel_title",
+            "page": 10,
+            "role": "figure_caption_candidate",
+            "text": "RND",
+            "bbox": [100, 520, 500, 540],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4566,14 +5866,25 @@ def test_suppressed_panel_title_not_emitted_as_matched_or_ambiguous() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_1", "page": 20, "role": "figure_caption",
-         "text": "Figure 2. Group analysis.", "bbox": [100, 900, 900, 950],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "ast_1", "page": 20, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 900, 500]},
-        {"block_id": "fake_cap", "page": 20, "role": "figure_caption_candidate",
-         "text": "Basal respiration rate", "bbox": [100, 520, 500, 550],
-         "zone": "display_zone", "style_family": "legend_like"},
+        {
+            "block_id": "leg_1",
+            "page": 20,
+            "role": "figure_caption",
+            "text": "Figure 2. Group analysis.",
+            "bbox": [100, 900, 900, 950],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {"block_id": "ast_1", "page": 20, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 900, 500]},
+        {
+            "block_id": "fake_cap",
+            "page": 20,
+            "role": "figure_caption_candidate",
+            "text": "Basal respiration rate",
+            "bbox": [100, 520, 500, 550],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4597,14 +5908,25 @@ def test_suppressed_panel_title_remains_accounted_not_body() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_k", "page": 30, "role": "figure_caption",
-         "text": "Figure 3. Analysis.", "bbox": [100, 900, 900, 950],
-         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "ast_k", "page": 30, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 900, 500]},
-        {"block_id": "panel_k", "page": 30, "role": "figure_caption_candidate",
-         "text": "COL II", "bbox": [100, 520, 500, 540],
-         "zone": "display_zone", "style_family": "legend_like"},
+        {
+            "block_id": "leg_k",
+            "page": 30,
+            "role": "figure_caption",
+            "text": "Figure 3. Analysis.",
+            "bbox": [100, 900, 900, 950],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {"block_id": "ast_k", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 900, 500]},
+        {
+            "block_id": "panel_k",
+            "page": 30,
+            "role": "figure_caption_candidate",
+            "text": "COL II",
+            "bbox": [100, 520, 500, 540],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
     ]
 
     inv = build_figure_inventory(blocks)
@@ -4619,7 +5941,6 @@ def test_suppressed_panel_title_remains_accounted_not_body() -> None:
     assert "panel_k" not in rejected_ids, "Suppressed title must not be in rejected_legends"
 
 
-
 # === Dense Composite Parent Candidate Hardening ===
 
 
@@ -4629,28 +5950,26 @@ def test_dense_fragmented_page_emits_composite_parent_candidate() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "d_leg", "page": 20, "role": "figure_caption",
-         "text": "Figure 1. Dense multi-panel composite figure showing expression profiles.",
-         "bbox": [100, 750, 900, 800],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "d_a1", "page": 20, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 350, 300]},
-        {"block_id": "d_a2", "page": 20, "role": "figure_asset", "raw_label": "image",
-         "bbox": [400, 100, 650, 300]},
-        {"block_id": "d_a3", "page": 20, "role": "figure_asset", "raw_label": "image",
-         "bbox": [700, 100, 950, 300]},
-        {"block_id": "d_a4", "page": 20, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 350, 350, 550]},
-        {"block_id": "d_a5", "page": 20, "role": "figure_asset", "raw_label": "image",
-         "bbox": [400, 350, 650, 550]},
+        {
+            "block_id": "d_leg",
+            "page": 20,
+            "role": "figure_caption",
+            "text": "Figure 1. Dense multi-panel composite figure showing expression profiles.",
+            "bbox": [100, 750, 900, 800],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "d_a1", "page": 20, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 350, 300]},
+        {"block_id": "d_a2", "page": 20, "role": "figure_asset", "raw_label": "image", "bbox": [400, 100, 650, 300]},
+        {"block_id": "d_a3", "page": 20, "role": "figure_asset", "raw_label": "image", "bbox": [700, 100, 950, 300]},
+        {"block_id": "d_a4", "page": 20, "role": "figure_asset", "raw_label": "image", "bbox": [100, 350, 350, 550]},
+        {"block_id": "d_a5", "page": 20, "role": "figure_asset", "raw_label": "image", "bbox": [400, 350, 650, 550]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1100)
 
     dense_parents = [
-        p for p in inv.get("composite_parent_candidates", [])
-        if p.get("parent_subtype") == "dense_composite"
+        p for p in inv.get("composite_parent_candidates", []) if p.get("parent_subtype") == "dense_composite"
     ]
     # vnext: composite_parent_candidates not emitted; accept empty
 
@@ -4661,29 +5980,34 @@ def test_ordinary_multi_figure_page_does_not_emit_dense_parent() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "ord_leg1", "page": 30, "role": "figure_caption",
-         "text": "Figure 2. First independent figure.", "bbox": [100, 350, 500, 390],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "ord_a1", "page": 30, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 500, 300]},
-        {"block_id": "ord_leg2", "page": 30, "role": "figure_caption",
-         "text": "Figure 3. Second independent figure.", "bbox": [600, 350, 1000, 390],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "ord_a2", "page": 30, "role": "figure_asset", "raw_label": "image",
-         "bbox": [600, 100, 1000, 300]},
+        {
+            "block_id": "ord_leg1",
+            "page": 30,
+            "role": "figure_caption",
+            "text": "Figure 2. First independent figure.",
+            "bbox": [100, 350, 500, 390],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {"block_id": "ord_a1", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 300]},
+        {
+            "block_id": "ord_leg2",
+            "page": 30,
+            "role": "figure_caption",
+            "text": "Figure 3. Second independent figure.",
+            "bbox": [600, 350, 1000, 390],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {"block_id": "ord_a2", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [600, 100, 1000, 300]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1100)
 
     dense_parents = [
-        p for p in inv.get("composite_parent_candidates", [])
-        if p.get("parent_subtype") == "dense_composite"
+        p for p in inv.get("composite_parent_candidates", []) if p.get("parent_subtype") == "dense_composite"
     ]
-    assert not dense_parents, (
-        "Ordinary multi-figure page must NOT emit a dense parent candidate"
-    )
+    assert not dense_parents, "Ordinary multi-figure page must NOT emit a dense parent candidate"
 
 
 def test_dense_parent_candidate_records_unresolved_cluster_ids() -> None:
@@ -4692,30 +6016,27 @@ def test_dense_parent_candidate_records_unresolved_cluster_ids() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "u_leg", "page": 25, "role": "figure_caption",
-         "text": "Figure 4. Dense composite with orphaned sub-panels.",
-         "bbox": [100, 750, 900, 800],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 4}},
-        {"block_id": "u_a1", "page": 25, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 350, 300]},
-        {"block_id": "u_a2", "page": 25, "role": "figure_asset", "raw_label": "image",
-         "bbox": [400, 100, 650, 300]},
-        {"block_id": "u_a3", "page": 25, "role": "figure_asset", "raw_label": "image",
-         "bbox": [700, 100, 950, 300]},
-        {"block_id": "u_a4", "page": 25, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 350, 350, 550]},
-        {"block_id": "u_a5", "page": 25, "role": "figure_asset", "raw_label": "image",
-         "bbox": [400, 350, 650, 550]},
-        {"block_id": "u_a6", "page": 25, "role": "figure_asset", "raw_label": "image",
-         "bbox": [700, 350, 950, 550]},
+        {
+            "block_id": "u_leg",
+            "page": 25,
+            "role": "figure_caption",
+            "text": "Figure 4. Dense composite with orphaned sub-panels.",
+            "bbox": [100, 750, 900, 800],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 4},
+        },
+        {"block_id": "u_a1", "page": 25, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 350, 300]},
+        {"block_id": "u_a2", "page": 25, "role": "figure_asset", "raw_label": "image", "bbox": [400, 100, 650, 300]},
+        {"block_id": "u_a3", "page": 25, "role": "figure_asset", "raw_label": "image", "bbox": [700, 100, 950, 300]},
+        {"block_id": "u_a4", "page": 25, "role": "figure_asset", "raw_label": "image", "bbox": [100, 350, 350, 550]},
+        {"block_id": "u_a5", "page": 25, "role": "figure_asset", "raw_label": "image", "bbox": [400, 350, 650, 550]},
+        {"block_id": "u_a6", "page": 25, "role": "figure_asset", "raw_label": "image", "bbox": [700, 350, 950, 550]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1100)
 
     dense_parents = [
-        p for p in inv.get("composite_parent_candidates", [])
-        if p.get("parent_subtype") == "dense_composite"
+        p for p in inv.get("composite_parent_candidates", []) if p.get("parent_subtype") == "dense_composite"
     ]
     # vnext: composite_parent_candidates not emitted; accept empty
     if dense_parents:
@@ -4724,28 +6045,26 @@ def test_dense_parent_candidate_records_unresolved_cluster_ids() -> None:
         assert uids is not None, "unresolved_cluster_ids field must exist"
         assert isinstance(uids, list), "unresolved_cluster_ids must be a list"
     blocks = [
-        {"block_id": "c_leg", "page": 35, "role": "figure_caption",
-         "text": "Figure 5. Composite caption with orphaned fragments.",
-         "bbox": [100, 750, 900, 800],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 5}},
-        {"block_id": "c_a1", "page": 35, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 350, 300]},
-        {"block_id": "c_a2", "page": 35, "role": "figure_asset", "raw_label": "image",
-         "bbox": [400, 100, 650, 300]},
-        {"block_id": "c_a3", "page": 35, "role": "figure_asset", "raw_label": "image",
-         "bbox": [700, 100, 950, 300]},
-        {"block_id": "c_a4", "page": 35, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 350, 350, 550]},
-        {"block_id": "c_a5", "page": 35, "role": "figure_asset", "raw_label": "image",
-         "bbox": [400, 350, 650, 550]},
+        {
+            "block_id": "c_leg",
+            "page": 35,
+            "role": "figure_caption",
+            "text": "Figure 5. Composite caption with orphaned fragments.",
+            "bbox": [100, 750, 900, 800],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 5},
+        },
+        {"block_id": "c_a1", "page": 35, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 350, 300]},
+        {"block_id": "c_a2", "page": 35, "role": "figure_asset", "raw_label": "image", "bbox": [400, 100, 650, 300]},
+        {"block_id": "c_a3", "page": 35, "role": "figure_asset", "raw_label": "image", "bbox": [700, 100, 950, 300]},
+        {"block_id": "c_a4", "page": 35, "role": "figure_asset", "raw_label": "image", "bbox": [100, 350, 350, 550]},
+        {"block_id": "c_a5", "page": 35, "role": "figure_asset", "raw_label": "image", "bbox": [400, 350, 650, 550]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1100)
 
     dense_parents = [
-        p for p in inv.get("composite_parent_candidates", [])
-        if p.get("parent_subtype") == "dense_composite"
+        p for p in inv.get("composite_parent_candidates", []) if p.get("parent_subtype") == "dense_composite"
     ]
     # vnext: composite_parent_candidates not emitted; accept empty
     if dense_parents:
@@ -4768,31 +6087,38 @@ def test_dense_parent_candidate_records_unresolved_cluster_ids() -> None:
 
 # --- Task 5: construction-time vs arbitration-time separation ---
 
+
 def test_dense_parent_candidate_can_be_constructed_from_visual_fragment_count_only() -> None:
     from paperforge.worker.ocr_figures import _build_dense_composite_parent_candidates
 
     groups = [
         {
-            "group_id": "g1", "page": 10,
+            "group_id": "g1",
+            "page": 10,
             "asset_block_ids": ["a1", "a2"],
             "cluster_bbox": [100, 100, 400, 400],
         },
         {
-            "group_id": "g2", "page": 10,
+            "group_id": "g2",
+            "page": 10,
             "asset_block_ids": ["a3", "a4"],
             "cluster_bbox": [500, 100, 800, 400],
         },
     ]
     clusters = [
         {
-            "cluster_id": "uc1", "page": 10,
+            "cluster_id": "uc1",
+            "page": 10,
             "media_block_ids": ["a5", "a6"],
             "cluster_bbox": [100, 500, 400, 800],
         },
     ]
 
     parents = _build_dense_composite_parent_candidates(
-        groups, clusters, {10}, page_width=1000,
+        groups,
+        clusters,
+        {10},
+        page_width=1000,
     )
     assert parents, "dense parent must be constructed from visual fragments only"
     p = parents[0]
@@ -4823,12 +6149,16 @@ def test_dense_parent_arbitration_uses_leftover_mass_to_outrank_partial_same_pag
         "construction_reason": ["dense_fragment_page", "6_visual_fragments", "1_unresolved_clusters"],
     }
 
-    owned = {"a5"}   # one asset already owned on page
+    owned = {"a5"}  # one asset already owned on page
     score_high = _score_dense_parent_candidate_against_local_ownership(
-        parent, owned_asset_ids=owned, unresolved_asset_ids={"a1", "a2", "a3", "a4", "a6", "a7"},
+        parent,
+        owned_asset_ids=owned,
+        unresolved_asset_ids={"a1", "a2", "a3", "a4", "a6", "a7"},
     )
     score_low = _score_dense_parent_candidate_against_local_ownership(
-        parent, owned_asset_ids=owned, unresolved_asset_ids={"a1"},
+        parent,
+        owned_asset_ids=owned,
+        unresolved_asset_ids={"a1"},
     )
 
     assert score_high["coverage_gain"] > score_low["coverage_gain"], (
@@ -4841,26 +6171,26 @@ def test_dense_parent_arbitration_uses_leftover_mass_to_outrank_partial_same_pag
 
 # --- Task 7: dense page arbitration regression ---
 
+
 def test_dense_composite_parent_collects_large_fragment_set() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg", "page": 10, "role": "figure_caption",
-         "text": "Figure 1. Multi-panel expression atlas.", "bbox": [100, 830, 900, 880],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "a1", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 80, 450, 230]},
-        {"block_id": "a2", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 280, 450, 430]},
-        {"block_id": "a3", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 480, 450, 630]},
-        {"block_id": "a4", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [550, 80, 900, 230]},
-        {"block_id": "a5", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [550, 280, 900, 430]},
-        {"block_id": "a6", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [550, 480, 900, 630]},
+        {
+            "block_id": "leg",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Multi-panel expression atlas.",
+            "bbox": [100, 830, 900, 880],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "a1", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 80, 450, 230]},
+        {"block_id": "a2", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 280, 450, 430]},
+        {"block_id": "a3", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 480, 450, 630]},
+        {"block_id": "a4", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [550, 80, 900, 230]},
+        {"block_id": "a5", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [550, 280, 900, 430]},
+        {"block_id": "a6", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [550, 480, 900, 630]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1000)
@@ -4882,26 +6212,29 @@ def test_dense_parent_does_not_swallow_neighboring_ordinary_figure() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg_dense", "page": 10, "role": "figure_caption",
-         "text": "Figure 1. Dense composite with 6 panels.",
-         "bbox": [100, 750, 500, 800],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "d1", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 250, 300]},
-        {"block_id": "d2", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [300, 100, 450, 300]},
-        {"block_id": "d3", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 350, 250, 550]},
-        {"block_id": "d4", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [300, 350, 450, 550]},
-        {"block_id": "leg_ord", "page": 10, "role": "figure_caption",
-         "text": "Figure 2. Independent figure on same page.",
-         "bbox": [600, 750, 1000, 800],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "n1", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [600, 100, 900, 500]},
+        {
+            "block_id": "leg_dense",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Dense composite with 6 panels.",
+            "bbox": [100, 750, 500, 800],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "d1", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 250, 300]},
+        {"block_id": "d2", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [300, 100, 450, 300]},
+        {"block_id": "d3", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 350, 250, 550]},
+        {"block_id": "d4", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [300, 350, 450, 550]},
+        {
+            "block_id": "leg_ord",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 2. Independent figure on same page.",
+            "bbox": [600, 750, 1000, 800],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {"block_id": "n1", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [600, 100, 900, 500]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1100)
@@ -4926,25 +6259,22 @@ def test_partial_same_page_claim_becomes_provisional_when_large_same_zone_leftov
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg", "page": 10, "role": "figure_caption",
-         "text": "Figure 1. Dense multi-panel composite with orphaned sub-panels.",
-         "bbox": [100, 750, 900, 800],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "ma1", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 300, 300]},
-        {"block_id": "ma2", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [350, 100, 550, 300]},
-        {"block_id": "ma3", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [600, 100, 800, 300]},
-        {"block_id": "ma4", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 350, 300, 550]},
-        {"block_id": "ma5", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [350, 350, 550, 550]},
-        {"block_id": "ma6", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [600, 350, 800, 550]},
-        {"block_id": "ma7", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [850, 350, 950, 400]},
+        {
+            "block_id": "leg",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Dense multi-panel composite with orphaned sub-panels.",
+            "bbox": [100, 750, 900, 800],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "ma1", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 300, 300]},
+        {"block_id": "ma2", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [350, 100, 550, 300]},
+        {"block_id": "ma3", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [600, 100, 800, 300]},
+        {"block_id": "ma4", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 350, 300, 550]},
+        {"block_id": "ma5", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [350, 350, 550, 550]},
+        {"block_id": "ma6", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [600, 350, 800, 550]},
+        {"block_id": "ma7", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [850, 350, 950, 400]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1050)
@@ -4974,14 +6304,17 @@ def test_unresolved_clusters_deduped_against_matched_figures() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "leg1", "page": 10, "role": "figure_caption",
-         "text": "Figure 1. Test figure.", "bbox": [100, 600, 500, 650],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "ast1", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 500, 500]},
-        {"block_id": "ast2", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [550, 100, 900, 500]},
+        {
+            "block_id": "leg1",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Figure 1. Test figure.",
+            "bbox": [100, 600, 500, 650],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "ast1", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 500]},
+        {"block_id": "ast2", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [550, 100, 900, 500]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1000)
@@ -4998,23 +6331,20 @@ def test_unresolved_clusters_deduped_against_matched_figures() -> None:
         uc_page = uc.get("page", 0)
         for bid in uc.get("media_block_ids", []):
             assert (uc_page, str(bid)) not in {
-                (mf.get("page", 0), b) for mf in matched for b in mf.get("asset_block_ids", [])
-                if str(b) == str(bid)
+                (mf.get("page", 0), b) for mf in matched for b in mf.get("asset_block_ids", []) if str(b) == str(bid)
             }, f"block {bid} in unresolved_cluster must not also be in matched_figures"
 
 
 # --- Sidecar: outlier-tolerant narrow column + raw band ---
 
+
 def test_narrow_caption_column_ignores_x_center_outlier() -> None:
     from paperforge.worker.ocr_figures import _same_page_narrow_caption_column
 
     captions = [
-        {"block_id": 2, "page": 3, "text": "Fig. 2. Left-column caption.",
-         "bbox": [103, 140, 422, 312]},
-        {"block_id": 5, "page": 3, "text": "Fig. 3. Another left-column caption.",
-         "bbox": [105, 802, 419, 838]},
-        {"block_id": 14, "page": 3, "text": "Fig. 6 body mention right column.",
-         "bbox": [799, 963, 1132, 1052]},
+        {"block_id": 2, "page": 3, "text": "Fig. 2. Left-column caption.", "bbox": [103, 140, 422, 312]},
+        {"block_id": 5, "page": 3, "text": "Fig. 3. Another left-column caption.", "bbox": [105, 802, 419, 838]},
+        {"block_id": 14, "page": 3, "text": "Fig. 6 body mention right column.", "bbox": [799, 963, 1132, 1052]},
     ]
 
     result = _same_page_narrow_caption_column(captions, page_width=1133)
@@ -5029,10 +6359,8 @@ def test_narrow_caption_column_requires_two_aligned_captions_after_outlier_filte
 
     # Only 1 left-column caption + 1 right outlier → no valid cluster
     captions = [
-        {"block_id": 2, "page": 3, "text": "Fig. 2. Left-column caption.",
-         "bbox": [103, 140, 422, 312]},
-        {"block_id": 14, "page": 3, "text": "Fig. 6 body mention right column.",
-         "bbox": [799, 963, 1132, 1052]},
+        {"block_id": 2, "page": 3, "text": "Fig. 2. Left-column caption.", "bbox": [103, 140, 422, 312]},
+        {"block_id": 14, "page": 3, "text": "Fig. 6 body mention right column.", "bbox": [799, 963, 1132, 1052]},
     ]
     assert _same_page_narrow_caption_column(captions, page_width=1133) == []
 
@@ -5044,28 +6372,33 @@ def test_sidecar_uses_full_filtered_raw_band_not_row_coupled_subset() -> None:
     # All assets cluster into one group, same_page gives it all to Fig 2.
     # Fig 3 is unresolved → violation → sidecar fires and redistributes.
     blocks = [
-        {"block_id": "leg2", "page": 10, "role": "figure_caption",
-         "text": "Fig. 2. Left column caption.", "bbox": [100, 80, 400, 150],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "leg3", "page": 10, "role": "figure_caption",
-         "text": "Fig. 3. Second left caption.", "bbox": [100, 600, 400, 650],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "a2a", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [450, 80, 700, 250]},
-        {"block_id": "a2b", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [450, 280, 700, 450]},
-        {"block_id": "a3a", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [450, 550, 700, 750]},
-        {"block_id": "a3b", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [450, 800, 700, 1000]},
+        {
+            "block_id": "leg2",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Fig. 2. Left column caption.",
+            "bbox": [100, 80, 400, 150],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "leg3",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Fig. 3. Second left caption.",
+            "bbox": [100, 600, 400, 650],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {"block_id": "a2a", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [450, 80, 700, 250]},
+        {"block_id": "a2b", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [450, 280, 700, 450]},
+        {"block_id": "a3a", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [450, 550, 700, 750]},
+        {"block_id": "a3b", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [450, 800, 700, 1000]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1200)
     # vnext: only Fig 3 matched (via same_page then sidecar); Fig 2 is unmatched
-    sidecar_matches = [m for m in inv.get("matched_figures", [])
-                       if m.get("settlement_type") == "sidecar"]
+    sidecar_matches = [m for m in inv.get("matched_figures", []) if m.get("settlement_type") == "sidecar"]
     assert len(sidecar_matches) >= 1, "Must have at least one sidecar match"
     sc = sidecar_matches[0]
     assert sc.get("settlement_type") == "sidecar"
@@ -5079,46 +6412,54 @@ def test_sidecar_raw_band_still_excludes_protected_assets() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
-        {"block_id": "legA", "page": 10, "role": "figure_caption",
-         "text": "Fig. 1. Protected below caption.", "bbox": [100, 500, 400, 550],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 1}},
-        {"block_id": "aA", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 500, 480]},
-        {"block_id": "legB", "page": 10, "role": "figure_caption",
-         "text": "Fig. 2. Narrow left caption.", "bbox": [100, 600, 400, 650],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 2}},
-        {"block_id": "legC", "page": 10, "role": "figure_caption",
-         "text": "Fig. 3. Narrow left caption.", "bbox": [100, 750, 400, 800],
-         "style_family": "legend_like",
-         "marker_signature": {"type": "figure_number", "number": 3}},
-        {"block_id": "aB", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [450, 550, 800, 750]},
-        {"block_id": "aC", "page": 10, "role": "figure_asset", "raw_label": "image",
-         "bbox": [450, 800, 800, 1000]},
+        {
+            "block_id": "legA",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Fig. 1. Protected below caption.",
+            "bbox": [100, 500, 400, 550],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+        {"block_id": "aA", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 480]},
+        {
+            "block_id": "legB",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Fig. 2. Narrow left caption.",
+            "bbox": [100, 600, 400, 650],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "block_id": "legC",
+            "page": 10,
+            "role": "figure_caption",
+            "text": "Fig. 3. Narrow left caption.",
+            "bbox": [100, 750, 400, 800],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {"block_id": "aB", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [450, 550, 800, 750]},
+        {"block_id": "aC", "page": 10, "role": "figure_asset", "raw_label": "image", "bbox": [450, 800, 800, 1000]},
     ]
 
     inv = build_figure_inventory(blocks, page_width=1200)
     # vnext: Fig 3 matched via same_page (collects aA,aB,aC) + sidecar (aB,aC).
     # Fig 1 and Fig 2 are unmatched in vnext.
-    sidecar_matches = [m for m in inv.get("matched_figures", [])
-                       if m.get("settlement_type") == "sidecar"]
+    sidecar_matches = [m for m in inv.get("matched_figures", []) if m.get("settlement_type") == "sidecar"]
     assert len(sidecar_matches) >= 1, "Must have at least one sidecar match"
     # Verify sidecar does NOT claim Fig 1's protected asset aA
     for sc in sidecar_matches:
         sc_asset_ids = {str(a.get("block_id", "")) for a in sc.get("matched_assets", [])}
-        assert "aA" not in sc_asset_ids, (
-            f"Sidecar match must not steal protected asset aA, got {sc_asset_ids}"
-        )
+        assert "aA" not in sc_asset_ids, f"Sidecar match must not steal protected asset aA, got {sc_asset_ids}"
     # Verify sidecar still captures the band assets
     all_sidecar_assets = set()
     for sc in sidecar_matches:
-        all_sidecar_assets.update(
-            str(a.get("block_id", "")) for a in sc.get("matched_assets", [])
-        )
+        all_sidecar_assets.update(str(a.get("block_id", "")) for a in sc.get("matched_assets", []))
     assert "aB" in all_sidecar_assets, "Sidecar must include asset aB"
     assert "aC" in all_sidecar_assets, "Sidecar must include asset aC"
+
 
 # === page_assets safety gate regressions (Task 4) ===
 
@@ -5128,8 +6469,7 @@ def test_page_assets_missing_page_context_rejected() -> None:
 
     result = _score_legend_to_group(
         {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
-        {"group_type": "page_assets", "page": 5, "media_blocks": [],
-         "cluster_bbox": [0, 0, 500, 500]},
+        {"group_type": "page_assets", "page": 5, "media_blocks": [], "cluster_bbox": [0, 0, 500, 500]},
         caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
         page_width=1200,
     )
@@ -5147,18 +6487,17 @@ def test_page_assets_single_legend_compact_group_matched() -> None:
         {"block_id": "a3", "bbox": [100, 280, 300, 440]},
     ]
     page_blocks = [
-        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
-         "text": "Dummy body block for context."},
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10], "text": "Dummy body block for context."},
     ]
 
     result = _score_legend_to_group(
         {"text": "Figure 1. Compact.", "block_id": "c1", "page": 5},
-        {"group_type": "page_assets", "page": 5,
-         "media_blocks": media_blocks,
-         "cluster_bbox": [100, 100, 520, 440]},
+        {"group_type": "page_assets", "page": 5, "media_blocks": media_blocks, "cluster_bbox": [100, 100, 520, 440]},
         caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
-        page_width=1200, page_height=1000,
-        page_blocks=page_blocks, page_numbered_legend_count=1,
+        page_width=1200,
+        page_height=1000,
+        page_blocks=page_blocks,
+        page_numbered_legend_count=1,
     )
 
     assert result["decision"] == "matched"
@@ -5175,18 +6514,17 @@ def test_page_assets_multiple_numbered_legends_rejected() -> None:
         {"block_id": "a3", "bbox": [100, 280, 300, 440]},
     ]
     page_blocks = [
-        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
-         "text": "Dummy body block for context."},
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10], "text": "Dummy body block for context."},
     ]
 
     result = _score_legend_to_group(
         {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
-        {"group_type": "page_assets", "page": 5,
-         "media_blocks": media_blocks,
-         "cluster_bbox": [100, 100, 520, 440]},
+        {"group_type": "page_assets", "page": 5, "media_blocks": media_blocks, "cluster_bbox": [100, 100, 520, 440]},
         caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
-        page_width=1200, page_height=1000,
-        page_blocks=page_blocks, page_numbered_legend_count=2,
+        page_width=1200,
+        page_height=1000,
+        page_blocks=page_blocks,
+        page_numbered_legend_count=2,
     )
 
     assert result["decision"] == "rejected"
@@ -5203,19 +6541,17 @@ def test_page_assets_text_separator_rejected() -> None:
         {"block_id": "a4", "bbox": [330, 240, 530, 340], "page": 5},
     ]
     page_blocks = [
-        {"page": 5, "role": "body_paragraph",
-         "bbox": [300, 130, 335, 170],
-         "text": "Body text in horizontal gap."},
+        {"page": 5, "role": "body_paragraph", "bbox": [300, 130, 335, 170], "text": "Body text in horizontal gap."},
     ]
 
     result = _score_legend_to_group(
         {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
-        {"group_type": "page_assets", "page": 5,
-         "media_blocks": media_blocks,
-         "cluster_bbox": [100, 100, 530, 340]},
+        {"group_type": "page_assets", "page": 5, "media_blocks": media_blocks, "cluster_bbox": [100, 100, 530, 340]},
         caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
-        page_width=1200, page_height=1000,
-        page_blocks=page_blocks, page_numbered_legend_count=1,
+        page_width=1200,
+        page_height=1000,
+        page_blocks=page_blocks,
+        page_numbered_legend_count=1,
     )
 
     assert result["decision"] == "rejected"
@@ -5231,18 +6567,17 @@ def test_page_assets_large_coverage_rejected() -> None:
         {"block_id": "a3", "bbox": [0, 900, 600, 1000]},
     ]
     page_blocks = [
-        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
-         "text": "Dummy body block for context."},
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10], "text": "Dummy body block for context."},
     ]
 
     result = _score_legend_to_group(
         {"text": "Figure 1. Large.", "block_id": "c1", "page": 5},
-        {"group_type": "page_assets", "page": 5,
-         "media_blocks": media_blocks,
-         "cluster_bbox": [0, 0, 1100, 1000]},
+        {"group_type": "page_assets", "page": 5, "media_blocks": media_blocks, "cluster_bbox": [0, 0, 1100, 1000]},
         caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
-        page_width=1200, page_height=1000,
-        page_blocks=page_blocks, page_numbered_legend_count=1,
+        page_width=1200,
+        page_height=1000,
+        page_blocks=page_blocks,
+        page_numbered_legend_count=1,
     )
 
     assert result["decision"] == "rejected"
@@ -5255,22 +6590,25 @@ def test_page_assets_table_like_asset_rejected() -> None:
     media_blocks = [
         {"block_id": "a1", "bbox": [100, 100, 300, 260]},
         {"block_id": "a2", "bbox": [320, 100, 520, 260]},
-        {"block_id": "t1", "bbox": [100, 280, 600, 500],
-         "raw_label": "table", "text": "<table><tr><td>data</td></tr></table>"},
+        {
+            "block_id": "t1",
+            "bbox": [100, 280, 600, 500],
+            "raw_label": "table",
+            "text": "<table><tr><td>data</td></tr></table>",
+        },
     ]
     page_blocks = [
-        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
-         "text": "Dummy body block for context."},
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10], "text": "Dummy body block for context."},
     ]
 
     result = _score_legend_to_group(
         {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
-        {"group_type": "page_assets", "page": 5,
-         "media_blocks": media_blocks,
-         "cluster_bbox": [100, 100, 600, 500]},
+        {"group_type": "page_assets", "page": 5, "media_blocks": media_blocks, "cluster_bbox": [100, 100, 600, 500]},
         caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
-        page_width=1200, page_height=1000,
-        page_blocks=page_blocks, page_numbered_legend_count=1,
+        page_width=1200,
+        page_height=1000,
+        page_blocks=page_blocks,
+        page_numbered_legend_count=1,
     )
 
     assert result["decision"] == "rejected"
@@ -5281,18 +6619,48 @@ def test_build_figure_inventory_no_page_assets_on_multi_legend_page() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
-        {"page": 5, "block_id": "a1", "role": "figure_asset", "raw_label": "image",
-         "bbox": [100, 100, 300, 260], "text": ""},
-        {"page": 5, "block_id": "a2", "role": "figure_asset", "raw_label": "image",
-         "bbox": [320, 100, 520, 260], "text": ""},
-        {"page": 5, "block_id": "a3", "role": "figure_asset", "raw_label": "image",
-         "bbox": [540, 100, 740, 260], "text": ""},
-        {"page": 5, "block_id": "c1", "role": "figure_caption",
-         "text": "Figure 1. Left.", "bbox": [100, 280, 320, 320],
-         "zone": "display_zone", "style_family": "legend_like"},
-        {"page": 5, "block_id": "c2", "role": "figure_caption",
-         "text": "Figure 2. Right.", "bbox": [420, 280, 740, 320],
-         "zone": "display_zone", "style_family": "legend_like"},
+        {
+            "page": 5,
+            "block_id": "a1",
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 300, 260],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "a2",
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [320, 100, 520, 260],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "a3",
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [540, 100, 740, 260],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "c1",
+            "role": "figure_caption",
+            "text": "Figure 1. Left.",
+            "bbox": [100, 280, 320, 320],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
+        {
+            "page": 5,
+            "block_id": "c2",
+            "role": "figure_caption",
+            "text": "Figure 2. Right.",
+            "bbox": [420, 280, 740, 320],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
     ]
 
     inventory = build_figure_inventory(structured_blocks)
@@ -5313,31 +6681,30 @@ def test_page_assets_count_uses_ordered_legends_not_stale_deduped() -> None:
         {"block_id": "a3", "bbox": [100, 280, 300, 440]},
     ]
     page_blocks = [
-        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10],
-         "text": "Dummy."},
+        {"page": 5, "role": "body_paragraph", "bbox": [0, 0, 10, 10], "text": "Dummy."},
     ]
 
     # With count=1 (correct — post-suppression), compact group must match.
     result = _score_legend_to_group(
         {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
-        {"group_type": "page_assets", "page": 5,
-         "media_blocks": media_blocks,
-         "cluster_bbox": [100, 100, 520, 440]},
+        {"group_type": "page_assets", "page": 5, "media_blocks": media_blocks, "cluster_bbox": [100, 100, 520, 440]},
         caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
-        page_width=1200, page_height=1000,
-        page_blocks=page_blocks, page_numbered_legend_count=1,
+        page_width=1200,
+        page_height=1000,
+        page_blocks=page_blocks,
+        page_numbered_legend_count=1,
     )
     assert result["decision"] == "matched"
 
     # With count=2 (stale deduped_count), same group must reject.
     result2 = _score_legend_to_group(
         {"text": "Figure 1. Test.", "block_id": "c1", "page": 5},
-        {"group_type": "page_assets", "page": 5,
-         "media_blocks": media_blocks,
-         "cluster_bbox": [100, 100, 520, 440]},
+        {"group_type": "page_assets", "page": 5, "media_blocks": media_blocks, "cluster_bbox": [100, 100, 520, 440]},
         caption_score={"score": 0.5, "decision": "candidate", "evidence": []},
-        page_width=1200, page_height=1000,
-        page_blocks=page_blocks, page_numbered_legend_count=2,
+        page_width=1200,
+        page_height=1000,
+        page_blocks=page_blocks,
+        page_numbered_legend_count=2,
     )
     assert result2["decision"] == "rejected"
     assert "multiple_numbered_legends" in result2.get("evidence", [])
@@ -5351,6 +6718,7 @@ class TestResolveFigureIdCollisions:
 
     def _run(self, figs: list[dict]) -> list[dict]:
         from paperforge.worker.ocr_figures import _resolve_figure_id_collisions
+
         inventory = {"matched_figures": list(figs), "held_figures": [], "ambiguous_figures": []}
         _resolve_figure_id_collisions(inventory)
         return inventory["matched_figures"]
@@ -5436,8 +6804,14 @@ class TestResolveFigureIdCollisions:
         ]
         result = self._run(figs)
         assert self._ids(result) == [
-            "figure_001", "figure_002", "figure_003", "figure_004",
-            "figure_s001", "figure_s002", "figure_s003", "figure_s004",
+            "figure_001",
+            "figure_002",
+            "figure_003",
+            "figure_004",
+            "figure_s001",
+            "figure_s002",
+            "figure_s003",
+            "figure_s004",
         ]
         # Verify originals are untouched
         assert len({f["figure_id"] for f in result}) == 8  # all unique
@@ -5459,24 +6833,71 @@ def test_infer_figure1_leading_gap() -> None:
     from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
 
     matched_figures = [
-        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
-         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
-         "page": 3, "legend_page": 3, "asset_pages": [3]},
-        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset2"],
-         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
-        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset3"],
-         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
-        {"figure_number": 4, "text": "Figure 4.", "legend_block_id": "leg4",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset4"],
-         "settlement_type": "same_page", "page": 9, "legend_page": 9, "asset_pages": [9]},
-        {"figure_number": 5, "text": "Figure 5.", "legend_block_id": "leg5",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset5"],
-         "settlement_type": "same_page", "page": 11, "legend_page": 11, "asset_pages": [11]},
-        {"figure_number": 6, "text": "Figure 6.", "legend_block_id": "leg6",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset6"],
-         "settlement_type": "same_page", "page": 13, "legend_page": 13, "asset_pages": [13]},
+        {
+            "figure_number": None,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1",
+            "asset_block_ids": ["asset1"],
+            "settlement_type": "same_page",
+            "page": 3,
+            "legend_page": 3,
+            "asset_pages": [3],
+        },
+        {
+            "figure_number": 2,
+            "text": "Figure 2.",
+            "legend_block_id": "leg2",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset2"],
+            "settlement_type": "same_page",
+            "page": 5,
+            "legend_page": 5,
+            "asset_pages": [5],
+        },
+        {
+            "figure_number": 3,
+            "text": "Figure 3.",
+            "legend_block_id": "leg3",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset3"],
+            "settlement_type": "same_page",
+            "page": 7,
+            "legend_page": 7,
+            "asset_pages": [7],
+        },
+        {
+            "figure_number": 4,
+            "text": "Figure 4.",
+            "legend_block_id": "leg4",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset4"],
+            "settlement_type": "same_page",
+            "page": 9,
+            "legend_page": 9,
+            "asset_pages": [9],
+        },
+        {
+            "figure_number": 5,
+            "text": "Figure 5.",
+            "legend_block_id": "leg5",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset5"],
+            "settlement_type": "same_page",
+            "page": 11,
+            "legend_page": 11,
+            "asset_pages": [11],
+        },
+        {
+            "figure_number": 6,
+            "text": "Figure 6.",
+            "legend_block_id": "leg6",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset6"],
+            "settlement_type": "same_page",
+            "page": 13,
+            "legend_page": 13,
+            "asset_pages": [13],
+        },
     ]
     figure_legends = [
         {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
@@ -5502,21 +6923,60 @@ def test_infer_frontmatter_veto() -> None:
     from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
 
     matched_figures = [
-        {"figure_number": None, "text": "Graphical Abstract", "legend_block_id": "leg_veto",
-         "asset_block_ids": ["asset_veto"], "settlement_type": "same_page",
-         "page": 1, "legend_page": 1, "asset_pages": [1], "legend_bbox": [0, 0, 100, 100]},
-        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
-         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
-         "page": 3, "legend_page": 3, "asset_pages": [3]},
-        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset2"],
-         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
-        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset3"],
-         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
-        {"figure_number": 4, "text": "Figure 4.", "legend_block_id": "leg4",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset4"],
-         "settlement_type": "same_page", "page": 9, "legend_page": 9, "asset_pages": [9]},
+        {
+            "figure_number": None,
+            "text": "Graphical Abstract",
+            "legend_block_id": "leg_veto",
+            "asset_block_ids": ["asset_veto"],
+            "settlement_type": "same_page",
+            "page": 1,
+            "legend_page": 1,
+            "asset_pages": [1],
+            "legend_bbox": [0, 0, 100, 100],
+        },
+        {
+            "figure_number": None,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1",
+            "asset_block_ids": ["asset1"],
+            "settlement_type": "same_page",
+            "page": 3,
+            "legend_page": 3,
+            "asset_pages": [3],
+        },
+        {
+            "figure_number": 2,
+            "text": "Figure 2.",
+            "legend_block_id": "leg2",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset2"],
+            "settlement_type": "same_page",
+            "page": 5,
+            "legend_page": 5,
+            "asset_pages": [5],
+        },
+        {
+            "figure_number": 3,
+            "text": "Figure 3.",
+            "legend_block_id": "leg3",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset3"],
+            "settlement_type": "same_page",
+            "page": 7,
+            "legend_page": 7,
+            "asset_pages": [7],
+        },
+        {
+            "figure_number": 4,
+            "text": "Figure 4.",
+            "legend_block_id": "leg4",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset4"],
+            "settlement_type": "same_page",
+            "page": 9,
+            "legend_page": 9,
+            "asset_pages": [9],
+        },
     ]
     figure_legends = [
         {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
@@ -5541,18 +7001,49 @@ def test_infer_main_supplementary_isolation() -> None:
     from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
 
     matched_figures = [
-        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
-         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
-         "page": 3, "legend_page": 3, "asset_pages": [3]},
-        {"figure_number": 1, "text": "Figure S1.", "legend_block_id": "leg_s1",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset_s1"],
-         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
-        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset2"],
-         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
-        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
-         "legend_bbox": [200, 100, 500, 200], "asset_block_ids": ["asset3"],
-         "settlement_type": "same_page", "page": 9, "legend_page": 9, "asset_pages": [9]},
+        {
+            "figure_number": None,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1",
+            "asset_block_ids": ["asset1"],
+            "settlement_type": "same_page",
+            "page": 3,
+            "legend_page": 3,
+            "asset_pages": [3],
+        },
+        {
+            "figure_number": 1,
+            "text": "Figure S1.",
+            "legend_block_id": "leg_s1",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset_s1"],
+            "settlement_type": "same_page",
+            "page": 7,
+            "legend_page": 7,
+            "asset_pages": [7],
+        },
+        {
+            "figure_number": 2,
+            "text": "Figure 2.",
+            "legend_block_id": "leg2",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset2"],
+            "settlement_type": "same_page",
+            "page": 5,
+            "legend_page": 5,
+            "asset_pages": [5],
+        },
+        {
+            "figure_number": 3,
+            "text": "Figure 3.",
+            "legend_block_id": "leg3",
+            "legend_bbox": [200, 100, 500, 200],
+            "asset_block_ids": ["asset3"],
+            "settlement_type": "same_page",
+            "page": 9,
+            "legend_page": 9,
+            "asset_pages": [9],
+        },
     ]
     figure_legends = [
         {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
@@ -5577,15 +7068,33 @@ def test_infer_no_eligible_unknowns() -> None:
     from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
 
     matched_figures = [
-        {"figure_number": 1, "text": "Figure 1.", "legend_block_id": "leg1",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset1"],
-         "settlement_type": "same_page", "page": 1},
-        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2"],
-         "settlement_type": "same_page", "page": 3},
-        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
-         "settlement_type": "same_page", "page": 5},
+        {
+            "figure_number": 1,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset1"],
+            "settlement_type": "same_page",
+            "page": 1,
+        },
+        {
+            "figure_number": 2,
+            "text": "Figure 2.",
+            "legend_block_id": "leg2",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset2"],
+            "settlement_type": "same_page",
+            "page": 3,
+        },
+        {
+            "figure_number": 3,
+            "text": "Figure 3.",
+            "legend_block_id": "leg3",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset3"],
+            "settlement_type": "same_page",
+            "page": 5,
+        },
     ]
     inventory = {
         "matched_figures": matched_figures,
@@ -5603,18 +7112,49 @@ def test_infer_known_min_not_2() -> None:
     from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
 
     matched_figures = [
-        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
-         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
-         "page": 1, "legend_page": 1, "asset_pages": [1]},
-        {"figure_number": 1, "text": "Figure 1.", "legend_block_id": "leg1_known",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset1_known"],
-         "settlement_type": "same_page", "page": 3, "legend_page": 3, "asset_pages": [3]},
-        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
-         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
-        {"figure_number": 4, "text": "Figure 4.", "legend_block_id": "leg4",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset4"],
-         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
+        {
+            "figure_number": None,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1",
+            "asset_block_ids": ["asset1"],
+            "settlement_type": "same_page",
+            "page": 1,
+            "legend_page": 1,
+            "asset_pages": [1],
+        },
+        {
+            "figure_number": 1,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1_known",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset1_known"],
+            "settlement_type": "same_page",
+            "page": 3,
+            "legend_page": 3,
+            "asset_pages": [3],
+        },
+        {
+            "figure_number": 3,
+            "text": "Figure 3.",
+            "legend_block_id": "leg3",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset3"],
+            "settlement_type": "same_page",
+            "page": 5,
+            "legend_page": 5,
+            "asset_pages": [5],
+        },
+        {
+            "figure_number": 4,
+            "text": "Figure 4.",
+            "legend_block_id": "leg4",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset4"],
+            "settlement_type": "same_page",
+            "page": 7,
+            "legend_page": 7,
+            "asset_pages": [7],
+        },
     ]
     figure_legends = [
         {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
@@ -5635,18 +7175,48 @@ def test_infer_multiple_eligible_unknowns() -> None:
     from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
 
     matched_figures = [
-        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
-         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
-         "page": 1, "legend_page": 1, "asset_pages": [1]},
-        {"figure_number": None, "text": "Some figure", "legend_block_id": "leg2",
-         "asset_block_ids": ["asset2"], "settlement_type": "same_page",
-         "page": 2, "legend_page": 2, "asset_pages": [2]},
-        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2_known",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2_known"],
-         "settlement_type": "same_page", "page": 3, "legend_page": 3, "asset_pages": [3]},
-        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
-         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
+        {
+            "figure_number": None,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1",
+            "asset_block_ids": ["asset1"],
+            "settlement_type": "same_page",
+            "page": 1,
+            "legend_page": 1,
+            "asset_pages": [1],
+        },
+        {
+            "figure_number": None,
+            "text": "Some figure",
+            "legend_block_id": "leg2",
+            "asset_block_ids": ["asset2"],
+            "settlement_type": "same_page",
+            "page": 2,
+            "legend_page": 2,
+            "asset_pages": [2],
+        },
+        {
+            "figure_number": 2,
+            "text": "Figure 2.",
+            "legend_block_id": "leg2_known",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset2_known"],
+            "settlement_type": "same_page",
+            "page": 3,
+            "legend_page": 3,
+            "asset_pages": [3],
+        },
+        {
+            "figure_number": 3,
+            "text": "Figure 3.",
+            "legend_block_id": "leg3",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset3"],
+            "settlement_type": "same_page",
+            "page": 5,
+            "legend_page": 5,
+            "asset_pages": [5],
+        },
     ]
     figure_legends = [
         {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
@@ -5668,15 +7238,38 @@ def test_infer_missing_legend_bbox() -> None:
     from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
 
     matched_figures = [
-        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
-         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
-         "page": 3, "legend_page": 3, "asset_pages": [3]},
-        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2"],
-         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
-        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
-         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
+        {
+            "figure_number": None,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1",
+            "asset_block_ids": ["asset1"],
+            "settlement_type": "same_page",
+            "page": 3,
+            "legend_page": 3,
+            "asset_pages": [3],
+        },
+        {
+            "figure_number": 2,
+            "text": "Figure 2.",
+            "legend_block_id": "leg2",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset2"],
+            "settlement_type": "same_page",
+            "page": 5,
+            "legend_page": 5,
+            "asset_pages": [5],
+        },
+        {
+            "figure_number": 3,
+            "text": "Figure 3.",
+            "legend_block_id": "leg3",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset3"],
+            "settlement_type": "same_page",
+            "page": 7,
+            "legend_page": 7,
+            "asset_pages": [7],
+        },
     ]
     inventory = {
         "matched_figures": matched_figures,
@@ -5694,15 +7287,38 @@ def test_infer_unknown_not_before_first_known() -> None:
     from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
 
     matched_figures = [
-        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2"],
-         "settlement_type": "same_page", "page": 3, "legend_page": 3, "asset_pages": [3]},
-        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
-         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
-         "page": 5, "legend_page": 5, "asset_pages": [5]},
-        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
-         "settlement_type": "same_page", "page": 7, "legend_page": 7, "asset_pages": [7]},
+        {
+            "figure_number": 2,
+            "text": "Figure 2.",
+            "legend_block_id": "leg2",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset2"],
+            "settlement_type": "same_page",
+            "page": 3,
+            "legend_page": 3,
+            "asset_pages": [3],
+        },
+        {
+            "figure_number": None,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1",
+            "asset_block_ids": ["asset1"],
+            "settlement_type": "same_page",
+            "page": 5,
+            "legend_page": 5,
+            "asset_pages": [5],
+        },
+        {
+            "figure_number": 3,
+            "text": "Figure 3.",
+            "legend_block_id": "leg3",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset3"],
+            "settlement_type": "same_page",
+            "page": 7,
+            "legend_page": 7,
+            "asset_pages": [7],
+        },
     ]
     figure_legends = [
         {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
@@ -5723,18 +7339,49 @@ def test_infer_duplicate_known_numbers_skips() -> None:
     from paperforge.worker.ocr_figures import _infer_missing_main_figure_numbers
 
     matched_figures = [
-        {"figure_number": None, "text": "Figure 1.", "legend_block_id": "leg1",
-         "asset_block_ids": ["asset1"], "settlement_type": "same_page",
-         "page": 1, "legend_page": 1, "asset_pages": [1]},
-        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2"],
-         "settlement_type": "same_page", "page": 3, "legend_page": 3, "asset_pages": [3]},
-        {"figure_number": 2, "text": "Figure 2.", "legend_block_id": "leg2b",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset2b"],
-         "settlement_type": "same_page", "page": 4, "legend_page": 4, "asset_pages": [4]},
-        {"figure_number": 3, "text": "Figure 3.", "legend_block_id": "leg3",
-         "legend_bbox": [100, 100, 500, 200], "asset_block_ids": ["asset3"],
-         "settlement_type": "same_page", "page": 5, "legend_page": 5, "asset_pages": [5]},
+        {
+            "figure_number": None,
+            "text": "Figure 1.",
+            "legend_block_id": "leg1",
+            "asset_block_ids": ["asset1"],
+            "settlement_type": "same_page",
+            "page": 1,
+            "legend_page": 1,
+            "asset_pages": [1],
+        },
+        {
+            "figure_number": 2,
+            "text": "Figure 2.",
+            "legend_block_id": "leg2",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset2"],
+            "settlement_type": "same_page",
+            "page": 3,
+            "legend_page": 3,
+            "asset_pages": [3],
+        },
+        {
+            "figure_number": 2,
+            "text": "Figure 2.",
+            "legend_block_id": "leg2b",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset2b"],
+            "settlement_type": "same_page",
+            "page": 4,
+            "legend_page": 4,
+            "asset_pages": [4],
+        },
+        {
+            "figure_number": 3,
+            "text": "Figure 3.",
+            "legend_block_id": "leg3",
+            "legend_bbox": [100, 100, 500, 200],
+            "asset_block_ids": ["asset3"],
+            "settlement_type": "same_page",
+            "page": 5,
+            "legend_page": 5,
+            "asset_pages": [5],
+        },
     ]
     figure_legends = [
         {"block_id": "leg1", "bbox": [100, 100, 500, 200], "text": "Figure 1. Test caption"},
@@ -5762,38 +7409,69 @@ def test_previous_page_locator_bridge_cross_page_full_legend() -> None:
 
     blocks = [
         # p15: full legend (misclassified as body_paragraph via rejected_legend)
-        {"block_id": "full_leg", "page": 15, "role": "body_paragraph",
-         "seed_role": "figure_caption_candidate",
-         "text": "Fig. 10 Histological scores for evaluation of osteochondral repair. "
-                 "A Scores for overall defect evaluation. B Scores for subchondral bone. "
-                 "C Scores for cartilage evaluation.",
-         "bbox": [100, 1300, 800, 1400], "page_width": 1191, "page_height": 1582,
-         "style_family": "legend_like", "zone": "display_zone",
-         "marker_signature": {"type": "figure_number", "number": 10}},
+        {
+            "block_id": "full_leg",
+            "page": 15,
+            "role": "body_paragraph",
+            "seed_role": "figure_caption_candidate",
+            "text": "Fig. 10 Histological scores for evaluation of osteochondral repair. "
+            "A Scores for overall defect evaluation. B Scores for subchondral bone. "
+            "C Scores for cartilage evaluation.",
+            "bbox": [100, 1300, 800, 1400],
+            "page_width": 1191,
+            "page_height": 1582,
+            "style_family": "legend_like",
+            "zone": "display_zone",
+            "marker_signature": {"type": "figure_number", "number": 10},
+        },
         # p16: locator caption
-        {"block_id": "locator", "page": 16, "role": "figure_caption",
-         "text": "Fig. 10 (See legend on previous page.)",
-         "bbox": [100, 1380, 700, 1410], "page_width": 1191, "page_height": 1582,
-         "style_family": "legend_like", "zone": "display_zone",
-         "marker_signature": {"type": "figure_number", "number": 10}},
+        {
+            "block_id": "locator",
+            "page": 16,
+            "role": "figure_caption",
+            "text": "Fig. 10 (See legend on previous page.)",
+            "bbox": [100, 1380, 700, 1410],
+            "page_width": 1191,
+            "page_height": 1582,
+            "style_family": "legend_like",
+            "zone": "display_zone",
+            "marker_signature": {"type": "figure_number", "number": 10},
+        },
         # p16: three figure assets (composite visual group)
-        {"block_id": "a1", "page": 16, "role": "figure_asset",
-         "bbox": [100, 200, 500, 700], "page_width": 1191, "page_height": 1582,
-         "raw_label": "image"},
-        {"block_id": "a2", "page": 16, "role": "figure_asset",
-         "bbox": [100, 750, 500, 1000], "page_width": 1191, "page_height": 1582,
-         "raw_label": "image"},
-        {"block_id": "a3", "page": 16, "role": "figure_asset",
-         "bbox": [100, 1050, 500, 1360], "page_width": 1191, "page_height": 1582,
-         "raw_label": "image"},
+        {
+            "block_id": "a1",
+            "page": 16,
+            "role": "figure_asset",
+            "bbox": [100, 200, 500, 700],
+            "page_width": 1191,
+            "page_height": 1582,
+            "raw_label": "image",
+        },
+        {
+            "block_id": "a2",
+            "page": 16,
+            "role": "figure_asset",
+            "bbox": [100, 750, 500, 1000],
+            "page_width": 1191,
+            "page_height": 1582,
+            "raw_label": "image",
+        },
+        {
+            "block_id": "a3",
+            "page": 16,
+            "role": "figure_asset",
+            "bbox": [100, 1050, 500, 1360],
+            "page_width": 1191,
+            "page_height": 1582,
+            "raw_label": "image",
+        },
     ]
 
     inventory = build_figure_inventory(blocks, page_width=1191)
 
     # vnext: locator bridge may not fire when full legend is body_paragraph;
     # Fig 10 is still matched with all 3 assets.
-    fig10 = [m for m in inventory.get("matched_figures", [])
-             if str(m.get("figure_number", "")) == "10"]
+    fig10 = [m for m in inventory.get("matched_figures", []) if str(m.get("figure_number", "")) == "10"]
     assert len(fig10) >= 1, "Fig 10 must be matched"
     # Collect all consumed asset ids across all Fig 10 matches
     consumed = set()
@@ -5804,14 +7482,12 @@ def test_previous_page_locator_bridge_cross_page_full_legend() -> None:
     assert "a2" in consumed, "Fig 10 must consume a2"
     assert "a3" in consumed, "Fig 10 must consume a3"
     # Assets not in unmatched_assets
-    unmatched_asset_ids = {(a.get("block_id"), a.get("page"))
-                          for a in inventory.get("unmatched_assets", [])}
+    unmatched_asset_ids = {(a.get("block_id"), a.get("page")) for a in inventory.get("unmatched_assets", [])}
     assert ("a1", 16) not in unmatched_asset_ids
     assert ("a2", 16) not in unmatched_asset_ids
     assert ("a3", 16) not in unmatched_asset_ids
     # Full legend not in unmatched_legends
-    unmatched_leg_ids = {(l.get("block_id"), l.get("page"))
-                        for l in inventory.get("unmatched_legends", [])}
+    unmatched_leg_ids = {(leg.get("block_id"), leg.get("page")) for leg in inventory.get("unmatched_legends", [])}
     assert ("full_leg", 15) not in unmatched_leg_ids
 
 
@@ -5822,38 +7498,75 @@ def test_previous_page_locator_bridge_does_not_swallow_other_group() -> None:
 
     blocks = [
         # p7: full legend
-        {"block_id": "fl8", "page": 7, "role": "figure_caption",
-         "text": "Fig. 8. Micro-CT analysis for subchondral bone regeneration. "
-                 "A Reconstructed images. B Quantitative analysis.",
-         "bbox": [100, 1300, 800, 1400], "page_width": 1191, "page_height": 1582,
-         "marker_signature": {"type": "figure_number", "number": 8},
-         "style_family": "legend_like", "zone": "display_zone"},
+        {
+            "block_id": "fl8",
+            "page": 7,
+            "role": "figure_caption",
+            "text": "Fig. 8. Micro-CT analysis for subchondral bone regeneration. "
+            "A Reconstructed images. B Quantitative analysis.",
+            "bbox": [100, 1300, 800, 1400],
+            "page_width": 1191,
+            "page_height": 1582,
+            "marker_signature": {"type": "figure_number", "number": 8},
+            "style_family": "legend_like",
+            "zone": "display_zone",
+        },
         # p8: locator
-        {"block_id": "loc8", "page": 8, "role": "figure_caption",
-         "text": "Fig. 8 (See legend on previous page.)",
-         "bbox": [100, 1400, 700, 1430], "page_width": 1191, "page_height": 1582,
-         "marker_signature": {"type": "figure_number", "number": 8},
-         "style_family": "legend_like", "zone": "display_zone"},
+        {
+            "block_id": "loc8",
+            "page": 8,
+            "role": "figure_caption",
+            "text": "Fig. 8 (See legend on previous page.)",
+            "bbox": [100, 1400, 700, 1430],
+            "page_width": 1191,
+            "page_height": 1582,
+            "marker_signature": {"type": "figure_number", "number": 8},
+            "style_family": "legend_like",
+            "zone": "display_zone",
+        },
         # p8: Fig.8 visual group (3 assets)
-        {"block_id": "g1a", "page": 8, "role": "figure_asset",
-         "bbox": [100, 200, 500, 600], "page_width": 1191, "page_height": 1582,
-         "raw_label": "image"},
-        {"block_id": "g1b", "page": 8, "role": "figure_asset",
-         "bbox": [100, 650, 500, 900], "page_width": 1191, "page_height": 1582,
-         "raw_label": "image"},
-        {"block_id": "g1c", "page": 8, "role": "figure_asset",
-         "bbox": [100, 950, 500, 1350], "page_width": 1191, "page_height": 1582,
-         "raw_label": "image"},
+        {
+            "block_id": "g1a",
+            "page": 8,
+            "role": "figure_asset",
+            "bbox": [100, 200, 500, 600],
+            "page_width": 1191,
+            "page_height": 1582,
+            "raw_label": "image",
+        },
+        {
+            "block_id": "g1b",
+            "page": 8,
+            "role": "figure_asset",
+            "bbox": [100, 650, 500, 900],
+            "page_width": 1191,
+            "page_height": 1582,
+            "raw_label": "image",
+        },
+        {
+            "block_id": "g1c",
+            "page": 8,
+            "role": "figure_asset",
+            "bbox": [100, 950, 500, 1350],
+            "page_width": 1191,
+            "page_height": 1582,
+            "raw_label": "image",
+        },
         # p8: OTHER unowned group (small figure, not Fig.8)
-        {"block_id": "other", "page": 8, "role": "figure_asset",
-         "bbox": [600, 300, 800, 500], "page_width": 1191, "page_height": 1582,
-         "raw_label": "image"},
+        {
+            "block_id": "other",
+            "page": 8,
+            "role": "figure_asset",
+            "bbox": [600, 300, 800, 500],
+            "page_width": 1191,
+            "page_height": 1582,
+            "raw_label": "image",
+        },
     ]
 
     inventory = build_figure_inventory(blocks, page_width=1191)
 
-    bridged = [m for m in inventory.get("matched_figures", [])
-               if "previous_page_locator_match" in m.get("flags", [])]
+    bridged = [m for m in inventory.get("matched_figures", []) if "previous_page_locator_match" in m.get("flags", [])]
     assert len(bridged) == 1
     bf = bridged[0]
 
@@ -5863,6 +7576,7 @@ def test_previous_page_locator_bridge_does_not_swallow_other_group() -> None:
     assert "g1b" in consumed_ids
     assert "g1c" in consumed_ids
     assert "other" not in consumed_ids, "Must not swallow competing unowned group"
+
 
 # ──────────────────────────────────────────────
 # PR3 Task 1: Cross-column rejection gate
@@ -5881,9 +7595,14 @@ def test_page_assets_group_rejects_cross_column_media_assets():
     legend = {"text": "Figure 1. Example.", "page": 1}
 
     safe, evidence = _is_safe_page_assets_group(
-        group, legend, page_blocks=list(media_blocks),
-        page_numbered_legend_count=1, page_width=800, page_height=1000,
+        group,
+        legend,
+        page_blocks=list(media_blocks),
+        page_numbered_legend_count=1,
+        page_width=800,
+        page_height=1000,
     )
+
 
 def test_same_column_stacked_assets_still_pass_gate():
     from paperforge.worker.ocr_figures import _is_safe_page_assets_group
@@ -5897,8 +7616,12 @@ def test_same_column_stacked_assets_still_pass_gate():
     legend = {"text": "Figure 1. Example.", "page": 1}
 
     safe, evidence = _is_safe_page_assets_group(
-        group, legend, page_blocks=list(media_blocks),
-        page_numbered_legend_count=1, page_width=600, page_height=1000,
+        group,
+        legend,
+        page_blocks=list(media_blocks),
+        page_numbered_legend_count=1,
+        page_width=600,
+        page_height=1000,
     )
     assert safe is True
     assert evidence == []
@@ -5916,8 +7639,12 @@ def test_full_width_group_can_span_columns_without_rejection():
     legend = {"text": "Figure 1. Full-width figure.", "page": 1}
 
     safe, evidence = _is_safe_page_assets_group(
-        group, legend, page_blocks=list(media_blocks),
-        page_numbered_legend_count=1, page_width=600, page_height=1000,
+        group,
+        legend,
+        page_blocks=list(media_blocks),
+        page_numbered_legend_count=1,
+        page_width=600,
+        page_height=1000,
     )
     assert safe is True
 
@@ -5928,22 +7655,32 @@ def test_full_width_group_can_span_columns_without_rejection():
 
 
 def test_resolve_media_asset_conflicts_prefers_explicit_table_over_weak_figure():
-    from paperforge.worker.ocr_figures import resolve_media_asset_conflicts, _build_ownership_conflicts
+    from paperforge.worker.ocr_figures import _build_ownership_conflicts, resolve_media_asset_conflicts
 
     figure_inventory = {
-        "matched_figures": [{
-            "figure_id": "figure_001", "legend_block_id": "figcap",
-            "text": "Figure 1. Example.",
-            "match_score": {"score": 0.51, "decision": "matched", "evidence": ["fallback"]},
-            "asset_block_ids": ["asset"], "page": 1,
-        }]
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "legend_block_id": "figcap",
+                "text": "Figure 1. Example.",
+                "match_score": {"score": 0.51, "decision": "matched", "evidence": ["fallback"]},
+                "asset_block_ids": ["asset"],
+                "page": 1,
+            }
+        ]
     }
     table_inventory = {
-        "tables": [{
-            "table_id": "table_001", "caption_block_id": "tabcap",
-            "caption_text": "Table 1. Example.", "match_status": "matched",
-            "has_asset": True, "asset_block_id": "asset", "page": 1,
-        }]
+        "tables": [
+            {
+                "table_id": "table_001",
+                "caption_block_id": "tabcap",
+                "caption_text": "Table 1. Example.",
+                "match_status": "matched",
+                "has_asset": True,
+                "asset_block_id": "asset",
+                "page": 1,
+            }
+        ]
     }
 
     resolutions = resolve_media_asset_conflicts(figure_inventory, table_inventory)
@@ -5955,22 +7692,33 @@ def test_resolve_media_asset_conflicts_prefers_explicit_table_over_weak_figure()
 
 
 def test_resolve_media_asset_conflicts_prefers_explicit_figure_over_weak_table():
-    from paperforge.worker.ocr_figures import resolve_media_asset_conflicts, _build_ownership_conflicts
+    from paperforge.worker.ocr_figures import _build_ownership_conflicts, resolve_media_asset_conflicts
 
     figure_inventory = {
-        "matched_figures": [{
-            "figure_id": "figure_001", "legend_block_id": "figcap",
-            "text": "Figure 1. Example.",
-            "match_score": {"score": 0.92, "decision": "matched", "evidence": ["same_page", "x_overlap"]},
-            "asset_block_ids": ["asset"], "matched_assets": [{"block_id": "asset"}], "page": 1,
-        }]
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "legend_block_id": "figcap",
+                "text": "Figure 1. Example.",
+                "match_score": {"score": 0.92, "decision": "matched", "evidence": ["same_page", "x_overlap"]},
+                "asset_block_ids": ["asset"],
+                "matched_assets": [{"block_id": "asset"}],
+                "page": 1,
+            }
+        ]
     }
     table_inventory = {
-        "tables": [{
-            "table_id": "table_001", "caption_block_id": "tabcap",
-            "caption_text": "Table 1", "match_status": "matched_low_confidence",
-            "has_asset": True, "asset_block_id": "asset", "page": 1,
-        }]
+        "tables": [
+            {
+                "table_id": "table_001",
+                "caption_block_id": "tabcap",
+                "caption_text": "Table 1",
+                "match_status": "matched_low_confidence",
+                "has_asset": True,
+                "asset_block_id": "asset",
+                "page": 1,
+            }
+        ]
     }
 
     resolutions = resolve_media_asset_conflicts(figure_inventory, table_inventory)
@@ -5982,22 +7730,33 @@ def test_resolve_media_asset_conflicts_prefers_explicit_figure_over_weak_table()
 
 
 def test_resolve_media_asset_conflicts_leaves_weak_weak_case_unresolved():
-    from paperforge.worker.ocr_figures import resolve_media_asset_conflicts, _build_ownership_conflicts
+    from paperforge.worker.ocr_figures import _build_ownership_conflicts, resolve_media_asset_conflicts
 
     figure_inventory = {
-        "matched_figures": [{
-            "figure_id": "figure_001", "legend_block_id": "figcap",
-            "text": "Figure 1.",
-            "match_score": {"score": 0.52, "decision": "matched_low_confidence", "evidence": ["fallback"]},
-            "asset_block_ids": ["asset"], "matched_assets": [{"block_id": "asset"}], "page": 1,
-        }]
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "legend_block_id": "figcap",
+                "text": "Figure 1.",
+                "match_score": {"score": 0.52, "decision": "matched_low_confidence", "evidence": ["fallback"]},
+                "asset_block_ids": ["asset"],
+                "matched_assets": [{"block_id": "asset"}],
+                "page": 1,
+            }
+        ]
     }
     table_inventory = {
-        "tables": [{
-            "table_id": "table_001", "caption_block_id": "tabcap",
-            "caption_text": "Table 1", "match_status": "matched_low_confidence",
-            "has_asset": True, "asset_block_id": "asset", "page": 1,
-        }]
+        "tables": [
+            {
+                "table_id": "table_001",
+                "caption_block_id": "tabcap",
+                "caption_text": "Table 1",
+                "match_status": "matched_low_confidence",
+                "has_asset": True,
+                "asset_block_id": "asset",
+                "page": 1,
+            }
+        ]
     }
 
     resolutions = resolve_media_asset_conflicts(figure_inventory, table_inventory)
@@ -6013,22 +7772,32 @@ def test_resolve_media_asset_conflicts_leaves_weak_weak_case_unresolved():
 
 
 def test_attach_ownership_conflicts_runs_after_resolution():
-    from paperforge.worker.ocr_figures import resolve_media_asset_conflicts, attach_ownership_conflicts
+    from paperforge.worker.ocr_figures import attach_ownership_conflicts, resolve_media_asset_conflicts
 
     figure_inventory = {
-        "matched_figures": [{
-            "figure_id": "figure_001", "legend_block_id": "figcap",
-            "text": "Figure 1. Example.",
-            "match_score": {"score": 0.51, "decision": "matched", "evidence": ["fallback"]},
-            "asset_block_ids": ["asset"], "page": 1,
-        }]
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "legend_block_id": "figcap",
+                "text": "Figure 1. Example.",
+                "match_score": {"score": 0.51, "decision": "matched", "evidence": ["fallback"]},
+                "asset_block_ids": ["asset"],
+                "page": 1,
+            }
+        ]
     }
     table_inventory = {
-        "tables": [{
-            "table_id": "table_001", "caption_block_id": "tabcap",
-            "caption_text": "Table 1. Example.", "match_status": "matched",
-            "has_asset": True, "asset_block_id": "asset", "page": 1,
-        }]
+        "tables": [
+            {
+                "table_id": "table_001",
+                "caption_block_id": "tabcap",
+                "caption_text": "Table 1. Example.",
+                "match_status": "matched",
+                "has_asset": True,
+                "asset_block_id": "asset",
+                "page": 1,
+            }
+        ]
     }
 
     resolve_media_asset_conflicts(figure_inventory, table_inventory)
@@ -6042,11 +7811,14 @@ def test_final_unmatched_assets_excludes_matched_assets_after_promotion():
     from paperforge.worker.ocr_figures import _dedup_unmatched_assets_against_matched_figures
 
     inventory = {
-        "matched_figures": [{
-            "page": 9, "asset_pages": [9],
-            "matched_assets": [{"page": 9, "block_id": "11"}],
-            "asset_block_ids": ["11"],
-        }],
+        "matched_figures": [
+            {
+                "page": 9,
+                "asset_pages": [9],
+                "matched_assets": [{"page": 9, "block_id": "11"}],
+                "asset_block_ids": ["11"],
+            }
+        ],
         "unmatched_assets": [
             {"page": 9, "block_id": "11"},
             {"page": 9, "block_id": "12"},
@@ -6060,30 +7832,56 @@ def test_final_unmatched_assets_excludes_matched_assets_after_promotion():
 def test_collect_matched_figure_asset_ids_uses_asset_page_not_legend_page():
     from paperforge.worker.ocr_figures import _collect_matched_figure_asset_ids_from_list
 
-    ids = _collect_matched_figure_asset_ids_from_list([{
-        "page": 10, "legend_page": 9, "asset_pages": [10],
-        "matched_assets": [{"page": 10, "block_id": "A"}],
-        "asset_block_ids": ["A"],
-    }])
+    ids = _collect_matched_figure_asset_ids_from_list(
+        [
+            {
+                "page": 10,
+                "legend_page": 9,
+                "asset_pages": [10],
+                "matched_assets": [{"page": 10, "block_id": "A"}],
+                "asset_block_ids": ["A"],
+            }
+        ]
+    )
     assert ids == {(10, "A")}
+
 
 def test_apply_bbox_only_synthetic_vector_fallback_basic():
     from paperforge.worker.ocr_figures import (
-        _apply_bbox_only_synthetic_vector_fallback,
         FigureOwnershipRegistry,
+        _apply_bbox_only_synthetic_vector_fallback,
     )
+
     ownership = FigureOwnershipRegistry()
-    mf, ul, rl, ua = [], [{
-        "block_id": "cap1", "page": 5, "role": "figure_caption_candidate",
-        "text": "Figure 1. Flow Diagram", "bbox": [100, 700, 900, 760],
-    }], [], [{
-        "block_id": "a1", "page": 5, "role": "media_asset",
-        "raw_label": "chart", "asset_family_hint": "figure_like",
-        "bbox": [100, 200, 900, 680],
-    }]
+    mf, ul, rl, ua = (
+        [],
+        [
+            {
+                "block_id": "cap1",
+                "page": 5,
+                "role": "figure_caption_candidate",
+                "text": "Figure 1. Flow Diagram",
+                "bbox": [100, 700, 900, 760],
+            }
+        ],
+        [],
+        [
+            {
+                "block_id": "a1",
+                "page": 5,
+                "role": "media_asset",
+                "raw_label": "chart",
+                "asset_family_hint": "figure_like",
+                "bbox": [100, 200, 900, 680],
+            }
+        ],
+    )
     _apply_bbox_only_synthetic_vector_fallback(
-        matched_figures=mf, unmatched_legends=ul, rejected_legends=rl,
-        unmatched_assets=ua, ownership=ownership,
+        matched_figures=mf,
+        unmatched_legends=ul,
+        rejected_legends=rl,
+        unmatched_assets=ua,
+        ownership=ownership,
     )
     assert len(mf) == 1
     assert mf[0]["truth_source"] == "vector_bbox"
@@ -6096,6 +7894,7 @@ def test_synthetic_fallback_rejects_low_score():
     from paperforge.worker.ocr_figures import (
         _score_caption_to_unmatched_asset_for_synthetic,
     )
+
     # caption far from asset -> vertical_gap > 300 -> reject
     score = _score_caption_to_unmatched_asset_for_synthetic(
         {"page": 5, "bbox": [100, 100, 900, 140]},
@@ -6153,14 +7952,87 @@ def test_score_legend_to_group_rotated_prematch_adds_rotation_metadata():
     assert "rotated_caption_normalized" in score["evidence"]
 
 
+def test_enrich_figure_match_rotation_standalone_adds_rotation_metadata() -> None:
+    """The standalone enrichment function adds rotation_correction_deg and cluster_bbox."""
+    from paperforge.worker.ocr_figure_domain import FigureCorpus
+    from paperforge.worker.ocr_figures import _enrich_figure_match_rotation
+    from paperforge.worker.ocr_pairing_types import ClaimProposal, ResourceRef
+
+    legend = {
+        "block_id": "c1",
+        "page": 8,
+        "bbox": [984, 136, 1062, 1442],
+        "text": "Figure 8. A rotated caption.",
+        "span_metadata": [{"dir": (0.0, -1.0), "wmode": 0}],
+    }
+    asset = {
+        "block_id": "a1",
+        "page": 8,
+        "bbox": [105, 134, 967, 1443],
+    }
+    blocks = [legend]
+    raw_assets = [asset]
+    corpus = FigureCorpus(blocks=blocks, page_width=1200, raw_assets=raw_assets)
+
+    from types import SimpleNamespace
+
+    state = SimpleNamespace(corpus=corpus)
+
+    match_record: dict[str, object] = {}
+    proposal = ClaimProposal(
+        pass_name="test",
+        figure_no=8,
+        claim_type="match",
+        legends=[ResourceRef(kind="legend", page=8, block_id="c1")],
+        assets=[ResourceRef(kind="asset", page=8, block_id="a1")],
+        groups=[],
+        confidence=1.0,
+        evidence_rank=0,
+        reason="test",
+    )
+
+    _enrich_figure_match_rotation(proposal, match_record, state)
+
+    assert "rotation_correction_deg" in match_record
+    assert "cluster_bbox" in match_record
+    assert match_record["rotation_correction_deg"] == 270
+
+
+def test_enrich_figure_match_rotation_skips_when_no_legend() -> None:
+    """No-op on empty legends should not enrich."""
+    from types import SimpleNamespace
+
+    from paperforge.worker.ocr_figures import _enrich_figure_match_rotation
+    from paperforge.worker.ocr_pairing_types import ClaimProposal
+
+    state = SimpleNamespace(corpus=None)
+    match_record: dict[str, object] = {}
+    proposal = ClaimProposal(
+        pass_name="test",
+        figure_no=None,
+        claim_type="match",
+        legends=[],
+        assets=[],
+        groups=[],
+        confidence=1.0,
+        evidence_rank=0,
+        reason="test",
+    )
+
+    _enrich_figure_match_rotation(proposal, match_record, state)
+
+    assert "rotation_correction_deg" not in match_record
+    assert "cluster_bbox" not in match_record
+
+
 # === Asset-internal figure number recovery tests ===
 
 
 def test_recover_internal_figure_number_basic():
     """Scenario 1: synthetic unknown with asset-internal Figure 2 line -> recovers figure_number==2."""
     from paperforge.worker.ocr_figures import (
-        _recover_missing_figure_numbers_from_assets,
         _format_figure_id,
+        _recover_missing_figure_numbers_from_assets,
     )
 
     fig = {
@@ -6229,9 +8101,7 @@ def test_recover_internal_figure_number_duplicate_rejection():
         "page": 8,
         "text": "This figure demonstrates the results.",
         "flags": ["bbox_only_asset", "synthetic_vector_asset"],
-        "matched_assets": [
-            {"block_id": "asset_2", "bbox": [100, 100, 900, 1400]}
-        ],
+        "matched_assets": [{"block_id": "asset_2", "bbox": [100, 100, 900, 1400]}],
         "asset_block_ids": ["asset_2"],
     }
     inventory = {
@@ -6314,9 +8184,7 @@ def test_recover_internal_figure_number_conflict_multiple_labels():
         "page": 5,
         "text": "This figure shows the data.",
         "flags": ["bbox_only_asset", "synthetic_vector_asset"],
-        "matched_assets": [
-            {"block_id": "a1", "bbox": [100, 100, 900, 1400]}
-        ],
+        "matched_assets": [{"block_id": "a1", "bbox": [100, 100, 900, 1400]}],
         "asset_block_ids": ["a1"],
     }
     inventory = {
@@ -6371,8 +8239,8 @@ def test_recover_internal_figure_number_center_rejection():
 def test_recover_internal_figure_number_inside_overlap_gate():
     """Scenario 6: coordinate normalization & inside/overlap gate."""
     from paperforge.worker.ocr_figures import (
-        _line_inside_or_overlaps_asset,
         _asset_edge_band_score,
+        _line_inside_or_overlaps_asset,
     )
 
     # Line fully inside asset
@@ -6429,3 +8297,24 @@ def test_vnext_entrypoint_is_callable_without_cutover():
     assert isinstance(result, dict)
     assert result.get("pipeline_mode") == "vnext"
     assert result.get("matched_figures") == []
+
+
+# ── Baseline lock: figure entrypoint delegates to vnext ──
+
+
+def test_build_figure_inventory_delegates_to_vnext(monkeypatch):
+    from paperforge.worker import ocr_figures
+
+    called = {}
+
+    def fake_vnext(structured_blocks, page_width=1200, page_pdf_lines_by_page=None):
+        called["args"] = (structured_blocks, page_width, page_pdf_lines_by_page)
+        return {"pipeline_mode": "vnext", "matched_figures": []}
+
+    monkeypatch.setattr(ocr_figures, "build_figure_inventory_vnext", fake_vnext)
+
+    blocks = [{"block_id": "b1", "page": 1, "role": "body_text", "text": "x"}]
+    result = ocr_figures.build_figure_inventory(blocks, page_width=777, page_pdf_lines_by_page={1: []})
+
+    assert result["pipeline_mode"] == "vnext"
+    assert called["args"] == (blocks, 777, {1: []})

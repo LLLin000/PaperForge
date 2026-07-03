@@ -1307,22 +1307,16 @@ def test_extract_table_number_supports_roman_and_s_prefix(text, expected_number)
     assert _extract_table_number(text) == expected_number
 
 
-def test_build_table_inventory_delegates_to_legacy_during_plan_b(monkeypatch) -> None:
+def test_build_table_inventory_delegates_to_vnext_after_cutover(monkeypatch) -> None:
     from paperforge.worker import ocr_tables
 
     called = {}
 
-    def fake_legacy(structured_blocks):
+    def fake_vnext(structured_blocks):
         called["blocks"] = structured_blocks
-        return {
-            "tables": [],
-            "held_tables": [],
-            "unmatched_captions": [],
-            "unmatched_assets": [],
-            "official_table_count": 0,
-        }
+        return {"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": [], "official_table_count": 0}
 
-    monkeypatch.setattr(ocr_tables, "build_table_inventory_legacy", fake_legacy, raising=False)
+    monkeypatch.setattr(ocr_tables, "build_table_inventory_vnext", fake_vnext)
 
     blocks = [{"block_id": "cap1", "page": 1, "role": "table_caption", "text": "Table 1. Example"}]
     result = ocr_tables.build_table_inventory(blocks)

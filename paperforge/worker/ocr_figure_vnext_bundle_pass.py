@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .ocr_figure_vnext_types import ClaimProposal, PassReport, ResourceRef
+from .ocr_pairing_types import ClaimProposal, PassReport, ResourceRef
 
 _NON_PURE_ROLES = frozenset({
     "body_paragraph",

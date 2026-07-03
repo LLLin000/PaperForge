@@ -188,7 +188,7 @@ def test_run_derived_rebuild_skips_span_backfill_when_valid(tmp_path: Path, monk
         encoding="utf-8",
     )
     (paper_root / "meta.json").write_text(
-        '{"source_pdf":"sample.pdf","span_backfill_version":"2026-06-22.1","span_visual_container_version":"2026-06-26.6","span_pdf_fingerprint":"fp-1","span_backfill_coverage":1.0}',
+        '{"source_pdf":"sample.pdf","span_backfill_version":"2026-07-01.1","span_visual_container_version":"2026-06-26.6","span_pdf_fingerprint":"fp-1","span_backfill_coverage":1.0}',
         encoding="utf-8",
     )
     pdf_path = tmp_path / "sample.pdf"
@@ -242,7 +242,7 @@ def test_run_derived_rebuild_records_unavailable_pdf_missing_without_rerun(tmp_p
     paper_root = tmp_path / "System" / "PaperForge" / "ocr" / key
     (paper_root / "canonical").mkdir(parents=True)
     (paper_root / "raw").mkdir(parents=True)
-    (paper_root / "meta.json").write_text('{"span_backfill_version":"2026-06-22.1"}', encoding="utf-8")
+    (paper_root / "meta.json").write_text('{"span_backfill_version":"2026-07-01.1"}', encoding="utf-8")
     (paper_root / "canonical" / "blocks.raw.jsonl").write_text('{"paper_id":"TESTKEY1","page":1,"block_id":"p1_b1","raw_label":"text","raw_order":0,"text":"A","bbox":[0,0,10,10],"page_width":600,"page_height":800,"span_metadata":[{"size":10}]}\n', encoding="utf-8")
     (paper_root / "raw" / "source_metadata.json").write_text('{"title":"Example Title"}', encoding="utf-8")
 
@@ -292,8 +292,8 @@ def test_run_derived_rebuild_does_not_skip_when_current_fingerprint_is_unknown()
     from paperforge.worker.ocr_rebuild import _span_backfill_is_valid
 
     meta = {
-        "span_backfill_version": "2026-06-22.1",
-        "span_visual_container_version": "2026-06-22.1",
+        "span_backfill_version": "2026-07-01.1",
+        "span_visual_container_version": "2026-06-26.6",
         "span_pdf_fingerprint": "unknown",
         "span_backfill_coverage": 1.0,
     }
@@ -306,7 +306,7 @@ def test_span_backfill_invalid_when_version_mismatch() -> None:
 
     meta = {
         "span_backfill_version": "old",
-        "span_visual_container_version": "2026-06-22.1",
+        "span_visual_container_version": "2026-06-26.6",
         "span_pdf_fingerprint": "fp-1",
     }
 
@@ -317,7 +317,7 @@ def test_span_backfill_invalid_when_visual_container_version_mismatch() -> None:
     from paperforge.worker.ocr_rebuild import _span_backfill_is_valid
 
     meta = {
-        "span_backfill_version": "2026-06-22.1",
+        "span_backfill_version": "2026-07-01.1",
         "span_visual_container_version": "old",
         "span_pdf_fingerprint": "fp-1",
     }
@@ -329,8 +329,8 @@ def test_span_backfill_invalid_when_fingerprint_mismatch() -> None:
     from paperforge.worker.ocr_rebuild import _span_backfill_is_valid
 
     meta = {
-        "span_backfill_version": "2026-06-22.1",
-        "span_visual_container_version": "2026-06-22.1",
+        "span_backfill_version": "2026-07-01.1",
+        "span_visual_container_version": "2026-06-26.6",
         "span_pdf_fingerprint": "fp-old",
     }
 
@@ -341,8 +341,8 @@ def test_span_backfill_invalid_when_coverage_below_threshold() -> None:
     from paperforge.worker.ocr_rebuild import _span_backfill_is_valid
 
     meta = {
-        "span_backfill_version": "2026-06-22.1",
-        "span_visual_container_version": "2026-06-22.1",
+        "span_backfill_version": "2026-07-01.1",
+        "span_visual_container_version": "2026-06-26.6",
         "span_pdf_fingerprint": "fp-1",
     }
 
@@ -422,3 +422,123 @@ doi: 10.1000/example
     assert meta["authors"] == ["W. H. Marks"]
     assert meta.get("authors_incomplete") is True
     assert meta.get("authors_source") == "paper_note.first_author_fallback"
+
+
+# ── Plan A: rebuild compatibility proof (pairing framework) ──
+
+
+def test_run_derived_rebuild_for_keys_still_uses_public_build_figure_inventory(tmp_path: Path, monkeypatch) -> None:
+    import json
+
+    from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+
+    key = "TESTKEY1"
+    paper_root = tmp_path / "System" / "PaperForge" / "ocr" / key
+    (paper_root / "canonical").mkdir(parents=True)
+    (paper_root / "raw").mkdir(parents=True)
+    (paper_root / "structure").mkdir(parents=True)
+
+    (paper_root / "canonical" / "blocks.raw.jsonl").write_text(
+        json.dumps(
+            {
+                "paper_id": key,
+                "page": 1,
+                "block_id": "p1_b1",
+                "raw_label": "text",
+                "raw_order": 0,
+                "text": "Example text",
+                "bbox": [10, 10, 100, 40],
+                "page_width": 600,
+                "page_height": 800,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (paper_root / "raw" / "source_metadata.json").write_text(
+        json.dumps({"title": "Example Title"}),
+        encoding="utf-8",
+    )
+    (paper_root / "meta.json").write_text(json.dumps({"source_pdf": ""}), encoding="utf-8")
+
+    called = {"count": 0}
+
+    def fake_build_figure_inventory(structured_blocks, page_width=1200, page_pdf_lines_by_page=None):
+        called["count"] += 1
+        return {
+            "pipeline_mode": "vnext",
+            "matched_figures": [],
+            "ambiguous_figures": [],
+            "unmatched_legends": [],
+            "unmatched_assets": [],
+            "unresolved_clusters": [],
+            "held_figures": [],
+            "rejected_legends": [],
+            "page_ledger": {},
+            "residual_ledger": {},
+            "local_pairing_hypotheses": [],
+            "pass_reports": [],
+            "completeness": {"total_numbered_legends": 0, "accounted_for": 0, "details": []},
+        }
+
+    monkeypatch.setattr("paperforge.worker.ocr_figures.build_figure_inventory", fake_build_figure_inventory)
+    monkeypatch.setattr("paperforge.worker.ocr_blocks.write_structured_blocks_jsonl", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_metadata.extract_frontmatter_candidates_from_blocks",
+        lambda structured: {"title": "Example Title", "authors_text": None, "doi_candidates": []},
+    )
+
+    result = run_derived_rebuild_for_keys(tmp_path, [key])
+
+    assert result["rebuild_count"] == 1
+    assert called["count"] > 0
+
+
+def test_run_derived_rebuild_for_keys_still_uses_public_build_table_inventory(tmp_path: Path, monkeypatch) -> None:
+    import json
+
+    from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+
+    key = "TESTKEY1"
+    paper_root = tmp_path / "System" / "PaperForge" / "ocr" / key
+    (paper_root / "canonical").mkdir(parents=True)
+    (paper_root / "raw").mkdir(parents=True)
+    (paper_root / "structure").mkdir(parents=True)
+
+    (paper_root / "canonical" / "blocks.raw.jsonl").write_text(
+        json.dumps({"paper_id": key, "page": 1, "block_id": "p1_b1", "raw_label": "text", "raw_order": 0, "text": "text", "bbox": [10, 10, 100, 40], "page_width": 600, "page_height": 800}) + "\n", encoding="utf-8"
+    )
+    (paper_root / "raw" / "source_metadata.json").write_text(json.dumps({"title": "Example Title"}), encoding="utf-8")
+    (paper_root / "meta.json").write_text(json.dumps({"source_pdf": ""}), encoding="utf-8")
+
+    called = {"count": 0}
+
+    def fake_build_table_inventory(structured_blocks):
+        called["count"] += 1
+        return {"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": [], "official_table_count": 0}
+
+    monkeypatch.setattr("paperforge.worker.ocr_tables.build_table_inventory", fake_build_table_inventory)
+    monkeypatch.setattr("paperforge.worker.ocr_blocks.write_structured_blocks_jsonl", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_metadata.extract_frontmatter_candidates_from_blocks", lambda s: {"title": "Example Title", "authors_text": None, "doi_candidates": []})
+    monkeypatch.setattr("paperforge.worker.ocr_figures.build_figure_inventory", lambda *a, **kw: {"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []})
+    monkeypatch.setattr("paperforge.worker.ocr_figures.write_back_figure_roles", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_figures.write_figure_inventory", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_figure_reader.synthesize_reader_figures", lambda *a, **kw: {})
+    monkeypatch.setattr("paperforge.worker.ocr_tables.write_back_table_roles", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_tables.write_table_inventory", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_objects.extract_and_write_objects", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *a, **kw: "")
+    monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_health", lambda *a, **kw: {})
+    monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_raw_integrity_health", lambda *a, **kw: {})
+    monkeypatch.setattr("paperforge.worker.ocr_health.write_ocr_health", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_decisions.collect_decisions", lambda *a, **kw: [])
+    monkeypatch.setattr("paperforge.worker.ocr_decisions.write_decision_log", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_index.build_role_indexes", lambda *a, **kw: {})
+    monkeypatch.setattr("paperforge.worker.ocr_index.write_role_index", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr.validate_ocr_meta", lambda *a, **kw: ("done", ""))
+
+    result = run_derived_rebuild_for_keys(tmp_path, [key])
+
+    assert result["rebuild_count"] == 1
+    assert called["count"] > 0

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -114,7 +115,6 @@ def _is_weak_explicit_table_caption(block: dict) -> bool:
 def _find_table_caption_continuation(caption: dict, structured_blocks: list[dict]) -> dict | None:
     """Find the block immediately after a weak-truncated table caption that
     looks like a continuation (stolen as figure_caption or similar)."""
-    caption_page = caption.get("page", 0)
     caption_bbox = caption.get("bbox") or [0, 0, 0, 0]
     next_idx = None
     for i, block in enumerate(structured_blocks):
@@ -233,7 +233,7 @@ def _table_note_falls_into_page_footnote_prior(
     return float(note_bbox[1]) >= float(prior_by_page[page])
 
 def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
-    return build_table_inventory_legacy(structured_blocks)
+    return build_table_inventory_vnext(structured_blocks)
 
 
 def build_table_inventory_legacy(structured_blocks: list[dict]) -> dict[str, Any]:
@@ -637,3 +637,33 @@ def write_back_table_roles(inventory: dict, structured_blocks: list[dict]) -> No
 
 def write_table_inventory(dst: Path, inventory: dict[str, Any]) -> None:
     write_json(dst, inventory)
+
+
+def build_table_inventory_vnext(structured_blocks: list[dict]) -> dict[str, Any]:
+    from .ocr_pairing_framework import run_pairing_passes
+    from .ocr_pairing_state import OwnershipLedger, PipelineState
+    from .ocr_table_domain import TableCandidateIndex, TableCorpus, assemble_table_inventory
+    from .ocr_table_passes import (
+        TableAdjacentPagePass,
+        TableFinalAccountingPass,
+        TableNotesAttachmentPass,
+        TableSamePagePass,
+        TableWeakCaptionRecoveryPass,
+    )
+
+    corpus = TableCorpus.from_blocks(structured_blocks)
+    candidate_index = TableCandidateIndex.from_corpus(corpus)
+    state = PipelineState(corpus=corpus, candidate_index=candidate_index, ledger=OwnershipLedger())
+    reports = run_pairing_passes(
+        state,
+        [
+            TableWeakCaptionRecoveryPass,
+            TableSamePagePass,
+            TableAdjacentPagePass,
+            TableNotesAttachmentPass,
+            TableFinalAccountingPass,
+        ],
+    )
+    inventory = assemble_table_inventory(state, candidate_index)
+    inventory["pass_reports"] = [asdict(r) for r in reports]
+    return inventory
