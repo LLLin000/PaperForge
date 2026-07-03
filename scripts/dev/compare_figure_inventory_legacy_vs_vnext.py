@@ -31,6 +31,14 @@ def compare_inventories(legacy: dict[str, object], vnext: dict[str, object]) -> 
         ),
     }
 
+def compare_blocks_file(blocks_path: Path) -> dict[str, object]:
+    blocks = [json.loads(line) for line in blocks_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    legacy = build_figure_inventory_legacy(blocks)
+    vnext = build_figure_inventory_vnext(blocks)
+    diff = compare_inventories(legacy, vnext)
+    diff["paper"] = blocks_path.parent.name
+    return diff
+
 
 def main(blocks_path: str) -> int:
     blocks = [json.loads(line) for line in Path(blocks_path).read_text(encoding="utf-8").splitlines() if line.strip()]
