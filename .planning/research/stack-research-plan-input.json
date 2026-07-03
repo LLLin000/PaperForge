@@ -1,0 +1,25 @@
+{
+  "ecosystem": "npm",
+  "config": {
+    "exa_search": false,
+    "brave_search": false,
+    "firecrawl": false,
+    "tavily_search": false
+  },
+  "questions": [
+    {
+      "text": "Obsidian plugin custom view and workspace leaf APIs for ItemView registerView setViewState openLinkText",
+      "kind": "docs",
+      "library": "obsidian",
+      "version": "1.12.0"
+    },
+    {
+      "text": "Obsidian plugin constraints for bundled JavaScript CSS DOM APIs and avoiding frontend frameworks in plugins",
+      "kind": "web"
+    },
+    {
+      "text": "DOM SVG overlay and ResizeObserver requestAnimationFrame patterns for connector lines between elements",
+      "kind": "web"
+    }
+  ]
+}
