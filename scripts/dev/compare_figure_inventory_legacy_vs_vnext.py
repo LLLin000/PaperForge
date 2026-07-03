@@ -58,12 +58,25 @@ def compare_inventories(legacy: dict[str, object], vnext: dict[str, object]) -> 
         "consumed_ids_only_in_vnext": sorted(set(_vnext_consumed) - set(_legacy_consumed)),
     }
 
+def _roles_for_ids(ids: list[str], blocks: list[dict]) -> dict[str, int]:
+    """Count roles for a set of block IDs."""
+    lookup = {str(b.get("block_id")): b.get("role", "?") for b in blocks}
+    counts: dict[str, int] = {}
+    for bid in ids:
+        role = lookup.get(bid, "NOT_FOUND")
+        counts[role] = counts.get(role, 0) + 1
+    return counts
+
+
+
 def compare_blocks_file(blocks_path: Path) -> dict[str, object]:
     blocks = [json.loads(line) for line in blocks_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     legacy = build_figure_inventory_legacy(blocks)
     vnext = build_figure_inventory_vnext(blocks)
     diff = compare_inventories(legacy, vnext)
     diff["paper"] = blocks_path.parent.name
+    diff["lost_block_roles"] = _roles_for_ids(diff.get("consumed_ids_only_in_legacy", []), blocks)
+    diff["gained_block_roles"] = _roles_for_ids(diff.get("consumed_ids_only_in_vnext", []), blocks)
     return diff
 
 

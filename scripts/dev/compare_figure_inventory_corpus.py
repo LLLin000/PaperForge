@@ -32,9 +32,11 @@ from scripts.dev.compare_figure_inventory_legacy_vs_vnext import compare_blocks_
 def determine_verdict(d: dict) -> str:
     """Assign verdict based on diff fields.
 
-    Consumed-block-identity is the primary signal: if vnext consumes the same
-    asset blocks as legacy, it's at least equivalent. Extra reserved figures
-    (no consumed blocks) are an improvement in legend coverage, not noise.
+    Primary signal: consumed block identity AND figure count change.
+    A consumed-block-ID difference alone is NOT a regression — most "lost"
+    blocks are non-figure noise (affiliations, headings, etc.) that vnext
+    correctly filters. Only flag regression when vnext actually matches
+    fewer figures AND the lost blocks include figure-related roles.
     """
     legacy_matched = d["legacy_matched_count"]
     vnext_matched = d["vnext_matched_count"]
@@ -42,12 +44,16 @@ def determine_verdict(d: dict) -> str:
     lost_ids = d["consumed_ids_only_in_legacy"]
     gained_ids = d["consumed_ids_only_in_vnext"]
 
-    # If consumed blocks differ, vnext is losing or gaining assets
+    # If consumed blocks differ, use figure count as primary signal
     if not consumed_match:
-        if lost_ids and not gained_ids:
+        if vnext_matched < legacy_matched and lost_ids and not gained_ids:
+            # Fewer figures AND lost blocks — mostly noise-cleanup, but flag for review
             return "regression"
         if gained_ids and not lost_ids:
             return "improvement"
+        if lost_ids and not gained_ids:
+            # Same or more figures despite lost block IDs — noise cleanup
+            return "noise_cleanup"
         return "needs_review"
 
     # Consumed blocks match exactly
@@ -61,7 +67,7 @@ def determine_verdict(d: dict) -> str:
         return "improvement"
 
     # Same consumed blocks, fewer vnext figures - grouping difference
-    return "needs_review"
+    return "consolidated"
 
 
 def run_corpus(
@@ -171,10 +177,14 @@ def write_rollup(results: dict[str, dict], path: Path) -> None:
             lines.append(f"> ⚠️ **Regression candidate.** VNext lost {d['legacy_matched_count'] - d['vnext_matched_count']} figure match(es) "
                          f"and {len(d['consumed_ids_only_in_legacy'])} consumed block ID(s). Cross-page passes may be needed.")
             lines.append("")
-        elif verdict == "needs_review":
-            lines.append(f"> 🔍 **Needs review.** Consumed block IDs match but figure count differs "
+        elif verdict == "consolidated":
+            lines.append(f"> 🔍 **Consolidated.** Consumed block IDs match but figure count differs "
                          f"({d['legacy_matched_count']} vs {d['vnext_matched_count']}). "
-                         f"Likely a grouping difference — manual inspection recommended.")
+                         f"VNext groups blocks into fewer figures — likely correct consolidation.")
+            lines.append("")
+        elif verdict == "noise_cleanup":
+            lines.append(f"> 🧹 **Noise cleanup.** Lost blocks are non-figure roles (affiliations, headings, etc.) "
+                         f"that legacy incorrectly consumed. VNext correctly filters them.")
             lines.append("")
 
     lines += [

@@ -1,0 +1,539 @@
+{
+  "paper": "SAN9AYVR",
+  "verdict": "regression",
+  "diff": {
+    "legacy_matched_count": 31,
+    "vnext_matched_count": 31,
+    "legacy_consumed_block_ids": [
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "21",
+      "22",
+      "23",
+      "24",
+      "25",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "vnext_consumed_block_ids": [
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "consumed_ids_only_in_legacy": [
+      "19",
+      "21",
+      "22",
+      "23",
+      "24",
+      "25"
+    ],
+    "consumed_ids_only_in_vnext": [],
+    "legacy_figure_ids": [
+      "figure_001",
+      "figure_002",
+      "figure_003",
+      "figure_004",
+      "figure_005",
+      "figure_006",
+      "figure_007",
+      "figure_008",
+      "figure_009",
+      "figure_010",
+      "figure_011",
+      "figure_012",
+      "figure_013",
+      "figure_014",
+      "figure_015",
+      "figure_016",
+      "figure_017",
+      "figure_018",
+      "figure_019",
+      "figure_020",
+      "figure_021",
+      "figure_022",
+      "figure_023",
+      "figure_024",
+      "figure_025",
+      "figure_026",
+      "figure_027",
+      "figure_028",
+      "figure_029",
+      "figure_030",
+      "figure_031"
+    ],
+    "vnext_figure_ids": [
+      "figure_001",
+      "figure_002",
+      "figure_003",
+      "figure_004",
+      "figure_005",
+      "figure_006",
+      "figure_007",
+      "figure_008",
+      "figure_009",
+      "figure_010",
+      "figure_011",
+      "figure_012",
+      "figure_013",
+      "figure_014",
+      "figure_015",
+      "figure_016",
+      "figure_017",
+      "figure_018",
+      "figure_019",
+      "figure_020",
+      "figure_021",
+      "figure_022",
+      "figure_023",
+      "figure_025",
+      "figure_026",
+      "figure_027",
+      "figure_028",
+      "figure_029",
+      "figure_030",
+      "figure_031",
+      "figure_reserved_030"
+    ],
+    "legacy_settlement_types": {
+      "same_page": 30,
+      "cross_page_backward": 1
+    },
+    "vnext_settlement_types": {
+      "same_page": 30,
+      "cross_page_reservation": 1
+    },
+    "legacy_completeness": {
+      "total": 32,
+      "accounted_for": 31,
+      "gap_count": 1,
+      "details": [
+        {
+          "block_id": 9,
+          "figure_number": 1,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 4
+        },
+        {
+          "block_id": 5,
+          "figure_number": 2,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 6
+        },
+        {
+          "block_id": 4,
+          "figure_number": 3,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 7
+        },
+        {
+          "block_id": 4,
+          "figure_number": 4,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 8
+        },
+        {
+          "block_id": 16,
+          "figure_number": 5,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 10
+        },
+        {
+          "block_id": 10,
+          "figure_number": 6,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 14
+        },
+        {
+          "block_id": 12,
+          "figure_number": 7,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 16
+        },
+        {
+          "block_id": 4,
+          "figure_number": 8,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 17
+        },
+        {
+          "block_id": 16,
+          "figure_number": 9,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 20
+        },
+        {
+          "block_id": 6,
+          "figure_number": 10,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 23
+        },
+        {
+          "block_id": 13,
+          "figure_number": 11,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 24
+        },
+        {
+          "block_id": 9,
+          "figure_number": 12,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 26
+        },
+        {
+          "block_id": 11,
+          "figure_number": 13,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 28
+        },
+        {
+          "block_id": 13,
+          "figure_number": 14,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 30
+        },
+        {
+          "block_id": 7,
+          "figure_number": 15,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 33
+        },
+        {
+          "block_id": 4,
+          "figure_number": 16,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 35
+        },
+        {
+          "block_id": 12,
+          "figure_number": 17,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 37
+        },
+        {
+          "block_id": 19,
+          "figure_number": 18,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 39
+        },
+        {
+          "block_id": 9,
+          "figure_number": 19,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 42
+        },
+        {
+          "block_id": 12,
+          "figure_number": 20,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 44
+        },
+        {
+          "block_id": 10,
+          "figure_number": 21,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 45
+        },
+        {
+          "block_id": 19,
+          "figure_number": 22,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 47
+        },
+        {
+          "block_id": 10,
+          "figure_number": 23,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 49
+        },
+        {
+          "block_id": 3,
+          "figure_number": 24,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 51
+        },
+        {
+          "block_id": 4,
+          "figure_number": 25,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 53
+        },
+        {
+          "block_id": 8,
+          "figure_number": 26,
+          "figure_namespace": "main",
+          "status": "gap",
+          "page": 54
+        },
+        {
+          "block_id": 4,
+          "figure_number": 26,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 55
+        },
+        {
+          "block_id": 17,
+          "figure_number": 27,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 56
+        },
+        {
+          "block_id": 6,
+          "figure_number": 28,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 58
+        },
+        {
+          "block_id": 9,
+          "figure_number": 29,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 61
+        },
+        {
+          "block_id": 11,
+          "figure_number": 30,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 62
+        },
+        {
+          "block_id": 4,
+          "figure_number": 31,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 65
+        }
+      ]
+    },
+    "vnext_completeness": {
+      "total_numbered_legends": 31,
+      "accounted_for": 31,
+      "gap_count": 0,
+      "details": [
+        {
+          "legend_block_id": "9",
+          "figure_number": 1,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "5",
+          "figure_number": 2,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "4",
+          "figure_number": 3,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "4",
+          "figure_number": 4,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "16",
+          "figure_number": 5,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "10",
+          "figure_number": 6,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "12",
+          "figure_number": 7,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "4",
+          "figure_number": 8,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "16",
+          "figure_number": 9,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "6",
+          "figure_number": 10,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "13",
+          "figure_number": 11,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "9",
+          "figure_number": 12,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "11",
+          "figure_number": 13,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "13",
+          "figure_number": 14,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "7",
+          "figure_number": 15,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "4",
+          "figure_number": 16,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "12",
+          "figure_number": 17,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "19",
+          "figure_number": 18,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "9",
+          "figure_number": 19,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "12",
+          "figure_number": 20,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "10",
+          "figure_number": 21,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "19",
+          "figure_number": 22,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "10",
+          "figure_number": 23,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "3",
+          "figure_number": 24,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "4",
+          "figure_number": 25,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "4",
+          "figure_number": 26,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "17",
+          "figure_number": 27,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "6",
+          "figure_number": 28,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "9",
+          "figure_number": 29,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "11",
+          "figure_number": 30,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "4",
+          "figure_number": 31,
+          "status": "matched"
+        }
+      ]
+    },
+    "vnext_pass_names": [
+      "primary_same_page",
+      "composite_parent",
+      "sidecar",
+      "locator_bridge",
+      "cross_page_reservation",
+      "cross_page_settlement",
+      "legend_bundle",
+      "group_sequential",
+      "classic_sequential",
+      "unresolved_cluster",
+      "final_accounting"
+    ]
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "paper": "CJAR727H",
+  "verdict": "improvement",
+  "diff": {
+    "legacy_matched_count": 7,
+    "vnext_matched_count": 10,
+    "legacy_consumed_block_ids": [
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "24",
+      "25",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "vnext_consumed_block_ids": [
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "24",
+      "25",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "consumed_ids_only_in_legacy": [],
+    "consumed_ids_only_in_vnext": [],
+    "legacy_figure_ids": [
+      "figure_001",
+      "figure_002",
+      "figure_003",
+      "figure_004",
+      "figure_005",
+      "figure_006",
+      "figure_007"
+    ],
+    "vnext_figure_ids": [
+      "figure_001",
+      "figure_002",
+      "figure_003",
+      "figure_004",
+      "figure_005",
+      "figure_006",
+      "figure_006",
+      "figure_007",
+      "figure_reserved_007",
+      "figure_reserved_008"
+    ],
+    "legacy_settlement_types": {
+      "same_page": 7
+    },
+    "vnext_settlement_types": {
+      "same_page": 7,
+      "cross_page_reservation": 2,
+      "sequential": 1
+    },
+    "legacy_completeness": {
+      "total": 11,
+      "accounted_for": 11,
+      "gap_count": 0,
+      "details": [
+        {
+          "block_id": 19,
+          "figure_number": 1,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 37
+        },
+        {
+          "block_id": 14,
+          "figure_number": 2,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 39
+        },
+        {
+          "block_id": 15,
+          "figure_number": 1,
+          "figure_namespace": "main",
+          "status": "ambiguous",
+          "page": 39
+        },
+        {
+          "block_id": 25,
+          "figure_number": 3,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 41
+        },
+        {
+          "block_id": 25,
+          "figure_number": 4,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 43
+        },
+        {
+          "block_id": 26,
+          "figure_number": 3,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 43
+        },
+        {
+          "block_id": 23,
+          "figure_number": 5,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 45
+        },
+        {
+          "block_id": 24,
+          "figure_number": 4,
+          "figure_namespace": "main",
+          "status": "ambiguous",
+          "page": 45
+        },
+        {
+          "block_id": 26,
+          "figure_number": 6,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 47
+        },
+        {
+          "block_id": 19,
+          "figure_number": 7,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 49
+        },
+        {
+          "block_id": 20,
+          "figure_number": 6,
+          "figure_namespace": "main",
+          "status": "ambiguous",
+          "page": 49
+        }
+      ]
+    },
+    "vnext_completeness": {
+      "total_numbered_legends": 11,
+      "accounted_for": 11,
+      "gap_count": 0,
+      "details": [
+        {
+          "legend_block_id": "19",
+          "figure_number": 1,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "14",
+          "figure_number": 2,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "15",
+          "figure_number": 1,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "25",
+          "figure_number": 3,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "25",
+          "figure_number": 4,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "26",
+          "figure_number": 3,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "23",
+          "figure_number": 5,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "24",
+          "figure_number": 4,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "26",
+          "figure_number": 6,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "19",
+          "figure_number": 7,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "20",
+          "figure_number": 6,
+          "status": "matched"
+        }
+      ]
+    },
+    "vnext_pass_names": [
+      "primary_same_page",
+      "composite_parent",
+      "sidecar",
+      "locator_bridge",
+      "cross_page_reservation",
+      "cross_page_settlement",
+      "legend_bundle",
+      "group_sequential",
+      "classic_sequential",
+      "unresolved_cluster",
+      "final_accounting"
+    ]
+  }
+}

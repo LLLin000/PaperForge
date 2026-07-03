@@ -1,0 +1,101 @@
+{
+  "paper": "XIR7ZJ6F",
+  "verdict": "parity",
+  "diff": {
+    "legacy_matched_count": 3,
+    "vnext_matched_count": 3,
+    "legacy_consumed_block_ids": [
+      "1",
+      "2",
+      "5",
+      "7"
+    ],
+    "vnext_consumed_block_ids": [
+      "1",
+      "2",
+      "5",
+      "7"
+    ],
+    "consumed_ids_only_in_legacy": [],
+    "consumed_ids_only_in_vnext": [],
+    "legacy_figure_ids": [
+      "figure_001",
+      "figure_002",
+      "figure_003"
+    ],
+    "vnext_figure_ids": [
+      "figure_001",
+      "figure_002",
+      "figure_003"
+    ],
+    "legacy_settlement_types": {
+      "same_page": 3
+    },
+    "vnext_settlement_types": {
+      "same_page": 3
+    },
+    "legacy_completeness": {
+      "total": 3,
+      "accounted_for": 3,
+      "gap_count": 0,
+      "details": [
+        {
+          "block_id": 3,
+          "figure_number": 1,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 3
+        },
+        {
+          "block_id": 6,
+          "figure_number": 2,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 5
+        },
+        {
+          "block_id": 8,
+          "figure_number": 3,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 6
+        }
+      ]
+    },
+    "vnext_completeness": {
+      "total_numbered_legends": 3,
+      "accounted_for": 3,
+      "gap_count": 0,
+      "details": [
+        {
+          "legend_block_id": "3",
+          "figure_number": 1,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "6",
+          "figure_number": 2,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "8",
+          "figure_number": 3,
+          "status": "matched"
+        }
+      ]
+    },
+    "vnext_pass_names": [
+      "primary_same_page",
+      "composite_parent",
+      "sidecar",
+      "locator_bridge",
+      "cross_page_reservation",
+      "cross_page_settlement",
+      "legend_bundle",
+      "group_sequential",
+      "classic_sequential",
+      "unresolved_cluster",
+      "final_accounting"
+    ]
+  }
+}
