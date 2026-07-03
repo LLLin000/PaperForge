@@ -99,7 +99,8 @@ class FigurePipelineState:
             "pass_name": proposal.pass_name,
             "figure_no": proposal.figure_no,
             "reason": proposal.reason,
-            "groups": proposal.groups,
+            "legends": list(proposal.legends),
+            "groups": list(proposal.groups),
         })
         self.diagnostics.append({
             "event": "reservation_accepted",

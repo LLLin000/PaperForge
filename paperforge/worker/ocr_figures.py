@@ -2983,13 +2983,21 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
 def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
     from .ocr_figure_vnext_corpus import FigureCandidateIndex, FigureCorpus
-    from .ocr_figure_vnext_passes import PrimarySamePagePass, _resource_page
+
+    from .ocr_figure_vnext_passes import (
+        CrossPageReservationPass,
+        CrossPageSettlementPass,
+        PrimarySamePagePass,
+        _resource_page,
+    )
     from .ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
 
     corpus = FigureCorpus.from_blocks(structured_blocks, page_width=page_width)
     candidate_index = FigureCandidateIndex.from_corpus(corpus)
     state = FigurePipelineState(corpus=corpus, candidate_index=candidate_index, ledger=OwnershipLedger())
-    report = PrimarySamePagePass().run(state)
+    reports = []
+    for pass_cls in (PrimarySamePagePass, CrossPageReservationPass, CrossPageSettlementPass):
+        reports.append(pass_cls().run(state))
     matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
 
     return {
@@ -3008,7 +3016,7 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
         "page_ledger": {},
         "residual_ledger": {},
         "local_pairing_hypotheses": [],
-        "pass_reports": [asdict(report)],
+        "pass_reports": [asdict(r) for r in reports],
         "completeness": {
             "total_numbered_legends": len(candidate_index.deduped_legends),
             "accounted_for": len(state.matches),

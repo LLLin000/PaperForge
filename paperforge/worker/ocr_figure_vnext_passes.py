@@ -150,3 +150,43 @@ class CrossPageReservationPass:
                 report.accepted.append(proposal)
                 break
         return report
+
+
+class CrossPageSettlementPass:
+    name = "cross_page_settlement"
+
+    def run(self, state):
+        report = PassReport(pass_name=self.name)
+        for reservation in state.reservations:
+            legend = reservation["legends"][0]
+            group = reservation["groups"][0]
+            state.ledger.transition_reserved_group_to_claimed(group, owner=legend, reason="cross_page_settlement")
+            proposal = ClaimProposal(
+                pass_name=self.name,
+                figure_no=reservation["figure_no"],
+                claim_type="match",
+                legends=[legend],
+                assets=[],
+                groups=[group],
+                confidence=0.6,
+                evidence_rank=2,
+                reason="cross_page_settlement",
+                diagnostics={"evidence": ["reservation_claimed"]},
+            )
+            state.accept_match(proposal, {
+                "figure_id": f"figure_reserved_{len(state.matches):03d}",
+                "figure_namespace": "figure",
+                "figure_number": reservation["figure_no"],
+                "legend_block_id": legend.block_id,
+                "page": legend.page,
+                "text": "",
+                "matched_assets": [],
+                "asset_block_ids": [],
+                "settlement_type": "cross_page_reservation",
+                "confidence": 0.6,
+                "match_score": {"score": 0.6, "decision": "matched", "evidence": ["reservation_claimed"]},
+                "flags": ["cross_page_reserved"],
+                "bridge_block_ids": [],
+            })
+            report.accepted.append(proposal)
+        return report
