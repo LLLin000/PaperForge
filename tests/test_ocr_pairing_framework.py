@@ -101,3 +101,49 @@ def test_figure_vnext_state_module_reexports_framework_ledger():
     from paperforge.worker.ocr_figure_vnext_state import OwnershipLedger as FigureModuleLedger
 
     assert FigureModuleLedger is FrameworkLedger
+
+
+# ── Task 4: Pairing framework runner ──
+
+
+def test_run_pairing_passes_executes_in_declared_order():
+    from paperforge.worker.ocr_pairing_framework import run_pairing_passes
+    from paperforge.worker.ocr_pairing_state import FigurePipelineState, OwnershipLedger
+    from paperforge.worker.ocr_pairing_types import PassReport
+
+    seen = []
+
+    class FirstPass:
+        name = "first"
+        def run(self, state):
+            seen.append(self.name)
+            return PassReport(pass_name=self.name)
+
+    class SecondPass:
+        name = "second"
+        def run(self, state):
+            seen.append(self.name)
+            return PassReport(pass_name=self.name)
+
+    state = FigurePipelineState(corpus=None, candidate_index=None, ledger=OwnershipLedger())
+    reports = run_pairing_passes(state, [FirstPass, SecondPass])
+
+    assert seen == ["first", "second"]
+    assert [r.pass_name for r in reports] == ["first", "second"]
+
+
+# ── Task 5: Figure domain module ──
+
+
+def test_figure_domain_module_exports_corpus_and_candidate_index():
+    from paperforge.worker.ocr_figure_domain import FigureCandidateIndex, FigureCorpus
+
+    assert FigureCorpus.__name__ == "FigureCorpus"
+    assert FigureCandidateIndex.__name__ == "FigureCandidateIndex"
+
+
+def test_legacy_vnext_corpus_module_reexports_figure_domain_types():
+    from paperforge.worker.ocr_figure_domain import FigureCorpus as DomainFigureCorpus
+    from paperforge.worker.ocr_figure_vnext_corpus import FigureCorpus as LegacyModuleFigureCorpus
+
+    assert LegacyModuleFigureCorpus is DomainFigureCorpus

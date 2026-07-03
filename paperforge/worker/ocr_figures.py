@@ -2986,7 +2986,7 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
     from .ocr_figure_vnext_bundle_pass import LegendBundlePass
     from .ocr_figure_vnext_classic_seq_pass import ClassicSequentialPass, UnresolvedClusterConsolidation
     from .ocr_figure_vnext_composite_pass import CompositeParentPass
-    from .ocr_figure_vnext_corpus import FigureCandidateIndex, FigureCorpus
+    from .ocr_figure_domain import FigureCandidateIndex, FigureCorpus
     from .ocr_figure_vnext_group_seq_pass import GroupSequentialPass
     from .ocr_figure_vnext_locator_pass import LocatorBridgePass
     from .ocr_figure_vnext_passes import (
@@ -3013,21 +3013,23 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
     corpus = FigureCorpus.from_blocks(structured_blocks, page_width=page_width)
     candidate_index = FigureCandidateIndex.from_corpus(corpus)
     state = FigurePipelineState(corpus=corpus, candidate_index=candidate_index, ledger=OwnershipLedger())
-    reports = []
-    for pass_cls in (
-        PrimarySamePagePass,
-        CompositeParentPass,
-        SidecarPass,
-        LocatorBridgePass,
-        CrossPageReservationPass,
-        CrossPageSettlementPass,
-        LegendBundlePass,
-        GroupSequentialPass,
-        ClassicSequentialPass,
-        UnresolvedClusterConsolidation,
-        FinalAccountingPass,
-    ):
-        reports.append(pass_cls().run(state))
+    from .ocr_pairing_framework import run_pairing_passes
+    reports = run_pairing_passes(
+        state,
+        [
+            PrimarySamePagePass,
+            CompositeParentPass,
+            SidecarPass,
+            LocatorBridgePass,
+            CrossPageReservationPass,
+            CrossPageSettlementPass,
+            LegendBundlePass,
+            GroupSequentialPass,
+            ClassicSequentialPass,
+            UnresolvedClusterConsolidation,
+            FinalAccountingPass,
+        ],
+    )
     matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
 
     result = {
