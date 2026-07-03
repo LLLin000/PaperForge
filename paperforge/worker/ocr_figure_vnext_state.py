@@ -82,6 +82,8 @@ class FigurePipelineState:
     completeness: dict = field(default_factory=dict)
 
     def accept_match(self, proposal: ClaimProposal, match_record: dict) -> None:
+        # Enrich match_record with rotation metadata if the legend has rotated text.
+        self._enrich_rotation(proposal, match_record)
         self.matches.append(match_record)
         self.diagnostics.append({
             "event": "match_accepted",
@@ -94,6 +96,37 @@ class FigurePipelineState:
                 "groups": proposal.groups,
             },
         })
+
+    def _enrich_rotation(self, proposal: ClaimProposal, match_record: dict) -> None:
+        """Detect rotated caption and add rotation_correction_deg + cluster_bbox."""
+        from .ocr_figures import _caption_has_rotated_text, _prepare_rotated_caption_normalization
+
+        if not self.corpus or not proposal.legends:
+            return
+        legend_ref = proposal.legends[0]
+        # Find the legend block in the corpus
+        legend_block = None
+        for b in self.corpus.blocks:
+            if str(b.get("block_id", "")) == str(legend_ref.block_id) and b.get("page") == legend_ref.page:
+                legend_block = b
+                break
+        if legend_block is None or not _caption_has_rotated_text(legend_block):
+            return
+        # Find the first asset block from the proposal
+        if not proposal.assets or not self.corpus.raw_assets:
+            return
+        asset_ref = proposal.assets[0]
+        asset_block = None
+        for a in self.corpus.raw_assets:
+            if str(a.get("block_id", "")) == str(asset_ref.block_id) and a.get("page") == asset_ref.page:
+                asset_block = a
+                break
+        if asset_block is None:
+            return
+        normalized = _prepare_rotated_caption_normalization(legend_block, asset_block)
+        if normalized is not None:
+            match_record["rotation_correction_deg"] = normalized["rotation_correction_deg"]
+            match_record["cluster_bbox"] = normalized["rotation_union_bbox"]
 
     def accept_reservation(self, proposal: ClaimProposal) -> None:
         self.reservations.append({
