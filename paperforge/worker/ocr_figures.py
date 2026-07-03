@@ -2979,9 +2979,9 @@ def _infer_missing_main_figure_numbers(
 
 
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
-    return build_figure_inventory_vnext(structured_blocks, page_width)
+    return build_figure_inventory_vnext(structured_blocks, page_width, page_pdf_lines_by_page)
 
-def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
+def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
     from .ocr_figure_vnext_accounting_pass import FinalAccountingPass
     from .ocr_figure_vnext_bundle_pass import LegendBundlePass
     from .ocr_figure_vnext_classic_seq_pass import ClassicSequentialPass, UnresolvedClusterConsolidation
@@ -2997,6 +2997,18 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
     )
     from .ocr_figure_vnext_sidecar_pass import SidecarPass
     from .ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
+
+    # Recover figure heading prefix from PDF text layer for OCR-missed captions
+    if page_pdf_lines_by_page:
+        for block in structured_blocks:
+            role = block.get("role", "")
+            if role in {"figure_caption", "figure_caption_candidate"}:
+                text = str(block.get("text", "") or "")
+                from .ocr_figures import _extract_figure_number, _recover_figure_heading_prefix
+                if _extract_figure_number(text) is None:
+                    recovered = _recover_figure_heading_prefix(block, page_pdf_lines_by_page)
+                    if recovered:
+                        block["text"] = recovered
 
     corpus = FigureCorpus.from_blocks(structured_blocks, page_width=page_width)
     candidate_index = FigureCandidateIndex.from_corpus(corpus)
@@ -3018,7 +3030,7 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
         reports.append(pass_cls().run(state))
     matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
 
-    return {
+    result = {
         "pipeline_mode": "vnext",
         "matched_figures": state.matches,
         "ambiguous_figures": [],
@@ -3041,6 +3053,13 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
             "details": [],
         },
     }
+
+    # Recover figure numbers from PDF lines inside figure assets
+    if page_pdf_lines_by_page:
+        from .ocr_figures import _recover_missing_figure_numbers_from_assets
+        _recover_missing_figure_numbers_from_assets(result, page_pdf_lines_by_page)
+
+    return result
 
 def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
     """[DEPRECATED] Legacy figure inventory builder — use build_figure_inventory_vnext instead.
