@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "D:\L\Med\Research\99_System\LiteraturePipeline\github-release\.opencode\skills\paperforge-development\scripts\audit_helpers.py", line 363, in <module>
-    "body_find_noise": body_find_noise,
-                       ^^^^^^^^^^^^^^^
-NameError: name 'body_find_noise' is not defined

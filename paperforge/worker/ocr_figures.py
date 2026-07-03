@@ -3041,7 +3041,13 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
             "details": [],
         },
     }
+
 def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
+    """[DEPRECATED] Legacy figure inventory builder — use build_figure_inventory_vnext instead.
+
+    Retained for comparison tooling (scripts/dev/compare_figure_inventory_legacy_vs_vnext.py).
+    Will be removed when vnext comparison is no longer needed.
+    """
     legends: list[dict] = []
     held_figures: list[dict] = []
     rejected_legends: list[dict] = []
