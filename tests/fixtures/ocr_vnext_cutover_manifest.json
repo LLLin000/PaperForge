@@ -1,0 +1,61 @@
+{
+  "corpus": [
+    {
+      "paper": "2HEUD5P9",
+      "categories": [
+        "same-page normal figure",
+        "multi-panel same-row group",
+        "unmatched asset / unresolved cluster page"
+      ],
+      "blocks_count": 670,
+      "notes": "Existing. 8 captions, 74 assets. Pages 4/9/13/15: 1 caption with 14-18 assets each (multi-panel). Some pages have assets with no captions (unmatched asset coverage)."
+    },
+    {
+      "paper": "DWQQK2YB",
+      "categories": [
+        "locator-bridge page",
+        "bundle-source page",
+        "duplicated / continued legend page"
+      ],
+      "blocks_count": 273,
+      "notes": "Existing. Page 35: 3 caption candidates, 0 assets (bundle source). Fig. 3/4 text on multiple pages (duplicated/continued). Locator captions bridging early caption pages to later asset pages."
+    },
+    {
+      "paper": "YGH7VEX6",
+      "categories": [
+        "classic sequential-only rescue page"
+      ],
+      "blocks_count": 189,
+      "notes": "Existing. 14 captions, 20 assets. Residual unmatched captions fall to classic sequential rescue."
+    },
+    {
+      "paper": "28JLIHLS",
+      "categories": [
+        "sidecar legend page"
+      ],
+      "blocks_count": 161,
+      "notes": "New. 7 captions, 6 assets. Pages 3-4: 3 narrow captions (488-491px wide) with same-page assets — sidecar trigger."
+    },
+    {
+      "paper": "24YKLTHQ",
+      "categories": [
+        "dense composite parent page"
+      ],
+      "blocks_count": 182,
+      "notes": "New. 9 captions, 16 assets. Page 7: 1 caption (Figure 5) with 8 assets, no body paragraphs — dense composite parent pattern."
+    }
+  ],
+  "categories_covered": {
+    "same-page normal figure": ["2HEUD5P9"],
+    "multi-panel same-row group": ["2HEUD5P9"],
+    "sidecar legend page": ["28JLIHLS"],
+    "bundle-source page": ["DWQQK2YB"],
+    "locator-bridge page": ["DWQQK2YB"],
+    "dense composite parent page": ["24YKLTHQ"],
+    "classic sequential-only rescue page": ["YGH7VEX6"],
+    "unmatched asset / unresolved cluster page": ["2HEUD5P9"],
+    "duplicated / continued legend page": ["DWQQK2YB"]
+  },
+  "missing_categories": [],
+  "total_papers": 5
+}
