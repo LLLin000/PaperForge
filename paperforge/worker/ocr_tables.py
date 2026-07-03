@@ -235,7 +235,7 @@ def _table_note_falls_into_page_footnote_prior(
 
 
 def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
-    return build_table_inventory_legacy(structured_blocks)
+    return build_table_inventory_vnext(structured_blocks)
 
 
 def build_table_inventory_legacy(structured_blocks: list[dict]) -> dict[str, Any]:

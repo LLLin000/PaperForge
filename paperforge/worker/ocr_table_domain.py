@@ -123,6 +123,43 @@ def assemble_table_inventory(
         if record["caption_block_id"] not in matched_caption_ids
         and record.get("status") != "held"
     ]
+    # Create has_asset=False table entries for unmatched captions (legacy-compat)
+    unmatched_table_entries: list[dict] = []
+    for record in candidate_index.caption_records:
+        if record["caption_block_id"] in matched_caption_ids or record.get("status") == "held":
+            continue
+        caption = record["caption"]
+        unmatched_table_entries.append(
+            {
+                "caption_block_id": record["caption_block_id"],
+                "page": caption.get("page", 0),
+                "caption_text": record["caption_text"],
+                "table_number": record["table_number"],
+                "formal_table_number": record["formal_table_number"],
+                "asset_block_id": None,
+                "asset_bbox": [],
+                "assistive_text": "",
+                "truth_source": "image",
+                "has_asset": False,
+                "segments": [],
+                "note_block_ids": [],
+                "note_texts": [],
+                "note_bboxes": [],
+                "note_band_bbox": [],
+                "note_match_reason": "",
+                "note_confidence": 0.0,
+                "bridge_block_ids": [],
+                "consumed_block_ids": [],
+                "is_continuation": record["is_continuation"],
+                "continuation_of": None,
+                "match_score": {"decision": "unmatched", "evidence": [], "matched_asset_id": "", "score": 0.0},
+                "match_status": record.get("status", "unmatched_caption"),
+                "candidate_assets": record["candidate_assets"],
+                "render_bbox": None,
+                "render_rotation_deg": 0,
+            }
+        )
+
     unmatched_assets = [
         asset
         for page_assets in candidate_index.assets_by_page.values()
@@ -130,15 +167,11 @@ def assemble_table_inventory(
         if str(asset.get("block_id", "")) not in used_asset_ids
     ]
     return {
-        "tables": list(state.matches),
+        "tables": list(state.matches) + unmatched_table_entries,
         "held_tables": held_tables,
         "unmatched_captions": unmatched_captions,
         "unmatched_assets": unmatched_assets,
         "official_table_count": len(
-            [
-                t
-                for t in state.matches
-                if t.get("has_asset") and not t.get("is_continuation")
-            ]
+            [t for t in state.matches if t.get("has_asset") and not t.get("is_continuation")]
         ),
     }

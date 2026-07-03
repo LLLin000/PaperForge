@@ -492,3 +492,53 @@ def test_run_derived_rebuild_for_keys_still_uses_public_build_figure_inventory(t
 
     assert result["rebuild_count"] == 1
     assert called["count"] > 0
+
+
+def test_run_derived_rebuild_for_keys_still_uses_public_build_table_inventory(tmp_path: Path, monkeypatch) -> None:
+    import json
+
+    from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+
+    key = "TESTKEY1"
+    paper_root = tmp_path / "System" / "PaperForge" / "ocr" / key
+    (paper_root / "canonical").mkdir(parents=True)
+    (paper_root / "raw").mkdir(parents=True)
+    (paper_root / "structure").mkdir(parents=True)
+
+    (paper_root / "canonical" / "blocks.raw.jsonl").write_text(
+        json.dumps({"paper_id": key, "page": 1, "block_id": "p1_b1", "raw_label": "text", "raw_order": 0, "text": "text", "bbox": [10, 10, 100, 40], "page_width": 600, "page_height": 800}) + "\n", encoding="utf-8"
+    )
+    (paper_root / "raw" / "source_metadata.json").write_text(json.dumps({"title": "Example Title"}), encoding="utf-8")
+    (paper_root / "meta.json").write_text(json.dumps({"source_pdf": ""}), encoding="utf-8")
+
+    called = {"count": 0}
+
+    def fake_build_table_inventory(structured_blocks):
+        called["count"] += 1
+        return {"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": [], "official_table_count": 0}
+
+    monkeypatch.setattr("paperforge.worker.ocr_tables.build_table_inventory", fake_build_table_inventory)
+    monkeypatch.setattr("paperforge.worker.ocr_blocks.write_structured_blocks_jsonl", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_metadata.extract_frontmatter_candidates_from_blocks", lambda s: {"title": "Example Title", "authors_text": None, "doi_candidates": []})
+    monkeypatch.setattr("paperforge.worker.ocr_figures.build_figure_inventory", lambda *a, **kw: {"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []})
+    monkeypatch.setattr("paperforge.worker.ocr_figures.write_back_figure_roles", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_figures.write_figure_inventory", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_figure_reader.synthesize_reader_figures", lambda *a, **kw: {})
+    monkeypatch.setattr("paperforge.worker.ocr_tables.write_back_table_roles", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_tables.write_table_inventory", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_objects.extract_and_write_objects", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *a, **kw: "")
+    monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_health", lambda *a, **kw: {})
+    monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_raw_integrity_health", lambda *a, **kw: {})
+    monkeypatch.setattr("paperforge.worker.ocr_health.write_ocr_health", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_decisions.collect_decisions", lambda *a, **kw: [])
+    monkeypatch.setattr("paperforge.worker.ocr_decisions.write_decision_log", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_index.build_role_indexes", lambda *a, **kw: {})
+    monkeypatch.setattr("paperforge.worker.ocr_index.write_role_index", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr.validate_ocr_meta", lambda *a, **kw: ("done", ""))
+
+    result = run_derived_rebuild_for_keys(tmp_path, [key])
+
+    assert result["rebuild_count"] == 1
+    assert called["count"] > 0

@@ -46,9 +46,20 @@ def test_assemble_table_inventory_preserves_public_shape_for_empty_state() -> No
     inventory = assemble_table_inventory(state, index)
 
     assert inventory == {
-        "tables": [], "held_tables": [],
-        "unmatched_captions": [blocks[0]],
-        "unmatched_assets": [], "official_table_count": 0,
+        "official_table_count": 0, "held_tables": [],
+        "tables": [{
+            "asset_bbox": [], "asset_block_id": None, "assistive_text": "",
+            "bridge_block_ids": [], "candidate_assets": [],
+            "caption_block_id": "cap1", "caption_text": "Table 1. Example",
+            "consumed_block_ids": [], "continuation_of": None,
+            "formal_table_number": 1, "has_asset": False,
+            "is_continuation": False, "match_score": {"decision": "unmatched", "evidence": [], "matched_asset_id": "", "score": 0.0},
+            "match_status": "pending", "note_band_bbox": [], "note_bboxes": [],
+            "note_block_ids": [], "note_confidence": 0.0, "note_match_reason": "",
+            "note_texts": [], "page": 1, "render_bbox": None, "render_rotation_deg": 0,
+            "segments": [], "table_number": 1, "truth_source": "image",
+        }],
+        "unmatched_assets": [], "unmatched_captions": [blocks[0]],
     }
 
 

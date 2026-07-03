@@ -65,7 +65,11 @@ class TableSamePagePass:
                 continue
             top_idx, top_asset, top_score = scored[0]
             second_score = scored[1][2].get("score", 0.0) if len(scored) > 1 else -1.0
-            if top_score.get("score", 0.0) < 0.4 or top_score.get("score", 0.0) - second_score < 0.15:
+            top_score_val = top_score.get("score", 0.0)
+            if top_score_val < 0.4:
+                continue
+            if top_score_val - second_score < 0.15:
+                record["status"] = "ambiguous"
                 continue
             owner = ResourceRef(kind="legend", page=caption_page, block_id=record["caption_block_id"], figure_no=record["formal_table_number"])
             asset_ref = ResourceRef(kind="asset", page=int(top_asset.get("page", 0) or 0), block_id=top_asset.get("block_id"))
@@ -172,12 +176,12 @@ class TableAdjacentPagePass:
                 for _, asset, score in all_candidates[:3]
             ]
             if not all_candidates:
-                record["status"] = "unmatched"
+                record["status"] = "unmatched_caption"
                 continue
             top_idx, top_asset, top_score = all_candidates[0]
             second_score = all_candidates[1][2].get("score", 0.0) if len(all_candidates) > 1 else -1.0
             if top_score.get("score", 0.0) < 0.4:
-                record["status"] = "unmatched"
+                record["status"] = "unmatched_caption"
                 continue
             if top_score.get("score", 0.0) - second_score < 0.15:
                 record["status"] = "ambiguous"
