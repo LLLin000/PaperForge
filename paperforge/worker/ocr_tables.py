@@ -246,7 +246,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         raw_label = str(block.get("raw_label", "") or "").strip()
         if role in {"table_caption", "table_caption_candidate"} or _is_validation_first_table_candidate(block):
             captions.append(block)
-        elif role in ("table_asset", "media_asset", "figure_asset"):
+        elif role in ("table_asset", "table_html", "media_asset", "figure_asset"):
             if role == "figure_asset" and raw_label != "table":
                 continue
             if role == "media_asset":
@@ -259,7 +259,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                     aspect = width / max(height, 1)
                     if aspect < 1.5:
                         continue
-            if raw_label in {"table", "table_image"}:
+            if raw_label in {"table", "table_image"} or role == "table_html":
                 block["asset_family_hint"] = "table_like"
                 block["asset_family_confidence"] = 0.70
                 block["asset_family_evidence"] = [f"raw_label:{raw_label}"]
