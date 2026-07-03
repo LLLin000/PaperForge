@@ -422,3 +422,73 @@ doi: 10.1000/example
     assert meta["authors"] == ["W. H. Marks"]
     assert meta.get("authors_incomplete") is True
     assert meta.get("authors_source") == "paper_note.first_author_fallback"
+
+
+# ── Plan A: rebuild compatibility proof (pairing framework) ──
+
+
+def test_run_derived_rebuild_for_keys_still_uses_public_build_figure_inventory(tmp_path: Path, monkeypatch) -> None:
+    import json
+
+    from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+
+    key = "TESTKEY1"
+    paper_root = tmp_path / "System" / "PaperForge" / "ocr" / key
+    (paper_root / "canonical").mkdir(parents=True)
+    (paper_root / "raw").mkdir(parents=True)
+    (paper_root / "structure").mkdir(parents=True)
+
+    (paper_root / "canonical" / "blocks.raw.jsonl").write_text(
+        json.dumps(
+            {
+                "paper_id": key,
+                "page": 1,
+                "block_id": "p1_b1",
+                "raw_label": "text",
+                "raw_order": 0,
+                "text": "Example text",
+                "bbox": [10, 10, 100, 40],
+                "page_width": 600,
+                "page_height": 800,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (paper_root / "raw" / "source_metadata.json").write_text(
+        json.dumps({"title": "Example Title"}),
+        encoding="utf-8",
+    )
+    (paper_root / "meta.json").write_text(json.dumps({"source_pdf": ""}), encoding="utf-8")
+
+    called = {"count": 0}
+
+    def fake_build_figure_inventory(structured_blocks, page_width=1200, page_pdf_lines_by_page=None):
+        called["count"] += 1
+        return {
+            "pipeline_mode": "vnext",
+            "matched_figures": [],
+            "ambiguous_figures": [],
+            "unmatched_legends": [],
+            "unmatched_assets": [],
+            "unresolved_clusters": [],
+            "held_figures": [],
+            "rejected_legends": [],
+            "page_ledger": {},
+            "residual_ledger": {},
+            "local_pairing_hypotheses": [],
+            "pass_reports": [],
+            "completeness": {"total_numbered_legends": 0, "accounted_for": 0, "details": []},
+        }
+
+    monkeypatch.setattr("paperforge.worker.ocr_figures.build_figure_inventory", fake_build_figure_inventory)
+    monkeypatch.setattr("paperforge.worker.ocr_blocks.write_structured_blocks_jsonl", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_metadata.extract_frontmatter_candidates_from_blocks",
+        lambda structured: {"title": "Example Title", "authors_text": None, "doi_candidates": []},
+    )
+
+    result = run_derived_rebuild_for_keys(tmp_path, [key])
+
+    assert result["rebuild_count"] == 1
+    assert called["count"] > 0
