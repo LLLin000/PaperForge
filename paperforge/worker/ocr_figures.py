@@ -2982,8 +2982,12 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     return build_figure_inventory_legacy(structured_blocks, page_width, page_pdf_lines_by_page)
 
 def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
+    from .ocr_figure_vnext_accounting_pass import FinalAccountingPass
     from .ocr_figure_vnext_bundle_pass import LegendBundlePass
+    from .ocr_figure_vnext_classic_seq_pass import ClassicSequentialPass, UnresolvedClusterConsolidation
+    from .ocr_figure_vnext_composite_pass import CompositeParentPass
     from .ocr_figure_vnext_corpus import FigureCandidateIndex, FigureCorpus
+    from .ocr_figure_vnext_group_seq_pass import GroupSequentialPass
     from .ocr_figure_vnext_locator_pass import LocatorBridgePass
     from .ocr_figure_vnext_passes import (
         CrossPageReservationPass,
@@ -3000,11 +3004,16 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
     reports = []
     for pass_cls in (
         PrimarySamePagePass,
+        CompositeParentPass,
         SidecarPass,
         LocatorBridgePass,
         CrossPageReservationPass,
         CrossPageSettlementPass,
         LegendBundlePass,
+        GroupSequentialPass,
+        ClassicSequentialPass,
+        UnresolvedClusterConsolidation,
+        FinalAccountingPass,
     ):
         reports.append(pass_cls().run(state))
     matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
@@ -3019,14 +3028,14 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
             if (_resource_page(a) is not None
                 and state.ledger.owner_of_asset(page=_resource_page(a), block_id=a.get("block_id")) is None)
         ],
-        "unresolved_clusters": [],
+        "unresolved_clusters": list(state.unresolved),
         "held_figures": list(candidate_index.held_legends),
         "rejected_legends": list(candidate_index.rejected_legends),
         "page_ledger": {},
         "residual_ledger": {},
         "local_pairing_hypotheses": [],
         "pass_reports": [asdict(r) for r in reports],
-        "completeness": {
+        "completeness": state.completeness or {
             "total_numbered_legends": len(candidate_index.deduped_legends),
             "accounted_for": len(state.matches),
             "details": [],
