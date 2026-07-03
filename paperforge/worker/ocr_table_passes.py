@@ -23,8 +23,9 @@ class TableWeakCaptionRecoveryPass:
                 same_page_assets = state.candidate_index.assets_by_page.get(int(caption.get("page", 0) or 0), [])
                 if not same_page_assets:
                     record["status"] = "held"
+                    held_count = len([r for r in state.candidate_index.caption_records if r.get("status") == "held"])
                     record["held_table"] = {
-                        "table_id": f"held_table_{len([r for r in state.candidate_index.caption_records if r.get('status') == 'held']) + 1:03d}",
+                        "table_id": f"held_table_{held_count + 1:03d}",
                         "caption_block_id": record["caption_block_id"],
                         "page": caption.get("page", 0),
                         "caption_text": record["caption_text"],
@@ -58,8 +59,7 @@ class TableSamePagePass:
             scored = ocr_tables._score_candidate_assets(page_assets, caption, is_continuation=record["is_continuation"])
             scored.sort(key=lambda item: item[2].get("score", 0.0), reverse=True)
             record["candidate_assets"] = [
-                {"asset_block_id": asset.get("block_id", ""), "match_score": score}
-                for _, asset, score in scored[:3]
+                {"asset_block_id": asset.get("block_id", ""), "match_score": score} for _, asset, score in scored[:3]
             ]
             if not scored:
                 continue
@@ -69,10 +69,29 @@ class TableSamePagePass:
             if top_score_val < 0.4:
                 continue
             if top_score_val - second_score < 0.15:
-                record["status"] = "ambiguous"
-                continue
-            owner = ResourceRef(kind="legend", page=caption_page, block_id=record["caption_block_id"], figure_no=record["formal_table_number"])
-            asset_ref = ResourceRef(kind="asset", page=int(top_asset.get("page", 0) or 0), block_id=top_asset.get("block_id"))
+                if record.get("is_weak_explicit_caption") and len(scored) > 1:
+                    scored.sort(
+                        key=lambda item: ocr_tables._bare_table_tie_break(item[2], caption, item[1]),
+                        reverse=True,
+                    )
+                    top_idx, top_asset, top_score = scored[0]
+                    top_tie = ocr_tables._bare_table_tie_break(top_score, caption, top_asset)
+                    second_tie = ocr_tables._bare_table_tie_break(scored[1][2], caption, scored[1][1])
+                    if top_tie == second_tie:
+                        record["status"] = "ambiguous"
+                        continue
+                else:
+                    record["status"] = "ambiguous"
+                    continue
+            owner = ResourceRef(
+                kind="legend",
+                page=caption_page,
+                block_id=record["caption_block_id"],
+                figure_no=record["formal_table_number"],
+            )
+            asset_ref = ResourceRef(
+                kind="asset", page=int(top_asset.get("page", 0) or 0), block_id=top_asset.get("block_id")
+            )
             conflict = state.ledger.try_claim_assets([asset_ref], owner=owner, reason=self.name)
             if conflict is not None:
                 report.conflicts.append(conflict)
@@ -117,7 +136,11 @@ class TableSamePagePass:
                     "note_match_reason": "",
                     "note_confidence": 0.0,
                     "bridge_block_ids": [],
-                    "consumed_block_ids": [record["caption_block_id"], top_asset.get("block_id", ""), *record.get("continuation_ids", [])],
+                    "consumed_block_ids": [
+                        record["caption_block_id"],
+                        top_asset.get("block_id", ""),
+                        *record.get("continuation_ids", []),
+                    ],
                     "is_continuation": record["is_continuation"],
                     "continuation_of": None,
                     "match_status": match_status,
@@ -156,7 +179,9 @@ class TableAdjacentPagePass:
                     for idx, asset in state.candidate_index.assets_by_page.get(page, [])
                     if state.ledger.owner_of_asset(page=page, block_id=asset.get("block_id")) is None
                 ]
-                all_candidates.extend(ocr_tables._score_candidate_assets(page_assets, caption, is_continuation=record["is_continuation"]))
+                all_candidates.extend(
+                    ocr_tables._score_candidate_assets(page_assets, caption, is_continuation=record["is_continuation"])
+                )
 
             for _, asset, score_dict in all_candidates:
                 a_page = int(asset.get("page", 0) or 0)
@@ -186,8 +211,15 @@ class TableAdjacentPagePass:
             if top_score.get("score", 0.0) - second_score < 0.15:
                 record["status"] = "ambiguous"
                 continue
-            owner = ResourceRef(kind="legend", page=caption_page, block_id=record["caption_block_id"], figure_no=record["formal_table_number"])
-            asset_ref = ResourceRef(kind="asset", page=int(top_asset.get("page", 0) or 0), block_id=top_asset.get("block_id"))
+            owner = ResourceRef(
+                kind="legend",
+                page=caption_page,
+                block_id=record["caption_block_id"],
+                figure_no=record["formal_table_number"],
+            )
+            asset_ref = ResourceRef(
+                kind="asset", page=int(top_asset.get("page", 0) or 0), block_id=top_asset.get("block_id")
+            )
             conflict = state.ledger.try_claim_assets([asset_ref], owner=owner, reason=self.name)
             if conflict is not None:
                 report.conflicts.append(conflict)
@@ -196,7 +228,9 @@ class TableAdjacentPagePass:
             continuation_of = None
             if record["is_continuation"] and record["formal_table_number"] is not None:
                 for existing in state.matches:
-                    if existing.get("formal_table_number") == record["formal_table_number"] and not existing.get("is_continuation"):
+                    if existing.get("formal_table_number") == record["formal_table_number"] and not existing.get(
+                        "is_continuation"
+                    ):
                         continuation_of = record["formal_table_number"]
                         break
             state.accept_match(
@@ -238,7 +272,11 @@ class TableAdjacentPagePass:
                     "note_match_reason": "",
                     "note_confidence": 0.0,
                     "bridge_block_ids": [],
-                    "consumed_block_ids": [record["caption_block_id"], top_asset.get("block_id", ""), *record.get("continuation_ids", [])],
+                    "consumed_block_ids": [
+                        record["caption_block_id"],
+                        top_asset.get("block_id", ""),
+                        *record.get("continuation_ids", []),
+                    ],
                     "is_continuation": record["is_continuation"],
                     "continuation_of": continuation_of,
                     "match_status": match_status,
@@ -290,11 +328,20 @@ class TableNotesAttachmentPass:
                     or braw_label == "vision_footnote"
                     or (
                         0 < len(btext) < 120
-                        and brole not in {
-                            "noise", "page_footer", "page_header", "frontmatter_noise",
-                            "table_caption", "table_caption_candidate",
-                            "table_asset", "media_asset", "figure_caption",
-                            "section_heading", "subsection_heading", "reference_heading",
+                        and brole
+                        not in {
+                            "noise",
+                            "page_footer",
+                            "page_header",
+                            "frontmatter_noise",
+                            "table_caption",
+                            "table_caption_candidate",
+                            "table_asset",
+                            "media_asset",
+                            "figure_caption",
+                            "section_heading",
+                            "subsection_heading",
+                            "reference_heading",
                         }
                     )
                 )
@@ -307,7 +354,9 @@ class TableNotesAttachmentPass:
                 if bbbox[1] < asset_bottom or bbbox[1] > asset_bottom + 100:
                     note_match_reason = "outside_vertical_range"
                     continue
-                if ocr_tables._table_note_falls_into_page_footnote_prior(bbbox, asset_page, state.corpus.page_footnote_prior):
+                if ocr_tables._table_note_falls_into_page_footnote_prior(
+                    bbbox, asset_page, state.corpus.page_footnote_prior
+                ):
                     note_match_reason = "page_footnote_prior_rejected"
                     continue
                 if ocr_tables._looks_like_body_text_below_table(block, asset_bbox):
@@ -318,7 +367,9 @@ class TableNotesAttachmentPass:
             if candidates:
                 candidates.sort(key=lambda b: (b.get("bbox") or [0, 0, 0, 0])[1])
                 table["note_block_ids"] = [str(b.get("block_id", "")) for b in candidates if b.get("block_id")]
-                table["note_texts"] = [str(b.get("text", "") or "").strip() for b in candidates if str(b.get("text", "") or "").strip()]
+                table["note_texts"] = [
+                    str(b.get("text", "") or "").strip() for b in candidates if str(b.get("text", "") or "").strip()
+                ]
                 table["note_bboxes"] = [b.get("bbox", [0, 0, 0, 0]) for b in candidates]
                 table["note_band_bbox"] = [
                     min(bb[0] for bb in table["note_bboxes"]),
@@ -337,7 +388,12 @@ class TableNotesAttachmentPass:
                 table.setdefault("note_confidence", 0.0)
 
             asset_block = next(
-                (a for a in state.corpus.raw_assets if str(a.get("block_id", "")) == str(table.get("asset_block_id", "")) and int(a.get("page", 0) or 0) == asset_page),
+                (
+                    a
+                    for a in state.corpus.raw_assets
+                    if str(a.get("block_id", "")) == str(table.get("asset_block_id", ""))
+                    and int(a.get("page", 0) or 0) == asset_page
+                ),
                 None,
             )
             if asset_block is not None:
@@ -345,12 +401,21 @@ class TableNotesAttachmentPass:
                 if rot:
                     ab = table.get("asset_bbox", [])
                     caption = next(
-                        (r["caption"] for r in state.candidate_index.caption_records if r["caption_block_id"] == table.get("caption_block_id")),
+                        (
+                            r["caption"]
+                            for r in state.candidate_index.caption_records
+                            if r["caption_block_id"] == table.get("caption_block_id")
+                        ),
                         None,
                     )
                     cb = (caption.get("bbox") or caption.get("block_bbox") or []) if caption else []
                     if len(ab) >= 4 and len(cb) >= 4:
-                        table["render_bbox"] = [min(cb[0], ab[0]), min(cb[1], ab[1]), max(cb[2], ab[2]), max(cb[3], ab[3])]
+                        table["render_bbox"] = [
+                            min(cb[0], ab[0]),
+                            min(cb[1], ab[1]),
+                            max(cb[2], ab[2]),
+                            max(cb[3], ab[3]),
+                        ]
                         table["render_rotation_deg"] = rot
 
             # Bridge block detection
@@ -377,8 +442,12 @@ class TableFinalAccountingPass:
     def run(self, state):
         report = PassReport(pass_name=self.name)
         state.completeness = {
-            "total_numbered_tables": len([r for r in state.candidate_index.caption_records if r.get("formal_table_number") is not None]),
-            "accounted_for": len([r for r in state.candidate_index.caption_records if r.get("status") in {"matched", "held"}]),
+            "total_numbered_tables": len(
+                [r for r in state.candidate_index.caption_records if r.get("formal_table_number") is not None]
+            ),
+            "accounted_for": len(
+                [r for r in state.candidate_index.caption_records if r.get("status") in {"matched", "held"}]
+            ),
             "details": [
                 {"caption_block_id": r["caption_block_id"], "status": r.get("status", "pending")}
                 for r in state.candidate_index.caption_records

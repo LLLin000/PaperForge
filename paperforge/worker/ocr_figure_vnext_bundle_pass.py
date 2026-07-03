@@ -145,9 +145,8 @@ class LegendBundlePass:
                 figure_no = ocr_figures._extract_figure_number(
                     str(cap.get("text", ""))
                 )
-                namespace = ocr_figures._extract_figure_namespace(
-                    str(cap.get("text", ""))
-                )
+                marker = ocr_figures._extract_figure_marker(str(cap.get("text", "")))
+                namespace = marker["namespace"]
 
                 legend_ref = ResourceRef(
                     kind="legend",
@@ -197,7 +196,9 @@ class LegendBundlePass:
 
                 if figure_no is not None:
                     figure_id = ocr_figures._format_figure_id(
-                        namespace, figure_no
+                        marker["namespace"],
+                        figure_no,
+                        alpha_prefix=marker["alpha_prefix"],
                     )
                 else:
                     figure_id = f"figure_unknown_{len(state.matches):03d}"

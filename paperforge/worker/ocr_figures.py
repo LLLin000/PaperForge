@@ -13,8 +13,8 @@ from paperforge.worker.ocr_scores import score_figure_caption, score_figure_matc
 
 _FIGURE_NUMBER_PATTERN = re.compile(
     r"(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?|"
-    r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?|图|圖|ͼ)\s*"
-    r"(?:S\.?\s*)?(\d+(?:\.\d+)?)",
+    r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?|图|圖|ͼ)"
+    r"\s*(?:(?P<prefix>[A-Z])\.?\s*)?(?P<number>\d+(?:\.\d+)?)",
     flags=re.IGNORECASE,
 )
 
@@ -110,29 +110,26 @@ def _extract_figure_number(text: str) -> int | None:
     m = _FIGURE_NUMBER_PATTERN.search(text)
     if m:
         try:
-            return int(float(m.group(1)))
-        except ValueError:
-            return None
+            num_str = m.group("number")
+            if num_str is not None:
+                return int(float(num_str))
+        except (ValueError, TypeError):
+            pass
     return None
 
 
-def _extract_figure_namespace(text: str) -> str:
+def _extract_figure_namespace(text: str, prefix: str | None = None) -> str:
     lower = text.lower()
-    if "supplementary" in lower:
-        return "supplementary"
-    if "extended data" in lower:
+    if "extended data" in lower or "extended figure" in lower:
         return "extended_data"
+    if prefix == "S":
+        return "supplementary"
+    if "supplementary" in lower or "supporting" in lower or "additional file" in lower:
+        return "supplementary"
+    if prefix and prefix != "S":
+        return "appendix"
     return "main"
 
-
-_FIGURE_MARKER_PATTERN = re.compile(
-    r"(?P<prefix>Supplementary\s+Figure|Supplementary\s+Fig\.?|"
-    r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?|"
-    r"Figure|Fig\.?)\s*"
-    r"(?P<s_prefix>S\.?\s*)?"
-    r"(?P<number>\d+(?:\.\d+)?)",
-    re.I,
-)
 
 _FIGURE_DESCRIPTION_OPENING = re.compile(
     r"^(?:This figure|The figure|This Fig\.?|The Fig\.?|Figure\s+\d+|Fig\.?\s+\d+)\b",
@@ -141,34 +138,42 @@ _FIGURE_DESCRIPTION_OPENING = re.compile(
 
 
 def _extract_figure_marker(text: str) -> dict:
-    m = _FIGURE_MARKER_PATTERN.search(text)
+    m = _FIGURE_NUMBER_PATTERN.search(text)
     if not m:
         return {
             "namespace": "main",
             "number": None,
+            "number_text": "",
+            "prefix": None,
+            "alpha_prefix": None,
+            "has_s": False,
+            "has_alpha_prefix": False,
             "raw_prefix": "",
             "has_s_prefix": False,
             "marker_text": "",
         }
-    lower = text.lower()
-    has_s = bool(m.group("s_prefix"))
-    if has_s or "supplementary" in lower or "supporting" in lower or "additional file" in lower or "appendix" in lower:
-        namespace = "supplementary"
-    elif "extended data" in lower or "extended figure" in lower:
-        namespace = "extended_data"
-    else:
-        namespace = "main"
+
+    prefix_raw = m.group("prefix")
+    prefix = (prefix_raw or "").upper() or None
     number_raw = m.group("number")
     try:
         number = int(float(number_raw))
-    except ValueError:
+    except (ValueError, TypeError):
         number = None
+
+    namespace = _extract_figure_namespace(text, prefix)
+
     return {
         "namespace": namespace,
         "number": number,
-        "raw_prefix": m.group("prefix"),
-        "has_s_prefix": has_s,
-        "marker_text": m.group(0),
+        "number_text": number_raw or "",
+        "prefix": prefix,
+        "alpha_prefix": prefix if prefix and prefix != "S" else None,
+        "has_s": prefix == "S",
+        "has_alpha_prefix": prefix is not None and prefix != "S",
+        "raw_prefix": prefix or "",
+        "has_s_prefix": prefix == "S",
+        "marker_text": m.group(0) or "",
     }
 
 
@@ -237,11 +242,15 @@ def _validate_page_local_caption_grammar(
     return hypotheses
 
 
-def _format_figure_id(namespace: str, number: int) -> str:
+def _format_figure_id(namespace: str, number: int, alpha_prefix: str | None = None) -> str:
     if namespace == "supplementary":
         return f"figure_s{number:03d}"
     if namespace == "extended_data":
         return f"figure_ed{number:03d}"
+    if namespace == "appendix":
+        if not alpha_prefix:
+            alpha_prefix = "x"  # fallback, should not happen
+        return f"figure_{alpha_prefix.lower()}{number:03d}"
     return f"figure_{number:03d}"
 
 
@@ -2573,11 +2582,12 @@ def _settle_cross_page_reserved_objects(
             best_group = target_groups[0]
 
             legend_text = str(legend.get("text") or "")
-            fn = _extract_figure_number(legend_text)
-            if fn is None:
+            marker = _extract_figure_marker(legend_text)
+            if marker["number"] is None:
                 continue
-            ns = _extract_figure_namespace(legend_text)
-            fig_id = _format_figure_id(ns, fn)
+            ns = marker["namespace"]
+            fn = marker["number"]
+            fig_id = _format_figure_id(ns, fn, alpha_prefix=marker["alpha_prefix"])
 
             caption_score = score_figure_caption(
                 legend, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
@@ -2654,11 +2664,12 @@ def _settle_cross_page_reserved_objects(
             lid = str(best_legend.get("block_id", ""))
 
             legend_text = str(best_legend.get("text") or "")
-            fn = _extract_figure_number(legend_text)
-            if fn is None:
+            marker = _extract_figure_marker(legend_text)
+            if marker["number"] is None:
                 continue
-            ns = _extract_figure_namespace(legend_text)
-            fig_id = _format_figure_id(ns, fn)
+            ns = marker["namespace"]
+            fn = marker["number"]
+            fig_id = _format_figure_id(ns, fn, alpha_prefix=marker["alpha_prefix"])
 
             caption_score = score_figure_caption(
                 best_legend, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
@@ -3231,6 +3242,7 @@ def build_figure_inventory_legacy(
         fn = _extract_figure_number(text)
         if fn is None:
             continue
+        # no prefix context — keyword-only fallback
         ns = _extract_figure_namespace(text)
         key = (ns, fn)
         if key not in _dedup_map:
@@ -3275,6 +3287,7 @@ def build_figure_inventory_legacy(
         text = legend.get("text", "")
         fn = _extract_figure_number(text)
         if fn is not None:
+            # no prefix context — keyword-only fallback
             ns = _extract_figure_namespace(text)
             key = (ns, fn)
             _distinct_check = (
@@ -3470,6 +3483,7 @@ def build_figure_inventory_legacy(
         legend_reserved_for_cross_page = (int(legend.get("page", 0) or 0), legend_id) in _reserved_legend_ids
         legend_page = legend.get("page", 0)
         legend_text = str(legend.get("text") or "")
+        # no prefix context — keyword-only fallback
         ns = _extract_figure_namespace(legend_text)
         fig_num = _extract_figure_number(legend_text)
         # Text may be empty (stored as [] in raw block) but marker_signature
@@ -3596,7 +3610,8 @@ def build_figure_inventory_legacy(
                         used_group_ids.add(child_gid)
 
         if _parent_accepted:
-            _parent_fig_id = _format_figure_id(ns, fig_num)
+            _legend_marker = _extract_figure_marker(legend_text)
+            _parent_fig_id = _format_figure_id(ns, fig_num, alpha_prefix=_legend_marker["alpha_prefix"])
             matched_figures.append(
                 {
                     "figure_id": _parent_fig_id,
@@ -3964,7 +3979,12 @@ def build_figure_inventory_legacy(
             unmatched_legends.append(legend)
             continue
 
-        fig_id = _format_figure_id(ns, fig_num) if fig_num else f"figure_unknown_{len(matched_figures):03d}"
+        _fig_marker = _extract_figure_marker(legend_text)
+        fig_id = (
+            _format_figure_id(ns, fig_num, alpha_prefix=_fig_marker["alpha_prefix"])
+            if fig_num
+            else f"figure_unknown_{len(matched_figures):03d}"
+        )
         match_score = (
             region_match["match_score"]
             if region_match is not None
@@ -4167,6 +4187,7 @@ def build_figure_inventory_legacy(
             lid = str(cap.get("block_id", ""))
             cap_text = str(cap.get("text") or "")
             fig_num = _extract_figure_number(cap_text)
+            # no prefix context — keyword-only fallback
             cap_ns = _extract_figure_namespace(cap_text)
             current_match = page_narrow_matched_by_legend.get(lid)
             cap_is_unresolved = any(str(leg.get("block_id", "")) == lid for leg in unmatched_legends) or any(
@@ -4217,7 +4238,7 @@ def build_figure_inventory_legacy(
                 if bid is not None:
                     sidecar_consumed_ids.add((ap, bid))
             fig_id = (
-                _format_figure_id(cap_ns, fig_num)
+                _format_figure_id(cap_ns, fig_num, alpha_prefix=_extract_figure_marker(cap_text)["alpha_prefix"])
                 if fig_num
                 else f"figure_sidecar_{len(matched_figures) + len(sidecar_promoted):03d}"
             )
@@ -4377,9 +4398,10 @@ def build_figure_inventory_legacy(
                 page_assets = asset_pages[ap]
                 if not page_assets:
                     continue
-                fn = _extract_figure_number(str(cap.get("text", "")))
-                cap_ns = _extract_figure_namespace(str(cap.get("text", "")))
-                fig_id = _format_figure_id(cap_ns, fn)
+                marker = _extract_figure_marker(str(cap.get("text", "")))
+                fn = marker["number"]
+                cap_ns = marker["namespace"]
+                fig_id = _format_figure_id(cap_ns, fn, alpha_prefix=marker["alpha_prefix"])
                 cap_score = score_figure_caption(
                     cap, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
                 )
@@ -4436,6 +4458,7 @@ def build_figure_inventory_legacy(
             fn = _extract_figure_number(str(leg.get("text", "")))
             if fn is None:
                 continue
+            # no prefix context — keyword-only fallback
             ns = _extract_figure_namespace(str(leg.get("text", "")))
             _unmatched_by_number.setdefault((ns, fn), []).append(leg)
         # Rejected legends may hold full legends misclassified as body_paragraph
@@ -4444,6 +4467,7 @@ def build_figure_inventory_legacy(
             fn = _extract_figure_number(str(leg.get("text", "")))
             if fn is None:
                 continue
+            # no prefix context — keyword-only fallback
             ns = _extract_figure_namespace(str(leg.get("text", "")))
             key = (ns, fn)
             if key in _unmatched_by_number:
@@ -4465,6 +4489,7 @@ def build_figure_inventory_legacy(
             fn = _extract_figure_number(locator_text)
             if fn is None:
                 continue
+            # no prefix context — keyword-only fallback
             ns = _extract_figure_namespace(locator_text)
             locator_page = int(locator.get("page", 0) or 0)
             if locator_page <= 1:
@@ -4542,7 +4567,7 @@ def build_figure_inventory_legacy(
                 continue
 
             # Build matched figure entry: use full_legend as caption, locator as bridge
-            fig_id = _format_figure_id(ns, fn)
+            fig_id = _format_figure_id(ns, fn, alpha_prefix=_extract_figure_marker(locator_text)["alpha_prefix"])
             consumed = [_project_asset_record(a) for a in best_group_assets]
             # Compute cluster_bbox from consumed asset bboxes
             asset_bboxes = [a.get("bbox") or a.get("block_bbox") or [0, 0, 0, 0] for a in best_group_assets]
@@ -4648,11 +4673,12 @@ def build_figure_inventory_legacy(
     for legend in list(unmatched_legends):
         lg_page = int(legend.get("page", 0) or 0)
         cap_text = str(legend.get("text", "") or "")
-        fn = _extract_figure_number(cap_text)
-        if fn is None:
+        marker = _extract_figure_marker(cap_text)
+        if marker["number"] is None:
             continue
-        cap_ns = _extract_figure_namespace(cap_text)
-        fig_id = _format_figure_id(cap_ns, fn)
+        fn = marker["number"]
+        cap_ns = marker["namespace"]
+        fig_id = _format_figure_id(cap_ns, fn, alpha_prefix=marker["alpha_prefix"])
 
         # Collect candidate groups: prefer same-page, then next-page, then previous-page
         same_page = [g for g in unmatched_groups if g["page"] == lg_page]
@@ -4776,10 +4802,11 @@ def build_figure_inventory_legacy(
         seq_matched: list[tuple[dict, dict]] = []
         for cap in sorted_caps:
             cap_text = cap.get("text", "")
-            fn = _extract_figure_number(cap_text)
-            if fn is None:
+            marker = _extract_figure_marker(cap_text)
+            if marker["number"] is None:
                 continue
-            cap_ns = _extract_figure_namespace(cap_text)
+            fn = marker["number"]
+            cap_ns = marker["namespace"]
 
             cp = cap.get("page", 0) or 0
             previous_page_asset = None
@@ -4826,7 +4853,7 @@ def build_figure_inventory_legacy(
                 ai += 1
                 if ai_asset.get("block_id", "") == asset_bid and ai_asset.get("page", 0) == asset_page:
                     break
-            fig_id = _format_figure_id(cap_ns, fn)
+            fig_id = _format_figure_id(cap_ns, fn, alpha_prefix=marker["alpha_prefix"])
             caption_score = score_figure_caption(
                 cap, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
             )
@@ -5114,6 +5141,7 @@ def compute_figure_legend_completeness(
         fig_num = None
         with contextlib.suppress(ValueError):
             fig_num = int(float(m.group(1)))
+        # no prefix context — keyword-only fallback
         fig_ns = _extract_figure_namespace(text)
 
         if bid in matched_ids:
@@ -5204,9 +5232,10 @@ def _promote_sequence_matches(figure_inventory: dict, blocks: list[dict]) -> dic
                 af["sequence_skip_incomplete_contract"] = True
                 remaining_ambiguous.append(af)
                 continue
-            ns_promoted = _extract_figure_namespace(af.get("text", ""))
+            marker = _extract_figure_marker(af.get("text", ""))
+            ns_promoted = marker["namespace"]
             promoted_entry = {
-                "figure_id": _format_figure_id(ns_promoted, fn),
+                "figure_id": _format_figure_id(ns_promoted, fn, alpha_prefix=marker["alpha_prefix"]),
                 "figure_namespace": ns_promoted,
                 "legend_block_id": af.get("legend_block_id", ""),
                 "page": page,
@@ -5850,11 +5879,16 @@ def _score_caption_to_unmatched_asset_for_synthetic(caption: dict, asset: dict) 
 
 def _build_bbox_only_synthetic_figure(caption, asset, *, index, score):
     text = str(caption.get("text") or "")
-    fn = _extract_figure_number(text)
-    ns = _extract_figure_namespace(text) if fn is not None else "figure"
+    marker = _extract_figure_marker(text)
+    fn = marker["number"]
+    ns = marker["namespace"] if fn is not None else "figure"
     page = int(asset.get("page", caption.get("page", 0)) or 0)
     asset_record = _project_asset_record(asset)
-    fig_id = _format_figure_id(ns, fn) if fn is not None else f"synthetic_figure_p{page}_{asset.get('block_id', index)}"
+    fig_id = (
+        _format_figure_id(ns, fn, alpha_prefix=marker["alpha_prefix"])
+        if fn is not None
+        else f"synthetic_figure_p{page}_{asset.get('block_id', index)}"
+    )
     normalized = _prepare_rotated_caption_normalization(caption, asset)
     entry = {
         "figure_id": fig_id,
@@ -5926,6 +5960,7 @@ def _apply_bbox_only_synthetic_vector_fallback(
 
         # Skip if figure number already exists (Amendment 6)
         fn = _extract_figure_number(str(caption.get("text") or ""))
+        # no prefix context — keyword-only fallback
         ns = _extract_figure_namespace(str(caption.get("text") or "")) if fn is not None else "figure"
         if fn is not None and (ns, fn) in _existing_numbered:
             continue

@@ -218,6 +218,8 @@
     },
     "consumed_ids_only_in_legacy": [],
     "consumed_ids_only_in_vnext": [],
-    "paper": "2HEUD5P9"
+    "paper": "2HEUD5P9",
+    "lost_block_roles": {},
+    "gained_block_roles": {}
   }
 }

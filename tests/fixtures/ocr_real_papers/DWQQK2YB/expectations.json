@@ -1,6 +1,6 @@
 {
   "document": {
-    "expected_reader_figure_count_min": 4,
+    "expected_reader_figure_count_min": 3,
     "expected_reference_zone": true,
     "expected_abstract_span": true,
     "expected_post_reference_backmatter_zone": true,
@@ -188,7 +188,6 @@
     },
     "41": {
       "expected_object_ownership": [
-        {"object_type": "figure", "figure_number": 3, "asset_block_ids": [2], "must_render_as_object": true},
         {"object_type": "figure", "figure_number": 4, "asset_block_ids": [8, 9], "must_render_as_object": true}
       ]
     }

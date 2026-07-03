@@ -206,6 +206,123 @@ def test_build_table_inventory_vnext_materializes_split_caption_continuation() -
     assert inventory["tables"][0]["caption_text"].startswith("Table 3.")
 
 
+def test_build_table_inventory_vnext_split_caption_with_repeated_page_local_block_ids() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory_vnext
+
+    structured_blocks = [
+        # Earlier page reuses the same page-local integer block ids.
+        {"block_id": 3, "page": 1, "role": "authors", "text": "Earlier page block", "bbox": [0, 0, 200, 20]},
+        {
+            "block_id": 4,
+            "page": 1,
+            "role": "affiliation",
+            "text": "Wrong continuation target",
+            "bbox": [0, 25, 200, 45],
+        },
+        {"block_id": 3, "page": 5, "role": "table_caption", "text": "Table 3.", "bbox": [100, 100, 220, 130]},
+        {"block_id": 4, "page": 5, "role": "body_text", "text": "Continuation text", "bbox": [100, 132, 700, 170]},
+        {
+            "block_id": "asset1",
+            "page": 5,
+            "role": "table_html",
+            "raw_label": "table",
+            "text": "<table></table>",
+            "bbox": [100, 180, 700, 500],
+        },
+    ]
+
+    inventory = build_table_inventory_vnext(structured_blocks)
+
+    assert inventory["tables"][0]["caption_text"] == "Table 3. Continuation text"
+    assert 4 in inventory["tables"][0]["consumed_block_ids"]
+
+
+def test_build_table_inventory_vnext_materializes_appendix_table_caption_from_figure_title_blocks() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory_vnext
+
+    structured_blocks = [
+        {
+            "block_id": "cap1",
+            "page": 10,
+            "role": "figure_caption_candidate",
+            "raw_label": "figure_title",
+            "text": "TABLE A1",
+            "bbox": [100, 100, 220, 130],
+            "style_family": "table_caption_like",
+        },
+        {
+            "block_id": "cap2",
+            "page": 10,
+            "role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "TABLE A1\nPredictors of the Diagnosis",
+            "bbox": [100, 132, 700, 170],
+            "style_family": "legend_like",
+        },
+        {
+            "block_id": "asset1",
+            "page": 10,
+            "role": "table_html",
+            "raw_label": "table",
+            "text": "<table></table>",
+            "bbox": [100, 180, 700, 500],
+        },
+    ]
+
+    inventory = build_table_inventory_vnext(structured_blocks)
+
+    assert len(inventory["tables"]) == 1
+    assert inventory["tables"][0]["has_asset"] is True
+    assert inventory["tables"][0]["caption_text"] == "TABLE A1 Predictors of the Diagnosis"
+
+
+def test_build_table_inventory_vnext_validation_first_appendix_table_breaks_same_page_tie_by_nearest_asset() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory_vnext
+
+    structured_blocks = [
+        {
+            "block_id": "cap1",
+            "page": 10,
+            "role": "figure_caption_candidate",
+            "raw_label": "figure_title",
+            "text": "TABLE A1",
+            "bbox": [100, 100, 220, 130],
+            "style_family": "table_caption_like",
+        },
+        {
+            "block_id": "cap2",
+            "page": 10,
+            "role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "TABLE A1\nPredictors of the Diagnosis",
+            "bbox": [100, 132, 700, 170],
+            "style_family": "legend_like",
+        },
+        {
+            "block_id": "asset_near",
+            "page": 10,
+            "role": "table_html",
+            "raw_label": "table",
+            "text": "<table></table>",
+            "bbox": [66, 193, 1098, 442],
+        },
+        {
+            "block_id": "asset_far",
+            "page": 10,
+            "role": "table_html",
+            "raw_label": "table",
+            "text": "<table></table>",
+            "bbox": [66, 565, 1099, 734],
+        },
+    ]
+
+    inventory = build_table_inventory_vnext(structured_blocks)
+
+    assert len(inventory["tables"]) == 1
+    assert inventory["tables"][0]["has_asset"] is True
+    assert inventory["tables"][0]["asset_block_id"] == "asset_near"
+
+
 def test_build_table_inventory_vnext_previous_page_continuation_gets_geometry_elevation() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory_vnext
 

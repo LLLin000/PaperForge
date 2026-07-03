@@ -297,6 +297,8 @@
     },
     "consumed_ids_only_in_legacy": [],
     "consumed_ids_only_in_vnext": [],
-    "paper": "YGH7VEX6"
+    "paper": "YGH7VEX6",
+    "lost_block_roles": {},
+    "gained_block_roles": {}
   }
 }

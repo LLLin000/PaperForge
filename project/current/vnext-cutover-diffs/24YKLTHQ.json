@@ -151,6 +151,8 @@
     },
     "consumed_ids_only_in_legacy": [],
     "consumed_ids_only_in_vnext": [],
-    "paper": "24YKLTHQ"
+    "paper": "24YKLTHQ",
+    "lost_block_roles": {},
+    "gained_block_roles": {}
   }
 }

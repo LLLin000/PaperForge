@@ -102,11 +102,16 @@ class SidecarPass:
                     report.rejected.append(proposal)
                     continue
 
-                namespace = ocr_figures._extract_figure_namespace(figure_text)
+                marker = ocr_figures._extract_figure_marker(figure_text)
+                namespace = marker["namespace"]
                 if figure_no is None:
                     figure_id = f"figure_unknown_{len(state.matches):03d}"
                 else:
-                    figure_id = ocr_figures._format_figure_id(namespace, figure_no)
+                    figure_id = ocr_figures._format_figure_id(
+                        marker["namespace"],
+                        marker["number"],
+                        alpha_prefix=marker["alpha_prefix"],
+                    )
 
                 match_record = {
                     "legend_block_id": cid,

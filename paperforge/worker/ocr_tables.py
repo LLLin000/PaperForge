@@ -8,7 +8,7 @@ from typing import Any
 from paperforge.core.io import write_json
 from paperforge.worker.ocr_scores import score_table_match
 
-_TABLE_NUM_TOKEN = r"(?:\d+(?:\.\d+)?|[IVXLCDM]+)"
+_TABLE_NUM_TOKEN = r"(?:[A-Z]\d+(?:\.\d+)?|\d+(?:\.\d+)?|[IVXLCDM]+)"
 
 _TABLE_PREFIX_PATTERN = re.compile(
     rf"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table|表|(?:\ufffc|\ufffd\ufffd))\s*"
@@ -67,6 +67,8 @@ def _table_has_rotated_content(asset: dict) -> int:
 
 def _parse_table_number_token(token: str) -> int | None:
     token = token.strip().rstrip(".")
+    if re.fullmatch(r"[A-Z]\d+(?:\.\d+)?", token, re.IGNORECASE):
+        token = token[1:]
     if re.fullmatch(r"\d+(?:\.\d+)?", token):
         return int(float(token))
     if re.fullmatch(r"[IVXLCDM]+", token, re.IGNORECASE):
@@ -97,7 +99,13 @@ def _is_validation_first_table_candidate(block: dict) -> bool:
     marker_type = (block.get("marker_signature") or {}).get("type") or "none"
     zone = str(block.get("zone", "") or "")
     style_family = str(block.get("style_family", "") or "")
-    return marker_type == "table_number" and zone == "display_zone" and style_family == "table_caption_like"
+    raw_label = str(block.get("raw_label", "") or "")
+    text = str(block.get("text", "") or "")
+    if marker_type == "table_number" and zone == "display_zone" and style_family == "table_caption_like":
+        return True
+    return (
+        raw_label == "figure_title" and style_family == "table_caption_like" and _extract_table_number(text) is not None
+    )
 
 
 def _is_insufficient_table_caption_evidence(block: dict) -> bool:
@@ -107,18 +115,19 @@ def _is_insufficient_table_caption_evidence(block: dict) -> bool:
 
 def _is_weak_explicit_table_caption(block: dict) -> bool:
     role = str(block.get("role", "") or "")
-    if role not in {"table_caption", "table_caption_candidate"}:
-        return False
-    return _is_insufficient_table_caption_evidence(block)
+    if role in {"table_caption", "table_caption_candidate"}:
+        return _is_insufficient_table_caption_evidence(block)
+    return _is_validation_first_table_candidate(block) and _is_insufficient_table_caption_evidence(block)
 
 
 def _find_table_caption_continuation(caption: dict, structured_blocks: list[dict]) -> dict | None:
     """Find the block immediately after a weak-truncated table caption that
     looks like a continuation (stolen as figure_caption or similar)."""
     caption_bbox = caption.get("bbox") or [0, 0, 0, 0]
+    caption_page = caption.get("page")
     next_idx = None
     for i, block in enumerate(structured_blocks):
-        if block.get("block_id") == caption.get("block_id"):
+        if block.get("page") == caption_page and block.get("block_id") == caption.get("block_id"):
             next_idx = i + 1
             break
     if next_idx is None or next_idx >= len(structured_blocks):
@@ -153,8 +162,11 @@ def _materialize_table_caption(caption: dict, continuation: dict | None) -> tupl
         return caption, consumed_ids
 
     merged = dict(caption)
-    cont_text = str(continuation.get("text", "") or "")
-    merged["text"] = (merged.get("text", "") or "") + " " + cont_text
+    cont_text = str(continuation.get("text", "") or "").strip()
+    marker_match = _TABLE_PREFIX_PATTERN.match(cont_text)
+    if marker_match is not None:
+        cont_text = cont_text[marker_match.end() :].lstrip(" .:-\n\t")
+    merged["text"] = ((merged.get("text", "") or "").strip() + " " + cont_text).strip()
     consumed_ids.append(continuation.get("block_id", ""))
     return merged, consumed_ids
 
@@ -173,8 +185,8 @@ def _bare_table_tie_break(score: dict, caption: dict, asset: dict) -> tuple[floa
     cb = caption.get("bbox") or [0, 0, 0, 0]
     ab = asset.get("bbox") or [0, 0, 0, 0]
     x_overlap = min(cb[2], ab[2]) - max(cb[0], ab[0]) if len(cb) >= 4 and len(ab) >= 4 else 0.0
-    vertical_gap = max(0.0, cb[1] - ab[3]) if len(cb) >= 4 and len(ab) >= 4 else 9999.0
-    return (float(score.get("score", 0.0)), float(x_overlap), -float(vertical_gap))
+    below_gap = max(0.0, ab[1] - cb[3]) if len(cb) >= 4 and len(ab) >= 4 else 9999.0
+    return (float(score.get("score", 0.0)), float(x_overlap), -float(below_gap))
 
 
 def _score_candidate_assets(
@@ -231,6 +243,7 @@ def _table_note_falls_into_page_footnote_prior(
     if page not in prior_by_page or len(note_bbox) < 4:
         return False
     return float(note_bbox[1]) >= float(prior_by_page[page])
+
 
 def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
     return build_table_inventory_vnext(structured_blocks)
@@ -295,8 +308,7 @@ def build_table_inventory_legacy(structured_blocks: list[dict]) -> dict[str, Any
         if is_validation_first_candidate and is_weak_truncated:
             # Check if same-page table assets exist before holding.
             same_page_assets = [
-                a for i,a in enumerate(assets)
-                if i not in used_asset_indices and a.get('page',0) == caption_page
+                a for i, a in enumerate(assets) if i not in used_asset_indices and a.get("page", 0) == caption_page
             ]
             if not same_page_assets:
                 held_tables.append(
@@ -555,8 +567,10 @@ def build_table_inventory_legacy(structured_blocks: list[dict]) -> dict[str, Any
                 ab = matched_asset.get("bbox") or matched_asset.get("block_bbox") or []
                 if len(cb) >= 4 and len(ab) >= 4:
                     _render_bbox = [
-                        min(cb[0], ab[0]), min(cb[1], ab[1]),
-                        max(cb[2], ab[2]), max(cb[3], ab[3]),
+                        min(cb[0], ab[0]),
+                        min(cb[1], ab[1]),
+                        max(cb[2], ab[2]),
+                        max(cb[3], ab[3]),
                     ]
                     _render_rotation_deg = _rot
 

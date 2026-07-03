@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 _FIGURE_NUMBER = re.compile(
-    r"\b(?:fig(?:ure)?\.?|extended data fig(?:ure)?\.?|supplementary fig(?:ure)?\.?|图|圖|ͼ|\uFFFD{1,2})\s*\d+",
+    r"\b(?:fig(?:ure)?\.?|extended data fig(?:ure)?\.?|supplementary fig(?:ure)?\.?|图|圖|ͼ|\uFFFD{1,2})\s*(?:[A-Z]\.?\s*)?\d+",
     re.I,
 )
 
