@@ -21,6 +21,8 @@ class PrimarySamePagePass:
             page = _resource_page(legend)
             if page is None:
                 continue
+            if ocr_figures._is_previous_page_legend_locator(legend):
+                continue
             page_groups = [g for g in state.candidate_index.candidate_groups if _resource_page(g) == page]
             for group in page_groups:
                 score = ocr_figures._score_legend_to_group(
@@ -70,9 +72,14 @@ class PrimarySamePagePass:
             for b in state.candidate_index.deduped_legends
             if str(b.get("block_id", "")) == legend.block_id
         )
+        figure_no = proposal.figure_no
         namespace = ocr_figures._extract_figure_namespace(legend_text)
+        if figure_no is None:
+            figure_id = f"figure_unknown_{len(state.matches):03d}"
+        else:
+            figure_id = ocr_figures._format_figure_id(namespace, figure_no)
         return {
-            "figure_id": ocr_figures._format_figure_id(namespace, proposal.figure_no),
+            "figure_id": figure_id,
             "figure_namespace": namespace,
             "figure_number": proposal.figure_no,
             "legend_block_id": legend.block_id,
