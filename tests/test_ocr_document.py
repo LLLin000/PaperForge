@@ -5460,3 +5460,99 @@ def test_normalize_document_structure_preserves_heading_page_reference_items() -
             f"Block {bid} demoted to {b.get('role')}"
         assert b.get("zone") == "reference_zone", \
             f"Block {bid} zone={b.get('zone')} not reference_zone"
+
+
+def test_veto_tail_spread_does_not_invert_range() -> None:
+    """spread_start must not exceed spread_end when a single-page tail spread
+    has strong body continuation (≥3 body_paragraph blocks). Regression for
+    the bug where _veto_tail_spread_body_continuation pushed spread_start
+    past spread_end, creating an inverted range."""
+    from paperforge.worker.ocr_document import TailBoundary, _veto_tail_spread_body_continuation
+
+    blocks = [
+        {"page": 5, "role": "body_paragraph", "seed_role": "body_paragraph",
+         "text": "Page 5 body continuation para 1. " * 10,
+         "bbox": [100, 100, 500, 130], "page_width": 1200, "page_height": 1600},
+        {"page": 5, "role": "body_paragraph", "seed_role": "body_paragraph",
+         "text": "Page 5 body continuation para 2. " * 10,
+         "bbox": [100, 140, 500, 170], "page_width": 1200, "page_height": 1600},
+        {"page": 5, "role": "body_paragraph", "seed_role": "body_paragraph",
+         "text": "Page 5 body continuation para 3. " * 10,
+         "bbox": [100, 180, 500, 210], "page_width": 1200, "page_height": 1600},
+        {"page": 6, "role": "reference_item", "seed_role": "reference_item",
+         "text": "[1] A reference. Journal. 2024.",
+         "bbox": [100, 100, 500, 120], "page_width": 1200, "page_height": 1600},
+    ]
+
+    boundary = TailBoundary(
+        body_end_page=4,
+        backmatter_start=5,
+        references_start=6,
+        spread_start=5,
+        spread_end=5,
+        is_clean_separated=True,
+        reason="test: single-page tail spread before veto",
+    )
+
+    result = _veto_tail_spread_body_continuation(boundary, blocks)
+
+    assert result.spread_start <= result.spread_end, \
+        f"spread_start ({result.spread_start}) > spread_end ({result.spread_end})"
+    assert result.spread_start == 5, \
+        f"spread_start should remain 5 (capped by spread_end=5), got {result.spread_start}"
+
+
+def test_frontmatter_support_below_body_start_rescued_by_width() -> None:
+    """A frontmatter_support block on page 1 below body start that is narrower
+    than the body anchor width by ≥100px should be rescued into
+    frontmatter_main_zone instead of falling to body_zone. Regression for
+    CAQNW9Q2 correspondence block (161px width vs ~393px body width)."""
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        # Paper title — triggers seen_title_or_author
+        {"block_id": "title", "page": 1,
+         "role": "paper_title", "seed_role": "paper_title",
+         "text": "A Study of Important Things",
+         "bbox": [100, 50, 500, 90],
+         "marker_signature": {"type": "none"},
+         "span_signature": {"font_size_median": 16.0},
+         "layout_signature": {"width": 400, "x_center": 300},
+         "page_width": 600, "page_height": 900},
+        # Body paragraph with ≥20 words — triggers body_started
+        {"block_id": "body1", "page": 1,
+         "role": "body_paragraph", "seed_role": "body_paragraph",
+         "text": "This is a body paragraph that has well more than twenty words so that it triggers the first page body start detection function correctly for the test.",
+         "bbox": [100, 120, 500, 160],
+         "marker_signature": {"type": "none"},
+         "span_signature": {"font_size_median": 10.0},
+         "layout_signature": {"width": 400, "x_center": 300},
+         "page_width": 600, "page_height": 900},
+        # Narrow frontmatter_support block below body — should be rescued
+        {"block_id": "corresp", "page": 1,
+         "role": "frontmatter_support", "seed_role": "frontmatter_support",
+         "text": "Correspondence to: Dr. Important Person",
+         "bbox": [100, 180, 260, 200],  # 160px wide, well under 400-100=300
+         "marker_signature": {"type": "none"},
+         "span_signature": {"font_size_median": 9.0},
+         "layout_signature": {"width": 160, "x_center": 180},
+         "page_width": 600, "page_height": 900},
+    ]
+    anchors = {
+        "body_family_anchor": {
+            "status": "ACCEPT",
+            "family_name": "body_family",
+            "sample_pages": [2],
+            "width_bucket": 400,
+        },
+    }
+
+    zones = infer_zones(blocks, anchors)
+
+    fm_main = zones["frontmatter_main_zone"]
+    body = zones["body_zone"]
+
+    assert "corresp" in fm_main["block_ids"], \
+        "narrow frontmatter_support block should be in frontmatter_main_zone"
+    assert "corresp" not in body["block_ids"], \
+        "narrow frontmatter_support block should NOT be in body_zone"

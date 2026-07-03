@@ -1,5 +1,6 @@
 """Production-path regression gate for OCR-v2 real papers.
 
+
 Primary: fixture-backed deterministic replay via build_raw_blocks_for_result_lines
          -> build_structured_blocks -> figure/table inventory -> render_fulltext_markdown.
 
@@ -10,6 +11,8 @@ Secondary: env-driven audit tests (marker: @pytest.mark.audit, skip if
 from __future__ import annotations
 
 import json
+import csv
+
 import os
 import re
 from pathlib import Path
@@ -1192,3 +1195,44 @@ def test_3fdt9652_multi_column_figures_not_merged(tmp_path: Path) -> None:
     assert fig2[0].get("legend_block_id") != fig3[0].get("legend_block_id"), (
         "Fig 2 and Fig 3 share the same legend_block_id"
     )
+
+
+def _load_trace_csv(key: str) -> list[dict]:
+    """Load block_trace.csv from fixture directory."""
+    path = FIXTURE_ROOT / key / "block_trace.csv"
+    if not path.exists():
+        pytest.skip(f"block_trace.csv not found for {key}")
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        return list(csv.DictReader(f))
+
+
+def _load_layout_expectations(key: str) -> dict:
+    """Load 'layout' section from expectations.json."""
+    exp = _load_expectations(key)
+    return exp.get("layout", {})
+
+
+MIXED_TAIL_FIXTURES = ["9TW98JH8", "MZC482YI"]
+
+
+@pytest.mark.parametrize("key", MIXED_TAIL_FIXTURES)
+def test_mixed_tail_fixture_layout_classification(key: str) -> None:
+    """Assert fixtures classified as mixed_tail have reference_item (≥3)
+    and body_paragraph blocks on the same page."""
+    trace = _load_trace_csv(key)
+    layout_exp = _load_layout_expectations(key)
+    mixed_tail_pages = layout_exp.get("mixed_tail_pages", [])
+    min_refs = layout_exp.get("min_reference_items_on_mixed_tail_page", 3)
+
+    assert mixed_tail_pages, f"No mixed_tail_pages defined for {key}"
+
+    for page in mixed_tail_pages:
+        page_blocks = [b for b in trace if int(b.get("page", 0)) == page]
+        roles = [b.get("role", "") for b in page_blocks]
+        ref_count = roles.count("reference_item")
+        body_count = roles.count("body_paragraph")
+
+        assert body_count >= 1, \
+            f"{key} page {page}: expected body_paragraph blocks, got {body_count}"
+        assert ref_count >= min_refs, \
+            f"{key} page {page}: expected ≥{min_refs} reference_item blocks, got {ref_count}"

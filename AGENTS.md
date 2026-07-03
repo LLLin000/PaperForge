@@ -48,9 +48,36 @@
 
 ## 1. 工作指示
 
-### Codebase Memory 优先
+### Codebase Memory MCP（知识图谱）
 
-有 `codebase-memory-mcp` 知识图，结构查询优先用 `search_graph` / `trace_path`，不用 grep/glob。
+`codebase-memory-mcp` 已索引整个项目（25K+ nodes, 53K+ edges），支持结构化代码查询。
+
+**典型使用场景：**
+
+| 工具 | 用法 | 示例 |
+|------|------|------|
+| `search_graph` | 自然语言搜代码 | `search_graph("layout profile column detection")` → 秒出相关函数 |
+| `trace_path` | 调用链追踪 | `trace_path("build_figure_inventory", direction="both")` → callees + callers |
+| `get_architecture` | 架构总览 + 热点函数 | `get_architecture(aspects=["hotspots"])` → fan-in 排名 |
+| `get_code_snippet` | 精确取函数源码 | `get_code_snippet("_classify_page_layout")` → 完整代码 |
+| `query_graph` | Cypher 自定义查询 | 查循环深度≥3 的函数、查递归函数等 |
+| `detect_changes` | 改动影响分析 | `detect_changes(scope="ocr_document.py")` → 哪些测试受影响 |
+| `manage_adr` | 记录架构决策 | `manage_adr(mode="update", ...)` → 跨 session 持久化 |
+
+**搜索优先于文本 grep：**
+```python
+# 不要：grep / rg / "find references" 文本搜索 — 迷失在 6000+ 行文件里
+# 应该：
+search_graph("column aware figure heading")        # 自然语言 → 相关函数
+trace_path("_recover_figure_heading_prefix")        # 调用链追踪
+get_architecture(aspects=["hotspots"])               # 项目热点
+```
+
+**索引维护：**
+项目已在索引中。代码有较大改动后手动重新索引（fast 模式，跳过语义相似度）：
+```
+index_repository(mode="fast", persistence=True)
+```
 
 ### 测试命令
 

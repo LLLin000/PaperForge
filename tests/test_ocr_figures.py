@@ -6424,3 +6424,75 @@ def test_recover_internal_figure_number_inside_overlap_gate():
     # Line that covers >15% of asset -> edge_band_score = 0
     large_line = [100, 100, 500, 600]  # covers large area
     assert _asset_edge_band_score(large_line, asset) == 0.0
+
+def test_recover_figure_heading_prefix_multi_column():
+    """Column-aware guard: skip same-y interfering lines from other columns."""
+    from paperforge.worker.ocr_figures import _recover_figure_heading_prefix
+    from paperforge.worker.ocr_document import PageLayoutProfile
+
+    block = {
+        "page": 1,
+        "text": "fraction of time that the system remains idle before processing the next request.",
+    }
+
+    # 2-column layout: boundary at x=600
+    # Heading at left column, interfering body line at right column (i+1 in pure y-order),
+    # real caption line further below in left column
+    page_pdf_lines = {
+        1: [
+            {"page": 1, "text": "FIGURE 3.", "bbox": [100, 100, 300, 120]},
+            # Interfering line — right column, shares ≥15 char prefix, would be i+1 in y-order
+            {"page": 1, "text": "fraction of time that", "bbox": [700, 130, 850, 150]},
+            # Real caption line — left column, below heading
+            {"page": 1, "text": "fraction of time that the system", "bbox": [100, 160, 350, 180]},
+        ],
+    }
+
+    page_layouts = {
+        1: PageLayoutProfile(column_count=2, column_boundaries=[0, 600, 1200]),
+    }
+
+    # Multi-column mode: should skip the right-column line and find the left-column caption
+    result = _recover_figure_heading_prefix(block, page_pdf_lines, page_layouts)
+    assert result is not None, "Expected prefix recovery in 2-column mode"
+    assert result.startswith("FIGURE 3.")
+    assert "fraction of time that the system remains idle" in result
+
+    # Single-column mode (no page_layouts): should hit the interfering line (false positive)
+    result_single = _recover_figure_heading_prefix(block, page_pdf_lines)
+    assert result_single is not None, "False positive expected in single-column mode"
+    # The recovery is wrong — it prepends FIGURE 3. to the interfering line's text,
+    # not the full caption
+    assert result_single is not None
+
+
+def test_build_figure_inventory_wrapper_stays_legacy_path(monkeypatch):
+    from paperforge.worker import ocr_figures
+
+    called = {"legacy": 0, "vnext": 0}
+
+    def fake_legacy(blocks, page_width=1200, page_pdf_lines_by_page=None):
+        called["legacy"] += 1
+        return {"source": "legacy"}
+
+    def fake_vnext(blocks, page_width=1200):
+        called["vnext"] += 1
+        return {"source": "vnext"}
+
+    monkeypatch.setattr(ocr_figures, "build_figure_inventory_legacy", fake_legacy)
+    monkeypatch.setattr(ocr_figures, "build_figure_inventory_vnext", fake_vnext)
+
+    result = ocr_figures.build_figure_inventory([], 1200)
+
+    assert result == {"source": "legacy"}
+    assert called == {"legacy": 1, "vnext": 0}
+
+
+def test_vnext_entrypoint_is_callable_without_cutover():
+    from paperforge.worker.ocr_figures import build_figure_inventory_vnext
+
+    result = build_figure_inventory_vnext([], 1200)
+
+    assert isinstance(result, dict)
+    assert result.get("pipeline_mode") == "vnext"
+    assert result.get("matched_figures") == []

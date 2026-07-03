@@ -1445,6 +1445,30 @@ def infer_zones(
             body_started = True
         if not body_started:
             frontmatter_main_blocks.append(block)
+
+    # Rescue frontmatter_support blocks that sit below body start on page 1.
+    # Old-style single-column journals (e.g. CAQNW9Q2) place correspondence
+    # inline after the first body paragraph. Width-vs-body-anchor distinguishes
+    # narrow metadata furniture from full-width body prose — no text matching.
+    if body_started and body_anchor_ok:
+        fm_main_id_set_pre = set(
+            _artifact_block_id(b, duplicate_block_ids) for b in frontmatter_main_blocks
+        )
+        body_width_val = body_anchor.get("width_bucket")
+        for block in page1_candidates:
+            if _artifact_block_id(block, duplicate_block_ids) in fm_main_id_set_pre:
+                continue
+            role = block.get("role") or block.get("seed_role")
+            if role == "unassigned":
+                role = block.get("seed_role")
+            if role != "frontmatter_support":
+                continue
+            bbox = _block_bbox(block)
+            if bbox is None or body_width_val is None:
+                continue
+            block_width = bbox[2] - bbox[0]
+            if block_width > 0 and block_width <= float(body_width_val) - 100:
+                frontmatter_main_blocks.append(block)
     frontmatter_main_ids = [_artifact_block_id(block, duplicate_block_ids) for block in frontmatter_main_blocks]
     frontmatter_main_composite_ids = [_zone_block_key(block) for block in frontmatter_main_blocks]
 
@@ -2153,7 +2177,11 @@ def _veto_tail_spread_body_continuation(boundary: TailBoundary, blocks: list[dic
         if page > 0:
             by_page.setdefault(page, []).append(b)
     spread = boundary.spread_start
-    while spread is not None and _page_has_strong_body_continuation(by_page.get(spread, [])):
+    while (
+        spread is not None
+        and spread < boundary.spread_end
+        and _page_has_strong_body_continuation(by_page.get(spread, []))
+    ):
         spread += 1
     return boundary._replace(spread_start=spread)
 

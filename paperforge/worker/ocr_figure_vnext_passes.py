@@ -1,0 +1,104 @@
+from __future__ import annotations
+
+from .ocr_figure_vnext_types import ClaimProposal, PassReport, ResourceRef
+
+
+def _resource_page(block: dict) -> int | None:
+    page = block.get("page")
+    if page is None:
+        page = block.get("page_num")
+    return int(page) if page is not None else None
+
+
+class PrimarySamePagePass:
+    name = "primary_same_page"
+
+    def _collect_proposals(self, state):
+        from . import ocr_figures
+
+        proposals = []
+        for legend in state.candidate_index.deduped_legends:
+            page = _resource_page(legend)
+            if page is None:
+                continue
+            page_groups = [g for g in state.candidate_index.candidate_groups if _resource_page(g) == page]
+            for group in page_groups:
+                score = ocr_figures._score_legend_to_group(
+                    legend,
+                    group,
+                    caption_score=ocr_figures.score_figure_caption(
+                        legend,
+                        nearby_media=True,
+                        caption_style_match=False,
+                        body_prose_likelihood=False,
+                    ),
+                    page_width=state.corpus.page_width,
+                )
+                if score.get("decision") != "matched":
+                    continue
+                figure_no = ocr_figures._extract_figure_number(str(legend.get("text", "")))
+                proposals.append(ClaimProposal(
+                    pass_name=self.name,
+                    figure_no=figure_no,
+                    claim_type="match",
+                    legends=[ResourceRef(kind="legend", page=page, block_id=legend.get("block_id"), figure_no=figure_no)],
+                    assets=[ResourceRef(kind="asset", page=page, block_id=bid) for bid in group.get("asset_block_ids", [])],
+                    groups=[ResourceRef(kind="group", page=page, block_id=None, group_id=group.get("group_id"))],
+                    confidence=float(score.get("score", 0.0)),
+                    evidence_rank=1,
+                    reason="same_page_primary",
+                    diagnostics={
+                        "evidence": list(score.get("evidence", [])),
+                        "legend_block_id": str(legend.get("block_id", "")),
+                    },
+                ))
+        return proposals
+
+    def _materialize_match(self, state, proposal):
+        from . import ocr_figures
+
+        legend = proposal.legends[0]
+        page = legend.page
+        asset_ids = {str(r.block_id) for r in proposal.assets}
+        matched_assets = [
+            ocr_figures._project_asset_record(a)
+            for a in state.corpus.raw_assets
+            if _resource_page(a) == page and str(a.get("block_id", "")) in asset_ids
+        ]
+        legend_text = next(
+            str(b.get("text", ""))
+            for b in state.candidate_index.deduped_legends
+            if str(b.get("block_id", "")) == legend.block_id
+        )
+        namespace = ocr_figures._extract_figure_namespace(legend_text)
+        return {
+            "figure_id": ocr_figures._format_figure_id(namespace, proposal.figure_no),
+            "figure_namespace": namespace,
+            "figure_number": proposal.figure_no,
+            "legend_block_id": legend.block_id,
+            "page": page,
+            "text": legend_text,
+            "matched_assets": matched_assets,
+            "asset_block_ids": sorted(asset_ids),
+            "settlement_type": "same_page",
+            "confidence": proposal.confidence,
+            "match_score": {"score": proposal.confidence, "decision": "matched", "evidence": proposal.diagnostics["evidence"]},
+            "flags": [],
+            "bridge_block_ids": [],
+        }
+
+    def run(self, state):
+        report = PassReport(pass_name=self.name)
+        proposals = self._collect_proposals(state)
+        report.proposals.extend(proposals)
+
+        for proposal in sorted(proposals, key=lambda p: (p.evidence_rank, -p.confidence, -(p.figure_no or -1))):
+            conflict = state.ledger.try_claim_assets(proposal.assets, owner=proposal.legends[0], reason=proposal.reason)
+            if conflict is not None:
+                report.conflicts.append(conflict)
+                report.rejected.append(proposal)
+                continue
+            state.accept_match(proposal, self._materialize_match(state, proposal))
+            report.accepted.append(proposal)
+
+        return report
