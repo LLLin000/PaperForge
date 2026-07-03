@@ -6429,3 +6429,24 @@ def test_vnext_entrypoint_is_callable_without_cutover():
     assert isinstance(result, dict)
     assert result.get("pipeline_mode") == "vnext"
     assert result.get("matched_figures") == []
+
+
+# ── Baseline lock: figure entrypoint delegates to vnext ──
+
+
+def test_build_figure_inventory_delegates_to_vnext(monkeypatch):
+    from paperforge.worker import ocr_figures
+
+    called = {}
+
+    def fake_vnext(structured_blocks, page_width=1200, page_pdf_lines_by_page=None):
+        called["args"] = (structured_blocks, page_width, page_pdf_lines_by_page)
+        return {"pipeline_mode": "vnext", "matched_figures": []}
+
+    monkeypatch.setattr(ocr_figures, "build_figure_inventory_vnext", fake_vnext)
+
+    blocks = [{"block_id": "b1", "page": 1, "role": "body_text", "text": "x"}]
+    result = ocr_figures.build_figure_inventory(blocks, page_width=777, page_pdf_lines_by_page={1: []})
+
+    assert result["pipeline_mode"] == "vnext"
+    assert called["args"] == (blocks, 777, {1: []})
