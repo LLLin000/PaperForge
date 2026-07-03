@@ -147,3 +147,54 @@ def test_legacy_vnext_corpus_module_reexports_figure_domain_types():
     from paperforge.worker.ocr_figure_vnext_corpus import FigureCorpus as LegacyModuleFigureCorpus
 
     assert LegacyModuleFigureCorpus is DomainFigureCorpus
+
+def test_resource_ref_supports_text_kind_and_role() -> None:
+    from paperforge.worker.ocr_pairing_types import ResourceRef
+
+    ref = ResourceRef(kind="text", page=5, block_id="note1", role="note")
+
+    assert ref.kind == "text"
+    assert ref.role == "note"
+
+
+def test_claim_proposal_exposes_entity_no_alias_and_texts() -> None:
+    from paperforge.worker.ocr_pairing_types import ClaimProposal, ResourceRef
+
+    proposal = ClaimProposal(
+        pass_name="p",
+        figure_no=3,
+        claim_type="attach_text",
+        legends=[ResourceRef(kind="legend", page=5, block_id="cap1")],
+        assets=[],
+        groups=[],
+        texts=[ResourceRef(kind="text", page=5, block_id="note1", role="note")],
+        confidence=0.8,
+        evidence_rank=1,
+        reason="test",
+    )
+
+    assert proposal.entity_no == 3
+    assert proposal.texts[0].block_id == "note1"
+
+
+def test_ownership_ledger_journals_text_attachments() -> None:
+    from paperforge.worker.ocr_pairing_state import OwnershipLedger
+    from paperforge.worker.ocr_pairing_types import ResourceRef
+
+    ledger = OwnershipLedger()
+    owner = ResourceRef(kind="legend", page=5, block_id="cap1", figure_no=5)
+    texts = [ResourceRef(kind="text", page=5, block_id="note1", role="note")]
+
+    ledger.journal_text_attachment(texts, owner=owner, reason="table-notes")
+
+    assert ledger.text_attachments_for(owner) == texts
+
+
+def test_pipeline_state_alias_preserves_figure_state_compatibility() -> None:
+    from paperforge.worker.ocr_pairing_state import FigurePipelineState, OwnershipLedger, PipelineState
+
+    state = PipelineState(corpus=None, candidate_index=None, ledger=OwnershipLedger())
+
+    assert FigurePipelineState is PipelineState
+    assert state.matches == []
+    assert state.reservations == []

@@ -68,6 +68,26 @@ class OwnershipLedger:
     def snapshot(self) -> list[dict[str, object]]:
         return list(self._journal)
 
+    def journal_text_attachment(
+        self, texts: list[ResourceRef], *, owner: ResourceRef, reason: str
+    ) -> None:
+        for text in texts:
+            self._journal.append(
+                {
+                    "action": "attach_text",
+                    "resource": text,
+                    "owner": owner,
+                    "reason": reason,
+                }
+            )
+
+    def text_attachments_for(self, owner: ResourceRef) -> list[ResourceRef]:
+        return [
+            entry["resource"]
+            for entry in self._journal
+            if entry.get("action") == "attach_text" and entry.get("owner") == owner
+        ]
+
 
 @dataclass
 class FigurePipelineState:
@@ -143,3 +163,6 @@ class FigurePipelineState:
             "reason": proposal.reason,
             "resources": {"groups": proposal.groups},
         })
+
+
+PipelineState = FigurePipelineState

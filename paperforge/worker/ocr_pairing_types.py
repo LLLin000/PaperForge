@@ -6,12 +6,16 @@ from typing import Any, Literal
 
 @dataclass(frozen=True)
 class ResourceRef:
-    kind: Literal["legend", "asset", "group"]
+    kind: Literal["legend", "asset", "group", "text"]
     page: int | None
     block_id: str | None
     group_id: str | None = None
     figure_no: int | None = field(default=None, compare=False)
     origin: str | None = field(default=None, compare=False)
+    role: str | None = field(default=None, compare=False)
+    @property
+    def entity_no(self) -> int | None:
+        return self.figure_no
 
     def __post_init__(self) -> None:
         if self.page is not None:
@@ -27,6 +31,8 @@ class ResourceRef:
             raise ValueError("legend ResourceRef requires page + block_id")
         if self.kind == "group" and (self.page is None or self.group_id is None):
             raise ValueError("group ResourceRef requires page + group_id")
+        if self.kind == "text" and (self.page is None or self.block_id is None):
+            raise ValueError("text ResourceRef requires page + block_id")
 
 
 @dataclass(frozen=True)
@@ -41,7 +47,7 @@ class OwnershipConflict:
 class ClaimProposal:
     pass_name: str
     figure_no: int | None
-    claim_type: Literal["match", "reserve", "block", "unresolved_cluster", "composite_parent"]
+    claim_type: Literal["match", "reserve", "block", "unresolved_cluster", "composite_parent", "attach_text"]
     legends: list[ResourceRef]
     assets: list[ResourceRef]
     groups: list[ResourceRef]
@@ -49,7 +55,11 @@ class ClaimProposal:
     evidence_rank: int
     reason: str
     diagnostics: dict[str, Any] = field(default_factory=dict)
+    texts: list[ResourceRef] = field(default_factory=list)
 
+    @property
+    def entity_no(self) -> int | None:
+        return self.figure_no
 
 @dataclass
 class PassReport:
