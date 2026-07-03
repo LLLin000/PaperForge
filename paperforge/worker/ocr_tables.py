@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -234,6 +235,10 @@ def _table_note_falls_into_page_footnote_prior(
 
 
 def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
+    return build_table_inventory_legacy(structured_blocks)
+
+
+def build_table_inventory_legacy(structured_blocks: list[dict]) -> dict[str, Any]:
     tables: list[dict] = []
     captions: list[dict] = []
     assets: list[dict] = []
@@ -634,3 +639,33 @@ def write_back_table_roles(inventory: dict, structured_blocks: list[dict]) -> No
 
 def write_table_inventory(dst: Path, inventory: dict[str, Any]) -> None:
     write_json(dst, inventory)
+
+
+def build_table_inventory_vnext(structured_blocks: list[dict]) -> dict[str, Any]:
+    from .ocr_pairing_framework import run_pairing_passes
+    from .ocr_pairing_state import OwnershipLedger, PipelineState
+    from .ocr_table_domain import TableCandidateIndex, TableCorpus, assemble_table_inventory
+    from .ocr_table_passes import (
+        TableAdjacentPagePass,
+        TableFinalAccountingPass,
+        TableNotesAttachmentPass,
+        TableSamePagePass,
+        TableWeakCaptionRecoveryPass,
+    )
+
+    corpus = TableCorpus.from_blocks(structured_blocks)
+    candidate_index = TableCandidateIndex.from_corpus(corpus)
+    state = PipelineState(corpus=corpus, candidate_index=candidate_index, ledger=OwnershipLedger())
+    reports = run_pairing_passes(
+        state,
+        [
+            TableWeakCaptionRecoveryPass,
+            TableSamePagePass,
+            TableAdjacentPagePass,
+            TableNotesAttachmentPass,
+            TableFinalAccountingPass,
+        ],
+    )
+    inventory = assemble_table_inventory(state, candidate_index)
+    inventory["pass_reports"] = [asdict(r) for r in reports]
+    return inventory

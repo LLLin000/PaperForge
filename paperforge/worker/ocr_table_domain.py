@@ -113,9 +113,9 @@ def assemble_table_inventory(
         if t.get("has_asset") and t.get("asset_block_id")
     }
     held_tables = [
-        record["caption"]
+        record["held_table"]
         for record in candidate_index.caption_records
-        if record.get("status") == "held"
+        if record.get("status") == "held" and "held_table" in record
     ]
     unmatched_captions = [
         record["caption"]
