@@ -21,6 +21,8 @@ class PrimarySamePagePass:
             page = _resource_page(legend)
             if page is None:
                 continue
+            if ocr_figures._is_previous_page_legend_locator(legend):
+                continue
             page_groups = [g for g in state.candidate_index.candidate_groups if _resource_page(g) == page]
             for group in page_groups:
                 score = ocr_figures._score_legend_to_group(
@@ -70,9 +72,14 @@ class PrimarySamePagePass:
             for b in state.candidate_index.deduped_legends
             if str(b.get("block_id", "")) == legend.block_id
         )
+        figure_no = proposal.figure_no
         namespace = ocr_figures._extract_figure_namespace(legend_text)
+        if figure_no is None:
+            figure_id = f"figure_unknown_{len(state.matches):03d}"
+        else:
+            figure_id = ocr_figures._format_figure_id(namespace, figure_no)
         return {
-            "figure_id": ocr_figures._format_figure_id(namespace, proposal.figure_no),
+            "figure_id": figure_id,
             "figure_namespace": namespace,
             "figure_number": proposal.figure_no,
             "legend_block_id": legend.block_id,
@@ -101,4 +108,85 @@ class PrimarySamePagePass:
             state.accept_match(proposal, self._materialize_match(state, proposal))
             report.accepted.append(proposal)
 
+        return report
+
+
+class CrossPageReservationPass:
+    name = "cross_page_reservation"
+
+    def run(self, state):
+        report = PassReport(pass_name=self.name)
+        for legend in state.candidate_index.deduped_legends:
+            page = _resource_page(legend)
+            if page is None:
+                continue
+            # Skip legends already matched by same-page primary
+            if any(str(m.get("legend_block_id", "")) == str(legend.get("block_id", "")) for m in state.matches):
+                continue
+            # Find forward groups (page > legend page)
+            forward_groups = [
+                g for g in state.candidate_index.candidate_groups
+                if _resource_page(g) is not None and _resource_page(g) > page
+            ]
+            for group in forward_groups[:1]:
+                group_ref = ResourceRef(kind="group", page=_resource_page(group), block_id=None, group_id=group.get("group_id"))
+                if not state.ledger.can_claim_group(group_ref):
+                    continue
+                proposal = ClaimProposal(
+                    pass_name=self.name,
+                    figure_no=None,
+                    claim_type="reserve",
+                    legends=[ResourceRef(kind="legend", page=page, block_id=legend.get("block_id"), figure_no=None)],
+                    assets=[],
+                    groups=[group_ref],
+                    confidence=0.6,
+                    evidence_rank=2,
+                    reason="forward_cross_page_candidate",
+                    diagnostics={"evidence": ["page_gap", "same_page_miss"]},
+                )
+                report.proposals.append(proposal)
+                state.ledger.reserve_group(group_ref, reason=proposal.reason)
+                state.accept_reservation(proposal)
+                report.accepted.append(proposal)
+                break
+        return report
+
+
+class CrossPageSettlementPass:
+    name = "cross_page_settlement"
+
+    def run(self, state):
+        report = PassReport(pass_name=self.name)
+        for reservation in state.reservations:
+            legend = reservation["legends"][0]
+            group = reservation["groups"][0]
+            state.ledger.transition_reserved_group_to_claimed(group, owner=legend, reason="cross_page_settlement")
+            proposal = ClaimProposal(
+                pass_name=self.name,
+                figure_no=reservation["figure_no"],
+                claim_type="match",
+                legends=[legend],
+                assets=[],
+                groups=[group],
+                confidence=0.6,
+                evidence_rank=2,
+                reason="cross_page_settlement",
+                diagnostics={"evidence": ["reservation_claimed"]},
+            )
+            state.accept_match(proposal, {
+                "figure_id": f"figure_reserved_{len(state.matches):03d}",
+                "figure_namespace": "figure",
+                "figure_number": reservation["figure_no"],
+                "legend_block_id": legend.block_id,
+                "page": legend.page,
+                "text": "",
+                "matched_assets": [],
+                "asset_block_ids": [],
+                "settlement_type": "cross_page_reservation",
+                "confidence": 0.6,
+                "match_score": {"score": 0.6, "decision": "matched", "evidence": ["reservation_claimed"]},
+                "flags": ["cross_page_reserved"],
+                "bridge_block_ids": [],
+            })
+            report.accepted.append(proposal)
         return report

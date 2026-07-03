@@ -5,14 +5,9 @@ import itertools
 import re
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any
 
 from paperforge.core.io import write_json
-from paperforge.worker.ocr_document import (
-    PageLayoutProfile,
-    _build_page_layout_profiles,
-    _col_boundaries_for_page,
-    _get_column_index,
-)
 from paperforge.worker.ocr_roles import _PANEL_LABEL_PATTERN, _looks_like_figure_description_opening
 from paperforge.worker.ocr_scores import score_figure_caption, score_figure_match
 
@@ -2982,19 +2977,45 @@ def _infer_missing_main_figure_numbers(
     }
     return inventory
 
-def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
-    return build_figure_inventory_legacy(structured_blocks, page_width, page_pdf_lines_by_page)
 
+def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
+    return build_figure_inventory_vnext(structured_blocks, page_width)
 
 def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
+    from .ocr_figure_vnext_accounting_pass import FinalAccountingPass
+    from .ocr_figure_vnext_bundle_pass import LegendBundlePass
+    from .ocr_figure_vnext_classic_seq_pass import ClassicSequentialPass, UnresolvedClusterConsolidation
+    from .ocr_figure_vnext_composite_pass import CompositeParentPass
     from .ocr_figure_vnext_corpus import FigureCandidateIndex, FigureCorpus
-    from .ocr_figure_vnext_passes import PrimarySamePagePass, _resource_page
+    from .ocr_figure_vnext_group_seq_pass import GroupSequentialPass
+    from .ocr_figure_vnext_locator_pass import LocatorBridgePass
+    from .ocr_figure_vnext_passes import (
+        CrossPageReservationPass,
+        CrossPageSettlementPass,
+        PrimarySamePagePass,
+        _resource_page,
+    )
+    from .ocr_figure_vnext_sidecar_pass import SidecarPass
     from .ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
 
     corpus = FigureCorpus.from_blocks(structured_blocks, page_width=page_width)
     candidate_index = FigureCandidateIndex.from_corpus(corpus)
     state = FigurePipelineState(corpus=corpus, candidate_index=candidate_index, ledger=OwnershipLedger())
-    report = PrimarySamePagePass().run(state)
+    reports = []
+    for pass_cls in (
+        PrimarySamePagePass,
+        CompositeParentPass,
+        SidecarPass,
+        LocatorBridgePass,
+        CrossPageReservationPass,
+        CrossPageSettlementPass,
+        LegendBundlePass,
+        GroupSequentialPass,
+        ClassicSequentialPass,
+        UnresolvedClusterConsolidation,
+        FinalAccountingPass,
+    ):
+        reports.append(pass_cls().run(state))
     matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
 
     return {
@@ -3007,21 +3028,19 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
             if (_resource_page(a) is not None
                 and state.ledger.owner_of_asset(page=_resource_page(a), block_id=a.get("block_id")) is None)
         ],
-        "unresolved_clusters": [],
+        "unresolved_clusters": list(state.unresolved),
         "held_figures": list(candidate_index.held_legends),
         "rejected_legends": list(candidate_index.rejected_legends),
         "page_ledger": {},
         "residual_ledger": {},
         "local_pairing_hypotheses": [],
-        "pass_reports": [asdict(report)],
-        "completeness": {
+        "pass_reports": [asdict(r) for r in reports],
+        "completeness": state.completeness or {
             "total_numbered_legends": len(candidate_index.deduped_legends),
             "accounted_for": len(state.matches),
             "details": [],
         },
     }
-
-
 def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
     legends: list[dict] = []
     held_figures: list[dict] = []
@@ -3054,9 +3073,6 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
         if block.get("page_width"):
             page_width = float(block["page_width"])
 
-    # Build per-page column profiles once, reused by prefix recovery
-    page_layouts = _build_page_layout_profiles(structured_blocks)
-
     for block in structured_blocks:
         role = block.get("role", "")
         if block.get("_non_body_media") or role == "non_body_insert":
@@ -3085,7 +3101,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             # PDF prefix recovery: restore "Figure N" heading missed by OCR
             # Must run BEFORE the zone/style filter that checks _extract_figure_number()
             if page_pdf_lines_by_page and _extract_figure_number(text) is None:
-                recovered = _recover_figure_heading_prefix(block, page_pdf_lines_by_page, page_layouts)
+                recovered = _recover_figure_heading_prefix(block, page_pdf_lines_by_page)
                 if recovered:
                     block["text"] = recovered
                     text = recovered
@@ -6093,10 +6109,10 @@ def _recover_missing_figure_numbers_from_assets(
             "figure_number_recovered_from_asset_text",
         ]))
 
+
 def _recover_figure_heading_prefix(
     block: dict,
     page_pdf_lines_by_page: dict[int, list[dict]],
-    page_layouts: dict[int, PageLayoutProfile] | None = None,
 ) -> str | None:
     """Recover 'FIGURE N' heading prefix from PDF text layer for OCR-missed captions.
 
@@ -6104,11 +6120,8 @@ def _recover_figure_heading_prefix(
     (e.g. rendered in a bold/small-caps font that the OCR engine doesn't read),
     the caption body is captured as figure_caption_candidate but lacks the
     figure number prefix. This function checks the PDF text layer for the
-    heading on the same page and prepends it if a line below the heading
-    (within 100px) matches the start of the caption text.
-
-    In multi-column layouts, only PDF lines in the same column as the heading
-    are considered, preventing false matches from adjacent columns.
+    heading on the same page and prepends it if the line immediately after
+    the heading matches the start of the caption text.
 
     Returns the complete caption text with prefix, or None if no recovery.
     """
@@ -6127,10 +6140,6 @@ def _recover_figure_heading_prefix(
         key=lambda l: (l.get("bbox") or [0, 0, 0, 0])[1],
     )
 
-    # Resolve column boundaries once
-    col_boundaries = _col_boundaries_for_page(page, page_layouts) if page_layouts else []
-    multi_column = len(col_boundaries) > 2  # N+1 boundaries for N columns
-
     for i, line in enumerate(sorted_lines):
         line_text = str(line.get("text", "") or "").strip()
         # Check: line starts with Figure N heading (short heading, not in-text ref)
@@ -6140,31 +6149,21 @@ def _recover_figure_heading_prefix(
         if len(line_text) > 40:
             continue  # too long for a heading — probably in-text reference
 
-        # Capture heading's column index for multi-column layouts
-        heading_col = _get_column_index(line, col_boundaries) if multi_column else None
+        # Check the next PDF line (by y-order) matches the start of block text
+        if i + 1 >= len(sorted_lines):
+            continue
+        next_text = str(sorted_lines[i + 1].get("text", "") or "").strip()
+        if not next_text or len(next_text) < 10:
+            continue
 
-        # Scan below-heading lines (within 100px y-gap) for prefix match
-        heading_y = line.get("bbox", [0, 0, 0, 0])[1] if line.get("bbox") else 0
-        for j in range(i + 1, len(sorted_lines)):
-            nxt = sorted_lines[j]
-            nxt_bbox = nxt.get("bbox") or [0, 0, 0, 0]
-            if nxt_bbox[1] - heading_y > 100:
+        # Common-prefix match: at least 15 chars case-insensitive
+        common = 0
+        for a, b in zip(next_text.lower(), block_text.lower()):
+            if a == b:
+                common += 1
+            else:
                 break
-            if multi_column and heading_col is not None:
-                if _get_column_index(nxt, col_boundaries) not in (heading_col, None):
-                    continue
-            next_text = str(nxt.get("text", "") or "").strip()
-            if not next_text or len(next_text) < 10:
-                continue
-
-            # Common-prefix match: at least 15 chars case-insensitive
-            common = 0
-            for a, b in zip(next_text.lower(), block_text.lower()):
-                if a == b:
-                    common += 1
-                else:
-                    break
-            if common >= 15:
-                return line_text + "\n" + block_text
+        if common >= 15:
+            return line_text + "\n" + block_text
 
     return None

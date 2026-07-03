@@ -10,8 +10,8 @@ class ResourceRef:
     page: int | None
     block_id: str | None
     group_id: str | None = None
-    figure_no: int | None = None
-    origin: str | None = None
+    figure_no: int | None = field(default=None, compare=False)
+    origin: str | None = field(default=None, compare=False)
 
     def __post_init__(self) -> None:
         if self.page is not None:

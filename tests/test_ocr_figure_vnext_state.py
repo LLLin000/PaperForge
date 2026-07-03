@@ -1,10 +1,12 @@
+"""Ownership ledger and pipeline state tests for vnext figure contracts."""
+
 from __future__ import annotations
 
 from paperforge.worker.ocr_figure_vnext_types import ClaimProposal, ResourceRef
 from paperforge.worker.ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
 
 
-def test_ledger_rejects_double_ownership_for_same_asset_and_records_conflict():
+def test_ledger_rejects_double_ownership_for_same_asset_and_records_conflict() -> None:
     ledger = OwnershipLedger()
     asset = ResourceRef(kind="asset", page=3, block_id="42")
     legend_a = ResourceRef(kind="legend", page=3, block_id="77", figure_no=1)
@@ -19,7 +21,7 @@ def test_ledger_rejects_double_ownership_for_same_asset_and_records_conflict():
     assert any(entry["action"] == "conflict" for entry in ledger.snapshot())
 
 
-def test_pipeline_state_accept_match_records_diagnostic():
+def test_pipeline_state_accept_match_records_diagnostic() -> None:
     state = FigurePipelineState(corpus=None, candidate_index=None, ledger=OwnershipLedger())
     proposal = ClaimProposal(
         pass_name="primary_same_page",
