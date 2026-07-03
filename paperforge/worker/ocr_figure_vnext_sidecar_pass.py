@@ -52,10 +52,12 @@ class SidecarPass:
                 # Skip captions already protected by an earlier pass
                 protected = False
                 for match in state.matches:
-                    if str(match.get("legend_block_id", "")) == cid:
-                        if ocr_figures._has_protected_figure_ownership(match):
-                            protected = True
-                            break
+                    if (
+                        str(match.get("legend_block_id", "")) == cid
+                        and ocr_figures._has_protected_figure_ownership(match)
+                    ):
+                        protected = True
+                        break
                 if protected:
                     continue
 

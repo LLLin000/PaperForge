@@ -34,3 +34,25 @@ def test_real_paper_special_fallbacks_reports_diff_shape():
     assert "vnext_matched_count" in diff
     assert "legacy_consumed_block_ids" in diff
     assert "vnext_consumed_block_ids" in diff
+
+
+def test_real_paper_sidecar_reports_diff_shape():
+    blocks_path = Path("tests/fixtures/ocr_vnext_real_papers/28JLIHLS/blocks.structured.jsonl")
+    diff = compare_blocks_file(blocks_path)
+
+    assert diff["paper"] == "28JLIHLS"
+    assert "legacy_matched_count" in diff
+    assert "vnext_matched_count" in diff
+    assert "legacy_consumed_block_ids" in diff
+    assert "vnext_consumed_block_ids" in diff
+
+
+def test_real_paper_dense_composite_reports_diff_shape():
+    blocks_path = Path("tests/fixtures/ocr_vnext_real_papers/24YKLTHQ/blocks.structured.jsonl")
+    diff = compare_blocks_file(blocks_path)
+
+    assert diff["paper"] == "24YKLTHQ"
+    assert "legacy_matched_count" in diff
+    assert "vnext_matched_count" in diff
+    assert "legacy_consumed_block_ids" in diff
+    assert "vnext_consumed_block_ids" in diff

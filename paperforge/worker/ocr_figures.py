@@ -2979,7 +2979,7 @@ def _infer_missing_main_figure_numbers(
 
 
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
-    return build_figure_inventory_legacy(structured_blocks, page_width, page_pdf_lines_by_page)
+    return build_figure_inventory_vnext(structured_blocks, page_width)
 
 def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
     from .ocr_figure_vnext_accounting_pass import FinalAccountingPass
