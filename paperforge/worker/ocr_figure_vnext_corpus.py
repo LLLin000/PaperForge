@@ -61,6 +61,7 @@ class FigureCandidateIndex:
     sidecar_candidates: dict[int, list[dict]]
     bundle_source_legend_ids: set[str]
     locator_candidates: list[dict]
+    composite_parent_candidates: list[dict] = field(default_factory=list)
 
     @classmethod
     def from_corpus(cls, corpus: FigureCorpus) -> FigureCandidateIndex:
@@ -103,6 +104,15 @@ class FigureCandidateIndex:
             formal_legends, corpus.raw_assets
         )
 
+
+        # Populate composite_parent_candidates: same-page atomic groups with
+        # horizontal alignment + vertical adjacency (2x2 grid, columnar stacks).
+        composite_parent_candidates = ocr_figures._build_composite_parent_figure_groups_visual_only(
+            candidate_groups,
+            corpus.raw_assets,
+            corpus.blocks,
+            corpus.page_width,
+        )
         return cls(
             formal_legends=formal_legends,
             held_legends=[],
@@ -113,4 +123,5 @@ class FigureCandidateIndex:
             sidecar_candidates=sidecar_candidates,
             bundle_source_legend_ids=bundle_source_legend_ids,
             locator_candidates=corpus.locator_candidates,
+            composite_parent_candidates=composite_parent_candidates,
         )

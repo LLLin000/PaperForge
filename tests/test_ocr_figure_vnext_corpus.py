@@ -200,3 +200,61 @@ def test_candidate_index_sidecar_candidates_empty_for_wide_captions() -> None:
     corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
     index = FigureCandidateIndex.from_corpus(corpus)
     assert index.sidecar_candidates == {}
+
+def test_candidate_index_populates_composite_parent_candidates() -> None:
+    """4 figure_asset blocks in a 2x2 grid → composite_parent_candidates non-empty.
+
+    Four identical-size (200x200) assets on page 1 arranged as a 2x2 grid:
+    top-left (100,100), top-right (400,100), bottom-left (100,350),
+    bottom-right (400,350) — vertical stacks share x-overlap, horizontal
+    pairs are separated by a 100px gap.  One caption anchors the page.
+    The helper unions left-column and right-column vertical pairs into
+    composite parents, yielding ≥1 candidate.
+    """
+    blocks = [
+        # Four figure assets forming a 2x2 grid on page 1
+        {
+            "block_id": "ast_tl",
+            "page": 1,
+            "role": "figure_asset",
+            "bbox": [100, 100, 300, 300],
+        },
+        {
+            "block_id": "ast_tr",
+            "page": 1,
+            "role": "figure_asset",
+            "bbox": [400, 100, 600, 300],
+        },
+        {
+            "block_id": "ast_bl",
+            "page": 1,
+            "role": "figure_asset",
+            "bbox": [100, 350, 300, 550],
+        },
+        {
+            "block_id": "ast_br",
+            "page": 1,
+            "role": "figure_asset",
+            "bbox": [400, 350, 600, 550],
+        },
+        # One caption below the grid
+        {
+            "block_id": "cap1",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Four-panel grid layout.",
+            "bbox": [300, 600, 900, 620],
+        },
+    ]
+    corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
+    index = FigureCandidateIndex.from_corpus(corpus)
+    assert len(index.composite_parent_candidates) >= 1, (
+        "Expected at least one composite parent from 2x2 grid"
+    )
+    for parent in index.composite_parent_candidates:
+        assert parent["group_type"] == "composite_parent"
+        assert parent["page"] == 1
+        assert len(parent["child_group_ids"]) >= 2
+        assert len(parent["asset_block_ids"]) >= 2
+        assert 0.0 <= parent["parent_confidence"] <= 1.0
+        assert isinstance(parent["cluster_bbox"], list) and len(parent["cluster_bbox"]) == 4
