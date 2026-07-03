@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-07-02)
 
 ## Current Position
 
-Phase: Annotation Phase 10 - Canvas Data Contract and View Registration
+Phase: Phase ANN10 - Canvas Data Contract and View Registration
 Plan: None yet
 Status: Requirements and roadmap defined; ready for phase discussion/planning
 Last activity: 2026-07-03 - annotation v0.3 research, requirements, and roadmap prepared
@@ -95,8 +95,8 @@ None yet.
 
 Last session: 2026-07-03T14:02:46.644Z
 Stopped at: Phase annotation-10 context gathered
-Resume file: .planning/phases/annotation-10-canvas-data-contract-and-view-registration/annotation-10-CONTEXT.md
-Next phase: Annotation Phase 10 - Canvas Data Contract and View Registration
+Resume file: .planning/phases/ANN10/annotation-10-CONTEXT.md
+Next phase: Phase ANN10 - Canvas Data Contract and View Registration
 
 ## Next Suggested Command
 

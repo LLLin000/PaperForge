@@ -1,10 +1,10 @@
-# Annotation Phase 10: Canvas Data Contract and View Registration - Discussion Log
+# Phase ANN10: Canvas Data Contract and View Registration - Discussion Log
 
 > **Audit trail only.** Do not use as input to planning, research, or execution agents.
 > Decisions are captured in CONTEXT.md; this log preserves the alternatives considered.
 
 **Date:** 2026-07-03
-**Phase:** annotation-10-canvas-data-contract-and-view-registration
+**Phase:** ANN10-canvas-data-contract-and-view-registration
 **Areas discussed:** entry points, paper identity, module boundaries, test gates
 
 ---

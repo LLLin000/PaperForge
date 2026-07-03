@@ -1,4 +1,4 @@
-# Annotation Phase 10: Canvas Data Contract and View Registration - Context
+# Phase ANN10: Canvas Data Contract and View Registration - Context
 
 **Gathered:** 2026-07-03
 **Status:** Ready for planning
@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Annotation Phase 10 establishes the Visual Reading Canvas foundation. It adds a PaperForge-owned Obsidian `ItemView`, explicit paper identity, a minimal open path, canvas module seams, and a shell-level render lifecycle that can load or represent annotation state through the existing v0.2 contracts.
+Phase ANN10, the annotation v0.3 Canvas Data Contract and View Registration phase, establishes the Visual Reading Canvas foundation. It adds a PaperForge-owned Obsidian `ItemView`, explicit paper identity, a minimal open path, canvas module seams, and a shell-level render lifecycle that can load or represent annotation state through the existing v0.2 contracts.
 
 In plain terms: this phase makes it possible to open a read-only Reading Canvas for one known paper and prove that the view, context, annotation bridge, stale guards, and shell states are wired correctly.
 
@@ -140,5 +140,5 @@ The user approved the recommended choices for entry points, paper identity, modu
 
 ---
 
-*Phase: annotation-10-canvas-data-contract-and-view-registration*
+*Phase: ANN10-canvas-data-contract-and-view-registration*
 *Context gathered: 2026-07-03*

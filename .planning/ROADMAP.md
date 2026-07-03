@@ -8,16 +8,16 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 ## Phases
 
-- [ ] **Annotation Phase 10: Canvas Data Contract and View Registration** - Add a PaperForge Reading Canvas view shell with explicit paper identity and reusable module seams.
-- [ ] **Annotation Phase 11: Annotation Card View-Models and Layout** - Project existing annotations into read-only card models and deterministic side lanes.
-- [ ] **Annotation Phase 12: Controlled Reading Surface and Source Anchors** - Render a PaperForge-owned central source surface with exact, page-level, and unresolved anchors.
-- [ ] **Annotation Phase 13: Bidirectional Navigation and Fallback Paths** - Connect cards and source anchors through focus/scroll behavior while preserving v0.2 PDF navigation fallback.
-- [ ] **Annotation Phase 14: Focused Connector Layer and Visual Polish** - Draw guarded focused connectors and harden responsive/readable canvas presentation.
-- [ ] **Annotation Phase 15: Canvas Verification Gate and Live Harness Record** - Prove automated canvas behavior, preserve v0.2 gates, and record live Obsidian confidence.
+- [ ] **Phase ANN10: Canvas Data Contract and View Registration** - Add a PaperForge Reading Canvas view shell with explicit paper identity and reusable module seams.
+- [ ] **Phase ANN11: Annotation Card View-Models and Layout** - Project existing annotations into read-only card models and deterministic side lanes.
+- [ ] **Phase ANN12: Controlled Reading Surface and Source Anchors** - Render a PaperForge-owned central source surface with exact, page-level, and unresolved anchors.
+- [ ] **Phase ANN13: Bidirectional Navigation and Fallback Paths** - Connect cards and source anchors through focus/scroll behavior while preserving v0.2 PDF navigation fallback.
+- [ ] **Phase ANN14: Focused Connector Layer and Visual Polish** - Draw guarded focused connectors and harden responsive/readable canvas presentation.
+- [ ] **Phase ANN15: Canvas Verification Gate and Live Harness Record** - Prove automated canvas behavior, preserve v0.2 gates, and record live Obsidian confidence.
 
 ## Phase Details
 
-### Annotation Phase 10: Canvas Data Contract and View Registration
+### Phase ANN10: Canvas Data Contract and View Registration
 
 **Goal:** Establish a PaperForge-owned Reading Canvas entry point with stable paper identity before visual work begins.
 
@@ -35,11 +35,11 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 **Plans:** TBD during phase planning.
 
-### Annotation Phase 11: Annotation Card View-Models and Layout
+### Phase ANN11: Annotation Card View-Models and Layout
 
 **Goal:** Turn existing annotation state into safe, deterministic side-lane cards.
 
-**Depends on:** Annotation Phase 10
+**Depends on:** Phase ANN10
 
 **Requirements:** CANVAS-03, CANVAS-04, CARD-01, CARD-02, CARD-03, CARD-04
 
@@ -53,11 +53,11 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 **Plans:** TBD during phase planning.
 
-### Annotation Phase 12: Controlled Reading Surface and Source Anchors
+### Phase ANN12: Controlled Reading Surface and Source Anchors
 
 **Goal:** Provide a PaperForge-owned central reading surface where source grounding can be measured and tested.
 
-**Depends on:** Annotation Phase 11
+**Depends on:** Phase ANN11
 
 **Requirements:** ANCHOR-01, ANCHOR-02
 
@@ -71,11 +71,11 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 **Plans:** TBD during phase planning.
 
-### Annotation Phase 13: Bidirectional Navigation and Fallback Paths
+### Phase ANN13: Bidirectional Navigation and Fallback Paths
 
 **Goal:** Make the canvas useful for reading by letting users move between annotation cards and grounded source positions.
 
-**Depends on:** Annotation Phase 12
+**Depends on:** Phase ANN12
 
 **Requirements:** NAV-01, NAV-02, NAV-03
 
@@ -89,11 +89,11 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 **Plans:** TBD during phase planning.
 
-### Annotation Phase 14: Focused Connector Layer and Visual Polish
+### Phase ANN14: Focused Connector Layer and Visual Polish
 
 **Goal:** Add the visual relationship layer from the target UI without overstating evidence precision.
 
-**Depends on:** Annotation Phase 13
+**Depends on:** Phase ANN13
 
 **Requirements:** CANVAS-05, CONN-01, CONN-02, CONN-03
 
@@ -107,11 +107,11 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 **Plans:** TBD during phase planning.
 
-### Annotation Phase 15: Canvas Verification Gate and Live Harness Record
+### Phase ANN15: Canvas Verification Gate and Live Harness Record
 
 **Goal:** Verify the full read-only canvas and document exactly what confidence exists in automated tests versus live Obsidian behavior.
 
-**Depends on:** Annotation Phase 14
+**Depends on:** Phase ANN14
 
 **Requirements:** SAFE-01, SAFE-02, SAFE-03, SAFE-04, TEST-01, TEST-02, TEST-03, TEST-04, TEST-05
 
@@ -135,10 +135,10 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 ## Research Flags
 
-- Phase 10: Confirm whether shipped Obsidian runtime can require `src/canvas/*` modules directly; otherwise keep temporary inlining debt covered by parity tests.
-- Phase 12: Re-check source/fulltext shapes if anchor matching needs more than page-level fallback.
-- Phase 14: Run focused connector geometry review before expanding beyond selected/hovered lines.
-- Phase 15: Do not skip live Obsidian harness recording.
+- Phase ANN10: Confirm whether shipped Obsidian runtime can require `src/canvas/*` modules directly; otherwise keep temporary inlining debt covered by parity tests.
+- Phase ANN12: Re-check source/fulltext shapes if anchor matching needs more than page-level fallback.
+- Phase ANN14: Run focused connector geometry review before expanding beyond selected/hovered lines.
+- Phase ANN15: Do not skip live Obsidian harness recording.
 
 ---
 *Roadmap created: 2026-07-03*
