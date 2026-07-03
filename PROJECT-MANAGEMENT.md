@@ -596,3 +596,43 @@ Full-day debugging session across 8 gold papers. 98 bug annotations, 8 pipeline 
 - `paperforge/worker/ocr_roles.py` — inline `<table>` before raw_label=table
 - `paperforge/worker/ocr_document.py` — removed `table_html_candidate` dead path
 - `paperforge/worker/ocr_structural_gate.py` — `table_html` verifier
+
+### 9.22 Plan A: OCR Pairing Framework Extraction (2026-07-03)
+
+**Goal:** Extract generic OCR pairing mechanics from figure vnext and migrate figure onto the framework with no behavior change. Table vnext deferred to Plan B.
+
+**Architecture (Option B):**
+- Generic framework: `ocr_pairing_types.py`, `ocr_pairing_state.py`, `ocr_pairing_framework.py`
+- Figure domain: `ocr_figure_domain.py` (FigureCorpus, FigureCandidateIndex), 8 pass files (import paths only)
+- Compatibility shims: `ocr_figure_vnext_types.py`, `ocr_figure_vnext_state.py`, `ocr_figure_vnext_corpus.py` each re-export from framework/domain
+- `ocr_figures.py`: orchestration loop replaced with `run_pairing_passes(state, pass_classes)` from framework
+
+**Key decisions:**
+- Keep `figure_no` and `FigurePipelineState` names in Plan A (rename deferred until migration stable)
+- Plan A extracts pass orchestration only, not full framework-owned arbitration
+- Table vnext deferred — no table file changes
+
+**Commits (branch `feat/ocr-pairing-framework`, 6 commits over master):**
+| # | Commit | Description |
+|---|--------|-------------|
+| 1 | `0f94123` | docs: add Plan A implementation document |
+| 2 | `96a5ddd` | fix(tests): update stale span_backfill_version constants |
+| 3 | `1cc44b5` | test(ocr): lock figure vnext extraction baseline |
+| 4 | `6229f6c` | refactor(ocr): extract generic pairing types and state |
+| 5 | `7cfbb5f` | refactor(ocr): add pairing pass runner and figure domain module |
+| 6 | `32541cf` | test(ocr): prove rebuild compatibility with pairing framework |
+
+**Files changed:** 21 files, +1546 -364
+
+**Tests:** 288 pass in figure + rebuild + pairing suites (0 failed). Pre-existing `paperforge.resources` ModuleNotFoundError in test_ocr_document.py unrelated.
+
+**Verification gates:**
+- Pre-existing rebuild test fixed (stale version constant)
+- `build_figure_inventory` → `build_figure_inventory_vnext` delegation test passes
+- Shim identity tests prove re-exports are the same class (not copies)
+- Rebuild compatibility test calls `run_derived_rebuild_for_keys()` for real and asserts `build_figure_inventory` is invoked
+- No table file changes in diff
+
+**Spec:** `docs/superpowers/specs/2026-07-03-ocr-pairing-framework-design.md`
+**Plan:** `docs/superpowers/plans/2026-07-03-ocr-pairing-framework-plan-a.md`
+**Branch:** `feat/ocr-pairing-framework` (in worktree `.worktrees/feat-ocr-pairing-framework/`)
