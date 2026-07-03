@@ -77,7 +77,7 @@ class FigureCandidateIndex:
         candidate_groups = ocr_figures._build_candidate_figure_groups_from_assets(
             corpus.raw_assets,
             corpus.blocks,
-            corpus.raw_legends,
+            formal_legends,
             page_width=corpus.page_width,
         )
         competing_caption_pages = {
