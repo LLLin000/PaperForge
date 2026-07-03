@@ -1,13 +1,13 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `feat/figure-pipeline-vnext` | **Last Updated:** 2026-07-03
-> **Active work:** Figure pipeline vnext cutover completed in worktree. Wrapper now points to vnext by default. 346 tests pass. Next: merge branch back to `master`.
+> **Branch:** `feat/ocr-pairing-framework` | **Last Updated:** 2026-07-03
+> **Active work:** Generic OCR pairing framework extracted; figure and table now both run on the shared pairing core in worktree. Targeted merge-unblock verification passed: 357 tests green, touched-file `ruff check`/`ruff format --check` green, 6 runnable real-paper table fixtures validated. Next: merge branch back to `master`.
 
 ---
 
 ## 0. Executive Summary
 
-**Current state:** Figure pipeline vnext is now fully implemented (11 passes incl. accounting), cutover corpus reviewed on 5 papers with 0 consumed-asset regressions, and the public wrapper has been switched to vnext on this branch. 346 tests pass (`59` vnext + `258` figure + `29` render). Next: merge `feat/figure-pipeline-vnext` back to `master`.
+**Current state:** The OCR pairing framework branch is merge-ready. Figure and table pipelines now share `ocr_pairing_types.py` / `ocr_pairing_state.py` / `ocr_pairing_framework.py`, while domain-specific logic stays in `ocr_figure_domain.py` and `ocr_table_domain.py`. The last merge blockers were cleared by (1) moving figure-only rotation enrichment out of generic state into a figure-domain hook, (2) hardening table semantic parity validation across all runnable real-paper fixtures including `37LK5T97`, and (3) cleaning touched-file lint/format issues. Verification: 357 targeted tests passed. Next: merge `feat/ocr-pairing-framework` back to `master`.
 ---
 
 ## 1. Architecture
@@ -46,31 +46,25 @@ raw observations → structural signatures → stable anchors/families → zone 
 
 ## 2. Current Status
 
-### 2.1 Test Suite
+### 2.1 Test / Verification Status
 </br>
 | Suite | Result |
 |-------|--------|
-| Figure stack (figures + reader + containment + backmatter boundary) | **286 passed** ✅ |
-| Document + roles + render + gate + rebuild + state machine + trace | **330 passed, 0 failed** ✅ |
-| Author bio detection (ocr_bio) | **37 passed** ✅ |
-| Spec contracts | All passed ✅ |
-| Real-paper regressions | All passed ✅ |
-| **Total OCR tests** | **1018 passed, 275 skipped (fixture unavailable), 0 failed** ✅ |
+| Pairing framework cutover suites (`test_ocr_figures` + `test_ocr_rebuild` + `test_ocr_tables` + `test_ocr_pairing_framework` + `test_ocr_table_pairing_framework`) | **357 passed, 0 failed** ✅ |
+| Real-paper table parity fixtures | **6 runnable fixtures checked** ✅ |
+| Touched-file lint (`ruff check`) | **OK** ✅ |
+| Touched-file format (`ruff format --check`) | **OK** ✅ |
 </br>
+| Component | Status |
+|-----------|--------|
 | Structural gate | Installed |
 | Role assignment (seed only) | ✅ |
 | Zone inference + fallback | ✅ |
-| Figure inventory | Global distance clustering — correct |
-| Backmatter boundary | ✅ Ref-anchored partition committed |
-| Pre-ref tail zone | ✅ Fixed |
-| Abstract detection | ✅ Fixed |
-| Frontmatter heading normalization | ✅ Fixed — no text matching |
-| non_body_insert clustering | ✅ Fixed — page-1 guard threshold |
-| Render (backmatter headings) | ✅ Correct heading rendering |
-| State machine | ✅ Accepts done_degraded as terminal |
-| Rebuild (span backfill skip) | ✅ Version match check fixed |
-| Author bio detection (Passes B+C) | ✅ P0: post-ref text-only bios as backmatter_body. P1: figure-residual portrait assets as author_bio_asset + figure_caption support |
-| Figure pipeline vnext | ✅ Default wrapper switched; 11-pass pipeline active; cutover corpus reviewed (5 papers, 0 regressions) |
+| Figure pipeline vnext | ✅ Shared pairing core + figure-only pre-enricher hook |
+| Table pipeline vnext | ✅ Shared pairing core + semantic parity validation |
+| Pairing framework core | ✅ `ocr_pairing_*` modules active for both figure and table |
+| Rebuild/orchestrator seam | ✅ Public wrappers unchanged; callers still use `build_figure_inventory(...)` / `build_table_inventory(...)` |
+| Cross-domain figure/table conflict resolution | ✅ Still external to pairing core |
 
 ### 2.3 Fix Status
 
@@ -95,48 +89,40 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 18 | — | **Issue 2**: Demoted-caption figure inner-text leakage | Container bbox regions | Validated `_container_bbox` regions in `tag_figure_contained_text` via 3 helpers + containment-only integration | `0e4ecbc` |
 | 19 | — | **Issue 5**: Cross-column page_assets groups falsely accepted | Column-homogeneity gate | `_column_band_id` + rejection in `_is_safe_page_assets_group` | `4ab227e` |
 | 20 | — | **Issue 6**: Same asset consumed by figure AND table | Post-hoc arbitration | `resolve_media_asset_conflicts` resolves asymmetric cases; weak/weak stays in `ownership_conflicts` | `4ab227e` |
+| 21 | — | Pairing framework extraction + figure migration | Refactor | Extracted shared `ocr_pairing_*` core from figure vnext; preserved public seams and figure behavior | `6229f6c`, `7cfbb5f`, `32541cf` |
+| 22 | — | Table vnext on pairing framework + public cutover | Refactor/feature | Added `ocr_table_domain.py` + `ocr_table_passes.py`, preserved resolver-consumed fields, switched `build_table_inventory(...)` to vnext | `db01518`, `ea6a1f0`, `a9e68ac`, `a2e5788` |
+| 23 | 37LK5T97 + cutover corpus | Merge-unblock hardening | Moved figure-only rotation enrichment out of generic state, validated 6 runnable real-paper table fixtures semantically, fixed touched-file lint/format issues | working tree (pre-merge session) |
 #### P2#1a — Previous-page legend locator bridge (✅ Fixed `3f61f4a`)
 WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to full legend (in rejected_legends, misclassified as body_paragraph)
 
-#### Remaining P2
+#### Remaining P2 / P3
 
-1. **Figure containment gaps** — `cluster_bbox` containment only runs on matched figures; composite figures with demoted caption upstream never enter containment. Inner-text detection misses `vision_footnote`/`paragraph_title` raw_labels.
-2. **Short "Table N" caption matching** — bare `"Table 1."` labels miss table_asset in ownership pipeline. Existing code partially handles it; residual cases remain.
-3. **Page-1 body paragraph OCR text extraction failure** (was: width check) — W33NLVJ2 right col Introduction block: OCR detected text region (raw_label=text) but extracted empty string. Pipeline previously mis-signaled as `unknown_structural`. Fixed: now `ocr_text_missing`.
-4. **Body text backfill overlap** — `backfill_missing_text_from_pdf` uses `get_text("words", clip=expanded)` returning words beyond block's bbox; can cause text duplication at render level.
-5. **2HEUD5P9 reference ordering** — ✅ Fixed by F12 (raw_label=reference_content signal)
-6. **Mixed-column tail page zone absorption** — ✅ Fixed: tighten year-period regex
-
-### P3 (Boundary / Edge Cases)
-
-1. **DW biography page mismatch** — pages 32-34 vs expectations 33-34.
-2. **AJR side-caption recovery** — deliberately deferred; not part of generic inventory refactor.
-3. **Chinese Windows encoding** — non-ASCII PDF filenames garbled via GBK codepage. Glob fallback added; residual `meta.json` corruption from earlier runs.
-4. **`backfill_missing_text_from_pdf` bbox-exact filtering** — need decision on render-level dedup vs backfill-level bbox clamp.
-5. **Multi-caption page column collapse** — `page_assets` group on multi-column pages merges separate figures in different columns.
-6. **Figure/table shared-consumption registry** — no shared consumed registry for ambiguous image-like blocks.
-7. **Short papers (<3 pages) health falsely red** — no headings/abstract in Letter/Editor formats.
+1. **Compatibility naming debt** — `figure_no`, `legend`, and `FigurePipelineState` remain backwards-compat names inside the shared pairing core. They are intentionally deferred cleanup, not release blockers.
+2. **37LK5T97 legacy consumption bug** — legacy table inventory drops caption `block_id=0` from `consumed_block_ids` because `if bid` treats `0` as falsy; vnext keeps `'0'`. Validation now treats this as a known legacy bug, not a vnext regression.
+3. **Figure containment gaps** — `cluster_bbox` containment only runs on matched figures; composite figures with demoted caption upstream still do not enter containment.
+4. **Short "Table N" caption matching** — bare `"Table 1."` labels still have residual weak cases outside the validated fixture set.
+5. **Chinese Windows encoding** — non-ASCII PDF filenames can still surface GBK path issues in older artifacts.
+6. **Shared consumed registry for ambiguous image-like blocks** — figure/table post-hoc arbitration exists, but there is still no first-class shared consumed registry for unresolved image-like assets.
 
 ## 4. Active Queue
 
-1. ✅ P1 backmatter boundary (ref-anchored partition)
-2. ✅ Pre-ref tail zone fix (4KCHGV2Z)
-3. ✅ Gate 5 frontmatter fix series (24YKLTHQ)
-4. ✅ Stale trace-vs-expectation fixtures cleared (10 assertion updates)
-5. ✅ All stale test expectations reconciled (non_body_insert, caffard, legend_like, structural gate, render, state machine, rebuild, truth docs)
-6. ✅ P0 author bio detection (post_ref_bio_cleanup for reference_item)
-7. ✅ P1 author bio detection (residual_author_bio_pass + figure_caption support + tag_figure_contained_text protection)
-8. **NEXT: Merge `feat/figure-pipeline-vnext` → `master`**
+1. ✅ Pairing framework extraction complete
+2. ✅ Figure migration onto shared pairing core complete
+3. ✅ Table migration onto shared pairing core complete
+4. ✅ Generic-state impurity removed (`_match_pre_enricher` hook at figure boundary)
+5. ✅ Real-paper table semantic parity validation hardened (6 runnable fixtures)
+6. ✅ Touched-file lint / format cleanup complete
+7. **NEXT: Merge `feat/ocr-pairing-framework` → `master`**
 
 ### 4.1 Immediate Next Steps
 
-- [x] Phase 0-4 vnext implementation complete
-- [x] Phase 5 cutover evaluation complete
-- [x] Cutover corpus: 5 papers, all 9 spec categories covered
-- [x] Cutover diff review: improvement=2, equivalent=2, parity=1, regression=0
-- [x] Wrapper switched to vnext in branch
-- [x] Full verification: 346 passed
-- [ ] Merge `feat/figure-pipeline-vnext` into `master`
+- [x] Shared `ocr_pairing_*` core active for figure + table
+- [x] Public wrappers preserved
+- [x] Table parity checks upgraded from smoke shape to semantic comparison
+- [x] `37LK5T97` made runnable under `tests/fixtures/ocr_vnext_real_papers/`
+- [x] Generic state made domain-neutral for match enrichment
+- [x] Targeted verification: 357 passed
+- [ ] Merge `feat/ocr-pairing-framework` into `master`
 
 ---
 
@@ -236,6 +222,9 @@ WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to ful
 | 2026-07-01 | Broaden recovery gate to handle normal prematch unknown figures | Synthetic-figure gate (`bbox_only_asset` flag) excluded `figure_unknown_NNN` from normal rotated prematch path. Gate now allows figure_unknown figures without synthetic flags. |
 | 2026-07-03 | Cutover uses evidence gates, not code confidence | VNext matched or improved on the full cutover corpus with identical consumed asset sets; wrapper switch became a release decision only after diff review + gate verification. |
 | 2026-07-03 | Legacy schema tests must be upgraded before wrapper switch | Real-paper behavior was cutover-ready earlier, but `test_ocr_figures.py` still asserted legacy-only inventory keys. Updating the test contract was required to make wrapper switch honest. |
+| 2026-07-03 | Generic state uses a domain hook for figure rotation enrichment | Figure rotation metadata had to stay behaviorally intact without polluting the shared pairing state used by table passes. A pre-match enricher hook keeps the core generic and the figure path exact. |
+| 2026-07-03 | Table parity comparison normalizes benign storage drift only | int/str block IDs, ordering differences, and `None` vs empty unmatched asset IDs are storage-level drift already tolerated downstream. Validation now compares semantic fields rather than raw serialization artifacts. |
+| 2026-07-03 | Legacy `block_id=0` drop is treated as a legacy bug, not a parity target | `37LK5T97` showed legacy dropping consumed caption id `0` via falsy filtering. The branch keeps vnext truth and documents the legacy defect instead of reproducing it. |
 
 ---
 
@@ -327,6 +316,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-02 | Round 2 truth audit + 3 targeted bug fixes for 37LK5T97 | Batch-audited 10 fresh papers (5 GREEN / 4 YELLOW / 1 RED). 37LK5T97 found with Figure 1 broken (sidecar caption demoted) + 6 unmatched rotated tables. Fixes: (1) `_is_sidecar_candidate` guard in candidate_resolution, (2) `adjacent_x`+`y_overlap` in score_table_match for rotated captions, (3) rotated table render bbox+270° correction. Also: rotated figure crop quality fix (4x zoom + coordinate normalization in `_crop_asset_from_pdf`). Commits: `59cd01a`, `bd3f3b6`, `86e0d14`. 428 regression tests pass. | §9.20 |
 | 2026-07-02 | Zone/role robustness completion — Figure caption prefix recovery + inline table fix + table matching audit | Figure caption prefix recovery from PDF text layer (`_recover_figure_heading_prefix`): 5S7UI34M 4→9 matched figures, 33→1 unmatched. Inline `<table>` HTML role fix: 650 blocks now `table_html` after rebuild (priority bug: raw_label=table fired before `<table>` check). Table matching audit: 620 remaining `media_asset` pending full rebuild. 585 figure/table/role tests pass. | §9.21 |
 | 2026-07-03 | Figure pipeline vnext cutover completed | Implemented all remaining vnext passes (composite parent, group/classic sequential, unresolved consolidation, accounting), expanded compare harness, curated 5-paper cutover corpus covering all 9 spec categories, generated diff review (improvement=2 / equivalent=2 / parity=1 / regression=0), updated legacy figure tests for vnext contract, and switched `build_figure_inventory(...)` wrapper to vnext on branch `feat/figure-pipeline-vnext`. Verification: 346 tests passed. | §9.22 |
+| 2026-07-03 | OCR pairing framework merge-unblock pass | Cleared the remaining merge blockers on `feat/ocr-pairing-framework`: moved figure-only rotation enrichment out of generic state, upgraded table cutover validation to semantic parity across 6 runnable real-paper fixtures including `37LK5T97`, and cleaned touched-file lint/format issues. Verification: 357 targeted tests passed; merge-ready. | §9.23 |
 
 ## 9. Historical Detail Archive
 

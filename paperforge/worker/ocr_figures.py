@@ -34,10 +34,7 @@ def _has_frontmatter_visual_veto(text: str) -> bool:
     lower = " ".join(text.lower().split())
     if re.search(r"\btoc\b", lower):
         return True
-    return any(
-        phrase in lower
-        for phrase in _FRONTMATTER_VISUAL_VETO
-    )
+    return any(phrase in lower for phrase in _FRONTMATTER_VISUAL_VETO)
 
 
 _BODY_MENTION_VERBS = (
@@ -194,7 +191,7 @@ def _validate_page_local_caption_grammar(
         m = _GRAMMAR_PREFIX_PATTERN.search(text)
         if not m:
             return ""
-        prefix_start = text[:m.start(1)]
+        prefix_start = text[: m.start(1)]
         return prefix_start.strip().lower().replace(".", "").replace(":", "").replace(" ", "")
 
     legend_by_id: dict[str, dict] = {}
@@ -319,12 +316,14 @@ def _is_safe_page_assets_group(
 
     # 6. Compact geometry: media_blocks must form ONE semantic cluster
     semantic_clusters = _cluster_semantic_page_assets(
-        media_blocks, page_blocks, page_width, page_height,
+        media_blocks,
+        page_blocks,
+        page_width,
+        page_height,
     )
     group_block_ids = {str(b.get("block_id")) for b in media_blocks if b.get("block_id")}
     cluster_member_ids = [
-        {str(b.get("block_id")) for b in cluster if b.get("block_id")}
-        for cluster in semantic_clusters
+        {str(b.get("block_id")) for b in cluster if b.get("block_id")} for cluster in semantic_clusters
     ]
     if group_block_ids not in cluster_member_ids:
         return False, ["media_not_compact"]
@@ -350,10 +349,7 @@ def _is_safe_page_assets_group(
     cw = cluster_bbox[2] - cluster_bbox[0]
     full_width_group = cw >= page_width * 0.65 and page_numbered_legend_count == 1
     if not full_width_group:
-        bands = {
-            _column_band_id(mb.get("bbox") or [0, 0, 0, 0], page_width)
-            for mb in media_blocks
-        }
+        bands = {_column_band_id(mb.get("bbox") or [0, 0, 0, 0], page_width) for mb in media_blocks}
         bands.discard(None)
         if len(bands) > 1:
             return False, ["cross_column_media"]
@@ -397,9 +393,7 @@ def _looks_like_figure_narrative_prose(text: str) -> bool:
     prose_markers = ["we ", "our ", "this study ", "here we ", "in this "]
     if any(m in text.lower() for m in prose_markers):
         return True
-    if re.search(r"\$?\^\{[^}]+\}\$?", text):
-        return True
-    return False
+    return bool(re.search(r"\$?\^\{[^}]+\}\$?", text))
 
 
 def _is_body_mention(block: dict) -> bool:
@@ -413,9 +407,7 @@ def _is_body_mention(block: dict) -> bool:
     if raw_role == "figure_caption_candidate":
         text = block.get("text", "")
         if text and _FIGURE_NUMBER_PATTERN.search(text):
-            if _looks_like_inline_figure_mention(text, block):
-                return True
-            return False
+            return _looks_like_inline_figure_mention(text, block)
         if text and _looks_like_figure_narrative_prose(text):
             return True
     if block.get("block_label", "") == "text":
@@ -484,10 +476,7 @@ def _is_insufficient_legend_evidence(block: dict) -> bool:
         return False
     if style_family != "legend_like":
         return False
-    if not _TRUNCATED_LEGEND_ONLY_PATTERN.fullmatch(text):
-        return False
-
-    return True
+    return bool(_TRUNCATED_LEGEND_ONLY_PATTERN.fullmatch(text))
 
 
 def _has_strong_explicit_caption_text(block: dict) -> bool:
@@ -540,6 +529,7 @@ def _is_tight_asset_cluster(assets: list[dict], below_top: float) -> bool:
     # Cluster is tight if vertical span < 90% of space to locator,
     # and horizontal spread is within page width limits.
     return spread_y < (below_top - union_top) * 0.9 and spread_x < 1500
+
 
 def _is_formal_legend(text: str, block: dict | None = None, page_width: float = 1200) -> bool:
     if not text:
@@ -966,9 +956,7 @@ def _build_semantic_figure_groups_from_assets(
             g["page_group_count"] = page_group_count
             g["page_distance_cluster_count"] = page_distance_cluster_count
             g["safe_auto_match"] = (
-                page_group_count == 1
-                and g["group_type"] == "distance_cluster"
-                and len(g.get("media_blocks", [])) >= 2
+                page_group_count == 1 and g["group_type"] == "distance_cluster" and len(g.get("media_blocks", [])) >= 2
             )
 
         groups.extend(page_groups)
@@ -1041,7 +1029,7 @@ def _build_candidate_figure_groups_from_assets(
     for page, page_groups in groups_by_page.items():
         page_blocks = [b for b in all_blocks if int(b.get("page", 0) or 0) == page]
         page_height = _estimate_page_height(page_blocks)
-        page_legends = [l for l in legends if l.get("page") == page]
+        page_legends = [leg for leg in legends if leg.get("page") == page]
         band_assist = _build_caption_band_group_assist(
             page_groups,
             page_legends,
@@ -1050,13 +1038,16 @@ def _build_candidate_figure_groups_from_assets(
         )
         for group in page_groups:
             group["page_legend_count"] = len(page_legends)
-            group["assist"] = band_assist.get(str(group.get("group_id", "")), {
-                "caption_band_ids": [],
-                "best_caption_band_id": None,
-                "overlap_ratio": 0.0,
-                "band_overlap": {},
-                "evidence": [],
-            })
+            group["assist"] = band_assist.get(
+                str(group.get("group_id", "")),
+                {
+                    "caption_band_ids": [],
+                    "best_caption_band_id": None,
+                    "overlap_ratio": 0.0,
+                    "band_overlap": {},
+                    "evidence": [],
+                },
+            )
 
     return groups
 
@@ -1112,8 +1103,12 @@ def _score_legend_to_group(
                 "evidence": ["page_assets_missing_page_context"],
             }
         safe, gate_evidence = _is_safe_page_assets_group(
-            group, legend, page_blocks, page_numbered_legend_count,
-            page_width=page_width, page_height=page_height,
+            group,
+            legend,
+            page_blocks,
+            page_numbered_legend_count,
+            page_width=page_width,
+            page_height=page_height,
         )
         if not safe:
             return {
@@ -1191,7 +1186,9 @@ def _make_local_pairing_hypothesis(
     else:
         group_page = group.get("page", 0)
         asset_ids = [
-            aid for block_id in group.get("asset_block_ids", []) if (aid := _asset_page_id(group_page, block_id)) is not None
+            aid
+            for block_id in group.get("asset_block_ids", [])
+            if (aid := _asset_page_id(group_page, block_id)) is not None
         ]
     return {
         "legend_block_id": str(legend.get("block_id", "")),
@@ -1450,14 +1447,18 @@ def _fallback_can_consume(
     grouped_asset_page_ids: set[tuple[int, str]] | None = None,
     allow_grouped: bool = False,
 ) -> bool:
-    normalized = [aid for aid in (_asset_page_id(page, block_id) for page, block_id in asset_page_ids) if aid is not None]
-    return len(_fallback_eligible_asset_page_ids(
-        normalized,
-        used_asset_page_ids=used_asset_page_ids,
-        blocked_asset_page_ids=blocked_asset_page_ids,
-        grouped_asset_page_ids=grouped_asset_page_ids,
-        allow_grouped=allow_grouped,
-    )) == len(normalized)
+    normalized = [
+        aid for aid in (_asset_page_id(page, block_id) for page, block_id in asset_page_ids) if aid is not None
+    ]
+    return len(
+        _fallback_eligible_asset_page_ids(
+            normalized,
+            used_asset_page_ids=used_asset_page_ids,
+            blocked_asset_page_ids=blocked_asset_page_ids,
+            grouped_asset_page_ids=grouped_asset_page_ids,
+            allow_grouped=allow_grouped,
+        )
+    ) == len(normalized)
 
 
 def _fallback_eligible_groups(
@@ -1477,10 +1478,7 @@ def _fallback_eligible_groups(
             continue
         asset_ids = [
             aid
-            for aid in (
-                _asset_page_id(group.get("page", 0), bid)
-                for bid in group.get("asset_block_ids", [])
-            )
+            for aid in (_asset_page_id(group.get("page", 0), bid) for bid in group.get("asset_block_ids", []))
             if aid is not None
         ]
         if not _fallback_can_consume(
@@ -1548,7 +1546,9 @@ def _expand_matched_assets_locally(
 
             if touches_stack and wide_enough_overlap:
                 current.append(asset)
-                ownership.mark_assets_owned([(ap, aid)], owner_id=str(legend.get("block_id", "")), owner_family="figure")
+                ownership.mark_assets_owned(
+                    [(ap, aid)], owner_id=str(legend.get("block_id", "")), owner_family="figure"
+                )
                 changed = True
 
     current.sort(key=lambda a: ((a.get("bbox") or [0, 0, 0, 0])[1], (a.get("bbox") or [0, 0, 0, 0])[0]))
@@ -1790,7 +1790,9 @@ def _normalized_caption_body(text: str) -> str:
     return body
 
 
-def _legend_dedup_priority(legend: dict, *, bundle_source_legend_ids: set[str], assets: list[dict]) -> tuple[int, int, int, int, int]:
+def _legend_dedup_priority(
+    legend: dict, *, bundle_source_legend_ids: set[str], assets: list[dict]
+) -> tuple[int, int, int, int, int]:
     legend_id = str(legend.get("block_id", ""))
     role = str(legend.get("role") or "")
     return (
@@ -1857,13 +1859,13 @@ def _build_composite_parent_figure_groups_visual_only(
         # Union-Find for connected components
         parent = list(range(n))
 
-        def find(i: int) -> int:
+        def find(i: int, parent=parent) -> int:
             while parent[i] != i:
                 parent[i] = parent[parent[i]]
                 i = parent[i]
             return i
 
-        def union(i: int, j: int) -> None:
+        def union(i: int, j: int, parent=parent) -> None:
             ri, rj = find(i), find(j)
             if ri != rj:
                 parent[ri] = rj
@@ -1886,7 +1888,7 @@ def _build_composite_parent_figure_groups_visual_only(
             root = find(i)
             components.setdefault(root, []).append(i)
 
-        for root, indices in components.items():
+        for _root, indices in components.items():
             if len(indices) < 2:
                 continue
             child_groups = [page_groups[i] for i in indices]
@@ -1894,10 +1896,7 @@ def _build_composite_parent_figure_groups_visual_only(
             all_assets = []
             for g in child_groups:
                 all_assets.extend(g.get("asset_block_ids", []))
-            all_bboxes = [
-                b for g in child_groups
-                if (b := g.get("cluster_bbox")) and len(b) >= 4
-            ]
+            all_bboxes = [b for g in child_groups if (b := g.get("cluster_bbox")) and len(b) >= 4]
             cluster_bbox = _cluster_bbox(all_bboxes) if all_bboxes else [0, 0, 0, 0]
 
             # Confidence scoring
@@ -1927,21 +1926,23 @@ def _build_composite_parent_figure_groups_visual_only(
                         confidence += 0.05
             confidence = min(0.75, confidence)
 
-            results.append({
-                "group_id": f"composite_parent_{page:04d}_{len(results):03d}",
-                "group_type": "composite_parent",
-                "page": page,
-                "child_group_ids": child_ids,
-                "asset_block_ids": list(dict.fromkeys(all_assets)),
-                "cluster_bbox": cluster_bbox,
-                "parent_evidence": [
-                    "same_page",
-                    "horizontal_alignment",
-                    f"{len(child_groups)}_child_groups",
-                ],
-                "parent_confidence": confidence,
-                "ownership_enabled": False,
-            })
+            results.append(
+                {
+                    "group_id": f"composite_parent_{page:04d}_{len(results):03d}",
+                    "group_type": "composite_parent",
+                    "page": page,
+                    "child_group_ids": child_ids,
+                    "asset_block_ids": list(dict.fromkeys(all_assets)),
+                    "cluster_bbox": cluster_bbox,
+                    "parent_evidence": [
+                        "same_page",
+                        "horizontal_alignment",
+                        f"{len(child_groups)}_child_groups",
+                    ],
+                    "parent_confidence": confidence,
+                    "ownership_enabled": False,
+                }
+            )
 
     return results
 
@@ -1949,11 +1950,7 @@ def _build_composite_parent_figure_groups_visual_only(
 def _compute_grid_score(envelopes: list[dict]) -> float:
     if len(envelopes) < 2:
         return 0.0
-    bboxes = [
-        cb
-        for env in envelopes
-        if (cb := env.get("cluster_bbox") or env.get("bbox")) and len(cb) >= 4
-    ]
+    bboxes = [cb for env in envelopes if (cb := env.get("cluster_bbox") or env.get("bbox")) and len(cb) >= 4]
     if len(bboxes) < 2:
         return 0.0
     y_centers = [(b[1] + b[3]) / 2 for b in bboxes]
@@ -2026,48 +2023,46 @@ def _build_dense_composite_parent_candidates(
         cluster_bbox = _cluster_bbox([e["cluster_bbox"] for e in envelopes])
         page_area = page_width * 1600.0
         envelope_area = (
-            (cluster_bbox[2] - cluster_bbox[0]) * (cluster_bbox[3] - cluster_bbox[1])
-            if len(cluster_bbox) >= 4
-            else 0.0
+            (cluster_bbox[2] - cluster_bbox[0]) * (cluster_bbox[3] - cluster_bbox[1]) if len(cluster_bbox) >= 4 else 0.0
         )
         compactness = min(1.0, envelope_area / max(1.0, page_area))
 
         grid_score = _compute_grid_score(envelopes)
 
         child_group_ids = [str(g.get("group_id", "")) for g in page_groups if g.get("group_id")]
-        unresolved_cluster_ids = [
-            str(uc.get("cluster_id", "")) for uc in page_ucs if uc.get("cluster_id")
-        ]
-        all_asset_ids: list[str] = list(dict.fromkeys(
-            bid for g in page_groups for bid in g.get("asset_block_ids", []) if bid is not None
-        ))
+        unresolved_cluster_ids = [str(uc.get("cluster_id", "")) for uc in page_ucs if uc.get("cluster_id")]
+        all_asset_ids: list[str] = list(
+            dict.fromkeys(bid for g in page_groups for bid in g.get("asset_block_ids", []) if bid is not None)
+        )
 
         reason = ["dense_fragment_page", f"{fragment_count}_visual_fragments"]
         if page_ucs:
             reason.append(f"{len(page_ucs)}_unresolved_clusters")
 
-        results.append({
-            "group_id": f"dense_composite_parent_{page:04d}_{len(results):03d}",
-            "group_type": "composite_parent",
-            "parent_subtype": "dense_composite",
-            "page": page,
-            "child_group_ids": child_group_ids,
-            "unresolved_cluster_ids": unresolved_cluster_ids,
-            "asset_block_ids": all_asset_ids,
-            "embedded_text_block_ids": [],
-            "cluster_bbox": cluster_bbox,
-            "parent_evidence": reason,
-            "parent_confidence": round(grid_score, 4),
-            "fragment_count": fragment_count,
-            "atomic_child_count": len(page_groups),
-            "unresolved_child_count": len(page_ucs),
-            "visual_mass": float(len(all_asset_ids)),
-            "compactness": round(compactness, 4),
-            "grid_score": round(grid_score, 4),
-            "construction_reason": reason,
-            "crosses_caption_boundary": False,
-            "ownership_enabled": False,
-        })
+        results.append(
+            {
+                "group_id": f"dense_composite_parent_{page:04d}_{len(results):03d}",
+                "group_type": "composite_parent",
+                "parent_subtype": "dense_composite",
+                "page": page,
+                "child_group_ids": child_group_ids,
+                "unresolved_cluster_ids": unresolved_cluster_ids,
+                "asset_block_ids": all_asset_ids,
+                "embedded_text_block_ids": [],
+                "cluster_bbox": cluster_bbox,
+                "parent_evidence": reason,
+                "parent_confidence": round(grid_score, 4),
+                "fragment_count": fragment_count,
+                "atomic_child_count": len(page_groups),
+                "unresolved_child_count": len(page_ucs),
+                "visual_mass": float(len(all_asset_ids)),
+                "compactness": round(compactness, 4),
+                "grid_score": round(grid_score, 4),
+                "construction_reason": reason,
+                "crosses_caption_boundary": False,
+                "ownership_enabled": False,
+            }
+        )
 
     return results
 
@@ -2128,11 +2123,7 @@ def _should_suppress_panel_title_candidate(
         return False
     block_width = bbox[2] - bbox[0]
     block_page = int(block.get("page", 0) or 0)
-    page_envelopes = [
-        env
-        for env in visual_envelopes
-        if int(env.get("page", 0) or 0) == block_page
-    ]
+    page_envelopes = [env for env in visual_envelopes if int(env.get("page", 0) or 0) == block_page]
     inside_envelope = False
     for env in page_envelopes:
         eb = env.get("cluster_bbox") or env.get("bbox") or [0, 0, 0, 0]
@@ -2147,9 +2138,7 @@ def _should_suppress_panel_title_candidate(
             break
     if not inside_envelope:
         return False
-    if block_width > page_width * 0.7:
-        return False
-    return True
+    return not (block_width > page_width * 0.7)
 
 
 def _asset_vertical_side(legend: dict, group: dict) -> str:
@@ -2225,7 +2214,7 @@ def _partition_assets_by_caption_bands(
     captions_precede_assets = bool(asset_centers) and min(caption_tops) <= min(asset_centers)
 
     boundaries: list[float] = [0.0]
-    for upper, lower in zip(ordered, ordered[1:]):
+    for upper, lower in zip(ordered, ordered[1:], strict=False):
         ub = upper.get("bbox") or [0, 0, 0, 0]
         lb = lower.get("bbox") or [0, 0, 0, 0]
         boundaries.append(((ub[1] + ub[3]) / 2 + (lb[1] + lb[3]) / 2) / 2)
@@ -2297,9 +2286,7 @@ def _is_structurally_matchable_group(group: dict, *, competing_caption_pages: se
     cb = group.get("cluster_bbox")
     if not cb or len(cb) < 4:
         return False
-    if group.get("group_type") == "page_assets" and group.get("page") in competing_caption_pages:
-        return False
-    return True
+    return not (group.get("group_type") == "page_assets" and group.get("page") in competing_caption_pages)
 
 
 def _is_unowned_matchable_group(
@@ -2314,10 +2301,7 @@ def _is_unowned_matchable_group(
     if str(group.get("group_id", "")) in used_group_ids:
         return False
     g_page = group.get("page", 0)
-    for bid in group.get("asset_block_ids", []):
-        if bid and (g_page, bid) in used_asset_page_ids:
-            return False
-    return True
+    return all(not (bid and (g_page, bid) in used_asset_page_ids) for bid in group.get("asset_block_ids", []))
 
 
 def _build_page_ledger(legends: list[dict], candidate_groups: list[dict]) -> dict[int, dict]:
@@ -2484,8 +2468,8 @@ def _reserve_cross_page_objects(
             if k <= 0:
                 continue
             page_legends = sorted(
-                [l for l in legends_by_page.get(page, []) if _is_strong_numbered_legend(l)],
-                key=lambda l: (l.get("bbox") or [0, 0, 0, 0])[1],
+                [leg for leg in legends_by_page.get(page, []) if _is_strong_numbered_legend(leg)],
+                key=lambda leg: (leg.get("bbox") or [0, 0, 0, 0])[1],
             )
             for leg in page_legends[:k]:
                 reserved_legend_ids.add((int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))))
@@ -2558,10 +2542,7 @@ def _settle_cross_page_reserved_objects(
     competing_caption_pages: set[int],
     page_width: float = 1200,
 ) -> None:
-    legends_by_id = {
-        (int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))): leg
-        for leg in legends
-    }
+    legends_by_id = {(int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))): leg for leg in legends}
     groups_by_id = {str(g.get("group_id", "")): g for g in candidate_groups}
 
     failed_legend_ids: set[tuple[int, str]] = set()
@@ -2590,7 +2571,6 @@ def _settle_cross_page_reserved_objects(
             if not target_groups:
                 continue
             best_group = target_groups[0]
-            came_from_reserved = str(best_group.get("group_id", "")) in reserved_group_ids
 
             legend_text = str(legend.get("text") or "")
             fn = _extract_figure_number(legend_text)
@@ -2635,8 +2615,7 @@ def _settle_cross_page_reserved_objects(
                 }
             )
             unmatched_legends[:] = [
-                u for u in unmatched_legends
-                if (int(u.get("page", 0) or 0), str(u.get("block_id", ""))) != lid
+                u for u in unmatched_legends if (int(u.get("page", 0) or 0), str(u.get("block_id", ""))) != lid
             ]
             break
         else:
@@ -2660,14 +2639,14 @@ def _settle_cross_page_reserved_objects(
                 continue
             candidate_legends = sorted(
                 [
-                    l
-                    for l in legends
-                    if str(l.get("block_id", "")) not in _used_legend_ids
-                    and (int(l.get("page", 0) or 0), str(l.get("block_id", ""))) not in failed_legend_ids
-                    and int(l.get("page", 0) or 0) == np
-                    and _is_strong_numbered_legend(l)
+                    leg
+                    for leg in legends
+                    if str(leg.get("block_id", "")) not in _used_legend_ids
+                    and (int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))) not in failed_legend_ids
+                    and int(leg.get("page", 0) or 0) == np
+                    and _is_strong_numbered_legend(leg)
                 ],
-                key=lambda l: (l.get("bbox") or [0, 0, 0, 0])[1],
+                key=lambda leg: (leg.get("bbox") or [0, 0, 0, 0])[1],
             )
             if not candidate_legends:
                 continue
@@ -2824,8 +2803,13 @@ def _infer_missing_main_figure_numbers(
         if not isinstance(asset_block_ids, list) or not asset_block_ids:
             continue
         settlement_type = item.get("settlement_type", "")
-        if settlement_type not in {"same_page", "group_sequential", "cross_page_forward",
-                                   "cross_page_backward", "composite_parent"}:
+        if settlement_type not in {
+            "same_page",
+            "group_sequential",
+            "cross_page_forward",
+            "cross_page_backward",
+            "composite_parent",
+        }:
             continue
         item_text = str(item.get("text", ""))
         legend_text = ""
@@ -2978,15 +2962,20 @@ def _infer_missing_main_figure_numbers(
     return inventory
 
 
-def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
+def build_figure_inventory(
+    structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None
+) -> dict[str, Any]:
     return build_figure_inventory_vnext(structured_blocks, page_width, page_pdf_lines_by_page)
 
-def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
+
+def build_figure_inventory_vnext(
+    structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None
+) -> dict[str, Any]:
+    from .ocr_figure_domain import FigureCandidateIndex, FigureCorpus
     from .ocr_figure_vnext_accounting_pass import FinalAccountingPass
     from .ocr_figure_vnext_bundle_pass import LegendBundlePass
     from .ocr_figure_vnext_classic_seq_pass import ClassicSequentialPass, UnresolvedClusterConsolidation
     from .ocr_figure_vnext_composite_pass import CompositeParentPass
-    from .ocr_figure_domain import FigureCandidateIndex, FigureCorpus
     from .ocr_figure_vnext_group_seq_pass import GroupSequentialPass
     from .ocr_figure_vnext_locator_pass import LocatorBridgePass
     from .ocr_figure_vnext_passes import (
@@ -3005,6 +2994,7 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
             if role in {"figure_caption", "figure_caption_candidate"}:
                 text = str(block.get("text", "") or "")
                 from .ocr_figures import _extract_figure_number, _recover_figure_heading_prefix
+
                 if _extract_figure_number(text) is None:
                     recovered = _recover_figure_heading_prefix(block, page_pdf_lines_by_page)
                     if recovered:
@@ -3013,7 +3003,9 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
     corpus = FigureCorpus.from_blocks(structured_blocks, page_width=page_width)
     candidate_index = FigureCandidateIndex.from_corpus(corpus)
     state = FigurePipelineState(corpus=corpus, candidate_index=candidate_index, ledger=OwnershipLedger())
+    state._match_pre_enricher = _enrich_figure_match_rotation
     from .ocr_pairing_framework import run_pairing_passes
+
     reports = run_pairing_passes(
         state,
         [
@@ -3036,11 +3028,16 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
         "pipeline_mode": "vnext",
         "matched_figures": state.matches,
         "ambiguous_figures": [],
-        "unmatched_legends": [b for b in candidate_index.deduped_legends if str(b.get("block_id", "")) not in matched_ids],
+        "unmatched_legends": [
+            b for b in candidate_index.deduped_legends if str(b.get("block_id", "")) not in matched_ids
+        ],
         "unmatched_assets": [
-            a for a in corpus.raw_assets
-            if (_resource_page(a) is not None
-                and state.ledger.owner_of_asset(page=_resource_page(a), block_id=a.get("block_id")) is None)
+            a
+            for a in corpus.raw_assets
+            if (
+                _resource_page(a) is not None
+                and state.ledger.owner_of_asset(page=_resource_page(a), block_id=a.get("block_id")) is None
+            )
         ],
         "unresolved_clusters": list(state.unresolved),
         "held_figures": list(candidate_index.held_legends),
@@ -3049,7 +3046,8 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
         "residual_ledger": {},
         "local_pairing_hypotheses": [],
         "pass_reports": [asdict(r) for r in reports],
-        "completeness": state.completeness or {
+        "completeness": state.completeness
+        or {
             "total_numbered_legends": len(candidate_index.deduped_legends),
             "accounted_for": len(state.matches),
             "details": [],
@@ -3059,11 +3057,15 @@ def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: floa
     # Recover figure numbers from PDF lines inside figure assets
     if page_pdf_lines_by_page:
         from .ocr_figures import _recover_missing_figure_numbers_from_assets
+
         _recover_missing_figure_numbers_from_assets(result, page_pdf_lines_by_page)
 
     return result
 
-def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
+
+def build_figure_inventory_legacy(
+    structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None
+) -> dict[str, Any]:
     """[DEPRECATED] Legacy figure inventory builder — use build_figure_inventory_vnext instead.
 
     Retained for comparison tooling (scripts/dev/compare_figure_inventory_legacy_vs_vnext.py).
@@ -3112,7 +3114,8 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
         # Re-activating it via geometry/style signals causes body text to leak
         # into legend matching (e.g. YGH7VEX6 Figure 11).
         if role == "body_paragraph" and str(block.get("seed_role") or "") in {
-            "figure_caption_candidate", "figure_caption"
+            "figure_caption_candidate",
+            "figure_caption",
         }:
             block["_rejected_legend"] = {
                 "reason": "demoted_body_paragraph",
@@ -3140,8 +3143,10 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 and _looks_like_figure_description_opening(text)
             )
             if role == "figure_caption_candidate" and (
-                (str(block.get("zone") or "") == "body_zone"
-                 and _extract_figure_number(block.get("text", "")) is None)  # skips recovery-rescued captions
+                (
+                    str(block.get("zone") or "") == "body_zone"
+                    and _extract_figure_number(block.get("text", "")) is None
+                )  # skips recovery-rescued captions
                 or (
                     str(block.get("zone") or "") != "display_zone"
                     and str(block.get("style_family") or "") != "legend_like"
@@ -3259,9 +3264,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 and not new_is_bundle
             ):
                 _dedup_map[key] = winner
-                _same_number_distinct_keys.add(
-                    (ns, fn, int(loser.get("page", 0) or 0), str(loser.get("block_id", "")))
-                )
+                _same_number_distinct_keys.add((ns, fn, int(loser.get("page", 0) or 0), str(loser.get("block_id", ""))))
             else:
                 _dedup_map[key] = winner
 
@@ -3357,11 +3360,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
         _numbered_pages_early,
         page_width,
     )
-    _parent_dict = {
-        str(p.get("group_id", "")): p
-        for p in composite_parent_candidates
-        if str(p.get("group_id", ""))
-    }
+    _parent_dict = {str(p.get("group_id", "")): p for p in composite_parent_candidates if str(p.get("group_id", ""))}
     for p in _early_dense_parents:
         pid = str(p.get("group_id", ""))
         if pid:
@@ -3398,7 +3397,8 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             remaining_legends.append(leg)
     legends = remaining_legends
     ordered_legends = [
-        leg for leg in ordered_legends
+        leg
+        for leg in ordered_legends
         if not _should_suppress_panel_title_candidate(
             leg,
             page_has_numbered_legend=int(leg.get("page", 0) or 0) in _numbered_pages,
@@ -3423,9 +3423,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
         if not (g.get("group_type") == "page_assets" and g.get("page") in _competing_caption_pages)
     ]
     _candidate_groups_by_id = {
-        str(group.get("group_id", "")): group
-        for group in candidate_groups
-        if str(group.get("group_id", ""))
+        str(group.get("group_id", "")): group for group in candidate_groups if str(group.get("group_id", ""))
     }
 
     # --- Stage 1: page ledger, reservation ---
@@ -3457,9 +3455,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
 
     _page_height_by_page: dict[int, float] = {}
     for page, page_blocks_on_page in _page_blocks_by_page.items():
-        explicit = max(
-            (float(b.get("page_height") or 0)) for b in page_blocks_on_page
-        )
+        explicit = max((float(b.get("page_height") or 0)) for b in page_blocks_on_page)
         _page_height_by_page[page] = explicit if explicit > 0 else _estimate_page_height(page_blocks_on_page)
 
     _numbered_legend_count_by_page: dict[int, int] = {}
@@ -3481,10 +3477,8 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
         if fig_num is None:
             ms = legend.get("marker_signature") or {}
             if ms.get("type") == "figure_number":
-                try:
+                with contextlib.suppress(ValueError, TypeError):
                     fig_num = int(float(ms.get("number", 0) or 0))
-                except (ValueError, TypeError):
-                    pass
         is_validation_first_candidate = _is_validation_first_legend_candidate(legend)
         is_weak_truncated = _is_insufficient_legend_evidence(legend)
 
@@ -3503,7 +3497,6 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             if caption_score.get("decision") == "rejected":
                 caption_score["decision"] = "candidate"
 
-
         candidates = []
         anchor_supported = _has_anchor_supported_legend_context(legend)
         caption_text_supported = _has_strong_explicit_caption_text(legend)
@@ -3520,7 +3513,8 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
 
         if fig_num is not None:
             _page_parents = [
-                cp for cp in composite_parent_candidates
+                cp
+                for cp in composite_parent_candidates
                 if cp.get("page") == legend_page
                 and not cp.get("ownership_consumed", False)
                 and not (
@@ -3544,9 +3538,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                     for child_gid in _best_parent.get("child_group_ids", [])
                     if child_gid in _candidate_groups_by_id
                     and str(
-                        (
-                            _candidate_groups_by_id[child_gid].get("assist", {}) or {}
-                        ).get("best_caption_band_id") or ""
+                        (_candidate_groups_by_id[child_gid].get("assist", {}) or {}).get("best_caption_band_id") or ""
                     )
                     == legend_id
                 ]
@@ -3559,18 +3551,17 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 # For dense parents with a single caption, consume all child groups.
                 # With competing captions, keep caption-band scoping.
                 _effective_child_groups = (
-                    _all_child_groups if (_is_dense and not _has_competing_caption)
+                    _all_child_groups
+                    if (_is_dense and not _has_competing_caption)
                     else (_matching_child_groups or _all_child_groups)
                 )
                 _effective_child_group_ids = [
-                    str(group.get("group_id", "")) for group in _effective_child_groups if str(group.get("group_id", ""))
+                    str(group.get("group_id", ""))
+                    for group in _effective_child_groups
+                    if str(group.get("group_id", ""))
                 ]
                 _effective_asset_ids = list(
-                    dict.fromkeys(
-                        bid
-                        for group in _effective_child_groups
-                        for bid in group.get("asset_block_ids", [])
-                    )
+                    dict.fromkeys(bid for group in _effective_child_groups for bid in group.get("asset_block_ids", []))
                 )
                 _band_scoped_parent = len(_matching_child_groups) >= 2
                 _dense_parent_unresolved_count = int(_best_parent.get("unresolved_child_count", 0) or 0)
@@ -3630,7 +3621,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                     "settlement_type": "composite_parent",
                 }
             )
-            unmatched_legends = [l for l in unmatched_legends if l.get("block_id") != legend.get("block_id")]
+            unmatched_legends = [leg for leg in unmatched_legends if leg.get("block_id") != legend.get("block_id")]
             continue  # skip normal same-page candidate scan for this legend
         # --- end P1B composite parent arbitration ---
 
@@ -3659,7 +3650,8 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             if _group_asset_ids:
                 _hint_map = {str(a.get("block_id", "")): a for a in assets}
                 _table_like_count = sum(
-                    1 for bid in _group_asset_ids
+                    1
+                    for bid in _group_asset_ids
                     if _hint_map.get(str(bid), {}).get("asset_family_hint") == "table_like"
                     and float(_hint_map.get(str(bid), {}).get("asset_family_confidence", 0) or 0) >= 0.70
                 )
@@ -3777,7 +3769,9 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                         else:
                             matched_assets = best_group.get("media_blocks", [])
                             g_page = best_group.get("page", 0)
-                            ownership.match_group(best_group, owner_id=str(legend.get("block_id", "")), owner_family="figure")
+                            ownership.match_group(
+                                best_group, owner_id=str(legend.get("block_id", "")), owner_family="figure"
+                            )
                             matched_assets = _expand_matched_assets_locally(
                                 legend,
                                 matched_assets,
@@ -3833,7 +3827,9 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                     else:
                         matched_assets = best_group.get("media_blocks", [])
                         g_page = best_group.get("page", 0)
-                        ownership.match_group(best_group, owner_id=str(legend.get("block_id", "")), owner_family="figure")
+                        ownership.match_group(
+                            best_group, owner_id=str(legend.get("block_id", "")), owner_family="figure"
+                        )
                         matched_assets = _expand_matched_assets_locally(
                             legend,
                             matched_assets,
@@ -3985,7 +3981,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             "page": legend_page,
             "text": legend_text,
             "figure_number": fig_num,
-                "matched_assets": [_project_asset_record(a) for a in matched_assets],
+            "matched_assets": [_project_asset_record(a) for a in matched_assets],
             "group_type": region_match.get("group_type", "") if region_match is not None else "",
             "group_evidence": region_match.get("group_evidence", []) if region_match is not None else [],
             "confidence": match_score["score"],
@@ -3994,7 +3990,9 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             "caption_score": caption_score,
             "legend_page": legend_page,
             "asset_pages": sorted({int(a.get("page", 0) or 0) for a in matched_assets}) or [legend_page],
-            "settlement_type": "same_page_rotated" if region_match and region_match.get("rotation_correction_deg") else "same_page",
+            "settlement_type": "same_page_rotated"
+            if region_match and region_match.get("rotation_correction_deg")
+            else "same_page",
         }
         if region_match and region_match.get("rotation_correction_deg"):
             entry["rotation_correction_deg"] = region_match["rotation_correction_deg"]
@@ -4101,7 +4099,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
         # when the normal spatial matching violates vertical ordering (top
         # caption should own top assets, bottom caption bottom assets).
         nid_set = {str(cap.get("block_id", "")) for cap in narrow_set}
-        page_unmatched = any(str(l.get("block_id", "")) in nid_set for l in unmatched_legends)
+        page_unmatched = any(str(leg.get("block_id", "")) in nid_set for leg in unmatched_legends)
         page_ambiguous = any(str(af.get("legend_block_id", "")) in nid_set for af in ambiguous_figures)
 
         def _median_y(items: list[dict]) -> float:
@@ -4110,9 +4108,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
 
         page_narrow_matched = [mf for mf in matched_figures if str(mf.get("legend_block_id", "")) in nid_set]
         page_unresolved_legend_ids = {
-            str(item.get("block_id", ""))
-            for item in unmatched_legends
-            if str(item.get("block_id", "")) in nid_set
+            str(item.get("block_id", "")) for item in unmatched_legends if str(item.get("block_id", "")) in nid_set
         } | {
             str(item.get("legend_block_id", ""))
             for item in ambiguous_figures
@@ -4134,8 +4130,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             (int(a.get("page", mf.get("page", sidecar_page)) or 0), str(a.get("block_id", "")))
             for mf in page_narrow_matched
             for a in mf.get("matched_assets", [])
-            if a.get("block_id") not in (None, "")
-            and str(mf.get("legend_block_id", "")) not in protected_by_legend_id
+            if a.get("block_id") not in (None, "") and str(mf.get("legend_block_id", "")) not in protected_by_legend_id
         }
         violation = len(page_narrow_matched) != len(narrow_set)
         if not violation and len(page_narrow_matched) > 1:
@@ -4166,9 +4161,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
         sidecar_promoted: list[dict] = []
         sidecar_consumed_ids: set[tuple] = set()
         page_narrow_matched_by_legend = {
-            str(mf.get("legend_block_id", "")): mf
-            for mf in page_narrow_matched
-            if str(mf.get("legend_block_id", ""))
+            str(mf.get("legend_block_id", "")): mf for mf in page_narrow_matched if str(mf.get("legend_block_id", ""))
         }
         for cap in narrow_set:
             lid = str(cap.get("block_id", ""))
@@ -4176,7 +4169,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             fig_num = _extract_figure_number(cap_text)
             cap_ns = _extract_figure_namespace(cap_text)
             current_match = page_narrow_matched_by_legend.get(lid)
-            cap_is_unresolved = any(str(l.get("block_id", "")) == lid for l in unmatched_legends) or any(
+            cap_is_unresolved = any(str(leg.get("block_id", "")) == lid for leg in unmatched_legends) or any(
                 str(af.get("legend_block_id", "")) == lid for af in ambiguous_figures
             )
             if lid in protected_by_legend_id:
@@ -4187,7 +4180,8 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 asset
                 for asset in band_map.get(lid, [])
                 if (int(asset.get("page", 0) or 0), str(asset.get("block_id", ""))) not in protected_asset_page_ids
-                and (int(asset.get("page", 0) or 0), str(asset.get("block_id", ""))) not in hypothesis_protected_asset_page_ids
+                and (int(asset.get("page", 0) or 0), str(asset.get("block_id", "")))
+                not in hypothesis_protected_asset_page_ids
             ]
             # In sidecar mode _partition_assets_by_caption_bands is the
             # ownership unit.  Row-coupled geometry is too strict for
@@ -4300,7 +4294,9 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                     ul for ul in unmatched_legends if str(ul.get("block_id", "")) != str(legend.get("block_id", ""))
                 ]
         matched_figures.extend(sidecar_promoted)
-        ownership.mark_assets_owned(list(sidecar_consumed_ids), owner_id=f"sidecar_page_{sidecar_page}", owner_family="figure")
+        ownership.mark_assets_owned(
+            list(sidecar_consumed_ids), owner_id=f"sidecar_page_{sidecar_page}", owner_family="figure"
+        )
 
     # Preproof legend-bundling: when a page packs 3+ figure captions
     # with zero same-page assets, match them 1:1 by page order to
@@ -4322,10 +4318,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             if _extract_figure_number(str(leg.get("text", ""))) is not None:
                 page_captions.setdefault(cp, []).append(leg)
         for cp, caps in sorted(page_captions.items()):
-            has_bundle_source = any(
-                str(cap.get("block_id", "")) in bundle_source_legend_ids
-                for cap in caps
-            )
+            has_bundle_source = any(str(cap.get("block_id", "")) in bundle_source_legend_ids for cap in caps)
             if len(caps) < 3 and not has_bundle_source:
                 continue
             page_has_assets = any(a.get("page", 0) == cp for a in unmatched_assets)
@@ -4394,9 +4387,11 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 for ast in page_assets:
                     bid = ast.get("block_id", "")
                     if bid:
-                        ownership.mark_assets_owned([(ap, bid)], owner_id=str(cap.get("block_id", "")), owner_family="figure")
+                        ownership.mark_assets_owned(
+                            [(ap, bid)], owner_id=str(cap.get("block_id", "")), owner_family="figure"
+                        )
                 consumed.append(_project_asset_record(ast))
-                unmatched_legends = [l for l in unmatched_legends if l.get("block_id") != cap.get("block_id")]
+                unmatched_legends = [leg for leg in unmatched_legends if leg.get("block_id") != cap.get("block_id")]
                 cp_page = int(cap.get("page", 0) or 0)
                 matched_figures.append(
                     {
@@ -4424,7 +4419,6 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 m["legend_block_id"] for m in matched_figures if "legend_bundle_match" in m.get("flags", [])
             }
             ambiguous_figures[:] = [a for a in ambiguous_figures if a.get("legend_block_id") not in bundle_legend_ids]
-
 
     # === Previous-page legend locator bridge ===
     # Some papers use a short locator caption like "Fig. 10 (See legend on previous page.)"
@@ -4492,7 +4486,6 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             if full_legend is None:
                 continue
 
-
             # Find visual group on locator's page:
             # 1) Priority: candidate_groups (distance_cluster, composite_parent)
             # 2) Fallback: only if there's one tight cluster above locator
@@ -4511,18 +4504,13 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 if len(g_bbox) < 4 or g_bbox[3] > locator_top:
                     continue
                 g_asset_ids = g.get("asset_block_ids", [])
-                g_unowned = [
-                    bid for bid in g_asset_ids
-                    if (locator_page, str(bid)) not in used_asset_page_ids
-                ]
+                g_unowned = [bid for bid in g_asset_ids if (locator_page, str(bid)) not in used_asset_page_ids]
                 if not g_unowned:
                     continue
                 g_type = g.get("group_type", "")
                 g_dist = abs(g_bbox[3] - locator_top)
                 score = (
-                    0 if g_type == "composite_parent" else
-                    1 if g_type == "distance_cluster" else
-                    2,
+                    0 if g_type == "composite_parent" else 1 if g_type == "distance_cluster" else 2,
                     -len(g_unowned),
                     g_dist,
                 )
@@ -4534,18 +4522,19 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 best = scored_groups[0]
                 g_unowned = best[2]
                 best_group_assets = [
-                    a for a in _filter_figure_assets(assets)
-                    if int(a.get("page", 0) or 0) == locator_page
-                    and str(a.get("block_id", "")) in g_unowned
+                    a
+                    for a in _filter_figure_assets(assets)
+                    if int(a.get("page", 0) or 0) == locator_page and str(a.get("block_id", "")) in g_unowned
                 ]
 
             # Fallback: no candidate group, but one tight asset cluster above locator
             if not best_group_assets:
                 page_assets = [
-                    a for a in _unowned_by_page.get(locator_page, [])
+                    a
+                    for a in _unowned_by_page.get(locator_page, [])
                     if (locator_page, str(a.get("block_id", ""))) not in used_asset_page_ids
                 ]
-                above = [a for a in page_assets if (a.get("bbox") or [0,0,0,0])[3] <= locator_top]
+                above = [a for a in page_assets if (a.get("bbox") or [0, 0, 0, 0])[3] <= locator_top]
                 if above and _is_tight_asset_cluster(above, locator_top):
                     best_group_assets = above
 
@@ -4556,10 +4545,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             fig_id = _format_figure_id(ns, fn)
             consumed = [_project_asset_record(a) for a in best_group_assets]
             # Compute cluster_bbox from consumed asset bboxes
-            asset_bboxes = [
-                a.get("bbox") or a.get("block_bbox") or [0, 0, 0, 0]
-                for a in best_group_assets
-            ]
+            asset_bboxes = [a.get("bbox") or a.get("block_bbox") or [0, 0, 0, 0] for a in best_group_assets]
             valid_bboxes = [b for b in asset_bboxes if len(b) >= 4 and b[2] > b[0] and b[3] > b[1]]
             cluster_bbox = _cluster_bbox(valid_bboxes) if valid_bboxes else [0, 0, 0, 0]
 
@@ -4577,49 +4563,59 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 str(full_legend.get("block_id", "")),
             )
             unmatched_legends = [
-                l for l in unmatched_legends
-                if (int(l.get("page", 0) or 0), str(l.get("block_id", ""))) != full_key
+                leg
+                for leg in unmatched_legends
+                if (int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))) != full_key
             ]
             # Remove consumed assets from unmatched_assets
             consumed_ids = {(locator_page, str(a.get("block_id", ""))) for a in best_group_assets}
             unmatched_assets = [
-                a for a in unmatched_assets
+                a
+                for a in unmatched_assets
                 if (int(a.get("page", 0) or 0), str(a.get("block_id", ""))) not in consumed_ids
             ]
 
-            matched_figures.append({
-                "figure_id": fig_id,
-                "figure_namespace": ns,
-                "legend_block_id": full_legend.get("block_id", ""),
-                "legend_page": prev_page,
-                "text": str(full_legend.get("text", "")),
-                "figure_number": fn,
-                "matched_assets": consumed,
-                "asset_block_ids": [c["block_id"] for c in consumed],
-                "cluster_bbox": cluster_bbox,
-                "group_type": "previous_page_locator_bridge",
-                "group_evidence": ["explicit_previous_page_locator", "previous_page_full_legend", "same_page_visual_group"],
-                "bridge_block_ids": [str(locator.get("block_id", ""))],
-                "caption_score": score_figure_caption(
-                    full_legend, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
-                ),
-                "match_score": {"score": 0.5, "decision": "matched", "evidence": ["previous_page_locator_bridge"]},
-                "confidence": 0.5,
-                "flags": ["previous_page_locator_match"],
-                "page": locator_page,
-                "locator_block_id": locator.get("block_id", ""),
-                "locator_page": locator_page,
-                "asset_pages": [locator_page],
-                "settlement_type": "previous_page_legend_locator",
-            })
+            matched_figures.append(
+                {
+                    "figure_id": fig_id,
+                    "figure_namespace": ns,
+                    "legend_block_id": full_legend.get("block_id", ""),
+                    "legend_page": prev_page,
+                    "text": str(full_legend.get("text", "")),
+                    "figure_number": fn,
+                    "matched_assets": consumed,
+                    "asset_block_ids": [c["block_id"] for c in consumed],
+                    "cluster_bbox": cluster_bbox,
+                    "group_type": "previous_page_locator_bridge",
+                    "group_evidence": [
+                        "explicit_previous_page_locator",
+                        "previous_page_full_legend",
+                        "same_page_visual_group",
+                    ],
+                    "bridge_block_ids": [str(locator.get("block_id", ""))],
+                    "caption_score": score_figure_caption(
+                        full_legend, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
+                    ),
+                    "match_score": {"score": 0.5, "decision": "matched", "evidence": ["previous_page_locator_bridge"]},
+                    "confidence": 0.5,
+                    "flags": ["previous_page_locator_match"],
+                    "page": locator_page,
+                    "locator_block_id": locator.get("block_id", ""),
+                    "locator_page": locator_page,
+                    "asset_pages": [locator_page],
+                    "settlement_type": "previous_page_legend_locator",
+                }
+            )
             # Clean up ambiguous_figures that referenced the locator (page-aware)
             locator_key = (locator_page, str(locator.get("block_id", "")))
             ambiguous_figures[:] = [
-                af for af in ambiguous_figures
+                af
+                for af in ambiguous_figures
                 if (
                     int(af.get("page", 0) or 0),
                     str(af.get("legend_block_id", "")),
-                ) != locator_key
+                )
+                != locator_key
             ]
 
     # === Group-aware sequential fallback ===
@@ -4712,7 +4708,9 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             asset = local_asset_by_page_id.get((group_page, str(bid)))
             if asset:
                 group_assets.append(asset)
-                ownership.mark_assets_owned([(group_page, str(bid))], owner_id=str(legend.get("block_id", "")), owner_family="figure")
+                ownership.mark_assets_owned(
+                    [(group_page, str(bid))], owner_id=str(legend.get("block_id", "")), owner_family="figure"
+                )
 
         if not group_assets:
             continue
@@ -4725,7 +4723,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 "page": group_page,
                 "text": cap_text,
                 "figure_number": fn,
-                    "matched_assets": [_project_asset_record(a) for a in group_assets],
+                "matched_assets": [_project_asset_record(a) for a in group_assets],
                 "asset_block_ids": [str(a.get("block_id", "")) for a in group_assets],
                 "bridge_block_ids": [],
                 "group_type": best_group.get("group_type", ""),
@@ -4784,8 +4782,6 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             cap_ns = _extract_figure_namespace(cap_text)
 
             cp = cap.get("page", 0) or 0
-            cap_bbox = cap.get("bbox") or [0, 0, 0, 0]
-            cap_top = cap_bbox[1] if len(cap_bbox) >= 4 else 0
             previous_page_asset = None
             future_page_asset = None
             scan_index = ai
@@ -4856,9 +4852,11 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
                 }
             )
             if asset_bid:
-                ownership.mark_assets_owned([(asset_page, asset_bid)], owner_id=str(cap.get("block_id", "")), owner_family="figure")
+                ownership.mark_assets_owned(
+                    [(asset_page, asset_bid)], owner_id=str(cap.get("block_id", "")), owner_family="figure"
+                )
         for cap, asset in seq_matched:
-            unmatched_legends[:] = [l for l in unmatched_legends if l is not cap]
+            unmatched_legends[:] = [leg for leg in unmatched_legends if leg is not cap]
             if int(asset.get("page", 0) or 0) < int(cap.get("page", 0) or 0):
                 ambiguous_figures[:] = [
                     af for af in ambiguous_figures if str(af.get("legend_block_id", "")) != str(cap.get("block_id", ""))
@@ -4887,13 +4885,10 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             )
         if unresolved_clusters:
             consumed = {
-                (int(uc.get("page", 0) or 0), str(bid))
-                for uc in unresolved_clusters
-                for bid in uc["media_block_ids"]
+                (int(uc.get("page", 0) or 0), str(bid)) for uc in unresolved_clusters for bid in uc["media_block_ids"]
             }
             unmatched_assets = [
-                a for a in unmatched_assets
-                if (int(a.get("page", 0) or 0), str(a.get("block_id", ""))) not in consumed
+                a for a in unmatched_assets if (int(a.get("page", 0) or 0), str(a.get("block_id", ""))) not in consumed
             ]
 
     unmatched_assets = _recompute_final_unmatched_assets(assets, used_asset_page_ids, unresolved_clusters)
@@ -4920,9 +4915,7 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
     # parent candidate exists, leftover unmatched assets are grouped into
     # unresolved clusters ---
     _dense_parent_pages = {
-        int(p.get("page", 0) or 0)
-        for p in composite_parent_candidates
-        if p.get("parent_subtype") == "dense_composite"
+        int(p.get("page", 0) or 0) for p in composite_parent_candidates if p.get("parent_subtype") == "dense_composite"
     }
     if unmatched_assets and _dense_parent_pages:
         for cluster in _media_clusters(unmatched_assets, page_width):
@@ -4944,19 +4937,16 @@ def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: flo
             )
         if unresolved_clusters:
             consumed_dense = {
-                (int(uc.get("page", 0) or 0), str(bid))
-                for uc in unresolved_clusters
-                for bid in uc["media_block_ids"]
+                (int(uc.get("page", 0) or 0), str(bid)) for uc in unresolved_clusters for bid in uc["media_block_ids"]
             }
             unmatched_assets = [
-                a for a in unmatched_assets
+                a
+                for a in unmatched_assets
                 if (int(a.get("page", 0) or 0), str(a.get("block_id", ""))) not in consumed_dense
             ]
 
     # --- P2: page-local caption grammar validation ---
-    local_pairing_hypotheses = _validate_page_local_caption_grammar(
-        local_pairing_hypotheses, ordered_legends
-    )
+    local_pairing_hypotheses = _validate_page_local_caption_grammar(local_pairing_hypotheses, ordered_legends)
 
     # --- Remove blocks already matched to figures from unresolved clusters
     # (clusters are built before matching completes; dedup afterward) ---
@@ -5254,7 +5244,6 @@ def _promote_sequence_matches(figure_inventory: dict, blocks: list[dict]) -> dic
     return figure_inventory
 
 
-
 def _collect_matched_figure_asset_ids_from_list(matched_figures: list[dict]) -> set[tuple[int, str]]:
     consumed: set[tuple[int, str]] = set()
     for fig in matched_figures:
@@ -5290,7 +5279,8 @@ def _dedup_unmatched_assets_against_matched_figures(inventory: dict) -> None:
     if not consumed:
         return
     inventory["unmatched_assets"] = [
-        a for a in inventory.get("unmatched_assets", []) or []
+        a
+        for a in inventory.get("unmatched_assets", []) or []
         if (int(a.get("page", 0) or 0), str(a.get("block_id", "") or "")) not in consumed
     ]
 
@@ -5302,14 +5292,14 @@ def _dedup_unresolved_clusters_against_matched_figures(inventory: dict) -> None:
     cleaned = []
     for cluster in inventory.get("unresolved_clusters", []) or []:
         page = int(cluster.get("page", 0) or 0)
-        kept = [str(bid) for bid in (cluster.get("media_block_ids", []) or [])
-                if (page, str(bid)) not in consumed]
+        kept = [str(bid) for bid in (cluster.get("media_block_ids", []) or []) if (page, str(bid)) not in consumed]
         if not kept:
             continue
         cluster = dict(cluster)
         cluster["media_block_ids"] = kept
         cleaned.append(cluster)
     inventory["unresolved_clusters"] = cleaned
+
 
 def _collect_figure_owned_asset_ids(figure_inventory: dict) -> set[tuple[int, str]]:
     return _collect_matched_figure_asset_ids(figure_inventory)
@@ -5324,6 +5314,7 @@ def _collect_table_owned_asset_ids(table_inventory: dict) -> set[tuple[int, str]
         if asset_id is not None:
             owned.add(asset_id)
     return owned
+
 
 def _table_ownership_strength(table: dict) -> tuple[int, int]:
     explicit = 1 if str(table.get("caption_text") or "").lower().startswith("table") else 0
@@ -5355,9 +5346,7 @@ def resolve_media_asset_conflicts(figure_inventory: dict, table_inventory: dict)
     kept_figures = []
     for fig in figure_inventory.get("matched_figures", []):
         asset_ids = [
-            (int(fig.get("page", 0) or 0), str(bid))
-            for bid in fig.get("asset_block_ids", [])
-            if bid is not None
+            (int(fig.get("page", 0) or 0), str(bid)) for bid in fig.get("asset_block_ids", []) if bid is not None
         ]
         conflict_id = next((aid for aid in asset_ids if aid in tables_by_asset), None)
         if conflict_id is None:
@@ -5383,7 +5372,6 @@ def resolve_media_asset_conflicts(figure_inventory: dict, table_inventory: dict)
     figure_inventory["matched_figures"] = kept_figures
     figure_inventory["ownership_resolutions"] = resolutions
     return resolutions
-
 
 
 def _build_ownership_conflicts(figure_inventory: dict, table_inventory: dict) -> list[dict]:
@@ -5423,10 +5411,17 @@ def write_back_figure_roles(inventory: dict, structured_blocks: list[dict]) -> N
 
 
 _LEAK_ROLES = {
-    "body_paragraph", "section_heading", "subsection_heading",
-    "sub_subsection_heading", "backmatter_heading", "backmatter_body",
-    "tail_candidate_body", "footnote", "structured_insert",
-    "non_body_insert", "frontmatter_noise",
+    "body_paragraph",
+    "section_heading",
+    "subsection_heading",
+    "sub_subsection_heading",
+    "backmatter_heading",
+    "backmatter_body",
+    "tail_candidate_body",
+    "footnote",
+    "structured_insert",
+    "non_body_insert",
+    "frontmatter_noise",
 }
 
 
@@ -5440,9 +5435,7 @@ def _container_area_ok(container_bbox: list[float], page_width: float, page_heig
     container_area = max(1.0, cw * ch)
     if container_area >= page_area * 0.65:
         return False
-    if cw >= page_width * 0.98 and ch >= page_height * 0.45:
-        return False
-    return True
+    return not (cw >= page_width * 0.98 and ch >= page_height * 0.45)
 
 
 def _container_has_media_asset(container_bbox: list[float], page_blocks: list[dict]) -> bool:
@@ -5504,16 +5497,14 @@ def _cluster_bboxes_by_proximity(
         ax1, ay1, ax2, ay2 = bboxes[i]
         for j in range(i + 1, n):
             bx1, by1, bx2, by2 = bboxes[j]
-            if (max(ax1, bx1) - margin < min(ax2, bx2) + margin
-                    and max(ay1, by1) - margin < min(ay2, by2) + margin):
+            if max(ax1, bx1) - margin < min(ax2, bx2) + margin and max(ay1, by1) - margin < min(ay2, by2) + margin:
                 _union(i, j)
 
     clusters: dict[int, list[list[float]]] = {}
     for i in range(n):
         clusters.setdefault(_find(i), []).append(bboxes[i])
     return [
-        [min(b[0] for b in g), min(b[1] for b in g),
-         max(b[2] for b in g), max(b[3] for b in g)]
+        [min(b[0] for b in g), min(b[1] for b in g), max(b[2] for b in g), max(b[3] for b in g)]
         for g in clusters.values()
     ]
 
@@ -5611,7 +5602,8 @@ def tag_figure_contained_text(
             if not _highly_overlaps_any_matched_region(cr, figure_regions):
                 figure_regions.append(("container", cr))
         fallback_assets = [
-            b for b in page_blocks
+            b
+            for b in page_blocks
             if (int(b.get("page", 0) or 0), str(b.get("block_id", ""))) not in covered_asset_keys
             and b.get("role") in {"figure_asset", "media_asset"}
             and b.get("role") not in {"table_html", "table_asset"}
@@ -5632,10 +5624,17 @@ def tag_figure_contained_text(
             if block.get("_object_owner_family") == "author_bio" or block.get("_excluded_from_figure_inventory"):
                 continue
             role = str(block.get("role") or "")
-            if role in {"figure_asset", "media_asset", "noise", "author_bio_asset",
-                        "figure_caption", "figure_caption_candidate",
-                        "table_html", "table_asset",
-                        "figure_inner_text"}:
+            if role in {
+                "figure_asset",
+                "media_asset",
+                "noise",
+                "author_bio_asset",
+                "figure_caption",
+                "figure_caption_candidate",
+                "table_html",
+                "table_asset",
+                "figure_inner_text",
+            }:
                 continue
             bbox = block.get("bbox")
             if not bbox or len(bbox) < 4:
@@ -5651,10 +5650,11 @@ def tag_figure_contained_text(
 def write_figure_inventory(dst: Path, inventory: dict[str, Any]) -> None:
     write_json(dst, inventory)
 
+
 def _is_synthetic_vector_caption_candidate(caption: dict) -> bool:
     text = str(caption.get("text") or "")
-    return bool(_FIGURE_DESCRIPTION_OPENING.match(text.strip())) \
-        or bool(_extract_figure_number(text) is not None)
+    return bool(_FIGURE_DESCRIPTION_OPENING.match(text.strip())) or bool(_extract_figure_number(text) is not None)
+
 
 def _caption_has_rotated_text(caption: dict) -> bool:
     span = caption.get("span_metadata") or []
@@ -5686,10 +5686,7 @@ def _rotate_rect_within_union(rect: list[float], union: list[float], *, clockwis
         (rx2 - ux1, ry2 - uy1),
         (rx1 - ux1, ry2 - uy1),
     ]
-    if clockwise:
-        rotated = [(height - y, x) for x, y in pts]
-    else:
-        rotated = [(y, width - x) for x, y in pts]
+    rotated = [(height - y, x) for x, y in pts] if clockwise else [(y, width - x) for x, y in pts]
     xs = [p[0] for p in rotated]
     ys = [p[1] for p in rotated]
     return [min(xs), min(ys), max(xs), max(ys)]
@@ -5723,6 +5720,41 @@ def _prepare_rotated_caption_normalization(legend: dict, asset: dict) -> dict | 
         "rotation_correction_deg": rotation_correction_deg,
         "rotation_union_bbox": union,
     }
+
+
+def _enrich_figure_match_rotation(proposal, match_record, state) -> None:
+    """Detect rotated caption and add rotation_correction_deg + cluster_bbox.
+
+    Standalone enrichment intended to be wired as ``state._match_pre_enricher``
+    in the figure pipeline so the generic pairing state stays domain-neutral.
+
+    This is the extracted body of the old ``FigurePipelineState._enrich_rotation``,
+    now living in the figure domain where it belongs.
+    """
+    if not state.corpus or not proposal.legends:
+        return
+    legend_ref = proposal.legends[0]
+    legend_block = None
+    for b in state.corpus.blocks:
+        if str(b.get("block_id", "")) == str(legend_ref.block_id) and b.get("page") == legend_ref.page:
+            legend_block = b
+            break
+    if legend_block is None or not _caption_has_rotated_text(legend_block):
+        return
+    if not proposal.assets or not state.corpus.raw_assets:
+        return
+    asset_ref = proposal.assets[0]
+    asset_block = None
+    for a in state.corpus.raw_assets:
+        if str(a.get("block_id", "")) == str(asset_ref.block_id) and a.get("page") == asset_ref.page:
+            asset_block = a
+            break
+    if asset_block is None:
+        return
+    normalized = _prepare_rotated_caption_normalization(legend_block, asset_block)
+    if normalized is not None:
+        match_record["rotation_correction_deg"] = normalized["rotation_correction_deg"]
+        match_record["cluster_bbox"] = normalized["rotation_union_bbox"]
 
 
 def _score_legend_to_asset_with_orientation(
@@ -5764,7 +5796,6 @@ def _score_legend_to_asset_with_orientation(
         family_supported=family_supported,
         zone_supported=zone_supported,
     )
-
 
 
 def _score_caption_to_unmatched_asset_for_synthetic(caption: dict, asset: dict) -> float:
@@ -5826,11 +5857,14 @@ def _build_bbox_only_synthetic_figure(caption, asset, *, index, score):
     fig_id = _format_figure_id(ns, fn) if fn is not None else f"synthetic_figure_p{page}_{asset.get('block_id', index)}"
     normalized = _prepare_rotated_caption_normalization(caption, asset)
     entry = {
-        "figure_id": fig_id, "figure_namespace": ns,
+        "figure_id": fig_id,
+        "figure_namespace": ns,
         "legend_block_id": caption.get("block_id", ""),
-        "page": page, "legend_page": int(caption.get("page", 0) or 0),
+        "page": page,
+        "legend_page": int(caption.get("page", 0) or 0),
         "asset_pages": [page] if page else [],
-        "text": text, "figure_number": fn,
+        "text": text,
+        "figure_number": fn,
         "matched_assets": [asset_record],
         "asset_block_ids": [asset_record.get("block_id", "")],
         "cluster_bbox": (
@@ -5844,8 +5878,7 @@ def _build_bbox_only_synthetic_figure(caption, asset, *, index, score):
             caption_style_match=False,
             body_prose_likelihood=False,
         ),
-        "match_score": {"score": score, "decision": "matched",
-                        "evidence": ["bbox_only_synthetic_vector_fallback"]},
+        "match_score": {"score": score, "decision": "matched", "evidence": ["bbox_only_synthetic_vector_fallback"]},
         "confidence": min(0.55, score),
         "flags": ["synthetic_vector_asset", "bbox_only_asset"],
         "truth_source": "vector_bbox",
@@ -5861,12 +5894,18 @@ def _build_bbox_only_synthetic_figure(caption, asset, *, index, score):
 
 
 def _apply_bbox_only_synthetic_vector_fallback(
-    *, matched_figures, unmatched_legends, rejected_legends, unmatched_assets, ownership,
+    *,
+    matched_figures,
+    unmatched_legends,
+    rejected_legends,
+    unmatched_assets,
+    ownership,
 ) -> None:
     if not unmatched_assets:
         return
-    candidates = [c for c in list(unmatched_legends) + list(rejected_legends)
-                  if _is_synthetic_vector_caption_candidate(c)]
+    candidates = [
+        c for c in list(unmatched_legends) + list(rejected_legends) if _is_synthetic_vector_caption_candidate(c)
+    ]
     if not candidates:
         return
 
@@ -5892,11 +5931,14 @@ def _apply_bbox_only_synthetic_vector_fallback(
             continue
 
         page_assets = [
-            a for a in unmatched_assets
+            a
+            for a in unmatched_assets
             if int(a.get("page", 0) or 0) == cap_page
             and str(a.get("role") or "") in {"media_asset", "figure_asset"}
-            and (a.get("asset_family_hint") == "figure_like"
-                 or str(a.get("raw_label") or "") in {"image", "chart", "figure"})
+            and (
+                a.get("asset_family_hint") == "figure_like"
+                or str(a.get("raw_label") or "") in {"image", "chart", "figure"}
+            )
         ]
         scored = []
         for asset in page_assets:
@@ -5934,14 +5976,20 @@ def _apply_bbox_only_synthetic_vector_fallback(
 
     # Clean up consumed legends and assets
     if used_caption_ids:
-        unmatched_legends[:] = [c for c in unmatched_legends if str(c.get("block_id", "") or "") not in used_caption_ids]
+        unmatched_legends[:] = [
+            c for c in unmatched_legends if str(c.get("block_id", "") or "") not in used_caption_ids
+        ]
         rejected_legends[:] = [c for c in rejected_legends if str(c.get("block_id", "") or "") not in used_caption_ids]
     if used_asset_ids:
-        unmatched_assets[:] = [a for a in unmatched_assets if (int(a.get("page", 0) or 0), str(a.get("block_id", "") or "")) not in used_asset_ids]
+        unmatched_assets[:] = [
+            a
+            for a in unmatched_assets
+            if (int(a.get("page", 0) or 0), str(a.get("block_id", "") or "")) not in used_asset_ids
+        ]
+
+
 # === Asset-internal figure number recovery ===
-_FIGURE_DESCRIPTION_OPENING = re.compile(
-    r"^(this|the)\s+figure\b", re.IGNORECASE
-)
+_FIGURE_DESCRIPTION_OPENING = re.compile(r"^(this|the)\s+figure\b", re.IGNORECASE)
 
 _INTERNAL_FIGURE_LABEL_PATTERN = re.compile(
     r"^(?:Figure|Fig\.?)\s+(\d+(?:\.\d+)?)(?:[A-Za-z])?"
@@ -5958,9 +6006,7 @@ def _looks_like_internal_figure_label(text: str) -> bool:
     if not _INTERNAL_FIGURE_LABEL_PATTERN.match(stripped):
         return False
     lower = stripped.lower()
-    if re.match(r"^(?:figure|fig\.?)\s+\d+\s+(?:shows|showed|demonstrates|illustrates|indicates)\b", lower):
-        return False
-    return True
+    return not re.match(r"^(?:figure|fig\.?)\s+\d+\s+(?:shows|showed|demonstrates|illustrates|indicates)\b", lower)
 
 
 def _needs_asset_internal_figure_number_recovery(fig: dict) -> bool:
@@ -6025,8 +6071,7 @@ def _asset_edge_band_score(line_bbox, asset_bbox) -> float:
     right_dist = abs(cx - ax2)
     top_dist = abs(cy - ay1)
     bottom_dist = abs(cy - ay2)
-    edge_dist = min(left_dist / asset_w, right_dist / asset_w,
-                    top_dist / asset_h, bottom_dist / asset_h)
+    edge_dist = min(left_dist / asset_w, right_dist / asset_w, top_dist / asset_h, bottom_dist / asset_h)
     if edge_dist <= 0.08:
         return 1.0
     if edge_dist <= 0.15:
@@ -6043,7 +6088,9 @@ def _iter_matched_figure_assets(fig: dict) -> list[dict]:
 
 
 def _recover_asset_internal_figure_number(
-    pdf_lines: list[dict], asset: dict, existing_numbers: set,
+    pdf_lines: list[dict],
+    asset: dict,
+    existing_numbers: set,
 ) -> dict | None:
     """Scan pdf_lines for a figure label inside asset bbox.
     Returns recovery dict with figure_number, text, bbox, figure_namespace, or None.
@@ -6067,13 +6114,15 @@ def _recover_asset_internal_figure_number(
                 number = int(m.group(1))
                 edge_score = _asset_edge_band_score(lb, ab)
                 if edge_score > 0:
-                    candidates.append({
-                        "figure_namespace": "figure",
-                        "figure_number": number,
-                        "text": text,
-                        "bbox": lb,
-                        "edge_score": edge_score,
-                    })
+                    candidates.append(
+                        {
+                            "figure_namespace": "figure",
+                            "figure_number": number,
+                            "text": text,
+                            "bbox": lb,
+                            "edge_score": edge_score,
+                        }
+                    )
     if not candidates:
         return None
     # Multiple different figure numbers -> conflict, don't recover
@@ -6132,9 +6181,14 @@ def _recover_missing_figure_numbers_from_assets(
         fig["recovered_label_text"] = recovered["text"]
         fig["recovered_label_bbox"] = recovered["bbox"]
         fig["figure_number_source"] = "asset_internal_pdf_line"
-        fig["flags"] = list(dict.fromkeys((fig.get("flags") or []) + [
-            "figure_number_recovered_from_asset_text",
-        ]))
+        fig["flags"] = list(
+            dict.fromkeys(
+                (fig.get("flags") or [])
+                + [
+                    "figure_number_recovered_from_asset_text",
+                ]
+            )
+        )
 
 
 def _recover_figure_heading_prefix(
@@ -6164,7 +6218,7 @@ def _recover_figure_heading_prefix(
     # Sort PDF lines top-to-bottom by y-center
     sorted_lines = sorted(
         pdf_lines,
-        key=lambda l: (l.get("bbox") or [0, 0, 0, 0])[1],
+        key=lambda leg: (leg.get("bbox") or [0, 0, 0, 0])[1],
     )
 
     for i, line in enumerate(sorted_lines):
@@ -6185,7 +6239,7 @@ def _recover_figure_heading_prefix(
 
         # Common-prefix match: at least 15 chars case-insensitive
         common = 0
-        for a, b in zip(next_text.lower(), block_text.lower()):
+        for a, b in zip(next_text.lower(), block_text.lower(), strict=False):
             if a == b:
                 common += 1
             else:

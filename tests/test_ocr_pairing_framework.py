@@ -51,8 +51,8 @@ def test_pairing_types_module_exports_generic_types():
 
 
 def test_figure_vnext_types_module_reexports_framework_types():
-    from paperforge.worker.ocr_pairing_types import ResourceRef as FrameworkResourceRef
     from paperforge.worker.ocr_figure_vnext_types import ResourceRef as FigureModuleResourceRef
+    from paperforge.worker.ocr_pairing_types import ResourceRef as FrameworkResourceRef
 
     assert FigureModuleResourceRef is FrameworkResourceRef
 
@@ -97,8 +97,8 @@ def test_pairing_state_module_exports_ownership_ledger():
 
 
 def test_figure_vnext_state_module_reexports_framework_ledger():
-    from paperforge.worker.ocr_pairing_state import OwnershipLedger as FrameworkLedger
     from paperforge.worker.ocr_figure_vnext_state import OwnershipLedger as FigureModuleLedger
+    from paperforge.worker.ocr_pairing_state import OwnershipLedger as FrameworkLedger
 
     assert FigureModuleLedger is FrameworkLedger
 
@@ -115,12 +115,14 @@ def test_run_pairing_passes_executes_in_declared_order():
 
     class FirstPass:
         name = "first"
+
         def run(self, state):
             seen.append(self.name)
             return PassReport(pass_name=self.name)
 
     class SecondPass:
         name = "second"
+
         def run(self, state):
             seen.append(self.name)
             return PassReport(pass_name=self.name)
@@ -147,6 +149,7 @@ def test_legacy_vnext_corpus_module_reexports_figure_domain_types():
     from paperforge.worker.ocr_figure_vnext_corpus import FigureCorpus as LegacyModuleFigureCorpus
 
     assert LegacyModuleFigureCorpus is DomainFigureCorpus
+
 
 def test_resource_ref_supports_text_kind_and_role() -> None:
     from paperforge.worker.ocr_pairing_types import ResourceRef
@@ -198,3 +201,46 @@ def test_pipeline_state_alias_preserves_figure_state_compatibility() -> None:
     assert FigurePipelineState is PipelineState
     assert state.matches == []
     assert state.reservations == []
+
+
+def test_state_accept_match_defaults_to_no_enricher() -> None:
+    """The generic state must not enrich matches by default (domain-neutral)."""
+    from paperforge.worker.ocr_pairing_state import OwnershipLedger, PipelineState
+
+    state = PipelineState(corpus=None, candidate_index=None, ledger=OwnershipLedger())
+    assert state._match_pre_enricher is None
+
+
+def test_state_accept_match_invokes_enricher_when_set() -> None:
+    """When a _match_pre_enricher hook is wired, accept_match must call it."""
+    from paperforge.worker.ocr_pairing_state import FigurePipelineState, OwnershipLedger
+    from paperforge.worker.ocr_pairing_types import ClaimProposal, ResourceRef
+
+    state = FigurePipelineState(corpus=None, candidate_index=None, ledger=OwnershipLedger())
+    called_with: list[tuple] = []
+
+    def fake_enricher(proposal, match_record, state_obj):
+        called_with.append((proposal, match_record, state_obj))
+
+    state._match_pre_enricher = fake_enricher
+    proposal = ClaimProposal(
+        pass_name="test",
+        figure_no=None,
+        claim_type="match",
+        legends=[ResourceRef(kind="legend", page=1, block_id="l1")],
+        assets=[],
+        groups=[],
+        confidence=1.0,
+        evidence_rank=0,
+        reason="test",
+    )
+    match_record = {"test": True}
+    state.accept_match(proposal, match_record)
+
+    assert len(called_with) == 1
+    assert called_with[0][0] is proposal
+    assert called_with[0][1] is match_record
+    assert called_with[0][2] is state
+    # The match_record should have been appended to state.matches *after* enrichment
+    assert state.matches[0] is match_record
+    assert state.matches[0]["test"] is True
