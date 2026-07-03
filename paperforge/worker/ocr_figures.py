@@ -2978,6 +2978,29 @@ def _infer_missing_main_figure_numbers(
 
 
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
+    return build_figure_inventory_legacy(structured_blocks, page_width, page_pdf_lines_by_page)
+
+
+def build_figure_inventory_vnext(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
+    return {
+        "pipeline_mode": "vnext",
+        "matched_figures": [],
+        "ambiguous_figures": [],
+        "unmatched_legends": [],
+        "unmatched_assets": [],
+        "unresolved_clusters": [],
+        "held_figures": [],
+        "rejected_legends": [],
+        "page_ledger": {},
+        "residual_ledger": {},
+        "local_pairing_hypotheses": [],
+        "completeness": {
+            "total_numbered_legends": 0,
+            "accounted_for": 0,
+            "details": [],
+        },
+    }
+def build_figure_inventory_legacy(structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None) -> dict[str, Any]:
     legends: list[dict] = []
     held_figures: list[dict] = []
     rejected_legends: list[dict] = []

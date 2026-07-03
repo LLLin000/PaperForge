@@ -6424,3 +6424,38 @@ def test_recover_internal_figure_number_inside_overlap_gate():
     # Line that covers >15% of asset -> edge_band_score = 0
     large_line = [100, 100, 500, 600]  # covers large area
     assert _asset_edge_band_score(large_line, asset) == 0.0
+
+
+# --- Task 1: Legacy/vnext mechanical split ---
+
+
+def test_build_figure_inventory_wrapper_stays_legacy_path(monkeypatch):
+    from paperforge.worker import ocr_figures
+
+    called = {"legacy": 0, "vnext": 0}
+
+    def fake_legacy(*args, **kwargs):
+        called["legacy"] += 1
+        return {"source": "legacy"}
+
+    def fake_vnext(*args, **kwargs):
+        called["vnext"] += 1
+        return {"source": "vnext"}
+
+    monkeypatch.setattr(ocr_figures, "build_figure_inventory_legacy", fake_legacy)
+    monkeypatch.setattr(ocr_figures, "build_figure_inventory_vnext", fake_vnext)
+
+    result = ocr_figures.build_figure_inventory([], 1200)
+
+    assert result == {"source": "legacy"}
+    assert called == {"legacy": 1, "vnext": 0}
+
+
+def test_vnext_entrypoint_is_callable_without_cutover():
+    from paperforge.worker.ocr_figures import build_figure_inventory_vnext
+
+    result = build_figure_inventory_vnext([], 1200)
+
+    assert isinstance(result, dict)
+    assert result.get("pipeline_mode") == "vnext"
+    assert result.get("matched_figures") == []
