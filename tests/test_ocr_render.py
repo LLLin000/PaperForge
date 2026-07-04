@@ -979,6 +979,26 @@ def test_frontmatter_no_duplication_when_metadata_present() -> None:
     assert "John Smith" not in md
 
 
+def test_render_frontmatter_affiliation_fallback_even_when_authors_metadata_present() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {"page": 1, "role": "authors", "text": "John Smith", "block_id": "p1_a1"},
+        {"page": 1, "role": "affiliation", "text": "University of Science", "block_id": "p1_af1"},
+    ]
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={"authors_display": "John Smith", "authors": {"value": ["John Smith"]}},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=1,
+        document_structure=None,
+        reader_payload={},
+    )
+    assert "**Affiliation:** University of Science" in md
+    assert "John Smith" in md
+
+
 def test_frontmatter_title_fallback_when_metadata_empty() -> None:
     """Title from structured blocks appears when metadata title is empty."""
     from paperforge.worker.ocr_render import render_fulltext_markdown

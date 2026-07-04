@@ -1223,9 +1223,9 @@ def _collect_frontmatter_fallback_fields(
             fallback_title = norm
         elif role == "authors" and not has_any_author:
             fallback_authors.append(norm)
-        elif role == "affiliation" and not has_any_author:
+        elif role == "affiliation":
             fallback_affiliations.append(norm)
-        elif role == "email" and not has_any_author:
+        elif role in {"email", "correspondence"}:
             fallback_emails.append(norm)
         elif role == "doi" and not has_doi:
             # Only accept clean DOI lines
