@@ -5,8 +5,19 @@ import { execFile } from "child_process";
 export type MaintenanceCategory = "ok" | "rebuild" | "failed" | "limited";
 export type MaintenanceAction = "rebuild" | "redo" | null;
 
-export type DisplayAction = "retry_ocr" | "rebuild_result" | "upgrade_legacy" | "add_pdf" | "configure_ocr" | "none";
-export type DisplayGroup = "retry" | "rebuild" | "legacy_optional" | "external_action" | "hidden";
+export type DisplayAction =
+  | "retry_ocr"
+  | "rebuild_result"
+  | "upgrade_legacy"
+  | "add_pdf"
+  | "configure_ocr"
+  | "none";
+export type DisplayGroup =
+  | "retry"
+  | "rebuild"
+  | "legacy_optional"
+  | "external_action"
+  | "hidden";
 export type DisplaySeverity = "actionable" | "optional" | "external" | "normal";
 
 export interface MaintenanceDisplayRow {
@@ -94,10 +105,18 @@ export function buildMaintenanceSummary(
 }
 
 function ocrMaintenanceCachePath(vaultPath: string): string {
-  return path.join(vaultPath, "System", "PaperForge", "cache", "ocr_maintenance.json");
+  return path.join(
+    vaultPath,
+    "System",
+    "PaperForge",
+    "cache",
+    "ocr_maintenance.json"
+  );
 }
 
-export function readMaintenanceCache(vaultPath: string): MaintenanceCache | null {
+export function readMaintenanceCache(
+  vaultPath: string
+): MaintenanceCache | null {
   try {
     const filePath = ocrMaintenanceCachePath(vaultPath);
     const raw = fs.readFileSync(filePath, "utf-8");
@@ -107,7 +126,10 @@ export function readMaintenanceCache(vaultPath: string): MaintenanceCache | null
   }
 }
 
-export function writeMaintenanceCache(vaultPath: string, cache: MaintenanceCache): void {
+export function writeMaintenanceCache(
+  vaultPath: string,
+  cache: MaintenanceCache
+): void {
   const filePath = ocrMaintenanceCachePath(vaultPath);
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
@@ -119,12 +141,12 @@ function execFilePromise(
   args: string[],
   options: { cwd: string; timeout: number }
 ): Promise<string> {
-  const { promise, resolve, reject } = Promise.withResolvers<string>();
-  execFile(cmd, args, options, (err: Error | null, stdout: string) => {
-    if (err) reject(err);
-    else resolve(stdout);
+  return new Promise<string>((resolve, reject) => {
+    execFile(cmd, args, options, (err: Error | null, stdout: string) => {
+      if (err) reject(err);
+      else resolve(stdout);
+    });
   });
-  return promise;
 }
 
 export async function refreshMaintenanceData(
@@ -155,12 +177,23 @@ export async function refreshMaintenanceData(
   }
 
   const changedKeys = Object.keys(manifest).filter(
-    (key) => !currentCache?.manifest[key] || currentCache.manifest[key] !== manifest[key]
+    (key) =>
+      !currentCache?.manifest[key] ||
+      currentCache.manifest[key] !== manifest[key]
   );
 
   const dataOut = await execFilePromise(
     pythonExe,
-    [...extraArgs, "-m", "paperforge", "ocr", "list", "--json", "--keys", ...changedKeys],
+    [
+      ...extraArgs,
+      "-m",
+      "paperforge",
+      "ocr",
+      "list",
+      "--json",
+      "--keys",
+      ...changedKeys,
+    ],
     { cwd: vaultPath, timeout: 30000 }
   );
   const updatedPapers: MaintenanceDisplayRow[] = JSON.parse(dataOut);
@@ -182,6 +215,8 @@ export async function refreshMaintenanceData(
   }
   writeMaintenanceCache(vaultPath, cache);
 
-  const data = Object.values(cache.papers).filter((p) => p.visible_in_maintenance);
+  const data = Object.values(cache.papers).filter(
+    (p) => p.visible_in_maintenance
+  );
   return { data, changed: true };
 }

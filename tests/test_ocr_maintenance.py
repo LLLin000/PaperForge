@@ -121,13 +121,13 @@ class TestRule6DoneBadHealthCanRebuild:
         df = _call(status="done", health="red", can_rebuild=True)
         _assert(df, action="rebuild_result", label="重建结果", group="rebuild",
                 severity="actionable", visible=True,
-                reason="已有OCR数据，可重建新版结果")
+                reason="已有OCR数据，可重建获得更稳定的结果")
 
     def test_done_yellow_can_rebuild(self) -> None:
         df = _call(status="done", health="yellow", can_rebuild=True)
         _assert(df, action="rebuild_result", label="重建结果", group="rebuild",
                 severity="actionable", visible=True,
-                reason="已有OCR数据，可重建新版结果")
+                reason="已有OCR数据，可重建获得更稳定的结果")
 
 
 # --- Rule 10: done + health NOT bad ---
