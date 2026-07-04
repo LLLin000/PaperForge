@@ -25,28 +25,34 @@
 
 ### Steps
 
-1. **Add `_collect_frontmatter_fallback_fields()` in `ocr_render.py`**
-   - Before the title rendering block (around line 1245)
-   - Scan `structured_blocks` for roles in `CONSUMED_FRONTMATTER_ROLES` on pages 1–2
-   - Group by role, only collect when `resolved_metadata` equivalent is empty
+1. **Move `CONSUMED_FRONTMATTER_ROLES` to module-level constant `_CONSUMED_FRONTMATTER_ROLES`** in `ocr_render.py`
+   - Both `_collect_frontmatter_fallback_fields()` and the body loop skip use the same constant
+   - Prevents scope issue (body loop defines it AFTER title rendering) and avoids two copies drifting apart
+
+2. **Add `_collect_frontmatter_fallback_fields()`** in `ocr_render.py`
+   - Call BEFORE the title rendering block (around line 1240)
+   - Read `text` or `block_content` from blocks, normalize via `normalize_ocr_math_text()`
+   - Deduplicate: track `seen` set of normalized text to avoid duplicate entries
+   - Do NOT check `render_default` — these blocks will be consumed by skip anyway
    - Return `dict[str, list[str] | str]` (title, authors, affiliations, emails, doi)
 
-2. **Refactor title rendering**
+3. **Refactor title rendering**
    ```python
    fallback = _collect_frontmatter_fallback_fields(structured_blocks, resolved_metadata)
    title = resolved_metadata.get("title", {}).get("value", "") or fallback.get("title", "")
    ```
 
-3. **Refactor author rendering**
-   - Fallback chain: `resolved_metadata.authors_display` → `resolved_metadata.authors.value` → `fallback.authors`
+4. **Refactor author rendering**
+   - Fallback chain: resolved_metadata.authors_display → resolved_metadata.authors.value → fallback.authors
 
-4. **Refactor metadata callout**
+5. **Refactor metadata callout**
    - Single `> [!info]- Paper Metadata` callout
    - If fallback has affiliations/emails, add them after existing metadata fields
-   - DOI: never from fallback unless metadata is empty and block is a clean DOI line
+   - DOI: only from fallback when metadata is empty AND block text is a clean DOI line
+   - Dedupe affiliation/email text via normalized `seen` set
 
-5. **Leave body loop unchanged**
-   - `CONSUMED_FRONTMATTER_ROLES` skip on page ≤ 2 stays
+6. **Leave body loop unchanged**
+   - `_CONSUMED_FRONTMATTER_ROLES` skip on page ≤ 2 stays
    - All rendered content comes from the metadata callout, not the body loop
 
 6. **Write 5 tests** in `tests/test_ocr_render.py`
@@ -76,8 +82,9 @@
 
 2. **Add body escape in `assign_block_role()`** (around line 936 main branch)
    - In `_has_figure_prefix` branch, before `_is_obviously_formal_figure_caption()` call
-   - `if raw_label == "text" and _looks_like_inline_figure_mention(...)`: return `body_paragraph` (zone-aware)
-
+   - `if raw_label == "text" and _looks_like_inline_figure_mention(...)`: **default to body_paragraph**
+   - Only bypass when both conditions hold: `zone == "display_zone"` AND `style_family == "legend_like"`
+   - This ensures early-stage blocks (no zone yet) also get the body escape, not just post-zone blocks
 3. **Add `_CAPTION_DELIMITER_PATTERN` and `_CAPTION_TITLE_PATTERN`** in `ocr_roles.py`
 
 4. **Rewrite `_is_obviously_formal_figure_caption()`**
@@ -87,12 +94,6 @@
 
 5. **Add `_looks_like_caption_syntax()`**
 
-6. **Write 8 tests** in `tests/test_ocr_roles.py`
-
-7. **Run 8 gold fixture regressions** — verify `matched_figures` per fixture table
-
-8. **Check 2HJSWV3V** — `matched_figures` should decrease (phantom Fig 8/9 removed)
-
 ### Acceptance Criteria
 
 | Check | Method |
@@ -101,7 +102,7 @@
 | "Figure 1. Results" → `figure_caption` | Unit test |
 | "Fig 1 Histological analysis" → `_looks_like_caption_syntax` True | Unit test |
 | 8 gold fixtures: matched_figures not decreased unless phantom-removal documented | Regression test |
-| 2HJSWV3V: matched_figures decreased by ~2 (phantom Fig 8/9) | Manual check |
+| 2HJSWV3V: phantom Fig 8/9 body mentions no longer enter formal legend pool; matched_figures may decrease only for phantom matches; real captions must not increase | Manual check |
 | No new unmatched_assets on gold fixtures | Regression test |
 
 ---
@@ -119,20 +120,23 @@
    - Handle: None ref → True (conservative), missing bbox → True (legacy), full-width → True (page-level)
    - Different column bands → False
    - Same band → True
-
+| DOI not duplicated (fallback only when metadata empty AND block is clean DOI) | Unit test |
 3. **Modify `same_page_tail_blocks`** in `infer_zones()`
    - Add `_is_in_same_reference_column()` guard before `not _is_reference_item_candidate()`
    - Pass the already-found `ref_heading_block` (do NOT re-scan)
 
-4. **Derive `page_width`** from body anchor or page blocks — do not hardcode 1200
-
+4. **Derive `page_width`** — use a helper `_page_width_for_zone_block()`:
+   - Check `block.get("page_width")` first
+   - Then scan `page_blocks` for any block with `page_width`, take the max
+   - Then try `body_anchor.get("page_width")`
+   - Finally fallback to 1200 (needed for test fixtures without page_width)
+   - Do NOT hardcode 1200 directly in the column comparison logic
 5. **Write 6 tests** in `tests/test_ocr_document.py`
    - Two-column with left-body not pulled
    - Two-column with right-column note still pulled
    - Single-column preserved
    - Full-width reference heading preserved
-   - 28JLIHLS regression (no false positive)
-   - Left-column Conclusion can render as body
+   - 28JLIHLS single-column same-page boundary remains correctly classified; no new zone pollution
 
 6. **Run zone tests + document tests + full suite**
 
@@ -142,8 +146,7 @@
 |-------|--------|
 | Left-column Conclusion NOT in `tail_nonref_hold_zone` on shared ref page | Unit test |
 | Same-column tail note STILL in tail zone | Unit test |
-| Single-column same-page boundary unchanged | Unit test |
-| 28JLIHLS still FALSE POSITIVE (no zone pollution) | Regression |
+| 28JLIHLS single-column same-page boundary remains correctly classified; no new zone pollution | Regression |
 | Zone tests + document tests all pass | pytest |
 
 ---
@@ -168,8 +171,15 @@
    - Returns dominant column band for a list of media blocks
    - `None` if group spans multiple bands (composite figure)
 
-4. **Enrich candidate group metadata** in `_candidate_group_entry()` — add `column_band` field
-
+4. **Enrich candidate group metadata** — add `column_band` after `_candidate_group_entry()` call
+   - Use **Scheme B** (smaller diff): do NOT change `_candidate_group_entry()` signature
+   - Instead, in the caller (`_build_semantic_figure_groups_from_assets()` or equivalent):
+     ```python
+     entry = _candidate_group_entry(...)
+     entry["column_band"] = _group_column_band(cluster, page_width)
+     entry["column_evidence"] = "..."
+     ```
+   - `page_width` is already available in the calling context
 5. **Insert column check in `_score_legend_to_group()`**
    - Must run **before** `safe_auto_match`
    - If incompatible → return `score=0, decision=rejected`
