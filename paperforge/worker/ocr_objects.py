@@ -32,10 +32,6 @@ def render_figure_object_markdown(figure: dict[str, Any]) -> str:
     if caption:
         parts.append("## Legend")
         parts.append(normalize_ocr_math_text(caption))
-    note_text = figure.get("note_text", "")
-    if note_text:
-        parts.append("")
-        parts.append(note_text)
     if figure.get("page"):
         parts.append("")
         parts.append(f"*Page {figure['page']}*")
@@ -274,13 +270,47 @@ def extract_and_write_objects(
 
             rotation_deg = int(match.get("rotation_correction_deg", 0) or 0)
 
+            # Build crop bbox: cluster_bbox, else union of matched_assets,
+            # expanded to include owned figure_inner_text blocks (same page)
+            crop_bbox = match.get("cluster_bbox") or [0, 0, 0, 0]
+            if not (len(crop_bbox) == 4 and all(v > 0 for v in crop_bbox)):
+                asset_bboxes = [
+                    a.get("bbox", [0, 0, 0, 0])
+                    for a in match.get("matched_assets", [])
+                    if len(a.get("bbox") or []) >= 4 and all(v > 0 for v in a.get("bbox", [0, 0, 0, 0]))
+                ]
+                if asset_bboxes:
+                    crop_bbox = [
+                        min(b[0] for b in asset_bboxes),
+                        min(b[1] for b in asset_bboxes),
+                        max(b[2] for b in asset_bboxes),
+                        max(b[3] for b in asset_bboxes),
+                    ]
+
+            if structured_blocks and len(crop_bbox) == 4 and all(v > 0 for v in crop_bbox):
+                for blk in structured_blocks:
+                    if blk.get("role") != "figure_inner_text":
+                        continue
+                    if str(blk.get("_object_owner_id", "")) != str(fig_id):
+                        continue
+                    if int(blk.get("page", 0) or 0) != int(page or 0):
+                        continue
+                    bb = blk.get("bbox") or [0, 0, 0, 0]
+                    if len(bb) < 4 or not all(v > 0 for v in bb):
+                        continue
+                    crop_bbox = [
+                        min(crop_bbox[0], bb[0]),
+                        min(crop_bbox[1], bb[1]),
+                        max(crop_bbox[2], bb[2]),
+                        max(crop_bbox[3], bb[3]),
+                    ]
+
             was_cropped = False
-            cluster_bbox = match.get("cluster_bbox")
-            if cluster_bbox and all(v > 0 for v in cluster_bbox):
+            if len(crop_bbox) == 4 and all(v > 0 for v in crop_bbox):
                 was_cropped = _crop_asset_from_pdf(
                     pdf_path,
                     page,
-                    cluster_bbox,
+                    crop_bbox,
                     asset_path_abs,
                     page_width=page_width,
                     page_height=page_height,
@@ -310,21 +340,6 @@ def extract_and_write_objects(
                         was_cropped = True
                         break
 
-            # Collect figure_inner_text blocks owned by this figure (side-adjacent + contained)
-            note_text = ""
-            if structured_blocks:
-                note_lines = []
-                for blk in structured_blocks:
-                    if blk.get("role") != "figure_inner_text":
-                        continue
-                    if str(blk.get("_object_owner_id", "")) != str(fig_id):
-                        continue
-                    t = str(blk.get("text", "")).strip()
-                    if t:
-                        note_lines.append(t)
-                if note_lines:
-                    note_text = "\n".join(f"- {line}" for line in note_lines)
-
             md = render_figure_object_markdown(
                 {
                     "figure_id": fig_id,
@@ -333,7 +348,6 @@ def extract_and_write_objects(
                     "image_relpath": asset_path_rel,
                     "confidence": match.get("confidence", 0.5),
                     "was_cropped": was_cropped,
-                    "note_text": note_text,
                 }
             )
             _write_object_markdown(md, figures_render_dir / f"{fig_id}.md")
