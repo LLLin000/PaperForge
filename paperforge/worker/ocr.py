@@ -101,6 +101,12 @@ OCR_QUEUE_STATUSES = {
 }
 OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked"}
 
+
+
+def _ocr_pipeline_v3_enabled() -> bool:
+    import os
+
+    return os.environ.get("OCR_PIPELINE_V3", "").strip().lower() in {"1", "true", "yes", "on"}
 _LEGACY_HARD_DEGRADE_PREFIXES = (
     "rendered text gaps",
 )

@@ -190,8 +190,16 @@ def build_structured_blocks(
     raw_blocks: list[dict],
     source_metadata: dict | None = None,
     structure_output_dir: str | Path | None = None,
+    normalize_mode: str = "legacy",
 ) -> tuple[list[dict], Any]:
     """Build structured blocks with role assignment, normalization, and rescue.
+
+    Args:
+        raw_blocks: OCR raw blocks.
+        source_metadata: Optional source metadata for frontmatter anchors.
+        structure_output_dir: Optional output dir for document structure JSON.
+        normalize_mode: "legacy" (default) runs full normalize pipeline;
+                        "seed_only" returns rows with seed_role as role before legacy normalize.
 
     Returns (rows, doc_structure_or_None) so callers can pass the
     document structure artifact downstream without re-computing it.
@@ -315,6 +323,12 @@ def build_structured_blocks(
             raw_blocks,
         )
         doc_structure.source_frontmatter_anchors = _sfm_anchors
+
+    # Early return for v3 seed-only mode — skip legacy normalize pipeline.
+    if normalize_mode == "seed_only":
+        for row in rows:
+            row["role"] = row["seed_role"]
+        return rows, doc_structure
 
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
     from paperforge.worker.ocr_document import normalize_document_structure
