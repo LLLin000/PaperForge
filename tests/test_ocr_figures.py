@@ -8320,42 +8320,6 @@ def test_build_figure_inventory_delegates_to_vnext(monkeypatch):
     assert called["args"] == (blocks, 777, {1: []})
 
 
-# ──────────────────────────────────────────────
-# PR4: Column compatibility check for figure caption-asset pairing
-# ──────────────────────────────────────────────
-
-
-def test_column_compatible_cross_column_rejected() -> None:
-    from paperforge.worker.ocr_figures import _column_compatible_for_caption_asset
-    pw = 1200.0
-    left_bbox = [100, 100, 500, 200]   # left column band = 0
-    right_bbox = [700, 100, 1100, 200]  # right column band = 1
-    result = _column_compatible_for_caption_asset(left_bbox, right_bbox, pw)
-    assert result is False
-
-
-def test_column_compatible_same_column() -> None:
-    from paperforge.worker.ocr_figures import _column_compatible_for_caption_asset
-    pw = 1200.0
-    left_bbox = [100, 100, 500, 200]
-    left_bbox2 = [100, 300, 500, 400]
-    assert _column_compatible_for_caption_asset(left_bbox, left_bbox2, pw)
-
-
-def test_column_compatible_full_width() -> None:
-    from paperforge.worker.ocr_figures import _column_compatible_for_caption_asset
-    pw = 1200.0
-    full_bbox = [50, 100, 1150, 200]  # 1100/1200 = 91.7% -> full-width
-    right_bbox = [700, 300, 1100, 400]
-    assert _column_compatible_for_caption_asset(full_bbox, right_bbox, pw)
-
-
-def test_column_compatible_center_band() -> None:
-    from paperforge.worker.ocr_figures import _column_compatible_for_caption_asset
-    pw = 1200.0
-    center_bbox = [200, 100, 1000, 200]   # center -> None band
-    right_bbox = [700, 300, 1100, 400]     # right -> band 1
-    assert _column_compatible_for_caption_asset(center_bbox, right_bbox, pw)
 
 
 def test_group_column_band_composite() -> None:

@@ -1118,7 +1118,9 @@ def _score_legend_to_group(
     # Skip for rotated captions (side captions sit in different column by design)
     if not legend.get("_rotated_caption_prematch"):
         legend_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
-        group_band = group.get("column_band") or _group_column_band(group.get("media_blocks", []), page_width)
+        group_band = group.get("column_band")
+        if group_band is None:
+            group_band = _group_column_band(group.get("media_blocks", []), page_width)
         legend_band = _column_band_id(legend_bbox, page_width)
         if legend_band is not None and group_band is not None and legend_band != group_band:
             return {
