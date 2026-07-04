@@ -92,11 +92,6 @@ def build_base_views(domain: str) -> list[dict]:
             ],
             "filter": 'analyze == true && ocr_status == "done" && deep_reading_status == "pending"',
         },
-        {
-            "name": "重做OCR",
-            "order": ["year", "first_author", "title", "ocr_redo", "ocr_time", "ocr_status"],
-            "filter": 'ocr_status == "done"',
-        },
     ]
 
 
@@ -410,11 +405,9 @@ properties:
   analyze:
     displayName: "Analyze"
   ocr_status:
-    displayName: "OCR Status"
-  ocr_redo:
-    displayName: "\u91CD\u505AOCR"
+    displayName: "状态"
   ocr_time:
-    displayName: "\u5B8C\u6210\u65F6\u95F4"
+    displayName: "完成时间"
   deep_reading_status:
     displayName: "Deep Reading"
   pdf_path:
@@ -549,8 +542,7 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
             indent = header_lines_fixed[j][: len(header_lines_fixed[j]) - len(header_lines_fixed[j].lstrip())]
             header_lines_fixed[j] = f'{indent}"!zotero_key.isEmpty()"'
 
-    # 5b: Fix broken ocr_redo placement (between ocr_status: and its displayName)
-    # Strip all existing ocr_redo blocks, then re-insert after ocr_status block
+    # 5b: Remove legacy ocr_redo blocks (no longer used)
     cleaned = []
     skip_next = False
     for j, line in enumerate(header_lines_fixed):
@@ -564,25 +556,6 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
                 continue
         cleaned.append(line)
     header_lines_fixed = cleaned
-
-    # Find ocr_status block and insert ocr_redo after its displayName
-    target_idx = None
-    for j, line in enumerate(header_lines_fixed):
-        if line.strip() == "ocr_status:":
-            # Find the end of ocr_status block (its displayName line, if any)
-            if j + 1 < len(header_lines_fixed) and "displayName" in header_lines_fixed[j + 1]:
-                target_idx = j + 2  # After displayName
-            else:
-                target_idx = j + 1  # After ocr_status:
-            break
-
-    if target_idx is not None:
-        has_redo = any(
-            line.strip() == "ocr_redo:" for line in header_lines_fixed[target_idx : target_idx + 2]
-        )
-        if not has_redo:
-            header_lines_fixed.insert(target_idx, "  ocr_redo:")
-            header_lines_fixed.insert(target_idx + 1, '    displayName: "重做OCR"')
 
     # 5c: Update folder filter
     for j in range(len(header_lines_fixed)):

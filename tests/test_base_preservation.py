@@ -43,7 +43,7 @@ class TestIncrementalMerge:
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content = domain_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 4
+        assert content.count("type: table") == 3
 
         user_custom = (
             content
@@ -61,9 +61,9 @@ class TestIncrementalMerge:
         refreshed = domain_base.read_text(encoding="utf-8")
 
         assert "My Custom Dashboard" in refreshed, "User custom view was lost on incremental refresh"
-        assert refreshed.count("type: table") == 5
+        assert refreshed.count("type: table") == 4
         assert "控制面板" in refreshed
-        assert "重做OCR" in refreshed
+        assert "控制面板" in refreshed
 
     def test_standard_paperforge_views_are_updated_on_refresh(self):
         """Standard views are replaced with fresh content on each refresh."""
@@ -71,12 +71,12 @@ class TestIncrementalMerge:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
 
         content1 = domain_base.read_text(encoding="utf-8")
-        assert content1.count(PAPERFORGE_VIEW_PREFIX) == 4
+        assert content1.count(PAPERFORGE_VIEW_PREFIX) == 3
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content2 = domain_base.read_text(encoding="utf-8")
 
-        assert content2.count("type: table") == 4
+        assert content2.count("type: table") == 3
         assert "${LIBRARY_RECORDS}" not in content2
 
     def test_force_flag_does_full_regeneration(self):
@@ -101,8 +101,8 @@ class TestIncrementalMerge:
         refreshed = domain_base.read_text(encoding="utf-8")
 
         assert "My Custom View" not in refreshed, "force=True should have replaced all views"
-        assert refreshed.count("type: table") == 4
-        assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 4
+        assert refreshed.count("type: table") == 3
+        assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 3
 
     def test_user_modified_filter_on_standard_view_is_preserved(self):
         """User changes filter on a standard PF view — on refresh it is PRESERVED.
@@ -141,7 +141,7 @@ class TestIncrementalMerge:
 
         assert domain_base.exists()
         content = domain_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 4
+        assert content.count("type: table") == 3
         assert PAPERFORGE_VIEW_PREFIX in content
 
     def test_old_file_without_prefix_gets_views_without_duplication(self):
@@ -176,8 +176,7 @@ views:
         # Old views preserved as-is (no prefix added to existing); missing views appended with prefix
         assert content.count('name: "控制面板"') == 1
         assert content.count('name: "待 OCR"') == 1
-        assert content.count(PAPERFORGE_VIEW_PREFIX) == 2  # Only 待深度阅读 + 重做OCR added
-        assert "重做OCR" in content
+        assert content.count(PAPERFORGE_VIEW_PREFIX) == 1  # Only 待深度阅读 added
         assert "待深度阅读" in content
 
     def test_corrupted_file_with_eight_views_repaired_to_four(self):
@@ -277,7 +276,7 @@ class TestLiteratureHubBase:
         hub_base = bases / "Literature Hub.base"
         assert hub_base.exists(), "Literature Hub.base not created"
         content = hub_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 4, f"Expected 4 views, got {content.count('type: table')}"
+        assert content.count("type: table") == 3, f"Expected 3 views, got {content.count('type: table')}"
         assert PAPERFORGE_VIEW_PREFIX in content
         assert "${LIBRARY_RECORDS}" not in content, "Placeholder should be substituted"
 
@@ -340,8 +339,8 @@ views:
         result = merge_base_views(existing, views, folder_filter="Resources/Literature/骨科")
 
         assert "My Custom View" in result, "User view was lost"
-        assert result.count("type: table") == 5
-        assert result.count(PAPERFORGE_VIEW_PREFIX) == 4
+        assert result.count("type: table") == 4
+        assert result.count(PAPERFORGE_VIEW_PREFIX) == 3
         assert "推荐分析" not in result, "Old PF view should be dropped"
 
     def test_merge_base_views_first_run_generates_fresh(self):
@@ -407,8 +406,6 @@ views:
         assert "file.name: 180" in result
         assert "title: 400" in result
         assert "year: 60" in result
-        assert "year: 55" in result
-        assert "title: 380" in result
 
     def test_merge_base_views_widths_not_injected_when_none_exist(self):
         """Fresh PF views without old widths should not have widths injected."""

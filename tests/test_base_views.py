@@ -7,22 +7,18 @@ from paperforge.worker.base_views import (
 
 
 class TestBuildBaseViews:
-    def test_build_base_views_has_4_standard_views(self):
+    def test_build_base_views_has_3_standard_views(self):
         views = build_base_views("骨科")
         names = {v["name"] for v in views}
+        assert names == {"控制面板", "待 OCR", "待深度阅读"}
 
-        assert names == {"控制面板", "待 OCR", "待深度阅读", "重做OCR"}
-
-    def test_ocr_redo_view_has_correct_columns(self):
+    def test_ocr_redo_view_removed(self):
         views = build_base_views("骨科")
-        redo = next(v for v in views if v["name"] == "重做OCR")
+        assert not any(v["name"] == "重做OCR" for v in views)
 
-        assert redo["order"] == ["year", "first_author", "title", "ocr_redo", "ocr_time", "ocr_status"]
-        assert redo["filter"] == 'ocr_status == "done"'
-
-    def test_returns_exactly_4_views(self):
+    def test_returns_exactly_3_views(self):
         views = build_base_views("骨科")
-        assert len(views) == 4
+        assert len(views) == 3
 
     def test_each_view_has_required_keys(self):
         views = build_base_views("骨科")
