@@ -220,21 +220,78 @@ def _get_run_ocr():
     return run_ocr
 
 
-def _run_ocr_redo(vault: Path, dry_run: bool = False, verbose: bool = False, no_progress: bool = False) -> int:
-    """Scan for papers with ocr_redo: true, reset and immediately rerun OCR."""
+def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = False,
+                   verbose: bool = False, no_progress: bool = False) -> int:
+    """Re-run OCR for papers.
+    If keys provided, only redo those papers.
+    If no keys, scan for ocr_redo: true papers (old behavior).
+    """
     from paperforge.worker.ocr import ocr_redo_papers
+
+    if keys:
+        # Keyed redo: process specific papers
+        from paperforge.worker.ocr import ensure_ocr_meta, write_json
+        from paperforge.worker._utils import pipeline_paths
+        from pathlib import Path
+
+        paths = pipeline_paths(vault)
+        ocr_root = paths.get("ocr")
+        if not ocr_root or not ocr_root.exists():
+            print("No OCR root directory.")
+            return 1
+
+        for key in keys:
+            meta_path = ocr_root / key / "meta.json"
+            if not meta_path.exists():
+                print(f"{key}: no meta.json, skipping")
+                continue
+            meta = __import__("json").loads(meta_path.read_text(encoding="utf-8"))
+            current = str(meta.get("ocr_status", "") or "").strip().lower()
+            if current == "nopdf":
+                print(f"{key}: nopdf — cannot redo (missing PDF)")
+                continue
+            # Reset meta to pending
+            meta["ocr_status"] = "pending"
+            meta["ocr_job_id"] = ""
+            meta["ocr_started_at"] = ""
+            meta["ocr_finished_at"] = ""
+            meta["error"] = ""
+            meta["retry_count"] = 0
+            if dry_run:
+                print(f"{key}: would reset to pending (dry-run)")
+            else:
+                write_json(meta_path, meta)
+                print(f"{key}: reset to pending")
+
+        if not dry_run:
+            print(f"Triggering OCR run for {len(keys)} paper(s)...")
+        return 0
 
     return ocr_redo_papers(vault, dry_run=dry_run, verbose=verbose, no_progress=no_progress)
 
 
-def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | None = None) -> int:
+def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | None = None,
+                   manifest: bool = False, keys: list[str] | None = None) -> int:
     """List all papers with OCR maintenance status."""
-    from paperforge.worker.ocr_maintenance import collect_maintenance_rows
+    from paperforge.worker.ocr_maintenance import collect_maintenance_rows, compute_maintenance_manifest
+    import json as _json
+
+    if manifest:
+        m = compute_maintenance_manifest(vault)
+        payload = _json.dumps(m, ensure_ascii=False, default=str)
+        if output_file:
+            Path(output_file).write_text(payload, encoding="utf-8")
+            print(f"Wrote {len(m)} entries to {output_file}")
+        else:
+            print(payload)
+        return 0
 
     rows = collect_maintenance_rows(vault)
-    if json_output:
-        import json as _json
+    if keys is not None:
+        keys_set = set(keys)
+        rows = [r for r in rows if r.key in keys_set]
 
+    if json_output:
         payload = _json.dumps([r.to_dict() for r in rows], ensure_ascii=False, default=str)
         if output_file:
             Path(output_file).write_text(payload, encoding="utf-8")
@@ -243,10 +300,10 @@ def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | Non
             print(payload)
         return 0
 
+    # Terminal table output (unchanged)
     if not rows:
         print("No OCR papers found.")
         return 0
-
     header = f"{'Key':12s} {'Title':42s} {'Status':8s} {'Health':6s} {'Ver':4s} {'Time':11s} {'Pg':>3s} {'Blk':>4s} {'Act'}"
     print(header)
     print("-" * len(header))
@@ -343,6 +400,7 @@ def run(args: argparse.Namespace) -> int:
         logger.info("OCR redo: scanning for ocr_redo: true papers...")
         rc = _run_ocr_redo(
             vault,
+            keys=getattr(args, "keys", None) or None,
             dry_run=getattr(args, "dry_run", False),
             verbose=getattr(args, "verbose", False),
             no_progress=getattr(args, "no_progress", False),
@@ -354,6 +412,8 @@ def run(args: argparse.Namespace) -> int:
             vault,
             json_output=json_output,
             output_file=getattr(args, "output", None),
+            manifest=getattr(args, "manifest", False),
+            keys=getattr(args, "keys", None) or None,
         )
 
     if ocr_action == "rebuild":

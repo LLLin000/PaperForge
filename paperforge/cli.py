@@ -233,10 +233,16 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
     redo_parser = ocr_sub.add_parser("redo", help="Re-run OCR for papers marked ocr_redo: true")
     redo_parser.add_argument("--dry-run", action="store_true", help="List papers that would be reset without making changes")
+    redo_parser.add_argument("keys", nargs="*", metavar="KEY",
+        help="Paper keys to redo (all redoable if empty)")
     redo_parser.set_defaults(ocr_action="redo")
     list_parser = ocr_sub.add_parser("list", help="List all papers with OCR maintenance status")
     list_parser.add_argument("--json", action="store_true", help="Output as JSON")
     list_parser.add_argument("--output", metavar="PATH", help="Write JSON output to file")
+    list_parser.add_argument("--manifest", action="store_true",
+        help="Output key→sha256 manifest dict instead of full rows")
+    list_parser.add_argument("--keys", nargs="*", metavar="KEY",
+        help="Only output rows for these specific keys (with --json)")
     rebuild_parser = ocr_sub.add_parser("rebuild", help="Rebuild OCR-derived artifacts from existing raw blocks")
     rebuild_parser.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys to rebuild")
     rebuild_parser.add_argument("--all", action="store_true", help="Rebuild all papers with existing OCR raw data")
