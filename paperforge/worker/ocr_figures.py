@@ -288,21 +288,6 @@ def _is_full_width_bbox(bbox: list[float], page_width: float) -> bool:
     return bw >= page_width * 0.8
 
 
-def _column_compatible_for_caption_asset(caption_bbox: list[float], asset_bbox: list[float], page_width: float) -> bool:
-    """Check if caption and asset are in compatible column bands.
-    Full-width -> compatible (spans both columns).
-    Same explicit column band -> compatible.
-    Both/one center/ambiguous -> compatible.
-    Different explicit bands -> incompatible.
-    """
-    if _is_full_width_bbox(caption_bbox, page_width) or _is_full_width_bbox(asset_bbox, page_width):
-        return True
-    caption_band = _column_band_id(caption_bbox, page_width)
-    asset_band = _column_band_id(asset_bbox, page_width)
-    if caption_band is None or asset_band is None:
-        # At least one is center/ambiguous -> compatible
-        return True
-    return caption_band == asset_band
 
 
 def _group_column_band(media_blocks: list[dict], page_width: float) -> int | None:
