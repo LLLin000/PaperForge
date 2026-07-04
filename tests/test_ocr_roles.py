@@ -1645,3 +1645,74 @@ def test_reference_heading_variants(text: str) -> None:
 def test_reference_heading_variants_rejects_non_headings(text: str) -> None:
     from paperforge.worker.ocr_roles import _is_reference_heading_text
     assert not _is_reference_heading_text(text), f"Expected no match: {text!r}"
+
+
+# --- PR2: Caption heuristic inline figure mention escape ---
+
+
+def test_fig_shows_body_mention_not_formal_caption() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {
+        "block_label": "text",
+        "block_content": "Fig. 9 shows the Mössbauer spectrum of a dehydrated sample.",
+        "block_bbox": [100, 200, 500, 300],
+        "zone": "body_zone",
+    }
+    role = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+    assert role.role == "body_paragraph"
+
+
+def test_figure_period_caption_remains_caption() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+    caption_block = {
+        "block_label": "text",
+        "block_content": "Figure 1. Histological analysis of tissue sections.",
+        "block_bbox": [100, 600, 500, 700],
+    }
+    figure_block = {
+        "block_label": "image",
+        "block_bbox": [100, 100, 500, 500],
+    }
+    role = assign_block_role(caption_block, page_blocks=[caption_block, figure_block], page_width=1200, page_height=1600)
+    assert role.role == "figure_caption"
+
+
+def test_inline_figure_mention_detects_shows() -> None:
+    from paperforge.worker.ocr_roles import _looks_like_inline_figure_mention
+    assert _looks_like_inline_figure_mention("Fig. 9 shows the results.")
+    assert not _looks_like_inline_figure_mention("Figure 1. Histological analysis.")
+
+
+def test_caption_syntax_detects_delimiter() -> None:
+    from paperforge.worker.ocr_roles import _looks_like_caption_syntax
+    assert _looks_like_caption_syntax("Figure 1. Histological analysis.")
+    assert _looks_like_caption_syntax("Fig 1: Results")
+    assert not _looks_like_caption_syntax("Fig. 9 shows the results.")
+
+
+def test_near_media_does_not_rescue_inline_mention() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+    caption_block = {
+        "block_label": "text",
+        "block_content": "Fig. 9 shows the Mössbauer spectrum.",
+        "block_bbox": [100, 600, 500, 700],
+        "zone": "body_zone",
+    }
+    figure_block = {
+        "block_label": "image",
+        "block_bbox": [100, 100, 500, 500],
+    }
+    role = assign_block_role(caption_block, page_blocks=[caption_block, figure_block], page_width=1200, page_height=1600)
+    assert role.role == "body_paragraph"
+
+
+def test_inline_mention_empty_zone_is_body() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {
+        "block_label": "text",
+        "block_content": "Fig. 10 shows the data analysis results.",
+        "block_bbox": [100, 200, 500, 300],
+        "zone": "",
+    }
+    role = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+    assert role.role == "body_paragraph"
