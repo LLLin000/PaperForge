@@ -1,12 +1,12 @@
 # OCR-v2 Project Management Log
 
 > **Branch:** `master` | **Last Updated:** 2026-07-04
-> **Active work:** A/B/C OCR deepening pass merged to `master`. Default path now includes `ocr_object_writeback.py` and `ocr_tail_settlement.py`; `OCR_PIPELINE_V3` is merged but remains OFF by default. Focused merge suite + fixture-backed v3 parity suite: 105 passed.
+> **Active work:** A/B/C OCR deepening pass merged to `master`. Default path now includes `ocr_object_writeback.py` and `ocr_tail_settlement.py`; `OCR_PIPELINE_V3` is merged but remains OFF by default. Corpus diff on 86 papers (6 fixtures + 80 batch): 86/86 show no diff between legacy and v3.
 
 ---
 
 ## 0. Executive Summary
-**Current state:** The 2026-07-04 OCR deepening stack is merged on `master`: Workstream A added the ownership-evidence writeback seam (`ocr_object_writeback.py`), Workstream B extracted tail/body/backmatter settlement into `ocr_tail_settlement.py` with `TailSettlementReport`, and Workstream C added the `pre_match_normalize(...)` / `post_match_normalize(...)` split behind `OCR_PIPELINE_V3`. Pre-merge blockers were closed: page-qualified writeback lookup, contained-text ownership contract, same-page contained-text guard, and v3 rescue equivalence. `master` at `6cbb82aa`, and fixture-backed v3 parity now passes on `DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, and `5MAW65YD`.
+**Current state:** The 2026-07-04 OCR deepening stack is merged on `master`; A/B/C all landed. Pre-merge blockers closed. Corpus diff on 86 papers shows zero divergence between legacy and v3 paths for role assignment, render/index defaults, and figure/table inventory counts. Six fixture-backed replay papers (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, `5MAW65YD`) have exact parity tests. Focused OCR suite: 105 tests green. `OCR_PIPELINE_V3` remains OFF by default. `<a href="docs/superpowers/analysis/2026-07-04-v3-legacy-corpus-diff.md">Full diff report</a>`.
 
 ## 1. Architecture
 
@@ -51,8 +51,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Focused merge suite (`test_ocr_pipeline_v3` + `test_ocr_tail_settlement` + `test_ocr_object_writeback` + `test_appendix_figure_numbering` + `test_ocr_rendering`) | **105 passed, 0 failed** ✅ |
 | Pairing framework cutover suites (`test_ocr_figures` + `test_ocr_rebuild` + `test_ocr_tables` + `test_ocr_pairing_framework` + `test_ocr_table_pairing_framework`) | **357 passed, 0 failed** ✅ |
 | Real-paper table parity fixtures | **6 runnable fixtures checked** ✅ |
-| Touched-file lint (`ruff check`) | **OK** ✅ |
-| Touched-file format (`ruff format --check`) | **OK** ✅ |
+| Corpus diff: legacy vs v3 (86 papers) | **86/86 no diff** ✅ |
 </br>
 | Component | Status |
 |-----------|--------|
@@ -118,7 +117,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 
 - [x] Merge `feat/ocr-tail-settlement` into `master`
 - [x] Push merged `master`
-- [x] Add focused v3 parity gate (`tests/test_ocr_pipeline_v3.py`)
+> Full corpus diff report: `docs/superpowers/analysis/2026-07-04-v3-legacy-corpus-diff.md`
 - [x] Expand fixture-backed real-paper parity gates to six replay papers (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, `5MAW65YD`)
 - [ ] Decide whether to broaden v3 parity beyond six replay fixtures
 - [ ] Archive stale queue files that still point to pre-merge branch work
