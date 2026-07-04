@@ -26,10 +26,10 @@ class FigureCorpus:
         from . import ocr_figures
 
         raw_legends = [
-            b for b in blocks if b.get("role") in {"figure_caption", "figure_caption_candidate"}
+            b for b in blocks if ocr_figures._match_role(b) in {"figure_caption", "figure_caption_candidate"}
         ]
         raw_assets = [
-            b for b in blocks if b.get("role") in {"figure_asset", "media_asset"}
+            b for b in blocks if ocr_figures._match_role(b) in {"figure_asset", "media_asset"}
         ]
         locator_candidates = [
             b for b in raw_legends if ocr_figures._is_previous_page_legend_locator(b)

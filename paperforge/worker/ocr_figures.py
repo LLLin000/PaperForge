@@ -85,6 +85,11 @@ _INLINE_FIGURE_MENTION_VERBS = (
 )
 
 
+def _match_role(block: dict) -> str:
+    """Resolve the role to use for matching: role_candidate > role > seed_role."""
+    return str(block.get("role_candidate") or block.get("role") or block.get("seed_role") or "")
+
+
 def _looks_like_inline_figure_mention(text: str, block: dict | None = None) -> bool:
     """
     Ponytail: position and style are the reliable signals for distinguishing
@@ -434,7 +439,7 @@ _TRUNCATED_LEGEND_ONLY_PATTERN = re.compile(
 
 
 def _is_validation_first_legend_candidate(block: dict) -> bool:
-    role = str(block.get("role") or "")
+    role = _match_role(block)
     marker_signature = block.get("marker_signature") or {}
     marker_type = str(marker_signature.get("type") or "none")
     zone = str(block.get("zone") or "")
@@ -817,7 +822,7 @@ def _filter_figure_assets(assets: list[dict]) -> list[dict]:
     for b in assets:
         if b.get("_non_body_media"):
             continue
-        role = b.get("role", "")
+        role = _match_role(b)
         if role == "figure_asset":
             result.append(b)
         elif role == "media_asset":
@@ -1666,7 +1671,7 @@ def is_embedded_figure_text(block: dict, all_blocks: list[dict], page_width: flo
 def _formal_figure_caption_blocks(blocks: list[dict]) -> dict[int, list[dict]]:
     by_page: dict[int, list[dict]] = {}
     for block in blocks:
-        role = str(block.get("role") or "")
+        role = _match_role(block)
         text = str(block.get("text") or "")
         if role not in {"figure_caption", "figure_caption_candidate"}:
             continue
@@ -3001,7 +3006,7 @@ def build_figure_inventory_vnext(
     # Recover figure heading prefix from PDF text layer for OCR-missed captions
     if page_pdf_lines_by_page:
         for block in structured_blocks:
-            role = block.get("role", "")
+            role = _match_role(block)
             if role in {"figure_caption", "figure_caption_candidate"}:
                 text = str(block.get("text", "") or "")
                 from .ocr_figures import _extract_figure_number, _recover_figure_heading_prefix
@@ -3114,7 +3119,7 @@ def build_figure_inventory_legacy(
             page_width = float(block["page_width"])
 
     for block in structured_blocks:
-        role = block.get("role", "")
+        role = _match_role(block)
         if block.get("_non_body_media") or role == "non_body_insert":
             continue
         # Skip single-letter panel labels (A, B, (C), A.) in figure legends
