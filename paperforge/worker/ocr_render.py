@@ -1157,6 +1157,98 @@ def _add_consumed_key(
     keys.add((page, str(block_id)))
 
 
+_CONSUMED_FRONTMATTER_ROLES: frozenset[str] = frozenset(
+    {
+        "paper_title",
+        "authors",
+        "doi",
+        "affiliation",
+        "email",
+        "correspondence",
+    }
+)
+
+
+def _collect_frontmatter_fallback_fields(
+    structured_blocks: list[dict],
+    resolved_metadata: dict,
+) -> dict[str, list[str] | str]:
+    """Collect frontmatter blocks from pages 1-2 for roles where metadata is empty.
+    Returns fields, not lines — caller merges into the single metadata callout.
+
+    Returns:
+        title: str — only when resolved_metadata title is empty
+        authors: list[str] — only when both authors_display and metadata authors empty
+        affiliations: list[str] — when metadata has no equivalent
+        emails: list[str] — when metadata has no correspondence
+        doi: str — ONLY when resolved_metadata DOI is empty AND block looks like clean DOI
+    """
+    from paperforge.worker.ocr_math import normalize_ocr_math_text
+
+    metadata_title = resolved_metadata.get("title", {}).get("value", "")
+    metadata_authors = resolved_metadata.get("authors", {}).get("value", []) or []
+    metadata_authors_display = resolved_metadata.get("authors_display", "")
+    metadata_doi = resolved_metadata.get("doi", {}).get("value", "")
+
+    has_title = bool(metadata_title)
+    has_any_author = bool(metadata_authors_display) or bool(metadata_authors)
+    has_doi = bool(metadata_doi)
+
+    fallback_title = ""
+    fallback_authors: list[str] = []
+    fallback_affiliations: list[str] = []
+    fallback_emails: list[str] = []
+    fallback_doi = ""
+
+    seen_text: set[str] = set()
+
+    for block in structured_blocks:
+        page = int(block.get("page", 0) or 0)
+        if page > 2:
+            continue
+        role = block.get("role", "")
+        if role not in _CONSUMED_FRONTMATTER_ROLES:
+            continue
+
+        text = str(block.get("text", "") or block.get("block_content", "") or "").strip()
+        if not text:
+            continue
+        norm = normalize_ocr_math_text(text)
+        norm_key = norm.strip().lower()
+        if norm_key in seen_text:
+            continue
+        seen_text.add(norm_key)
+
+        if role == "paper_title" and not has_title:
+            fallback_title = norm
+        elif role == "authors" and not has_any_author:
+            fallback_authors.append(norm)
+        elif role == "affiliation" and not has_any_author:
+            fallback_affiliations.append(norm)
+        elif role == "email" and not has_any_author:
+            fallback_emails.append(norm)
+        elif role == "doi" and not has_doi:
+            # Only accept clean DOI lines
+            cleaned = norm.strip().lower()
+            if cleaned.startswith("doi:") or cleaned.startswith("doi "):
+                fallback_doi = norm
+            elif "/" in norm and not any(c in norm for c in ("\n", "  ")):
+                fallback_doi = norm
+
+    result: dict[str, list[str] | str] = {}
+    if fallback_title:
+        result["title"] = fallback_title
+    if fallback_authors:
+        result["authors"] = fallback_authors
+    if fallback_affiliations:
+        result["affiliations"] = fallback_affiliations
+    if fallback_emails:
+        result["emails"] = fallback_emails
+    if fallback_doi:
+        result["doi"] = fallback_doi
+    return result
+
+
 def render_fulltext_markdown(
     *,
     structured_blocks: list[dict],
@@ -1294,8 +1386,11 @@ def render_fulltext_markdown(
                     rf["caption_text"] = _block_text_by_bid[cid_str]
                     break
 
+    # --- fallback frontmatter ---
+    fallback = _collect_frontmatter_fallback_fields(structured_blocks, resolved_metadata)
+
     # --- title ---
-    title = resolved_metadata.get("title", {}).get("value", "")
+    title = resolved_metadata.get("title", {}).get("value", "") or fallback.get("title", "")
     if title:
         lines.append(f"# {title}")
         lines.append("")
@@ -1306,13 +1401,20 @@ def render_fulltext_markdown(
         authors = resolved_metadata.get("authors", {}).get("value", [])
         if authors:
             authors_display = ", ".join(authors)
+        else:
+            fallback_authors = fallback.get("authors", [])
+            if fallback_authors:
+                authors_display = ", ".join(fallback_authors)
 
     # --- metadata block ---
     journal = resolved_metadata.get("journal", {}).get("value", "")
     year = resolved_metadata.get("year", {}).get("value", 0)
-    doi = resolved_metadata.get("doi", {}).get("value", "")
+    doi = resolved_metadata.get("doi", {}).get("value", "") or fallback.get("doi", "")
 
-    if authors_display or journal or year or doi:
+    has_any_meta = bool(authors_display) or bool(journal) or bool(year) or bool(doi)
+    fallback_affiliations = fallback.get("affiliations", [])
+    fallback_emails = fallback.get("emails", [])
+    if has_any_meta or fallback_affiliations or fallback_emails:
         lines.append("> [!info]- Paper Metadata")
         if authors_display:
             lines.append(f"> **Authors:** {authors_display}")
@@ -1322,6 +1424,10 @@ def render_fulltext_markdown(
             lines.append(f"> **Year:** {year}")
         if doi:
             lines.append(f"> **DOI:** {doi}")
+        for aff in fallback_affiliations:
+            lines.append(f"> **Affiliation:** {aff}")
+        for email in fallback_emails:
+            lines.append(f"> **Email:** {email}")
         lines.append("")
 
     # --- abstract ---
@@ -1478,16 +1584,6 @@ def render_fulltext_markdown(
     max_page = max(all_pages) if all_pages else 0
     current_page: int | None = None
 
-    CONSUMED_FRONTMATTER_ROLES = frozenset(
-        {
-            "paper_title",
-            "authors",
-            "doi",
-            "affiliation",
-            "email",
-            "correspondence",
-        }
-    )
 
     if document_structure is None:
         # Fallback compatibility path — shared with test fixtures and legacy
@@ -1645,7 +1741,7 @@ def render_fulltext_markdown(
             bm_start = getattr(document_structure, "spread_start", None) if document_structure else None
             if role != "frontmatter_noise" or block_page is None or not bm_start or block_page < bm_start:
                 continue
-        if role in CONSUMED_FRONTMATTER_ROLES and int(block.get("page", 0) or 0) <= 2:
+        if role in _CONSUMED_FRONTMATTER_ROLES and int(block.get("page", 0) or 0) <= 2:
             continue
 
         # Ownership skip first — table note removal by contract, not by role

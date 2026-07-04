@@ -921,3 +921,97 @@ def test_reorder_tail_run_preserves_duplicate_numbered_refs() -> None:
     before = {id(b) for b in [ref42a, ref42b, ref43]}
     after = {id(b) for b in ordered if b.get("role") == "reference_item"}
     assert before == after, f"Lost refs: {before - after}"
+def test_frontmatter_author_fallback_when_metadata_empty() -> None:
+    """Authors from page 1 structured blocks appear when resolved_metadata is empty."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {"page": 1, "role": "authors", "text": "John Smith, Jane Doe", "block_id": "p1_a1"},
+    ]
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=1,
+        document_structure=None,
+        reader_payload={},
+    )
+    assert "John Smith, Jane Doe" in md
+
+
+def test_frontmatter_affiliation_fallback_when_metadata_empty() -> None:
+    """Affiliations from page 1 appear when metadata has no authors."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {"page": 1, "role": "affiliation", "text": "University of Science", "block_id": "p1_af1"},
+    ]
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=1,
+        document_structure=None,
+        reader_payload={},
+    )
+    assert "**Affiliation:** University of Science" in md
+
+
+def test_frontmatter_no_duplication_when_metadata_present() -> None:
+    """Fallback fields are not used when resolved_metadata already has authors."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {"page": 1, "role": "authors", "text": "John Smith", "block_id": "p1_a1"},
+    ]
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={"authors_display": "Metadata Author", "authors": {"value": ["Metadata Author"]}},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=1,
+        document_structure=None,
+        reader_payload={},
+    )
+    assert "Metadata Author" in md
+    assert "John Smith" not in md
+
+
+def test_frontmatter_title_fallback_when_metadata_empty() -> None:
+    """Title from structured blocks appears when metadata title is empty."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {"page": 1, "role": "paper_title", "text": "My Paper Title", "block_id": "p1_t1"},
+    ]
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=1,
+        document_structure=None,
+        reader_payload={},
+    )
+    assert "# My Paper Title" in md
+
+
+def test_frontmatter_doi_fallback_only_when_metadata_empty() -> None:
+    """DOI from structured blocks appears only when metadata DOI is empty and block is clean."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {"page": 1, "role": "doi", "text": "10.1234/example", "block_id": "p1_d1"},
+    ]
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=1,
+        document_structure=None,
+        reader_payload={},
+    )
+    assert "**DOI:** 10.1234/example" in md
