@@ -1,11 +1,11 @@
 # OCR-v2 Project Management Log
 
 > **Branch:** `master` | **Last Updated:** 2026-07-05
-> **Active work:** Release readiness: four-layer cleanup. (1) Layout-category truth audit — sample by layout class, not just zone/role. (2) Health layer hardening. (3) Plugin UI polish. (4) Downstream tools — section-aware chunking, figure/table separate handling.
+> **Active work:** Layer 3 — Plugin UI polish. Layer 2 (OCR Quality Report + Readiness Policy) delivered at `96fd9771`. Full test suite: 1278 passed, 8 pre-existing failures, 275 skipped.
 >
 > ---
 >
-> **Current state:** The 2026-07-04 OCR deepening stack is merged on `master`; A/B/C all landed. V3 normalize split is now **ON by default**. Full vault corpus diff (555 papers): 547/555 no diff, 5/555 diff (all v3 improvements). Figure inner_text crop bbox expansion included. Focused OCR suite: 105 tests green. Next up: layout-category truth audit (Workstream X), then health/UI/downstream in sequence. Architecture cleanup deferred post-release.
+> **Current state:** All four architecture-hardening PRs (frontmatter fallback, caption heuristic, column-aware zone, pairing column) merged. V3 normalize split ON by default. Layer 2 (Quality Indicators + Readiness Policy + Feedback Sidecar) implemented with contract polish complete. Next: Plugin UI polish (Layer 3), then downstream tooling (Layer 4). Architecture cleanup deferred post-release.
 
 ## 1. Architecture
 
@@ -47,7 +47,9 @@ raw observations → structural signatures → stable anchors/families → zone 
 </br>
 | Suite | Result |
 |-------|--------|
+| Full OCR regression suite | **1278 passed, 8 pre-existing failures, 275 skipped** ✅ |
 | Focused merge suite (v3 + tail settlement + writeback + appendix numbering + rendering) | **105 passed, 0 failed** ✅ |
+| Layer 2 quality + feedback tests | **22 passed, 0 failed** ✅ (17 quality + 5 feedback) |
 | Full vault corpus diff: legacy vs v3 (555 papers) | **547/555 no diff, 5/555 v3 improvement** ✅ |
 | 86-paper pre-merge corpus diff | **86/86 no diff** ✅ |
 | 6 fixture-backed v3 parity gates | **6/6 pass** ✅ |
@@ -63,8 +65,11 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Object writeback seam | ✅ `paperforge/worker/ocr_object_writeback.py` active on default path |
 | Tail settlement seam | ✅ `paperforge/worker/ocr_tail_settlement.py` active on default path |
 | V3 normalize split | ✅ ON by default (`OCR_PIPELINE_V3=0` reverts to legacy) |
-| Rebuild/orchestrator seam | ✅ Public wrappers unchanged; callers still use `build_figure_inventory(...)` / `build_table_inventory(...)` |
+| Rebuild/orchestrator seam | ✅ Public wrappers unchanged |
 | Cross-domain figure/table conflict resolution | ✅ Still external to pairing core |
+| **Quality indicators** (Layer 2) | ✅ `paperforge/worker/ocr_quality.py` — `build_quality_indicators()` with 5 normalizers |
+| **Readiness policy** (Layer 2) | ✅ `evaluate_readiness()` + YAML policy evaluator with deep-merge, hard-red, use-case gates |
+| **Feedback sidecar** (Layer 2) | ✅ `paperforge/worker/ocr_quality_feedback.py` — per-mark hash, stale detection, no UI |
 
 ### 2.3 Fix Status
 
@@ -114,8 +119,12 @@ raw observations → structural signatures → stable anchors/families → zone 
 
 **Non-bugs confirmed:** 170 `reference_span_error` findings = FALSE POSITIVE (high-risk noise). Single-column same-page boundaries = FALSE POSITIVE.
 
-### Layer 2: Health Reporting
-`build_ocr_health()` has known defects (audit §2.4: `figure_asset_count` counts matched figures, not assets; §3.1: `section_heading_count` misses subsections). Binary health gates penalize large papers unfairly. Needs weighted/composite scoring, clearer user-facing status.
+### Layer 2: OCR Quality Report + Readiness Policy
+**DONE** at commit `96fd9771`. Three modules delivered:
+- `paperforge/worker/ocr_quality.py` — `build_quality_indicators()` (5 normalsers) + `evaluate_readiness()` (policy evaluator)
+- `paperforge/policies/ocr_readiness_v1.yaml` — default policy (weights, hard-red, use-case gates)
+- `paperforge/worker/ocr_quality_feedback.py` — human feedback sidecar (per-mark hash, stale detection)
+22 new tests. Contract polish: `status/gates/reasons` output shape, hash validation, user override bypass.
 
 ### Layer 3: Plugin UI
 `PaperForgeStatusView` dashboard is 2300+ lines in one file. Status display, OCR maintenance UI, and user-facing health presentation not yet polished.
@@ -124,14 +133,10 @@ raw observations → structural signatures → stable anchors/families → zone 
 `chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
 
 Remaining legacy OCR issues (carried forward):
-1. **Compatibility naming debt** — `figure_no`, `legend`, `FigurePipelineState` remain backwards-compat names. Deferred post-release.
-2. **37LK5T97 legacy consumption bug** — documented, not a current regression.
-3. **Short "Table N" caption matching** — residual weak cases outside validated fixture set.
-4. **Chinese Windows encoding** — non-ASCII PDF filenames can surface GBK path issues.
 ## 4. Active Queue
 
-1. ✅ **Layout-category truth audit (Workstream X)** — 6 bug patterns identified. Ready for solution design with GPT.
-2. 🟡 **Health layer hardening** — fix metric names, weighted scoring, clearer user status
+1. ✅ **Layout-category truth audit (Workstream X)** — 6 bug patterns identified.
+2. ✅ **Layer 2: OCR Quality Report + Readiness Policy** — `96fd9771`.
 3. 🟡 **Plugin UI polish** — dashboard cleanup, status clarity
 4. 🟡 **Downstream tooling** — section-aware chunking, figure/table separate handling
 5. ⏳ **Architecture cleanup** — deferred post-release
@@ -139,9 +144,8 @@ Remaining legacy OCR issues (carried forward):
 
 ### 4.1 Immediate Next Steps
 
-- [ ] **Send findings to GPT** for solution design — 6 bug patterns in `docs/superpowers/analysis/2026-07-05-layout-truth-audit-findings.md`
-- [ ] Fix 37LK5T97 two-column figure 1 bug (known RED from Round 2 audit)
-- [ ] Archive stale queue files from pairing-framework phase
+- [ ] Enter Layer 3: Plugin UI polish (`PaperForgeStatusView`)
+- [ ] Archive stale queue docs from pairing-framework phase
 
 ---
 
@@ -169,6 +173,9 @@ Remaining legacy OCR issues (carried forward):
 | `paperforge/worker/ocr_rebuild.py` | Derived rebuild entry point |
 | `paperforge/worker/ocr_pdf_spans.py` | PDF span backfill for OCR-missed blocks |
 | `paperforge/worker/ocr_bio.py` | Author biography detection utilities and passes |
+| `paperforge/worker/ocr_quality.py` | Quality indicators builder (5 normalsers) + readiness policy evaluator |
+| `paperforge/worker/ocr_quality_feedback.py` | Human feedback sidecar (per-mark hash, stale detection, append-only) |
+| `paperforge/policies/ocr_readiness_v1.yaml` | Default readiness policy (weights, hard-red rules, use-case gates) |
 
 ### 5.2 Test Files
 
@@ -188,6 +195,8 @@ Remaining legacy OCR issues (carried forward):
 | `tests/test_ocr_object_writeback.py` | Ownership-evidence seam, consumed-block contract, contained/side-adjacent text, cross-page `block_id` guard |
 | `tests/test_ocr_tail_settlement.py` | Tail/body/backmatter extraction seam + `TailSettlementReport` |
 | `tests/test_ocr_pipeline_v3.py` | `OCR_PIPELINE_V3` toggle, seed-only mode, pre/post normalize split, parity gate |
+| `tests/test_ocr_quality.py` | Quality indicators (17 tests: shape, thresholds, health_profile, inventory precedence, run_integrity) + readiness policy (7 tests: default, hard-red, gates, YAML, merge) |
+| `tests/test_ocr_quality_feedback.py` | Human feedback sidecar (5 tests: roundtrip, hash validation, append, stale, resolve) |
 | `tests/test_appendix_figure_numbering.py` | Appendix figure/table numbering regressions including M84CTEM9 coverage |
 
 ### 5.3 Test Fixtures
@@ -204,6 +213,8 @@ Remaining legacy OCR issues (carried forward):
 | `docs/superpowers/specs/2026-06-23-ocr-visual-grammar-hardening-design.md` | Visual grammar hardening |
 | `docs/superpowers/specs/2026-06-27-figure-containment-and-backmatter-boundary-design.md` | Current P0/P1 spec |
 | `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md` | Readiness gates master plan |
+| `docs/superpowers/specs/2026-07-05-ocr-quality-report-design.md` | Layer 2 design spec — quality indicators, readiness policy, feedback sidecar |
+| `docs/superpowers/plans/2026-07-05-ocr-quality-report-plan.md` | Layer 2 implementation plan (3 PRs + contract polish) |
 | `docs/superpowers/plans/2026-06-17-ocr-v2-closeout-single-plan.md` | Close-out single plan |
 | `docs/superpowers/plans/2026-06-15-group-first-figure-inventory-plan.md` | Group-first figure refactor (deferred) |
 | `docs/superpowers/specs/README-ocr.md` | OCR design index |
@@ -259,6 +270,13 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-05 | Expand crop bbox to include figure_inner_text | figure_inner_text IS the figure content (variables labels, y-axis text); text should be IN the cropped jpg, not listed as a separate note section. Crop bbox now unions all owned figure_inner_text block bboxes. |
 | 2026-07-05 | Enable OCR_PIPELINE_V3 by default | Full vault corpus diff (555 papers): 547/555 no diff, 5/555 v3 improvements (3 more figures found, 2 boundary corrections). 98.6% parity is sufficient to flip the default; OCR_PIPELINE_V3=0 restores legacy. |
 | 2026-07-05 | figure_inner_text must be in the figure render, not dropped | Side-adjacent and contained text blocks correctly identified as figure_inner_text, but had no display outlet. Crop bbox expansion is the correct fix (text is IN the figure), not a text listing below the image. |
+| 2026-07-05 | Health = 3 layers: Quality Signal → Quality Indicator → User Readiness | `build_ocr_health()` preserved raw; `build_quality_indicators()` adds normalized layer; `evaluate_readiness()` applies policy. Never merge health and quality report. |
+| 2026-07-05 | Readiness weights in external YAML, never hardcoded in Python | Policy evaluator reads from YAML; thresholds tunable without re-running OCR. Default ships in `paperforge/policies/ocr_readiness_v1.yaml`. |
+| 2026-07-05 | Human feedback is a sidecar file, never part of pipeline output | `ocr_quality_feedback.json` is read/written independently; bound to `result_hash` for integrity. |
+| 2026-07-05 | Field resolution precedence: direct inventory > health aggregates | `figure_inventory` fields preferred over `health.matched_figure_count_v2` etc. `health.figure_asset_count` is NOT a figure-evidence signal (it's a match count). |
+| 2026-07-05 | `user_readiness` must state `"basis": "policy_estimate"` | Pipeline produces signals, not ground truth. Gaps are real, but code doesn't know if a gap is actual missing text or a proper skip. |
+| 2026-07-05 | `recommended_use` output shape: `status`/`gates`/`reasons` | Contract fixed at `96fd9771` from the initial `recommended`/`gate_results` shape. |
+| 2026-07-05 | Feedback hashes per-mark, not just root | `append_mark()` injects `result_hash` and `fulltext_hash` into each mark; stale detection compares latest mark's hash with current run. |
 
 ---
 

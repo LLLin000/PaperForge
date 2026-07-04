@@ -1,11 +1,11 @@
 # OCR-v2 Active Queue
-> Status: ACTIVE QUEUE — Four-layer release readiness. V3 ON by default. 105 tests green on `master`.
+> Status: ACTIVE QUEUE — Four-layer release readiness. Layer 2 delivered. 1278 tests green on `master`.
 > Last updated: 2026-07-05
-> Scope: layout-category truth audit → health → UI → downstream tools
+> Scope: UI polish → downstream tools
 
 ## Current Priorities
 1. ✅ **Workstream X: Layout-category truth audit** — 11 papers, 6 bug patterns. Report in `docs/superpowers/analysis/2026-07-05-layout-truth-audit-findings.md`
-2. 🟡 **Health layer hardening** — fix metric naming, weighted scoring, user-facing status
+2. ✅ **Layer 2: OCR Quality Report + Readiness Policy** — `build_quality_indicators()`, `evaluate_readiness()`, human feedback sidecar. Contract polished at commit `96fd9771`.
 3. 🟡 **Plugin UI polish** — dashboard cleanliness, maintenance display
 4. 🟡 **Downstream tooling** — section-aware vector chunking, figure/table separate handling
 
@@ -35,6 +35,14 @@
   - `tests/test_appendix_figure_numbering.py`
   - `tests/test_ocr_rendering.py`
   - Result: **105 passed, 0 failed**
+- **Layer 2: OCR Quality Report + Readiness Policy**:
+  - Added `paperforge/worker/ocr_quality.py` — `build_quality_indicators()` with 5 normalizers
+  - Added `paperforge/worker/ocr_quality_feedback.py` — human feedback sidecar (per-mark hash, stale detection)
+  - Added `paperforge/policies/ocr_readiness_v1.yaml` — default readiness policy (weights, hard-red, use-case gates)
+  - Added `evaluate_readiness()` — policy evaluator with deep-merge, user override bypass
+  - Contract polish: `status/gates/reasons` output shape, hash validation, non-mutating append
+  - 22 new tests (17 quality + 5 feedback), 1278 total green
+  - Master commit: `96fd9771`
 
 ## Immediate Next Checks
 - [ ] Send 6 bug patterns to GPT for solution design
