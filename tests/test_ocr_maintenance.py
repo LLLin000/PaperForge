@@ -499,3 +499,273 @@ class TestCollectMaintenanceRowsDisplayFields:
         assert "display_group" in d
         assert "display_severity" in d
         assert "visible_in_maintenance" in d
+
+
+# ===========================================================================
+# PR B: CLI — _run_ocr_list with manifest/keys, _run_ocr_redo with keys
+# ===========================================================================
+
+
+class TestOcrListManifest:
+    """_run_ocr_list with manifest=True."""
+
+    def test_manifest_flag_calls_compute_maintenance_manifest(
+        self, monkeypatch, capsys
+    ) -> None:
+        import json as _json
+        from paperforge.commands.ocr import _run_ocr_list
+
+        manifest_data = {"KEY1": "abc123", "KEY2": "def456"}
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_maintenance.compute_maintenance_manifest",
+            lambda vault: manifest_data,
+        )
+
+        result = _run_ocr_list(Path("/fake"), manifest=True)
+        captured = capsys.readouterr()
+        assert result == 0
+        assert _json.loads(captured.out) == manifest_data
+
+    def test_manifest_does_not_call_collect_maintenance_rows(
+        self, monkeypatch
+    ) -> None:
+        from paperforge.commands.ocr import _run_ocr_list
+
+        def _raise(*args, **kwargs):
+            raise RuntimeError("collect_maintenance_rows should not be called")
+
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            _raise,
+        )
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_maintenance.compute_maintenance_manifest",
+            lambda vault: {},
+        )
+
+        result = _run_ocr_list(Path("/fake"), manifest=True)
+        assert result == 0
+
+
+class TestOcrListKeys:
+    """_run_ocr_list with keys filter."""
+
+    @staticmethod
+    def _make_row(key: str) -> "OCRMaintenanceRow":
+        from paperforge.worker.ocr_maintenance import OCRMaintenanceRow
+
+        return OCRMaintenanceRow(
+            key=key,
+            title=f"Paper {key}",
+            title_full=f"Paper {key} Full",
+            status="done",
+            health="green",
+            version="2.0",
+            finished_at="-",
+            rebuild_finished_at="-",
+            pages=5,
+            blocks=100,
+            figures=2,
+            tables=1,
+            model="test",
+            degraded_reasons=[],
+            error_summary="",
+            error_stage="",
+            can_redo=False,
+            can_rebuild=True,
+            recommended_action="",
+        )
+
+    def test_keys_flag_filters_by_key(self, monkeypatch, capsys) -> None:
+        import json as _json
+        from paperforge.commands.ocr import _run_ocr_list
+
+        rows = [self._make_row("KEY1"), self._make_row("KEY2"), self._make_row("KEY3")]
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda vault: rows,
+        )
+
+        result = _run_ocr_list(Path("/fake"), json_output=True, keys=["KEY1"])
+        captured = capsys.readouterr()
+        assert result == 0
+        data = _json.loads(captured.out)
+        assert len(data) == 1
+        assert data[0]["key"] == "KEY1"
+
+    def test_keys_none_returns_all(self, monkeypatch, capsys) -> None:
+        import json as _json
+        from paperforge.commands.ocr import _run_ocr_list
+
+        rows = [self._make_row("KEY1"), self._make_row("KEY2")]
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda vault: rows,
+        )
+
+        result = _run_ocr_list(Path("/fake"), json_output=True, keys=None)
+        captured = capsys.readouterr()
+        assert result == 0
+        data = _json.loads(captured.out)
+        assert len(data) == 2
+        assert data[0]["key"] == "KEY1"
+        assert data[1]["key"] == "KEY2"
+
+    def test_keys_unknown_key_ignored(self, monkeypatch, capsys) -> None:
+        import json as _json
+        from paperforge.commands.ocr import _run_ocr_list
+
+        rows = [self._make_row("KEY1"), self._make_row("KEY2")]
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda vault: rows,
+        )
+
+        result = _run_ocr_list(Path("/fake"), json_output=True, keys=["UNKNOWN"])
+        captured = capsys.readouterr()
+        assert result == 0
+        data = _json.loads(captured.out)
+        assert len(data) == 0
+
+
+class TestOcrRedoKeyed:
+    """_run_ocr_redo with keys parameter."""
+
+    def test_redo_single_key(self, tmp_path) -> None:
+        from paperforge.commands.ocr import _run_ocr_redo
+
+        ocr_root = _ocr_path(tmp_path)
+        (ocr_root / "KEY1").mkdir(parents=True)
+        meta = {"zotero_key": "KEY1", "ocr_status": "done", "ocr_job_id": "job-123"}
+        (ocr_root / "KEY1" / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+        result = _run_ocr_redo(tmp_path, keys=["KEY1"])
+        assert result == 0
+        reloaded = json.loads(
+            (ocr_root / "KEY1" / "meta.json").read_text(encoding="utf-8")
+        )
+        assert reloaded["ocr_status"] == "pending"
+        assert reloaded["ocr_job_id"] == ""
+
+    def test_redo_multiple_keys(self, tmp_path) -> None:
+        from paperforge.commands.ocr import _run_ocr_redo
+
+        ocr_root = _ocr_path(tmp_path)
+        for key in ["KEY1", "KEY2"]:
+            (ocr_root / key).mkdir(parents=True)
+            meta = {"zotero_key": key, "ocr_status": "done", "ocr_job_id": f"job-{key}"}
+            (ocr_root / key / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+        result = _run_ocr_redo(tmp_path, keys=["KEY1", "KEY2"])
+        assert result == 0
+        for key in ["KEY1", "KEY2"]:
+            reloaded = json.loads(
+                (ocr_root / key / "meta.json").read_text(encoding="utf-8")
+            )
+            assert reloaded["ocr_status"] == "pending"
+            assert reloaded["ocr_job_id"] == ""
+
+    def test_redo_dry_run(self, tmp_path) -> None:
+        from paperforge.commands.ocr import _run_ocr_redo
+
+        ocr_root = _ocr_path(tmp_path)
+        (ocr_root / "KEY1").mkdir(parents=True)
+        meta = {"zotero_key": "KEY1", "ocr_status": "done", "ocr_job_id": "job-123"}
+        meta_path = ocr_root / "KEY1" / "meta.json"
+        meta_path.write_text(json.dumps(meta), encoding="utf-8")
+
+        _run_ocr_redo(tmp_path, keys=["KEY1"], dry_run=True)
+
+        reloaded = json.loads(meta_path.read_text(encoding="utf-8"))
+        assert reloaded["ocr_status"] == "done"
+        assert reloaded["ocr_job_id"] == "job-123"
+
+    def test_redo_no_keys_falls_back(self, monkeypatch) -> None:
+        from paperforge.commands.ocr import _run_ocr_redo
+
+        call_kwargs = {}
+
+        def mock_redo(vault, **kwargs):
+            call_kwargs.update(kwargs)
+            call_kwargs["vault"] = vault
+            return 0
+
+        monkeypatch.setattr(
+            "paperforge.worker.ocr.ocr_redo_papers",
+            mock_redo,
+        )
+
+        result = _run_ocr_redo(Path("/fake"), keys=None, verbose=True)
+        assert result == 0
+        assert call_kwargs.get("vault") == Path("/fake")
+        assert call_kwargs.get("dry_run") is False
+        assert call_kwargs.get("verbose") is True
+
+    def test_redo_skips_nopdf(self, tmp_path) -> None:
+        from paperforge.commands.ocr import _run_ocr_redo
+
+        ocr_root = _ocr_path(tmp_path)
+
+        (ocr_root / "NOPDF").mkdir(parents=True)
+        (ocr_root / "NOPDF" / "meta.json").write_text(
+            json.dumps({"zotero_key": "NOPDF", "ocr_status": "nopdf"}),
+            encoding="utf-8",
+        )
+        (ocr_root / "KEY1").mkdir(parents=True)
+        (ocr_root / "KEY1" / "meta.json").write_text(
+            json.dumps({"zotero_key": "KEY1", "ocr_status": "done", "ocr_job_id": "job-123"}),
+            encoding="utf-8",
+        )
+
+        _run_ocr_redo(tmp_path, keys=["NOPDF", "KEY1"])
+
+        nopdf_meta = json.loads(
+            (ocr_root / "NOPDF" / "meta.json").read_text(encoding="utf-8")
+        )
+        assert nopdf_meta["ocr_status"] == "nopdf"
+
+        key1_meta = json.loads(
+            (ocr_root / "KEY1" / "meta.json").read_text(encoding="utf-8")
+        )
+        assert key1_meta["ocr_status"] == "pending"
+
+
+class TestRunOcrListDispatch:
+    """Dispatch in run() passes manifest/keys to _run_ocr_list."""
+
+    def test_list_dispatch_manifest(self, monkeypatch) -> None:
+        import argparse
+        from paperforge.commands.ocr import run
+
+        call_kwargs = {}
+
+        def recording_fn(vault, **kwargs):
+            call_kwargs.update(kwargs)
+            call_kwargs["vault"] = vault
+            return 0
+
+        monkeypatch.setattr(
+            "paperforge.commands.ocr._run_ocr_list",
+            recording_fn,
+        )
+
+        ns = argparse.Namespace(
+            vault_path=Path("/fake"),
+            vault=None,
+            ocr_action="list",
+            json=False,
+            output=None,
+            manifest=True,
+            keys=None,
+            diagnose=False,
+            key=None,
+            live=False,
+            dry_run=False,
+            verbose=False,
+            no_progress=False,
+        )
+
+        result = run(ns)
+        assert result == 0
+        assert call_kwargs.get("manifest") is True
+        assert call_kwargs.get("vault") == Path("/fake")
