@@ -33,7 +33,10 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 4. Canvas annotation loading reuses v0.2 contracts and has no direct SQLite/Zotero reads or new Python subprocess API.
 5. `main.js` remains a thin runtime integration point with parity/runtime coverage if imports require temporary inlining.
 
-**Plans:** TBD during phase planning.
+**Plans:** 2 plans
+
+- [ ] `ANN10-01-PLAN.md` - Canvas contract modules and pure tests (Wave 1).
+- [ ] `ANN10-02-PLAN.md` - Runtime ItemView, command/button wiring, shell styling, and final gate (Wave 2, depends on Wave 1).
 
 ### Phase ANN11: Annotation Card View-Models and Layout
 
