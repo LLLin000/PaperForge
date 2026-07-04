@@ -238,69 +238,90 @@ Internal states such as failed, fatal_error, done_degraded, health≠green, degr
 must not be shown directly to users.
 ```
 
-`paperforge ocr list` 增加两个 flag：
+## Row Model 新增字段
 
-| Flag | 作用 | 返回 |
+现有 `OCRMaintenanceRow` 有 `status / health / version / degraded_reasons / error_summary / can_redo / can_rebuild / recommended_action`。这些保持不动。
+
+新增 display 层，前端不自己猜文案：
+
+| 字段 | 类型 | 说明 |
 |------|------|------|
-| `--manifest` | 输出全部论文的 hash 字典 | `{"2BB8VM5W": "abc123", ...}` |
-| `--keys KEY1 KEY2` | 只输出指定 key 的完整行 | 标准 JSON 数组（同 `--json`） |
+| `display_action` | str | 枚举值：`retry_ocr` / `rebuild_result` / `upgrade_legacy` / `add_pdf` / `configure_ocr` / `none` |
+| `display_label` | str | 用户看到的标签：`重试 OCR` / `重建结果` / `升级旧结果` / `补充 PDF` / `配置 OCR` / `已完成` |
+| `display_reason` | str | 一行简述原因 |
+| `display_group` | str | `retry` / `rebuild` / `legacy_optional` / `external_action` / `hidden` |
+| `display_severity` | str | `actionable` / `optional` / `external` / `normal` |
+| `visible_in_maintenance` | bool | 是否在维护标签显示 |
 
-### hash 算法
+### 映射规则（核心合同）
+
+```python
+if status in (failed, done_incomplete, retryable_error) and can_redo:
+    display_action = "retry_ocr"
+    display_label = "重试 OCR"
+    display_group = "retry"
+    visible_in_maintenance = True
+
+elif version == "v1" and can_redo:
+    display_action = "upgrade_legacy"
+    display_label = "升级旧结果"
+    display_group = "legacy_optional"
+    visible_in_maintenance = True
+
+elif (status == "done_degraded" or (status == "done" and health != "green")) and can_rebuild:
+    display_action = "rebuild_result"
+    display_label = "重建结果"
+    display_group = "rebuild"
+    visible_in_maintenance = True
+
+elif status == "done_degraded" and not can_rebuild and can_redo:
+    display_action = "retry_ocr"
+    display_label = "重试 OCR"
+    display_group = "retry"
+    visible_in_maintenance = True
+
+elif status == "nopdf":
+    display_action = "add_pdf"
+    display_label = "补充 PDF"
+    display_group = "external_action"
+    visible_in_maintenance = False
+
+elif status == "blocked":
+    display_action = "configure_ocr"
+    display_label = "配置 OCR"
+    display_group = "external_action"
+    visible_in_maintenance = False
+
+else:
+    display_action = "none"
+    display_label = "已完成"
+    display_group = "hidden"
+    visible_in_maintenance = False
+
+# 排除规则：修不了的不显示
+# done + health≠green 但 !can_rebuild 且 !can_redo → hidden
+# done_degraded 但 !can_rebuild 且 !can_redo → hidden
+if visible_in_maintenance and not can_redo and not can_rebuild \
+   and status not in ("pending", "running", "queued", "processing"):
+    visible_in_maintenance = False
+    display_group = "hidden"
+    display_label = "已完成"
+```
+
+### manifest hash 算法（含 display 字段）
 
 ```
-hash = sha256(paper_key + "|" + status + "|" + health + "|" + version + "|" + recommended_action)
+hash = sha256(
+  key |
+  status | health | version |
+  recommended_action |
+  display_action | display_label | display_reason | display_group |
+  can_redo | can_rebuild |
+  error_stage | error_summary | degraded_reasons
+)
 ```
 
-不进 OCR 管线，只读 `meta.json` + `health.json`，比全量 `collect_maintenance_rows` 快很多。
-
-## UI 结构
-
-### 刷新图标
-
-右上角刷新图标：
-
-- 静止 → 数据最新
-- 旋转 → 后台正在更新
-
-### 维护表格
-
-| 列 | 说明 |
-|----|------|
-| ☑ | 勾选（批量操作用） |
-| Key | 论文 ID |
-| Title | 标题 |
-| 状态 | `retry` / `rebuild` 等操作名 |
-| 详情 | 一行简述原因 |
-| 操作 | [retry] [rebuild] 按钮 |
-
-工具栏：
-
-| 按钮 | 作用 |
-|------|------|
-| 全选 | 选中当前筛选项全部 |
-| 取消全选 | — |
-| ▶ 执行已选 | 批量 retry 或 rebuild |
-
-### 分层展示
-
-```
-┌──────────────────────────────────────────────┐
-│  ✅ 全部正常                                   │  ← 没活干时
-│                                                 │
-│  ── 或 ──                                        │
-│                                                 │
-│  ⚠️ 3 篇需要处理                                 │
-│  ┌───────────────────────────────────────────┐  │
-│  │ ☑ │ Key    │ Title   │ 状态   │ 详情  │  │
-│  │ ☑ │ 2BB... │ Paper A │ retry  │ 上次API失败 │  │
-│  │ ☐ │ 53B... │ Paper B │ rebuild│ 质量降级 │  │
-│  │ 全选            ▶ 执行已选                  │  │
-│  └───────────────────────────────────────────┘  │
-│                                                 │
-│  ── 全局操作 ──                                  │
-│  [重建索引]  [重建记忆库]                        │
-└──────────────────────────────────────────────────┘
-```
+任何显示字段变化都会导致 hash 变化，缓存自动过期。
 
 ### 视觉规范
 
