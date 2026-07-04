@@ -1,13 +1,13 @@
 # OCR-v2 Active Queue
-> Status: ACTIVE QUEUE — A/B/C OCR deepening pass merged to `master`; legacy path remains default, `OCR_PIPELINE_V3` is merged but OFF by default. Focused suite + fixture-backed parity gate: 105 tests green on `master`.
-> Last updated: 2026-07-04
-> Scope: post-merge stabilization / v3 parity follow-up
+> Status: ACTIVE QUEUE — Four-layer release readiness. V3 ON by default. 105 tests green on `master`.
+> Last updated: 2026-07-05
+> Scope: layout-category truth audit → health → UI → downstream tools
 
 ## Current Priorities
-1. **Monitor merged `master`** for any default-path OCR regressions after the A/B/C merge
-2. **Decide whether six fixture-backed replay papers are enough parity evidence for `OCR_PIPELINE_V3=1`** or whether to broaden again before any default-on discussion
-3. **Update / archive stale `project/current/` files** that still point to pre-merge pairing-framework work
-4. **Compatibility naming cleanup** (`figure_no` / `legend` / `FigurePipelineState`) — still deferred
+1. ✅ **Workstream X: Layout-category truth audit** — 11 papers, 6 bug patterns. Report in `docs/superpowers/analysis/2026-07-05-layout-truth-audit-findings.md`
+2. 🟡 **Health layer hardening** — fix metric naming, weighted scoring, user-facing status
+3. 🟡 **Plugin UI polish** — dashboard cleanliness, maintenance display
+4. 🟡 **Downstream tooling** — section-aware vector chunking, figure/table separate handling
 
 ## Completed This Session (cumulative)
 - **Workstream A — object writeback seam**:
@@ -37,9 +37,6 @@
   - Result: **105 passed, 0 failed**
 
 ## Immediate Next Checks
-- [x] Merge `feat/ocr-tail-settlement` into `master`
-- [x] Push merged `master`
-- [x] Expand fixture-backed `OCR_PIPELINE_V3` real-paper parity gates to six replay papers (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, `5MAW65YD`)
-- [ ] Decide whether six replay fixtures are sufficient parity evidence
-- [ ] Decide whether `post_match_normalize()` rescue equivalence is sufficient or still needs corpus proof
-- [ ] Archive or rewrite stale queue docs from the pairing-framework phase
+- [ ] Send 6 bug patterns to GPT for solution design
+- [ ] Fix 37LK5T97 two-column figure 1 bug (Round 2 RED)
+- [ ] Archive stale queue docs from pairing-framework phase

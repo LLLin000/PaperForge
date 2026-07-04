@@ -1,12 +1,11 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `master` | **Last Updated:** 2026-07-04
-> **Active work:** A/B/C OCR deepening pass merged to `master`. Default path now includes `ocr_object_writeback.py` and `ocr_tail_settlement.py`; `OCR_PIPELINE_V3` is merged but remains OFF by default. Corpus diff on 86 papers (6 fixtures + 80 batch): 86/86 show no diff between legacy and v3.
-
----
-
-## 0. Executive Summary
-**Current state:** The 2026-07-04 OCR deepening stack is merged on `master`; A/B/C all landed. Pre-merge blockers closed. Corpus diff on 86 papers shows zero divergence between legacy and v3 paths for role assignment, render/index defaults, and figure/table inventory counts. Six fixture-backed replay papers (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, `5MAW65YD`) have exact parity tests. Focused OCR suite: 105 tests green. `OCR_PIPELINE_V3` remains OFF by default. `<a href="docs/superpowers/analysis/2026-07-04-v3-legacy-corpus-diff.md">Full diff report</a>`.
+> **Branch:** `master` | **Last Updated:** 2026-07-05
+> **Active work:** Release readiness: four-layer cleanup. (1) Layout-category truth audit — sample by layout class, not just zone/role. (2) Health layer hardening. (3) Plugin UI polish. (4) Downstream tools — section-aware chunking, figure/table separate handling.
+>
+> ---
+>
+> **Current state:** The 2026-07-04 OCR deepening stack is merged on `master`; A/B/C all landed. V3 normalize split is now **ON by default**. Full vault corpus diff (555 papers): 547/555 no diff, 5/555 diff (all v3 improvements). Figure inner_text crop bbox expansion included. Focused OCR suite: 105 tests green. Next up: layout-category truth audit (Workstream X), then health/UI/downstream in sequence. Architecture cleanup deferred post-release.
 
 ## 1. Architecture
 
@@ -48,10 +47,11 @@ raw observations → structural signatures → stable anchors/families → zone 
 </br>
 | Suite | Result |
 |-------|--------|
-| Focused merge suite (`test_ocr_pipeline_v3` + `test_ocr_tail_settlement` + `test_ocr_object_writeback` + `test_appendix_figure_numbering` + `test_ocr_rendering`) | **105 passed, 0 failed** ✅ |
-| Pairing framework cutover suites (`test_ocr_figures` + `test_ocr_rebuild` + `test_ocr_tables` + `test_ocr_pairing_framework` + `test_ocr_table_pairing_framework`) | **357 passed, 0 failed** ✅ |
-| Real-paper table parity fixtures | **6 runnable fixtures checked** ✅ |
-| Corpus diff: legacy vs v3 (86 papers) | **86/86 no diff** ✅ |
+| Focused merge suite (v3 + tail settlement + writeback + appendix numbering + rendering) | **105 passed, 0 failed** ✅ |
+| Full vault corpus diff: legacy vs v3 (555 papers) | **547/555 no diff, 5/555 v3 improvement** ✅ |
+| 86-paper pre-merge corpus diff | **86/86 no diff** ✅ |
+| 6 fixture-backed v3 parity gates | **6/6 pass** ✅ |
+</br>
 </br>
 | Component | Status |
 |-----------|--------|
@@ -62,7 +62,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Table pipeline vnext | ✅ Shared pairing core + `role_candidate`-aware match-time role resolution |
 | Object writeback seam | ✅ `paperforge/worker/ocr_object_writeback.py` active on default path |
 | Tail settlement seam | ✅ `paperforge/worker/ocr_tail_settlement.py` active on default path |
-| V3 normalize split | ✅ merged behind `OCR_PIPELINE_V3` (default OFF) |
+| V3 normalize split | ✅ ON by default (`OCR_PIPELINE_V3=0` reverts to legacy) |
 | Rebuild/orchestrator seam | ✅ Public wrappers unchanged; callers still use `build_figure_inventory(...)` / `build_table_inventory(...)` |
 | Cross-domain figure/table conflict resolution | ✅ Still external to pairing core |
 
@@ -94,33 +94,54 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 23 | 37LK5T97 + cutover corpus | Merge-unblock hardening | Moved figure-only rotation enrichment out of generic state, validated 6 runnable real-paper table fixtures semantically, fixed touched-file lint/format issues | `fa734f6`, `9b285b1` |
 | 24 | — | Workstream A — object ownership evidence seam | New module | Added `ocr_object_writeback.py`; unified figure/table asset claims, side-adjacent text claims, consumed-block contract, and renderer consumption skip | `964e05b` |
 | 25 | — | Workstream B — tail settlement seam | New module | Added `ocr_tail_settlement.py`, extracted tail/body/backmatter settlement, and attached `TailSettlementReport` to `DocumentStructure` | `7bf652c` |
-| 26 | — | Workstream C — v3 pre/post normalize split | Feature / toggle | Added `ocr_pre_match_normalize.py`, `ocr_post_match_normalize.py`, `OCR_PIPELINE_V3`, and `normalize_mode=\"seed_only\"` orchestration | `c9d78fc`, `d82949e`, `cb685f7`, `1a81817` |
-| 27 | — | Pre-merge blocker cleanup | Hardening | Fixed page-qualified writeback lookup, contained-text ownership contract, same-page contained-text guard, and v3 rescue equivalence | `7856d6e`, `dcf706f` |
-## 3. Remaining Issues
+| 28 | — | Wire apply_object_writebacks into rebuild path | Fix | Rebuild entry point never called apply_object_writebacks; side-adjacent/contained claims missing from rebuild production path | `e8aae2e` |
+| 29 | M84CTEM9 | Figure inner_text not merged into figure render | Fix | figure_inner_text blocks were correctly recognized but crop bbox excluded variable labels; render_figure_object_markdown emits only image+legend. Fix: expand crop bbox to include owned figure_inner_text blocks | `c42da20` |
+| 30 | — | tag_figure_contained_text binds owner_id on contained blocks | Fix | Contained text path stamped role but not _object_owner_id; needed for crop bbox expansion to find the block-to-figure link | `34827f2` |
+| 31 | — | Enable OCR_PIPELINE_V3 by default | Toggle | Full vault corpus diff (555 papers): 547/555 no diff, 5/555 v3 improvements. Set OCR_PIPELINE_V3=0 for legacy | `914acd6` |
 
-1. **Compatibility naming debt** — `figure_no`, `legend`, and `FigurePipelineState` remain backwards-compat names inside the shared pairing core. Deferred cleanup, not a merge blocker.
-2. **37LK5T97 legacy consumption bug** — legacy table inventory still drops caption `block_id=0` from `consumed_block_ids`; vnext keeps `'0'`. Documented as a legacy defect, not a current regression.
-3. **V3 real-paper parity depth** — `OCR_PIPELINE_V3` now has synthetic/focused coverage plus six fixture-backed replay gates (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, `5MAW65YD`). This is materially better than the earlier single-fixture state, but broader corpus parity is still lighter than the legacy path. Keep toggle OFF by default until more fixture-backed papers land or a corpus diff says otherwise.
-4. **Short \"Table N\" caption matching** — bare short-table captions still have residual weak cases outside the validated fixture set.
-5. **Chinese Windows encoding** — non-ASCII PDF filenames can still surface GBK path issues in older artifacts.
-6. **Shared consumed registry for ambiguous image-like blocks** — figure/table post-hoc arbitration exists, but there is still no first-class shared consumed registry for unresolved image-like assets.
+## 3. Remaining Issues — Release-Readiness Layers
 
+### Layer 1: OCR Truth Coverage — Layout-Category Audit
+**Workstream X complete.** 11 papers audited across 6 layout classes, verified via vision subagents. 6 real bug patterns identified. Full report: `docs/superpowers/analysis/2026-07-05-layout-truth-audit-findings.md`
+
+**Bug patterns found:**
+- **A** `_is_obviously_formal_figure_caption` heuristic — "Fig. X shows..." body text classified as figure caption (`ocr_roles.py:193`)
+- **B** Cross-column figure asset mis-assignment — nearest-neighbor ignores column boundaries (`ocr_figures.py:704`)
+- **C** Render frontmatter skip — authors/affiliations silently dropped from fulltext (`ocr_render.py`)
+- **D** Two-column same-page boundary — body pulled to backmatter zone on mixed pages (`ocr_document.py`)
+- **E** Frontmatter headings ("ARTICLE INFO") misclassified (`ocr_roles.py`)
+- **F** Supplementary-only PDFs — pipeline not designed for non-standard structure
+
+**Non-bugs confirmed:** 170 `reference_span_error` findings = FALSE POSITIVE (high-risk noise). Single-column same-page boundaries = FALSE POSITIVE.
+
+### Layer 2: Health Reporting
+`build_ocr_health()` has known defects (audit §2.4: `figure_asset_count` counts matched figures, not assets; §3.1: `section_heading_count` misses subsections). Binary health gates penalize large papers unfairly. Needs weighted/composite scoring, clearer user-facing status.
+
+### Layer 3: Plugin UI
+`PaperForgeStatusView` dashboard is 2300+ lines in one file. Status display, OCR maintenance UI, and user-facing health presentation not yet polished.
+
+### Layer 4: Downstream Tools
+`chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
+
+Remaining legacy OCR issues (carried forward):
+1. **Compatibility naming debt** — `figure_no`, `legend`, `FigurePipelineState` remain backwards-compat names. Deferred post-release.
+2. **37LK5T97 legacy consumption bug** — documented, not a current regression.
+3. **Short "Table N" caption matching** — residual weak cases outside validated fixture set.
+4. **Chinese Windows encoding** — non-ASCII PDF filenames can surface GBK path issues.
 ## 4. Active Queue
 
-1. ✅ A/B/C OCR deepening pass merged to `master`
-2. ✅ Pre-merge blockers A-D cleared and covered by regression tests
-3. **NEXT: decide whether six fixture-backed replay papers are enough evidence to keep v3 experimental, or whether to broaden again before any default-on discussion**
-4. **NEXT: archive or rewrite stale `project/current/` files from the pairing-framework phase**
-5. **Deferred:** compatibility naming cleanup (`figure_no` / `legend` / `FigurePipelineState`)
+1. ✅ **Layout-category truth audit (Workstream X)** — 6 bug patterns identified. Ready for solution design with GPT.
+2. 🟡 **Health layer hardening** — fix metric names, weighted scoring, clearer user status
+3. 🟡 **Plugin UI polish** — dashboard cleanup, status clarity
+4. 🟡 **Downstream tooling** — section-aware chunking, figure/table separate handling
+5. ⏳ **Architecture cleanup** — deferred post-release
+6. ⏳ **Compatibility naming cleanup** — deferred post-release
 
 ### 4.1 Immediate Next Steps
 
-- [x] Merge `feat/ocr-tail-settlement` into `master`
-- [x] Push merged `master`
-> Full corpus diff report: `docs/superpowers/analysis/2026-07-04-v3-legacy-corpus-diff.md`
-- [x] Expand fixture-backed real-paper parity gates to six replay papers (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, `5MAW65YD`)
-- [ ] Decide whether to broaden v3 parity beyond six replay fixtures
-- [ ] Archive stale queue files that still point to pre-merge branch work
+- [ ] **Send findings to GPT** for solution design — 6 bug patterns in `docs/superpowers/analysis/2026-07-05-layout-truth-audit-findings.md`
+- [ ] Fix 37LK5T97 two-column figure 1 bug (known RED from Round 2 audit)
+- [ ] Archive stale queue files from pairing-framework phase
 
 ---
 
@@ -235,6 +256,9 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 2026-07-03 | Generic state uses a domain hook for figure rotation enrichment | Figure rotation metadata had to stay behaviorally intact without polluting the shared pairing state used by table passes. A pre-match enricher hook keeps the core generic and the figure path exact. |
 | 2026-07-03 | Table parity comparison normalizes benign storage drift only | int/str block IDs, ordering differences, and `None` vs empty unmatched asset IDs are storage-level drift already tolerated downstream. Validation now compares semantic fields rather than raw serialization artifacts. |
 | 2026-07-03 | Legacy `block_id=0` drop is treated as a legacy bug, not a parity target | `37LK5T97` showed legacy dropping consumed caption id `0` via falsy filtering. The branch keeps vnext truth and documents the legacy defect instead of reproducing it. |
+| 2026-07-05 | Expand crop bbox to include figure_inner_text | figure_inner_text IS the figure content (variables labels, y-axis text); text should be IN the cropped jpg, not listed as a separate note section. Crop bbox now unions all owned figure_inner_text block bboxes. |
+| 2026-07-05 | Enable OCR_PIPELINE_V3 by default | Full vault corpus diff (555 papers): 547/555 no diff, 5/555 v3 improvements (3 more figures found, 2 boundary corrections). 98.6% parity is sufficient to flip the default; OCR_PIPELINE_V3=0 restores legacy. |
+| 2026-07-05 | figure_inner_text must be in the figure render, not dropped | Side-adjacent and contained text blocks correctly identified as figure_inner_text, but had no display outlet. Crop bbox expansion is the correct fix (text is IN the figure), not a text listing below the image. |
 
 ---
 
@@ -320,6 +344,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-06-28 | Test fix session: 25 tests reconciled | Fixed 10 stale test issues: non_body_insert guard, caffard abstract, legend_like role, structural gate, backmatter heading render, state machine (done_degraded), body_zone anchor, rebuild backfill skip, truth surface docs, trace-vs-expectations (10 assertions). **616 OCR tests, 0 failed.** Expectations updated for post-P1 behavior. | §9.14 |
 | 2026-07-04 | A/B/C OCR deepening merge + pre-merge blocker cleanup | Merged Workstream A (`ocr_object_writeback.py`), Workstream B (`ocr_tail_settlement.py`), and Workstream C (`pre_match_normalize` / `post_match_normalize` behind `OCR_PIPELINE_V3`) to `master`. Closed pre-merge blockers: page-qualified writeback lookup, contained-text ownership contract, same-page contained-text guard, and v3 rescue equivalence. Verification: 99 focused tests passed on merged `master`. | §9.24 |
 | 2026-06-28 | Data-driven truth audit (2 papers) | 2HEUD5P9 (27p) + 4AG67PBH (25p) — no vision (model limit). Found 3 pipeline defect patterns: zone_leak_frontmatter_to_body (2 papers), reference_boundary_body_mix (2 papers), title_repeat_page2 (1 paper). 12 ghost unknown_structural blocks in 2HEUD5P9. Findings saved to audit/2026-06-28-data-audit-findings.json. | §9.15 |
+| 2026-07-05 | Figure inner_text crop merge + V3 default-on | Figure inner_text identified but silently dropped — crop bbox expanded to include owned figure_inner_text blocks (variables in images retained). Rebuild path wired to apply_object_writebacks. Full vault corpus diff: 547/555 no diff, 5/555 v3 improvements. OCR_PIPELINE_V3 enabled by default. 105 tests + 555-paper diff green. | §9.25 |
 | 2026-06-28 | P0 author bio detection implementation | Created ocr_bio.py with category-weighted bio scoring, Pass C (post_ref_bio_cleanup), figure match guards. Wired author_bio_asset role contract + pipeline. 30 new tests pass. 1041 total OCR tests, 0 regressions. Commits: `e2f0c8a`, `7810eb1`. | §9.16 |
 | 2026-06-28 | P1 author bio detection implementation | Added residual_author_bio_pass (figure-residual portrait assets), extended post_ref_bio_cleanup for figure_caption, tag_figure_contained_text protection. 7 new P1 tests. 1018 total OCR tests, 0 regressions. Commit: `7a1cc5e`. | §9.17 |
 | 2026-07-01 | Audit fix commits + orientation-aware rotated figure normalization | Commit 1 (`2d40ad9`) + Commit 2 (`21bdfd0`) + Commit 4 (`7670227`) landed, then refactored rotated-caption handling out of synthetic fallback into normal figure pre-match. Added PyMuPDF `dir/wmode` capture, same-page rotated settlement, rotated crop render. U746UJ7G now matches via `same_page_rotated`; KUR9PBJC unchanged. 422 regression tests pass. | §9.18 |

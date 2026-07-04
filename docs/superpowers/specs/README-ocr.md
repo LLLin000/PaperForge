@@ -29,17 +29,14 @@ Use this file as the quick index for the **current** OCR design and execution st
 - `../plans/2026-07-04-pre-merge-verification-plan.md`
   - Merge-gate checklist used to close the remaining blockers before merging A/B/C to `master`.
 
-## Current merged status on `master`
+## Current merged status on `master` (2026-07-05)
 
 - `ocr_object_writeback.py` is active on the default path.
 - `ocr_tail_settlement.py` is active on the default path.
-- `OCR_PIPELINE_V3` exists, but remains **OFF by default**.
-- Current focused merge suite on merged `master`: **99 passed**.
-
-## Still-relevant related OCR workflow design
-
-- `2026-06-01-ocr-redo-single-source-design.md`
-  - Approved design for OCR redo and canonical single-source fulltext behavior.
+- **`OCR_PIPELINE_V3` is ON by default** — shadow-normalize before figure/table matching, final role commit after. `OCR_PIPELINE_V3=0` reverts to legacy.
+- Full vault corpus diff (555 papers): 547/555 no diff, 5/555 v3 improvements.
+- Figure inner_text crop bbox expanded to include owned inner text in cropped jpg (no separate note list).
+- Current focused merge suite: **105 passed**.
 
 - `../plans/2026-06-01-ocr-redo-single-source.md`
   - Implementation plan for the single-source redo workflow.
