@@ -190,8 +190,16 @@ def build_structured_blocks(
     raw_blocks: list[dict],
     source_metadata: dict | None = None,
     structure_output_dir: str | Path | None = None,
+    normalize_mode: str = "legacy",
 ) -> tuple[list[dict], Any]:
     """Build structured blocks with role assignment, normalization, and rescue.
+
+    Args:
+        raw_blocks: OCR raw blocks.
+        source_metadata: Optional source metadata for frontmatter anchors.
+        structure_output_dir: Optional output dir for document structure JSON.
+        normalize_mode: "legacy" (default) runs full normalize pipeline;
+                        "seed_only" returns rows with seed_role as role before legacy normalize.
 
     Returns (rows, doc_structure_or_None) so callers can pass the
     document structure artifact downstream without re-computing it.
@@ -316,6 +324,12 @@ def build_structured_blocks(
         )
         doc_structure.source_frontmatter_anchors = _sfm_anchors
 
+    # Early return for v3 seed-only mode — skip legacy normalize pipeline.
+    if normalize_mode == "seed_only":
+        for row in rows:
+            row["role"] = row["seed_role"]
+        return rows, doc_structure
+
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
     from paperforge.worker.ocr_document import normalize_document_structure
 
@@ -347,13 +361,9 @@ def build_structured_blocks(
 
         rows = rescue_roles_with_document_context(rows, paper_context["role_profiles"], doc_structure)
 
-    from paperforge.worker.ocr_document import (
-        _exclude_tail_nonref_from_body_flow,
-        _restore_numbered_body_from_tail_hold,
-    )
+    from paperforge.worker.ocr_tail_settlement import settle_tail_and_backmatter
 
-    _exclude_tail_nonref_from_body_flow(rows)
-    _restore_numbered_body_from_tail_hold(rows)
+    settle_tail_and_backmatter(structured_blocks=rows, document_structure=doc_structure)
 
     # Sync render_default/index_default after role normalizations
     for row in rows:

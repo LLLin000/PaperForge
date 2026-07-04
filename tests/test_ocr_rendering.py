@@ -2649,3 +2649,28 @@ def test_fulltext_skips_table_note_blocks_consumed_by_inventory() -> None:
     )
 
     assert "* p < 0.05" not in md
+
+
+def test_body_renderer_skips_consumed_object_owned_blocks() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {
+            "block_id": "inner1",
+            "page": 5,
+            "role": "figure_inner_text",
+            "text": "Age 42",
+            "_object_consumed": True,
+            "render_default": True,
+        }
+    ]
+    markdown = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": []},
+        table_inventory={"tables": []},
+        page_count=5,
+        document_structure=None,
+        reader_payload={"reader_figures": []},
+    )
+    assert "Age 42" not in markdown

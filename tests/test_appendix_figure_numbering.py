@@ -234,3 +234,44 @@ class TestAppendixSamePageMatching:
         matched = result.get("matched_figures", [])
         assert len(matched) == 1
         assert matched[0]["figure_id"] == "figure_a001"
+
+class TestSideAdjacentFigureTextLeak:
+    """M84CTEM9 class: body blocks side-adjacent to a figure should not leak into body."""
+
+    def test_side_adjacent_text_does_not_leak_into_body(self):
+        from paperforge.worker.ocr_figures import build_figure_inventory_vnext
+        from paperforge.worker.ocr_tables import build_table_inventory_vnext
+        from paperforge.worker.ocr_object_writeback import apply_object_writebacks
+
+        blocks = [
+            {
+                "block_id": "note1",
+                "page": 8,
+                "role": "body_paragraph",
+                "raw_label": "text",
+                "bbox": [191, 1022, 514, 1083],
+                "text": "Age in years - 67:52.8",
+            },
+            {
+                "block_id": "asset1",
+                "page": 8,
+                "role": "media_asset",
+                "raw_label": "image",
+                "bbox": [534, 976, 978, 1334],
+                "text": "",
+            },
+            {
+                "block_id": "cap1",
+                "page": 8,
+                "role": "figure_caption",
+                "raw_label": "text",
+                "bbox": [534, 1340, 978, 1420],
+                "text": "Figure A1. Odds ratios with CIs for the probability of a rotator cuff tear.",
+            },
+        ]
+
+        fig_inv = build_figure_inventory_vnext(blocks, 1200)
+        tab_inv = build_table_inventory_vnext(blocks)
+        apply_object_writebacks(structured_blocks=blocks, figure_inventory=fig_inv, table_inventory=tab_inv)
+
+        assert blocks[0]["role"] == "figure_inner_text"

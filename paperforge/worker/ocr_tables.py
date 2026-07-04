@@ -25,6 +25,11 @@ _TRUNCATED_TABLE_ONLY_PATTERN = re.compile(
 )
 
 
+def _match_role(block: dict) -> str:
+    """Resolve the role to use for matching: role_candidate > role > seed_role."""
+    return str(block.get("role_candidate") or block.get("role") or block.get("seed_role") or "")
+
+
 def _roman_to_int(roman: str) -> int | None:
     roman_values = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
     s = roman.strip().upper()
@@ -93,7 +98,7 @@ def _extract_base_table_number(text: str) -> int | None:
 
 
 def _is_validation_first_table_candidate(block: dict) -> bool:
-    role = str(block.get("role", "") or "")
+    role = _match_role(block)
     if role in {"table_caption", "table_caption_candidate"}:
         return False
     marker_type = (block.get("marker_signature") or {}).get("type") or "none"
@@ -114,7 +119,7 @@ def _is_insufficient_table_caption_evidence(block: dict) -> bool:
 
 
 def _is_weak_explicit_table_caption(block: dict) -> bool:
-    role = str(block.get("role", "") or "")
+    role = _match_role(block)
     if role in {"table_caption", "table_caption_candidate"}:
         return _is_insufficient_table_caption_evidence(block)
     return _is_validation_first_table_candidate(block) and _is_insufficient_table_caption_evidence(block)
@@ -258,7 +263,7 @@ def build_table_inventory_legacy(structured_blocks: list[dict]) -> dict[str, Any
     unmatched_assets: list[dict] = []
 
     for block in structured_blocks:
-        role = block.get("role", "")
+        role = _match_role(block)
         raw_label = str(block.get("raw_label", "") or "").strip()
         if role in {"table_caption", "table_caption_candidate"} or _is_validation_first_table_candidate(block):
             captions.append(block)

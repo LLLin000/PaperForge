@@ -19,12 +19,12 @@ class TableCorpus:
         raw_captions = [
             b
             for b in blocks
-            if b.get("role") in {"table_caption", "table_caption_candidate"}
+            if ocr_tables._match_role(b) in {"table_caption", "table_caption_candidate"}
             or ocr_tables._is_validation_first_table_candidate(b)
         ]
         raw_assets = []
         for block in blocks:
-            role = block.get("role", "")
+            role = ocr_tables._match_role(block)
             raw_label = str(block.get("raw_label", "") or "").strip()
             if role not in ("table_asset", "table_html", "media_asset", "figure_asset"):
                 continue

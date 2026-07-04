@@ -69,8 +69,6 @@ from paperforge.worker.ocr_errors import (
 )
 from paperforge.worker.ocr_figures import (
     build_figure_inventory,
-    tag_figure_contained_text,
-    write_back_figure_roles,
     write_figure_inventory,
 )
 from paperforge.worker.ocr_metadata import (
@@ -80,9 +78,9 @@ from paperforge.worker.ocr_metadata import (
 )
 from paperforge.worker.ocr_tables import (
     build_table_inventory,
-    write_back_table_roles,
     write_table_inventory,
 )
+from paperforge.worker.ocr_object_writeback import apply_object_writebacks
 from paperforge.worker.sync import (
     load_control_actions,
     load_export_rows,
@@ -103,6 +101,12 @@ OCR_QUEUE_STATUSES = {
 }
 OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked"}
 
+
+
+def _ocr_pipeline_v3_enabled() -> bool:
+    import os
+
+    return os.environ.get("OCR_PIPELINE_V3", "").strip().lower() in {"1", "true", "yes", "on"}
 _LEGACY_HARD_DEGRADE_PREFIXES = (
     "rendered text gaps",
 )
@@ -1855,11 +1859,21 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
 
+    normalize_mode = "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
     structured, doc_structure = build_structured_blocks(
         all_raw_blocks,
         source_metadata=source_meta,
         structure_output_dir=artifacts.blocks_structured.parent,
+        normalize_mode=normalize_mode,
     )
+    if _ocr_pipeline_v3_enabled():
+        from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
+
+        structured, doc_structure = pre_match_normalize(
+            structured,
+            source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
+            document_structure=doc_structure,
+        )
     write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
     # Write role-level span profiles
     from paperforge.worker.ocr_profiles import write_role_span_profiles
@@ -1878,9 +1892,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     )
     write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 
-    # --- Phase 2: figure inventory ---
     figure_inventory = build_figure_inventory(structured)
-    write_back_figure_roles(figure_inventory, structured)
 
     # --- Author bio: residual figure inventory cleanup (Pass B, P1) ---
     from paperforge.worker.ocr_bio import (
@@ -1910,22 +1922,31 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     # --- Phase 2: table inventory ---
     table_inventory = build_table_inventory(structured)
-    from paperforge.worker.ocr_figures import attach_ownership_conflicts, resolve_media_asset_conflicts
+    # --- Phase 2: object writeback ---
+    if _ocr_pipeline_v3_enabled():
+        from paperforge.worker.ocr_post_match_normalize import post_match_normalize
 
-    resolve_media_asset_conflicts(figure_inventory, table_inventory)
-    attach_ownership_conflicts(figure_inventory, table_inventory)
+        structured, doc_structure = post_match_normalize(
+            structured,
+            figure_inventory,
+            table_inventory,
+            document_structure=doc_structure,
+            source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
+        )
+
+    apply_object_writebacks(
+        structured_blocks=structured,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+    )
     write_figure_inventory(
         artifacts.blocks_structured.parent / "figure_inventory.json",
         figure_inventory,
     )
-    write_back_table_roles(table_inventory, structured)
     write_table_inventory(
         artifacts.blocks_structured.parent / "table_inventory.json",
         table_inventory,
     )
-
-    # Figure containment render hygiene: tag text blocks inside figure regions
-    tag_figure_contained_text(structured, figure_inventory.get("matched_figures", []))
 
     # Re-persist structured blocks with writeback roles (table_html, figure_asset)
     # ponytail: writes entire list again; if throughput matters, write only changed blocks
