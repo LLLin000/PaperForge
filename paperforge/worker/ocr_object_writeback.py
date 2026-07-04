@@ -108,11 +108,12 @@ def apply_object_writebacks(
     skipped: list[dict] = []
     consumed_block_ids: dict[str, list[str]] = {}
 
-    block_by_id: dict[str, dict] = {}
+    block_by_page_and_id: dict[tuple[int, str], dict] = {}
     for b in structured_blocks:
         bid = b.get("block_id")
+        page = b.get("page", 0) or 0
         if bid is not None:
-            block_by_id[str(bid)] = b
+            block_by_page_and_id[(int(page), str(bid))] = b
 
     # --- Figure asset writeback ---
     for fig in figure_inventory.get("matched_figures", []):
@@ -120,7 +121,8 @@ def apply_object_writebacks(
         fig_consumed: list[str] = []
         for asset in fig.get("matched_assets", []):
             asset_bid = str(asset.get("block_id", ""))
-            block = block_by_id.get(asset_bid)
+            fig_page = int(fig.get("page", 0) or 0)
+            block = block_by_page_and_id.get((fig_page, asset_bid))
             if block is None:
                 continue
             # Idempotency guard
@@ -157,7 +159,8 @@ def apply_object_writebacks(
         table_id = str(tbl.get("table_id", ""))
         tbl_consumed: list[str] = []
         asset_bid = str(tbl.get("asset_block_id", ""))
-        block = block_by_id.get(asset_bid)
+        tbl_page = int(tbl.get("page", 0) or 0)
+        block = block_by_page_and_id.get((tbl_page, asset_bid))
         if block is not None and not block.get("_object_writeback_phase"):
             block["role"] = "table_html"
             _mark_owned(block, family="table", owner_id=table_id, owner_role="asset", reason="matched_asset")
@@ -190,6 +193,73 @@ def apply_object_writebacks(
 
     # --- Contained text tagging (bridging) ---
     tag_figure_contained_text(structured_blocks, figure_inventory.get("matched_figures", []))
+
+    # --- Contained figure text — route through ownership evidence ---
+    for fig in figure_inventory.get("matched_figures", []):
+        figure_id = str(fig.get("figure_id", ""))
+        fig_page = int(fig.get("page", 0) or 0)
+        region = fig.get("cluster_bbox")
+        if not region or len(region) < 4:
+            # Fallback: union bbox from matched_assets
+            assets = fig.get("matched_assets", [])
+            bboxes = [
+                a.get("bbox", [0, 0, 0, 0])
+                for a in assets
+                if len(a.get("bbox") or []) >= 4
+            ]
+            if bboxes:
+                region = [min(b[0] for b in bboxes), min(b[1] for b in bboxes),
+                          max(b[2] for b in bboxes), max(b[3] for b in bboxes)]
+        if not region or len(region) < 4:
+            continue
+        for block in structured_blocks:
+            if block.get("_object_writeback_phase"):
+                continue
+            if not block.get("_figure_contained"):
+                continue
+            bid = block.get("block_id")
+            if bid is None:
+                continue
+            # Check if this block is within this figure's region
+            bbox = block.get("bbox") or [0, 0, 0, 0]
+            if len(bbox) < 4:
+                continue
+            fx1, fy1, fx2, fy2 = region[:4]
+            bx1, by1, bx2, by2 = bbox[:4]
+            if not (bx1 >= fx1 and by1 >= fy1 and bx2 <= fx2 and by2 <= fy2):
+                continue
+            # Assign ownership
+            block["role"] = "figure_inner_text"
+            _mark_owned(
+                block,
+                family="figure",
+                owner_id=figure_id,
+                owner_role="inner_text",
+                reason="contained",
+            )
+            bid_str = str(bid)
+            fig.setdefault("consumed_block_ids", []).append(bid_str)
+            fig.setdefault("associated_text_block_ids", []).append(bid_str)
+            consumed_block_ids.setdefault(figure_id, []).append(bid_str)
+            claim = ObjectOwnershipClaim(
+                owner_family="figure",
+                owner_id=figure_id,
+                owner_role="inner_text",
+                association_reason="contained",
+                confidence=0.8,
+                source_phase="post_inventory",
+                source_block_ids=(bid_str,),
+            )
+            claims.append({
+                "owner_family": claim.owner_family,
+                "owner_id": claim.owner_id,
+                "owner_role": claim.owner_role,
+                "association_reason": claim.association_reason,
+                "confidence": claim.confidence,
+                "source_phase": claim.source_phase,
+                "source_block_ids": list(claim.source_block_ids),
+            })
+            applied.append({"block_id": bid_str, "role": "figure_inner_text"})
 
     # --- Side-adjacent figure text claims ---
     for fig in figure_inventory.get("matched_figures", []):

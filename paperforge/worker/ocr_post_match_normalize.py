@@ -7,6 +7,8 @@ Reuses tail settlement from Workstream B.
 from __future__ import annotations
 
 from paperforge.worker.ocr_document import DocumentStructure, normalize_document_structure
+from paperforge.worker.ocr_document import rescue_roles_with_document_context
+from paperforge.worker.ocr_profiles import build_role_span_profiles
 from paperforge.worker.ocr_tail_settlement import settle_tail_and_backmatter
 
 
@@ -31,5 +33,15 @@ def post_match_normalize(
         live["role_candidate"] = live.get("role_candidate") or shadow.get("role")
         live["render_default"] = shadow.get("render_default", live.get("render_default"))
         live["index_default"] = shadow.get("index_default", live.get("index_default"))
+    # Rescue: document-context corrections (same as legacy build_structured_blocks)
+    paper_context: dict = {}
+    if len(live_rows) >= 10:
+        paper_context["role_profiles"] = build_role_span_profiles(live_rows)
+    source_anchors = getattr(shadow_doc, "source_frontmatter_anchors", {}) if shadow_doc else {}
+    legacy_rescue_enabled = not bool(source_anchors)
+    if paper_context.get("role_profiles") and shadow_doc and legacy_rescue_enabled:
+        live_rows = rescue_roles_with_document_context(
+            live_rows, paper_context["role_profiles"], shadow_doc
+        )
     settle_tail_and_backmatter(structured_blocks=live_rows, document_structure=shadow_doc)
     return live_rows, shadow_doc

@@ -189,3 +189,71 @@ def test_protected_roles_are_never_stolen_by_side_adjacent_claims() -> None:
 
     assert blocks[0]["role"] == "reference_item"
     assert report["applied"] == [] or all(item.get("block_id") != "ref1" for item in report["applied"])
+
+
+def test_apply_object_writebacks_respects_page_for_duplicate_block_ids() -> None:
+    from paperforge.worker.ocr_object_writeback import apply_object_writebacks
+
+    blocks = [
+        {"block_id": "99", "page": 1, "role": "media_asset", "raw_label": "image", "bbox": [100, 100, 400, 400], "text": ""},
+        {"block_id": "99", "page": 2, "role": "media_asset", "raw_label": "image", "bbox": [100, 100, 400, 400], "text": ""},
+    ]
+    figure_inventory = {
+        "matched_figures": [
+            {"page": 1, "figure_id": "fig1", "matched_assets": [{"block_id": "99", "bbox": [100, 100, 400, 400]}], "asset_block_ids": ["99"]},
+        ]
+    }
+    table_inventory = {"tables": []}
+
+    apply_object_writebacks(structured_blocks=blocks, figure_inventory=figure_inventory, table_inventory=table_inventory)
+
+    # Page 1, block 99 should be claimed (matched figure is on page 1)
+    assert blocks[0]["_object_consumed"] is True
+    assert blocks[0]["_object_owner_role"] == "asset"
+    # Page 2, block 99 should NOT be claimed (matched figure is on page 1)
+    assert blocks[1].get("_object_consumed") is not True
+
+
+def test_contained_figure_text_stamps_ownership_evidence() -> None:
+    from paperforge.worker.ocr_object_writeback import apply_object_writebacks
+
+    blocks = [
+        {
+            "block_id": "asset1",
+            "page": 5,
+            "role": "figure_asset",
+            "raw_label": "image",
+            "bbox": [100, 100, 400, 400],
+            "text": "",
+        },
+        {
+            "block_id": "inner1",
+            "page": 5,
+            "role": "body_paragraph",
+            "raw_label": "text",
+            "bbox": [120, 120, 380, 200],
+            "text": "Age 42",
+        },
+    ]
+    figure_inventory = {
+        "matched_figures": [
+            {
+                "page": 5,
+                "figure_id": "fig1",
+                "matched_assets": [{"block_id": "asset1", "bbox": [100, 100, 400, 400]}],
+                "asset_block_ids": ["asset1"],
+                "cluster_bbox": [100, 100, 400, 400],
+            }
+        ]
+    }
+    table_inventory = {"tables": []}
+
+    report = apply_object_writebacks(structured_blocks=blocks, figure_inventory=figure_inventory, table_inventory=table_inventory)
+
+    inner = blocks[1]
+    assert inner["_object_owner_family"] == "figure"
+    assert inner["_object_owner_role"] == "inner_text"
+    assert inner["_object_association_reason"] == "contained"
+    assert inner["_object_consumed"] is True
+    assert "inner1" in figure_inventory["matched_figures"][0].get("consumed_block_ids", [])
+    assert any(c["owner_id"] == "fig1" and c["association_reason"] == "contained" for c in report["claims"])

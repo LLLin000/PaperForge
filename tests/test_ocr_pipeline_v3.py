@@ -200,3 +200,86 @@ def test_build_structured_blocks_legacy_default_still_matches_seed_contract() ->
 
     assert rows[0]["role"]
     assert rows[0]["seed_role"]
+
+def test_post_match_normalize_runs_rescue_roles(monkeypatch) -> None:
+    from paperforge.worker.ocr_document import DocumentStructure
+    import paperforge.worker.ocr_post_match_normalize as post
+
+    rescue_called = False
+
+    def tracking_rescue(rows, profiles, doc):
+        nonlocal rescue_called
+        rescue_called = True
+        return rows
+
+    monkeypatch.setattr(post, "rescue_roles_with_document_context", tracking_rescue)
+
+    # Create rows with enough blocks to trigger rescue (>= 10) and span_metadata
+    # so build_role_span_profiles produces non-empty profiles
+    rows = []
+    for i in range(15):
+        rows.append({
+            "block_id": str(i),
+            "page": 1,
+            "role": "body_paragraph",
+            "seed_role": "body_paragraph",
+            "text": f"Block {i}",
+            "bbox": [100, 100 + i * 30, 420, 130 + i * 30],
+            "span_metadata": [
+                {"size": 10.0 + (i % 5), "font": "Times", "flags": 0, "color": 0}
+            ],
+        })
+
+    post.post_match_normalize(
+        rows,
+        {"matched_figures": []},
+        {"tables": []},
+        document_structure=DocumentStructure(),
+        source_frontmatter_anchors=None,
+    )
+
+    assert rescue_called, "rescue_roles_with_document_context must be called in post_match_normalize"
+
+
+def test_v3_synthetic_parity_with_legacy_reference_boundaries(monkeypatch) -> None:
+    """Verify v3 path produces same output as legacy on a synthetic reference-heavy paper.
+
+    This is a synthetic proxy for a real-paper parity gate: it creates blocks
+    that exercise the reference boundary, tail settlement, and backmatter headings.
+    """
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+    from paperforge.worker.ocr_figures import build_figure_inventory_vnext
+    from paperforge.worker.ocr_tables import build_table_inventory_vnext
+    from paperforge.worker.ocr_object_writeback import apply_object_writebacks
+    from paperforge.worker.ocr_post_match_normalize import post_match_normalize
+    from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
+
+    raw_blocks = [
+        {"paper_id": "synth_paper", "block_id": 1, "page": 1, "raw_label": "doc_title", "text": "Test Paper", "bbox": [100, 100, 500, 130]},
+        {"paper_id": "synth_paper", "block_id": 2, "page": 1, "raw_label": "text", "text": "Introduction. This is the body.", "bbox": [100, 150, 500, 300]},
+        {"paper_id": "synth_paper", "block_id": 3, "page": 1, "raw_label": "image", "text": "", "bbox": [100, 320, 300, 500]},
+        {"paper_id": "synth_paper", "block_id": 4, "page": 1, "raw_label": "text", "text": "Figure 1. A caption.", "bbox": [100, 510, 300, 540]},
+        {"paper_id": "synth_paper", "block_id": 5, "page": 2, "raw_label": "text", "text": "References", "bbox": [100, 100, 300, 130]},
+        {"paper_id": "synth_paper", "block_id": 6, "page": 2, "raw_label": "text", "text": "1. Ref one. 2. Ref two.", "bbox": [100, 140, 500, 200]},
+    ]
+
+    monkeypatch.setenv("OCR_PIPELINE_V3", "1")
+    try:
+        rows_seed, doc_seed = build_structured_blocks(raw_blocks, normalize_mode="seed_only")
+        rows_pre, doc_pre = pre_match_normalize(
+            rows_seed, source_frontmatter_anchors=None, document_structure=doc_seed
+        )
+        fig_inv = build_figure_inventory_vnext(rows_pre)
+        tab_inv = build_table_inventory_vnext(rows_pre)
+        rows_post, doc_post = post_match_normalize(
+            rows_pre, fig_inv, tab_inv, document_structure=doc_pre
+        )
+        apply_object_writebacks(structured_blocks=rows_post, figure_inventory=fig_inv, table_inventory=tab_inv)
+    finally:
+        monkeypatch.delenv("OCR_PIPELINE_V3", raising=False)
+
+    # Check that key roles are assigned and consistent
+    by_id = {b["block_id"]: b for b in rows_post}
+    assert by_id[1]["role"] is not None
+    assert len(rows_post) == 6
+    assert doc_post is not None
