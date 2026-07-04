@@ -1973,6 +1973,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         asset_root=ocr_asset_root,
         render_root=ocr_render_root,
         page_dimensions_by_page=page_dimensions_by_page,
+        structured_blocks=structured,
     )
 
     # --- Phase 3: structured renderer ---

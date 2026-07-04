@@ -32,6 +32,10 @@ def render_figure_object_markdown(figure: dict[str, Any]) -> str:
     if caption:
         parts.append("## Legend")
         parts.append(normalize_ocr_math_text(caption))
+    note_text = figure.get("note_text", "")
+    if note_text:
+        parts.append("")
+        parts.append(note_text)
     if figure.get("page"):
         parts.append("")
         parts.append(f"*Page {figure['page']}*")
@@ -198,6 +202,7 @@ def extract_and_write_objects(
     render_root: Path,
     *,
     page_dimensions_by_page: dict[int, tuple[int, int]] | None = None,
+    structured_blocks: list[dict] | None = None,
 ) -> None:
     """Extract figure/table asset crops from PDF and write object markdown."""
     # Validation-first figure matching may retain held figures in inventory,
@@ -305,6 +310,21 @@ def extract_and_write_objects(
                         was_cropped = True
                         break
 
+            # Collect figure_inner_text blocks owned by this figure (side-adjacent + contained)
+            note_text = ""
+            if structured_blocks:
+                note_lines = []
+                for blk in structured_blocks:
+                    if blk.get("role") != "figure_inner_text":
+                        continue
+                    if str(blk.get("_object_owner_id", "")) != str(fig_id):
+                        continue
+                    t = str(blk.get("text", "")).strip()
+                    if t:
+                        note_lines.append(t)
+                if note_lines:
+                    note_text = "\n".join(f"- {line}" for line in note_lines)
+
             md = render_figure_object_markdown(
                 {
                     "figure_id": fig_id,
@@ -313,6 +333,7 @@ def extract_and_write_objects(
                     "image_relpath": asset_path_rel,
                     "confidence": match.get("confidence", 0.5),
                     "was_cropped": was_cropped,
+                    "note_text": note_text,
                 }
             )
             _write_object_markdown(md, figures_render_dir / f"{fig_id}.md")

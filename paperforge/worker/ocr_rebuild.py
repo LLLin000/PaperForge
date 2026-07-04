@@ -305,11 +305,9 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
 
         resolve_media_asset_conflicts(figure_inventory, table_inventory)
         attach_ownership_conflicts(figure_inventory, table_inventory)
-        write_figure_inventory(artifacts.blocks_structured.parent / "figure_inventory.json", figure_inventory)
-        write_back_table_roles(table_inventory, structured)
-        write_table_inventory(artifacts.blocks_structured.parent / "table_inventory.json", table_inventory)
 
         # Apply object writeback seam (ownership evidence, contained/side-adjacent text, consumed-block contract)
+        # Must run BEFORE write_figure_inventory so claims land in the persisted inventory.
         from paperforge.worker.ocr_object_writeback import apply_object_writebacks
 
         apply_object_writebacks(
@@ -317,6 +315,10 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             figure_inventory=figure_inventory,
             table_inventory=table_inventory,
         )
+
+        write_figure_inventory(artifacts.blocks_structured.parent / "figure_inventory.json", figure_inventory)
+        write_back_table_roles(table_inventory, structured)
+        write_table_inventory(artifacts.blocks_structured.parent / "table_inventory.json", table_inventory)
 
         # Re-persist structured blocks with writeback roles (table_html, figure_asset)
         # ponytail: writes entire list again; if throughput matters, write only changed blocks
@@ -342,6 +344,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             asset_root=paper_root / "assets",
             render_root=paper_root / "render",
             page_dimensions_by_page=page_dimensions_by_page,
+            structured_blocks=structured,
         )
 
         # Rebuild render output

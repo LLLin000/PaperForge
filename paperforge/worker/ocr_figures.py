@@ -5622,19 +5622,19 @@ def tag_figure_contained_text(
             matched_by_page.setdefault(p, []).append(mf)
     for page in sorted(pages):
         page_blocks = [b for b in blocks if b.get("page") == page]
-        figure_regions: list[tuple[str, list[float]]] = []
+        figure_regions: list[tuple[str, list[float], str]] = []
         covered_asset_keys: set[tuple[int, str]] = set()
         for mf in matched_by_page.get(page, []):
             region = _figure_region_bbox(mf)
             if region:
-                figure_regions.append(("matched", region))
+                figure_regions.append(("matched", region, str(mf.get("figure_id", ""))))
                 covered_asset_keys |= _matched_asset_keys(mf)
         # ── Container bbox regions (validated _container_bbox) ──
         page_width = max((float(b.get("page_width") or 0.0) for b in page_blocks), default=0.0)
         page_height = max((float(b.get("page_height") or 0.0) for b in page_blocks), default=0.0)
         for cr in _validated_container_regions(page_blocks, page_width, page_height):
             if not _highly_overlaps_any_matched_region(cr, figure_regions):
-                figure_regions.append(("container", cr))
+                figure_regions.append(("container", cr, ""))
         fallback_assets = [
             b
             for b in page_blocks
@@ -5650,7 +5650,7 @@ def tag_figure_contained_text(
             fallback_bboxes = [b["bbox"] for b in fallback_assets if len(b.get("bbox") or []) >= 4]
             for fr in _cluster_bboxes_by_proximity(fallback_bboxes, margin=40):
                 if not _highly_overlaps_any_matched_region(fr, figure_regions):
-                    figure_regions.append(("fallback", fr))
+                    figure_regions.append(("fallback", fr, ""))
         if not figure_regions:
             continue
         for block in page_blocks:
@@ -5673,11 +5673,16 @@ def tag_figure_contained_text(
             bbox = block.get("bbox")
             if not bbox or len(bbox) < 4:
                 continue
-            for _, fr in figure_regions:
+            for kind, fr, fid in figure_regions:
                 if _is_contained(bbox, fr):
                     block["_figure_contained"] = True
                     if role in _LEAK_ROLES:
                         block["role"] = "figure_inner_text"
+                        if kind == "matched" and fid:
+                            block["_object_owner_id"] = fid
+                            block["_object_owner_family"] = "figure"
+                            block["_object_owner_role"] = "inner_text"
+                            block["_object_association_reason"] = "contained"
                     break
 
 
