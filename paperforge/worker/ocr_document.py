@@ -1591,7 +1591,7 @@ def infer_zones(
     _zone_page_width = _page_width_for_zone_block(
         ref_heading_block if ref_heading_block else (blocks[0] if blocks else {}),
         blocks,
-        anchors,
+        (anchors or {}).get("body_family_anchor"),
     )
 
     body_blocks = [
@@ -1609,10 +1609,7 @@ def infer_zones(
         )
         and (
             (body_end_page is None or int(block.get("page", 0) or 0) <= body_end_page)
-            or (
-                _is_above_same_page_reference_heading(block, refs_start_page, ref_heading_top if ref_heading_block else None)
-                and _is_in_same_reference_column(block, ref_heading_block, _zone_page_width)
-            )
+            or _is_above_same_page_reference_heading(block, refs_start_page, ref_heading_top if ref_heading_block else None)
         )
         and not _is_reference_item_candidate(block)
         and not _is_reference_heading_candidate(block)

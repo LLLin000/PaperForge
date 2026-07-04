@@ -5601,3 +5601,17 @@ def test_same_page_tail_column_aware() -> None:
     # Left-column body below ref heading but in different column -> NOT in tail zone
     assert "p3_b1" not in region_bus["tail_nonref_hold_zone"]["block_ids"], \
         "Left-column body should not be in tail_nonref_hold_zone despite being below ref heading"
+
+
+def test_is_in_same_reference_column_cross_column() -> None:
+    from paperforge.worker.ocr_document import _is_in_same_reference_column
+    pw = 1200.0
+    ref_heading = {"bbox": [700, 100, 1100, 140], "page_width": pw}
+    left_block = {"bbox": [100, 200, 500, 250], "page_width": pw}
+    right_block = {"bbox": [700, 200, 1100, 250], "page_width": pw}
+    assert _is_in_same_reference_column(left_block, ref_heading, pw) is False,         "Left-column block should not be in same column as right-column ref heading"
+    assert _is_in_same_reference_column(right_block, ref_heading, pw) is True,         "Right-column block should be in same column as right-column ref heading"
+    single_ref = {"bbox": [50, 100, 1150, 140], "page_width": pw}
+    single_block = {"bbox": [50, 200, 1150, 250], "page_width": pw}
+    assert _is_in_same_reference_column(single_block, single_ref, pw) is True,         "Full-width blocks on single-column page should return True"
+    assert _is_in_same_reference_column(left_block, None, pw) is True,         "None ref heading should return True (conservative)"
