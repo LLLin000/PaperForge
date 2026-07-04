@@ -10,6 +10,8 @@ SCHEMA_VERSION = "ocr_quality_feedback_v1"
 SAMPLE_MARK = {
     "marked_by": "test",
     "overall": "correct",
+    "result_hash": "hash-abc",
+    "fulltext_hash": "fulltext-abc",
     "use_cases": {"reading": "ok", "qa": "ok", "figure_table_reasoning": "ok"},
     "issue_tags": [],
     "notes": "",
@@ -43,23 +45,16 @@ def test_write_read_roundtrip(tmp_path: Path) -> None:
     assert len(loaded["marks"]) == 1
     assert loaded["marks"][0]["notes"] == "roundtrip"
     assert loaded["marks"][0]["overall"] == "correct"
+def test_write_feedback_requires_result_hash(tmp_path: Path) -> None:
+    """write_feedback raises ValueError when a mark lacks result_hash."""
+    from paperforge.worker.ocr_quality_feedback import write_feedback
 
-
-# ---------------------------------------------------------------------------
-# C2: missing hash raises validation (append_mark requires keyword-only args)
-# ---------------------------------------------------------------------------
-
-
-def test_append_mark_requires_hash_keyword() -> None:
-    from paperforge.worker.ocr_quality_feedback import append_mark
-
-    path = Path("/does/not/matter.json")
-    mark = {**SAMPLE_MARK}
-
-    # current_result_hash is keyword-only with no default — omitting it is a
-    # TypeError from Python itself, no extra validation needed.
-    with pytest.raises(TypeError):
-        append_mark(path, mark)
+    bad_mark = dict(SAMPLE_MARK)
+    del bad_mark["result_hash"]
+    feedback = _make_feedback(marks=[bad_mark])
+    path = tmp_path / "feedback.json"
+    with pytest.raises(ValueError, match="result_hash"):
+        write_feedback(path, feedback)
 
 
 # ---------------------------------------------------------------------------

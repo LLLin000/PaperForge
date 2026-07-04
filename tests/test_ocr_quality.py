@@ -268,7 +268,7 @@ def test_b3_reading_gate_yellow_when_yellow() -> None:
     result = evaluate_readiness(base)
 
     reading = result["recommended_use"].get("reading", {})
-    assert reading.get("recommended") == "yes"
+    assert reading.get("status") == "ok"
 
 
 def test_b4_figure_table_reasoning_not_applicable() -> None:
@@ -297,7 +297,7 @@ def test_b4_figure_table_reasoning_not_applicable() -> None:
     result = evaluate_readiness(base)
 
     ftr = result["recommended_use"].get("figure_table_reasoning", {})
-    assert ftr.get("recommended") == "not_applicable"
+    assert ftr.get("status") == "not_applicable"
 
     # The figure_table_integrity indicator should be excluded from weighted scoring
     # because its applicability is not_applicable
@@ -380,3 +380,15 @@ def test_b7_user_override_merges_correctly() -> None:
     # With only one dimension weighted 1.0 and no hard_red matching,
     # the score should be high
     assert result["user_readiness"]["policy_version"] == "ocr_readiness_policy_v1"
+
+# ── C series: Contract polish tests ──────────────────────────────
+
+
+def test_c1_confidence_fallbacks_yellow_when_degraded() -> None:
+    """confidence_and_fallbacks returns yellow when degraded_mode_active=True."""
+    from paperforge.worker.ocr_quality import _normalize_confidence_fallbacks
+
+    health = {"degraded_mode_active": True, "span_coverage_quality": "good"}
+    ind = _normalize_confidence_fallbacks(health)
+    assert ind["status"] == "yellow"
+    assert ind["evidence"] == ["degraded_mode_active=True", "span_coverage_quality=good", "Degraded mode active"]

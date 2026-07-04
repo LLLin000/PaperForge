@@ -1,9 +1,9 @@
 {
   "papers": 555,
-  "diff": 5,
+  "diff": 6,
   "error": 3,
   "skipped": 0,
-  "elapsed_seconds": 234.3460774421692,
+  "elapsed_seconds": 203.86275339126587,
   "results": [
     {
       "paper": "A35UYJBK",
@@ -2253,7 +2253,11 @@
     },
     {
       "paper": "YSBJVWTA",
-      "diff": false
+      "diff": true,
+      "figure_diff": {
+        "legacy": 4,
+        "v3": 5
+      }
     },
     {
       "paper": "YSKXZHDZ",

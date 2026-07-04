@@ -116,6 +116,8 @@ def _normalize_figure_table_integrity(
         or matched_count > 0
         or unmatched_asset_count > 0
         or unresolved_cluster_count > 0
+        or unmatched_legend_count > 0
+        or held_count > 0
     )
     has_table_evidence = table_asset_count > 0 or table_unmatched > 0
 
@@ -188,8 +190,10 @@ def _normalize_confidence_fallbacks(health: dict) -> dict[str, Any]:
     }
     evidence = [f"{k}={v}" for k, v in signals.items()]
 
-    if degraded and span_coverage in ("poor", "none"):
-        return _make_indicator("yellow", "applicable", signals, evidence)
+    if degraded:
+        return _make_indicator("yellow", "applicable", signals, evidence + ["Degraded mode active"])
+    if span_coverage not in ("good", "acceptable", "strong"):
+        return _make_indicator("yellow", "applicable", signals, evidence + [f"Span coverage: {span_coverage}"])
 
     return _make_indicator("green", "applicable", signals, evidence)
 
@@ -319,19 +323,19 @@ def load_readiness_policy(
     with open(default_path, "r", encoding="utf-8") as fh:
         merged = yaml.safe_load(fh) or {}
 
-    # 2. Load explicit policy_path or user override
     if policy_path is not None:
         with open(policy_path, "r", encoding="utf-8") as fh:
             override = yaml.safe_load(fh) or {}
         merged = _deep_merge(merged, override)
-    else:
+    elif policy is None:
+        # Only load user override when no explicit policy or policy_path
         user_path = Path.home() / ".paperforge" / "policies" / "ocr_readiness_v1.yaml"
         if user_path.exists():
             with open(user_path, "r", encoding="utf-8") as fh:
                 override = yaml.safe_load(fh) or {}
             merged = _deep_merge(merged, override)
 
-    # 3. In-memory policy overrides everything
+    # 3. In-memory policy overrides everything (provided after user override is skipped)
     if policy is not None:
         merged = _deep_merge(merged, policy)
 
@@ -359,14 +363,21 @@ def _evaluate_gate(indicators: dict, indicator_name: str, min_status: str) -> di
 
 
 def compute_use_cases(policy: dict, indicators: dict) -> dict:
-    """Compute recommended use cases from policy and indicators."""
+    """Compute recommended use cases from policy and indicators.
+
+    Returns dict mapping use-case name → {"status", "gates", "reasons"}.
+    """
     result: dict[str, Any] = {}
     for uc_name, uc_config in policy.get("use_cases", {}).items():
         # Check not_applicable shortcut
         if uc_config.get("if_no_figure_table_evidence") == "not_applicable":
             fig_ind = indicators.get("figure_table_integrity", {})
             if fig_ind.get("applicability") == "not_applicable":
-                result[uc_name] = {"recommended": "not_applicable", "gate_results": []}
+                result[uc_name] = {
+                    "status": "not_applicable",
+                    "gates": [],
+                    "reasons": ["No figure/table evidence detected"],
+                }
                 continue
 
         gates = uc_config.get("gates", {})
@@ -385,9 +396,14 @@ def compute_use_cases(policy: dict, indicators: dict) -> dict:
             gr["required"] = False
             gate_results.append(gr)
 
+        reasons = []
+        if not all_required_pass:
+            reasons.append("Required gates not satisfied")
+
         result[uc_name] = {
-            "recommended": "yes" if all_required_pass else "no",
-            "gate_results": gate_results,
+            "status": "ok" if all_required_pass else "not_recommended",
+            "gates": gate_results,
+            "reasons": reasons,
         }
 
     return result
