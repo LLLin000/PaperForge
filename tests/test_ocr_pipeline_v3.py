@@ -359,7 +359,7 @@ def _count_truthy(rows: list[dict], field: str) -> int:
     return sum(1 for block in rows if block.get(field))
 
 
-@pytest.mark.parametrize("key", ["DWQQK2YB"])
+@pytest.mark.parametrize("key", ["DWQQK2YB", "VAMSAZMG", "PJBMGVTF"])
 def test_v3_real_paper_parity_matches_legacy_contract(key: str, tmp_path) -> None:
     legacy = _run_legacy_fixture_pipeline(key, tmp_path)
     v3 = _run_v3_fixture_pipeline(key, tmp_path)
