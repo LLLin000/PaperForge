@@ -8318,3 +8318,14 @@ def test_build_figure_inventory_delegates_to_vnext(monkeypatch):
 
     assert result["pipeline_mode"] == "vnext"
     assert called["args"] == (blocks, 777, {1: []})
+
+
+
+
+def test_group_column_band_composite() -> None:
+    from paperforge.worker.ocr_figures import _group_column_band
+    pw = 1200.0
+    left_asset = {"bbox": [100, 100, 500, 300]}
+    right_asset = {"bbox": [700, 100, 1100, 300]}
+    band = _group_column_band([left_asset, right_asset], pw)
+    assert band is None  # spans multiple columns -> None

@@ -280,6 +280,39 @@ def _column_band_id(bbox: list[float], page_width: float) -> int | None:
     return None
 
 
+def _is_full_width_bbox(bbox: list[float], page_width: float) -> bool:
+    """True if bbox spans 80%+ of page width (single-column or full-width)."""
+    if not bbox or len(bbox) < 4 or page_width <= 0:
+        return False
+    bw = bbox[2] - bbox[0]
+    return bw >= page_width * 0.8
+
+
+
+
+def _group_column_band(media_blocks: list[dict], page_width: float) -> int | None:
+    """Return dominant column band for a list of media blocks.
+    Returns None if group spans multiple bands (composite/multi-column figure).
+    """
+    bands: set[int | None] = set()
+    for mb in media_blocks:
+        bbox = mb.get("bbox") or [0, 0, 0, 0]
+        if _is_full_width_bbox(bbox, page_width):
+            return None  # full-width = center
+        band = _column_band_id(bbox, page_width)
+        bands.add(band)
+    non_none = {b for b in bands if b is not None}
+    if not non_none:
+        return None  # all center/ambiguous
+    if len(non_none) > 1:
+        return None  # spans multiple explicit columns
+    # All non-None bands agree on one column
+    if None in bands:
+        return None  # center mixed with explicit -> ambiguous
+    return next(iter(non_none))
+
+
+
 def _is_safe_page_assets_group(
     group: dict,
     legend: dict,
@@ -963,6 +996,7 @@ def _build_semantic_figure_groups_from_assets(
             )
             page_groups.append(entry)
             next_id += 1
+            entry["column_band"] = _group_column_band(cluster, page_width)
 
         page_group_count = len(page_groups)
         page_distance_cluster_count = sum(1 for g in page_groups if g["group_type"] == "distance_cluster")
@@ -1080,6 +1114,21 @@ def _score_legend_to_group(
     family_supported: bool = False,
     zone_supported: bool = False,
 ) -> dict:
+    # Column compatibility check -- must run before safe_auto_match
+    # Skip for rotated captions (side captions sit in different column by design)
+    if not legend.get("_rotated_caption_prematch"):
+        legend_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
+        group_band = group.get("column_band")
+        if group_band is None:
+            group_band = _group_column_band(group.get("media_blocks", []), page_width)
+        legend_band = _column_band_id(legend_bbox, page_width)
+        if legend_band is not None and group_band is not None and legend_band != group_band:
+            return {
+                "score": 0.0,
+                "decision": "rejected",
+                "evidence": ["column_incompatible: legend band=" + str(legend_band) + " group band=" + str(group_band)],
+            }
+
     gt = group.get("group_type", "")
 
     if gt == "distance_cluster":
