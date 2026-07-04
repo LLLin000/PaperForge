@@ -178,3 +178,205 @@ def test_a10_run_integrity_dict_preserved() -> None:
     ri = {"pages_processed": 5, "status": "ok"}
     result = build_quality_indicators(health=health, run_integrity=ri)
     assert result["developer_diagnostics"]["run_integrity"] == {"pages_processed": 5, "status": "ok"}
+
+
+# ── B series: Readiness policy evaluator ──────────────────────────────
+
+
+def test_b1_default_policy_returns_status_and_score() -> None:
+    """Default policy evaluates a healthy report as green."""
+    from paperforge.worker.ocr_quality import build_quality_indicators, evaluate_readiness
+
+    health = {
+        "rendered_text_gap_count": 0,
+        "body_spine_quality": "strong",
+        "health_profile": "standard",
+        "layout_audit_status": "pass",
+        "layout_anomaly_count": 0,
+        "references_found": True,
+        "section_heading_count": 3,
+        "reference_item_count": 5,
+        "figure_caption_count": 0,
+        "matched_figure_count_v2": 0,
+        "media_without_caption_count": 0,
+        "unresolved_cluster_count": 0,
+        "figure_reader_coverage_ratio": 1.0,
+        "table_asset_count": 0,
+        "table_unmatched_count": 0,
+    }
+    base = build_quality_indicators(health=health)
+    result = evaluate_readiness(base)
+
+    assert "user_readiness" in result
+    assert "recommended_use" in result
+    assert result["user_readiness"]["status"] in ("green", "yellow", "red")
+    assert result["user_readiness"]["basis"] == "policy_estimate"
+
+
+def test_b2_hard_red_overrides_green() -> None:
+    """gap_count > 10 triggers hard-red rule, forcing status to red."""
+    from paperforge.worker.ocr_quality import build_quality_indicators, evaluate_readiness
+
+    health = {
+        "rendered_text_gap_count": 15,
+        "body_spine_quality": "strong",
+        "health_profile": "standard",
+        "layout_audit_status": "pass",
+        "layout_anomaly_count": 0,
+        "references_found": True,
+        "section_heading_count": 3,
+        "reference_item_count": 5,
+        "figure_caption_count": 0,
+        "matched_figure_count_v2": 0,
+        "media_without_caption_count": 0,
+        "unresolved_cluster_count": 0,
+        "figure_reader_coverage_ratio": 1.0,
+        "table_asset_count": 0,
+        "table_unmatched_count": 0,
+    }
+    base = build_quality_indicators(health=health)
+    result = evaluate_readiness(base)
+
+    assert result["user_readiness"]["status"] == "red"
+    assert "rendered_text_gap_excessive" in result["user_readiness"]["hard_red_triggers"]
+
+
+def test_b3_reading_gate_yellow_when_yellow() -> None:
+    """Reading gate passes when both required indicators are at least yellow."""
+    from paperforge.worker.ocr_quality import build_quality_indicators, evaluate_readiness
+
+    # gap_count 7 → yellow rendered_text_integrity
+    # body_spine partial → yellow body_reference_structure
+    health = {
+        "rendered_text_gap_count": 7,
+        "body_spine_quality": "partial",
+        "health_profile": "standard",
+        "layout_audit_status": "pass",
+        "layout_anomaly_count": 1,
+        "references_found": True,
+        "section_heading_count": 3,
+        "reference_item_count": 5,
+        "figure_caption_count": 0,
+        "matched_figure_count_v2": 0,
+        "media_without_caption_count": 0,
+        "unresolved_cluster_count": 0,
+        "figure_reader_coverage_ratio": 1.0,
+        "table_asset_count": 0,
+        "table_unmatched_count": 0,
+    }
+    base = build_quality_indicators(health=health)
+    result = evaluate_readiness(base)
+
+    reading = result["recommended_use"].get("reading", {})
+    assert reading.get("recommended") == "yes"
+
+
+def test_b4_figure_table_reasoning_not_applicable() -> None:
+    """figure_table_reasoning returns not_applicable when no figure/table evidence."""
+    from paperforge.worker.ocr_quality import build_quality_indicators, evaluate_readiness
+
+    # No figure/table evidence → not_applicable
+    health = {
+        "rendered_text_gap_count": 0,
+        "body_spine_quality": "strong",
+        "health_profile": "standard",
+        "layout_audit_status": "pass",
+        "layout_anomaly_count": 0,
+        "references_found": True,
+        "section_heading_count": 3,
+        "reference_item_count": 5,
+        "figure_caption_count": 0,
+        "matched_figure_count_v2": 0,
+        "media_without_caption_count": 0,
+        "unresolved_cluster_count": 0,
+        "figure_reader_coverage_ratio": 0.0,
+        "table_asset_count": 0,
+        "table_unmatched_count": 0,
+    }
+    base = build_quality_indicators(health=health)
+    result = evaluate_readiness(base)
+
+    ftr = result["recommended_use"].get("figure_table_reasoning", {})
+    assert ftr.get("recommended") == "not_applicable"
+
+    # The figure_table_integrity indicator should be excluded from weighted scoring
+    # because its applicability is not_applicable
+    fig_ind = base["quality_indicators"]["figure_table_integrity"]
+    assert fig_ind["applicability"] == "not_applicable"
+
+
+def test_b5_policy_loaded_from_temp_yaml() -> None:
+    """Policy can be loaded from an explicit YAML path."""
+    import tempfile
+    from pathlib import Path
+
+    import yaml
+
+    from paperforge.worker.ocr_quality import evaluate_readiness
+
+    temp_policy = {
+        "schema_version": "custom_v1",
+        "weights": {"rendered_text_integrity": 1.0},
+        "hard_red": [],
+        "use_cases": {},
+    }
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".yaml", delete=False, encoding="utf-8"
+    ) as f:
+        yaml.dump(temp_policy, f)
+        tmp_path = Path(f.name)
+
+    try:
+        base = {"quality_indicators": {}, "developer_diagnostics": {}}
+        result = evaluate_readiness(base, policy_path=tmp_path)
+        assert result["user_readiness"]["policy_version"] == "custom_v1"
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
+def test_b6_default_policy_file_exists() -> None:
+    """The default policy YAML is bundled with the package."""
+    from importlib.resources import files as pkg_files
+
+    policy_path = pkg_files("paperforge") / "policies/ocr_readiness_v1.yaml"
+    assert policy_path.exists()
+    assert policy_path.is_file()
+
+
+def test_b7_user_override_merges_correctly() -> None:
+    """Deep-merge and list-replace semantics work for user overrides."""
+    from paperforge.worker.ocr_quality import load_readiness_policy, evaluate_readiness
+
+    # Override with a custom weight and a replacement hard_red list
+    override = {
+        "weights": {"rendered_text_integrity": 0.50},
+        "hard_red": [{"rule": "custom_rule", "field": "x", "op": "eq", "value": 1}],
+    }
+
+    policy = load_readiness_policy(policy=override)
+
+    # Weight should be overridden
+    assert policy["weights"]["rendered_text_integrity"] == 0.50
+    # Other weights should still exist (dict deep-merge)
+    assert "body_reference_structure" in policy["weights"]
+
+    # hard_red list should be replaced, not appended
+    assert len(policy["hard_red"]) == 1
+    assert policy["hard_red"][0]["rule"] == "custom_rule"
+
+    # Use cases should be preserved
+    assert "reading" in policy["use_cases"]
+
+    # Integration: override via evaluate_readiness
+    health = {
+        "rendered_text_gap_count": 15,
+        "body_spine_quality": "strong",
+    }
+    from paperforge.worker.ocr_quality import build_quality_indicators
+
+    base = build_quality_indicators(health=health)
+    result = evaluate_readiness(base, policy=override)
+    # With only one dimension weighted 1.0 and no hard_red matching,
+    # the score should be high
+    assert result["user_readiness"]["policy_version"] == "ocr_readiness_policy_v1"

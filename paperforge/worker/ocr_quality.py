@@ -223,3 +223,236 @@ def build_quality_indicators(
         },
         "developer_diagnostics": developer_diagnostics,
     }
+
+
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursive dict merge with list replace."""
+    result = dict(base)
+    for k, v in override.items():
+        if k in result and isinstance(result[k], dict) and isinstance(v, dict):
+            result[k] = _deep_merge(result[k], v)
+        else:
+            result[k] = v
+    return result
+
+
+def _resolve_field(data: dict, path: str) -> Any:
+    """Resolve dotted field path against a nested dict."""
+    parts = path.split(".")
+    current = data
+    for part in parts:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(part)
+    return current
+
+
+def _apply_op(value, op: str, target) -> bool:
+    """Apply comparison operator."""
+    if op == "gt":
+        return isinstance(value, (int, float)) and value > target
+    elif op == "lt":
+        return isinstance(value, (int, float)) and value < target
+    elif op == "eq":
+        return value == target
+    return False
+
+
+def _check_hard_red(policy: dict, quality_report: dict) -> list[str]:
+    """Check hard-red rules against the full quality report.
+
+    Returns:
+        list of triggered hard-red rule names.
+    """
+    triggered: list[str] = []
+    for rule in policy.get("hard_red", []):
+        if "condition" in rule:
+            cond = rule["condition"]
+            val_a = _resolve_field(quality_report, cond["field_a"])
+            val_b = _resolve_field(quality_report, cond["field_b"])
+            match_a = _apply_op(val_a, cond["op_a"], cond["value_a"])
+            match_b = _apply_op(val_b, cond["op_b"], cond["value_b"])
+            if match_a and match_b:
+                triggered.append(rule["rule"])
+        else:
+            val = _resolve_field(quality_report, rule["field"])
+            if _apply_op(val, rule["op"], rule["value"]):
+                triggered.append(rule["rule"])
+    return triggered
+
+
+def load_readiness_policy(
+    policy: dict | None = None,
+    *,
+    policy_path: str | Path | None = None,
+) -> dict:
+    """Load and merge readiness policy.
+
+    Args:
+        policy: in-memory policy dict (mutually exclusive with policy_path)
+        policy_path: path to explicit YAML file (mutually exclusive with policy)
+
+    Returns:
+        merged policy dict
+
+    Resolution order:
+        1. Default: paperforge/policies/ocr_readiness_v1.yaml (via importlib.resources)
+        2. If policy_path is provided: deep-merge that file over default. Skip user override.
+        3. Else if ~/.paperforge/policies/ocr_readiness_v1.yaml exists: deep-merge user override.
+        4. If in-memory policy is provided: deep-merge over whatever was loaded.
+
+    Merge rules:
+        - dicts: recursive deep-merge
+        - lists: replace (not append)
+        - scalars: override
+    """
+    if policy is not None and policy_path is not None:
+        raise ValueError("policy and policy_path are mutually exclusive")
+
+    from pathlib import Path
+
+    import yaml
+    from importlib.resources import files as pkg_files
+
+    # 1. Load default
+    default_path = pkg_files("paperforge") / "policies/ocr_readiness_v1.yaml"
+    with open(default_path, "r", encoding="utf-8") as fh:
+        merged = yaml.safe_load(fh) or {}
+
+    # 2. Load explicit policy_path or user override
+    if policy_path is not None:
+        with open(policy_path, "r", encoding="utf-8") as fh:
+            override = yaml.safe_load(fh) or {}
+        merged = _deep_merge(merged, override)
+    else:
+        user_path = Path.home() / ".paperforge" / "policies" / "ocr_readiness_v1.yaml"
+        if user_path.exists():
+            with open(user_path, "r", encoding="utf-8") as fh:
+                override = yaml.safe_load(fh) or {}
+            merged = _deep_merge(merged, override)
+
+    # 3. In-memory policy overrides everything
+    if policy is not None:
+        merged = _deep_merge(merged, policy)
+
+    return merged
+
+
+STATUS_RANK = {"red": 0, "unknown": 1, "yellow": 2, "green": 3}
+STATUS_SCORE = {"green": 1.0, "yellow": 0.6, "red": 0.2, "unknown": 0.5}
+
+
+def _evaluate_gate(indicators: dict, indicator_name: str, min_status: str) -> dict:
+    """Evaluate a single gate against an indicator.
+
+    unknown status fails required gates (rank 1 < yellow 2).
+    """
+    ind = indicators.get(indicator_name, {})
+    actual_status = ind.get("status", "unknown")
+    passes = STATUS_RANK.get(actual_status, 1) >= STATUS_RANK.get(min_status, 2)
+    return {
+        "indicator": indicator_name,
+        "actual_status": actual_status,
+        "min_status": min_status,
+        "passes": passes,
+    }
+
+
+def compute_use_cases(policy: dict, indicators: dict) -> dict:
+    """Compute recommended use cases from policy and indicators."""
+    result: dict[str, Any] = {}
+    for uc_name, uc_config in policy.get("use_cases", {}).items():
+        # Check not_applicable shortcut
+        if uc_config.get("if_no_figure_table_evidence") == "not_applicable":
+            fig_ind = indicators.get("figure_table_integrity", {})
+            if fig_ind.get("applicability") == "not_applicable":
+                result[uc_name] = {"recommended": "not_applicable", "gate_results": []}
+                continue
+
+        gates = uc_config.get("gates", {})
+        gate_results: list[dict] = []
+        all_required_pass = True
+
+        for gate in gates.get("required", []):
+            gr = _evaluate_gate(indicators, gate["indicator"], gate["min_status"])
+            gr["required"] = True
+            gate_results.append(gr)
+            if not gr["passes"]:
+                all_required_pass = False
+
+        for gate in gates.get("soft", []):
+            gr = _evaluate_gate(indicators, gate["indicator"], gate["min_status"])
+            gr["required"] = False
+            gate_results.append(gr)
+
+        result[uc_name] = {
+            "recommended": "yes" if all_required_pass else "no",
+            "gate_results": gate_results,
+        }
+
+    return result
+
+
+def evaluate_readiness(
+    quality_report_base: dict,
+    policy: dict | None = None,
+    *,
+    policy_path: str | Path | None = None,
+) -> dict:
+    """Apply readiness policy to quality report.
+
+    Args:
+        quality_report_base: output of build_quality_indicators()
+        policy: in-memory policy dict (mutually exclusive with policy_path)
+        policy_path: path to YAML policy file
+
+    Returns:
+        dict with user_readiness + recommended_use
+    """
+    from pathlib import Path
+
+    merged_policy = load_readiness_policy(policy, policy_path=policy_path)
+    indicators = quality_report_base.get("quality_indicators", {})
+
+    # Hard-red check (resolves fields against full quality report)
+    triggered = _check_hard_red(merged_policy, quality_report_base)
+
+    # Weighted score
+    weights = merged_policy.get("weights", {})
+    total_weight = 0.0
+    weighted_sum = 0.0
+    dim_statuses: dict[str, str] = {}
+    for dim, weight in weights.items():
+        ind = indicators.get(dim, {})
+        if ind.get("applicability") == "not_applicable":
+            continue  # exclude from weighted score, renormalize
+        status = ind.get("status", "unknown")
+        dim_statuses[dim] = status
+        score = STATUS_SCORE.get(status, 0.5)
+        weighted_sum += weight * score
+        total_weight += weight
+
+    score = weighted_sum / total_weight if total_weight > 0 else 0.0
+
+    # Status determination
+    hard_red = len(triggered) > 0
+    if hard_red:
+        status = "red"
+        score = min(score, 0.3)
+    elif score >= 0.75:
+        status = "green"
+    elif score >= 0.40:
+        status = "yellow"
+    else:
+        status = "red"
+
+    return {
+        "user_readiness": {
+            "status": status,
+            "score": round(score, 4),
+            "policy_version": merged_policy.get("schema_version", ""),
+            "basis": "policy_estimate",
+            "hard_red_triggers": triggered,
+        },
+        "recommended_use": compute_use_cases(merged_policy, indicators),
+    }

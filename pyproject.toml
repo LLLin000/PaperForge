@@ -62,6 +62,8 @@ version = {attr = "paperforge.__version__"}
 [tool.setuptools.package-data]
 paperforge = [
     "py.typed",
+    "policies/*.yaml",
+    "render-themes/*.yaml",
     "skills/paperforge/**",
     "command_files/*.md",
     "plugin/*.css",
