@@ -974,7 +974,7 @@ def assign_block_role(
         # Inline figure mention escape: "Fig. 9 shows..." → body_paragraph
         if raw_label == "text" and _looks_like_inline_figure_mention(text, block):
             return RoleAssignment(
-                role="body_paragraph" if block.get("zone") in ("body_zone", None) else "figure_caption_candidate",
+                role="body_paragraph",
                 confidence=0.82,
                 evidence=[f"inline figure mention in body prose: {text[:60]}"],
             )
@@ -1008,7 +1008,7 @@ def assign_block_role(
             )
         if _looks_like_inline_figure_mention(text, block):
             return RoleAssignment(
-                role="body_paragraph" if block.get("zone") in ("body_zone", None) else "figure_caption_candidate",
+                role="body_paragraph",
                 confidence=0.82,
                 evidence=[f"inline figure mention: {text[:60]}"],
             )

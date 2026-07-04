@@ -1704,3 +1704,15 @@ def test_near_media_does_not_rescue_inline_mention() -> None:
     }
     role = assign_block_role(caption_block, page_blocks=[caption_block, figure_block], page_width=1200, page_height=1600)
     assert role.role == "body_paragraph"
+
+
+def test_inline_mention_empty_zone_is_body() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {
+        "block_label": "text",
+        "block_content": "Fig. 10 shows the data analysis results.",
+        "block_bbox": [100, 200, 500, 300],
+        "zone": "",
+    }
+    role = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+    assert role.role == "body_paragraph"
