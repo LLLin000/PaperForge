@@ -1,4 +1,5 @@
 from __future__ import annotations
+import pytest
 
 
 def test_ocr_pipeline_v3_enabled_defaults_false(monkeypatch) -> None:
@@ -283,3 +284,88 @@ def test_v3_synthetic_parity_with_legacy_reference_boundaries(monkeypatch) -> No
     assert by_id[1]["role"] is not None
     assert len(rows_post) == 6
     assert doc_post is not None
+
+def _load_real_paper_json(path):
+    import json
+
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_real_paper_fixture(key: str) -> tuple[list[dict], dict]:
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent / "fixtures" / "ocr_real_papers" / key
+    ocr_payload = _load_real_paper_json(root / "ocr_payload.json")
+    source_metadata = _load_real_paper_json(root / "source_metadata.json")
+    return ocr_payload, source_metadata
+
+
+def _run_legacy_fixture_pipeline(key: str, tmp_path):
+    from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks
+    from paperforge.worker.ocr_figures import build_figure_inventory
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    ocr_payload, source_metadata = _load_real_paper_fixture(key)
+    raw_blocks = build_raw_blocks_for_result_lines(key, ocr_payload)
+    rows, doc = build_structured_blocks(
+        raw_blocks,
+        source_metadata=source_metadata,
+        structure_output_dir=str(tmp_path / "legacy"),
+    )
+    fig = build_figure_inventory(rows)
+    tab = build_table_inventory(rows)
+    return {"rows": rows, "doc": doc, "fig": fig, "tab": tab}
+
+
+def _run_v3_fixture_pipeline(key: str, tmp_path):
+    from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks
+    from paperforge.worker.ocr_figures import build_figure_inventory
+    from paperforge.worker.ocr_post_match_normalize import post_match_normalize
+    from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    ocr_payload, source_metadata = _load_real_paper_fixture(key)
+    raw_blocks = build_raw_blocks_for_result_lines(key, ocr_payload)
+    rows_seed, doc_seed = build_structured_blocks(
+        raw_blocks,
+        source_metadata=source_metadata,
+        structure_output_dir=str(tmp_path / "v3"),
+        normalize_mode="seed_only",
+    )
+    rows_pre, doc_pre = pre_match_normalize(
+        rows_seed,
+        source_frontmatter_anchors=getattr(doc_seed, "source_frontmatter_anchors", None),
+        document_structure=doc_seed,
+    )
+    fig = build_figure_inventory(rows_pre)
+    tab = build_table_inventory(rows_pre)
+    rows_post, doc_post = post_match_normalize(
+        rows_pre,
+        fig,
+        tab,
+        document_structure=doc_pre,
+        source_frontmatter_anchors=getattr(doc_pre, "source_frontmatter_anchors", None),
+    )
+    return {"rows": rows_post, "doc": doc_post, "fig": fig, "tab": tab}
+
+
+def _role_counter(rows: list[dict]):
+    from collections import Counter
+
+    return Counter(str(block.get("role") or "") for block in rows)
+
+
+def _count_truthy(rows: list[dict], field: str) -> int:
+    return sum(1 for block in rows if block.get(field))
+
+
+@pytest.mark.parametrize("key", ["DWQQK2YB"])
+def test_v3_real_paper_parity_matches_legacy_contract(key: str, tmp_path) -> None:
+    legacy = _run_legacy_fixture_pipeline(key, tmp_path)
+    v3 = _run_v3_fixture_pipeline(key, tmp_path)
+
+    assert _role_counter(v3["rows"]) == _role_counter(legacy["rows"])
+    assert _count_truthy(v3["rows"], "render_default") == _count_truthy(legacy["rows"], "render_default")
+    assert _count_truthy(v3["rows"], "index_default") == _count_truthy(legacy["rows"], "index_default")
+    assert len(v3["fig"].get("matched_figures", [])) == len(legacy["fig"].get("matched_figures", []))
+    assert len(v3["tab"].get("tables", [])) == len(legacy["tab"].get("tables", []))

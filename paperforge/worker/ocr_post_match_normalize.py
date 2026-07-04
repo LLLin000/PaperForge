@@ -10,6 +10,40 @@ from paperforge.worker.ocr_document import DocumentStructure, normalize_document
 from paperforge.worker.ocr_document import rescue_roles_with_document_context
 from paperforge.worker.ocr_profiles import build_role_span_profiles
 from paperforge.worker.ocr_tail_settlement import settle_tail_and_backmatter
+from paperforge.worker.ocr_blocks import _CANDIDATE_ROLES
+
+
+def _sync_render_index_defaults(rows: list[dict]) -> None:
+    """Mirror the legacy build_structured_blocks post-normalize sync."""
+    for row in rows:
+        role = row.get("role", "")
+        if row.get("_suppressed_heading"):
+            row["render_default"] = False
+            row["index_default"] = False
+        else:
+            row["render_default"] = role not in ({"noise", "unknown_structural", "ocr_raw_error"} | _CANDIDATE_ROLES)
+            if role in {
+                "noise",
+                "page_header",
+                "page_footer",
+                "frontmatter_noise",
+                "non_body_insert",
+                "structured_insert",
+                "author_bio_asset",
+                "ocr_raw_error",
+            }:
+                row["render_default"] = False
+            row["index_default"] = role not in _CANDIDATE_ROLES
+            if role in {
+                "noise",
+                "frontmatter_noise",
+                "table_html",
+                "non_body_insert",
+                "structured_insert",
+                "author_bio_asset",
+                "ocr_raw_error",
+            }:
+                row["index_default"] = False
 
 
 def post_match_normalize(
@@ -44,4 +78,5 @@ def post_match_normalize(
             live_rows, paper_context["role_profiles"], shadow_doc
         )
     settle_tail_and_backmatter(structured_blocks=live_rows, document_structure=shadow_doc)
+    _sync_render_index_defaults(live_rows)
     return live_rows, shadow_doc
