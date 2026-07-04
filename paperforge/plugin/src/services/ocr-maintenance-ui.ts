@@ -1,5 +1,31 @@
+import * as fs from "fs";
+import * as path from "path";
+import { execFile } from "child_process";
+
 export type MaintenanceCategory = "ok" | "rebuild" | "failed" | "limited";
 export type MaintenanceAction = "rebuild" | "redo" | null;
+
+export type DisplayAction = "retry_ocr" | "rebuild_result" | "upgrade_legacy" | "add_pdf" | "configure_ocr" | "none";
+export type DisplayGroup = "retry" | "rebuild" | "legacy_optional" | "external_action" | "hidden";
+export type DisplaySeverity = "actionable" | "optional" | "external" | "normal";
+
+export interface MaintenanceDisplayRow {
+  key: string;
+  title: string;
+  display_action: DisplayAction;
+  display_label: string;
+  display_reason: string;
+  display_group: DisplayGroup;
+  visible_in_maintenance: boolean;
+  can_redo: boolean;
+  can_rebuild: boolean;
+}
+
+export interface MaintenanceCache {
+  manifest: Record<string, string>;
+  papers: Record<string, MaintenanceDisplayRow>;
+  cached_at: string;
+}
 
 export type MaintenanceRowLike = {
   key: string;
@@ -65,4 +91,97 @@ export function buildMaintenanceSummary(
   for (const item of items) counts[item.category] += 1;
   const tone = counts.failed > 0 || counts.rebuild > 0 ? "warn" : "ok";
   return { counts, tone };
+}
+
+function ocrMaintenanceCachePath(vaultPath: string): string {
+  return path.join(vaultPath, "System", "PaperForge", "cache", "ocr_maintenance.json");
+}
+
+export function readMaintenanceCache(vaultPath: string): MaintenanceCache | null {
+  try {
+    const filePath = ocrMaintenanceCachePath(vaultPath);
+    const raw = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(raw) as MaintenanceCache;
+  } catch {
+    return null;
+  }
+}
+
+export function writeMaintenanceCache(vaultPath: string, cache: MaintenanceCache): void {
+  const filePath = ocrMaintenanceCachePath(vaultPath);
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(cache, null, 2), "utf-8");
+}
+
+function execFilePromise(
+  cmd: string,
+  args: string[],
+  options: { cwd: string; timeout: number }
+): Promise<string> {
+  const { promise, resolve, reject } = Promise.withResolvers<string>();
+  execFile(cmd, args, options, (err: Error | null, stdout: string) => {
+    if (err) reject(err);
+    else resolve(stdout);
+  });
+  return promise;
+}
+
+export async function refreshMaintenanceData(
+  vaultPath: string,
+  pythonExe: string,
+  extraArgs: string[],
+  currentCache: MaintenanceCache | null
+): Promise<{ data: MaintenanceDisplayRow[]; changed: boolean }> {
+  const manifestOut = await execFilePromise(
+    pythonExe,
+    [...extraArgs, "-m", "paperforge", "ocr", "list", "--manifest"],
+    { cwd: vaultPath, timeout: 30000 }
+  );
+  const manifest: Record<string, string> = JSON.parse(manifestOut);
+
+  if (currentCache) {
+    const cacheKeys = Object.keys(currentCache.manifest);
+    const manifestKeys = Object.keys(manifest);
+    const same =
+      cacheKeys.length === manifestKeys.length &&
+      cacheKeys.every((k) => currentCache.manifest[k] === manifest[k]);
+    if (same) {
+      const data = Object.values(currentCache.papers).filter(
+        (p) => p.visible_in_maintenance
+      );
+      return { data, changed: false };
+    }
+  }
+
+  const changedKeys = Object.keys(manifest).filter(
+    (key) => !currentCache?.manifest[key] || currentCache.manifest[key] !== manifest[key]
+  );
+
+  const dataOut = await execFilePromise(
+    pythonExe,
+    [...extraArgs, "-m", "paperforge", "ocr", "list", "--json", "--keys", ...changedKeys],
+    { cwd: vaultPath, timeout: 30000 }
+  );
+  const updatedPapers: MaintenanceDisplayRow[] = JSON.parse(dataOut);
+
+  const cache: MaintenanceCache = {
+    manifest,
+    papers: {},
+    cached_at: new Date().toISOString(),
+  };
+  if (currentCache?.papers) {
+    for (const key of Object.keys(manifest)) {
+      if (currentCache.papers[key]) {
+        cache.papers[key] = currentCache.papers[key];
+      }
+    }
+  }
+  for (const p of updatedPapers) {
+    cache.papers[p.key] = p;
+  }
+  writeMaintenanceCache(vaultPath, cache);
+
+  const data = Object.values(cache.papers).filter((p) => p.visible_in_maintenance);
+  return { data, changed: true };
 }
