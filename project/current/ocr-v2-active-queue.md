@@ -1,30 +1,44 @@
 # OCR-v2 Active Queue
-> Status: ACTIVE QUEUE — OCR pairing framework branch is merge-ready after merge-unblock verification. 357 targeted tests pass.
-> Last updated: 2026-07-03
-> Scope: pairing framework integration / post-merge follow-up
+> Status: ACTIVE QUEUE — A/B/C OCR deepening pass merged to `master`; legacy path remains default, `OCR_PIPELINE_V3` is merged but OFF by default. 99 focused tests green on merged `master`.
+> Last updated: 2026-07-04
+> Scope: post-merge stabilization / v3 parity follow-up
 
 ## Current Priorities
-1. **Merge `feat/ocr-pairing-framework`** back to `master`
-2. **Monitor production OCR** after pairing-core unification (figure + table on shared framework)
-3. **Archive stale `project/current/` files**
-4. **Compatibility naming cleanup** (`figure_no` / `legend` / `FigurePipelineState`) — deferred
+1. **Monitor merged `master`** for any default-path OCR regressions after the A/B/C merge
+2. **Build real-paper parity evidence for `OCR_PIPELINE_V3=1`** before considering any default-on change
+3. **Update / archive stale `project/current/` files** that still point to pre-merge pairing-framework work
+4. **Compatibility naming cleanup** (`figure_no` / `legend` / `FigurePipelineState`) — still deferred
 
 ## Completed This Session (cumulative)
-- **Pairing framework extraction**:
-  - Shared `ocr_pairing_types.py`, `ocr_pairing_state.py`, `ocr_pairing_framework.py`
-  - Figure pipeline migrated onto shared core without changing public seam
-- **Table pipeline migration**:
-  - Added `ocr_table_domain.py` + ordered `ocr_table_passes.py`
-  - `build_table_inventory(...)` now routes to table vnext on shared core
-- **Merge-unblock hardening**:
-  - Generic-state figure rotation enrichment moved behind figure-only `_match_pre_enricher`
-  - Table semantic parity validation upgraded across 6 runnable real-paper fixtures
-  - Added runnable `tests/fixtures/ocr_vnext_real_papers/37LK5T97/blocks.structured.jsonl`
-  - Touched-file `ruff check` / `ruff format --check` green
+- **Workstream A — object writeback seam**:
+  - Added `paperforge/worker/ocr_object_writeback.py`
+  - Unified figure/table asset writeback, contained text, side-adjacent text, and consumed-block ownership evidence
+  - Added `tests/test_ocr_object_writeback.py`
+- **Workstream B — tail settlement seam**:
+  - Added `paperforge/worker/ocr_tail_settlement.py`
+  - Added `TailSettlementReport` and attached it to `DocumentStructure`
+  - Preserved legacy tail/body/backmatter behavior with focused regressions
+- **Workstream C — v3 pre/post normalize split**:
+  - Added `paperforge/worker/ocr_pre_match_normalize.py`
+  - Added `paperforge/worker/ocr_post_match_normalize.py`
+  - Added `OCR_PIPELINE_V3` toggle and `normalize_mode="seed_only"`
+  - Updated figure/table matching to accept `role_candidate > role > seed_role`
+- **Pre-merge blocker cleanup**:
+  - Fixed page-qualified object writeback lookup
+  - Guarded contained figure claims by page
+  - Restored rescue equivalence inside `post_match_normalize()`
+  - Added merge-gate regression tests for all four blockers
 - **Verification**:
-  - `tests/test_ocr_figures.py`
-  - `tests/test_ocr_rebuild.py`
-  - `tests/test_ocr_tables.py`
-  - `tests/test_ocr_pairing_framework.py`
-  - `tests/test_ocr_table_pairing_framework.py`
-  - Result: **357 passed, 0 failed**
+  - `tests/test_ocr_pipeline_v3.py`
+  - `tests/test_ocr_tail_settlement.py`
+  - `tests/test_ocr_object_writeback.py`
+  - `tests/test_appendix_figure_numbering.py`
+  - `tests/test_ocr_rendering.py`
+  - Result: **99 passed, 0 failed**
+
+## Immediate Next Checks
+- [x] Merge `feat/ocr-tail-settlement` into `master`
+- [x] Push merged `master`
+- [ ] Add real-paper `OCR_PIPELINE_V3` parity gate beyond synthetic/unit coverage
+- [ ] Decide whether `post_match_normalize()` rescue equivalence is sufficient or still needs corpus proof
+- [ ] Archive or rewrite stale queue docs from the pairing-framework phase

@@ -1,28 +1,51 @@
 # OCR Design Index
 
-Use this file as the quick index for current OCR design docs.
+Use this file as the quick index for the **current** OCR design and execution stack.
 
 ## Current OCR architecture source of truth
 
+- `2026-07-04-ocr-pipeline-deepening-design.md`
+  - Current top-level architecture for the A/B/C deepening pass.
+  - Defines:
+    - **Workstream A** — `ocr_object_writeback.py` ownership-evidence seam
+    - **Workstream B** — `ocr_tail_settlement.py` tail/body/backmatter settlement seam
+    - **Workstream C** — `pre_match_normalize(...)` / `post_match_normalize(...)` split behind `OCR_PIPELINE_V3`
+
 - `2026-06-08-ocr-anchor-first-structured-parsing-design.md`
-  - Current clean target architecture for OCR parsing.
-  - Covers anchors, zones, reference-first tail parsing, family partition, and figure/table validation.
+  - Base OCR v2 architecture.
+  - Still the foundational reference for anchors, zones, family partition, structural gating, and render contracts.
 
-## Current OCR implementation plan
+## Current OCR implementation plans
 
-- `../plans/2026-06-08-ocr-anchor-first-structured-parsing-plan.md`
-  - Task-by-task implementation sequence for the anchor-first redesign.
+- `../plans/2026-07-04-ocr-object-writeback-implementation-plan.md`
+  - Workstream A implementation plan.
 
-## Still-active related OCR workflow design
+- `../plans/2026-07-04-ocr-tail-settlement-implementation-plan.md`
+  - Workstream B implementation plan.
+
+- `../plans/2026-07-04-ocr-pipeline-v3-implementation-plan.md`
+  - Workstream C implementation plan.
+
+- `../plans/2026-07-04-pre-merge-verification-plan.md`
+  - Merge-gate checklist used to close the remaining blockers before merging A/B/C to `master`.
+
+## Current merged status on `master`
+
+- `ocr_object_writeback.py` is active on the default path.
+- `ocr_tail_settlement.py` is active on the default path.
+- `OCR_PIPELINE_V3` exists, but remains **OFF by default**.
+- Current focused merge suite on merged `master`: **99 passed**.
+
+## Still-relevant related OCR workflow design
 
 - `2026-06-01-ocr-redo-single-source-design.md`
-  - Separate approved design for OCR redo and canonical single-source fulltext behavior.
+  - Approved design for OCR redo and canonical single-source fulltext behavior.
 
 - `../plans/2026-06-01-ocr-redo-single-source.md`
   - Implementation plan for the single-source redo workflow.
 
 ## Notes
 
-- This worktree keeps only the current OCR v2 architecture/design baseline plus the still-relevant single-source redo docs.
-- Older OCR reading-order, structured-pipeline phase plans, score-tuning plans, and convergence-only intermediate OCR drafts were removed after they were superseded by the anchor-first design.
-- `2026-05-31-ocr-skip-and-tags-preserve-design.md` and its paired plan remain because they are mixed OCR/plugin frontmatter behavior work, not replaced by the anchor-first parsing redesign.
+- The 2026-07-04 A/B/C stack is now the active OCR design thread.
+- Workstream C is merged, but its new path is intentionally gated behind `OCR_PIPELINE_V3`; legacy behavior remains the default production path.
+- Older OCR reading-order, convergence-only, and intermediate phase plans remain historical references, not current execution targets.

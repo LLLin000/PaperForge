@@ -1,12 +1,12 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `master` | **Last Updated:** 2026-07-03
-> **Active work:** Appendix numbering + table appendix support merged. All appendix figures (Figure A1-A3) and tables (Table 1,2,A1,A2) match correctly in M84CTEM9. 302 tests green, `ruff check`/`ruff format --check` clean.
+> **Branch:** `master` | **Last Updated:** 2026-07-04
+> **Active work:** A/B/C OCR deepening pass merged to `master`. Default path now includes `ocr_object_writeback.py` and `ocr_tail_settlement.py`; `OCR_PIPELINE_V3` is merged but remains OFF by default. Focused merge suite: 99 passed.
 
 ---
 
 ## 0. Executive Summary
-**Current state:** Appendix extraction and matching fully operational. Three cross-cutting bugs fixed: (1) TABLE removed from figure regex (was causing table captions to enter figure pipeline), (2) int block_id type mismatches in cross-page settlement and table continuation, (3) table alpha prefix support (TABLE A1→recognized via `_TABLE_PREFIX_PATTERN` + `_parse_table_number_token`). Weak-caption tie-break ported to vnext same-page pass for vertically stacked tables. `master` at `3cda942`.
+**Current state:** The 2026-07-04 OCR deepening stack is merged on `master`: Workstream A added the ownership-evidence writeback seam (`ocr_object_writeback.py`), Workstream B extracted tail/body/backmatter settlement into `ocr_tail_settlement.py` with `TailSettlementReport`, and Workstream C added the `pre_match_normalize(...)` / `post_match_normalize(...)` split behind `OCR_PIPELINE_V3`. Pre-merge blockers were closed: page-qualified writeback lookup, contained-text ownership contract, same-page contained-text guard, and v3 rescue equivalence. `master` at `6cbb82aa`.
 
 ## 1. Architecture
 
@@ -48,6 +48,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 </br>
 | Suite | Result |
 |-------|--------|
+| Focused merge suite (`test_ocr_pipeline_v3` + `test_ocr_tail_settlement` + `test_ocr_object_writeback` + `test_appendix_figure_numbering` + `test_ocr_rendering`) | **99 passed, 0 failed** ✅ |
 | Pairing framework cutover suites (`test_ocr_figures` + `test_ocr_rebuild` + `test_ocr_tables` + `test_ocr_pairing_framework` + `test_ocr_table_pairing_framework`) | **357 passed, 0 failed** ✅ |
 | Real-paper table parity fixtures | **6 runnable fixtures checked** ✅ |
 | Touched-file lint (`ruff check`) | **OK** ✅ |
@@ -58,9 +59,11 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Structural gate | Installed |
 | Role assignment (seed only) | ✅ |
 | Zone inference + fallback | ✅ |
-| Figure pipeline vnext | ✅ Shared pairing core + figure-only pre-enricher hook |
-| Table pipeline vnext | ✅ Shared pairing core + semantic parity validation |
-| Pairing framework core | ✅ `ocr_pairing_*` modules active for both figure and table |
+| Figure pipeline vnext | ✅ Shared pairing core + `role_candidate`-aware match-time role resolution |
+| Table pipeline vnext | ✅ Shared pairing core + `role_candidate`-aware match-time role resolution |
+| Object writeback seam | ✅ `paperforge/worker/ocr_object_writeback.py` active on default path |
+| Tail settlement seam | ✅ `paperforge/worker/ocr_tail_settlement.py` active on default path |
+| V3 normalize split | ✅ merged behind `OCR_PIPELINE_V3` (default OFF) |
 | Rebuild/orchestrator seam | ✅ Public wrappers unchanged; callers still use `build_figure_inventory(...)` / `build_table_inventory(...)` |
 | Cross-domain figure/table conflict resolution | ✅ Still external to pairing core |
 
@@ -89,38 +92,36 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 20 | — | **Issue 6**: Same asset consumed by figure AND table | Post-hoc arbitration | `resolve_media_asset_conflicts` resolves asymmetric cases; weak/weak stays in `ownership_conflicts` | `4ab227e` |
 | 21 | — | Pairing framework extraction + figure migration | Refactor | Extracted shared `ocr_pairing_*` core from figure vnext; preserved public seams and figure behavior | `6229f6c`, `7cfbb5f`, `32541cf` |
 | 22 | — | Table vnext on pairing framework + public cutover | Refactor/feature | Added `ocr_table_domain.py` + `ocr_table_passes.py`, preserved resolver-consumed fields, switched `build_table_inventory(...)` to vnext | `db01518`, `ea6a1f0`, `a9e68ac`, `a2e5788` |
-| 23 | 37LK5T97 + cutover corpus | Merge-unblock hardening | Moved figure-only rotation enrichment out of generic state, validated 6 runnable real-paper table fixtures semantically, fixed touched-file lint/format issues | working tree (pre-merge session) |
-#### P2#1a — Previous-page legend locator bridge (✅ Fixed `3f61f4a`)
-WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to full legend (in rejected_legends, misclassified as body_paragraph)
+| 23 | 37LK5T97 + cutover corpus | Merge-unblock hardening | Moved figure-only rotation enrichment out of generic state, validated 6 runnable real-paper table fixtures semantically, fixed touched-file lint/format issues | `fa734f6`, `9b285b1` |
+| 24 | — | Workstream A — object ownership evidence seam | New module | Added `ocr_object_writeback.py`; unified figure/table asset claims, side-adjacent text claims, consumed-block contract, and renderer consumption skip | `964e05b` |
+| 25 | — | Workstream B — tail settlement seam | New module | Added `ocr_tail_settlement.py`, extracted tail/body/backmatter settlement, and attached `TailSettlementReport` to `DocumentStructure` | `7bf652c` |
+| 26 | — | Workstream C — v3 pre/post normalize split | Feature / toggle | Added `ocr_pre_match_normalize.py`, `ocr_post_match_normalize.py`, `OCR_PIPELINE_V3`, and `normalize_mode=\"seed_only\"` orchestration | `c9d78fc`, `d82949e`, `cb685f7`, `1a81817` |
+| 27 | — | Pre-merge blocker cleanup | Hardening | Fixed page-qualified writeback lookup, contained-text ownership contract, same-page contained-text guard, and v3 rescue equivalence | `7856d6e`, `dcf706f` |
+## 3. Remaining Issues
 
-#### Remaining P2 / P3
-
-1. **Compatibility naming debt** — `figure_no`, `legend`, and `FigurePipelineState` remain backwards-compat names inside the shared pairing core. They are intentionally deferred cleanup, not release blockers.
-2. **37LK5T97 legacy consumption bug** — legacy table inventory drops caption `block_id=0` from `consumed_block_ids` because `if bid` treats `0` as falsy; vnext keeps `'0'`. Validation now treats this as a known legacy bug, not a vnext regression.
-3. **Figure containment gaps** — `cluster_bbox` containment only runs on matched figures; composite figures with demoted caption upstream still do not enter containment.
-4. **Short "Table N" caption matching** — bare `"Table 1."` labels still have residual weak cases outside the validated fixture set.
+1. **Compatibility naming debt** — `figure_no`, `legend`, and `FigurePipelineState` remain backwards-compat names inside the shared pairing core. Deferred cleanup, not a merge blocker.
+2. **37LK5T97 legacy consumption bug** — legacy table inventory still drops caption `block_id=0` from `consumed_block_ids`; vnext keeps `'0'`. Documented as a legacy defect, not a current regression.
+3. **V3 real-paper parity depth** — `OCR_PIPELINE_V3` now has synthetic / focused regression coverage, but real-paper parity is still lighter than the legacy path. Keep toggle OFF by default until broader corpus evidence lands.
+4. **Short \"Table N\" caption matching** — bare short-table captions still have residual weak cases outside the validated fixture set.
 5. **Chinese Windows encoding** — non-ASCII PDF filenames can still surface GBK path issues in older artifacts.
 6. **Shared consumed registry for ambiguous image-like blocks** — figure/table post-hoc arbitration exists, but there is still no first-class shared consumed registry for unresolved image-like assets.
 
 ## 4. Active Queue
 
-1. ✅ Pairing framework extraction complete
-2. ✅ Figure migration onto shared pairing core complete
-3. ✅ Table migration onto shared pairing core complete
-4. ✅ Generic-state impurity removed (`_match_pre_enricher` hook at figure boundary)
-5. ✅ Real-paper table semantic parity validation hardened (6 runnable fixtures)
-6. ✅ Touched-file lint / format cleanup complete
-7. **NEXT: Merge `feat/ocr-pairing-framework` → `master`**
+1. ✅ A/B/C OCR deepening pass merged to `master`
+2. ✅ Pre-merge blockers A-D cleared and covered by regression tests
+3. **NEXT: build real-paper parity evidence for `OCR_PIPELINE_V3=1`**
+4. **NEXT: archive or rewrite stale `project/current/` files from the pairing-framework phase**
+5. **Deferred:** compatibility naming cleanup (`figure_no` / `legend` / `FigurePipelineState`)
 
 ### 4.1 Immediate Next Steps
 
-- [x] Shared `ocr_pairing_*` core active for figure + table
-- [x] Public wrappers preserved
-- [x] Table parity checks upgraded from smoke shape to semantic comparison
-- [x] `37LK5T97` made runnable under `tests/fixtures/ocr_vnext_real_papers/`
-- [x] Generic state made domain-neutral for match enrichment
-- [x] Targeted verification: 357 passed
-- [ ] Merge `feat/ocr-pairing-framework` into `master`
+- [x] Merge `feat/ocr-tail-settlement` into `master`
+- [x] Push merged `master`
+- [x] Add focused v3 parity gate (`tests/test_ocr_pipeline_v3.py`)
+- [ ] Add real-paper `OCR_PIPELINE_V3` parity gate beyond synthetic/unit coverage
+- [ ] Decide whether current `post_match_normalize()` rescue equivalence is sufficient or still needs corpus proof
+- [ ] Archive stale queue files that still point to pre-merge branch work
 
 ---
 
@@ -130,16 +131,20 @@ WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to ful
 
 | File | Role |
 |------|------|
-| `paperforge/worker/ocr_blocks.py` | Raw + structured block generation; preserves seed_role only |
+| `paperforge/worker/ocr_blocks.py` | Raw + structured block generation; legacy normalize path plus `normalize_mode=\"seed_only\"` for v3 |
 | `paperforge/worker/ocr_roles.py` | `assign_block_role()` — seed/proposal logic only (NOT final) |
 | `paperforge/worker/ocr_document.py` | `normalize_document_structure()` — anchor/family/zone + gate + final roles |
+| `paperforge/worker/ocr_pre_match_normalize.py` | V3 candidate-only normalize; fills `role_candidate` while preserving public `role = seed_role` |
+| `paperforge/worker/ocr_post_match_normalize.py` | V3 post-match role commit; shadow normalize + rescue equivalence + tail settlement |
+| `paperforge/worker/ocr_object_writeback.py` | Post-inventory ownership-evidence seam for figure/table assets, contained text, and side-adjacent figure text |
+| `paperforge/worker/ocr_tail_settlement.py` | Tail/body/backmatter settlement seam + `TailSettlementReport` |
 | `paperforge/worker/ocr_structural_gate.py` | `VERIFY_REQUIRED` role decision + abstract span + reference zone + health |
 | `paperforge/worker/ocr_orchestrator.py` | Body reorder, column validation, layered assembly |
-| `paperforge/worker/ocr_render.py` | `render_fulltext_markdown()` — consumes verified artifacts ONLY |
+| `paperforge/worker/ocr_render.py` | `render_fulltext_markdown()` — skips consumed object-owned blocks and consumes verified artifacts only |
 | `paperforge/worker/ocr_health.py` | Health reporting, merged gate summary |
 | `paperforge/worker/ocr_profiles.py` | Span extraction, profile aggregation, cross-validation |
-| `paperforge/worker/ocr_figures.py` | Figure reader pipeline |
-| `paperforge/worker/ocr_tables.py` | Table inventory matching |
+| `paperforge/worker/ocr_figures.py` | Figure reader pipeline + `role_candidate`-aware match-time role resolution |
+| `paperforge/worker/ocr_tables.py` | Table inventory matching + `role_candidate`-aware match-time role resolution |
 | `paperforge/worker/ocr_scores.py` | Score functions (spatial, structured_insert, etc.) |
 | `paperforge/worker/ocr_rebuild.py` | Derived rebuild entry point |
 | `paperforge/worker/ocr_pdf_spans.py` | PDF span backfill for OCR-missed blocks |
@@ -149,8 +154,8 @@ WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to ful
 
 | File | Purpose |
 |------|---------|
-| `tests/test_ocr_figures.py` | Figure inventory, matching, ownership | 261 tests |
-| `tests/test_ocr_document.py` | Document structure, normalize, gate | 131 tests |
+| `tests/test_ocr_figures.py` | Figure inventory, matching, ownership |
+| `tests/test_ocr_document.py` | Document structure, normalize, gate |
 | `tests/test_ocr_render.py` | Fulltext render contract |
 | `tests/test_ocr_figure_reader.py` | Reader contract |
 | `tests/test_ocr_trace_vs_expectations.py` | Real-paper trace vs expectations gap report (8 gold papers) |
@@ -160,6 +165,10 @@ WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to ful
 | `tests/test_ocr_structural_gate.py` | Gate unit tests |
 | `tests/test_ocr_v2_structural_regressions.py` | Structural regression guards |
 | `tests/test_ocr_layout_first_regressions.py` | Layout-first behavior guards |
+| `tests/test_ocr_object_writeback.py` | Ownership-evidence seam, consumed-block contract, contained/side-adjacent text, cross-page `block_id` guard |
+| `tests/test_ocr_tail_settlement.py` | Tail/body/backmatter extraction seam + `TailSettlementReport` |
+| `tests/test_ocr_pipeline_v3.py` | `OCR_PIPELINE_V3` toggle, seed-only mode, pre/post normalize split, parity gate |
+| `tests/test_appendix_figure_numbering.py` | Appendix figure/table numbering regressions including M84CTEM9 coverage |
 
 ### 5.3 Test Fixtures
 
@@ -214,6 +223,10 @@ WV2FF4NV Fig 10: locator "See legend on previous page" on p16 not bridged to ful
 | 2026-06-28 | Page-1 body_start: metadata headings should not trigger | `_is_first_page_body_start` treated ANY section_heading as body start. Fix: only real body section headings (introduction, methods, etc.) trigger body_start on page 1. |
 | 2026-06-28 | Frontmatter heading normalization: no text matching | Metadata sidebar labels rejected by structural gate fell to unknown_structural. Fix: normalize held heading blocks in frontmatter_main_zone to frontmatter_noise using only zone + gate decision + seed_role, no text matching. |
 | 2026-06-28 | Author bio detection: three-pass cascade, P0 first | Strong structure first, residual explanation second. Real figures must never be preempted. P0: post-ref text-only. P1: figure residual. P2+: P1 profile card pre-pass. |
+| 2026-07-04 | Introduce ownership-evidence writeback seam | Figure/table asset claims, contained text, and side-adjacent figure text needed one post-inventory contract so renderer suppression and future late-stage role logic could consume the same evidence. |
+| 2026-07-04 | Extract tail settlement out of normalize/build seam | Tail/body/backmatter settlement had grown into a cross-module implicit contract; isolating it lowered blast radius before attempting the v3 normalize split. |
+| 2026-07-04 | Keep `OCR_PIPELINE_V3` merged but default-off | The pre/post normalize split is architecturally correct, but synthetic parity is easier to prove than corpus parity. Merging behind a toggle cuts long-lived branch risk without forcing the new path live. |
+| 2026-07-04 | Contained figure claims must be page-qualified | Cross-page `block_id` reuse and similar figure geometry can silently hide the wrong text. Ownership claims now require same-page qualification before containment is trusted. |
 | 2026-06-28 | Category-weighted bio scoring | career=+3, education=+2, research=+2, institution=+1, publication=+1. Returns (score, categories) tuple. Threshold: score ≥ 4 AND categories ≥ 2. |
 | 2026-06-28 | author_bio_asset role: non-rendered, non-indexed | Bio artifacts removed from figure_inventory entirely, never returned to unmatched_assets. Clean prune before reader. |
 | 2026-07-01 | Asset-internal figure number recovery: metadata-only pass | Recovery must NOT split OCR blocks or mutate chart text — only patches figure_number, figure_id, recovered_label_text on existing matched figures. Coordinate normalization is caller responsibility. |
@@ -306,6 +319,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-06-28 | Gate 5 blind audit + pre-ref tail zone fix | Gate 5: 24YKLTHQ (13p) + 4KCHGV2Z (9p) rebuilt post-P1. Found pre-ref body pages misclassified as tail_nonref_hold_zone. Root cause: _apply_zone_labels re-applies stale region_bus after ref partition. Fixed by stripping pre_ref block IDs from tail zone. 4KCHGV2Z P7: tail=20 → body=2+disp=5. All 286 figure/backmatter tests green. | §9.12 |
 | 2026-06-28 | Gate 5 frontmatter fix series (3 fixes) | 24YKLTHQ: author byline lowercase guard, metadata body_start fix, frontmatter heading normalization (no text matching). All 3 fixes verified on real paper, 461 tests pass, 0 new regressions. | §9.13 |
 | 2026-06-28 | Test fix session: 25 tests reconciled | Fixed 10 stale test issues: non_body_insert guard, caffard abstract, legend_like role, structural gate, backmatter heading render, state machine (done_degraded), body_zone anchor, rebuild backfill skip, truth surface docs, trace-vs-expectations (10 assertions). **616 OCR tests, 0 failed.** Expectations updated for post-P1 behavior. | §9.14 |
+| 2026-07-04 | A/B/C OCR deepening merge + pre-merge blocker cleanup | Merged Workstream A (`ocr_object_writeback.py`), Workstream B (`ocr_tail_settlement.py`), and Workstream C (`pre_match_normalize` / `post_match_normalize` behind `OCR_PIPELINE_V3`) to `master`. Closed pre-merge blockers: page-qualified writeback lookup, contained-text ownership contract, same-page contained-text guard, and v3 rescue equivalence. Verification: 99 focused tests passed on merged `master`. | §9.24 |
 | 2026-06-28 | Data-driven truth audit (2 papers) | 2HEUD5P9 (27p) + 4AG67PBH (25p) — no vision (model limit). Found 3 pipeline defect patterns: zone_leak_frontmatter_to_body (2 papers), reference_boundary_body_mix (2 papers), title_repeat_page2 (1 paper). 12 ghost unknown_structural blocks in 2HEUD5P9. Findings saved to audit/2026-06-28-data-audit-findings.json. | §9.15 |
 | 2026-06-28 | P0 author bio detection implementation | Created ocr_bio.py with category-weighted bio scoring, Pass C (post_ref_bio_cleanup), figure match guards. Wired author_bio_asset role contract + pipeline. 30 new tests pass. 1041 total OCR tests, 0 regressions. Commits: `e2f0c8a`, `7810eb1`. | §9.16 |
 | 2026-06-28 | P1 author bio detection implementation | Added residual_author_bio_pass (figure-residual portrait assets), extended post_ref_bio_cleanup for figure_caption, tag_figure_contained_text protection. 7 new P1 tests. 1018 total OCR tests, 0 regressions. Commit: `7a1cc5e`. | §9.17 |
