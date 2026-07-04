@@ -104,9 +104,16 @@ OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked"}
 
 
 def _ocr_pipeline_v3_enabled() -> bool:
-    import os
+    """Check if the V3 pipeline is active.
 
-    return os.environ.get("OCR_PIPELINE_V3", "").strip().lower() in {"1", "true", "yes", "on"}
+    Now enabled by default — v3 normalizes role candidates before figure/table
+    matching, then commits final roles after matching.  Set OCR_PIPELINE_V3=0
+    (or any falsy value) to revert to legacy normalize-then-match order.
+    """
+    val = os.environ.get("OCR_PIPELINE_V3", "").strip()
+    if val:
+        return val.lower() not in {"0", "false", "no", "off"}
+    return True
 _LEGACY_HARD_DEGRADE_PREFIXES = (
     "rendered text gaps",
 )
@@ -1858,7 +1865,6 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         backfill_missing_text_from_pdf(all_raw_blocks, source_pdf_path)
 
     write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
-
     normalize_mode = "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
     structured, doc_structure = build_structured_blocks(
         all_raw_blocks,
@@ -1868,12 +1874,6 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     )
     if _ocr_pipeline_v3_enabled():
         from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
-
-        structured, doc_structure = pre_match_normalize(
-            structured,
-            source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
-            document_structure=doc_structure,
-        )
     write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
     # Write role-level span profiles
     from paperforge.worker.ocr_profiles import write_role_span_profiles

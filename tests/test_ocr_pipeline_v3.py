@@ -2,12 +2,12 @@ from __future__ import annotations
 import pytest
 
 
-def test_ocr_pipeline_v3_enabled_defaults_false(monkeypatch) -> None:
+def test_ocr_pipeline_v3_enabled_defaults_true(monkeypatch) -> None:
     from paperforge.worker.ocr import _ocr_pipeline_v3_enabled
 
     monkeypatch.delenv("OCR_PIPELINE_V3", raising=False)
 
-    assert _ocr_pipeline_v3_enabled() is False
+    assert _ocr_pipeline_v3_enabled() is True
 
 
 def test_ocr_pipeline_v3_enabled_truthy(monkeypatch) -> None:

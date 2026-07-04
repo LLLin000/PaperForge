@@ -1,0 +1,2335 @@
+{
+  "papers": 555,
+  "diff": 5,
+  "error": 3,
+  "skipped": 0,
+  "elapsed_seconds": 234.3460774421692,
+  "results": [
+    {
+      "paper": "A35UYJBK",
+      "diff": false
+    },
+    {
+      "paper": "A45X769B",
+      "diff": false
+    },
+    {
+      "paper": "A4T4TRT2",
+      "diff": false
+    },
+    {
+      "paper": "A6IC2SIK",
+      "diff": false
+    },
+    {
+      "paper": "A8E7SRVS",
+      "diff": false
+    },
+    {
+      "paper": "A8P6F3B9",
+      "diff": false
+    },
+    {
+      "paper": "A95N278J",
+      "diff": false
+    },
+    {
+      "paper": "A98BQ6YU",
+      "diff": false
+    },
+    {
+      "paper": "A9ALKPZP",
+      "diff": false
+    },
+    {
+      "paper": "A9NGG2EA",
+      "diff": false
+    },
+    {
+      "paper": "AA6P3IE5",
+      "diff": false
+    },
+    {
+      "paper": "ACVQ5LA3",
+      "diff": false
+    },
+    {
+      "paper": "ADZR7SUT",
+      "diff": false
+    },
+    {
+      "paper": "AEBREGPE",
+      "diff": false
+    },
+    {
+      "paper": "AEQBENVW",
+      "diff": false
+    },
+    {
+      "paper": "AH6Q7DLC",
+      "diff": false
+    },
+    {
+      "paper": "AIICT4YX",
+      "diff": false
+    },
+    {
+      "paper": "AL6C2PJ5",
+      "diff": false
+    },
+    {
+      "paper": "ALHRIEFB",
+      "diff": false
+    },
+    {
+      "paper": "ANDP8RMP",
+      "diff": false
+    },
+    {
+      "paper": "ANFJ5BJY",
+      "diff": false
+    },
+    {
+      "paper": "API5RITV",
+      "diff": false
+    },
+    {
+      "paper": "APNGVIIY",
+      "diff": false
+    },
+    {
+      "paper": "AT99P8YS",
+      "diff": false
+    },
+    {
+      "paper": "AUUNHWSN",
+      "diff": false
+    },
+    {
+      "paper": "AUYNML4R",
+      "diff": false
+    },
+    {
+      "paper": "AW49IHEX",
+      "diff": false
+    },
+    {
+      "paper": "AX3TCBXU",
+      "diff": false
+    },
+    {
+      "paper": "AXDD57L3",
+      "diff": false
+    },
+    {
+      "paper": "B43QSAJP",
+      "diff": false
+    },
+    {
+      "paper": "B4ENIFAB",
+      "diff": false
+    },
+    {
+      "paper": "B5QGAKL2",
+      "diff": false
+    },
+    {
+      "paper": "B7SJKHIG",
+      "diff": false
+    },
+    {
+      "paper": "BAGSWM3L",
+      "diff": false
+    },
+    {
+      "paper": "BAUEIRRM",
+      "diff": false
+    },
+    {
+      "paper": "BC95XMCB",
+      "diff": false
+    },
+    {
+      "paper": "BCSQUW2S",
+      "diff": false
+    },
+    {
+      "paper": "BDMLFC4B",
+      "diff": false
+    },
+    {
+      "paper": "BDZ3A5XR",
+      "diff": false
+    },
+    {
+      "paper": "BESW2PP2",
+      "diff": false
+    },
+    {
+      "paper": "BHLZMJZP",
+      "diff": false
+    },
+    {
+      "paper": "BKBHMB8M",
+      "diff": false
+    },
+    {
+      "paper": "BKKR4KIV",
+      "diff": false
+    },
+    {
+      "paper": "BL8ABQ2A",
+      "diff": false
+    },
+    {
+      "paper": "BP6VZC2H",
+      "diff": false
+    },
+    {
+      "paper": "BPVR2AQM",
+      "diff": false
+    },
+    {
+      "paper": "BQZB2874",
+      "diff": false
+    },
+    {
+      "paper": "BTKXAJWJ",
+      "diff": false
+    },
+    {
+      "paper": "BVMXNWF6",
+      "diff": false
+    },
+    {
+      "paper": "BZLBFRW9",
+      "diff": false
+    },
+    {
+      "paper": "C2U3WZDW",
+      "diff": false
+    },
+    {
+      "paper": "C5C2SWA5",
+      "diff": false
+    },
+    {
+      "paper": "C6ZESGTE",
+      "diff": false
+    },
+    {
+      "paper": "C7WCW4NX",
+      "diff": false
+    },
+    {
+      "paper": "CAGJA5FF",
+      "diff": false
+    },
+    {
+      "paper": "CAQNW9Q2",
+      "diff": false
+    },
+    {
+      "paper": "CATYKTHR",
+      "diff": false
+    },
+    {
+      "paper": "CAYP5AKS",
+      "diff": false
+    },
+    {
+      "paper": "CB5NJ28R",
+      "diff": false
+    },
+    {
+      "paper": "CEGHBEQ5",
+      "diff": false
+    },
+    {
+      "paper": "CGGYTEEQ",
+      "diff": false
+    },
+    {
+      "paper": "CHILQ4KJ",
+      "diff": false
+    },
+    {
+      "paper": "CIBQ2KHS",
+      "diff": false
+    },
+    {
+      "paper": "CJAR727H",
+      "diff": false
+    },
+    {
+      "paper": "CPKSS2DU",
+      "diff": false
+    },
+    {
+      "paper": "CPQ47TBV",
+      "diff": false
+    },
+    {
+      "paper": "CQAXQN4D",
+      "diff": false
+    },
+    {
+      "paper": "CQG5WH2Y",
+      "diff": false
+    },
+    {
+      "paper": "CRTUBAGB",
+      "diff": false
+    },
+    {
+      "paper": "CSQQ3B7J",
+      "diff": false
+    },
+    {
+      "paper": "CW3BQFEB",
+      "diff": false
+    },
+    {
+      "paper": "CX53XS72",
+      "diff": false
+    },
+    {
+      "paper": "CYJLYG56",
+      "diff": false
+    },
+    {
+      "paper": "D3FZL7JH",
+      "diff": false
+    },
+    {
+      "paper": "D444D4S5",
+      "diff": false
+    },
+    {
+      "paper": "D7XTQYV7",
+      "diff": false
+    },
+    {
+      "paper": "DAB9VMWW",
+      "diff": false
+    },
+    {
+      "paper": "DDGMQ7RW",
+      "diff": false
+    },
+    {
+      "paper": "DJJ96MTM",
+      "diff": false
+    },
+    {
+      "paper": "DKPT585M",
+      "diff": false
+    },
+    {
+      "paper": "DLVSVU49",
+      "error": "v3: max() iterable argument is empty"
+    },
+    {
+      "paper": "DNDE7U87",
+      "diff": false
+    },
+    {
+      "paper": "DR3AJILH",
+      "diff": false
+    },
+    {
+      "paper": "DR6FGTCA",
+      "diff": false
+    },
+    {
+      "paper": "DS2FR5FU",
+      "diff": false
+    },
+    {
+      "paper": "DURZMVMB",
+      "diff": false
+    },
+    {
+      "paper": "DVPB7W88",
+      "diff": false
+    },
+    {
+      "paper": "DWBH7R7C",
+      "diff": false
+    },
+    {
+      "paper": "DWGY2F42",
+      "diff": false
+    },
+    {
+      "paper": "DWQQK2YB",
+      "diff": false
+    },
+    {
+      "paper": "DX62FY37",
+      "diff": false
+    },
+    {
+      "paper": "DX9STNSG",
+      "diff": false
+    },
+    {
+      "paper": "DZ5BH43F",
+      "diff": false
+    },
+    {
+      "paper": "DZSW7CRD",
+      "diff": false
+    },
+    {
+      "paper": "E3UEZ4YH",
+      "diff": false
+    },
+    {
+      "paper": "E52CVLIH",
+      "diff": false
+    },
+    {
+      "paper": "E7AEA4HU",
+      "error": "missing raw data"
+    },
+    {
+      "paper": "E8KM5CRS",
+      "diff": false
+    },
+    {
+      "paper": "ECUA27Y2",
+      "diff": false
+    },
+    {
+      "paper": "EGLY3SE4",
+      "diff": false
+    },
+    {
+      "paper": "EGY463YC",
+      "diff": false
+    },
+    {
+      "paper": "EHWNEQM9",
+      "diff": false
+    },
+    {
+      "paper": "EIAWBJJP",
+      "diff": false
+    },
+    {
+      "paper": "EQAZ2EL5",
+      "diff": false
+    },
+    {
+      "paper": "ES23M9IS",
+      "diff": false
+    },
+    {
+      "paper": "ESIQJBWT",
+      "diff": false
+    },
+    {
+      "paper": "EUXKIYZM",
+      "diff": false
+    },
+    {
+      "paper": "EWH4NKMD",
+      "diff": false
+    },
+    {
+      "paper": "EYT6JLZU",
+      "diff": false
+    },
+    {
+      "paper": "EZ4W2N5S",
+      "diff": false
+    },
+    {
+      "paper": "F27I3PJN",
+      "diff": false
+    },
+    {
+      "paper": "F3FIP9IQ",
+      "diff": false
+    },
+    {
+      "paper": "F5CHZH3H",
+      "diff": false
+    },
+    {
+      "paper": "F5L77QU4",
+      "diff": false
+    },
+    {
+      "paper": "FB48C9EL",
+      "diff": false
+    },
+    {
+      "paper": "FC72S4K9",
+      "diff": false
+    },
+    {
+      "paper": "FCQ7M8U5",
+      "diff": false
+    },
+    {
+      "paper": "FFBAXFSE",
+      "diff": false
+    },
+    {
+      "paper": "FFD4HR22",
+      "diff": false
+    },
+    {
+      "paper": "FG62NV5H",
+      "diff": false
+    },
+    {
+      "paper": "FHZPDCAX",
+      "diff": false
+    },
+    {
+      "paper": "FL8APLAM",
+      "diff": false
+    },
+    {
+      "paper": "FLYEIA6G",
+      "diff": false
+    },
+    {
+      "paper": "FMCXKIX2",
+      "diff": false
+    },
+    {
+      "paper": "FPZB97GU",
+      "diff": false
+    },
+    {
+      "paper": "FRU2XUGJ",
+      "diff": false
+    },
+    {
+      "paper": "FS7N2WVM",
+      "diff": false
+    },
+    {
+      "paper": "FX7PTWSK",
+      "diff": false
+    },
+    {
+      "paper": "FX9RAEHE",
+      "diff": false
+    },
+    {
+      "paper": "FYVUMBG7",
+      "diff": false
+    },
+    {
+      "paper": "FYXMGQ8U",
+      "diff": false
+    },
+    {
+      "paper": "FZJHEDQK",
+      "diff": false
+    },
+    {
+      "paper": "G3IIG3AT",
+      "diff": false
+    },
+    {
+      "paper": "G46XM9U7",
+      "diff": false
+    },
+    {
+      "paper": "G5GEKQXJ",
+      "diff": false
+    },
+    {
+      "paper": "G5QGQ9PB",
+      "diff": false
+    },
+    {
+      "paper": "GECL2FJ3",
+      "diff": false
+    },
+    {
+      "paper": "GENCMQ2X",
+      "diff": false
+    },
+    {
+      "paper": "GFPBAHTB",
+      "diff": false
+    },
+    {
+      "paper": "GIH5IBBE",
+      "diff": false
+    },
+    {
+      "paper": "GMP96ULY",
+      "diff": false
+    },
+    {
+      "paper": "GMZPZSVA",
+      "diff": false
+    },
+    {
+      "paper": "GNPKTNCD",
+      "diff": false
+    },
+    {
+      "paper": "GQHHT5NF",
+      "diff": false
+    },
+    {
+      "paper": "GS3G6YQK",
+      "diff": false
+    },
+    {
+      "paper": "GTBXAKBY",
+      "diff": false
+    },
+    {
+      "paper": "GTLJC2LP",
+      "diff": false
+    },
+    {
+      "paper": "GTRPMM56",
+      "diff": false
+    },
+    {
+      "paper": "GTSAYVFS",
+      "diff": false
+    },
+    {
+      "paper": "GU9R8EPE",
+      "diff": false
+    },
+    {
+      "paper": "GZ4BNT63",
+      "diff": false
+    },
+    {
+      "paper": "H32RMBLK",
+      "diff": false
+    },
+    {
+      "paper": "H497AGMU",
+      "diff": false
+    },
+    {
+      "paper": "H4B6CQLA",
+      "diff": false
+    },
+    {
+      "paper": "H4GURFWI",
+      "diff": false
+    },
+    {
+      "paper": "H4VPRJLT",
+      "diff": false
+    },
+    {
+      "paper": "H4VQSH3C",
+      "diff": false
+    },
+    {
+      "paper": "H5NLDWTJ",
+      "diff": false
+    },
+    {
+      "paper": "H6ATTBWZ",
+      "diff": false
+    },
+    {
+      "paper": "H6DI4BNH",
+      "diff": false
+    },
+    {
+      "paper": "H84PP2IW",
+      "diff": false
+    },
+    {
+      "paper": "HDJE9353",
+      "diff": false
+    },
+    {
+      "paper": "HGFWDH4S",
+      "diff": false
+    },
+    {
+      "paper": "HGLET7VG",
+      "diff": false
+    },
+    {
+      "paper": "HIU4F3V4",
+      "diff": false
+    },
+    {
+      "paper": "HJ5E5U49",
+      "diff": false
+    },
+    {
+      "paper": "HJ5M4YFC",
+      "diff": false
+    },
+    {
+      "paper": "HJTU2WUQ",
+      "diff": false
+    },
+    {
+      "paper": "HL2FUMPM",
+      "diff": false
+    },
+    {
+      "paper": "HN4758MP",
+      "diff": false
+    },
+    {
+      "paper": "HNJA5DMR",
+      "diff": false
+    },
+    {
+      "paper": "HQAQBSBP",
+      "diff": false
+    },
+    {
+      "paper": "HRTE44P7",
+      "diff": false
+    },
+    {
+      "paper": "HUXX6KW2",
+      "diff": false
+    },
+    {
+      "paper": "HW3YVARY",
+      "diff": false
+    },
+    {
+      "paper": "HX7FMUSA",
+      "diff": false
+    },
+    {
+      "paper": "HXZHMT2Q",
+      "diff": false
+    },
+    {
+      "paper": "HYL7D64E",
+      "diff": false
+    },
+    {
+      "paper": "HYRDQLMS",
+      "diff": false
+    },
+    {
+      "paper": "HZTMVS5K",
+      "diff": false
+    },
+    {
+      "paper": "HZU2N9JG",
+      "diff": false
+    },
+    {
+      "paper": "I295B7RX",
+      "diff": false
+    },
+    {
+      "paper": "I42Y93C4",
+      "diff": false
+    },
+    {
+      "paper": "I49J37D4",
+      "diff": false
+    },
+    {
+      "paper": "I75SS5KU",
+      "diff": false
+    },
+    {
+      "paper": "I7K45BFS",
+      "diff": false
+    },
+    {
+      "paper": "I8ZU2VYA",
+      "diff": false
+    },
+    {
+      "paper": "I9RALI9H",
+      "diff": false
+    },
+    {
+      "paper": "ID2NXSYY",
+      "diff": false
+    },
+    {
+      "paper": "IES8B82I",
+      "diff": false
+    },
+    {
+      "paper": "IFYKRHV8",
+      "diff": false
+    },
+    {
+      "paper": "IGR5PYH2",
+      "diff": false
+    },
+    {
+      "paper": "IH6K34R9",
+      "diff": false
+    },
+    {
+      "paper": "IL2KJQCD",
+      "diff": false
+    },
+    {
+      "paper": "IN8LEK6F",
+      "diff": false
+    },
+    {
+      "paper": "IPVHC44X",
+      "diff": false
+    },
+    {
+      "paper": "IRJ68ZUP",
+      "diff": false
+    },
+    {
+      "paper": "IRK7NJLZ",
+      "diff": false
+    },
+    {
+      "paper": "IRS5EFHQ",
+      "diff": false
+    },
+    {
+      "paper": "IS6T9ZDA",
+      "diff": false
+    },
+    {
+      "paper": "IT2ET6ZL",
+      "diff": false
+    },
+    {
+      "paper": "IVMKWLFV",
+      "diff": false
+    },
+    {
+      "paper": "IVQAQ8IQ",
+      "diff": false
+    },
+    {
+      "paper": "IVSG7E67",
+      "diff": false
+    },
+    {
+      "paper": "J2U9DWNW",
+      "diff": false
+    },
+    {
+      "paper": "J8E86Y84",
+      "diff": false
+    },
+    {
+      "paper": "JAX9AESX",
+      "diff": false
+    },
+    {
+      "paper": "JC5AM3YP",
+      "diff": false
+    },
+    {
+      "paper": "JCXZNJJC",
+      "diff": false
+    },
+    {
+      "paper": "JD8T7YHD",
+      "diff": false
+    },
+    {
+      "paper": "JEH6Q7P6",
+      "diff": false
+    },
+    {
+      "paper": "JF35KF37",
+      "diff": false
+    },
+    {
+      "paper": "JGRQS9T9",
+      "diff": false
+    },
+    {
+      "paper": "JKNNX3W2",
+      "diff": false
+    },
+    {
+      "paper": "JLFF4L85",
+      "diff": false
+    },
+    {
+      "paper": "JLIYIK7P",
+      "diff": false
+    },
+    {
+      "paper": "JMG23U8Q",
+      "diff": false
+    },
+    {
+      "paper": "JMPAEY3N",
+      "diff": false
+    },
+    {
+      "paper": "JMRH8KLX",
+      "diff": false
+    },
+    {
+      "paper": "JQMRCEXY",
+      "diff": false
+    },
+    {
+      "paper": "JSC4748V",
+      "diff": false
+    },
+    {
+      "paper": "JSXF2R54",
+      "diff": false
+    },
+    {
+      "paper": "JXDZ9G5D",
+      "diff": false
+    },
+    {
+      "paper": "JZX7QTGF",
+      "diff": false
+    },
+    {
+      "paper": "K2BGG2YT",
+      "diff": false
+    },
+    {
+      "paper": "K462DXIS",
+      "diff": false
+    },
+    {
+      "paper": "K6EBNFNK",
+      "diff": false
+    },
+    {
+      "paper": "K6ECPBLX",
+      "diff": false
+    },
+    {
+      "paper": "K7R8PEKW",
+      "diff": false
+    },
+    {
+      "paper": "K9LF39GY",
+      "diff": false
+    },
+    {
+      "paper": "KBLPLRVL",
+      "diff": false
+    },
+    {
+      "paper": "KG7A5K5V",
+      "diff": false
+    },
+    {
+      "paper": "KGWH3G9I",
+      "diff": false
+    },
+    {
+      "paper": "KGZHC39M",
+      "diff": false
+    },
+    {
+      "paper": "KH3GMDCH",
+      "diff": false
+    },
+    {
+      "paper": "KIX7SKXQ",
+      "diff": false
+    },
+    {
+      "paper": "KKV573J4",
+      "diff": false
+    },
+    {
+      "paper": "KNEBDHHT",
+      "diff": false
+    },
+    {
+      "paper": "KPYGKKHB",
+      "diff": false
+    },
+    {
+      "paper": "KQQ8LY7W",
+      "diff": false
+    },
+    {
+      "paper": "KQVWFZKL",
+      "diff": false
+    },
+    {
+      "paper": "KS62XBF8",
+      "diff": false
+    },
+    {
+      "paper": "KT7MGHH8",
+      "diff": false
+    },
+    {
+      "paper": "KTPAGKVN",
+      "diff": false
+    },
+    {
+      "paper": "KTZCR777",
+      "diff": false
+    },
+    {
+      "paper": "KUR9PBJC",
+      "diff": false
+    },
+    {
+      "paper": "KWVMRYRN",
+      "diff": false
+    },
+    {
+      "paper": "KXXIADQ8",
+      "diff": false
+    },
+    {
+      "paper": "KY76CCC7",
+      "diff": false
+    },
+    {
+      "paper": "KYILQ39G",
+      "diff": false
+    },
+    {
+      "paper": "KZP6FB4Y",
+      "diff": false
+    },
+    {
+      "paper": "L26ZHSAU",
+      "diff": false
+    },
+    {
+      "paper": "L5YS7JTA",
+      "diff": false
+    },
+    {
+      "paper": "L623PH9P",
+      "diff": false
+    },
+    {
+      "paper": "L6ALWJFP",
+      "diff": false
+    },
+    {
+      "paper": "L8A56654",
+      "diff": false
+    },
+    {
+      "paper": "LA2NJUUG",
+      "diff": false
+    },
+    {
+      "paper": "LAEITRZT",
+      "diff": false
+    },
+    {
+      "paper": "LAS7H9GY",
+      "diff": false
+    },
+    {
+      "paper": "LCGJ6IMF",
+      "diff": false
+    },
+    {
+      "paper": "LE2AX85P",
+      "diff": false
+    },
+    {
+      "paper": "LFCUIEIX",
+      "diff": false
+    },
+    {
+      "paper": "LGGZ9SKS",
+      "diff": false
+    },
+    {
+      "paper": "LIGD5965",
+      "diff": false
+    },
+    {
+      "paper": "LISDYT7V",
+      "diff": false
+    },
+    {
+      "paper": "LJU5RQUB",
+      "diff": false
+    },
+    {
+      "paper": "LKDUIBY7",
+      "diff": false
+    },
+    {
+      "paper": "LMD5YVLP",
+      "diff": false
+    },
+    {
+      "paper": "LMHLIWB4",
+      "diff": false
+    },
+    {
+      "paper": "LNQPEIZK",
+      "diff": false
+    },
+    {
+      "paper": "LQZ2FWIW",
+      "diff": false
+    },
+    {
+      "paper": "LRSHSG28",
+      "diff": false
+    },
+    {
+      "paper": "LSTHKPAE",
+      "diff": false
+    },
+    {
+      "paper": "LW6I3KS9",
+      "diff": false
+    },
+    {
+      "paper": "LX976EPG",
+      "diff": false
+    },
+    {
+      "paper": "LYDQ5I9G",
+      "diff": false
+    },
+    {
+      "paper": "LYEFATEN",
+      "diff": false
+    },
+    {
+      "paper": "LZFN9S4S",
+      "diff": false
+    },
+    {
+      "paper": "M23R849F",
+      "diff": false
+    },
+    {
+      "paper": "M36WA39N",
+      "diff": false
+    },
+    {
+      "paper": "M49UM5YD",
+      "diff": false
+    },
+    {
+      "paper": "M84CTEM9",
+      "diff": false
+    },
+    {
+      "paper": "M8BNQFIV",
+      "diff": false
+    },
+    {
+      "paper": "M8CNKCIZ",
+      "diff": false
+    },
+    {
+      "paper": "M9DLLUWN",
+      "diff": false
+    },
+    {
+      "paper": "M9M2RRDA",
+      "diff": false
+    },
+    {
+      "paper": "MCETYNLL",
+      "diff": false
+    },
+    {
+      "paper": "MDIJFH35",
+      "diff": false
+    },
+    {
+      "paper": "MJXA8QCR",
+      "diff": false
+    },
+    {
+      "paper": "MKCSFZPR",
+      "diff": false
+    },
+    {
+      "paper": "MLNA8UY9",
+      "diff": false
+    },
+    {
+      "paper": "MNJRQS7N",
+      "diff": false
+    },
+    {
+      "paper": "MP8VHCLN",
+      "diff": false
+    },
+    {
+      "paper": "MS7V7R62",
+      "diff": false
+    },
+    {
+      "paper": "MV2HVAYZ",
+      "diff": false
+    },
+    {
+      "paper": "MX7LIXJN",
+      "diff": false
+    },
+    {
+      "paper": "MYWRV652",
+      "diff": false
+    },
+    {
+      "paper": "MZC482YI",
+      "diff": false
+    },
+    {
+      "paper": "N3GG9XE5",
+      "diff": false
+    },
+    {
+      "paper": "N5DGPURB",
+      "diff": false
+    },
+    {
+      "paper": "N6XCZD25",
+      "diff": false
+    },
+    {
+      "paper": "N8FPLYZ3",
+      "diff": false
+    },
+    {
+      "paper": "N9BFPD7H",
+      "diff": false
+    },
+    {
+      "paper": "NC66N4Q3",
+      "diff": false
+    },
+    {
+      "paper": "ND2L8SXH",
+      "diff": false
+    },
+    {
+      "paper": "NDPUMMCI",
+      "diff": false
+    },
+    {
+      "paper": "NDZRXDGS",
+      "diff": false
+    },
+    {
+      "paper": "NEDYXLIF",
+      "diff": false
+    },
+    {
+      "paper": "NEUVP8X3",
+      "diff": false
+    },
+    {
+      "paper": "NEW7X2HZ",
+      "diff": false
+    },
+    {
+      "paper": "NF4NQPSD",
+      "diff": false
+    },
+    {
+      "paper": "NFJ9GS6J",
+      "diff": false
+    },
+    {
+      "paper": "NJRB55TZ",
+      "diff": false
+    },
+    {
+      "paper": "NJWU2G4V",
+      "diff": false
+    },
+    {
+      "paper": "NLKKXD5Z",
+      "diff": false
+    },
+    {
+      "paper": "NMDUNWVY",
+      "diff": false
+    },
+    {
+      "paper": "NRM7TE8T",
+      "diff": false
+    },
+    {
+      "paper": "NSV8KBJY",
+      "diff": false
+    },
+    {
+      "paper": "NUNFKPRI",
+      "diff": false
+    },
+    {
+      "paper": "NXYBYPAH",
+      "diff": false
+    },
+    {
+      "paper": "NYWJL2T9",
+      "diff": false
+    },
+    {
+      "paper": "NZNCJI6D",
+      "diff": false
+    },
+    {
+      "paper": "P2T8IH9M",
+      "diff": false
+    },
+    {
+      "paper": "P9D6GZ9M",
+      "diff": false
+    },
+    {
+      "paper": "P9ZYVAXB",
+      "diff": false
+    },
+    {
+      "paper": "PAJWI6DH",
+      "diff": false
+    },
+    {
+      "paper": "PDZECABG",
+      "diff": false
+    },
+    {
+      "paper": "PEPI5WG4",
+      "diff": false
+    },
+    {
+      "paper": "PHR8VMVL",
+      "diff": false
+    },
+    {
+      "paper": "PJBMGVTF",
+      "diff": false
+    },
+    {
+      "paper": "PL5FA5T3",
+      "diff": false
+    },
+    {
+      "paper": "PMFECT33",
+      "diff": false
+    },
+    {
+      "paper": "PMWF8DBV",
+      "diff": false
+    },
+    {
+      "paper": "PP76T2EY",
+      "diff": false
+    },
+    {
+      "paper": "PRI2HDPD",
+      "diff": false
+    },
+    {
+      "paper": "PU28H9A7",
+      "diff": false
+    },
+    {
+      "paper": "PUP9JRFH",
+      "diff": false
+    },
+    {
+      "paper": "PV3NKFKI",
+      "diff": false
+    },
+    {
+      "paper": "PX9XJURS",
+      "diff": false
+    },
+    {
+      "paper": "PZ8B59K4",
+      "diff": false
+    },
+    {
+      "paper": "Q2K7SJXH",
+      "diff": false
+    },
+    {
+      "paper": "Q5UCL5Z3",
+      "diff": false
+    },
+    {
+      "paper": "Q97VPT8A",
+      "diff": false
+    },
+    {
+      "paper": "QBLSSHTF",
+      "diff": false
+    },
+    {
+      "paper": "QFF2JRBM",
+      "diff": false
+    },
+    {
+      "paper": "QGCAFI3P",
+      "diff": false
+    },
+    {
+      "paper": "QIZUZJNX",
+      "diff": false
+    },
+    {
+      "paper": "QJANCHHB",
+      "diff": false
+    },
+    {
+      "paper": "QJF8VV5C",
+      "diff": false
+    },
+    {
+      "paper": "QPIJVH5G",
+      "diff": false
+    },
+    {
+      "paper": "QPT4IGLD",
+      "diff": false
+    },
+    {
+      "paper": "QS5CSUYB",
+      "diff": false
+    },
+    {
+      "paper": "QSIYVSBS",
+      "diff": false
+    },
+    {
+      "paper": "QU4IAZ7E",
+      "diff": false
+    },
+    {
+      "paper": "QUJ3AS6S",
+      "diff": false
+    },
+    {
+      "paper": "QXGGVJW8",
+      "diff": false
+    },
+    {
+      "paper": "QZXT9L27",
+      "diff": false
+    },
+    {
+      "paper": "R5IKNGWW",
+      "diff": false
+    },
+    {
+      "paper": "R6BHEK75",
+      "diff": false
+    },
+    {
+      "paper": "R6WJ65K9",
+      "diff": false
+    },
+    {
+      "paper": "R8PCX2YL",
+      "diff": false
+    },
+    {
+      "paper": "R9B9H423",
+      "diff": false
+    },
+    {
+      "paper": "RC54NRW7",
+      "diff": false
+    },
+    {
+      "paper": "RJ88RTVX",
+      "diff": false
+    },
+    {
+      "paper": "RKSLQRIM",
+      "diff": false
+    },
+    {
+      "paper": "RLJJ4VMS",
+      "diff": false
+    },
+    {
+      "paper": "RNYNZF9D",
+      "diff": false
+    },
+    {
+      "paper": "RQILSL2A",
+      "diff": false
+    },
+    {
+      "paper": "RQSJAT8I",
+      "diff": false
+    },
+    {
+      "paper": "RS7N87DR",
+      "diff": false
+    },
+    {
+      "paper": "RSGLUYHK",
+      "diff": false
+    },
+    {
+      "paper": "RSPCDGFT",
+      "diff": false
+    },
+    {
+      "paper": "RUEUYY5C",
+      "diff": false
+    },
+    {
+      "paper": "RZBG2YBT",
+      "diff": false
+    },
+    {
+      "paper": "S2Q4R8ZX",
+      "diff": false
+    },
+    {
+      "paper": "S4CE8NRR",
+      "diff": false
+    },
+    {
+      "paper": "S8IMFPAV",
+      "diff": false
+    },
+    {
+      "paper": "S8X8CBJM",
+      "diff": false
+    },
+    {
+      "paper": "S9E6TBI2",
+      "diff": false
+    },
+    {
+      "paper": "S9GTE3IZ",
+      "diff": true,
+      "figure_diff": {
+        "legacy": 14,
+        "v3": 15
+      }
+    },
+    {
+      "paper": "S9UMIF83",
+      "diff": false
+    },
+    {
+      "paper": "SAN9AYVR",
+      "diff": false
+    },
+    {
+      "paper": "SBDQC4KP",
+      "diff": false
+    },
+    {
+      "paper": "SDILTBGK",
+      "diff": false
+    },
+    {
+      "paper": "SF6E52HK",
+      "diff": false
+    },
+    {
+      "paper": "SFMISNDE",
+      "diff": true,
+      "role_diff": {
+        "legacy": {
+          "noise": 17,
+          "non_body_insert": 5,
+          "paper_title": 1,
+          "authors": 1,
+          "abstract_heading": 1,
+          "abstract_body": 1,
+          "section_heading": 2,
+          "body_paragraph": 47,
+          "ocr_text_missing": 6,
+          "frontmatter_noise": 2,
+          "footnote": 2,
+          "subsection_heading": 3,
+          "unknown_structural": 11,
+          "media_asset": 6,
+          "figure_caption": 4,
+          "table_caption": 3,
+          "table_html": 3,
+          "reference_item": 54,
+          "sub_subsection_heading": 2,
+          "structured_insert": 9
+        },
+        "v3": {
+          "noise": 17,
+          "non_body_insert": 5,
+          "paper_title": 1,
+          "authors": 1,
+          "abstract_heading": 1,
+          "abstract_body": 1,
+          "section_heading": 2,
+          "body_paragraph": 46,
+          "ocr_text_missing": 6,
+          "frontmatter_noise": 2,
+          "footnote": 2,
+          "subsection_heading": 3,
+          "unknown_structural": 11,
+          "media_asset": 6,
+          "figure_caption": 4,
+          "table_caption": 3,
+          "table_html": 3,
+          "reference_item": 55,
+          "sub_subsection_heading": 2,
+          "structured_insert": 9
+        }
+      }
+    },
+    {
+      "paper": "SI4Q9KAZ",
+      "diff": false
+    },
+    {
+      "paper": "SK2PRABH",
+      "diff": false
+    },
+    {
+      "paper": "SKXTCE6M",
+      "diff": false
+    },
+    {
+      "paper": "SN2YYBIW",
+      "diff": false
+    },
+    {
+      "paper": "SP8GYE3L",
+      "diff": false
+    },
+    {
+      "paper": "SR6EDMUV",
+      "diff": false
+    },
+    {
+      "paper": "SRNJDAA2",
+      "diff": true,
+      "figure_diff": {
+        "legacy": 26,
+        "v3": 27
+      }
+    },
+    {
+      "paper": "STAQ4KRB",
+      "diff": false
+    },
+    {
+      "paper": "SWDN9RHF",
+      "diff": false
+    },
+    {
+      "paper": "SYDIXE3H",
+      "diff": false
+    },
+    {
+      "paper": "SZYSZBNR",
+      "diff": false
+    },
+    {
+      "paper": "T25WAPSR",
+      "diff": false
+    },
+    {
+      "paper": "T3GK5A94",
+      "diff": false
+    },
+    {
+      "paper": "T6DW6IFG",
+      "diff": false
+    },
+    {
+      "paper": "T8J456SQ",
+      "diff": false
+    },
+    {
+      "paper": "T9IIY9Q4",
+      "diff": false
+    },
+    {
+      "paper": "T9YGQZD4",
+      "diff": false
+    },
+    {
+      "paper": "TA65YVWA",
+      "diff": false
+    },
+    {
+      "paper": "TA9FZKNF",
+      "diff": false
+    },
+    {
+      "paper": "TATTU9AZ",
+      "diff": false
+    },
+    {
+      "paper": "TEMG2785",
+      "diff": false
+    },
+    {
+      "paper": "TFI9P8KG",
+      "diff": false
+    },
+    {
+      "paper": "TGZS8W2W",
+      "diff": false
+    },
+    {
+      "paper": "TIEF9DFJ",
+      "diff": false
+    },
+    {
+      "paper": "TK9TPNLC",
+      "diff": false
+    },
+    {
+      "paper": "TLR5T8W4",
+      "diff": false
+    },
+    {
+      "paper": "TNK4V5PF",
+      "diff": false
+    },
+    {
+      "paper": "TS623M5V",
+      "diff": false
+    },
+    {
+      "paper": "TSCKAVIS",
+      "diff": false
+    },
+    {
+      "paper": "TW2333LF",
+      "diff": false
+    },
+    {
+      "paper": "TXMVULD7",
+      "diff": false
+    },
+    {
+      "paper": "TZ5XX44L",
+      "diff": false
+    },
+    {
+      "paper": "U26YPHMW",
+      "diff": false
+    },
+    {
+      "paper": "U2GY2XR8",
+      "diff": false
+    },
+    {
+      "paper": "U3XAT3SD",
+      "diff": false
+    },
+    {
+      "paper": "U746UJ7G",
+      "diff": false
+    },
+    {
+      "paper": "U7LXVK35",
+      "diff": false
+    },
+    {
+      "paper": "U8KUR7W5",
+      "diff": false
+    },
+    {
+      "paper": "U96H2WCT",
+      "diff": false
+    },
+    {
+      "paper": "UBM39DTB",
+      "diff": false
+    },
+    {
+      "paper": "UGA8GFAR",
+      "diff": false
+    },
+    {
+      "paper": "UN9MGTEZ",
+      "diff": false
+    },
+    {
+      "paper": "UREH7R2M",
+      "diff": false
+    },
+    {
+      "paper": "URYKAMJE",
+      "diff": false
+    },
+    {
+      "paper": "URYZ3IZJ",
+      "diff": false
+    },
+    {
+      "paper": "US22T6CB",
+      "diff": false
+    },
+    {
+      "paper": "USSA3UZX",
+      "diff": false
+    },
+    {
+      "paper": "UT2WKEVN",
+      "diff": false
+    },
+    {
+      "paper": "UV6IVNUE",
+      "diff": false
+    },
+    {
+      "paper": "UVV6WCCV",
+      "diff": false
+    },
+    {
+      "paper": "UWXQL9PD",
+      "diff": false
+    },
+    {
+      "paper": "V2UIKRGT",
+      "diff": false
+    },
+    {
+      "paper": "V463BSDR",
+      "diff": true,
+      "figure_diff": {
+        "legacy": 8,
+        "v3": 9
+      }
+    },
+    {
+      "paper": "V4UTP5X7",
+      "diff": false
+    },
+    {
+      "paper": "VAMSAZMG",
+      "diff": false
+    },
+    {
+      "paper": "VAPIZV63",
+      "diff": false
+    },
+    {
+      "paper": "VDQCYYIA",
+      "diff": false
+    },
+    {
+      "paper": "VDU747IQ",
+      "diff": false
+    },
+    {
+      "paper": "VFS8CBW2",
+      "diff": false
+    },
+    {
+      "paper": "VG7ZCJGM",
+      "diff": false
+    },
+    {
+      "paper": "VGFQLEXA",
+      "diff": false
+    },
+    {
+      "paper": "VK2KPR24",
+      "diff": false
+    },
+    {
+      "paper": "VL5KKBZM",
+      "diff": false
+    },
+    {
+      "paper": "VLBARZU8",
+      "diff": false
+    },
+    {
+      "paper": "VNP3AGHC",
+      "diff": false
+    },
+    {
+      "paper": "VPGRTNJ7",
+      "diff": true,
+      "role_diff": {
+        "legacy": {
+          "noise": 68,
+          "unknown_structural": 15,
+          "paper_title": 1,
+          "authors": 1,
+          "abstract_body": 1,
+          "section_heading": 8,
+          "body_paragraph": 56,
+          "affiliation": 1,
+          "media_asset": 11,
+          "frontmatter_noise": 4,
+          "ocr_text_missing": 9,
+          "subsection_heading": 12,
+          "table_caption": 3,
+          "table_html": 3,
+          "figure_caption": 5,
+          "reference_item": 150,
+          "sub_subsection_heading": 2
+        },
+        "v3": {
+          "noise": 68,
+          "unknown_structural": 15,
+          "paper_title": 1,
+          "authors": 1,
+          "abstract_body": 1,
+          "section_heading": 8,
+          "body_paragraph": 57,
+          "affiliation": 1,
+          "media_asset": 11,
+          "frontmatter_noise": 3,
+          "ocr_text_missing": 9,
+          "subsection_heading": 12,
+          "table_caption": 3,
+          "table_html": 3,
+          "figure_caption": 5,
+          "reference_item": 150,
+          "sub_subsection_heading": 2
+        }
+      },
+      "render_diff": {
+        "legacy": 263,
+        "v3": 264
+      },
+      "index_diff": {
+        "legacy": 275,
+        "v3": 276
+      }
+    },
+    {
+      "paper": "VQUR2CKD",
+      "diff": false
+    },
+    {
+      "paper": "VVIT8SVK",
+      "diff": false
+    },
+    {
+      "paper": "VVKIB2EM",
+      "diff": false
+    },
+    {
+      "paper": "VY8CRKCE",
+      "diff": false
+    },
+    {
+      "paper": "VZMMSJBS",
+      "diff": false
+    },
+    {
+      "paper": "W2W7NUU9",
+      "diff": false
+    },
+    {
+      "paper": "W33NLVJ2",
+      "diff": false
+    },
+    {
+      "paper": "W65RJQFC",
+      "diff": false
+    },
+    {
+      "paper": "WD8GWLL7",
+      "diff": false
+    },
+    {
+      "paper": "WDCPZHE5",
+      "diff": false
+    },
+    {
+      "paper": "WDV72ZFQ",
+      "diff": false
+    },
+    {
+      "paper": "WDY4IMJB",
+      "diff": false
+    },
+    {
+      "paper": "WEBUEELY",
+      "diff": false
+    },
+    {
+      "paper": "WEFRCCCH",
+      "diff": false
+    },
+    {
+      "paper": "WINN9BKP",
+      "diff": false
+    },
+    {
+      "paper": "WIXJ9YQA",
+      "diff": false
+    },
+    {
+      "paper": "WJJZAD3G",
+      "diff": false
+    },
+    {
+      "paper": "WJNEHSQD",
+      "diff": false
+    },
+    {
+      "paper": "WJVB72YW",
+      "diff": false
+    },
+    {
+      "paper": "WKVUPETF",
+      "diff": false
+    },
+    {
+      "paper": "WLFKC6DA",
+      "diff": false
+    },
+    {
+      "paper": "WLMYX4XT",
+      "diff": false
+    },
+    {
+      "paper": "WMAFPBED",
+      "diff": false
+    },
+    {
+      "paper": "WML2NNFE",
+      "diff": false
+    },
+    {
+      "paper": "WNDJX4KB",
+      "diff": false
+    },
+    {
+      "paper": "WRP8UIHR",
+      "diff": false
+    },
+    {
+      "paper": "WS6T79MU",
+      "diff": false
+    },
+    {
+      "paper": "WUHL7LSK",
+      "diff": false
+    },
+    {
+      "paper": "WV2FF4NV",
+      "diff": false
+    },
+    {
+      "paper": "WVB9LEFM",
+      "diff": false
+    },
+    {
+      "paper": "WXLHDCDM",
+      "diff": false
+    },
+    {
+      "paper": "WZLSE58A",
+      "diff": false
+    },
+    {
+      "paper": "X2KYTXR3",
+      "diff": false
+    },
+    {
+      "paper": "X33IXEI2",
+      "diff": false
+    },
+    {
+      "paper": "X3NTXX4M",
+      "diff": false
+    },
+    {
+      "paper": "X5FJTVGP",
+      "diff": false
+    },
+    {
+      "paper": "X5UHKKSM",
+      "diff": false
+    },
+    {
+      "paper": "X6PQAH4V",
+      "diff": false
+    },
+    {
+      "paper": "XB772KJL",
+      "diff": false
+    },
+    {
+      "paper": "XBSC5X2H",
+      "diff": false
+    },
+    {
+      "paper": "XD2BPCMG",
+      "diff": false
+    },
+    {
+      "paper": "XEK3VB67",
+      "diff": false
+    },
+    {
+      "paper": "XG8R37M7",
+      "diff": false
+    },
+    {
+      "paper": "XGT9Z257",
+      "diff": false
+    },
+    {
+      "paper": "XH2DVZPF",
+      "diff": false
+    },
+    {
+      "paper": "XHIMIRE6",
+      "error": "missing raw data"
+    },
+    {
+      "paper": "XIBL7H2B",
+      "diff": false
+    },
+    {
+      "paper": "XIR7ZJ6F",
+      "diff": false
+    },
+    {
+      "paper": "XJ35X62V",
+      "diff": false
+    },
+    {
+      "paper": "XM8J9JPU",
+      "diff": false
+    },
+    {
+      "paper": "XNHB6EDX",
+      "diff": false
+    },
+    {
+      "paper": "XPHBVWW3",
+      "diff": false
+    },
+    {
+      "paper": "XPNHLA4I",
+      "diff": false
+    },
+    {
+      "paper": "XSGAHQUZ",
+      "diff": false
+    },
+    {
+      "paper": "XSYF6UJI",
+      "diff": false
+    },
+    {
+      "paper": "XTUQTWER",
+      "diff": false
+    },
+    {
+      "paper": "XU3QKIPZ",
+      "diff": false
+    },
+    {
+      "paper": "XUTJVXNN",
+      "diff": false
+    },
+    {
+      "paper": "XVGX9U4V",
+      "diff": false
+    },
+    {
+      "paper": "XVZR7QAC",
+      "diff": false
+    },
+    {
+      "paper": "XW8IN24I",
+      "diff": false
+    },
+    {
+      "paper": "XWNGKFID",
+      "diff": false
+    },
+    {
+      "paper": "XYK89ZZG",
+      "diff": false
+    },
+    {
+      "paper": "XYX6DHYD",
+      "diff": false
+    },
+    {
+      "paper": "Y4FGBUSM",
+      "diff": false
+    },
+    {
+      "paper": "Y52UWB7A",
+      "diff": false
+    },
+    {
+      "paper": "Y5KQ4JQ7",
+      "diff": false
+    },
+    {
+      "paper": "Y6GJDLK7",
+      "diff": false
+    },
+    {
+      "paper": "Y6IDPZJL",
+      "diff": false
+    },
+    {
+      "paper": "Y9LDXUH7",
+      "diff": false
+    },
+    {
+      "paper": "Y9LM7XNH",
+      "diff": false
+    },
+    {
+      "paper": "Y9NEE9D2",
+      "diff": false
+    },
+    {
+      "paper": "YBUMIK5P",
+      "diff": false
+    },
+    {
+      "paper": "YEACENJ2",
+      "diff": false
+    },
+    {
+      "paper": "YFMZDQJ3",
+      "diff": false
+    },
+    {
+      "paper": "YGH7VEX6",
+      "diff": false
+    },
+    {
+      "paper": "YHGRMZIG",
+      "diff": false
+    },
+    {
+      "paper": "YIGSIZIC",
+      "diff": false
+    },
+    {
+      "paper": "YII2HZEA",
+      "diff": false
+    },
+    {
+      "paper": "YNJBXU5T",
+      "diff": false
+    },
+    {
+      "paper": "YPQP6YSY",
+      "diff": false
+    },
+    {
+      "paper": "YQIC2RDL",
+      "diff": false
+    },
+    {
+      "paper": "YRFELQYY",
+      "diff": false
+    },
+    {
+      "paper": "YSBJVWTA",
+      "diff": false
+    },
+    {
+      "paper": "YSKXZHDZ",
+      "diff": false
+    },
+    {
+      "paper": "YTGGUL86",
+      "diff": false
+    },
+    {
+      "paper": "YUBV24D6",
+      "diff": false
+    },
+    {
+      "paper": "YZGDMGA2",
+      "diff": false
+    },
+    {
+      "paper": "Z3LK9CZA",
+      "diff": false
+    },
+    {
+      "paper": "Z698HB3N",
+      "diff": false
+    },
+    {
+      "paper": "Z73N29KR",
+      "diff": false
+    },
+    {
+      "paper": "ZAJWC3SA",
+      "diff": false
+    },
+    {
+      "paper": "ZARNGKY7",
+      "diff": false
+    },
+    {
+      "paper": "ZCGCM3WH",
+      "diff": false
+    },
+    {
+      "paper": "ZFNT2XS7",
+      "diff": false
+    },
+    {
+      "paper": "ZKQII63V",
+      "diff": false
+    },
+    {
+      "paper": "ZLSXVG2Y",
+      "diff": false
+    },
+    {
+      "paper": "ZMCQFT34",
+      "diff": false
+    },
+    {
+      "paper": "ZS3UFYRR",
+      "diff": false
+    },
+    {
+      "paper": "ZS44NM5K",
+      "diff": false
+    },
+    {
+      "paper": "ZTCG9CZM",
+      "diff": false
+    },
+    {
+      "paper": "ZXER5F2Z",
+      "diff": false
+    },
+    {
+      "paper": "ZZKEYE6J",
+      "diff": false
+    }
+  ]
+}
