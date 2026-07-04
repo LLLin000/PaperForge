@@ -5556,3 +5556,62 @@ def test_frontmatter_support_below_body_start_rescued_by_width() -> None:
         "narrow frontmatter_support block should be in frontmatter_main_zone"
     assert "corresp" not in body["block_ids"], \
         "narrow frontmatter_support block should NOT be in body_zone"
+
+def test_block_column_band_left_right() -> None:
+    from paperforge.worker.ocr_document import _block_column_band
+    pw = 1200.0
+    left = {"bbox": [100, 100, 500, 200]}
+    right = {"bbox": [700, 100, 1100, 200]}
+    center = {"bbox": [200, 100, 1000, 200]}
+    full = {"bbox": [50, 100, 1150, 200]}
+    assert _block_column_band(left, pw) == 0
+    assert _block_column_band(right, pw) == 1
+    assert _block_column_band(center, pw) is None
+    assert _block_column_band(full, pw) is None  # full-width -> None
+
+
+def test_is_in_same_reference_column() -> None:
+    from paperforge.worker.ocr_document import _is_in_same_reference_column
+    pw = 1200.0
+    ref_heading = {"bbox": [700, 100, 1100, 150]}  # right column
+    left_block = {"bbox": [100, 400, 500, 500]}    # left column
+    right_block = {"bbox": [700, 400, 1100, 500]}  # right column
+    assert not _is_in_same_reference_column(left_block, ref_heading, pw)
+    assert _is_in_same_reference_column(right_block, ref_heading, pw)
+    assert _is_in_same_reference_column(left_block, None, pw)  # None ref -> True
+
+
+def test_is_in_same_reference_column_full_width_ref() -> None:
+    from paperforge.worker.ocr_document import _is_in_same_reference_column
+    pw = 1200.0
+    full_ref = {"bbox": [50, 100, 1150, 150]}  # full-width
+    left_block = {"bbox": [100, 400, 500, 500]}
+    assert _is_in_same_reference_column(left_block, full_ref, pw)  # full-width -> page-level
+
+
+def test_same_page_tail_column_aware() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+    blocks = [
+        {"page": 3, "role": "reference_heading", "text": "REFERENCES", "bbox": [700, 100, 1100, 140], "block_id": "p3_h1"},
+        {"page": 3, "role": "reference_item", "text": "[1] Some ref", "bbox": [700, 150, 1100, 180], "block_id": "p3_r1"},
+        {"page": 3, "role": "body_paragraph", "text": "Conclusions continue...", "bbox": [100, 300, 500, 350], "block_id": "p3_b1"},
+    ]
+    anchors = {"body_family_anchor": {"status": "ACCEPT", "sample_pages": [2]}}
+    region_bus = infer_zones(blocks, anchors)
+    # Left-column body below ref heading but in different column -> NOT in tail zone
+    assert "p3_b1" not in region_bus["tail_nonref_hold_zone"]["block_ids"], \
+        "Left-column body should not be in tail_nonref_hold_zone despite being below ref heading"
+
+
+def test_is_in_same_reference_column_cross_column() -> None:
+    from paperforge.worker.ocr_document import _is_in_same_reference_column
+    pw = 1200.0
+    ref_heading = {"bbox": [700, 100, 1100, 140], "page_width": pw}
+    left_block = {"bbox": [100, 200, 500, 250], "page_width": pw}
+    right_block = {"bbox": [700, 200, 1100, 250], "page_width": pw}
+    assert _is_in_same_reference_column(left_block, ref_heading, pw) is False,         "Left-column block should not be in same column as right-column ref heading"
+    assert _is_in_same_reference_column(right_block, ref_heading, pw) is True,         "Right-column block should be in same column as right-column ref heading"
+    single_ref = {"bbox": [50, 100, 1150, 140], "page_width": pw}
+    single_block = {"bbox": [50, 200, 1150, 250], "page_width": pw}
+    assert _is_in_same_reference_column(single_block, single_ref, pw) is True,         "Full-width blocks on single-column page should return True"
+    assert _is_in_same_reference_column(left_block, None, pw) is True,         "None ref heading should return True (conservative)"

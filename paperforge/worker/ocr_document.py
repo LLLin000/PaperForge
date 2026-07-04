@@ -522,6 +522,52 @@ def _block_y_bottom(block: dict) -> float:
     return bbox[3] if bbox else 0.0
 
 
+
+def _block_column_band(block: dict, page_width: float) -> int | None:
+    """Classify a block into left (0), right (1), or center/mixed (None) column band.
+    Covers full-width blocks by checking width threshold.
+    """
+    bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+    if len(bbox) < 4 or page_width <= 0:
+        return None
+    x0, x1 = bbox[0], bbox[2]
+    block_width = x1 - x0
+    # Full-width blocks span both columns → compatible with everything
+    if block_width >= page_width * 0.8:
+        return None  # full-width → treat as center/ambiguous
+    cx = (x0 + x1) / 2.0
+    if cx < page_width * 0.45:
+        return 0
+    if cx > page_width * 0.55:
+        return 1
+    return None
+
+
+def _is_full_width_ref_heading(block: dict, page_width: float) -> bool:
+    """True if the reference heading spans full page width (single-column layout)."""
+    bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+    if len(bbox) < 4 or page_width <= 0:
+        return False
+    block_width = bbox[2] - bbox[0]
+    return block_width >= page_width * 0.8
+
+
+def _is_in_same_reference_column(block: dict, ref_heading_block: dict | None, page_width: float) -> bool:
+    """Check if block shares the same column band as the reference heading.
+    None ref_heading_block -> True (conservative).
+    Full-width ref heading -> True (page-level, not column-level).
+    """
+    if ref_heading_block is None:
+        return True
+    ref_band = _block_column_band(ref_heading_block, page_width)
+    if ref_band is None:
+        return True
+    block_band = _block_column_band(block, page_width)
+    if block_band is None:
+        return True
+    return block_band == ref_band
+
+
 _REFERENCE_ZONE_MARKER_TYPES: frozenset[str] = frozenset({
     "reference_numeric_bracket",
     "reference_numeric_dot",
@@ -1246,6 +1292,23 @@ def _is_below_same_page_reference_heading(block: dict, refs_start_page: int | No
     return _block_y_top(block) > ref_heading_top
 
 
+
+
+def _page_width_for_zone_block(block: dict, page_blocks: list[dict], body_anchor: dict | None = None) -> float:
+    """Derive page_width from block, page_blocks, or body_anchor. Fallback 1200."""
+    pw = block.get("page_width", 0) or 0
+    if pw:
+        return float(pw)
+    for b in page_blocks:
+        bw = b.get("page_width", 0) or 0
+        if bw:
+            pw = max(pw, float(bw))
+    if pw:
+        return pw
+    if body_anchor and isinstance(body_anchor, dict):
+        pw = body_anchor.get("page_width", 0) or 0
+    return float(pw) if pw else 1200.0
+
 def infer_zones(
     blocks: list[dict],
     anchors: dict[str, dict] | None,
@@ -1524,6 +1587,13 @@ def infer_zones(
                 ref_heading_top = _block_y_top(block)
                 break
 
+    # Derive page_width for column-aware reference boundary checks
+    _zone_page_width = _page_width_for_zone_block(
+        ref_heading_block if ref_heading_block else (blocks[0] if blocks else {}),
+        blocks,
+        (anchors or {}).get("body_family_anchor"),
+    )
+
     body_blocks = [
         block
         for block in blocks
@@ -1555,6 +1625,7 @@ def infer_zones(
         block
         for block in blocks
         if _is_below_same_page_reference_heading(block, refs_start_page, ref_heading_top if ref_heading_block else None)
+        and _is_in_same_reference_column(block, ref_heading_block, _zone_page_width)
         and not _is_reference_item_candidate(block)
         and not _is_reference_heading_candidate(block)
         and block.get("block_id") is not None
