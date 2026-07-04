@@ -1,12 +1,12 @@
 # OCR-v2 Project Management Log
 
 > **Branch:** `master` | **Last Updated:** 2026-07-04
-> **Active work:** A/B/C OCR deepening pass merged to `master`. Default path now includes `ocr_object_writeback.py` and `ocr_tail_settlement.py`; `OCR_PIPELINE_V3` is merged but remains OFF by default. Focused merge suite + fixture-backed v3 parity suite: 102 passed.
+> **Active work:** A/B/C OCR deepening pass merged to `master`. Default path now includes `ocr_object_writeback.py` and `ocr_tail_settlement.py`; `OCR_PIPELINE_V3` is merged but remains OFF by default. Focused merge suite + fixture-backed v3 parity suite: 105 passed.
 
 ---
 
 ## 0. Executive Summary
-**Current state:** The 2026-07-04 OCR deepening stack is merged on `master`: Workstream A added the ownership-evidence writeback seam (`ocr_object_writeback.py`), Workstream B extracted tail/body/backmatter settlement into `ocr_tail_settlement.py` with `TailSettlementReport`, and Workstream C added the `pre_match_normalize(...)` / `post_match_normalize(...)` split behind `OCR_PIPELINE_V3`. Pre-merge blockers were closed: page-qualified writeback lookup, contained-text ownership contract, same-page contained-text guard, and v3 rescue equivalence. `master` at `6cbb82aa`, and fixture-backed v3 parity now passes on `DWQQK2YB`, `VAMSAZMG`, and `PJBMGVTF`.
+**Current state:** The 2026-07-04 OCR deepening stack is merged on `master`: Workstream A added the ownership-evidence writeback seam (`ocr_object_writeback.py`), Workstream B extracted tail/body/backmatter settlement into `ocr_tail_settlement.py` with `TailSettlementReport`, and Workstream C added the `pre_match_normalize(...)` / `post_match_normalize(...)` split behind `OCR_PIPELINE_V3`. Pre-merge blockers were closed: page-qualified writeback lookup, contained-text ownership contract, same-page contained-text guard, and v3 rescue equivalence. `master` at `6cbb82aa`, and fixture-backed v3 parity now passes on `DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, and `5MAW65YD`.
 
 ## 1. Architecture
 
@@ -48,7 +48,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 </br>
 | Suite | Result |
 |-------|--------|
-| Focused merge suite (`test_ocr_pipeline_v3` + `test_ocr_tail_settlement` + `test_ocr_object_writeback` + `test_appendix_figure_numbering` + `test_ocr_rendering`) | **102 passed, 0 failed** ✅ |
+| Focused merge suite (`test_ocr_pipeline_v3` + `test_ocr_tail_settlement` + `test_ocr_object_writeback` + `test_appendix_figure_numbering` + `test_ocr_rendering`) | **105 passed, 0 failed** ✅ |
 | Pairing framework cutover suites (`test_ocr_figures` + `test_ocr_rebuild` + `test_ocr_tables` + `test_ocr_pairing_framework` + `test_ocr_table_pairing_framework`) | **357 passed, 0 failed** ✅ |
 | Real-paper table parity fixtures | **6 runnable fixtures checked** ✅ |
 | Touched-file lint (`ruff check`) | **OK** ✅ |
@@ -101,7 +101,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 
 1. **Compatibility naming debt** — `figure_no`, `legend`, and `FigurePipelineState` remain backwards-compat names inside the shared pairing core. Deferred cleanup, not a merge blocker.
 2. **37LK5T97 legacy consumption bug** — legacy table inventory still drops caption `block_id=0` from `consumed_block_ids`; vnext keeps `'0'`. Documented as a legacy defect, not a current regression.
-3. **V3 real-paper parity depth** — `OCR_PIPELINE_V3` now has synthetic/focused coverage plus three fixture-backed replay gates (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`), but broader real-paper corpus parity is still lighter than the legacy path. Keep toggle OFF by default until more fixture-backed papers land.
+3. **V3 real-paper parity depth** — `OCR_PIPELINE_V3` now has synthetic/focused coverage plus six fixture-backed replay gates (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, `5MAW65YD`). This is materially better than the earlier single-fixture state, but broader corpus parity is still lighter than the legacy path. Keep toggle OFF by default until more fixture-backed papers land or a corpus diff says otherwise.
 4. **Short \"Table N\" caption matching** — bare short-table captions still have residual weak cases outside the validated fixture set.
 5. **Chinese Windows encoding** — non-ASCII PDF filenames can still surface GBK path issues in older artifacts.
 6. **Shared consumed registry for ambiguous image-like blocks** — figure/table post-hoc arbitration exists, but there is still no first-class shared consumed registry for unresolved image-like assets.
@@ -110,7 +110,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 
 1. ✅ A/B/C OCR deepening pass merged to `master`
 2. ✅ Pre-merge blockers A-D cleared and covered by regression tests
-3. **NEXT: broaden fixture-backed real-paper parity beyond `DWQQK2YB` / `VAMSAZMG` / `PJBMGVTF` for `OCR_PIPELINE_V3=1`**
+3. **NEXT: decide whether six fixture-backed replay papers are enough evidence to keep v3 experimental, or whether to broaden again before any default-on discussion**
 4. **NEXT: archive or rewrite stale `project/current/` files from the pairing-framework phase**
 5. **Deferred:** compatibility naming cleanup (`figure_no` / `legend` / `FigurePipelineState`)
 
@@ -119,8 +119,8 @@ raw observations → structural signatures → stable anchors/families → zone 
 - [x] Merge `feat/ocr-tail-settlement` into `master`
 - [x] Push merged `master`
 - [x] Add focused v3 parity gate (`tests/test_ocr_pipeline_v3.py`)
-- [x] Add fixture-backed real-paper parity gates (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`)
-- [ ] Broaden fixture-backed v3 parity beyond three replay fixtures
+- [x] Expand fixture-backed real-paper parity gates to six replay papers (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, `5MAW65YD`)
+- [ ] Decide whether to broaden v3 parity beyond six replay fixtures
 - [ ] Archive stale queue files that still point to pre-merge branch work
 
 ---

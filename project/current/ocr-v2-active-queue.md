@@ -1,11 +1,11 @@
 # OCR-v2 Active Queue
-> Status: ACTIVE QUEUE — A/B/C OCR deepening pass merged to `master`; legacy path remains default, `OCR_PIPELINE_V3` is merged but OFF by default. Focused suite + fixture-backed parity gate: 102 tests green on `master`.
+> Status: ACTIVE QUEUE — A/B/C OCR deepening pass merged to `master`; legacy path remains default, `OCR_PIPELINE_V3` is merged but OFF by default. Focused suite + fixture-backed parity gate: 105 tests green on `master`.
 > Last updated: 2026-07-04
 > Scope: post-merge stabilization / v3 parity follow-up
 
 ## Current Priorities
 1. **Monitor merged `master`** for any default-path OCR regressions after the A/B/C merge
-2. **Broaden fixture-backed real-paper parity for `OCR_PIPELINE_V3=1`** beyond the current replay set (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`) before considering any default-on change
+2. **Decide whether six fixture-backed replay papers are enough parity evidence for `OCR_PIPELINE_V3=1`** or whether to broaden again before any default-on discussion
 3. **Update / archive stale `project/current/` files** that still point to pre-merge pairing-framework work
 4. **Compatibility naming cleanup** (`figure_no` / `legend` / `FigurePipelineState`) — still deferred
 
@@ -34,12 +34,12 @@
   - `tests/test_ocr_object_writeback.py`
   - `tests/test_appendix_figure_numbering.py`
   - `tests/test_ocr_rendering.py`
-  - Result: **102 passed, 0 failed**
+  - Result: **105 passed, 0 failed**
 
 ## Immediate Next Checks
 - [x] Merge `feat/ocr-tail-settlement` into `master`
 - [x] Push merged `master`
-- [x] Add fixture-backed `OCR_PIPELINE_V3` real-paper parity gates (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`)
-- [ ] Broaden fixture-backed v3 parity beyond three replay fixtures
+- [x] Expand fixture-backed `OCR_PIPELINE_V3` real-paper parity gates to six replay papers (`DWQQK2YB`, `VAMSAZMG`, `PJBMGVTF`, `37LK5T97`, `8CCATQE3`, `5MAW65YD`)
+- [ ] Decide whether six replay fixtures are sufficient parity evidence
 - [ ] Decide whether `post_match_normalize()` rescue equivalence is sufficient or still needs corpus proof
 - [ ] Archive or rewrite stale queue docs from the pairing-framework phase
