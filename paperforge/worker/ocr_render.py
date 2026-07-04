@@ -1656,6 +1656,10 @@ def render_fulltext_markdown(
         ):
             continue
 
+        # Object writeback ownership — skip consumed blocks from render
+        if block.get("_object_consumed"):
+            continue
+
         _SKIPPED_BODY_ROLES = {
             "abstract_heading",
             "abstract_body",
