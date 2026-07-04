@@ -309,6 +309,15 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         write_back_table_roles(table_inventory, structured)
         write_table_inventory(artifacts.blocks_structured.parent / "table_inventory.json", table_inventory)
 
+        # Apply object writeback seam (ownership evidence, contained/side-adjacent text, consumed-block contract)
+        from paperforge.worker.ocr_object_writeback import apply_object_writebacks
+
+        apply_object_writebacks(
+            structured_blocks=structured,
+            figure_inventory=figure_inventory,
+            table_inventory=table_inventory,
+        )
+
         # Re-persist structured blocks with writeback roles (table_html, figure_asset)
         # ponytail: writes entire list again; if throughput matters, write only changed blocks
         write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
