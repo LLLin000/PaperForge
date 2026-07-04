@@ -34,6 +34,11 @@ import {
 import {
   categorizeMaintenanceRow,
   buildMaintenanceSummary,
+  MaintenanceDisplayRow,
+  MaintenanceCache,
+  readMaintenanceCache,
+  writeMaintenanceCache,
+  refreshMaintenanceData,
 } from "./services/ocr-maintenance-ui";
 
 // ── Interface ──
@@ -1706,10 +1711,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   _renderMaintenanceTab(containerEl: HTMLElement) {
     containerEl.createEl("h2", {
-      text: t("tab_maintenance") || "\u7EF4\u62A4",
+      text: t("tab_maintenance") || "维护",
     });
 
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
+    const statusEl = containerEl.createEl("div");
+
+    // ── Helpers ──
+    const buildActionArgs = (keys: string[], action: string) => {
+      if (action === "retry_ocr" || action === "upgrade_legacy")
+        return { cmd: ["-m", "paperforge", "ocr", "redo", ...keys], timeout: 300000 };
+      if (action === "rebuild_result")
+        return { cmd: ["-m", "paperforge", "ocr", "rebuild", ...keys], timeout: 120000 };
+      return null;
+    };
+
+    // ── Phase 1: Read cache ──
+    let cache: MaintenanceCache | null = null;
+    try {
+      cache = readMaintenanceCache(vaultPath);
+    } catch {}
+
+    // ── Phase 2: Try manifest refresh ──
     const py = resolvePythonExecutable(
       vaultPath,
       this.plugin.settings as any,
@@ -1717,573 +1740,243 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       execFileSync
     );
     if (!py.path) {
-      containerEl.createEl("p", {
-        text: "\u26A0 Python \u672A\u914D\u7F6E\uFF0C\u8BF7\u5148\u5728\u201C\u5B89\u88C5\u201D\u6807\u7B7E\u9875\u914D\u7F6E\u3002",
+      statusEl.createEl("p", {
+        text: "⚠ Python 未配置，请先在「安装」标签页配置。",
         cls: "setting-item-description",
       });
       return;
     }
 
-    // ── State ──
-    const state = containerEl.createEl("div");
-    state.createEl("p", {
-      text: "\u6B63\u5728\u52A0\u8F7D OCR \u7EF4\u62A4\u6570\u636E\u2026",
-    });
+    // Shared table rendering function
+    const renderTable = (papers: MaintenanceDisplayRow[]) => {
+      statusEl.empty();
 
-    // ── Run paperforge ocr list --json --output ──
-    const tmpFile = path.join(
-      os.tmpdir(),
-      `pf_ocr_maintenance_${Date.now()}.json`
-    );
-    const args = [
-      "-m",
-      "paperforge",
-      "ocr",
-      "list",
-      "--json",
-      "--output",
-      tmpFile,
-    ];
+      const visible = papers.filter(p => p.visible_in_maintenance);
+      if (visible.length === 0) {
+        statusEl.createEl("p", { text: t("maintenance_all_good") || "✅ 全部正常" });
+        return;
+      }
 
-    execFile(
-      py.path,
-      args,
-      { cwd: vaultPath, timeout: 30000, windowsHide: true },
-      (_err, _stdout, _stderr) => {
-        state.empty();
-        if (!fs.existsSync(tmpFile)) {
-          state.createEl("p", {
-            text: "\u274C \u65E0\u6CD5\u52A0\u8F7D OCR \u6570\u636E\u3002\u8BF7\u786E\u4FDD\u5DF2\u5B89\u88C5 paperforge \u5E76\u8FD0\u884C\u8FC7 OCR\u3002",
-            cls: "setting-item-description",
-          });
-          return;
+      const pyPath = py.path;
+      const pyExtra = (py.extraArgs || []) as string[];
+
+      // Group by display_group
+      const groups: { key: string; title: string; items: MaintenanceDisplayRow[] }[] = [
+        { key: "retry", title: t("maintenance_group_retry") || "需要重试", items: [] },
+        { key: "rebuild", title: t("maintenance_group_rebuild") || "可重建结果", items: [] },
+        { key: "legacy_optional", title: t("maintenance_group_legacy") || "可升级旧结果（可选）", items: [] },
+      ];
+      for (const p of visible) {
+        const g = groups.find(g => g.key === p.display_group);
+        if (g) g.items.push(p);
+      }
+
+      for (const group of groups) {
+        if (group.items.length === 0) continue;
+
+        const isLegacy = group.key === "legacy_optional";
+        const section = isLegacy
+          ? statusEl.createEl("details")
+          : statusEl.createEl("div");
+
+        if (isLegacy) {
+          const summary = (section as HTMLDetailsElement).createEl("summary");
+          summary.createEl("strong", { text: group.title + " (" + group.items.length + ")" });
+        } else {
+          section.createEl("h3", { text: group.title + " (" + group.items.length + ")" });
         }
 
-        let rows: any[] = [];
-        try {
-          rows = JSON.parse(fs.readFileSync(tmpFile, "utf-8"));
-        } catch {
-          rows = [];
-        }
-        try {
-          fs.unlinkSync(tmpFile);
-        } catch {}
-        if (!rows.length) {
-          state.createEl("p", {
-            text: "\u6CA1\u6709 OCR \u8BBA\u6587\u3002\u8BF7\u5148\u8FD0\u884C OCR\u3002",
-          });
-          return;
-        }
+        // Selection state per row
+        const selState = new Map<string, boolean>();
+        for (const p of group.items) selState.set(p.key, false);
 
-        // ── Categorize each row ──
-        const items = rows.map((row: any) => ({
-          row,
-          ui: categorizeMaintenanceRow(row),
-        }));
-        const summary = buildMaintenanceSummary(items.map((item) => item.ui));
+        // Toolbar
+        const toolbar = section.createEl("div", { cls: "pf-maint-toolbar" });
+        const selAllBtn = toolbar.createEl("button", { text: "全选" });
+        const deselAllBtn = toolbar.createEl("button", { text: "取消全选" });
+        const execBtn = toolbar.createEl("button", { text: "▶ 执行已选", cls: "mod-cta" });
+        const execLabel = toolbar.createEl("span", { cls: "pf-maint-exec-label" });
 
-        state.empty();
-
-        // ── Hero: overall conclusion card ──
-        const hero = state.createEl("div", { cls: "pf-maint-hero pf-card" });
-        hero.createEl("h3", {
-          text:
-            summary.tone === "warn"
-              ? t("ocr_maint_hero_warn")
-                  .replace("{rebuild}", String(summary.counts.rebuild))
-                  .replace("{failed}", String(summary.counts.failed))
-              : t("ocr_maint_hero_ok"),
-        });
-        hero.createEl("p", {
-          text: t("ocr_maint_hero_note"),
-          cls: "setting-item-description",
-        });
-
-        // Count chips
-        const counts = hero.createEl("div", { cls: "pf-maint-counts" });
-        for (const [label, value] of [
-          [t("ocr_maint_no_action"), summary.counts.ok] as const,
-          [t("ocr_maint_rebuild"), summary.counts.rebuild] as const,
-          [t("ocr_maint_failed"), summary.counts.failed] as const,
-        ]) {
-          const stat = counts.createEl("div", { cls: "pf-maint-stat" });
-          stat.createEl("strong", { text: String(value) });
-          stat.createEl("span", { text: label });
-        }
-
-        // ── Section: Needs Attention ──
-        const actionable = items.filter(
-          (item) =>
-            item.ui.category === "rebuild" || item.ui.category === "failed"
-        );
-        if (actionable.length > 0) {
-          state.createEl("h3", { text: t("ocr_maint_needs_attention") });
-          const actSection = state.createEl("div", { cls: "pf-maint-section" });
-          for (const item of actionable) {
-            const card = actSection.createEl("div", { cls: "pf-maint-card" });
-            card.createEl("strong", {
-              text: item.row.title_short || item.row.title || item.row.key,
-            });
-            const chip = card.createEl("span", {
-              cls: "pf-maint-chip pf-maint-chip--" + item.ui.category,
-              text: item.ui.label,
-            });
-            card.createEl("p", {
-              text: item.ui.reason,
-              cls: "setting-item-description",
-            });
-            const btn = card.createEl("button", {
-              text:
-                item.ui.primaryAction === "rebuild"
-                  ? t("ocr_maint_rebuild_btn")
-                  : t("ocr_maint_redo_btn"),
-            });
-            btn.addEventListener("click", () => {
-              const keys = [item.row.key];
-              if (item.ui.primaryAction === "rebuild") {
-                execFile(
-                  py.path,
-                  ["-m", "paperforge", "ocr", "rebuild", ...keys],
-                  { cwd: vaultPath, timeout: 120000, windowsHide: true },
-                  () => {
-                    new Notice(
-                      t("ocr_maint_rebuild_btn") + " — " + item.row.key
-                    );
-                  }
-                );
-              } else if (item.ui.primaryAction === "redo") {
-                execFile(
-                  py.path,
-                  ["-m", "paperforge", "ocr", "redo", ...keys],
-                  { cwd: vaultPath, timeout: 300000, windowsHide: true },
-                  () => {
-                    new Notice(t("ocr_maint_redo_btn") + " — " + item.row.key);
-                  }
-                );
-              }
-            });
-          }
-        }
-
-        // ── Section: Result Limitations ──
-        const limited = items.filter((item) => item.ui.category === "limited");
-        if (limited.length > 0) {
-          state.createEl("h3", { text: t("ocr_maint_limitations") });
-          state.createEl("p", {
-            text: t("ocr_maint_limitations_intro"),
-            cls: "setting-item-description",
-          });
-          for (const item of limited) {
-            const card = state.createEl("div", { cls: "pf-maint-card" });
-            card.createEl("strong", {
-              text: item.row.title_short || item.row.title || item.row.key,
-            });
-            const chip = card.createEl("span", {
-              cls: "pf-maint-chip pf-maint-chip--limited",
-              text: item.ui.label,
-            });
-            chip.style.marginLeft = "8px";
-            card.createEl("p", {
-              text: item.ui.reason,
-              cls: "setting-item-description",
-            });
-          }
-        }
-
-        // ── Section: All Papers (advanced, collapsed) ──
-        const advanced = state.createEl("details", {
-          cls: "pf-maint-advanced",
-          attr: { open: "" },
-        });
-        advanced.createEl("summary", {
-          text: t("ocr_maint_all_papers") + " (" + rows.length + ")",
-        });
-
-        // Helper functions for the table
-        const classifyPaper = (r: any) => {
-          const s = r.status,
-            h = r.health;
-          if (s === "done" && r.version === "v1")
-            return { badge: "? \u672A\u8BC4\u4F30", color: "#9e9e9e" };
-          if (s === "done" && h === "green")
-            return { badge: "\u2713 \u5B8C\u6210", color: "#4caf50" };
-          if (s === "done" && h === "yellow")
-            return {
-              badge: "\u26A0 \u8D28\u91CF\u95EE\u9898",
-              color: "#ff9800",
-            };
-          if (s === "done" && h === "red")
-            return {
-              badge: "\u26A0 \u4E25\u91CD\u5F02\u5E38",
-              color: "#f44336",
-            };
-          if (s === "done_degraded")
-            return {
-              badge: "\u26A0 \u8D28\u91CF\u95EE\u9898",
-              color: "#ff9800",
-            };
-          if (s === "failed" || s === "fatal_error")
-            return { badge: "\u2717 \u5931\u8D25", color: "#f44336" };
-          if (s === "pending" || s === "nopdf" || s === "blocked")
-            return { badge: "\u25CB \u5F85\u5904\u7406", color: "#9e9e9e" };
-          if (s === "running" || s === "queued")
-            return { badge: "\u25CF \u5904\u7406\u4E2D", color: "#2196f3" };
-          if (s === "retryable_error")
-            return { badge: "\u2717 \u53EF\u91CD\u8BD5", color: "#ff9800" };
-          return { badge: s, color: "#9e9e9e" };
+        const updateExecLabel = () => {
+          const n = group.items.filter(p => selState.get(p.key)).length;
+          execLabel.setText("已选 " + n + " 篇");
         };
-        const actionHint = (r: any) => {
-          if (r.recommended_action === "redo") return "\u91CD\u65B0OCR";
-          if (r.recommended_action === "rebuild")
-            return "\u91CD\u5EFA\u7D22\u5F15";
-          return "";
-        };
-
-        // Count categories for filter dropdown
-        const catCounts: Record<string, number> = {};
-        for (const r of rows) {
-          const b = classifyPaper(r).badge;
-          catCounts[b] = (catCounts[b] || 0) + 1;
-        }
-        const badgeOrder = [
-          "\u2713 \u5B8C\u6210",
-          "? \u672A\u8BC4\u4F30",
-          "\u26A0 \u8D28\u91CF\u95EE\u9898",
-          "\u26A0 \u4E25\u91CD\u5F02\u5E38",
-          "\u2717 \u5931\u8D25",
-          "\u25CB \u5F85\u5904\u7406",
-          "\u25CF \u5904\u7406\u4E2D",
-        ];
-
-        // Toolbar (inside details)
-        const toolbar = advanced.createEl("div", { cls: "pf-maint-toolbar" });
-
-        // Row state
-        const selState: Record<string, { sel: boolean; action: string }> = {};
-        for (const r of rows) {
-          selState[r.key] = { sel: false, action: r.recommended_action || "" };
-        }
-
-        // ── Active filter ──
-        let activeFilter = "all";
-        let filtered = rows;
-        const redrawTable = () => {
-          filtered =
-            activeFilter === "all"
-              ? rows
-              : rows.filter(
-                  (r: any) => classifyPaper(r).badge === activeFilter
-                );
-          filtered.sort((a: any, b: any) => {
-            const ta =
-              a.rebuild_finished_at && a.rebuild_finished_at !== "-"
-                ? a.rebuild_finished_at
-                : a.finished_at || "";
-            const tb =
-              b.rebuild_finished_at && b.rebuild_finished_at !== "-"
-                ? b.rebuild_finished_at
-                : b.finished_at || "";
-            if (ta === "-" || !ta) return 1;
-            if (tb === "-" || !tb) return -1;
-            return tb.localeCompare(ta);
-          });
-          tbody.empty();
-          renderRows(filtered);
-          updateSummary();
-        };
-
-        // Filter dropdown
-        const filterSel = toolbar.createEl("select");
-        filterSel.createEl("option", { text: "\u5168\u90E8", value: "all" });
-        for (const k of badgeOrder) {
-          if (catCounts[k])
-            filterSel.createEl("option", {
-              text: k + " " + catCounts[k],
-              value: k,
-            });
-        }
-        filterSel.addEventListener("change", () => {
-          activeFilter = filterSel.value;
-          redrawTable();
-        });
-
-        // Select / deselect / execute buttons
-        const selAllBtn = toolbar.createEl("button", { text: "\u5168\u9009" });
-        const deselAllBtn = toolbar.createEl("button", {
-          text: "\u53D6\u6D88\u5168\u9009",
-        });
-        const execBtn = toolbar.createEl("button", {
-          text: "\u25B8 \u6267\u884C\u5DF2\u9009",
-          cls: "mod-cta",
-        });
-        const execLabel = toolbar.createEl("span", {
-          cls: "pf-maint-exec-label",
-        });
-
-        const updateSummary = () => {
-          let n = 0;
-          for (const r of filtered) {
-            if (selState[r.key].action) n++;
-          }
-          execLabel.setText("\u5F85\u4FEE\u590D " + n + " \u7BC7");
-        };
+        updateExecLabel();
 
         selAllBtn.addEventListener("click", () => {
-          for (const r of filtered) {
-            selState[r.key].sel = true;
-            if (!selState[r.key].action)
-              selState[r.key].action = r.recommended_action || "";
-          }
-          redrawTable();
+          for (const p of group.items) selState.set(p.key, true);
+          updateExecLabel();
+          // Update checkboxes
+          const cbs = section.querySelectorAll("input[type=checkbox].pf-maint-sel");
+          cbs.forEach((cb) => { (cb as HTMLInputElement).checked = true; });
         });
         deselAllBtn.addEventListener("click", () => {
-          for (const r of rows) {
-            selState[r.key].sel = false;
-            selState[r.key].action = "";
-          }
-          redrawTable();
-        });
-        execBtn.addEventListener("click", () => {
-          const redoKeys: string[] = [],
-            rebuildKeys: string[] = [];
-          for (const r of rows) {
-            const a = selState[r.key].action;
-            if (a === "redo") redoKeys.push(r.key);
-            else if (a === "rebuild") rebuildKeys.push(r.key);
-          }
-          if (!redoKeys.length && !rebuildKeys.length) {
-            new Notice(
-              "\u8BF7\u5148\u9009\u62E9\u8981\u4FEE\u590D\u7684\u8BBA\u6587\u3002"
-            );
-            return;
-          }
-          state.empty();
-          state.createEl("p", { text: "\u6267\u884C\u4E2D\u2026" });
-          if (redoKeys.length)
-            execFile(
-              py.path,
-              ["-m", "paperforge", "ocr", "redo", ...redoKeys],
-              { cwd: vaultPath, timeout: 300000, windowsHide: true },
-              () => {
-                new Notice(
-                  "\u91CD\u65B0OCR\u5DF2\u89E6\u53D1\uFF0C\u5171 " +
-                    redoKeys.length +
-                    " \u7BC7\u3002"
-                );
-              }
-            );
-          if (rebuildKeys.length)
-            execFile(
-              py.path,
-              ["-m", "paperforge", "ocr", "rebuild", ...rebuildKeys],
-              { cwd: vaultPath, timeout: 120000, windowsHide: true },
-              () => {
-                new Notice(
-                  "\u91CD\u5EFA\u5B8C\u6210\uFF0C\u5171 " +
-                    rebuildKeys.length +
-                    " \u7BC7\u3002"
-                );
-              }
-            );
+          for (const p of group.items) selState.set(p.key, false);
+          updateExecLabel();
+          const cbs = section.querySelectorAll("input[type=checkbox].pf-maint-sel");
+          cbs.forEach((cb) => { (cb as HTMLInputElement).checked = false; });
         });
 
-        // ── Table ──
-        const tableWrapper = advanced.createEl("div", {
-          cls: "pf-maint-table-wrap",
+        execBtn.addEventListener("click", () => {
+          const selected = group.items.filter(p => selState.get(p.key));
+          if (selected.length === 0) {
+            new Notice("请先选择要处理的论文。");
+            return;
+          }
+          for (const p of selected) {
+            const args = buildActionArgs([p.key], p.display_action);
+            if (!args) continue;
+            execFile(
+              pyPath,
+              [...pyExtra, ...args.cmd],
+              { cwd: vaultPath, timeout: args.timeout, windowsHide: true },
+              () => {
+                new Notice(p.display_label + " — " + p.key);
+              }
+            );
+          }
         });
-        const table = tableWrapper.createEl("table", { cls: "pf-maint-table" });
+
+        // Table
+        const wrapper = section.createEl("div", { cls: "pf-maint-table-wrap" });
+        const table = wrapper.createEl("table", { cls: "pf-maint-table" });
         const thead = table.createEl("thead");
         const tbody = table.createEl("tbody");
         const headerRow = thead.insertRow();
-        [
-          "",
-          "Key",
-          "Title",
-          "\u72B6\u6001",
-          "\u5EFA\u8BAE",
-          "Model",
-          "\u65F6\u95F4",
-          "\u4FEE\u590D",
-        ].forEach((h) => {
+        ["", "Key", "Title", "建议操作", "原因", "操作"].forEach(h => {
           const th = document.createElement("th");
           th.textContent = h;
           headerRow.appendChild(th);
         });
 
-        const badgeHtml = (label: string, color: string) =>
-          `<span class="pf-maint-badge" style="background:${color}22;color:${color};border:1px solid ${color}44;">${label}</span>`;
-
-        const renderRows = (rowList: any[]) => {
-          for (const r of rowList) {
-            const st = selState[r.key];
-            const cp = classifyPaper(r);
-            const hint = actionHint(r);
-            const tr = tbody.insertRow();
-
-            // Sel checkbox
-            const selTd = tr.insertCell();
-            selTd.style.cssText = "padding:3px 4px;";
-            const selCb = document.createElement("input");
-            selCb.type = "checkbox";
-            selCb.checked = st.sel;
-            selCb.addEventListener("change", () => {
-              st.sel = selCb.checked;
-              if (!st.sel && st.action) st.action = "";
-              if (st.sel && !st.action) st.action = r.recommended_action || "";
-            });
-            selTd.appendChild(selCb);
-
-            // Key
-            const keyTd = tr.insertCell();
-            keyTd.style.cssText =
-              "padding:3px 4px; white-space:nowrap; font-size:11px; max-width:90px; overflow:hidden; text-overflow:ellipsis;";
-            keyTd.textContent = r.key;
-
-            // Title
-            const titleTd = tr.insertCell();
-            titleTd.style.cssText =
-              "padding:3px 4px; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis;";
-            titleTd.textContent = r.title_short || r.title || r.key;
-            setTooltip(titleTd, r.title_full || r.title || r.key, {
-              placement: "top",
-              delay: 500,
-            });
-
-            // Status badge
-            const badgeTd = tr.insertCell();
-            badgeTd.style.cssText = "padding:3px 4px; white-space:nowrap;";
-            badgeTd.innerHTML = badgeHtml(cp.badge, cp.color);
-
-            // Suggestion column
-            const sugTd = tr.insertCell();
-            sugTd.style.cssText =
-              "padding:3px 4px; white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis; font-size:11px; color:var(--text-muted);";
-            let sug = "";
-            if (hint) sug = hint;
-            else if (cp.badge === "\u2713 \u5B8C\u6210")
-              sug = "\u5DF2\u5B8C\u6210";
-            else if (cp.badge.includes("\u5F85\u5904\u7406"))
-              sug = "\u7B49\u5F85OCR";
-            else if (cp.badge.includes("\u5931\u8D25"))
-              sug = r.error_summary?.substring(0, 50) || "";
-            else if (cp.badge.includes("\u672A\u8BC4\u4F30"))
-              sug = "\u5EFA\u8BAE\u91CD\u65B0\u5904\u7406";
-            else if (r.degraded_reasons?.length)
-              sug = r.degraded_reasons[0].substring(0, 50);
-            sugTd.textContent = sug;
-
-            // Model
-            const modelTd = tr.insertCell();
-            modelTd.style.cssText =
-              "padding:3px 4px; white-space:nowrap; max-width:140px; overflow:hidden; text-overflow:ellipsis; font-size:11px;";
-            modelTd.textContent = r.model || "-";
-
-            // Time — show latest (rebuild > ocr)
-            const timeTd = tr.insertCell();
-            timeTd.style.cssText =
-              "padding:3px 4px; white-space:nowrap; font-size:11px; color:var(--text-muted);";
-            const latestTime =
-              r.rebuild_finished_at && r.rebuild_finished_at !== "-"
-                ? r.rebuild_finished_at
-                : r.finished_at;
-            timeTd.textContent = latestTime || "-";
-            setTooltip(
-              timeTd,
-              r.rebuild_finished_at && r.rebuild_finished_at !== "-"
-                ? "OCR: " +
-                    (r.finished_at || "-") +
-                    "\n重建: " +
-                    r.rebuild_finished_at
-                : "OCR: " + (r.finished_at || "-"),
-              { placement: "top", delay: 500 }
-            );
-
-            // Fix checkbox
-            const fixTd = tr.insertCell();
-            fixTd.style.cssText =
-              "padding:3px 4px; text-align:center; white-space:nowrap;";
-            if (hint) {
-              const fixCb = document.createElement("input");
-              fixCb.type = "checkbox";
-              fixCb.checked = !!st.action;
-              fixCb.title = hint;
-              fixCb.addEventListener("change", () => {
-                st.action = fixCb.checked ? r.recommended_action : "";
-                st.sel = fixCb.checked;
-                redrawTable();
-              });
-              fixTd.appendChild(fixCb);
-              const lbl = document.createElement("span");
-              lbl.style.cssText =
-                "font-size:10px; color:var(--text-faint); margin-left:2px;";
-              lbl.textContent = hint;
-              fixTd.appendChild(lbl);
-            } else {
-              fixTd.textContent = "-";
-              fixTd.style.cssText =
-                "padding:3px 4px; text-align:center; font-size:11px; color:var(--text-faint);";
-            }
-          }
+        const btnText = (action: string) => {
+          if (action === "retry_ocr") return t("maintenance_btn_retry") || "重试";
+          if (action === "rebuild_result") return t("maintenance_btn_rebuild") || "重建";
+          if (action === "upgrade_legacy") return t("maintenance_btn_upgrade") || "升级";
+          return "";
         };
 
-        // Sort by time descending (latest first)
-        const _rowsSorted = [...rows].sort((a, b) => {
-          const ta =
-            a.rebuild_finished_at && a.rebuild_finished_at !== "-"
-              ? a.rebuild_finished_at
-              : a.finished_at || "";
-          const tb =
-            b.rebuild_finished_at && b.rebuild_finished_at !== "-"
-              ? b.rebuild_finished_at
-              : b.finished_at || "";
-          if (ta === "-" || !ta) return 1;
-          if (tb === "-" || !tb) return -1;
-          return tb.localeCompare(ta);
-        });
-        renderRows(_rowsSorted);
-        updateSummary();
+        for (const p of group.items) {
+          const tr = tbody.insertRow();
 
-        // ── Separator + Global actions (inside callback, after details) ──
-        containerEl.createEl("hr");
-        containerEl.createEl("h3", { text: "\u5168\u5C40\u64CD\u4F5C" });
+          // Checkbox
+          const selTd = tr.insertCell();
+          selTd.style.cssText = "padding:3px 4px;text-align:center;";
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "pf-maint-sel";
+          cb.checked = selState.get(p.key) || false;
+          cb.addEventListener("change", () => {
+            selState.set(p.key, cb.checked);
+            updateExecLabel();
+          });
+          selTd.appendChild(cb);
 
-        const globalActions = containerEl.createEl("div", {
-          cls: "pf-maint-global",
-        });
+          // Key
+          const keyTd = tr.insertCell();
+          keyTd.style.cssText = "padding:3px 4px;white-space:nowrap;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;";
+          keyTd.textContent = p.key;
 
-        const rebuildIndexBtn = globalActions.createEl("button", {
-          text: "\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15",
-        });
-        rebuildIndexBtn.addEventListener("click", () => {
-          new Notice("\u6B63\u5728\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15\u2026");
-          execFile(
-            py.path,
-            ["-m", "paperforge", "embed", "build", "--force"],
-            { cwd: vaultPath, timeout: 300000, windowsHide: true },
-            (_e: any, _o: string, _s: any) => {
-              new Notice(
-                "\u641C\u7D22\u7D22\u5F15\u91CD\u5EFA\u5B8C\u6210\u3002"
+          // Title
+          const titleTd = tr.insertCell();
+          titleTd.style.cssText = "padding:3px 4px;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;";
+          titleTd.textContent = p.title || p.key;
+
+          // Display label (建议操作)
+          const labelTd = tr.insertCell();
+          labelTd.style.cssText = "padding:3px 4px;white-space:nowrap;";
+          labelTd.textContent = p.display_label;
+
+          // Reason
+          const reasonTd = tr.insertCell();
+          reasonTd.style.cssText = "padding:3px 4px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--text-muted);";
+          reasonTd.textContent = p.display_reason || "";
+
+          // Action button
+          const actionTd = tr.insertCell();
+          actionTd.style.cssText = "padding:3px 4px;text-align:center;white-space:nowrap;";
+          const actionBtn = document.createElement("button");
+          actionBtn.textContent = btnText(p.display_action);
+          if (actionBtn.textContent) {
+            actionBtn.addEventListener("click", () => {
+              const args = buildActionArgs([p.key], p.display_action);
+              if (!args) return;
+              execFile(
+                pyPath,
+                [...pyExtra, ...args.cmd],
+                { cwd: vaultPath, timeout: args.timeout, windowsHide: true },
+                () => { new Notice(p.display_label + " — " + p.key); }
               );
-            }
-          );
-        });
-
-        const rebuildMemBtn = globalActions.createEl("button", {
-          text: "\u91CD\u5EFA\u8BB0\u5FC6\u5E93",
-        });
-        rebuildMemBtn.addEventListener("click", () => {
-          new Notice("\u6B63\u5728\u91CD\u5EFA\u8BB0\u5FC6\u5E93\u2026");
-          execFile(
-            py.path,
-            ["-m", "paperforge", "repair", "--fix"],
-            { cwd: vaultPath, timeout: 120000, windowsHide: true },
-            (_e: any, _o: string, _s: any) => {
-              new Notice("\u8BB0\u5FC6\u5E93\u91CD\u5EFA\u5B8C\u6210\u3002");
-            }
-          );
-        });
+            });
+            actionTd.appendChild(actionBtn);
+          }
+        }
       }
-    );
+    };
+
+    // ── Phase 1: Show cache immediately ──
+    if (cache) {
+      const papers = Object.values(cache.papers) as MaintenanceDisplayRow[];
+      renderTable(papers);
+    } else {
+      statusEl.createEl("p", { text: "正在加载 OCR 维护数据…" });
+    }
+
+    // ── Phase 2: Background refresh ──
+    refreshMaintenanceData(vaultPath, py.path, py.extraArgs || [], cache || null)
+      .then(result => {
+        if (result.changed) {
+          renderTable(result.data);
+          writeMaintenanceCache(vaultPath, {
+            manifest: {},
+            papers: Object.fromEntries(result.data.map(p => [p.key, p])),
+            cached_at: new Date().toISOString(),
+          });
+        } else if (!cache) {
+          renderTable(result.data);
+          writeMaintenanceCache(vaultPath, {
+            manifest: {},
+            papers: Object.fromEntries(result.data.map(p => [p.key, p])),
+            cached_at: new Date().toISOString(),
+          });
+        }
+      })
+      .catch(() => {
+        if (!cache) {
+          statusEl.empty();
+          statusEl.createEl("p", {
+            text: "无法加载 OCR 数据。请确保已安装 paperforge 并运行过 OCR。",
+            cls: "setting-item-description",
+          });
+        }
+      });
+
+    // ── Global operations ──
+    containerEl.createEl("hr");
+    containerEl.createEl("h3", { text: "全局操作" });
+    const globalActions = containerEl.createEl("div", { cls: "pf-maint-global" });
+
+    const rebuildIndexBtn = globalActions.createEl("button", { text: "重建搜索索引" });
+    rebuildIndexBtn.addEventListener("click", () => {
+      new Notice("正在重建搜索索引…");
+      execFile(
+        py.path,
+        [...(py.extraArgs || []), "-m", "paperforge", "embed", "build", "--force"],
+        { cwd: vaultPath, timeout: 300000, windowsHide: true },
+        () => { new Notice("搜索索引重建完成。"); }
+      );
+    });
+
+    const rebuildMemBtn = globalActions.createEl("button", { text: "重建记忆库" });
+    rebuildMemBtn.addEventListener("click", () => {
+      new Notice("正在重建记忆库…");
+      execFile(
+        py.path,
+        [...(py.extraArgs || []), "-m", "paperforge", "repair", "--fix"],
+        { cwd: vaultPath, timeout: 120000, windowsHide: true },
+        () => { new Notice("记忆库重建完成。"); }
+      );
+    });
   }
 
   _renderReleaseNotesTab(containerEl: HTMLElement) {

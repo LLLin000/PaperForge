@@ -259,6 +259,15 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_maint_all_papers: "All Papers",
     ocr_maint_rebuild_btn: "Rebuild results",
     ocr_maint_redo_btn: "Rerun OCR",
+    maintenance_group_retry: "Needs Retry",
+    maintenance_group_rebuild: "Can Rebuild",
+    maintenance_group_legacy: "Upgrade Available (Optional)",
+    maintenance_btn_retry: "Retry",
+    maintenance_btn_rebuild: "Rebuild",
+    maintenance_btn_upgrade: "Upgrade",
+    maintenance_refresh_spinning: "Updating…",
+    maintenance_all_good: "✅ All good — no action needed",
+    maintenance_n_pending: "{n} need attention",
   },
 
   zh: {
@@ -495,7 +504,15 @@ const LANG: Record<string, Record<string, string>> = {
       "这类论文通常表示版式复杂或信号偏弱，PaperForge 目前没有高置信度的维护建议。",
     ocr_maint_all_papers: "全部论文",
     ocr_maint_rebuild_btn: "重建结果",
-    ocr_maint_redo_btn: "重新 OCR",
+    maintenance_group_retry: "需要重试",
+    maintenance_group_rebuild: "可重建结果",
+    maintenance_group_legacy: "可升级旧结果（可选）",
+    maintenance_btn_retry: "重试",
+    maintenance_btn_rebuild: "重建",
+    maintenance_btn_upgrade: "升级",
+    maintenance_refresh_spinning: "正在更新…",
+    maintenance_all_good: "✅ 全部正常",
+    maintenance_n_pending: "{n} 篇需要处理",
   },
 };
 
