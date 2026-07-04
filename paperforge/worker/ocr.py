@@ -1859,11 +1859,21 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
 
+    normalize_mode = "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
     structured, doc_structure = build_structured_blocks(
         all_raw_blocks,
         source_metadata=source_meta,
         structure_output_dir=artifacts.blocks_structured.parent,
+        normalize_mode=normalize_mode,
     )
+    if _ocr_pipeline_v3_enabled():
+        from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
+
+        structured, doc_structure = pre_match_normalize(
+            structured,
+            source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
+            document_structure=doc_structure,
+        )
     write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
     # Write role-level span profiles
     from paperforge.worker.ocr_profiles import write_role_span_profiles
@@ -1913,6 +1923,17 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     # --- Phase 2: table inventory ---
     table_inventory = build_table_inventory(structured)
     # --- Phase 2: object writeback ---
+    if _ocr_pipeline_v3_enabled():
+        from paperforge.worker.ocr_post_match_normalize import post_match_normalize
+
+        structured, doc_structure = post_match_normalize(
+            structured,
+            figure_inventory,
+            table_inventory,
+            document_structure=doc_structure,
+            source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
+        )
+
     apply_object_writebacks(
         structured_blocks=structured,
         figure_inventory=figure_inventory,

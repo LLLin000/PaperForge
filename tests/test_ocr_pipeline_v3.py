@@ -141,3 +141,41 @@ def test_table_inventory_accepts_role_candidate_caption_blocks() -> None:
     inv = build_table_inventory_vnext(blocks)
 
     assert inv.get("tables")
+
+
+def test_post_match_normalize_commits_shadow_role_back_to_public_role(monkeypatch) -> None:
+    from paperforge.worker.ocr_document import DocumentStructure
+    import paperforge.worker.ocr_post_match_normalize as post
+
+    def fake_normalize(rows, source_frontmatter_anchors=None, pdf_path=None):
+        shadow_rows = [dict(r) for r in rows]
+        shadow_rows[0]["role"] = "figure_caption"
+        shadow_rows[0]["role_source"] = "shadow_post_match"
+        return DocumentStructure(), shadow_rows
+
+    monkeypatch.setattr(post, "normalize_document_structure", fake_normalize)
+
+    rows = [
+        {
+            "block_id": "c1",
+            "page": 1,
+            "role": "body_paragraph",
+            "seed_role": "body_paragraph",
+            "role_candidate": "figure_caption_candidate",
+            "text": "Figure 1. Example caption text.",
+            "bbox": [100, 100, 520, 160],
+        }
+    ]
+
+    out_rows, doc = post.post_match_normalize(
+        rows,
+        {"matched_figures": []},
+        {"tables": []},
+        document_structure=DocumentStructure(),
+        source_frontmatter_anchors=None,
+    )
+
+    assert out_rows[0]["role"] == "figure_caption"
+    assert out_rows[0]["role_candidate"] == "figure_caption_candidate"
+    assert out_rows[0]["role_source"] == "shadow_post_match"
+    assert doc is not None
