@@ -220,6 +220,9 @@ def apply_object_writebacks(
             bid = block.get("block_id")
             if bid is None:
                 continue
+            block_page = int(block.get("page", 0) or 0)
+            if block_page != fig_page:
+                continue
             # Check if this block is within this figure's region
             bbox = block.get("bbox") or [0, 0, 0, 0]
             if len(bbox) < 4:
