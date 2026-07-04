@@ -179,3 +179,24 @@ def test_post_match_normalize_commits_shadow_role_back_to_public_role(monkeypatc
     assert out_rows[0]["role_candidate"] == "figure_caption_candidate"
     assert out_rows[0]["role_source"] == "shadow_post_match"
     assert doc is not None
+
+
+
+def test_build_structured_blocks_legacy_default_still_matches_seed_contract() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "test_paper",
+            "block_id": "r1",
+            "page": 1,
+            "raw_label": "text",
+            "text": "Minimal body text.",
+            "bbox": [100, 100, 420, 140],
+        }
+    ]
+
+    rows, _ = build_structured_blocks(raw_blocks)
+
+    assert rows[0]["role"]
+    assert rows[0]["seed_role"]
