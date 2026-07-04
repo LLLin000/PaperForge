@@ -6,6 +6,7 @@ Every row is assembled here. The plugin/CLI only consume this model.
 from __future__ import annotations
 
 import datetime
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -33,6 +34,14 @@ class OCRMaintenanceRow:
     can_redo: bool = False
     can_rebuild: bool = False
     recommended_action: str = ""
+    display_action: str = "none"
+    display_label: str = "已完成"
+    display_label_key: str = ""
+    display_reason: str = ""
+    display_reason_key: str = ""
+    display_group: str = "hidden"
+    display_severity: str = "normal"
+    visible_in_maintenance: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -55,6 +64,14 @@ class OCRMaintenanceRow:
             "can_redo": bool(self.can_redo),
             "can_rebuild": bool(self.can_rebuild),
             "recommended_action": _safe_str(self.recommended_action),
+            "display_action": _safe_str(self.display_action),
+            "display_label": _safe_str(self.display_label),
+            "display_label_key": _safe_str(self.display_label_key),
+            "display_reason": _safe_str(self.display_reason),
+            "display_reason_key": _safe_str(self.display_reason_key),
+            "display_group": _safe_str(self.display_group),
+            "display_severity": _safe_str(self.display_severity),
+            "visible_in_maintenance": bool(self.visible_in_maintenance),
         }
 
 
@@ -159,6 +176,149 @@ def _recommended_action(meta: dict, has_raw: bool, has_source_meta: bool) -> str
 
     return ""
 
+def _compute_display_fields(
+    status: str,
+    health_overall: str,
+    version: str,
+    can_redo: bool,
+    can_rebuild: bool,
+    error_stage: str = "",
+    error_summary: str = "",
+    degraded_reasons: list[str] | None = None,
+) -> dict:
+    """Map raw OCR state to display fields for the maintenance tab."""
+    _health_is_bad = health_overall in ("yellow", "red")
+
+    if status in ("pending",):
+        return dict(display_action="none", display_label="等待处理", display_label_key="",
+                    display_reason="", display_reason_key="",
+                    display_group="hidden", display_severity="normal",
+                    visible_in_maintenance=False)
+    if status in ("running", "queued", "processing"):
+        return dict(display_action="none", display_label="处理中", display_label_key="",
+                    display_reason="", display_reason_key="",
+                    display_group="hidden", display_severity="normal",
+                    visible_in_maintenance=False)
+    if status in ("failed", "error", "fatal_error", "done_incomplete", "retryable_error") and can_redo:
+        return dict(display_action="retry_ocr", display_label="重试 OCR",
+                    display_label_key="maintenance_action_retry_ocr",
+                    display_reason="上次处理未完成，可以重新尝试",
+                    display_reason_key="maintenance_reason_retry",
+                    display_group="retry", display_severity="actionable",
+                    visible_in_maintenance=True)
+    if version == "v1" and can_redo:
+        return dict(display_action="upgrade_legacy", display_label="升级旧结果",
+                    display_label_key="maintenance_action_upgrade_legacy",
+                    display_reason="旧版本结果仍然可用，升级后可获得更好的章节、图表和问答效果",
+                    display_reason_key="maintenance_reason_legacy",
+                    display_group="legacy_optional", display_severity="optional",
+                    visible_in_maintenance=True)
+    if status == "done_degraded" and can_rebuild:
+        return dict(display_action="rebuild_result", display_label="重建结果",
+                    display_label_key="",
+                    display_reason="已有OCR数据，可重建获得更稳定的结果",
+                    display_reason_key="",
+                    display_group="rebuild", display_severity="actionable",
+                    visible_in_maintenance=True)
+    if status == "done" and _health_is_bad and can_rebuild:
+        return dict(display_action="rebuild_result", display_label="重建结果",
+                    display_label_key="",
+                    display_reason="已有OCR数据，可重建新版结果",
+                    display_reason_key="",
+                    display_group="rebuild", display_severity="actionable",
+                    visible_in_maintenance=True)
+    if status == "done_degraded" and not can_rebuild and can_redo:
+        return dict(display_action="retry_ocr", display_label="重试 OCR",
+                    display_label_key="",
+                    display_reason="降级结果无法重建，可重新OCR",
+                    display_reason_key="",
+                    display_group="retry", display_severity="actionable",
+                    visible_in_maintenance=True)
+    if status == "nopdf":
+        return dict(display_action="add_pdf", display_label="补充 PDF",
+                    display_label_key="",
+                    display_reason="请去 Zotero 添加 PDF 文件",
+                    display_reason_key="",
+                    display_group="external_action", display_severity="external",
+                    visible_in_maintenance=False)
+    if status == "blocked":
+        return dict(display_action="configure_ocr", display_label="配置 OCR",
+                    display_label_key="",
+                    display_reason="请配置 PaddleOCR API Token",
+                    display_reason_key="",
+                    display_group="external_action", display_severity="external",
+                    visible_in_maintenance=False)
+    if status == "done" and not _health_is_bad:
+        return dict(display_action="none", display_label="已完成", display_label_key="",
+                    display_reason="", display_reason_key="",
+                    display_group="hidden", display_severity="normal",
+                    visible_in_maintenance=False)
+    if not can_redo and not can_rebuild:
+        return dict(display_action="none", display_label="已完成", display_label_key="",
+                    display_reason="", display_reason_key="",
+                    display_group="hidden", display_severity="normal",
+                    visible_in_maintenance=False)
+    return dict(display_action="none", display_label="已完成", display_label_key="",
+                display_reason="", display_reason_key="",
+                display_group="hidden", display_severity="normal",
+                visible_in_maintenance=False)
+
+
+def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
+    """Return {key: sha256} for all OCR papers.
+    Only reads meta.json + health/ocr_health.json.
+    Does NOT read source_metadata, raw blocks, or formal-library index.
+    """
+    from paperforge.worker._utils import pipeline_paths
+    from paperforge.worker.ocr_artifacts import artifact_paths_for_root
+    import hashlib
+
+    paths = pipeline_paths(vault)
+    ocr_root = paths.get("ocr")
+    if not ocr_root or not ocr_root.exists():
+        return {}
+
+    manifest = {}
+    for paper_dir in sorted(ocr_root.iterdir()):
+        if not paper_dir.is_dir():
+            continue
+        key = paper_dir.name
+        artifacts = artifact_paths_for_root(ocr_root, key)
+        meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
+        health = read_json(artifacts.paper_root / "health" / "ocr_health.json") if (artifacts.paper_root / "health" / "ocr_health.json").exists() else {}
+        status = str(meta.get("ocr_status", "") or "").lower()
+        health_overall = str(health.get("overall", "") or "")
+
+        # Also compute can_redo, can_rebuild, version to include in hash
+        has_raw = artifacts.blocks_raw.exists()
+        has_source_meta = artifacts.source_metadata.exists()
+        has_structured = artifacts.blocks_structured.exists()
+        version = _detect_version(meta, has_structured, has_raw)
+        can_redo = _can_redo(meta)
+        can_rebuild = _can_rebuild(meta, has_raw, has_source_meta)
+        rec_action = _recommended_action(meta, has_raw, has_source_meta)
+
+        # Compute display fields for hash
+        df = _compute_display_fields(
+            status=status, health_overall=health_overall,
+            version=version, can_redo=can_redo, can_rebuild=can_rebuild,
+            error_stage=_error_stage(meta),
+            error_summary=_error_summary(meta),
+            degraded_reasons=health.get("degraded_reasons", []) or [],
+        )
+
+        raw = "|".join([
+            key, status, health_overall, version, rec_action,
+            df["display_action"], df["display_group"], df["display_severity"],
+            df.get("display_reason_key", ""),
+            str(can_redo), str(can_rebuild),
+            _error_stage(meta), _error_summary(meta),
+            str(health.get("degraded_reasons", [])),
+        ])
+        manifest[key] = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+    return manifest
+
 
 def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
     """Scan all OCR paper directories and return normalized maintenance rows."""
@@ -246,6 +406,22 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
             can_rebuild=_can_rebuild(meta, has_raw, has_source_meta),
             recommended_action=_recommended_action(meta, has_raw, has_source_meta),
         )
+        row_status = status if status != "-" else "pending"
+        df = _compute_display_fields(
+            status=row_status, health_overall=health_overall,
+            version=version, can_redo=row.can_redo, can_rebuild=row.can_rebuild,
+            error_stage=meta.get("error_stage", ""),
+            error_summary=_error_summary(meta),
+            degraded_reasons=degraded_reasons,
+        )
+        row.display_action = df["display_action"]
+        row.display_label = df["display_label"]
+        row.display_label_key = df.get("display_label_key", "")
+        row.display_reason = df["display_reason"]
+        row.display_reason_key = df.get("display_reason_key", "")
+        row.display_group = df["display_group"]
+        row.display_severity = df["display_severity"]
+        row.visible_in_maintenance = df["visible_in_maintenance"]
         rows.append(row)
 
     return rows
