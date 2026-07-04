@@ -112,6 +112,23 @@ _REFERENCE_HEADING_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+_INLINE_FIGURE_MENTION_PATTERN = re.compile(
+    r"^\s*(?:fig(?:ure)?\.?\s+\d+[a-z]?|figs?\.?\s+\d+[a-z]?)\s+"
+    r"(?:shows?|illustrates?|depicts?|demonstrates?|presents?|summarizes?|"
+    r"reveals?|indicates?|compares?|contains?|provides?|displays?|represents?)\b",
+    re.I,
+)
+
+_CAPTION_DELIMITER_PATTERN = re.compile(
+    r"^\s*(?:figure|fig\.?)\s+\d+[a-z]?\s*[.:|—–]",
+    re.I,
+)
+
+_CAPTION_TITLE_PATTERN = re.compile(
+    r"^\s*(?i:figure|fig\.?)\s+\d+[a-z]?\s+"
+    r"[A-Z][A-Za-z0-9\u03b2\u03b3\u03bc\u03b1\u0391-\u03a9,;:/() -]{3,}",
+)
+
 
 def _normalize_heading_text(text: str) -> str:
     text = text.strip().rstrip(":")
@@ -190,18 +207,39 @@ def _has_figure_prefix(text: str) -> bool:
     return bool(_FIGURE_PREFIX_PATTERN.match(text.strip()))
 
 
+def _looks_like_inline_figure_mention(text: str, block: dict | None = None) -> bool:
+    """True if text looks like 'Fig. N shows...' — body prose, not a caption."""
+    if not text:
+        return False
+    return bool(_INLINE_FIGURE_MENTION_PATTERN.match(text.strip()))
+
+
+def _looks_like_caption_syntax(text: str) -> bool:
+    """Formal caption: delimiter pattern or title pattern. Run AFTER inline-mention reject."""
+    if not text:
+        return False
+    if _CAPTION_DELIMITER_PATTERN.match(text.strip()):
+        return True
+    if _CAPTION_TITLE_PATTERN.match(text.strip()):
+        return True
+    return False
+
+
 def _is_obviously_formal_figure_caption(text: str, block: dict, page_blocks: list[dict]) -> bool:
     if not _has_figure_prefix(text):
         return False
-    verb_patterns = ["shows", "illustrates", "depicts", "demonstrates", "presents", "summarizes"]
-    has_verb = any(v in text.lower() for v in verb_patterns)
-    sentence_markers = [" is ", " are ", " was ", " were "]
-    has_sentence = any(m in text.lower() for m in sentence_markers)
-    if has_verb and has_sentence:
+    # Inline mention reject: "Fig. 9 shows..." → NOT a formal caption
+    if _looks_like_inline_figure_mention(text, block):
         return False
-    is_short = len(text) <= 80
     near_media = _is_near_figure_media(block, page_blocks)
-    return is_short or near_media
+    raw_label = str(block.get("raw_label") or block.get("block_label") or "")
+    if raw_label == "figure_title":
+        return True
+    if near_media and _looks_like_caption_syntax(text):
+        return True
+    if len(text) <= 80 and _looks_like_caption_syntax(text):
+        return True
+    return False
 
 
 def _is_near_figure_media(block: dict, page_blocks: list[dict], max_gap: int = 200) -> bool:
@@ -933,6 +971,13 @@ def assign_block_role(
 
     # Figure / table caption patterns override any prior
     if _has_figure_prefix(text):
+        # Inline figure mention escape: "Fig. 9 shows..." → body_paragraph
+        if raw_label == "text" and _looks_like_inline_figure_mention(text, block):
+            return RoleAssignment(
+                role="body_paragraph" if block.get("zone") in ("body_zone", None) else "figure_caption_candidate",
+                confidence=0.82,
+                evidence=[f"inline figure mention in body prose: {text[:60]}"],
+            )
         if raw_label == "text":
             if _is_obviously_formal_figure_caption(text, block, page_blocks):
                 is_long = len(text) > 80
@@ -960,6 +1005,12 @@ def assign_block_role(
                 role="figure_caption",
                 confidence=0.92,
                 evidence=[f"figure_title label: {text[:60]}"],
+            )
+        if _looks_like_inline_figure_mention(text, block):
+            return RoleAssignment(
+                role="body_paragraph" if block.get("zone") in ("body_zone", None) else "figure_caption_candidate",
+                confidence=0.82,
+                evidence=[f"inline figure mention: {text[:60]}"],
             )
         if _is_obviously_formal_figure_caption(text, block, page_blocks):
             return RoleAssignment(
