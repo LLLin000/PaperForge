@@ -1,11 +1,11 @@
 /**
  * PaperForge Reading Canvas — CommonJS module entry point.
  *
- * Exports a narrow surface of Phase ANN10 contracts:
+ * Exports Phase ANN10 contracts:
  *   - context helpers (buildCanvasContextFromEntry, buildMissingCanvasContext)
  *   - annotation loader wrapper (createCanvasAnnotationLoader, ANNOTATION_LOAD_STATES)
- *
- * Controller and render modules are added in Task 2.
+ *   - canvas session controller (createCanvasSessionController)
+ *   - shell DOM rendering (renderCanvasView, renderCanvas*)
  *
  * @module canvas/index
  */
@@ -20,6 +20,25 @@ const {
     ANNOTATION_LOAD_STATES,
 } = require('./annotations');
 
+const {
+    createCanvasSessionController,
+} = require('./controller');
+
+const {
+    renderCanvasView,
+    renderCanvasIdentity,
+    renderCanvasIdle,
+    renderCanvasLoading,
+    renderCanvasEmpty,
+    renderCanvasMissingPaper,
+    renderCanvasMissingDb,
+    renderCanvasCliError,
+    renderCanvasInvalidJson,
+    renderCanvasMissingSource,
+    renderCanvasUnsupported,
+    renderCanvasStaleBanner,
+} = require('./render');
+
 module.exports = {
     // ── Context helpers ──
     buildCanvasContextFromEntry,
@@ -28,4 +47,21 @@ module.exports = {
     // ── Annotation loading ──
     createCanvasAnnotationLoader,
     ANNOTATION_LOAD_STATES,
+
+    // ── Canvas session controller ──
+    createCanvasSessionController,
+
+    // ── Canvas DOM rendering ──
+    renderCanvasView,
+    renderCanvasIdentity,
+    renderCanvasIdle,
+    renderCanvasLoading,
+    renderCanvasEmpty,
+    renderCanvasMissingPaper,
+    renderCanvasMissingDb,
+    renderCanvasCliError,
+    renderCanvasInvalidJson,
+    renderCanvasMissingSource,
+    renderCanvasUnsupported,
+    renderCanvasStaleBanner,
 };
