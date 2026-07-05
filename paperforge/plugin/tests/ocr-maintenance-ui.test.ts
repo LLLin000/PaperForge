@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   categorizeMaintenanceRow,
   buildMaintenanceSummary,
+  MaintenanceRowLike,
 } from "../src/services/ocr-maintenance-ui";
 
 describe("categorizeMaintenanceRow", () => {
@@ -120,6 +121,31 @@ describe("categorizeMaintenanceRow", () => {
 
     expect(result.category).toBe("limited");
     expect(result.primaryAction).toBeNull();
+  });
+
+  it("keeps unknown drift rows non-deceptive", () => {
+    // Test fixture: object includes drift fields before type supports them
+    const input: Record<string, unknown> = {
+      key: "U1",
+      title: "Paper U",
+      title_full: "Paper U",
+      status: "done",
+      health: "green",
+      recommended_action: "",
+      degraded_reasons: [],
+      error_summary: "",
+      error_stage: "",
+      version: "v2",
+      finished_at: "06-19 10:00",
+      rebuild_finished_at: "-",
+      model: "PaddleOCR-VL-1.6",
+      fulltext_drift_state: "UNKNOWN",
+      fulltext_drift_reason: "No machine baseline is available.",
+    };
+    const result = categorizeMaintenanceRow(
+      input as unknown as MaintenanceRowLike
+    );
+    expect(result.reason).not.toContain("safe");
   });
 });
 

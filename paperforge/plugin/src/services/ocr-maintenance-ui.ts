@@ -30,6 +30,8 @@ export interface MaintenanceDisplayRow {
   visible_in_maintenance: boolean;
   can_redo: boolean;
   can_rebuild: boolean;
+  fulltext_drift_state?: "MATCHED" | "DRIFTED" | "UNKNOWN";
+  fulltext_drift_reason?: string;
 }
 
 export interface MaintenanceCache {
@@ -52,15 +54,24 @@ export type MaintenanceRowLike = {
   finished_at: string;
   rebuild_finished_at: string;
   model: string;
+  fulltext_drift_state?: "MATCHED" | "DRIFTED" | "UNKNOWN";
+  fulltext_drift_reason?: string;
 };
 
 export function categorizeMaintenanceRow(row: MaintenanceRowLike) {
   if (row.recommended_action === "rebuild") {
+    // ponytail: drift message for DRIFTED+rebuild; other drift states keep default
+    const driftSuffix =
+      row.fulltext_drift_state === "DRIFTED"
+        ? " (fulltext has changed since machine wrote it)"
+        : "";
     return {
       category: "rebuild" as const,
       label: "Rebuild Recommended",
       primaryAction: "rebuild" as const,
-      reason: "Derived OCR results can be regenerated from existing OCR data.",
+      reason:
+        "Derived OCR results can be regenerated from existing OCR data." +
+        driftSuffix,
     };
   }
 
@@ -84,6 +95,15 @@ export function categorizeMaintenanceRow(row: MaintenanceRowLike) {
       reason:
         row.degraded_reasons?.[0] ||
         "This paper has weaker confidence signals, but no clear maintenance action is recommended.",
+    };
+  }
+
+  if (row.fulltext_drift_state === "UNKNOWN") {
+    return {
+      category: "ok" as const,
+      label: "No Action Needed",
+      primaryAction: null,
+      reason: row.fulltext_drift_reason || "No machine baseline is available.",
     };
   }
 

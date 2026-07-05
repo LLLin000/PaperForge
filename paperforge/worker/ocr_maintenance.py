@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from paperforge.core.io import read_json
+from paperforge.worker.ocr_fulltext_state import get_fulltext_drift_state
 
 
 @dataclass
@@ -42,6 +43,8 @@ class OCRMaintenanceRow:
     display_group: str = "hidden"
     display_severity: str = "normal"
     visible_in_maintenance: bool = False
+    fulltext_drift_state: str = "UNKNOWN"
+    fulltext_drift_reason: str = ""
     show_in_base: bool = True
 
     def to_dict(self) -> dict:
@@ -74,6 +77,8 @@ class OCRMaintenanceRow:
             "display_severity": self.display_severity,
             "visible_in_maintenance": self.visible_in_maintenance,
             "show_in_base": self.show_in_base,
+            "fulltext_drift_state": self.fulltext_drift_state,
+            "fulltext_drift_reason": self.fulltext_drift_reason,
         }
 
 
@@ -303,13 +308,15 @@ def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
         )
 
         err_summary = _error_summary(meta)
+        drift_state = get_fulltext_drift_state(artifacts.compat_fulltext, meta.get("machine_fulltext_hash"))
         err_summary_hash = hashlib.sha256(err_summary.encode("utf-8")).hexdigest() if err_summary else ""
         raw = "|".join([
             key, status, health_overall, version, rec_action,
             df["display_action"], df["display_group"], df["display_severity"],
-            df.get("display_reason_key", ""),
+            drift_state, meta.get("machine_fulltext_hash", ""),
+            err_summary, err_summary_hash,
             str(can_redo), str(can_rebuild),
-            _error_stage(meta), err_summary_hash,
+            _error_stage(meta),
             str(health.get("degraded_reasons", [])),
         ])
         manifest[key] = hashlib.sha256(raw.encode("utf-8")).hexdigest()
@@ -419,6 +426,13 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         row.display_group = df["display_group"]
         row.display_severity = df["display_severity"]
         row.visible_in_maintenance = df["visible_in_maintenance"]
+        drift_state = get_fulltext_drift_state(artifacts.compat_fulltext, meta.get("machine_fulltext_hash"))
+        row.fulltext_drift_state = drift_state
+        row.fulltext_drift_reason = {
+            "MATCHED": "fulltext.md matches the latest machine write.",
+            "DRIFTED": "fulltext.md has changed since the last machine write.",
+            "UNKNOWN": "No machine baseline is available.",
+        }[drift_state]
         rows.append(row)
 
     return rows

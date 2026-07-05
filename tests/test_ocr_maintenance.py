@@ -769,3 +769,31 @@ class TestRunOcrListDispatch:
         assert result == 0
         assert call_kwargs.get("manifest") is True
         assert call_kwargs.get("vault") == Path("/fake")
+
+# ===========================================================================
+# OCRMaintenanceRow drift tri-state tests
+# ===========================================================================
+
+
+def test_maintenance_row_reports_unknown_when_machine_hash_missing(tmp_path: Path) -> None:
+    """A row without machine baseline must report UNKNOWN drift."""
+    from paperforge.worker.ocr_maintenance import OCRMaintenanceRow
+
+    row = OCRMaintenanceRow(
+        key="U1",
+        title="Paper U",
+        title_full="Paper U",
+        status="done",
+        health="green",
+        version="v2",
+        finished_at="-",
+        rebuild_finished_at="-",
+        pages=1,
+        blocks=1,
+        figures=0,
+        tables=0,
+        model="PaddleOCR-VL-1.6",
+        fulltext_drift_state="UNKNOWN",
+        fulltext_drift_reason="No machine baseline is available.",
+    )
+    assert row.to_dict()["fulltext_drift_state"] == "UNKNOWN"
