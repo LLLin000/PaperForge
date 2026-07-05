@@ -127,6 +127,7 @@ def run(args: argparse.Namespace) -> int:
                 code=ErrorCode.PATH_NOT_FOUND,
                 message=f"No paper found for key: {key}",
             ),
+            data={"absence_proof": "multi-path lookup exhausted"},
         )
     else:
         result = PFResult(

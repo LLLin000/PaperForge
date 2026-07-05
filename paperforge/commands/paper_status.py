@@ -24,10 +24,11 @@ def run(args: argparse.Namespace) -> int:
                     code=ErrorCode.PATH_NOT_FOUND,
                     message=f"No paper found for: {query}",
                 ),
+                data={"absence_proof": "multi-path lookup exhausted"},
                 next_actions=[
                     {
-                        "command": "paperforge search",
-                        "reason": "Search for papers by keyword",
+                        "command": "paperforge paper-lookup",
+                        "reason": "Run the Layer 4 decomposed lookup gateway.",
                     }
                 ],
             )
