@@ -1988,13 +1988,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         document_structure=doc_structure,
         reader_payload=reader_payload,
     )
-    meta = write_render_outputs(
-        render_root=ocr_root / "render",
-        user_fulltext=ocr_root / "fulltext.md",
-        markdown=markdown,
-        meta=meta,
-        rebuild_increment=False,
-    )
+    
 
     # --- Phase 3: OCR health report ---
     from paperforge.worker.ocr_health import (
@@ -2062,6 +2056,13 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     except ValueError:
         meta["legacy_images_path"] = str(images_dir)
     meta["path_map"] = {"structured_truth": "assets/", "legacy_compat": "images/"}
+    meta = write_render_outputs(
+        render_root=ocr_root / "render",
+        user_fulltext=ocr_root / "fulltext.md",
+        markdown=markdown,
+        meta=meta,
+        rebuild_increment=False,
+    )
     write_json(meta_path, meta)
 
     fulltext_path = ocr_root / "fulltext.md"
