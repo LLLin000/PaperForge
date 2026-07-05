@@ -363,14 +363,6 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             document_structure=doc_structure,
             reader_payload=reader_payload,
         )
-        meta = write_render_outputs(
-            render_root=paper_root / "render",
-            user_fulltext=artifacts.compat_fulltext,
-            markdown=markdown,
-            meta=ocr_meta,
-            rebuild_increment=True,
-            now_utc=datetime.datetime.now(datetime.timezone.utc),
-        )
 
         # Rebuild health
         from paperforge.worker.ocr_health import build_ocr_health, build_ocr_raw_integrity_health, write_ocr_health
@@ -408,13 +400,20 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         write_structure_tree(paper_root / "index", structure_tree)
 
         # Update version state in meta.json
+        meta = ocr_meta
         meta.update(span_meta_patch)
         meta = _apply_post_rebuild_version_flags(meta)
         # Rebuild regenerated the derived outputs; validate from a clean
         # optimistic status instead of short-circuiting on a stale
         # done_incomplete value from a previous render.
         meta["ocr_status"] = "done"
-        meta["rebuild_finished_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        meta = write_render_outputs(
+            render_root=paper_root / "render",
+            user_fulltext=artifacts.compat_fulltext,
+            markdown=markdown,
+            meta=meta,
+            rebuild_increment=True,
+        )
         # Re-validate and clear stale errors (e.g. page marker mismatch from pre-fix render)
         paths_dict = {"ocr": pipeline_paths(vault)["ocr"]}
         _status, _err = validate_ocr_meta(paths_dict, meta)

@@ -217,7 +217,7 @@ def test_run_derived_rebuild_skips_span_backfill_when_valid(tmp_path: Path, monk
     monkeypatch.setattr("paperforge.worker.ocr_tables.write_table_inventory", lambda *args, **kwargs: None)
     monkeypatch.setattr("paperforge.worker.ocr_objects.extract_and_write_objects", lambda *args, **kwargs: None)
     monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *args, **kwargs: "")
-    monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *args, **kwargs: None)
+    monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *args, meta=None, **kwargs: dict(meta) if meta else {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_health", lambda *args, **kwargs: {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_raw_integrity_health", lambda *args, **kwargs: {})
     monkeypatch.setattr("paperforge.worker.ocr_health.write_ocr_health", lambda *args, **kwargs: None)
@@ -268,7 +268,7 @@ def test_run_derived_rebuild_records_unavailable_pdf_missing_without_rerun(tmp_p
     monkeypatch.setattr("paperforge.worker.ocr_tables.write_table_inventory", lambda *args, **kwargs: None)
     monkeypatch.setattr("paperforge.worker.ocr_objects.extract_and_write_objects", lambda *args, **kwargs: None)
     monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *args, **kwargs: "")
-    monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *args, **kwargs: None)
+    monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *args, meta=None, **kwargs: dict(meta) if meta else {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_health", lambda *args, **kwargs: {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_raw_integrity_health", lambda *args, **kwargs: {})
     monkeypatch.setattr("paperforge.worker.ocr_health.write_ocr_health", lambda *args, **kwargs: None)
@@ -528,7 +528,7 @@ def test_run_derived_rebuild_for_keys_still_uses_public_build_table_inventory(tm
     monkeypatch.setattr("paperforge.worker.ocr_tables.write_table_inventory", lambda *a, **kw: None)
     monkeypatch.setattr("paperforge.worker.ocr_objects.extract_and_write_objects", lambda *a, **kw: None)
     monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *a, **kw: "")
-    monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *a, **kw: None)
+    monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *a, meta=None, **kw: dict(meta) if meta else {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_health", lambda *a, **kw: {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_raw_integrity_health", lambda *a, **kw: {})
     monkeypatch.setattr("paperforge.worker.ocr_health.write_ocr_health", lambda *a, **kw: None)
@@ -542,3 +542,46 @@ def test_run_derived_rebuild_for_keys_still_uses_public_build_table_inventory(tm
 
     assert result["rebuild_count"] == 1
     assert called["count"] > 0
+
+# ── Derived-rebuild backup & provenance tests ──
+
+
+def _seed_rebuild_paper(tmp_path: Path, key: str) -> Path:
+    paper_root = tmp_path / "System" / "PaperForge" / "ocr" / key
+    (paper_root / "canonical").mkdir(parents=True)
+    (paper_root / "raw").mkdir(parents=True)
+    (paper_root / "raw" / "source_metadata.json").write_text('{"title": "Example Title"}', encoding="utf-8")
+    (paper_root / "canonical" / "blocks.raw.jsonl").write_text(
+        '{"paper_id":"TESTKEY1","page":1,"block_id":"p1_b1","raw_label":"text","raw_order":0,"text":"A","bbox":[0,0,10,10],"page_width":600,"page_height":800,"span_metadata":[{"size":10}]}\n',
+        encoding="utf-8",
+    )
+    (paper_root / "meta.json").write_text('{"source_pdf":"","ocr_status":"done"}', encoding="utf-8")
+    return paper_root
+
+
+def test_run_derived_rebuild_creates_backup_before_replace(tmp_path: Path, monkeypatch) -> None:
+    from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+
+    key = "TESTKEY1"
+    paper_root = _seed_rebuild_paper(tmp_path, key)
+    (paper_root / "fulltext.md").write_text("annotated\n", encoding="utf-8")
+    result = run_derived_rebuild_for_keys(tmp_path, [key])
+    assert result["rebuild_count"] == 1
+    backups = sorted((paper_root / "backups").glob("fulltext.pre-rebuild.*.md"))
+    assert len(backups) == 1
+    assert backups[0].read_text(encoding="utf-8") == "annotated\n"
+
+
+def test_run_derived_rebuild_increments_rebuild_count_and_hash(tmp_path: Path, monkeypatch) -> None:
+    import json
+    from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+
+    key = "TESTKEY1"
+    paper_root = _seed_rebuild_paper(tmp_path, key)
+    (paper_root / "fulltext.md").write_text("annotated\n", encoding="utf-8")
+    (paper_root / "meta.json").write_text('{"rebuild_count": 1}', encoding="utf-8")
+    run_derived_rebuild_for_keys(tmp_path, [key])
+    meta = json.loads((paper_root / "meta.json").read_text(encoding="utf-8"))
+    assert meta["rebuild_count"] == 2
+    assert meta["machine_fulltext_hash"].startswith("sha256:")
+    assert meta["last_backup_path"].startswith("backups/fulltext.pre-rebuild.")
