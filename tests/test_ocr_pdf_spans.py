@@ -489,3 +489,93 @@ def test_admission_maps_ocr_bbox_to_pdf_space() -> None:
     assert isinstance(rects[0], fitz.Rect)
     assert abs(rects[0].x0 - 100) < 1
     assert abs(rects[0].y0 - 100) < 1
+
+
+def test_backfill_span_metadata_one_rawdict_per_page() -> None:
+    """Multiple blocks on the same page must trigger only one get_text('rawdict') call.
+
+    Regression: the per-page batching optimization converts N calls per page
+    to 1 call per page.  This test asserts the old O(N) behavior is gone.
+    """
+    import tempfile
+    from pathlib import Path
+
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
+
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    page.insert_text(fitz.Point(50, 100), "Block A", fontname="helv", fontsize=12)
+    page.insert_text(fitz.Point(50, 200), "Block B", fontname="helv", fontsize=12)
+    page.insert_text(fitz.Point(50, 300), "Block C", fontname="helv", fontsize=12)
+
+    tmp = Path(tempfile.mktemp(suffix=".pdf"))
+    doc.save(str(tmp))
+    doc.close()
+
+    blocks = [
+        # PDF text at (50,100) → OCR space y ≈ 100 * 1600/792 ≈ 202, add margin
+        {"page": 1, "bbox": [40, 180, 200, 230], "text": "Block A", "page_width": 1200, "page_height": 1600},
+        {"page": 1, "bbox": [40, 380, 200, 430], "text": "Block B", "page_width": 1200, "page_height": 1600},
+        {"page": 1, "bbox": [40, 580, 200, 630], "text": "Block C", "page_width": 1200, "page_height": 1600},
+    ]
+    try:
+        result = backfill_span_metadata_from_pdf(blocks, tmp)
+        assert result[0].get("span_metadata") is not None
+        assert result[1].get("span_metadata") is not None
+        assert result[2].get("span_metadata") is not None
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+def test_backfill_span_metadata_fast_path_matches_single_block_api() -> None:
+    """Fast path (_spans_from_rawdict with rect) must match extract_pdf_spans_for_block output.
+
+    Regression: the per-page optimization must not change span extraction quality.
+    """
+    import json
+    import tempfile
+    from pathlib import Path
+
+    import fitz
+
+    from paperforge.worker.ocr_pdf_spans import (
+        _spans_from_rawdict,
+        extract_pdf_spans_for_block,
+        _map_ocr_bbox_to_pdf_rect,
+    )
+
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    page.insert_text(fitz.Point(50, 100), "Title Text", fontname="helv", fontsize=16, color=(0, 0, 0))
+    page.insert_text(fitz.Point(50, 200), "Body paragraph", fontname="helv", fontsize=10, color=(0.2, 0.2, 0.2))
+
+    tmp = Path(tempfile.mktemp(suffix=".pdf"))
+    doc.save(str(tmp))
+    doc.close()
+
+    doc2 = fitz.open(str(tmp))
+    page2 = doc2[0]
+    full_rawdict = page2.get_text("rawdict")
+
+    test_cases = [
+        {"bbox": [40, 80, 200, 120], "pw": 1200, "ph": 1600, "label": "Title"},
+        {"bbox": [40, 180, 250, 220], "pw": 1200, "ph": 1600, "label": "Body"},
+        {"bbox": [0, 0, 10, 10], "pw": 1200, "ph": 1600, "label": "Empty"},
+    ]
+
+    for tc in test_cases:
+        old = extract_pdf_spans_for_block(doc2, 0, tc["bbox"], page_width=tc["pw"], page_height=tc["ph"])
+        rect = _map_ocr_bbox_to_pdf_rect(tc["bbox"], tc["pw"], tc["ph"], page2)
+        new = _spans_from_rawdict(full_rawdict, rect)
+
+        old_json = {json.dumps(s, sort_keys=True) for s in (old or [])}
+        new_json = {json.dumps(s, sort_keys=True) for s in (new or [])}
+
+        assert old_json == new_json, (
+            f"Mismatch for {tc['label']}: old={len(old_json)} spans, new={len(new_json)} spans"
+        )
+
+    doc2.close()
+    tmp.unlink(missing_ok=True)

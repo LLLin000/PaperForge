@@ -43,7 +43,7 @@ def _is_text_like_raw_block(block: dict) -> bool:
     raw_label = str(block.get("raw_label") or "")
     text = str(block.get("text") or "").strip()
     bbox = block.get("bbox") or []
-    text_like_labels = {"text", "paragraph_title", "abstract", "reference_content", "figure_title"}
+    text_like_labels = {"text", "paragraph_title", "abstract", "reference_content"}
     return raw_label in text_like_labels and bool(text) and len(bbox) >= 4
 
 

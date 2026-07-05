@@ -5618,7 +5618,7 @@ def _highly_overlaps_any_matched_region(
 ) -> bool:
     fx1, fy1, fx2, fy2 = fallback_bbox
     fallback_area = max(1.0, (fx2 - fx1) * (fy2 - fy1))
-    for tag, region_bbox in figure_regions:
+    for tag, region_bbox, _ in figure_regions:
         if tag != "matched":
             continue
         rx1, ry1, rx2, ry2 = region_bbox

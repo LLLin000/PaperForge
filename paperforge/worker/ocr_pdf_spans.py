@@ -47,6 +47,92 @@ def _map_ocr_bbox_to_pdf_rect(
         bbox[3] * scale_y,
     )
 
+def _rect_from_bbox(bbox) -> fitz.Rect | None:
+    """Convert a 4-element bbox to fitz.Rect, returning None for invalid input."""
+    if not bbox or len(bbox) < 4:
+        return None
+    try:
+        rect = fitz.Rect(float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3]))
+    except Exception:
+        return None
+    if rect.is_empty or rect.width <= 0 or rect.height <= 0:
+        return None
+    return rect
+
+
+def _char_center_hits_rect(char: dict, rect: fitz.Rect, tol: float = 0.75) -> bool:
+    """Check if a character's center falls within a rect (with tolerance)."""
+    cb = _rect_from_bbox(char.get("bbox"))
+    if cb is None:
+        return False
+    cx = (cb.x0 + cb.x1) / 2
+    cy = (cb.y0 + cb.y1) / 2
+    return (
+        rect.x0 - tol <= cx <= rect.x1 + tol
+        and rect.y0 - tol <= cy <= rect.y1 + tol
+    )
+
+
+def _span_hits_rect(span: dict, rect: fitz.Rect) -> bool:
+    """Check if a span's characters (or span bbox fallback) overlap a rect."""
+    chars = span.get("chars") or []
+    if chars:
+        return any(_char_center_hits_rect(ch, rect) for ch in chars)
+    # Fallback for unexpected rawdict shape.
+    sb = _rect_from_bbox(span.get("bbox"))
+    if sb is None:
+        return False
+    inter = sb & rect
+    return (not inter.is_empty) and inter.width > 0 and inter.height > 0
+
+
+def _spans_from_rawdict(
+    rawdict: dict,
+    rect: fitz.Rect | None = None,
+) -> list[dict] | None:
+    """Extract flat span metadata list from a rawdict page dict, optionally filtered by rect."""
+    spans: list[dict] = []
+
+    for block in rawdict.get("blocks", []):
+        if block.get("type") != 0:
+            continue
+
+        for line in block.get("lines", []):
+            line_dir = line.get("dir")
+            if isinstance(line_dir, (list, tuple)) and len(line_dir) == 2:
+                line_dir = (float(line_dir[0]), float(line_dir[1]))
+            else:
+                line_dir = None
+
+            line_wmode = line.get("wmode")
+            if not isinstance(line_wmode, int):
+                line_wmode = 0
+
+            for span in line.get("spans", []):
+                if rect is not None and not _span_hits_rect(span, rect):
+                    continue
+
+                size = span.get("size")
+                if size is None:
+                    continue
+
+                flags = span.get("flags", 0)
+                if not isinstance(flags, int):
+                    flags = 0
+
+                spans.append(
+                    {
+                        "size": float(size),
+                        "font": str(span.get("font", "")),
+                        "flags": flags,
+                        "color": int(span.get("color", 0)),
+                        "dir": line_dir,
+                        "wmode": line_wmode,
+                    }
+                )
+
+    return spans if spans else None
+
 
 def extract_pdf_spans_for_block(
     pdf_doc: Any,
@@ -96,38 +182,7 @@ def extract_pdf_spans_for_block(
     except Exception:
         return None
 
-    spans: list[dict] = []
-    for block in tp.get("blocks", []):
-        if block.get("type") != 0:
-            continue
-        for line in block.get("lines", []):
-            line_dir = line.get("dir")
-            if isinstance(line_dir, (list, tuple)) and len(line_dir) == 2:
-                line_dir = (float(line_dir[0]), float(line_dir[1]))
-            else:
-                line_dir = None
-            line_wmode = line.get("wmode")
-            if not isinstance(line_wmode, int):
-                line_wmode = 0
-            for span in line.get("spans", []):
-                size = span.get("size")
-                if size is None:
-                    continue
-                flags = span.get("flags", 0)
-                if not isinstance(flags, int):
-                    flags = 0
-                spans.append(
-                    {
-                        "size": float(size),
-                        "font": str(span.get("font", "")),
-                        "flags": flags,
-                        "color": int(span.get("color", 0)),
-                        "dir": line_dir,
-                        "wmode": line_wmode,
-                    }
-                )
-
-    return spans if spans else None
+    return _spans_from_rawdict(tp)
 
 
 def _normalize_rgb(color) -> tuple[float, float, float] | None:
@@ -426,8 +481,9 @@ def backfill_span_metadata_from_pdf(
 ) -> list[dict]:
     """Backfill span_metadata for raw blocks from the source PDF.
 
-    Iterates all blocks, extracts per-character font info from the PDF
-    at each block's bbox, and writes it as span_metadata.
+    Optimized: groups raw_blocks by page, calls page.get_text("rawdict")
+    once per page (not once per block), then filters spans per block
+    using character bbox center overlap.
 
     Returns the modified blocks list (mutated in-place for efficiency).
     Gracefully handles missing PDFs, invalid bboxes, and extraction failures.
@@ -444,27 +500,57 @@ def backfill_span_metadata_from_pdf(
         return raw_blocks
 
     try:
-        for block in raw_blocks:
-            page_num = block.get("page", 1) - 1
-            bbox = block.get("bbox", [])
-            if not bbox or len(bbox) < 4:
-                continue
-            spans = extract_pdf_spans_for_block(
-                doc,
-                page_num,
-                bbox,
-                page_width=block.get("page_width"),
-                page_height=block.get("page_height"),
-            )
-            if spans:
-                block["span_metadata"] = spans
-
-        # Phase A+B+C: per-page container detection
         from collections import defaultdict
+
+        # Group blocks by 0-indexed page number
         raw_blocks_by_page: dict[int, list[dict]] = defaultdict(list)
         for block in raw_blocks:
-            raw_blocks_by_page[block.get("page", 1) - 1].append(block)
+            try:
+                pageno = int(block.get("page", 1)) - 1
+            except Exception:
+                pageno = 0
+            raw_blocks_by_page[pageno].append(block)
 
+        # Phase 0: span metadata backfill — one get_text("rawdict") per page
+        #           Skips pages where all blocks already have span_metadata.
+        for pageno, page_blocks in raw_blocks_by_page.items():
+            if pageno < 0 or pageno >= len(doc):
+                continue
+
+            # Only process blocks that still need span_metadata
+            need = [b for b in page_blocks if not b.get("span_metadata")]
+            if not need:
+                continue  # entire page already done, skip get_text("rawdict")
+
+            try:
+                page = doc[pageno]
+                page_rawdict = page.get_text("rawdict")
+            except Exception:
+                continue
+
+            for block in need:
+                bbox = block.get("bbox", [])
+                if not bbox or len(bbox) < 4:
+                    continue
+
+                try:
+                    pw = block.get("page_width")
+                    ph = block.get("page_height")
+                    if pw and ph and pw > 0 and ph > 0:
+                        rect = _map_ocr_bbox_to_pdf_rect(bbox, pw, ph, page)
+                    else:
+                        rect = fitz.Rect(*bbox)
+                except Exception:
+                    continue
+
+                if rect.is_empty or rect.width <= 0 or rect.height <= 0:
+                    continue
+
+                spans = _spans_from_rawdict(page_rawdict, rect)
+                if spans:
+                    block["span_metadata"] = spans
+
+        # Phase A+B+C: per-page container detection
         for pageno, page_blocks in raw_blocks_by_page.items():
             # Phase A: clear stale flags
             for block in page_blocks:
@@ -513,7 +599,6 @@ def backfill_span_metadata_from_pdf(
                     overlap_ratio = _bbox_overlap_ratio(container_rect, block_rect)
                     if overlap_ratio >= 0.3:
                         block["_in_visual_container"] = True
-                        # _container_bbox in OCR space (as existing code does)
                         scale_x = pw / doc[pageno].rect.width if pw and doc[pageno].rect.width else 1
                         scale_y = ph / doc[pageno].rect.height if ph and doc[pageno].rect.height else 1
                         block["_container_bbox"] = [
