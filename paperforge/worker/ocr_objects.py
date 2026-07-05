@@ -102,6 +102,58 @@ def _find_cached_page_image(page_cache_dir: Path | None, page_num: int) -> Path 
     return None
 
 
+class PageRenderContext:
+    """In-memory page image cache for a single rebuild session.
+
+    Each unique page is rendered at most once via get_pixmap, converted to
+    a PIL Image, and reused across all crop tasks on that page. No full-page
+    JPG is written to disk.
+
+    Thread-safe for concurrent access from multiple crop tasks.
+    """
+    def __init__(self, pdf_doc):
+        self._doc = pdf_doc
+        self._images: dict[int, Image.Image] = {}
+        self._lock = threading.Lock()
+
+    def get_page_image(self, page_num: int, page_width: int, page_height: int):
+        """Return a PIL Image for the given 1-indexed page number.
+
+        Renders the page at the OCR/page dimensions on first access,
+        returns cached image on subsequent calls.
+        """
+        from PIL import Image as PILImage
+
+        cached = self._images.get(page_num)
+        if cached is not None:
+            return cached
+
+        with self._lock:
+            cached = self._images.get(page_num)
+            if cached is not None:
+                return cached
+
+            if self._doc is None or page_num < 1 or page_num > len(self._doc):
+                return None
+            try:
+                import fitz
+            except ImportError:
+                return None
+
+            try:
+                page = self._doc[page_num - 1]
+                rect = page.rect
+                zoom_x = (page_width / rect.width) if page_width > 0 else 2.0
+                zoom_y = (page_height / rect.height) if page_height > 0 else 2.0
+                mat = fitz.Matrix(zoom_x, zoom_y)
+                pix = page.get_pixmap(matrix=mat, alpha=False)
+                img = PILImage.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                self._images[page_num] = img
+                return img
+            except Exception:
+                return None
+
+
 def _crop_asset_from_pdf(
     pdf_path: Path | None,
     page_num: int,
@@ -114,12 +166,32 @@ def _crop_asset_from_pdf(
     pdf_doc: Any | None = None,
     pdf_doc_provider: Callable[[], Any | None] | None = None,
     rotation_deg: int = 0,
+    page_render_context: PageRenderContext | None = None,
 ) -> bool:
 
     if dst.exists():
         with contextlib.suppress(Exception):
             dst.unlink()
 
+    # ── Fast path: use in-memory page render context ──
+    if page_render_context is not None:
+        img = page_render_context.get_page_image(page_num, page_width, page_height)
+        if img is None:
+            return False
+        try:
+            x1, y1, x2, y2 = (int(v) for v in bbox)
+            if x2 <= x1 or y2 <= y1:
+                return False
+            crop = img.crop((x1, y1, x2, y2))
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if rotation_deg:
+                crop = crop.rotate(rotation_deg, expand=True, resample=Image.Resampling.LANCZOS)
+            crop.save(dst)
+            return True
+        except Exception:
+            return False
+
+    # ── Original disk-cache path ──
     cached_page_image = _find_cached_page_image(page_cache_dir, page_num)
     if cached_page_image is not None and not rotation_deg:
         try:
@@ -183,23 +255,18 @@ def _crop_asset_from_pdf(
             return False
         try:
             page = doc[page_num - 1]
-            # Clip is in PDF user space — bbox is in OCR coordinates (scaled).
-            # Convert to PDF space using page_width/height vs PDF page rect ratio.
             pdf_rect = page.rect
             sx = max(1.0, page_width / pdf_rect.width) if page_width > 0 else 2.0
             sy = max(1.0, page_height / pdf_rect.height) if page_height > 0 else 2.0
             rect = fitz.Rect(bbox[0] / sx, bbox[1] / sy, bbox[2] / sx, bbox[3] / sy)
-            # High-resolution zoom for crisp vector rendering (4x vs previous 2x)
             zoom = 4.0
             mat = fitz.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat, clip=rect)
             dst.parent.mkdir(parents=True, exist_ok=True)
             if rotation_deg:
-                # PyMuPDF Pixmap has no .rotate() — render at 4x then rotate via PIL
-                # on the high-res pixmap data. Single pass, no double JPEG compression.
-                from PIL import Image
+                from PIL import Image as PILImage
                 import io
-                img = Image.open(io.BytesIO(pix.tobytes("png")))
+                img = PILImage.open(io.BytesIO(pix.tobytes("png")))
                 img = img.rotate(rotation_deg, expand=True, resample=Image.Resampling.LANCZOS)
                 img.save(str(dst))
             else:
@@ -217,6 +284,7 @@ def _write_figure_object_task(
     *,
     pdf_path: Path | None,
     page_cache_dir: Path | None,
+    page_render_context: PageRenderContext | None = None,
     asset_dir: Path,
     render_dir: Path,
 ) -> None:
@@ -234,16 +302,12 @@ def _write_figure_object_task(
     was_cropped = False
     if crop_bbox and all(v > 0 for v in crop_bbox):
         was_cropped = _crop_asset_from_pdf(
-            pdf_path,
-            page,
-            crop_bbox,
-            asset_path_abs,
-            page_width=page_width,
-            page_height=page_height,
+            pdf_path, page, crop_bbox, asset_path_abs,
+            page_width=page_width, page_height=page_height,
             page_cache_dir=page_cache_dir,
-            pdf_doc=None,
-            pdf_doc_provider=None,
+            pdf_doc=None, pdf_doc_provider=None,
             rotation_deg=rotation_deg,
+            page_render_context=page_render_context,
         )
 
     if not was_cropped:
@@ -251,30 +315,24 @@ def _write_figure_object_task(
             bbox = asset_info.get("bbox", [0, 0, 0, 0])
             if pdf_path and bbox and all(v > 0 for v in bbox):
                 if _crop_asset_from_pdf(
-                    pdf_path,
-                    page,
-                    bbox,
-                    asset_path_abs,
-                    page_width=page_width,
-                    page_height=page_height,
+                    pdf_path, page, bbox, asset_path_abs,
+                    page_width=page_width, page_height=page_height,
                     page_cache_dir=page_cache_dir,
-                    pdf_doc=None,
-                    pdf_doc_provider=None,
+                    pdf_doc=None, pdf_doc_provider=None,
                     rotation_deg=rotation_deg,
+                    page_render_context=page_render_context,
                 ):
                     was_cropped = True
                     break
 
-    md = render_figure_object_markdown(
-        {
-            "figure_id": fig_id,
-            "page": page,
-            "caption": caption,
-            "image_relpath": asset_path_rel,
-            "confidence": data.get("confidence", 0.5),
-            "was_cropped": was_cropped,
-        }
-    )
+    md = render_figure_object_markdown({
+        "figure_id": fig_id,
+        "page": page,
+        "caption": caption,
+        "image_relpath": asset_path_rel,
+        "confidence": data.get("confidence", 0.5),
+        "was_cropped": was_cropped,
+    })
     _write_object_markdown(md, render_dir / f"{fig_id}.md")
 
 
@@ -283,6 +341,7 @@ def _write_table_object_task(
     *,
     pdf_path: Path | None,
     page_cache_dir: Path | None,
+    page_render_context: PageRenderContext | None = None,
     asset_dir: Path,
     render_dir: Path,
 ) -> None:
@@ -300,30 +359,24 @@ def _write_table_object_task(
     was_cropped = False
     if data.get("has_asset") and pdf_path and crop_bbox and all(v > 0 for v in crop_bbox):
         was_cropped = _crop_asset_from_pdf(
-            pdf_path,
-            page,
-            crop_bbox,
-            asset_path_abs,
-            page_width=page_width,
-            page_height=page_height,
+            pdf_path, page, crop_bbox, asset_path_abs,
+            page_width=page_width, page_height=page_height,
             page_cache_dir=page_cache_dir,
-            pdf_doc=None,
-            pdf_doc_provider=None,
+            pdf_doc=None, pdf_doc_provider=None,
             rotation_deg=rotation_deg,
+            page_render_context=page_render_context,
         )
 
-    md = render_table_object_markdown(
-        {
-            "table_id": tbl_id,
-            "page": page,
-            "caption": caption,
-            "image_relpath": asset_path_rel,
-            "confidence": 0.85 if was_cropped else 0.4,
-            "formal_table_number": data.get("formal_table_number"),
-            "note_texts": data.get("note_texts", []),
-            "note_match_reason": data.get("note_match_reason", ""),
-        }
-    )
+    md = render_table_object_markdown({
+        "table_id": tbl_id,
+        "page": page,
+        "caption": caption,
+        "image_relpath": asset_path_rel,
+        "confidence": 0.85 if was_cropped else 0.4,
+        "formal_table_number": data.get("formal_table_number"),
+        "note_texts": data.get("note_texts", []),
+        "note_match_reason": data.get("note_match_reason", ""),
+    })
     _write_object_markdown(md, render_dir / f"{tbl_id}.md")
 
 
@@ -332,6 +385,7 @@ def _write_orphan_object_task(
     *,
     pdf_path: Path | None,
     page_cache_dir: Path | None,
+    page_render_context: PageRenderContext | None = None,
     asset_dir: Path,
     render_dir: Path,
 ) -> None:
@@ -346,26 +400,20 @@ def _write_orphan_object_task(
 
     if pdf_path and bbox and all(v > 0 for v in bbox):
         _crop_asset_from_pdf(
-            pdf_path,
-            page,
-            bbox,
-            asset_path_abs,
-            page_width=page_width,
-            page_height=page_height,
+            pdf_path, page, bbox, asset_path_abs,
+            page_width=page_width, page_height=page_height,
             page_cache_dir=page_cache_dir,
-            pdf_doc=None,
-            pdf_doc_provider=None,
+            pdf_doc=None, pdf_doc_provider=None,
+            page_render_context=page_render_context,
         )
 
-    md = render_figure_object_markdown(
-        {
-            "figure_id": orphan_id,
-            "page": page,
-            "caption": "",
-            "image_relpath": asset_path_rel,
-            "confidence": 0.3,
-        }
-    )
+    md = render_figure_object_markdown({
+        "figure_id": orphan_id,
+        "page": page,
+        "caption": "",
+        "image_relpath": asset_path_rel,
+        "confidence": 0.3,
+    })
     _write_object_markdown(md, render_dir / f"{orphan_id}.md")
 
 
@@ -574,37 +622,59 @@ def extract_and_write_objects(
         ))
 
     # ---- Parallel phase: dispatch crops and markdown writes ----
-    max_workers = min(2, os.cpu_count() or 4)
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
-        for task_type, data in tasks:
-            if task_type == "figure":
-                futures.append(executor.submit(
-                    _write_figure_object_task,
-                    data,
-                    pdf_path=pdf_path,
-                    page_cache_dir=page_cache_dir,
-                    asset_dir=figures_asset_dir,
-                    render_dir=figures_render_dir,
-                ))
-            elif task_type == "table":
-                futures.append(executor.submit(
-                    _write_table_object_task,
-                    data,
-                    pdf_path=pdf_path,
-                    page_cache_dir=page_cache_dir,
-                    asset_dir=tables_asset_dir,
-                    render_dir=tables_render_dir,
-                ))
-            elif task_type == "orphan":
-                futures.append(executor.submit(
-                    _write_orphan_object_task,
-                    data,
-                    pdf_path=pdf_path,
-                    page_cache_dir=page_cache_dir,
-                    asset_dir=orphans_asset_dir,
-                    render_dir=figures_render_dir,
-                ))
+    from PIL import Image as PILImage
 
-        for future in as_completed(futures):
-            future.result()
+    doc = None
+    page_render_ctx = None
+    if pdf_path and pdf_path.exists():
+        try:
+            import fitz
+            doc = fitz.open(str(pdf_path))
+            page_render_ctx = PageRenderContext(doc)
+        except Exception:
+            pass
+
+    max_workers = min(2, os.cpu_count() or 4)
+    try:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = []
+            for task_type, data in tasks:
+                if task_type == "figure":
+                    futures.append(executor.submit(
+                        _write_figure_object_task,
+                        data,
+                        pdf_path=pdf_path,
+                        page_cache_dir=page_cache_dir,
+                        page_render_context=page_render_ctx,
+                        asset_dir=figures_asset_dir,
+                        render_dir=figures_render_dir,
+                    ))
+                elif task_type == "table":
+                    futures.append(executor.submit(
+                        _write_table_object_task,
+                        data,
+                        pdf_path=pdf_path,
+                        page_cache_dir=page_cache_dir,
+                        page_render_context=page_render_ctx,
+                        asset_dir=tables_asset_dir,
+                        render_dir=tables_render_dir,
+                    ))
+                elif task_type == "orphan":
+                    futures.append(executor.submit(
+                        _write_orphan_object_task,
+                        data,
+                        pdf_path=pdf_path,
+                        page_cache_dir=page_cache_dir,
+                        page_render_context=page_render_ctx,
+                        asset_dir=orphans_asset_dir,
+                        render_dir=figures_render_dir,
+                    ))
+
+            for future in as_completed(futures):
+                future.result()
+    finally:
+        if doc is not None:
+            try:
+                doc.close()
+            except Exception:
+                pass
