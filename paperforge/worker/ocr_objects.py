@@ -109,7 +109,8 @@ class PageRenderContext:
     a PIL Image, and reused across all crop tasks on that page. No full-page
     JPG is written to disk.
 
-    Thread-safe for concurrent access from multiple crop tasks.
+    Thread-safe for serialized page rendering (lock-guarded) and read-only
+    PIL crop reuse across threads.
     """
     def __init__(self, pdf_doc):
         self._doc = pdf_doc
@@ -147,7 +148,17 @@ class PageRenderContext:
                 zoom_y = (page_height / rect.height) if page_height > 0 else 2.0
                 mat = fitz.Matrix(zoom_x, zoom_y)
                 pix = page.get_pixmap(matrix=mat, alpha=False)
-                img = PILImage.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                if pix.n == 1:
+                    mode = "L"
+                elif pix.n == 3:
+                    mode = "RGB"
+                elif pix.n == 4:
+                    mode = "RGBA"
+                else:
+                    return None
+                img = PILImage.frombytes(mode, (pix.width, pix.height), pix.samples)
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
                 self._images[page_num] = img
                 return img
             except Exception:
@@ -167,40 +178,51 @@ def _crop_asset_from_pdf(
     pdf_doc_provider: Callable[[], Any | None] | None = None,
     rotation_deg: int = 0,
     page_render_context: PageRenderContext | None = None,
+    use_disk_page_cache: bool = True,
 ) -> bool:
-
+    """Crop asset from PDF, with in-memory or disk-cache or direct path.
+    Priority:
+        1. In-memory PageRenderContext (when dims valid, no rotation)
+        2. Disk page cache (when use_disk_page_cache=True, has cache, no rotation)
+        3. Direct PDF clip + render fallback
+    """
     if dst.exists():
         with contextlib.suppress(Exception):
             dst.unlink()
 
-    # ── Fast path: use in-memory page render context ──
-    if page_render_context is not None:
+    # ── 1. In-memory PageRenderContext path ──
+    if (
+        page_render_context is not None
+        and page_width > 0
+        and page_height > 0
+        and not rotation_deg
+    ):
         img = page_render_context.get_page_image(page_num, page_width, page_height)
-        if img is None:
-            return False
-        try:
-            x1, y1, x2, y2 = (int(v) for v in bbox)
-            if x2 <= x1 or y2 <= y1:
+        if img is not None:
+            try:
+                x1, y1, x2, y2 = (int(v) for v in bbox)
+                if x2 <= x1 or y2 <= y1:
+                    return False
+                crop = img.crop((x1, y1, x2, y2))
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                crop.save(dst)
+                return True
+            except Exception:
                 return False
-            crop = img.crop((x1, y1, x2, y2))
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            if rotation_deg:
-                crop = crop.rotate(rotation_deg, expand=True, resample=Image.Resampling.LANCZOS)
-            crop.save(dst)
-            return True
-        except Exception:
-            return False
+        # fall through if render failed
 
-    # ── Original disk-cache path ──
-    cached_page_image = _find_cached_page_image(page_cache_dir, page_num)
-    if cached_page_image is not None and not rotation_deg:
-        try:
-            from paperforge.worker.ocr import crop_block_asset
-        except ImportError:
-            return False
-        ok = crop_block_asset(cached_page_image, [int(v) for v in bbox], dst)
-        return ok
+    # ── 2. Disk page cache path (only when use_disk_page_cache=True) ──
+    if use_disk_page_cache and page_cache_dir is not None and not rotation_deg:
+        cached_page_image = _find_cached_page_image(page_cache_dir, page_num)
+        if cached_page_image is not None:
+            try:
+                from paperforge.worker.ocr import crop_block_asset
+            except ImportError:
+                return False
+            ok = crop_block_asset(cached_page_image, [int(v) for v in bbox], dst)
+            return ok
 
+    # ── 3. Direct PDF clip + render fallback ──
     created_doc = None
     doc = pdf_doc
     if doc is None and pdf_doc_provider is not None:
@@ -218,7 +240,14 @@ def _crop_asset_from_pdf(
         doc = created_doc
 
     try:
-        if page_width > 0 and page_height > 0 and page_cache_dir is not None and not rotation_deg:
+        # Only render+save full page to disk cache when use_disk_page_cache
+        if (
+            use_disk_page_cache
+            and page_width > 0
+            and page_height > 0
+            and page_cache_dir is not None
+            and not rotation_deg
+        ):
             lock = _get_render_lock(page_cache_dir, page_num)
             with lock:
                 cached_page_image = _find_cached_page_image(page_cache_dir, page_num)
@@ -236,10 +265,8 @@ def _crop_asset_from_pdf(
                 try:
                     page_image_path = page_cache_dir / f"page_{page_num:03d}.jpg"
                     rendered = render_pdf_page_cached(
-                        doc,
-                        page_num,
-                        target_width=page_width,
-                        target_height=page_height,
+                        doc, page_num,
+                        target_width=page_width, target_height=page_height,
                         destination=page_image_path,
                     )
                     if not rendered:
@@ -267,7 +294,7 @@ def _crop_asset_from_pdf(
                 from PIL import Image as PILImage
                 import io
                 img = PILImage.open(io.BytesIO(pix.tobytes("png")))
-                img = img.rotate(rotation_deg, expand=True, resample=Image.Resampling.LANCZOS)
+                img = img.rotate(rotation_deg, expand=True, resample=PILImage.Resampling.LANCZOS)
                 img.save(str(dst))
             else:
                 pix.save(str(dst))
@@ -285,6 +312,7 @@ def _write_figure_object_task(
     pdf_path: Path | None,
     page_cache_dir: Path | None,
     page_render_context: PageRenderContext | None = None,
+    use_disk_page_cache: bool = False,
     asset_dir: Path,
     render_dir: Path,
 ) -> None:
@@ -308,6 +336,7 @@ def _write_figure_object_task(
             pdf_doc=None, pdf_doc_provider=None,
             rotation_deg=rotation_deg,
             page_render_context=page_render_context,
+            use_disk_page_cache=use_disk_page_cache,
         )
 
     if not was_cropped:
@@ -321,6 +350,7 @@ def _write_figure_object_task(
                     pdf_doc=None, pdf_doc_provider=None,
                     rotation_deg=rotation_deg,
                     page_render_context=page_render_context,
+                    use_disk_page_cache=use_disk_page_cache,
                 ):
                     was_cropped = True
                     break
@@ -333,15 +363,15 @@ def _write_figure_object_task(
         "confidence": data.get("confidence", 0.5),
         "was_cropped": was_cropped,
     })
+
     _write_object_markdown(md, render_dir / f"{fig_id}.md")
-
-
 def _write_table_object_task(
     data: dict[str, Any],
     *,
     pdf_path: Path | None,
     page_cache_dir: Path | None,
     page_render_context: PageRenderContext | None = None,
+    use_disk_page_cache: bool = False,
     asset_dir: Path,
     render_dir: Path,
 ) -> None:
@@ -365,6 +395,7 @@ def _write_table_object_task(
             pdf_doc=None, pdf_doc_provider=None,
             rotation_deg=rotation_deg,
             page_render_context=page_render_context,
+            use_disk_page_cache=use_disk_page_cache,
         )
 
     md = render_table_object_markdown({
@@ -386,6 +417,7 @@ def _write_orphan_object_task(
     pdf_path: Path | None,
     page_cache_dir: Path | None,
     page_render_context: PageRenderContext | None = None,
+    use_disk_page_cache: bool = False,
     asset_dir: Path,
     render_dir: Path,
 ) -> None:
@@ -405,6 +437,7 @@ def _write_orphan_object_task(
             page_cache_dir=page_cache_dir,
             pdf_doc=None, pdf_doc_provider=None,
             page_render_context=page_render_context,
+            use_disk_page_cache=use_disk_page_cache,
         )
 
     md = render_figure_object_markdown({
@@ -426,8 +459,14 @@ def extract_and_write_objects(
     *,
     page_dimensions_by_page: dict[int, tuple[int, int]] | None = None,
     structured_blocks: list[dict] | None = None,
+    use_disk_page_cache: bool = True,
 ) -> None:
-    """Extract figure/table asset crops from PDF and write object markdown."""
+    """Extract figure/table asset crops from PDF and write object markdown.
+
+    When use_disk_page_cache=False (rebuild mode), no pages/page_XXX.jpg
+    files are created or read — all rendering goes through an in-memory
+    PageRenderContext for determinism.
+    """
     # Validation-first figure matching may retain held figures in inventory,
     # but object emission remains limited to matched figures and unresolved
     # media clusters until figure evidence is sufficient.
@@ -436,15 +475,14 @@ def extract_and_write_objects(
     orphans_asset_dir = asset_root / "orphans"
     figures_render_dir = render_root / "figures"
     tables_render_dir = render_root / "tables"
-    page_cache_dir = asset_root.parent / "pages"
-
+    page_cache_dir = (asset_root.parent / "pages") if use_disk_page_cache else None
     for d in (
         figures_asset_dir,
         tables_asset_dir,
         orphans_asset_dir,
         figures_render_dir,
         tables_render_dir,
-        page_cache_dir,
+        *(page_cache_dir is not None and [page_cache_dir] or []),
     ):
         d.mkdir(parents=True, exist_ok=True)
 
@@ -646,6 +684,7 @@ def extract_and_write_objects(
                         pdf_path=pdf_path,
                         page_cache_dir=page_cache_dir,
                         page_render_context=page_render_ctx,
+                        use_disk_page_cache=use_disk_page_cache,
                         asset_dir=figures_asset_dir,
                         render_dir=figures_render_dir,
                     ))
@@ -656,6 +695,7 @@ def extract_and_write_objects(
                         pdf_path=pdf_path,
                         page_cache_dir=page_cache_dir,
                         page_render_context=page_render_ctx,
+                        use_disk_page_cache=use_disk_page_cache,
                         asset_dir=tables_asset_dir,
                         render_dir=tables_render_dir,
                     ))
@@ -666,6 +706,7 @@ def extract_and_write_objects(
                         pdf_path=pdf_path,
                         page_cache_dir=page_cache_dir,
                         page_render_context=page_render_ctx,
+                        use_disk_page_cache=use_disk_page_cache,
                         asset_dir=orphans_asset_dir,
                         render_dir=figures_render_dir,
                     ))

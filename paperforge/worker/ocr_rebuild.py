@@ -257,10 +257,6 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
                 if pageno < 0 or pageno >= len(doc):
                     continue
 
-                need = [b for b in page_blocks if not b.get("span_metadata")]
-                if not need:
-                    continue  # all blocks on this page done, skip get_text
-
                 try:
                     page = doc[pageno]
                     page_rawdict = page.get_text("rawdict")
@@ -271,7 +267,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
                 ocr_width = int(pdf_rect.width * 2) if pdf_rect.width > 0 else 1200
                 ocr_height = int(pdf_rect.height * 2) if pdf_rect.height > 0 else 1700
 
-                # Extract PDF lines from the same rawdict (replaces Phase 2a)
+                # Always extract PDF lines for this page (needed for figure inventory)
                 page_lines = _extract_lines_from_rawdict(
                     page_rawdict, pageno, pdf_rect,
                     ocr_width=ocr_width, ocr_height=ocr_height,
@@ -279,7 +275,11 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
                 if page_lines:
                     page_pdf_lines_by_page[pageno + 1] = page_lines
 
-                # Extract span metadata for blocks that need it
+                # Only backfill span metadata for blocks that need it
+                need = [b for b in page_blocks if not b.get("span_metadata")]
+                if not need:
+                    continue
+
                 for block in need:
                     bbox = block.get("bbox", [])
                     if not bbox or len(bbox) < 4:
@@ -444,7 +444,13 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         Returns markdown string."""
         from paperforge.worker.ocr_objects import extract_and_write_objects
 
-        _source_pdf_path = Path(ocr_meta.get("source_pdf", "")) if ocr_meta.get("source_pdf") else None
+        # Use the resolved source_pdf_path from Phase 1, not ocr_meta fallback.
+        _source_pdf_path = source_pdf_path
+        if _source_pdf_path is None and ocr_meta.get("source_pdf"):
+            candidate = Path(str(ocr_meta["source_pdf"]))
+            if candidate.exists():
+                _source_pdf_path = candidate
+
         page_dimensions_by_page: dict[int, tuple[int, int]] = {}
         for block in structured:
             page = int(block.get("page", 0) or 0)
@@ -461,6 +467,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             render_root=paper_root / "render",
             page_dimensions_by_page=page_dimensions_by_page,
             structured_blocks=structured,
+            use_disk_page_cache=False,
         )
 
         from paperforge.worker.ocr_render import render_fulltext_markdown, write_render_outputs
