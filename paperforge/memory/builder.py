@@ -370,14 +370,15 @@ def _upsert_body_units(conn: sqlite3.Connection, body_units: list[dict]) -> None
         conn.execute(
             """INSERT OR REPLACE INTO body_units
                (unit_id, paper_id, section_path, unit_text,
-                page_span_json, block_span_json, token_estimate,
-                indexable, veto_reason, quality_hints_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                unit_kind, page_span_json, block_span_json,
+                token_estimate, indexable, veto_reason, quality_hints_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 unit["unit_id"],
                 unit["paper_id"],
                 unit["section_path"],
                 unit["unit_text"],
+                unit.get("unit_kind", "body"),
                 json.dumps(unit.get("page_span", [])),
                 json.dumps(unit.get("block_span", [])),
                 unit.get("token_estimate", 0),
@@ -401,16 +402,19 @@ def _upsert_object_units(conn: sqlite3.Connection, object_units: list[dict]) -> 
     for unit in object_units:
         conn.execute(
             """INSERT OR REPLACE INTO object_units
-               (unit_id, paper_id, section_path, unit_text,
-                object_role, page_span_json, block_span_json,
+               (unit_id, paper_id, section_path,
+                object_kind, object_label, caption_text, nearby_body_text,
+                page_span_json, block_span_json,
                 token_estimate, indexable, veto_reason, quality_hints_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 unit["unit_id"],
                 unit["paper_id"],
                 unit["section_path"],
-                unit["unit_text"],
-                unit.get("object_role", ""),
+                unit.get("object_kind", ""),
+                unit.get("object_label", ""),
+                unit.get("caption_text", ""),
+                unit.get("nearby_body_text", ""),
                 json.dumps(unit.get("page_span", [])),
                 json.dumps(unit.get("block_span", [])),
                 unit.get("token_estimate", 0),

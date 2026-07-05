@@ -137,8 +137,10 @@ def test_build_object_units_from_role_index():
     units = build_object_units(tree=tree, structured_blocks=blocks, role_index=role_index)
     assert len(units) >= 1
     assert units[0]["unit_id"].startswith("P010:object:")
-    assert "Figure 1: Results" in units[0]["unit_text"]
-    assert units[0]["object_role"] == "figure_captions"
+    assert units[0]["object_kind"] == "figure"
+    assert units[0]["object_label"] == "Figure 1"
+    assert units[0]["caption_text"] == "Figure 1: Results"
+    assert "As shown in Figure 1." in units[0]["nearby_body_text"]
 
 
 def test_build_object_units_empty_role_index():
@@ -186,7 +188,7 @@ def test_build_paper_manifest():
 def test_fts_body_units_table_creation(tmp_path):
     db = tmp_path / "test.db"
     conn = sqlite3.connect(str(db))
-    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.row_factory = sqlite3.Row
     conn.execute(CREATE_BODY_UNITS)
     conn.execute(CREATE_BODY_UNITS_FTS)
     conn.commit()
@@ -224,8 +226,10 @@ def test_fts_body_units_table_creation(tmp_path):
     ).fetchall()
     assert len(results) == 1
     assert results[0][0] == "P001:body:sec:1:1-b1:1-b2"
+    # Verify unit_kind was set via DEFAULT
+    row = conn.execute("SELECT unit_kind FROM body_units WHERE unit_id = ?", ("P001:body:sec:1:1-b1:1-b2",)).fetchone()
+    assert row["unit_kind"] == "body"
     conn.close()
-
 
 def test_object_units_table_creation(tmp_path):
     db = tmp_path / "test.db"
@@ -234,22 +238,27 @@ def test_object_units_table_creation(tmp_path):
     conn.execute(CREATE_OBJECT_UNITS)
     conn.commit()
     conn.execute(
-        """INSERT INTO object_units (unit_id, paper_id, section_path, unit_text,
-           object_role, page_span_json, block_span_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO object_units (unit_id, paper_id, section_path,
+           object_kind, object_label, caption_text, nearby_body_text,
+           page_span_json, block_span_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             "P001:object:sec:1:1-f1:1-f1",
             "P001",
             "Figures",
+            "figure",
+            "Figure 1",
             "Figure 1: Results",
-            "figure_captions",
+            "As shown in Figure 1.",
             json.dumps([4, 4]),
             json.dumps([[4, "f1"]]),
         ),
     )
-    row = conn.execute("SELECT unit_id, object_role FROM object_units WHERE unit_id = ?", ("P001:object:sec:1:1-f1:1-f1",)).fetchone()
+    row = conn.execute("SELECT unit_id, object_kind, object_label, caption_text FROM object_units WHERE unit_id = ?", ("P001:object:sec:1:1-f1:1-f1",)).fetchone()
     assert row is not None
-    assert row["object_role"] == "figure_captions"
+    assert row["object_kind"] == "figure"
+    assert row["object_label"] == "Figure 1"
+    assert row["caption_text"] == "Figure 1: Results"
     conn.close()
 
 
@@ -267,4 +276,34 @@ def test_ensure_schema_includes_new_tables(tmp_path):
 
     fts_tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_fts%'").fetchall()]
     assert "body_units_fts" in fts_tables
+    conn.close()
+
+
+def test_body_units_schema_includes_unit_kind(tmp_path):
+    db = tmp_path / "test_schema_body_units.db"
+    conn = sqlite3.connect(str(db))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    ensure_schema(conn)
+
+    cols = {
+        r[1] for r in conn.execute("PRAGMA table_info(body_units)").fetchall()
+    }
+    assert "unit_kind" in cols, "body_units missing unit_kind column"
+    conn.close()
+
+
+def test_object_units_schema_includes_new_columns(tmp_path):
+    db = tmp_path / "test_schema_obj_units.db"
+    conn = sqlite3.connect(str(db))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    ensure_schema(conn)
+
+    cols = {
+        r[1] for r in conn.execute("PRAGMA table_info(object_units)").fetchall()
+    }
+    for col in ("object_kind", "object_label", "caption_text", "nearby_body_text"):
+        assert col in cols, f"object_units missing {col} column"
+    assert "object_role" not in cols, "object_units should not have legacy object_role column"
     conn.close()

@@ -19,6 +19,9 @@ _COMMAND_REGISTRY: dict[str, str] = {
     "prune": "paperforge.commands.prune",
     "paper-navigation": "paperforge.commands.paper_navigation",
     "reading-log": "paperforge.commands.reading_log",
+    "paper-lookup": "paperforge.commands.paper_lookup",
+    "content-discovery": "paperforge.commands.content_discovery",
+    "scoped-fetch": "paperforge.commands.scoped_fetch",
 }
 
 

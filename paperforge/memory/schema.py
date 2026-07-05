@@ -5,7 +5,7 @@ import sqlite3
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SCHEMA_VERSION = 2  # Bump from 1 for reading_log + project_log tables
+CURRENT_SCHEMA_VERSION = 3  # Bump from 2 for unit_kind + object_units schema changes
 
 CREATE_META = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -181,6 +181,7 @@ CREATE TABLE IF NOT EXISTS body_units (
     paper_id TEXT NOT NULL,
     section_path TEXT NOT NULL,
     unit_text TEXT NOT NULL,
+    unit_kind TEXT NOT NULL DEFAULT 'body',
     page_span_json TEXT NOT NULL,
     block_span_json TEXT NOT NULL,
     token_estimate INTEGER NOT NULL,
@@ -206,8 +207,10 @@ CREATE TABLE IF NOT EXISTS object_units (
     unit_id TEXT PRIMARY KEY,
     paper_id TEXT NOT NULL,
     section_path TEXT NOT NULL,
-    unit_text TEXT NOT NULL,
-    object_role TEXT NOT NULL,
+    object_kind TEXT NOT NULL,
+    object_label TEXT NOT NULL,
+    caption_text TEXT NOT NULL,
+    nearby_body_text TEXT NOT NULL DEFAULT '',
     page_span_json TEXT NOT NULL,
     block_span_json TEXT NOT NULL,
     token_estimate INTEGER NOT NULL DEFAULT 0,
@@ -216,6 +219,7 @@ CREATE TABLE IF NOT EXISTS object_units (
     quality_hints_json TEXT NOT NULL DEFAULT '[]'
 );
 """
+
 
 ALL_TABLES = ["body_units", "body_units_fts", "object_units", "paper_fts", "reading_log", "project_log", "paper_events", "paper_assets", "paper_aliases", "papers", "meta"]
 
@@ -230,6 +234,14 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_EVENTS)
     conn.execute(CREATE_READING_LOG)
     conn.execute(CREATE_PROJECT_LOG)
+
+    # Migration: derived tables are rebuildable, drop and recreate when shape changes
+    current_version = get_schema_version(conn)
+    if current_version < 3:
+        logger.info("Migrating schema v%s -> v3: rebuilding body_units, body_units_fts, object_units", current_version)
+        for table in ("body_units", "body_units_fts", "object_units"):
+            conn.execute(f"DROP TABLE IF EXISTS {table};")
+
     conn.execute(CREATE_BODY_UNITS)
     conn.execute(CREATE_BODY_UNITS_FTS)
     conn.execute(CREATE_OBJECT_UNITS)
@@ -239,6 +251,8 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         conn.execute(idx_sql)
     for trigger_sql in FTS_TRIGGERS:
         conn.execute(trigger_sql)
+
+    _set_schema_version(conn, CURRENT_SCHEMA_VERSION)
     conn.commit()
 
 
@@ -266,3 +280,11 @@ def get_schema_version(conn: sqlite3.Connection) -> int:
         return int(row["value"]) if row else 0
     except sqlite3.OperationalError:
         return 0
+
+
+def _set_schema_version(conn: sqlite3.Connection, version: int) -> None:
+    """Write the schema version into the meta table."""
+    conn.execute(
+        "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)",
+        (str(version),),
+    )

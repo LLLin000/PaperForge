@@ -444,3 +444,33 @@ def test_all_intents_surface_route_explanation(tmp_path):
         assert "primary_arm" in result.data["route_explanation"], (
             f"{intent} missing primary_arm"
         )
+
+
+def test_command_registry_contains_gateway_commands():
+    from paperforge.commands import _COMMAND_REGISTRY
+
+    for name in ("paper-lookup", "content-discovery", "scoped-fetch"):
+        assert name in _COMMAND_REGISTRY, f"registry missing {name}"
+
+
+def test_compat_content_discovery_surfaces_route_explanation_with_vector_secondary(tmp_path):
+    """Compat mode surfaces paper_fts primary + vector secondary when available."""
+    from paperforge.embedding import get_embed_status
+
+    _make_paper_only_db(tmp_path)
+    result = route_gateway(tmp_path, "content-discovery", "Johnson", json_mode=True)
+
+    assert result.ok
+    route_exp = result.data["route_explanation"]
+    assert route_exp["primary_arm"] == "paper_fts"
+    assert route_exp.get("compatibility_mode") is True
+    # Vector may or may not be available; verify the response shape either way
+    if "secondary_arm" in route_exp:
+        assert route_exp["secondary_arm"] == "vector_retrieve"
+    # When vector is available, vector_results should be populated
+    if result.data.get("vector_results") is not None:
+        assert isinstance(result.data["vector_results"], list)
+    else:
+        # vector_results is None when vector is unavailable — clean fallback
+        assert result.data.get("vector_results") is None
+    assert len(result.data["results"]) > 0

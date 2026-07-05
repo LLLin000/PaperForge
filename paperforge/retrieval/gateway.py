@@ -5,11 +5,12 @@ route through. Each intent is routed to the correct real data source.
 """
 
 from __future__ import annotations
-
 import json
 import logging
 import re
 from pathlib import Path
+from typing import Any
+
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.io import read_json
@@ -248,7 +249,11 @@ def _run_compat_content_discovery(
     limit: int = 5,
     explanation_note: str = "",
 ) -> PFResult:
-    """Fallback content discovery using ``paper_fts`` (metadata-only)."""
+    """Fallback content discovery using ``paper_fts`` (metadata-only).
+
+    When the vector arm is available, a secondary vector chunk result is
+    included in the response alongside ``paper_fts`` as the primary arm.
+    """
     from paperforge.memory.fts import search_papers
 
     db_path = get_memory_db_path(vault)
@@ -270,25 +275,10 @@ def _run_compat_content_discovery(
     conn = get_connection(db_path, read_only=True)
     try:
         results = search_papers(conn, query, limit=limit)
-        return PFResult(
-            ok=True,
-            command="content-discovery",
-            version=PF_VERSION,
-            data={
-                "intent": "content-discovery",
-                "query": query,
-                "results": results,
-                "count": len(results),
-                "route_explanation": {
-                    "primary_arm": "paper_fts",
-                    "compatibility_mode": True,
-                    "note": (
-                        explanation_note
-                        or "body_units_fts unavailable, using metadata FTS"
-                    ),
-                },
-            },
-        )
+
+        # Secondary arm: vector retrieve if available
+        secondary_arm: str | None = None
+        vector_results = None
     except Exception as exc:
         return PFResult(
             ok=False,
@@ -302,6 +292,43 @@ def _run_compat_content_discovery(
                     "primary_arm": "paper_fts",
                     "error": str(exc),
                 },
+            },
+        )
+    else:
+        try:
+            from paperforge.embedding import get_embed_status, retrieve_chunks
+
+            status = get_embed_status(vault)
+            if status.get("healthy") and status.get("chunk_count", 0) > 0:
+                chunks = retrieve_chunks(vault, query, limit=limit)
+                if chunks:
+                    secondary_arm = "vector_retrieve"
+                    vector_results = chunks
+        except Exception:
+            logger.warning("vector secondary arm unavailable in compat mode", exc_info=True)
+
+        route_explanation: dict[str, Any] = {
+            "primary_arm": "paper_fts",
+            "compatibility_mode": True,
+            "note": (
+                explanation_note
+                or "body_units_fts unavailable, using metadata FTS"
+            ),
+        }
+        if secondary_arm:
+            route_explanation["secondary_arm"] = secondary_arm
+
+        return PFResult(
+            ok=True,
+            command="content-discovery",
+            version=PF_VERSION,
+            data={
+                "intent": "content-discovery",
+                "query": query,
+                "results": results,
+                "count": len(results),
+                "vector_results": vector_results,
+                "route_explanation": route_explanation,
             },
         )
     finally:
