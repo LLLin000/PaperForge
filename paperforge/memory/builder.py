@@ -17,6 +17,8 @@ from paperforge.memory.schema import (
     ensure_schema,
     get_schema_version,
 )
+from paperforge.retrieval.manifest import build_paper_manifest
+from paperforge.retrieval.units import build_body_units, build_object_units
 from paperforge.worker.asset_index import read_index
 from paperforge.worker.asset_state import (
     compute_lifecycle,
@@ -295,3 +297,75 @@ def build_from_index(vault: Path) -> dict:
         raise
     finally:
         conn.close()
+
+def _read_result_hash(paper_dir: Path) -> str:
+    """Read the OCR result hash from a paper's index directory."""
+    result_hash_path = paper_dir / "index" / "result-hash.txt"
+    if result_hash_path.exists():
+        return result_hash_path.read_text(encoding="utf-8").strip()
+    return ""
+
+
+def _upsert_body_units(conn: sqlite3.Connection, body_units: list[dict]) -> None:
+    """Insert or replace body unit rows, then refresh the FTS index."""
+    for unit in body_units:
+        conn.execute(
+            """INSERT OR REPLACE INTO body_units
+               (unit_id, paper_id, section_path, unit_text,
+                page_span_json, block_span_json, token_estimate,
+                indexable, veto_reason, quality_hints_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                unit["unit_id"],
+                unit["paper_id"],
+                unit["section_path"],
+                unit["unit_text"],
+                json.dumps(unit.get("page_span", [])),
+                json.dumps(unit.get("block_span", [])),
+                unit.get("token_estimate", 0),
+                1 if unit.get("indexable") else 0,
+                unit.get("veto_reason", ""),
+                json.dumps(unit.get("quality_hints", [])),
+            ),
+        )
+    # Refresh FTS for all body units of the affected papers
+    paper_ids = list({u["paper_id"] for u in body_units})
+    for pid in paper_ids:
+        conn.execute("DELETE FROM body_units_fts WHERE paper_id = ?", (pid,))
+    conn.execute(
+        """INSERT INTO body_units_fts(rowid, unit_id, paper_id, section_path, unit_text)
+           SELECT rowid, unit_id, paper_id, section_path, unit_text FROM body_units"""
+    )
+
+
+def _upsert_object_units(conn: sqlite3.Connection, object_units: list[dict]) -> None:
+    """Insert or replace object unit rows."""
+    for unit in object_units:
+        conn.execute(
+            """INSERT OR REPLACE INTO object_units
+               (unit_id, paper_id, section_path, unit_text,
+                object_role, page_span_json, block_span_json,
+                token_estimate, indexable, veto_reason, quality_hints_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                unit["unit_id"],
+                unit["paper_id"],
+                unit["section_path"],
+                unit["unit_text"],
+                unit.get("object_role", ""),
+                json.dumps(unit.get("page_span", [])),
+                json.dumps(unit.get("block_span", [])),
+                unit.get("token_estimate", 0),
+                1 if unit.get("indexable") else 0,
+                unit.get("veto_reason", ""),
+                json.dumps(unit.get("quality_hints", [])),
+            ),
+        )
+
+
+def _write_manifest_row(conn: sqlite3.Connection, manifest: dict) -> None:
+    """Store a paper's retrieval manifest in the meta table."""
+    conn.execute(
+        "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+        (f"manifest:{manifest['paper_id']}", json.dumps(manifest)),
+    )

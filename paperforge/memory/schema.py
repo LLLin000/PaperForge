@@ -175,7 +175,49 @@ CREATE TABLE IF NOT EXISTS project_log (
 );
 """
 
-ALL_TABLES = ["paper_fts", "reading_log", "project_log", "paper_events", "paper_assets", "paper_aliases", "papers", "meta"]
+CREATE_BODY_UNITS = """
+CREATE TABLE IF NOT EXISTS body_units (
+    unit_id TEXT PRIMARY KEY,
+    paper_id TEXT NOT NULL,
+    section_path TEXT NOT NULL,
+    unit_text TEXT NOT NULL,
+    page_span_json TEXT NOT NULL,
+    block_span_json TEXT NOT NULL,
+    token_estimate INTEGER NOT NULL,
+    indexable INTEGER NOT NULL,
+    veto_reason TEXT NOT NULL,
+    quality_hints_json TEXT NOT NULL
+);
+"""
+
+CREATE_BODY_UNITS_FTS = """
+CREATE VIRTUAL TABLE IF NOT EXISTS body_units_fts USING fts5(
+    unit_id,
+    paper_id,
+    section_path,
+    unit_text,
+    content='body_units',
+    content_rowid='rowid'
+);
+"""
+
+CREATE_OBJECT_UNITS = """
+CREATE TABLE IF NOT EXISTS object_units (
+    unit_id TEXT PRIMARY KEY,
+    paper_id TEXT NOT NULL,
+    section_path TEXT NOT NULL,
+    unit_text TEXT NOT NULL,
+    object_role TEXT NOT NULL,
+    page_span_json TEXT NOT NULL,
+    block_span_json TEXT NOT NULL,
+    token_estimate INTEGER NOT NULL DEFAULT 0,
+    indexable INTEGER NOT NULL DEFAULT 1,
+    veto_reason TEXT NOT NULL DEFAULT '',
+    quality_hints_json TEXT NOT NULL DEFAULT '[]'
+);
+"""
+
+ALL_TABLES = ["body_units", "body_units_fts", "object_units", "paper_fts", "reading_log", "project_log", "paper_events", "paper_assets", "paper_aliases", "papers", "meta"]
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
@@ -188,6 +230,9 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_EVENTS)
     conn.execute(CREATE_READING_LOG)
     conn.execute(CREATE_PROJECT_LOG)
+    conn.execute(CREATE_BODY_UNITS)
+    conn.execute(CREATE_BODY_UNITS_FTS)
+    conn.execute(CREATE_OBJECT_UNITS)
     for idx_sql in INDEX_SQL:
         conn.execute(idx_sql)
     for idx_sql in EVENT_INDEX_SQL:
@@ -208,6 +253,7 @@ def drop_all_tables(conn: sqlite3.Connection) -> None:
 def clear_fts(conn: sqlite3.Connection) -> None:
     """Delete all FTS index entries (before rebuild)."""
     conn.execute("DELETE FROM paper_fts;")
+    conn.execute("DELETE FROM body_units_fts;")
     conn.commit()
 
 
