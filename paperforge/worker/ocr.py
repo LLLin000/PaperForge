@@ -2029,6 +2029,11 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         resolved_metadata=resolved,
     )
     write_role_index(ocr_root / "index", role_indexes)
+    # --- Phase 6: structure tree ---
+    from paperforge.retrieval.structure_tree import build_structure_tree, write_structure_tree
+
+    structure_tree = build_structure_tree(structured)
+    write_structure_tree(ocr_root / "index", structure_tree)
 
     # Update meta.json with version payloads
     ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))

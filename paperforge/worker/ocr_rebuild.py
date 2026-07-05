@@ -398,6 +398,11 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             resolved_metadata=resolved,
         )
         write_role_index(paper_root / "index", role_indexes)
+        # Rebuild structure tree
+        from paperforge.retrieval.structure_tree import build_structure_tree, write_structure_tree
+
+        structure_tree = build_structure_tree(structured)
+        write_structure_tree(paper_root / "index", structure_tree)
 
         # Update version state in meta.json
         meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
