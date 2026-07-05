@@ -147,6 +147,14 @@ Each task was committed atomically:
 - **For ANN11 (Card layout):** The render dispatch switch is extensible — adding a `case 'ready'` that renders card lanes is the next step. The paper identity header and stale banner are already handled.
 - **Test frameworks verified:** 82 tests across 3 focused files all pass in jsdom environment. The annotation-bridge, annotation-main-runtime, and annotation-section-dom test files remain independently passable.
 
+## Self-Check: PASSED
+
+- All 3 commits verified in git log: `994e318`, `019e633`, `9dfcee1`
+- All 82 tests pass across 3 test files: 27 context + 35 render + 20 controller
+- 8 files created/modified, all present on disk
+- All deviations documented
+- No authentication gates encountered
+
 ---
 *Phase: ANN10 — Plan 01*
 *Completed: 2026-07-05*
