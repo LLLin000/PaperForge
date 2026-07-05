@@ -130,6 +130,7 @@ class SidecarPass:
                     "legend_block_id": cid,
                     "figure_id": figure_id,
                     "figure_number": figure_no,
+                    "text": figure_text,
                     "settlement_type": "sidecar",
                     "flags": ["sidecar_match"],
                     "page": page,

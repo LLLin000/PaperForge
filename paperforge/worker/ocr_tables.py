@@ -149,6 +149,9 @@ def _find_table_caption_continuation(caption: dict, structured_blocks: list[dict
     # reject if starts with Fig/Figure/Scheme/Plate
     if next_text.lower().startswith(("fig", "figure", "scheme", "plate")):
         return None
+    # reject actual table HTML blocks — these are not text continuations
+    if next_text.strip().lower().startswith("<table"):
+        return None
 
     # x-overlap check
     x_overlap = max(0, min(caption_bbox[2], bbox[2]) - max(caption_bbox[0], bbox[0]))
