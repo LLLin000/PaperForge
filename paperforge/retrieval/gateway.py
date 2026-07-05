@@ -153,6 +153,10 @@ def _run_paper_lookup(vault: Path, query: str, *, limit: int = 5) -> PFResult:
                 "query": query,
                 "results": limited,
                 "count": len(limited),
+                "next_action": None if limited else {
+                    "command": "paperforge content-discovery",
+                    "reason": "Identity lookup exhausted. Try content discovery or narrow with author/year/title fragments.",
+                },
                 "route_explanation": {
                     "primary_arm": "lookup_paper",
                     "matched": len(limited) > 0,
