@@ -3,15 +3,15 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from paperforge.embedding._chroma import get_collection
+from paperforge.embedding.backends import get_vector_backend
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
 
 logger = logging.getLogger(__name__)
 
 
 def embed_paper(vault: Path, zotero_key: str, chunks: list[dict]) -> int:
-    """Embed chunks for one paper using API and insert into ChromaDB. Returns count."""
-    collection = get_collection(vault)
+    """Embed chunks for one paper using API and insert into vector DB. Returns count."""
+    backend = get_vector_backend(vault)
     provider = OpenAICompatibleProvider(vault)
 
     texts = [c["text"] for c in chunks]
@@ -28,20 +28,5 @@ def embed_paper(vault: Path, zotero_key: str, chunks: list[dict]) -> int:
     ]
 
     embeddings = provider.encode(texts)
-    try:
-        collection.add(
-            ids=ids,
-            embeddings=embeddings,
-            documents=texts,
-            metadatas=metadatas,
-        )
-    except Exception as exc:
-        err = str(exc).lower()
-        if "hnsw" in err or "compaction" in err or "segment" in err:
-            raise RuntimeError(
-                f"ChromaDB index error (possibly corrupted). "
-                f"Run 'paperforge embed build --force' to rebuild from scratch. "
-                f"Original error: {exc}"
-            ) from exc
-        raise
+    backend.add(ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
     return len(chunks)

@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from paperforge.embedding._chroma import get_collection, get_vector_db_path
+from paperforge.embedding._chroma import get_vector_db_path
 from paperforge.embedding._config import get_api_model
+from paperforge.embedding.backends import get_vector_backend
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +22,12 @@ def get_embed_status(vault: Path) -> dict:
     error = ""
     corrupted = False
     if exists:
-        try:
-            collection = get_collection(vault)
-            chunk_count = collection.count()
-        except Exception as exc:
-            healthy = False
-            error = str(exc)
-            err_lower = str(exc).lower()
-            corrupted = "hnsw" in err_lower or "corrupt" in err_lower
+        backend = get_vector_backend(vault)
+        health = backend.health()
+        healthy = health["healthy"]
+        chunk_count = health.get("chunk_count", 0)
+        error = health.get("error", "")
+        corrupted = health.get("corrupted", False)
 
     model = get_api_model(vault)
 

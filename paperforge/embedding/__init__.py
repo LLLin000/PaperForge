@@ -5,6 +5,11 @@ from paperforge.embedding._chroma import (
     get_collection,
     get_vector_db_path,
 )
+from paperforge.embedding.backends import (
+    ChromaBackend,
+    VectorBackend,
+    get_vector_backend,
+)
 from paperforge.embedding.build_state import (
     get_vector_build_state_path,
     mark_vector_build_state,
@@ -17,10 +22,13 @@ from paperforge.embedding.search import retrieve_chunks
 from paperforge.embedding.status import get_embed_status
 
 __all__ = [
+    "ChromaBackend",
+    "VectorBackend",
     "delete_paper_vectors",
     "embed_paper",
     "get_collection",
     "get_embed_status",
+    "get_vector_backend",
     "get_vector_build_state_path",
     "get_vector_db_path",
     "mark_vector_build_state",
