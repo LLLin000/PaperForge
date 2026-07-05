@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import datetime
 import json
+import logging
 from pathlib import Path
 
 from paperforge.core.io import read_json, write_json
+
+logger = logging.getLogger(__name__)
 
 CURRENT_SPAN_BACKFILL_VERSION = "2026-07-01.1"
 CURRENT_SPAN_VISUAL_CONTAINER_VERSION = "2026-06-26.6"
@@ -116,37 +119,53 @@ def select_papers_for_derived_rebuild(papers: list[dict]) -> list[str]:
     return [p["zotero_key"] for p in papers if p.get("derived_stale") and not p.get("raw_upgradable")]
 
 
-def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None, checkpoint: Path | None = None) -> dict:
-    """Run derived-layer rebuild for the given paper keys without raw OCR rerun.
 
-    Rebuilds: structured blocks, metadata, figure/table inventories, objects,
-    render outputs, and health — from stored raw blocks only.
 
-    If checkpoint is provided, appends each rebuilt key so interrupted runs
-    can skip completed work via --resume.
+def _filter_completed_keys(checkpoint_dir: Path | None, keys: list[str]) -> list[str]:
+    """Return keys that do not have a .done.<key> marker in checkpoint_dir."""
+    if not checkpoint_dir:
+        return keys
+    cp = Path(checkpoint_dir)
+    if not cp.exists():
+        return keys
+    done = {p.name.removeprefix(".done.") for p in cp.glob(".done.*")}
+    return [k for k in keys if k not in done]
+
+
+def _write_done_marker(checkpoint_dir: Path | None, key: str) -> None:
+    """Write a completion marker for a successfully rebuilt paper."""
+    if not checkpoint_dir:
+        return
+    (Path(checkpoint_dir) / f".done.{key}").touch()
+
+
+def _rebuild_one_paper(vault: Path, key: str) -> dict:
+    """Rebuild derived artifacts for a single paper. Module-level for pickle.
+
+    Returns dict with status ('ok', 'skipped') and details.
     """
     from paperforge.worker._utils import pipeline_paths, read_jsonl
     from paperforge.worker.ocr import validate_ocr_meta
     from paperforge.worker.ocr_artifacts import artifact_paths_for_root
 
     ocr_root = pipeline_paths(vault)["ocr"]
-    rebuilt_count = 0
+    artifacts = artifact_paths_for_root(ocr_root, key)
+    paper_root = artifacts.paper_root
 
-    keys_iter = progress_bar(keys, desc="OCR rebuild") if progress_bar else keys
-    for key in keys_iter:
-        artifacts = artifact_paths_for_root(ocr_root, key)
-        paper_root = artifacts.paper_root
-        if not paper_root.exists():
-            continue
+    if not paper_root.exists():
+        return {"key": key, "status": "skipped", "reason": "no_paper_dir"}
+    if not artifacts.blocks_raw.exists():
+        return {"key": key, "status": "skipped", "reason": "no_raw_blocks"}
 
-        # Read stored raw blocks
-        if not artifacts.blocks_raw.exists():
-            continue
-        all_raw_blocks = list(read_jsonl(artifacts.blocks_raw))
+    all_raw_blocks = list(read_jsonl(artifacts.blocks_raw))
+    ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
 
-        # Reject pdf_text_layer_fallback blocks whose text overlaps >=80% with
-        # a non-backfill block on the same page.  These are column fragments
-        # the PDF text layer spilled during the initial OCR backfill.
+    # ── Phase 1: clean raw blocks and span backfill ──
+    def _phase1_span_backfill() -> dict:
+        """Reject overlapping fallback blocks, backfill span_metadata from PDF.
+        Returns (span_meta_patch, source_pdf_path). Modifies all_raw_blocks in place."""
+        nonlocal all_raw_blocks
+
         from paperforge.worker.ocr_pdf_spans import (
             _BACKFILL_OVERLAP_REJECT_THRESHOLD,
             _backfill_coverage_in_existing,
@@ -175,10 +194,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
                 block["_ocr_raw_error_type"] = "backfill_overlaps_existing_text_block"
                 block["_text_source"] = "pdf_text_layer_fallback_rejected"
 
-        # Backfill span_metadata from source PDF
-        ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
         source_pdf_path = _resolve_source_pdf_for_rebuild(vault, key, ocr_meta)
-
         span_meta_patch: dict[str, object] = {}
         covered_count, eligible_count, coverage = _compute_span_backfill_coverage(all_raw_blocks)
 
@@ -223,17 +239,19 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
                     status="rerun_backfill",
                 )
 
-        # Extract normalized PDF rawdict lines for asset-internal figure number recovery
+        return {"span_meta_patch": span_meta_patch, "source_pdf_path": source_pdf_path}
+
+    # ── Phase 2: PDF lines, enrich meta, build structured blocks ──
+    def _phase2_build_structured(source_pdf_path: Path | None) -> dict:
+        """Extract PDF lines, enrich source metadata, build structured blocks.
+        Returns {structured, doc_structure, resolved, source_meta, page_pdf_lines_by_page}."""
         from paperforge.worker.ocr_pdf_spans import extract_pdf_lines_normalized
+
         page_pdf_lines_by_page = extract_pdf_lines_normalized(source_pdf_path)
 
-        # Read source metadata. If legacy/old OCR papers are missing canonical
-        # bibliographic metadata, enrich source_metadata.json from the formal
-        # Literature-hub note frontmatter before rebuilding OCR-derived layers.
         _enrich_meta_from_paper_note(vault, key, artifacts.source_metadata)
         source_meta = read_json(artifacts.source_metadata) if artifacts.source_metadata.exists() else {}
 
-        # Rebuild structured blocks
         from paperforge.worker.ocr_blocks import build_structured_blocks, write_structured_blocks_jsonl
 
         structured, doc_structure = build_structured_blocks(
@@ -241,12 +259,11 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             source_metadata=source_meta,
             structure_output_dir=artifacts.blocks_structured.parent,
         )
-        # Write role-level span profiles
+
         from paperforge.worker.ocr_profiles import write_role_span_profiles
 
         write_role_span_profiles(structured, artifacts.blocks_structured.parent)
 
-        # Rebuild resolved metadata
         from paperforge.worker.ocr_metadata import (
             extract_frontmatter_candidates_from_blocks,
             resolve_metadata,
@@ -264,7 +281,21 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         )
         write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 
-        # Rebuild figure inventory
+        return {
+            "structured": structured,
+            "doc_structure": doc_structure,
+            "resolved": resolved,
+            "source_meta": source_meta,
+            "page_pdf_lines_by_page": page_pdf_lines_by_page,
+        }
+
+    # ── Phase 3: figure/table inventories, bio passes, writebacks ──
+    def _phase3_figure_tables(
+        structured: list[dict],
+        page_pdf_lines_by_page: dict[int, list[dict]],
+        source_meta: dict,
+    ) -> dict:
+        """Build figure and table inventories, run bio passes, resolve conflicts."""
         from paperforge.worker.ocr_figures import (
             build_figure_inventory,
             write_back_figure_roles,
@@ -274,7 +305,6 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         figure_inventory = build_figure_inventory(structured, page_pdf_lines_by_page=page_pdf_lines_by_page)
         write_back_figure_roles(figure_inventory, structured)
 
-        # Author bio passes (Pass B + Pass C)
         from paperforge.worker.ocr_bio import (
             residual_author_bio_pass,
             post_ref_bio_cleanup,
@@ -289,7 +319,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         if ref_start_page is not None:
             post_ref_bio_cleanup(figure_inventory, structured, ref_start_page=ref_start_page)
             prune_figure_inventory_after_bio(figure_inventory)
-        # Rebuild reader figures
+
         from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
 
         reader_payload = synthesize_reader_figures(figure_inventory, structured_blocks=structured)
@@ -297,7 +327,6 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         reader_figures_dir.mkdir(parents=True, exist_ok=True)
         write_json(reader_figures_dir / "reader_figures.json", reader_payload)
 
-        # Rebuild table inventory
         from paperforge.worker.ocr_tables import build_table_inventory, write_back_table_roles, write_table_inventory
 
         table_inventory = build_table_inventory(structured)
@@ -306,8 +335,6 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         resolve_media_asset_conflicts(figure_inventory, table_inventory)
         attach_ownership_conflicts(figure_inventory, table_inventory)
 
-        # Apply object writeback seam (ownership evidence, contained/side-adjacent text, consumed-block contract)
-        # Must run BEFORE write_figure_inventory so claims land in the persisted inventory.
         from paperforge.worker.ocr_object_writeback import apply_object_writebacks
 
         apply_object_writebacks(
@@ -320,15 +347,32 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         write_back_table_roles(table_inventory, structured)
         write_table_inventory(artifacts.blocks_structured.parent / "table_inventory.json", table_inventory)
 
-        # Re-persist structured blocks with writeback roles (table_html, figure_asset)
         # ponytail: writes entire list again; if throughput matters, write only changed blocks
-        write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
+        from paperforge.worker.ocr_blocks import write_structured_blocks_jsonl as _write_structured_blocks_jsonl
+        _write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
 
-        # Rebuild object artifacts
+        return {
+            "figure_inventory": figure_inventory,
+            "table_inventory": table_inventory,
+            "reader_payload": reader_payload,
+        }
+
+    # ── Phase 4: objects, render, health ──
+    def _phase4_render_health(
+        structured: list[dict],
+        resolved: dict,
+        figure_inventory: dict,
+        table_inventory: dict,
+        reader_payload: dict,
+        doc_structure: dict,
+        ocr_meta: dict,
+        source_pdf_path: Path | None,
+    ) -> str:
+        """Extract object artifacts, render fulltext markdown, build health report.
+        Returns markdown string."""
         from paperforge.worker.ocr_objects import extract_and_write_objects
 
-        ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
-        source_pdf_path = Path(ocr_meta.get("source_pdf", "")) if ocr_meta.get("source_pdf") else None
+        _source_pdf_path = Path(ocr_meta.get("source_pdf", "")) if ocr_meta.get("source_pdf") else None
         page_dimensions_by_page: dict[int, tuple[int, int]] = {}
         for block in structured:
             page = int(block.get("page", 0) or 0)
@@ -338,7 +382,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
                 page_dimensions_by_page[page] = (width, height)
 
         extract_and_write_objects(
-            pdf_path=source_pdf_path,
+            pdf_path=_source_pdf_path,
             figure_inventory=figure_inventory,
             table_inventory=table_inventory,
             asset_root=paper_root / "assets",
@@ -347,7 +391,6 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             structured_blocks=structured,
         )
 
-        # Rebuild render output
         from paperforge.worker.ocr_render import render_fulltext_markdown, write_render_outputs
 
         rebuild_page_count = ocr_meta.get("page_count", 0) or 0
@@ -364,7 +407,6 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             reader_payload=reader_payload,
         )
 
-        # Rebuild health
         from paperforge.worker.ocr_health import build_ocr_health, build_ocr_raw_integrity_health, write_ocr_health
 
         health_report = build_ocr_health(
@@ -380,12 +422,20 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         health_report["ocr_raw_integrity"] = build_ocr_raw_integrity_health(all_raw_blocks)
         write_ocr_health(paper_root / "health", health_report)
 
-        # Persist decision log
         from paperforge.worker.ocr_decisions import collect_decisions, write_decision_log
 
         write_decision_log(paper_root / "health" / "decision_log.jsonl", collect_decisions(structured))
 
-        # Rebuild role index
+        return markdown
+
+    # ── Phase 5: indexes, version flags, write meta ──
+    def _phase5_finalize(
+        resolved: dict,
+        structured: list[dict],
+        markdown: str,
+        span_meta_patch: dict,
+    ) -> None:
+        """Rebuild indexes, apply version flags, write meta.json."""
         from paperforge.worker.ocr_index import build_role_indexes, write_role_index
 
         role_indexes = build_role_indexes(
@@ -393,20 +443,19 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             resolved_metadata=resolved,
         )
         write_role_index(paper_root / "index", role_indexes)
-        # Rebuild structure tree
+
         from paperforge.retrieval.structure_tree import build_structure_tree, write_structure_tree
 
         structure_tree = build_structure_tree(structured)
         write_structure_tree(paper_root / "index", structure_tree)
 
-        # Update version state in meta.json
         meta = ocr_meta
         meta.update(span_meta_patch)
         meta = _apply_post_rebuild_version_flags(meta)
-        # Rebuild regenerated the derived outputs; validate from a clean
-        # optimistic status instead of short-circuiting on a stale
-        # done_incomplete value from a previous render.
         meta["ocr_status"] = "done"
+
+        from paperforge.worker.ocr_render import write_render_outputs
+
         meta = write_render_outputs(
             render_root=paper_root / "render",
             user_fulltext=artifacts.compat_fulltext,
@@ -414,21 +463,97 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             meta=meta,
             rebuild_increment=True,
         )
-        # Re-validate and clear stale errors (e.g. page marker mismatch from pre-fix render)
         paths_dict = {"ocr": pipeline_paths(vault)["ocr"]}
         _status, _err = validate_ocr_meta(paths_dict, meta)
         meta["ocr_status"] = _status
         meta["error"] = _err if _err else ""
         write_json(artifacts.meta_json, meta)
 
-        rebuilt_count += 1
-        if checkpoint:
-            done = []
-            if checkpoint.exists():
-                done = json.loads(checkpoint.read_text(encoding="utf-8"))
-            done.append(key)
-            checkpoint.write_text(json.dumps(done, ensure_ascii=False), encoding="utf-8")
+    # ── Execute phases ──
+    phase1_result = _phase1_span_backfill()
+    span_meta_patch = phase1_result["span_meta_patch"]
+    source_pdf_path = phase1_result["source_pdf_path"]
 
+    phase2_result = _phase2_build_structured(source_pdf_path)
+    structured = phase2_result["structured"]
+    doc_structure = phase2_result["doc_structure"]
+    resolved = phase2_result["resolved"]
+    source_meta = phase2_result["source_meta"]
+    page_pdf_lines_by_page = phase2_result["page_pdf_lines_by_page"]
+
+    phase3_result = _phase3_figure_tables(structured, page_pdf_lines_by_page, source_meta)
+    figure_inventory = phase3_result["figure_inventory"]
+    table_inventory = phase3_result["table_inventory"]
+    reader_payload = phase3_result["reader_payload"]
+
+    markdown = _phase4_render_health(
+        structured, resolved, figure_inventory, table_inventory,
+        reader_payload, doc_structure, ocr_meta, source_pdf_path,
+    )
+
+    _phase5_finalize(resolved, structured, markdown, span_meta_patch)
+
+    return {"key": key, "status": "ok"}
+
+
+def _run_parallel_rebuild(vault: Path, keys: list[str], workers: int, checkpoint_dir: Path | None) -> list[dict]:
+    """Run rebuild in parallel using a process pool."""
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
+    results: list[dict] = []
+    with ProcessPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(_rebuild_one_paper, vault, k): k for k in keys}
+        for future in as_completed(futures):
+            key = futures[future]
+            try:
+                result = future.result()
+                if result.get("status") == "ok":
+                    _write_done_marker(checkpoint_dir, key)
+                results.append(result)
+            except Exception as e:
+                results.append({"key": key, "status": "failed", "error": str(e)})
+    return results
+
+
+def run_derived_rebuild_for_keys(
+    vault: Path,
+    keys: list[str],
+    progress_bar=None,
+    checkpoint_dir: Path | None = None,
+    parallel: int = 4,
+) -> dict:
+    """Run derived-layer rebuild for the given paper keys without raw OCR rerun.
+
+    Rebuilds: structured blocks, metadata, figure/table inventories, objects,
+    render outputs, and health — from stored raw blocks only.
+
+    If checkpoint_dir is provided, .done.<key> marker files track progress so
+    interrupted runs can skip completed work via --resume.
+
+    Args:
+        vault: Vault root path.
+        keys: Paper keys to rebuild.
+        progress_bar: Optional progress bar wrapper (tqdm-style).
+        checkpoint_dir: Directory for .done.<key> completion markers.
+        parallel: Number of parallel workers (0 = serial). Default 4.
+    """
+    keys = _filter_completed_keys(checkpoint_dir, keys)
+    if not keys:
+        return {"rebuild_count": 0}
+
+    workers = int(parallel) if parallel else 0
+
+    if workers > 0 and len(keys) > 1:
+        results = _run_parallel_rebuild(vault, keys, workers, checkpoint_dir)
+        return {"rebuild_count": sum(1 for r in results if r.get("status") == "ok")}
+
+    rebuilt_count = 0
+    keys_iter = progress_bar(keys, desc="OCR rebuild") if progress_bar else keys
+    for key in keys_iter:
+        result = _rebuild_one_paper(vault, key)
+        if result.get("status") == "ok":
+            rebuilt_count += 1
+            _write_done_marker(checkpoint_dir, key)
     return {"rebuild_count": rebuilt_count}
 
 

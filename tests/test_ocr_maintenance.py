@@ -18,8 +18,8 @@ def _call(status: str, health: str = "-", version: str = "-",
           can_redo: bool = False, can_rebuild: bool = False,
           error_stage: str = "", error_summary: str = "",
           degraded_reasons: list[str] | None = None) -> dict:
-    from paperforge.worker.ocr_maintenance import _compute_display_fields
-    return _compute_display_fields(
+    from paperforge.worker.ocr_maintenance import OCRMaintenanceRow
+    return OCRMaintenanceRow.compute_display_fields(
         status=status, health_overall=health, version=version,
         can_redo=can_redo, can_rebuild=can_rebuild,
         error_stage=error_stage, error_summary=error_summary,

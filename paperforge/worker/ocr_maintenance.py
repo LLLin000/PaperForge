@@ -46,6 +46,97 @@ class OCRMaintenanceRow:
     fulltext_drift_state: str = "UNKNOWN"
     fulltext_drift_reason: str = ""
     show_in_base: bool = True
+    def __post_init__(self) -> None:
+        df = self.compute_display_fields(
+            status=self.status, health_overall=self.health,
+            version=self.version, can_redo=self.can_redo,
+            can_rebuild=self.can_rebuild, error_stage=self.error_stage,
+            error_summary=self.error_summary,
+            degraded_reasons=self.degraded_reasons,
+        )
+        for k, v in df.items():
+            setattr(self, k, v)
+
+    @staticmethod
+    def compute_display_fields(
+        status: str,
+        health_overall: str,
+        version: str,
+        can_redo: bool,
+        can_rebuild: bool,
+        error_stage: str = "",
+        error_summary: str = "",
+        degraded_reasons: list[str] | None = None,
+    ) -> dict:
+        """Map raw OCR state to display fields for the maintenance tab."""
+        is_degraded = health_overall in ("yellow", "red") or status == "done_degraded"
+
+        if status in ("pending",):
+            return dict(display_action="none", display_label="等待处理", display_label_key="",
+                        display_reason="", display_reason_key="",
+                        display_group="hidden", display_severity="normal",
+                        visible_in_maintenance=False, show_in_base=True)
+        if status in ("running", "queued", "processing"):
+            return dict(display_action="none", display_label="处理中", display_label_key="",
+                        display_reason="", display_reason_key="",
+                        display_group="hidden", display_severity="normal",
+                        visible_in_maintenance=False, show_in_base=True)
+        if status in ("failed", "error", "fatal_error", "done_incomplete", "retryable_error") and can_redo:
+            return dict(display_action="retry_ocr", display_label="重试 OCR",
+                        display_label_key="maintenance_action_retry_ocr",
+                        display_reason="上次处理未完成，可以重新尝试",
+                        display_reason_key="maintenance_reason_retry",
+                        display_group="retry", display_severity="actionable",
+                        visible_in_maintenance=True, show_in_base=True)
+        if version == "v1" and can_redo:
+            return dict(display_action="upgrade_legacy", display_label="升级旧结果",
+                        display_label_key="maintenance_action_upgrade_legacy",
+                        display_reason="旧版本结果仍然可用，升级后可获得更好的章节、图表和问答效果",
+                        display_reason_key="maintenance_reason_legacy",
+                        display_group="legacy_optional", display_severity="optional",
+                        visible_in_maintenance=True, show_in_base=True)
+        if is_degraded and can_rebuild:
+            return dict(display_action="rebuild_result", display_label="重建结果",
+                        display_label_key="",
+                        display_reason="已有OCR数据，可重建获得更稳定的结果",
+                        display_reason_key="",
+                        display_group="rebuild", display_severity="actionable",
+                        visible_in_maintenance=True, show_in_base=True)
+        if is_degraded and not can_rebuild and can_redo:
+            return dict(display_action="retry_ocr", display_label="重试 OCR",
+                        display_label_key="",
+                        display_reason="降级结果无法重建，可重新OCR",
+                        display_reason_key="",
+                        display_group="retry", display_severity="actionable",
+                        visible_in_maintenance=True, show_in_base=True)
+        if status == "nopdf":
+            return dict(display_action="add_pdf", display_label="补充 PDF",
+                        display_label_key="",
+                        display_reason="请去 Zotero 添加 PDF 文件",
+                        display_reason_key="",
+                        display_group="external_action", display_severity="external",
+                        visible_in_maintenance=False, show_in_base=True)
+        if status == "blocked":
+            return dict(display_action="configure_ocr", display_label="配置 OCR",
+                        display_label_key="",
+                        display_reason="请配置 PaddleOCR API Token",
+                        display_reason_key="",
+                        display_group="external_action", display_severity="external",
+                        visible_in_maintenance=False, show_in_base=True)
+        if status == "done" and not is_degraded:
+            return dict(display_action="none", display_label="已完成", display_label_key="",
+                        display_reason="", display_reason_key="",
+                        display_group="hidden", display_severity="normal",
+                        visible_in_maintenance=False, show_in_base=True)
+        if not can_redo and not can_rebuild:
+            return dict(display_action="none", display_label="已完成", display_label_key="",
+                        display_reason="", display_reason_key="",
+                        display_group="hidden", display_severity="normal",
+                        visible_in_maintenance=False, show_in_base=False)
+        return dict(display_action="none", display_label="已完成", display_label_key="",
+                    display_reason="", display_reason_key="",
+                    display_group="hidden", display_severity="normal",
+                    visible_in_maintenance=False, show_in_base=True)
 
     def to_dict(self) -> dict:
         return {
@@ -183,85 +274,7 @@ def _recommended_action(meta: dict, has_raw: bool, has_source_meta: bool) -> str
 
     return ""
 
-def _compute_display_fields(
-    status: str,
-    health_overall: str,
-    version: str,
-    can_redo: bool,
-    can_rebuild: bool,
-    error_stage: str = "",
-    error_summary: str = "",
-    degraded_reasons: list[str] | None = None,
-) -> dict:
-    """Map raw OCR state to display fields for the maintenance tab."""
-    is_degraded = health_overall in ("yellow", "red") or status == "done_degraded"
-
-    if status in ("pending",):
-        return dict(display_action="none", display_label="等待处理", display_label_key="",
-                    display_reason="", display_reason_key="",
-                    display_group="hidden", display_severity="normal",
-                    visible_in_maintenance=False, show_in_base=True)
-    if status in ("running", "queued", "processing"):
-        return dict(display_action="none", display_label="处理中", display_label_key="",
-                    display_reason="", display_reason_key="",
-                    display_group="hidden", display_severity="normal",
-                    visible_in_maintenance=False, show_in_base=True)
-    if status in ("failed", "error", "fatal_error", "done_incomplete", "retryable_error") and can_redo:
-        return dict(display_action="retry_ocr", display_label="重试 OCR",
-                    display_label_key="maintenance_action_retry_ocr",
-                    display_reason="上次处理未完成，可以重新尝试",
-                    display_reason_key="maintenance_reason_retry",
-                    display_group="retry", display_severity="actionable",
-                    visible_in_maintenance=True, show_in_base=True)
-    if version == "v1" and can_redo:
-        return dict(display_action="upgrade_legacy", display_label="升级旧结果",
-                    display_label_key="maintenance_action_upgrade_legacy",
-                    display_reason="旧版本结果仍然可用，升级后可获得更好的章节、图表和问答效果",
-                    display_reason_key="maintenance_reason_legacy",
-                    display_group="legacy_optional", display_severity="optional",
-                    visible_in_maintenance=True, show_in_base=True)
-    if is_degraded and can_rebuild:
-        return dict(display_action="rebuild_result", display_label="重建结果",
-                    display_label_key="",
-                    display_reason="已有OCR数据，可重建获得更稳定的结果",
-                    display_reason_key="",
-                    display_group="rebuild", display_severity="actionable",
-                    visible_in_maintenance=True, show_in_base=True)
-    if is_degraded and not can_rebuild and can_redo:
-        return dict(display_action="retry_ocr", display_label="重试 OCR",
-                    display_label_key="",
-                    display_reason="降级结果无法重建，可重新OCR",
-                    display_reason_key="",
-                    display_group="retry", display_severity="actionable",
-                    visible_in_maintenance=True, show_in_base=True)
-    if status == "nopdf":
-        return dict(display_action="add_pdf", display_label="补充 PDF",
-                    display_label_key="",
-                    display_reason="请去 Zotero 添加 PDF 文件",
-                    display_reason_key="",
-                    display_group="external_action", display_severity="external",
-                    visible_in_maintenance=False, show_in_base=True)
-    if status == "blocked":
-        return dict(display_action="configure_ocr", display_label="配置 OCR",
-                    display_label_key="",
-                    display_reason="请配置 PaddleOCR API Token",
-                    display_reason_key="",
-                    display_group="external_action", display_severity="external",
-                    visible_in_maintenance=False, show_in_base=True)
-    if status == "done" and not is_degraded:
-        return dict(display_action="none", display_label="已完成", display_label_key="",
-                    display_reason="", display_reason_key="",
-                    display_group="hidden", display_severity="normal",
-                    visible_in_maintenance=False, show_in_base=True)
-    if not can_redo and not can_rebuild:
-        return dict(display_action="none", display_label="已完成", display_label_key="",
-                    display_reason="", display_reason_key="",
-                    display_group="hidden", display_severity="normal",
-                    visible_in_maintenance=False, show_in_base=False)
-    return dict(display_action="none", display_label="已完成", display_label_key="",
-                display_reason="", display_reason_key="",
-                display_group="hidden", display_severity="normal",
-                visible_in_maintenance=False, show_in_base=True)
+_compute_display_fields = OCRMaintenanceRow.compute_display_fields
 
 
 def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
@@ -299,7 +312,7 @@ def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
         rec_action = _recommended_action(meta, has_raw, has_source_meta)
 
         # Compute display fields for hash
-        df = _compute_display_fields(
+        df = OCRMaintenanceRow.compute_display_fields(
             status=status, health_overall=health_overall,
             version=version, can_redo=can_redo, can_rebuild=can_rebuild,
             error_stage=_error_stage(meta),

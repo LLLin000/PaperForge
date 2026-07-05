@@ -249,6 +249,11 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild_parser.add_argument("--status", metavar="STATUS", help="Filter by OCR status (done, done_degraded, failed)")
     rebuild_parser.add_argument("--dry-run", action="store_true", help="List papers that would be rebuilt without executing")
     rebuild_parser.add_argument("--resume", action="store_true", help="Skip papers already in checkpoint")
+    parallel_group = rebuild_parser.add_mutually_exclusive_group()
+    parallel_group.add_argument("--parallel", type=int, nargs="?", const=4, default=4, metavar="N",
+        help="Number of parallel workers (default: 4)")
+    parallel_group.add_argument("--no-parallel", dest="parallel", action="store_const", const=0,
+        help="Disable parallel processing (serial)")
 
     # context (Phase 26: traceable AI context packs)
     p_context = sub.add_parser("context", help="Generate traceable AI context pack for paper(s)")

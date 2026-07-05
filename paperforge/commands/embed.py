@@ -20,6 +20,7 @@ from paperforge.embedding.preflight import _preflight_check
 from paperforge.memory.chunker import chunk_fulltext
 from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.worker.asset_index import read_index
+from paperforge.worker._progress import progress_bar
 
 
 def run(args: argparse.Namespace) -> int:
@@ -183,7 +184,8 @@ def run(args: argparse.Namespace) -> int:
     )
 
     i = 0
-    for entry in done_papers:
+    papers_iter = progress_bar(done_papers, desc="Embedding", disable=args.json)
+    for entry in papers_iter:
         key = entry.get("zotero_key")
         fulltext_rel = entry.get("fulltext_path", "")
         if not fulltext_rel:

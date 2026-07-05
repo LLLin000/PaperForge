@@ -323,6 +323,7 @@ def _run_ocr_rebuild(
     status_filter: str | None = None,
     dry_run: bool = False,
     resume: bool = False,
+    parallel_workers: int = 4,
 ) -> int:
     """Rebuild OCR-derived artifacts from existing raw blocks."""
     from paperforge.worker.ocr_maintenance import collect_maintenance_rows
@@ -345,11 +346,10 @@ def _run_ocr_rebuild(
         print("No papers matched for rebuild.")
         return 0
 
-    # Resume: skip keys already in checkpoint
-    cp = vault / "System" / "PaperForge" / ".ocr_rebuild_checkpoint.json"
-    if resume and cp.exists():
-        import json
-        done = set(json.loads(cp.read_text(encoding="utf-8")))
+    # Resume: skip keys already in checkpoint (.done.* markers)
+    cp_dir = vault / "System" / "PaperForge" / ".ocr_rebuild_checkpoint"
+    if resume and cp_dir.exists():
+        done = {p.name.removeprefix(".done.") for p in cp_dir.glob(".done.*")}
         skipped = [k for k in keys if k in done]
         keys = [k for k in keys if k not in done]
         if skipped:
@@ -366,7 +366,12 @@ def _run_ocr_rebuild(
         return 0
 
     from paperforge.worker._progress import progress_bar
-    result = run_derived_rebuild_for_keys(vault, keys, progress_bar=progress_bar, checkpoint=cp)
+    result = run_derived_rebuild_for_keys(
+        vault, keys,
+        progress_bar=progress_bar,
+        checkpoint_dir=cp_dir if resume else None,
+        parallel=parallel_workers,
+    )
     count = result.get("rebuild_count", 0)
     print(f"Done. Rebuilt {count} paper(s).")
     return 0
@@ -417,6 +422,7 @@ def run(args: argparse.Namespace) -> int:
         )
 
     if ocr_action == "rebuild":
+        parallel_workers = 0 if getattr(args, "no_parallel", False) else max(1, int(getattr(args, "parallel", 4) or 4))
         return _run_ocr_rebuild(
             vault,
             keys=getattr(args, "keys", None) or None,
@@ -424,6 +430,7 @@ def run(args: argparse.Namespace) -> int:
             status_filter=getattr(args, "status", None),
             dry_run=getattr(args, "dry_run", False),
             resume=getattr(args, "resume", False),
+            parallel_workers=parallel_workers,
         )
 
     if key:
