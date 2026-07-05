@@ -9,6 +9,35 @@ from paperforge.embedding.backends import get_vector_backend
 
 logger = logging.getLogger(__name__)
 
+def _module_available(name: str) -> bool:
+    """Check whether *name* can be imported without side effects."""
+    import importlib
+
+    try:
+        importlib.import_module(name)
+        return True
+    except ImportError:
+        return False
+
+
+def get_available_backends() -> dict[str, dict]:
+    """Return a dict of known backends with installation and selection status."""
+    return {
+        "chroma": {
+            "installed": True,
+            "selected": True,
+            "supports_hybrid": False,
+            "supports_multimodal": False,
+        },
+        "lancedb": {
+            "installed": _module_available("lancedb"),
+            "selected": False,
+            "supports_hybrid": True,
+            "supports_multimodal": True,
+        },
+    }
+
+
 
 def get_embed_status(vault: Path) -> dict:
     """Get vector DB status. API-only mode.

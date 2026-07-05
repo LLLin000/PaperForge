@@ -26,4 +26,10 @@ class VectorBackend(Protocol):
 
     def delete_paper(self, paper_id: str) -> int: ...
 
+    def capabilities(self) -> dict:
+        """Return a dict describing what this backend supports.
+
+        Keys: backend, supports_hybrid, supports_multimodal.
+        """
+        ...
     def health(self) -> dict: ...

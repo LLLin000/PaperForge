@@ -100,3 +100,10 @@ class ChromaBackend:
                 "error": str(exc),
                 "corrupted": "hnsw" in err_lower or "corrupt" in err_lower,
             }
+
+    def capabilities(self) -> dict:
+        return {
+            "backend": "chroma",
+            "supports_hybrid": False,
+            "supports_multimodal": False,
+        }
