@@ -398,8 +398,8 @@ Do not introduce a second query decomposition implementation.
 - author + 任意标题子集
 - coverage-ranked unions
 
-### Step 5：正文侧补救
-必要时用 FTS / vector 在正文中寻找标题痕迹、作者提及或相关线索。
+### Step 5：停止在 identity 边界
+`paper_lookup` 不自动使用正文 FTS / vector 做跨论文补救。若 metadata / alias / coverage 仍不足，只返回明确的 `next_action`，引导用户或 agent 转入 `content_discovery` 或手动 narrowing；不把“找具体 paper”污染成“找正文里提到它的别的 paper”。
 
 ### 返回值规则
 返回结果不能只有“命中/未命中”，而应包含：
@@ -421,7 +421,7 @@ Layer 4 需要补的是：
 - author/year 交集
 - coverage score
 - `matched_by` 解释
-- 多路径失败后才返回“暂未定位”
+- 多路径失败后才返回“暂未定位”与后续 `next_action`
 
 ## 检索流程
 
