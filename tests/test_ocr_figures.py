@@ -8329,3 +8329,93 @@ def test_group_column_band_composite() -> None:
     right_asset = {"bbox": [700, 100, 1100, 300]}
     band = _group_column_band([left_asset, right_asset], pw)
     assert band is None  # spans multiple columns -> None
+
+
+def test_table_media_asset_excluded_from_figure_assets() -> None:
+    """raw_label=table media_asset with table_html role is excluded from figure pool."""
+    from paperforge.worker.ocr_figures import _is_table_owned_media
+
+    block = {"role": "table_html", "raw_label": "table", "text": "<table><tr><td>data</td></tr></table>"}
+    assert _is_table_owned_media(block) is True
+
+
+def test_table_image_asset_excluded_from_figure_assets() -> None:
+    """raw_label=table_image media_asset is excluded from figure pool."""
+    from paperforge.worker.ocr_figures import _is_table_owned_media
+
+    block = {"role": "media_asset", "raw_label": "table_image", "text": "", "asset_family_hint": "table_like"}
+    assert _is_table_owned_media(block) is True
+
+
+def test_figure_like_image_asset_not_excluded() -> None:
+    """raw_label=image media_asset without table signals stays in figure pool."""
+    from paperforge.worker.ocr_figures import _is_table_owned_media
+
+    block = {"role": "media_asset", "raw_label": "image", "text": ""}
+    assert _is_table_owned_media(block) is False
+
+
+def test_figure_body_range_reference_not_legend() -> None:
+    """'Figure 11-10 shows...' with body_paragraph role is rejected as legend."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "page": 1,
+            "text": "Figure 11-10 shows the molecular structure of polyvinylidene fluoride.",
+            "bbox": [100, 100, 700, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+            "zone": "body_zone",
+        },
+    ]
+    inventory = build_figure_inventory(blocks)
+    assert len(inventory.get("unmatched_legends", [])) == 0
+    assert len(inventory.get("rejected_legends", [])) >= 0
+    assert len(inventory.get("matched_figures", [])) == 0
+
+
+def test_figure_range_body_reference_with_asset_rejected() -> None:
+    """Body paragraph 'Figure 2-4 shows...' with nearby asset is still rejected."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "page": 1,
+            "text": "Figures 2 and 3 show the experimental results for tensile strength.",
+            "bbox": [100, 500, 700, 530],
+            "page_width": 1200,
+            "page_height": 1700,
+            "zone": "body_zone",
+        },
+        {"block_id": "a1", "role": "figure_asset", "page": 1, "bbox": [100, 50, 700, 450]},
+    ]
+    inventory = build_figure_inventory(blocks)
+    unmatched = len(inventory.get("unmatched_legends", []))
+    assert unmatched == 0, f"Expected 0 unmatched legends, got {unmatched}"
+
+
+def test_display_zone_caption_not_rejected_as_inline_ref() -> None:
+    """Display zone legend_like caption 'Figure 3 shows...' is kept."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "cap1",
+            "role": "figure_caption_candidate",
+            "page": 1,
+            "text": "Figure 3. Schematic illustration of the experimental workflow.",
+            "bbox": [100, 500, 700, 530],
+            "page_width": 1200,
+            "page_height": 1700,
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
+        {"block_id": "a1", "role": "figure_asset", "page": 1, "bbox": [100, 50, 700, 450]},
+    ]
+    inventory = build_figure_inventory(blocks)
+    assert len(inventory.get("matched_figures", [])) >= 1

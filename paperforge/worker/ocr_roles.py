@@ -113,9 +113,12 @@ _REFERENCE_HEADING_PATTERN = re.compile(
 )
 
 _INLINE_FIGURE_MENTION_PATTERN = re.compile(
-    r"^\s*(?:fig(?:ure)?\.?\s+\d+[a-z]?|figs?\.?\s+\d+[a-z]?)\s+"
-    r"(?:shows?|illustrates?|depicts?|demonstrates?|presents?|summarizes?|"
-    r"reveals?|indicates?|compares?|contains?|provides?|displays?|represents?)\b",
+    r"^\s*(?:fig(?:ure)?s?\.?)\s+"
+    r"\d+(?:[a-z])?"
+    r"(?:\s*(?:[-–—,]\s*|and|to)\s*\d+(?:[a-z])?)*"
+    r"\s+(?:shows?|illustrates?|depicts?|demonstrates?|presents?|"
+    r"summarizes?|reveals?|indicates?|compares?|contains?|provides?|"
+    r"displays?|represents?|outlines?|reports?|lists?)\b",
     re.I,
 )
 

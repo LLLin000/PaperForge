@@ -85,6 +85,41 @@ _INLINE_FIGURE_MENTION_VERBS = (
 )
 
 
+
+_INLINE_FIGURE_BODY_REF_PATTERN = re.compile(
+    r"^\s*(?:fig(?:ure)?s?\.?)\s+"
+    r"\d+(?:[a-z])?"
+    r"(?:\s*(?:[-–—,]\s*|and|to)\s*\d+(?:[a-z])?)*"
+    r"\s+(?:shows?|shown|illustrates?|depicts?|demonstrates?|"
+    r"presents?|summarizes?|reveals?|indicates?|compares?|"
+    r"contains?|provides?|displays?|represents?|outlines?|"
+    r"reports?|lists?)\b",
+    re.I,
+)
+
+
+def _looks_like_inline_figure_body_reference(text: str) -> bool:
+    """True if text starts with 'Figure N shows/illustrates/...' pattern."""
+    compact = " ".join(str(text or "").split())
+    return bool(_INLINE_FIGURE_BODY_REF_PATTERN.match(compact))
+
+
+def _is_table_owned_media(block: dict) -> bool:
+    """True if a media_asset block belongs to table processing, not figure matching."""
+    raw_label = str(block.get("raw_label") or "").strip().lower()
+    role = _match_role(block)
+    hint = str(block.get("asset_family_hint") or "").strip().lower()
+    text = str(block.get("text") or "").strip().lower()
+
+    if role in {"table_asset", "table_html"}:
+        return True
+    if raw_label in {"table", "table_image"}:
+        return True
+    if hint == "table_like":
+        return True
+    if text.startswith("<table"):
+        return True
+    return False
 def _match_role(block: dict) -> str:
     """Resolve the role to use for matching: role_candidate > role > seed_role."""
     return str(block.get("role_candidate") or block.get("role") or block.get("seed_role") or "")
@@ -108,7 +143,8 @@ def _looks_like_inline_figure_mention(text: str, block: dict | None = None) -> b
             return False
         if zone == "display_zone" and style == "legend_like":
             return False
-    return False
+
+    return _looks_like_inline_figure_body_reference(text)
 
 
 def _extract_figure_number(text: str) -> int | None:
@@ -3253,6 +3289,11 @@ def build_figure_inventory_legacy(
         elif role == "figure_asset":
             assets.append(block)
         elif role == "media_asset":
+            # Table-owned media must be excluded from figure asset pool
+            if _is_table_owned_media(block):
+                block["_figure_asset_reject_reason"] = "table_owned_media"
+                continue
+
             raw_label = str(block.get("raw_label", "")).strip()
             if (
                 raw_label in {"image", "chart", "figure_title", "figure"}

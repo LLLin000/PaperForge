@@ -1716,3 +1716,49 @@ def test_inline_mention_empty_zone_is_body() -> None:
     }
     role = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
     assert role.role == "body_paragraph"
+
+
+def test_assign_block_role_figure_range_body_reference_is_body() -> None:
+    """Hyphenated 'Figure 11-10 shows...' with raw_label=text gets body_paragraph."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "text",
+        "block_content": "Figure 11-10 shows the molecular structure of PVDF under mechanical stress.",
+        "block_bbox": [100, 200, 800, 230],
+        "page": 1,
+        "raw_order": 0,
+    }
+    role = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+    assert role.role == "body_paragraph", f"Expected body_paragraph, got {role.role}"
+
+
+def test_assign_block_role_figure_list_body_reference_is_body() -> None:
+    """'Figures 2 and 3 show...' with raw_label=text gets body_paragraph."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "text",
+        "block_content": "Figures 2 and 3 show the comparison of migration rates under electrical stimulation.",
+        "block_bbox": [100, 200, 800, 230],
+        "page": 1,
+        "raw_order": 0,
+    }
+    role = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+    assert role.role == "body_paragraph", f"Expected body_paragraph, got {role.role}"
+
+
+def test_assign_block_role_formal_caption_not_confused_with_body_ref() -> None:
+    """Short formal 'Figure 2. Caption...' with figure_title label keeps figure_caption."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "figure_title",
+        "block_content": "Figure 2. Cell migration under electrical stimulation.",
+        "block_bbox": [100, 100, 700, 130],
+        "page": 1,
+        "raw_order": 0,
+    }
+    role = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+    # figure_title label should trigger explicit mapping, not body_paragraph
+    assert role.role != "body_paragraph", f"Expected not body_paragraph, got {role.role}"
