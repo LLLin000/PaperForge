@@ -464,7 +464,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_paper_navigation = sub.add_parser("paper-navigation", help="Navigate paper structure through the Layer 4 gateway")
     p_paper_navigation.add_argument("query", help="Paper identifier or DOI for structural navigation")
     p_paper_navigation.add_argument("--json", action="store_true", help="Output JSON")
-    p_paper_navigation.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
 
     p_scoped_fetch = sub.add_parser("scoped-fetch", help="Fetch paper content scoped by query through the Layer 4 gateway")
     p_scoped_fetch.add_argument("query", help="Paper identifier, title, or scoped query for targeted fetch")

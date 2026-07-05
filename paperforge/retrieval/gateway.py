@@ -18,13 +18,6 @@ from paperforge.memory.db import get_connection, get_memory_db_path
 
 logger = logging.getLogger(__name__)
 
-# Map gateway intent names to build_query_plan intent strings
-INTENTS: dict[str, str] = {
-    "paper-lookup": "known-paper",
-    "content-discovery": "content",
-    "paper-navigation": "known-paper",
-    "scoped-fetch": "known-paper",
-}
 
 
 def route_gateway(

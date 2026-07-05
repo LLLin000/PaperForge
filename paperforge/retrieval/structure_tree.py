@@ -13,12 +13,13 @@ def build_structure_tree(structured_blocks: list[dict[str, Any]]) -> dict[str, A
         role = block.get("role")
         text = str(block.get("text", "")).strip()
         if role in {"section_heading", "subsection_heading", "introduction_heading", "abstract_heading"} and text:
+            parent_title = nodes[-1]["title"] if nodes else ""
             current_section = {
                 "node_id": f"sec:{block.get('block_id')}",
                 "kind": "section",
                 "title": text,
                 "level": 1 if role != "subsection_heading" else 2,
-                "section_path": [text] if role != "subsection_heading" else [nodes[-1]["title"], text] if nodes else [text],
+                "section_path": [text] if role != "subsection_heading" else [parent_title, text],
                 "page_span": [block.get("page", 0), block.get("page", 0)],
                 "block_span": [[block.get("page", 0), block.get("block_id", "")]],
                 "children": [],

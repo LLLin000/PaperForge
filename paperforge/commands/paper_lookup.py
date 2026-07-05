@@ -5,7 +5,7 @@ from __future__ import annotations
 from paperforge.retrieval import gateway
 
 
-def run(args):
+def run(args) -> int:
     """Execute ``paper-lookup`` via the Layer 4 gateway."""
     result = gateway.route_gateway(
         args.vault_path,
