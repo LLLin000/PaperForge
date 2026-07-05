@@ -814,3 +814,254 @@ def test_standard_profile_still_flags_missing_structure():
 
     assert report["health_profile"] == "standard"
     assert report["overall"] == "red"
+
+
+def test_figure_completeness_backward_compat_legacy() -> None:
+    """_figure_completeness reads legacy 'figure_legend_completeness' shape."""
+    from paperforge.worker.ocr_health import _figure_completeness
+
+    fi = {"figure_legend_completeness": {"total": 5, "accounted_for": 4, "gap_count": 1}}
+    c = _figure_completeness(fi)
+    assert c == {"total": 5, "accounted_for": 4, "gap_count": 1}
+
+
+def test_figure_completeness_vnext_format() -> None:
+    """_figure_completeness reads vnext 'completeness' shape."""
+    from paperforge.worker.ocr_health import _figure_completeness
+
+    fi = {"completeness": {"total_numbered_legends": 3, "accounted_for": 3, "gap_count": 0}}
+    c = _figure_completeness(fi)
+    assert c == {"total": 3, "accounted_for": 3, "gap_count": 0}
+
+
+def test_figure_completeness_legacy_preferred_over_vnext() -> None:
+    """When both shapes present, legacy takes priority."""
+    from paperforge.worker.ocr_health import _figure_completeness
+
+    fi = {
+        "figure_legend_completeness": {"total": 5, "accounted_for": 4, "gap_count": 1},
+        "completeness": {"total_numbered_legends": 99, "accounted_for": 99, "gap_count": 0},
+    }
+    c = _figure_completeness(fi)
+    assert c == {"total": 5, "accounted_for": 4, "gap_count": 1}
+
+
+def test_figure_completeness_empty_fallback() -> None:
+    """_figure_completeness returns zero-safe dict when neither shape exists."""
+    from paperforge.worker.ocr_health import _figure_completeness
+
+    assert _figure_completeness({}) == {"total": 0, "accounted_for": 0, "gap_count": 0}
+
+
+def test_figure_status_green_no_numbered_figures() -> None:
+    """When total is 0, figure_status is green with 'no_numbered_figures'."""
+    from paperforge.worker.ocr_health import _compute_figure_status
+
+    status, reasons = _compute_figure_status({})
+    assert status == "green"
+    assert "no_numbered_figures" in reasons
+
+
+def test_figure_status_green_full_accounting() -> None:
+    """Full accounting without gaps yields green."""
+    from paperforge.worker.ocr_health import _compute_figure_status
+
+    fi = {"figure_legend_completeness": {"total": 10, "accounted_for": 10, "gap_count": 0}}
+    status, reasons = _compute_figure_status(fi)
+    assert status == "green"
+    assert any("figure_accounting_ok" in r for r in reasons)
+
+
+def test_figure_status_yellow_partial() -> None:
+    """Partial accounting >= 60% yields yellow."""
+    from paperforge.worker.ocr_health import _compute_figure_status
+
+    fi = {"figure_legend_completeness": {"total": 10, "accounted_for": 7, "gap_count": 3}}
+    status, reasons = _compute_figure_status(fi)
+    assert status == "yellow"
+    assert any("partial_figure_accounting" in r for r in reasons)
+
+
+def test_figure_status_red_poor() -> None:
+    """Poor accounting < 60% yields red."""
+    from paperforge.worker.ocr_health import _compute_figure_status
+
+    fi = {"figure_legend_completeness": {"total": 10, "accounted_for": 5, "gap_count": 5}}
+    status, reasons = _compute_figure_status(fi)
+    assert status == "red"
+    assert any("poor_figure_accounting" in r for r in reasons)
+
+
+def test_figure_status_uses_normalized_completeness_not_caption_count() -> None:
+    """figure_status relies on _figure_completeness, never figure_caption_count."""
+    from paperforge.worker.ocr_health import _compute_figure_status
+
+    fi = {"completeness": {"total_numbered_legends": 4, "accounted_for": 4, "gap_count": 0}}
+    status, reasons = _compute_figure_status(fi)
+    assert status == "green"
+
+
+def test_structure_status_computation() -> None:
+    """_compute_structure_status maps blocker count to traffic-light."""
+    from paperforge.worker.ocr_health import _compute_structure_status
+
+    assert _compute_structure_status(0) == ("green", ["all_structural_gates_passed"])
+    assert _compute_structure_status(1) == ("yellow", ["structural_blocker:1"])
+    assert _compute_structure_status(2) == ("red", ["structural_blockers:2"])
+    assert _compute_structure_status(3) == ("red", ["structural_blockers:3"])
+
+
+def test_structure_status_role_gate_degraded_overrides() -> None:
+    """Role gate degraded forces red regardless of blocker count."""
+    from paperforge.worker.ocr_health import _compute_structure_status
+
+    status, reasons = _compute_structure_status(0, role_gate_status="degraded")
+    assert status == "red"
+    assert "structural_role_gate_degraded" in reasons
+
+
+def test_table_status_no_tables() -> None:
+    """No formal tables yields green."""
+    from paperforge.worker.ocr_health import _compute_table_status
+
+    status, reasons = _compute_table_status(
+        formal_table_count=0, table_asset_count=0, ambiguous_count=0, low_confidence_count=0,
+    )
+    assert status == "green"
+    assert "no_formal_tables" in reasons
+
+
+def test_table_status_green_full_coverage() -> None:
+    """Full asset coverage without ambiguity yields green."""
+    from paperforge.worker.ocr_health import _compute_table_status
+
+    status, reasons = _compute_table_status(
+        formal_table_count=5, table_asset_count=5, ambiguous_count=0, low_confidence_count=0,
+    )
+    assert status == "green"
+    assert any("table_assets_ok" in r for r in reasons)
+
+
+def test_table_status_yellow_partial() -> None:
+    """Partial asset coverage with ambiguity yields yellow."""
+    from paperforge.worker.ocr_health import _compute_table_status
+
+    status, reasons = _compute_table_status(
+        formal_table_count=10, table_asset_count=7, ambiguous_count=2, low_confidence_count=0,
+    )
+    assert status == "yellow"
+
+
+def test_table_status_red_no_assets() -> None:
+    """No table assets at all yields red."""
+    from paperforge.worker.ocr_health import _compute_table_status
+
+    status, reasons = _compute_table_status(
+        formal_table_count=3, table_asset_count=0, ambiguous_count=0, low_confidence_count=0,
+    )
+    assert status == "red"
+    assert "no_table_assets" in reasons
+
+
+def test_table_status_red_poor_ratio() -> None:
+    """Asset ratio < 60% yields red."""
+    from paperforge.worker.ocr_health import _compute_table_status
+
+    status, reasons = _compute_table_status(
+        formal_table_count=10, table_asset_count=5, ambiguous_count=0, low_confidence_count=0,
+    )
+    assert status == "red"
+
+
+def test_health_status_split_structure_red_figure_green() -> None:
+    """Structure=red (missing abstract/refs/headings) + figure=green (full accounting)."""
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=10,
+        raw_blocks_count=0,
+        structured_blocks=[
+            {"page": 1, "role": "body_paragraph", "text": "Intro."},
+            {"page": 5, "role": "body_paragraph", "text": "Body."},
+        ],
+        figure_inventory={
+            "matched_figures": [],
+            "held_figures": [],
+            "unmatched_legends": [],
+            "unmatched_assets": [],
+            "figure_legend_completeness": {"total": 8, "accounted_for": 8, "gap_count": 0},
+        },
+        table_inventory={"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": []},
+    )
+
+    assert report["overall"] == "red"
+    assert report["structure_status"] == "red"
+    assert report["figure_status"] == "green"
+
+
+def test_health_status_split_all_fields_present() -> None:
+    """All PR-3 status split fields are present alongside overall."""
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=3,
+        raw_blocks_count=0,
+        structured_blocks=[
+            {"page": 1, "role": "abstract_heading", "text": "Abstract"},
+            {"page": 1, "role": "abstract_body", "text": "A."},
+            {"page": 1, "role": "section_heading", "text": "Intro"},
+            {"page": 2, "role": "subsection_heading", "text": "Method"},
+            {"page": 3, "role": "reference_item", "text": "Ref 1"},
+            {"page": 3, "role": "reference_item", "text": "Ref 2"},
+        ],
+        figure_inventory={
+            "matched_figures": [],
+            "held_figures": [],
+            "unmatched_legends": [],
+            "unmatched_assets": [],
+            "figure_legend_completeness": {"total": 5, "accounted_for": 5, "gap_count": 0},
+        },
+        table_inventory={"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": []},
+    )
+
+    assert "overall" in report
+    assert "structure_status" in report
+    assert "figure_status" in report
+    assert "table_status" in report
+    assert "dimension_statuses" in report
+    assert "status_reasons" in report
+    assert report["dimension_statuses"] == {
+        "structure": report["structure_status"],
+        "figure": report["figure_status"],
+        "table": report["table_status"],
+    }
+    assert len(report["status_reasons"]) >= 3
+    assert report["overall"] == "green"
+
+
+def test_health_status_split_figure_uses_vnext_completeness() -> None:
+    """figure_status works with vnext completeness shape."""
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=3,
+        raw_blocks_count=0,
+        structured_blocks=[
+            {"page": 1, "role": "abstract_heading", "text": "Abstract"},
+            {"page": 1, "role": "abstract_body", "text": "A."},
+            {"page": 1, "role": "section_heading", "text": "Intro"},
+            {"page": 2, "role": "subsection_heading", "text": "Method"},
+            {"page": 3, "role": "reference_item", "text": "Ref 1"},
+        ],
+        figure_inventory={
+            "matched_figures": [],
+            "held_figures": [],
+            "unmatched_legends": [],
+            "unmatched_assets": [],
+            "completeness": {"total_numbered_legends": 3, "accounted_for": 3, "gap_count": 0},
+        },
+        table_inventory={"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": []},
+    )
+
+    assert report["figure_status"] == "green"
+    assert report["overall"] == "green"

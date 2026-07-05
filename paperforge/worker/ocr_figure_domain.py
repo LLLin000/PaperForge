@@ -76,6 +76,11 @@ class FigureCandidateIndex:
                 str(b.get("text", "")), b, corpus.page_width
             )
         ]
+        for leg in formal_legends:
+            text = str(leg.get("text", ""))
+            if ocr_figures._is_figure_continuation_caption(text):
+                leg["_figure_continuation"] = True
+                leg["_continuation_base_number"] = ocr_figures._extract_base_figure_number(text)
         rejected_legends = [b for b in corpus.raw_legends if b not in formal_legends]
         candidate_groups = ocr_figures._build_candidate_figure_groups_from_assets(
             corpus.raw_assets,

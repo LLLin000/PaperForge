@@ -17,11 +17,29 @@ class PrimarySamePagePass:
         from . import ocr_figures
 
         proposals = []
+
+        # Precompute per-page context for short-caption geometry scoring
+        _numbered_count_by_page: dict[int, int] = {}
+        _page_blocks_map: dict[int, list[dict]] = {}
+        _page_height_map: dict[int, float] = {}
+        for _leg in state.candidate_index.deduped_legends:
+            _lp = _resource_page(_leg)
+            if _lp is not None and ocr_figures._extract_figure_number(str(_leg.get("text", ""))) is not None:
+                _numbered_count_by_page[_lp] = _numbered_count_by_page.get(_lp, 0) + 1
+        for _b in state.corpus.blocks:
+            _bp = _resource_page(_b)
+            if _bp is not None:
+                _page_blocks_map.setdefault(_bp, []).append(_b)
+                _bbox = _b.get("bbox") or [0, 0, 0, 0]
+                _page_height_map[_bp] = max(_page_height_map.get(_bp, 0), _bbox[3])
+
         for legend in state.candidate_index.deduped_legends:
             page = _resource_page(legend)
             if page is None:
                 continue
             if ocr_figures._is_previous_page_legend_locator(legend):
+                continue
+            if legend.get("_figure_continuation"):
                 continue
             page_groups = [g for g in state.candidate_index.candidate_groups if _resource_page(g) == page]
             for group in page_groups:
@@ -35,6 +53,9 @@ class PrimarySamePagePass:
                         body_prose_likelihood=False,
                     ),
                     page_width=state.corpus.page_width,
+                    page_height=_page_height_map.get(page, 0.0),
+                    page_blocks=_page_blocks_map.get(page, []),
+                    page_numbered_legend_count=_numbered_count_by_page.get(page, 0),
                 )
                 if score.get("decision") != "matched":
                     continue
@@ -235,4 +256,182 @@ class CrossPageSettlementPass:
                 },
             )
             report.accepted.append(proposal)
+        return report
+
+
+class ContinuationCaptionPass:
+    name = "continuation_caption"
+
+    def _collect_proposals(self, state):
+        from . import ocr_figures
+
+        proposals = []
+        for legend in state.candidate_index.deduped_legends:
+            if not legend.get("_figure_continuation"):
+                continue
+            page = _resource_page(legend)
+            if page is None:
+                continue
+            base_number = legend.get("_continuation_base_number")
+            if base_number is None:
+                continue
+
+            # Compute base marker from cleaned text (without continuation marker)
+            cleaned = ocr_figures._FIGURE_CONTINUATION_PATTERN.sub("", str(legend.get("text", ""))).strip()
+            marker = ocr_figures._extract_figure_marker(cleaned)
+
+            # --- Same-page: match by geometry ---
+            page_groups = [g for g in state.candidate_index.candidate_groups if _resource_page(g) == page]
+            for group in page_groups:
+                score = ocr_figures._score_legend_to_group(
+                    legend,
+                    group,
+                    caption_score=ocr_figures.score_figure_caption(
+                        legend, nearby_media=True, caption_style_match=False, body_prose_likelihood=False,
+                    ),
+                    page_width=state.corpus.page_width,
+                )
+                if score.get("decision") != "matched":
+                    continue
+                proposals.append(
+                    ClaimProposal(
+                        pass_name=self.name,
+                        figure_no=base_number,
+                        claim_type="match",
+                        legends=[
+                            ResourceRef(
+                                kind="legend", page=page, block_id=legend.get("block_id"), figure_no=base_number
+                            )
+                        ],
+                        assets=[
+                            ResourceRef(kind="asset", page=page, block_id=bid)
+                            for bid in group.get("asset_block_ids", [])
+                        ],
+                        groups=[
+                            ResourceRef(
+                                kind="group", page=page, block_id=None, group_id=group.get("group_id")
+                            )
+                        ],
+                        confidence=float(score.get("score", 0.85)),
+                        evidence_rank=0,
+                        reason="continuation_same_page",
+                        diagnostics={
+                            "evidence": list(score.get("evidence", [])),
+                            "legend_block_id": str(legend.get("block_id", "")),
+                            "base_number": base_number,
+                            "namespace": marker["namespace"],
+                            "alpha_prefix": marker["alpha_prefix"],
+                        },
+                    )
+                )
+
+            # --- Cross-page: page +/- 1, no strong interruption ---
+            if not proposals:
+                for offset in (-1, 1):
+                    np = page + offset
+                    if np < 0:
+                        continue
+                    if ocr_figures._has_strong_interruption(np, state.corpus.blocks):
+                        continue
+                    np_groups = [
+                        g for g in state.candidate_index.candidate_groups if _resource_page(g) == np
+                    ]
+                    for group in np_groups:
+                        proposals.append(
+                            ClaimProposal(
+                                pass_name=self.name,
+                                figure_no=base_number,
+                                claim_type="match",
+                                legends=[
+                                    ResourceRef(
+                                        kind="legend", page=page, block_id=legend.get("block_id"), figure_no=base_number
+                                    )
+                                ],
+                                assets=[
+                                    ResourceRef(kind="asset", page=np, block_id=bid)
+                                    for bid in group.get("asset_block_ids", [])
+                                ],
+                                groups=[
+                                    ResourceRef(
+                                        kind="group", page=np, block_id=None, group_id=group.get("group_id")
+                                    )
+                                ],
+                                confidence=0.7,
+                                evidence_rank=0,
+                                reason="continuation_cross_page",
+                                diagnostics={
+                                    "evidence": [],
+                                    "legend_block_id": str(legend.get("block_id", "")),
+                                    "base_number": base_number,
+                                    "namespace": marker["namespace"],
+                                    "alpha_prefix": marker["alpha_prefix"],
+                                    "group_page": np,
+                                },
+                            )
+                        )
+        return proposals
+
+    def _materialize_match(self, state, proposal):
+        from . import ocr_figures
+
+        legend = proposal.legends[0]
+        page = legend.page
+        legend_text = ""
+        for leg in state.candidate_index.deduped_legends:
+            if str(leg.get("block_id", "")) == str(legend.block_id):
+                legend_text = str(leg.get("text", ""))
+                break
+        marker = ocr_figures._extract_figure_marker(legend_text)
+        namespace = marker["namespace"]
+        base_number = proposal.figure_no
+        # Determine what the base figure matches to
+        base_figure_id = ocr_figures._format_figure_id(
+            namespace,
+            base_number,
+            alpha_prefix=marker["alpha_prefix"],
+        )
+        # Unique continuation ID
+        continuation_id = base_figure_id + f"_continued_p{page:03d}_b{legend.block_id}"
+        asset_ids = {str(r.block_id) for r in proposal.assets}
+        matched_assets = [
+            ocr_figures._project_asset_record(a)
+            for a in state.corpus.raw_assets
+            if str(a.get("block_id", "")) in asset_ids
+        ]
+        return {
+            "figure_id": continuation_id,
+            "figure_namespace": namespace,
+            "figure_number": base_number,
+            "legend_block_id": legend.block_id,
+            "page": page,
+            "text": legend_text,
+            "matched_assets": matched_assets,
+            "asset_block_ids": sorted(asset_ids),
+            "settlement_type": proposal.reason,
+            "confidence": proposal.confidence,
+            "match_score": {
+                "score": proposal.confidence,
+                "decision": "matched",
+                "evidence": proposal.diagnostics.get("evidence", []),
+            },
+            "flags": ["continuation"],
+            "bridge_block_ids": [],
+            "continuation_of": base_figure_id,
+            "is_continuation": True,
+        }
+
+    def run(self, state):
+        report = PassReport(pass_name=self.name)
+        proposals = self._collect_proposals(state)
+        report.proposals.extend(proposals)
+
+        for proposal in sorted(proposals, key=lambda p: (p.evidence_rank, -p.confidence, -(p.figure_no or -1))):
+            conflict = state.ledger.try_claim_assets(proposal.assets, owner=proposal.legends[0], reason=proposal.reason)
+            if conflict is not None:
+                report.conflicts.append(conflict)
+                report.rejected.append(proposal)
+                continue
+            state.accept_match(proposal, self._materialize_match(state, proposal))
+            report.accepted.append(proposal)
+
         return report

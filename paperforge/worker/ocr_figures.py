@@ -505,6 +505,30 @@ _TRUNCATED_LEGEND_ONLY_PATTERN = re.compile(
     r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?)\s+(?:S)?\d+(?:\.0+)?\.?$",
     flags=re.IGNORECASE,
 )
+_FIGURE_CONTINUATION_PATTERN = re.compile(
+    r"\(\s*cont(?:inued)?\.?\s*\)|\bcontinued\b", re.I,
+)
+
+
+def _is_figure_continuation_caption(text: str) -> bool:
+    return bool(_FIGURE_CONTINUATION_PATTERN.search(text or ""))
+
+
+def _extract_base_figure_number(text: str) -> int | None:
+    cleaned = _FIGURE_CONTINUATION_PATTERN.sub("", text or "").strip()
+    return _extract_figure_number(cleaned)
+
+def _is_short_numbered_figure_caption(block: dict) -> bool:
+    """True if block text matches a bare "Figure N" (no descriptive text)
+    AND passes zone/style/raw_label gates to avoid false-positive field labels."""
+    text = str(block.get("text") or "").strip()
+    if not _TRUNCATED_LEGEND_ONLY_PATTERN.fullmatch(text):
+        return False
+    return (
+        str(block.get("zone") or "") == "display_zone"
+        or str(block.get("style_family") or "") == "legend_like"
+        or str(block.get("raw_label") or "") == "figure_title"
+    )
 
 
 def _is_validation_first_legend_candidate(block: dict) -> bool:
@@ -1165,6 +1189,60 @@ def _score_legend_to_group(
                 "evidence": ["column_incompatible: legend band=" + str(legend_band) + " group band=" + str(group_band)],
             }
 
+
+    # --- Short caption geometry rescue ---
+    # Truncated "Figure N" legends (no descriptive text) score poorly in
+    # normal scoring.  Apply a geometric-only match when the caption sits
+    # in the same column as the group with a tight vertical gap, and is
+    # page-locally unique (no competing numbered legend in the same column).
+    if _is_short_numbered_figure_caption(legend):
+        # Do not override page_assets groups (have their own gate) or
+        # safe_auto_match groups (already strongly matched).
+        _sc_gt = group.get("group_type", "")
+        if _sc_gt != "page_assets" and not (group.get("safe_auto_match") and len(group.get("media_blocks", [])) >= 2):
+            _leg_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
+            _grp_bbox = group.get("cluster_bbox", [0, 0, 0, 0])
+            _cap_top = _leg_bbox[1]
+            _grp_bot = _grp_bbox[3]
+            _short_caption_matched = False
+            if _grp_bot > 0 and _cap_top > 0:
+                _gap = _cap_top - _grp_bot
+                if -20 <= _gap <= 220:
+                    # Column-band guard (recompute in case rotated-caption skip applied)
+                    _leg_band = _column_band_id(_leg_bbox, page_width)
+                    _grp_band = group.get("column_band")
+                    if _grp_band is None:
+                        _grp_band = _group_column_band(group.get("media_blocks", []), page_width)
+                    if _leg_band is not None and _grp_band is not None and _leg_band != _grp_band:
+                        pass  # column mismatch, fall through to normal scoring
+                    else:
+                        # X-overlap guard for center-band groups (ambiguous column)
+                        _xol = max(0, min(_leg_bbox[2], _grp_bbox[2]) - max(_leg_bbox[0], _grp_bbox[0]))
+                        if _xol <= 0:
+                            pass  # no overlap, fall through to normal scoring
+                        elif page_numbered_legend_count > 1 and page_blocks:
+                            # Page-local uniqueness: if multiple numbered legends on this page,
+                            # only match when this legend is the only one in its column band.
+                            _same_band = [
+                                _b for _b in page_blocks
+                                if _b.get("block_id") != legend.get("block_id")
+                                and _extract_figure_number(str(_b.get("text", ""))) is not None
+                                and _column_band_id(_b.get("bbox") or [0, 0, 0, 0], page_width) == _leg_band
+                            ]
+                            if not _same_band:
+                                _short_caption_matched = True
+                        elif page_numbered_legend_count > 1:
+                            pass  # competing but no page_blocks → fall through
+                        else:
+                            _short_caption_matched = True
+            if _short_caption_matched:
+                _n_assets = len(group.get("media_blocks", []))
+                _score_val = 0.65 if _n_assets >= 2 else 0.62
+                return {
+                    "score": _score_val, "decision": "matched",
+                    "evidence": ["short_caption_geometry", f"gap={int(_gap)}"],
+                }
+            # else: fall through to normal scoring
     gt = group.get("group_type", "")
 
     if gt == "distance_cluster":
@@ -3078,14 +3156,15 @@ def build_figure_inventory_vnext(
     from .ocr_figure_vnext_classic_seq_pass import ClassicSequentialPass, UnresolvedClusterConsolidation
     from .ocr_figure_vnext_composite_pass import CompositeParentPass
     from .ocr_figure_vnext_group_seq_pass import GroupSequentialPass
-    from .ocr_figure_vnext_locator_pass import LocatorBridgePass
     from .ocr_figure_vnext_passes import (
+        ContinuationCaptionPass,
         CrossPageReservationPass,
         CrossPageSettlementPass,
         PrimarySamePagePass,
         _resource_page,
     )
     from .ocr_figure_vnext_sidecar_pass import SidecarPass
+    from .ocr_figure_vnext_locator_pass import LocatorBridgePass
     from .ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
 
     # Recover figure heading prefix from PDF text layer for OCR-missed captions
@@ -3110,6 +3189,7 @@ def build_figure_inventory_vnext(
     reports = run_pairing_passes(
         state,
         [
+            ContinuationCaptionPass,
             PrimarySamePagePass,
             CompositeParentPass,
             SidecarPass,

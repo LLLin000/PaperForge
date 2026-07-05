@@ -110,6 +110,73 @@ def _health_profile(page_count: int) -> str:
     return "short_form" if int(page_count or 0) <= 2 else "standard"
 
 
+
+def _figure_completeness(figure_inventory: dict) -> dict:
+    """Normalize figure completeness from legacy or vnext shape."""
+    c = (
+        figure_inventory.get("figure_legend_completeness")
+        or figure_inventory.get("completeness")
+        or {}
+    )
+    return {
+        "total": int(c.get("total", c.get("total_numbered_legends", 0)) or 0),
+        "accounted_for": int(c.get("accounted_for", 0) or 0),
+        "gap_count": int(c.get("gap_count", 0) or 0),
+    }
+
+
+def _compute_figure_status(figure_inventory: dict) -> tuple[str, list[str]]:
+    c = _figure_completeness(figure_inventory)
+    total = c["total"]
+    accounted = c["accounted_for"]
+    gaps = c["gap_count"]
+
+    if total == 0:
+        return "green", ["no_numbered_figures"]
+
+    ratio = accounted / total
+    if gaps == 0 and ratio >= 0.9:
+        return "green", [f"figure_accounting_ok:{accounted}/{total}"]
+    if ratio >= 0.6:
+        return "yellow", [f"partial_figure_accounting:{accounted}/{total}"]
+    return "red", [f"poor_figure_accounting:{accounted}/{total}"]
+
+
+def _compute_structure_status(
+    structural_blockers: int, role_gate_status: str | None = None
+) -> tuple[str, list[str]]:
+    if role_gate_status == "degraded":
+        return "red", ["structural_role_gate_degraded"]
+    if structural_blockers >= 2:
+        return "red", [f"structural_blockers:{structural_blockers}"]
+    if structural_blockers == 1:
+        return "yellow", [f"structural_blocker:{structural_blockers}"]
+    return "green", ["all_structural_gates_passed"]
+
+
+def _compute_table_status(
+    *,
+    formal_table_count: int,
+    table_asset_count: int,
+    ambiguous_count: int,
+    low_confidence_count: int,
+) -> tuple[str, list[str]]:
+    if formal_table_count == 0:
+        return "green", ["no_formal_tables"]
+    if table_asset_count == 0:
+        return "red", ["no_table_assets"]
+    ratio = table_asset_count / formal_table_count
+    if ratio >= 0.9 and ambiguous_count == 0 and low_confidence_count == 0:
+        return "green", [f"table_assets_ok:{table_asset_count}/{formal_table_count}"]
+    reasons = [f"partial_table_assets:{table_asset_count}/{formal_table_count}"]
+    if ambiguous_count:
+        reasons.append(f"ambiguous:{ambiguous_count}")
+    if low_confidence_count:
+        reasons.append(f"low_confidence:{low_confidence_count}")
+    if ratio >= 0.6:
+        return "yellow", reasons
+    return "red", reasons
+
 def build_ocr_health(
     *,
     page_count: int,
@@ -431,6 +498,34 @@ def build_ocr_health(
     report["degraded_reasons"] = hard_degraded_reasons
     if profile == "short_form":
         report["degraded_reason"] = "short_paper_format"
+
+    # PR-3: status split — additive, preserves overall
+    fig_status, fig_reasons = _compute_figure_status(figure_inventory)
+    struct_status, struct_reasons = _compute_structure_status(
+        structural_blockers, role_gate_summary.get("status")
+    )
+    tbl_status, tbl_reasons = _compute_table_status(
+        formal_table_count=formal_table_count,
+        table_asset_count=table_asset_count,
+        ambiguous_count=ambiguous_table_match_count,
+        low_confidence_count=low_confidence_table_match_count,
+    )
+
+    report["structure_status"] = struct_status
+    report["figure_status"] = fig_status
+    report["table_status"] = tbl_status
+    report["dimension_statuses"] = {
+        "structure": struct_status,
+        "figure": fig_status,
+        "table": tbl_status,
+    }
+    report["status_reasons"] = [
+        {"scope": "structure", "reason": r} for r in struct_reasons
+    ] + [
+        {"scope": "figure", "reason": r} for r in fig_reasons
+    ] + [
+        {"scope": "table", "reason": r} for r in tbl_reasons
+    ]
 
     return report
 
