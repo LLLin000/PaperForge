@@ -1229,6 +1229,7 @@ function scanBbtUnderProfiles(profilesDir) {
 
 
 const VIEW_TYPE_PAPERFORGE = 'paperforge-status';
+const VIEW_TYPE_PAPERFORGE_READING_CANVAS = 'paperforge-reading-canvas';
 const PF_ICON_ID = 'paperforge';
 const PF_RIBBON_SVG = `
     <path d="M62 10H26c-4.4 0-8 3.6-8 8v64c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V30z" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -2812,6 +2813,17 @@ class PaperForgeStatusView extends ItemView {
             ftBtn.createEl('span', { text: '打开全文' });
             ftBtn.addEventListener('click', () => this._openFulltext(entry.fulltext_path));
         }
+        // ── Reading Canvas button (Phase ANN10) ──
+        {
+            const canvasBtn = stripRight.createEl('button', { cls: 'paperforge-contextual-btn' });
+            canvasBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDDD2' });
+            canvasBtn.createEl('span', { text: 'Open Reading Canvas' });
+            const capturedKey = key;
+            const capturedEntry = entry;
+            canvasBtn.addEventListener('click', () => {
+                PaperForgeReadingCanvasView.open(this.plugin || this._plugin || this.app.plugins.plugins.paperforge, capturedKey, capturedEntry);
+            });
+        }
 
         // ── Paper Overview ──
         this._renderPaperOverviewCard(view, entry);
@@ -4357,6 +4369,161 @@ class PaperForgeStatusView extends ItemView {
         const leaf = plugin.app.workspace.getRightLeaf(false);
         if (leaf) {
             await leaf.setViewState({ type: VIEW_TYPE_PAPERFORGE, active: true });
+            plugin.app.workspace.revealLeaf(leaf);
+        }
+    }
+}
+
+// ── Reading Canvas View (Phase ANN10) ──
+
+/**
+ * PaperForge Reading Canvas — an Obsidian ItemView that opens a read-only
+ * canvas shell for a specific paper.  Accepts an explicit paper identity
+ * via setPaperContext() and delegates rendering to src/canvas modules.
+ *
+ * The view does NOT auto-switch when the active paper changes elsewhere
+ * (D-10).  Each canvas instance keeps its own paperKey captured at
+ * setPaperContext() time.
+ *
+ * No edit, delete, create, save, import, apply, write-back, database,
+ * evidence, or concept-card controls appear in any state.
+ */
+class PaperForgeReadingCanvasView extends ItemView {
+    constructor(leaf) {
+        super(leaf);
+        this._paperKey = null;
+        this._paperEntry = null;
+        this._canvasContext = null;
+        this._sessionController = null;
+        this._vm = null;
+    }
+
+    getViewType() {
+        return VIEW_TYPE_PAPERFORGE_READING_CANVAS;
+    }
+
+    getDisplayText() {
+        return this._paperKey
+            ? `Reading Canvas \u2014 ${this._paperKey}`
+            : 'PaperForge Reading Canvas';
+    }
+
+    getIcon() {
+        return PF_ICON_ID;
+    }
+
+    /**
+     * Set the paper context for this canvas session.
+     *
+     * Captures the explicit paperKey and entry at call time.  Never
+     * re-reads from external state (D-10).  Delegates rendering to
+     * src/canvas modules.
+     *
+     * @param {string} paperKey - Authoritative paper identity.
+     * @param {object} entry - Paper entry object with key, title, etc.
+     */
+    setPaperContext(paperKey, entry) {
+        this._paperKey = paperKey;
+        this._paperEntry = entry;
+
+        const canvas = require('./src/canvas');
+        const canvasCtx = canvas.buildCanvasContextFromEntry(entry);
+        this._canvasContext = canvasCtx;
+
+        this._sessionController = canvas.createCanvasSessionController({
+            paperKey: canvasCtx.ok ? canvasCtx.paperKey : null,
+        });
+
+        this._renderCanvas(canvas);
+    }
+
+    /**
+     * Render the canvas shell based on current context.
+     * @param {object} [canvas] - The canvas module (injected for testability).
+     */
+    _renderCanvas(canvas) {
+        canvas = canvas || require('./src/canvas');
+        const contentEl = this.contentEl;
+        contentEl.empty();
+        contentEl.addClass('paperforge-reading-canvas-view');
+
+        const vm = this._buildViewModel();
+        canvas.renderCanvasView(contentEl, vm);
+        this._vm = vm;
+    }
+
+    /**
+     * Build the view-model for the current canvas context.
+     * @returns {{ state: string, paperKey: string|null, message: string, annotations: Array, stale: boolean, errorCode: string|null }}
+     */
+    _buildViewModel() {
+        if (this._canvasContext && this._canvasContext.ok) {
+            return {
+                state: 'idle',
+                paperKey: this._canvasContext.paperKey,
+                message: 'Canvas ready. Load annotations to begin.',
+                annotations: [],
+                stale: false,
+                errorCode: null,
+            };
+        }
+        return {
+            state: 'missing-paper',
+            paperKey: null,
+            message: (this._canvasContext && this._canvasContext.reason)
+                || 'No paper context available.',
+            annotations: [],
+            stale: false,
+            errorCode: null,
+        };
+    }
+
+    async onOpen() {
+        // Context is set via setPaperContext() — nothing extra needed.
+    }
+
+    async onClose() {
+        if (this._sessionController) {
+            this._sessionController.teardown();
+            this._sessionController = null;
+        }
+        this._paperKey = null;
+        this._paperEntry = null;
+        this._canvasContext = null;
+        this._vm = null;
+    }
+
+    /**
+     * Static: open or reveal the Reading Canvas for a specific paper.
+     *
+     * If a canvas leaf already exists, reuses it and updates the context
+     * via setPaperContext().  Otherwise creates a new leaf in the right
+     * sidebar.
+     *
+     * @param {object} plugin - PaperForgePlugin instance.
+     * @param {string} paperKey - Authoritative paper identity.
+     * @param {object} entry - Paper entry object.
+     */
+    static async open(plugin, paperKey, entry) {
+        const leaves = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE_READING_CANVAS);
+        if (leaves.length > 0) {
+            const view = leaves[0].view;
+            if (view && view.setPaperContext) {
+                view.setPaperContext(paperKey, entry);
+            }
+            plugin.app.workspace.revealLeaf(leaves[0]);
+            return;
+        }
+        const leaf = plugin.app.workspace.getRightLeaf(false);
+        if (leaf) {
+            await leaf.setViewState({
+                type: VIEW_TYPE_PAPERFORGE_READING_CANVAS,
+                active: true,
+            });
+            const view = leaf.view;
+            if (view && view.setPaperContext) {
+                view.setPaperContext(paperKey, entry);
+            }
             plugin.app.workspace.revealLeaf(leaf);
         }
     }
@@ -6412,6 +6579,56 @@ class PaperForgeSetupModal extends Modal {
     }
 }
 
+/* ── Reading Canvas open helper (Phase ANN10) ── */
+
+/**
+ * Open or reveal the Reading Canvas for the currently active paper.
+ *
+ * Resolution order:
+ *   1. Paper panel entry (PaperForgeStatusView._currentPaperEntry) — most reliable.
+ *   2. Active file frontmatter zotero_key — fallback.
+ *   3. Fail with a concise Notice asking the user to open a recognized paper.
+ *
+ * @param {object} plugin - PaperForgePlugin instance.
+ */
+function openReadingCanvasForActivePaper(plugin) {
+    const leaves = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE);
+    let paperKey = null;
+    let entry = null;
+
+    if (leaves.length > 0) {
+        const statusView = leaves[0].view;
+        if (statusView && statusView._currentPaperEntry && statusView._currentPaperEntry.key) {
+            paperKey = statusView._currentPaperEntry.key;
+            entry = statusView._currentPaperEntry;
+        }
+    }
+
+    // Fallback: active file frontmatter
+    if (!paperKey) {
+        const activeFile = plugin.app.workspace.getActiveFile();
+        if (activeFile) {
+            try {
+                const fm = plugin.app.metadataCache.getFileCache(activeFile)?.frontmatter;
+                if (fm && fm.zotero_key) {
+                    paperKey = fm.zotero_key;
+                    entry = {
+                        key: fm.zotero_key,
+                        title: fm.title || activeFile.basename,
+                        doi: fm.doi || '',
+                    };
+                }
+            } catch (_) {}
+        }
+    }
+
+    if (paperKey) {
+        PaperForgeReadingCanvasView.open(plugin, paperKey, entry || { key: paperKey });
+    } else {
+        new Notice('[PaperForge] No active paper found. Open a paper note or PDF first.', 6000);
+    }
+}
+
 module.exports = class PaperForgePlugin extends Plugin {
     async onload() {
         await this.loadSettings();
@@ -6429,6 +6646,7 @@ module.exports = class PaperForgePlugin extends Plugin {
         this.saveSettings();
         T = (langFromApp(this.app) === 'zh') ? LANG.zh : LANG.en;
         this.registerView(VIEW_TYPE_PAPERFORGE, (leaf) => new PaperForgeStatusView(leaf));
+        this.registerView(VIEW_TYPE_PAPERFORGE_READING_CANVAS, (leaf) => new PaperForgeReadingCanvasView(leaf));
 
         try { addIcon(PF_ICON_ID, PF_RIBBON_SVG); } catch (_) {}
         this.addRibbonIcon(PF_ICON_ID, 'PaperForge Dashboard', () => PaperForgeStatusView.open(this));
@@ -6439,6 +6657,13 @@ module.exports = class PaperForgePlugin extends Plugin {
             id: 'paperforge-status-panel',
             name: `PaperForge: ${t('guide_open')}`,
             callback: () => PaperForgeStatusView.open(this),
+        });
+
+        // ── Reading Canvas command (Phase ANN10) ──
+        this.addCommand({
+            id: 'paperforge-open-reading-canvas',
+            name: 'PaperForge: Open Reading Canvas for active paper',
+            callback: () => openReadingCanvasForActivePaper(this),
         });
 
         for (const a of ACTIONS) {
@@ -6763,6 +6988,9 @@ module.exports = class PaperForgePlugin extends Plugin {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports.__test = {
         PaperForgeStatusView,
+        PaperForgeReadingCanvasView,
+        openReadingCanvasForActivePaper,
+        VIEW_TYPE_PAPERFORGE_READING_CANVAS,
         extractVaultPdfPath,
         buildPaperPdfCandidates,
         resolveAnnotationPdfTarget,

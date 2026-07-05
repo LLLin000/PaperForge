@@ -54,7 +54,10 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 4. Loaded, empty, missing paper, missing DB, missing source, command failure, refresh, and stale-result states are represented explicitly.
 5. No card interaction exposes create, edit, delete, save, import, apply, or write-back controls.
 
-**Plans:** TBD during phase planning.
+**Plans:** 2 plans
+
+- [ ] `ANN11-01-PLAN.md` - Card view-models and deterministic layout pure contracts (Wave 1).
+- [ ] `ANN11-02-PLAN.md` - Card lane DOM, CSS resilience, i18n, and guarded runtime gate (Wave 2, depends on ANN10-02 and ANN11-01).
 
 ### Phase ANN12: Controlled Reading Surface and Source Anchors
 

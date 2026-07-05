@@ -2898,3 +2898,45 @@
     white-space: pre-wrap;
     margin-bottom: 2px;
 }
+
+/* ── Reading Canvas (Phase ANN10) ── */
+.paperforge-reading-canvas-view {
+    padding: 16px;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-identity {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-identity-key {
+    font-family: var(--font-monospace);
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-left: 8px;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-message {
+    font-size: 14px;
+    color: var(--text-muted);
+    padding: 8px 0;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-missing-icon {
+    font-size: 48px;
+    text-align: center;
+    padding: 24px 0 8px 0;
+    opacity: 0.4;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-missing-text {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-faint);
+    padding: 8px 16px;
+}
