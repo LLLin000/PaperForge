@@ -5,6 +5,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from paperforge.core.io import read_json
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
@@ -184,6 +185,8 @@ def build_from_index(vault: Path) -> dict:
         conn.execute("DELETE FROM paper_aliases;")
         conn.execute("DELETE FROM paper_assets;")
         conn.execute("DELETE FROM papers;")
+        conn.execute("DELETE FROM body_units;")
+        conn.execute("DELETE FROM object_units;")
         conn.execute("PRAGMA foreign_keys=ON;")
 
         clear_fts(conn)
@@ -266,6 +269,59 @@ def build_from_index(vault: Path) -> dict:
             "DELETE FROM paper_events WHERE event_type != 'correction_note';"
         )
 
+        # Build and persist retrieval units for papers with OCR output
+        body_unit_count = 0
+        object_unit_count = 0
+        ocr_root = vault / "System" / "PaperForge" / "ocr"
+        if ocr_root.exists():
+            for entry in items:
+                zotero_key = entry.get("zotero_key", "")
+                if not zotero_key:
+                    continue
+                ocr_dir = ocr_root / zotero_key
+                index_root = ocr_dir / "index"
+                tree_path = index_root / "structure-tree.json"
+                structured_path = ocr_dir / "structured-blocks.json"
+                if not tree_path.exists() or not structured_path.exists():
+                    continue
+                tree = read_json(tree_path)
+                structured_blocks = read_json(structured_path)
+                role_index_path = index_root / "role-index.json"
+                role_index = read_json(role_index_path) if role_index_path.exists() else {}
+                body_units = build_body_units(tree=tree, structured_blocks=structured_blocks)
+                object_units = build_object_units(
+                    tree=tree, structured_blocks=structured_blocks, role_index=role_index
+                )
+                _upsert_body_units(conn, body_units)
+                _upsert_object_units(conn, object_units)
+
+                ocr_result_hash = _read_result_hash(ocr_dir)
+                manifest = build_paper_manifest(
+                    paper_id=zotero_key,
+                    ocr_result_hash=ocr_result_hash,
+                    structure_tree_bytes=tree_path.read_bytes(),
+                    retrieval_policy_version="l4.body.v1",
+                    body_units=body_units,
+                    object_units=object_units,
+                    source_paths={
+                        "structured_blocks": str(structured_path),
+                        "role_index": str(role_index_path),
+                        "fulltext": str(ocr_dir / "fulltext.md"),
+                    },
+                )
+                _write_manifest_row(conn, manifest)
+                body_unit_count += len(body_units)
+                object_unit_count += len(object_units)
+                logger.info(
+                    "Built %d body + %d object units for %s",
+                    len(body_units), len(object_units), zotero_key,
+                )
+        if body_unit_count or object_unit_count:
+            logger.info(
+                "Retrieval units built: %d body, %d object",
+                body_unit_count, object_unit_count,
+            )
+
         meta_upserts = [
             ("schema_version", str(CURRENT_SCHEMA_VERSION)),
             ("paperforge_version", PF_VERSION),
@@ -291,6 +347,8 @@ def build_from_index(vault: Path) -> dict:
             "project_entries_imported": project_count,
             "corrections_imported": correction_count,
             "schema_version": str(CURRENT_SCHEMA_VERSION),
+            "body_units_built": body_unit_count,
+            "object_units_built": object_unit_count,
         }
     except Exception:
         conn.rollback()

@@ -94,13 +94,9 @@ def build_object_units(
                     continue
                 text = str(entry.get("text", ""))
                 uid = build_unit_id(
-                    paper_id,
-                    "object",
-                    node["node_id"],
-                    node["page_span"][0],
-                    span[0][1] if span else "",
-                    node["page_span"][1],
-                    span[-1][1] if span else "",
+                    paper_id, "object", node["node_id"],
+                    node["page_span"][0], entry.get("block_id", ""),
+                    node["page_span"][1], entry.get("block_id", ""),
                 )
                 unit = {
                     "unit_id": uid,
