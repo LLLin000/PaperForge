@@ -126,7 +126,15 @@ def run(args: argparse.Namespace) -> int:
             finally:
                 conn.close()
 
-    data = {"query": query, "chunks": chunks, "count": len(chunks)}
+    data = {
+        "query": query,
+        "chunks": chunks,
+        "count": len(chunks),
+        "route_explanation": {
+            "primary_arm": "vector_retrieve",
+            "compatibility_mode": False,
+        },
+    }
     warnings: list[str] = []
     next_actions: list[dict] = []
     if len(chunks) == 0:

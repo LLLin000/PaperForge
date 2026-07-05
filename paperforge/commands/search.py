@@ -59,6 +59,10 @@ def run(args: argparse.Namespace) -> int:
                 "lifecycle": args.lifecycle,
                 "next_step": args.next_step,
             },
+            "route_explanation": {
+                "primary_arm": "paper_fts",
+                "compatibility_mode": False,
+            },
         }
         warnings: list[str] = []
         next_actions: list[dict] = []
