@@ -161,9 +161,12 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
 
     # ── Phase 1: clean raw blocks and span backfill ──
-    def _phase1_span_backfill() -> dict:
-        """Reject overlapping fallback blocks, backfill span_metadata from PDF.
-        Returns (span_meta_patch, source_pdf_path). Modifies all_raw_blocks in place."""
+    def _phase1_span_and_lines() -> dict:
+        """Backfill rejection, then open PDF once for both span metadata and PDF lines.
+
+        Returns:
+            span_meta_patch, source_pdf_path, page_pdf_lines_by_page
+        """
         nonlocal all_raw_blocks
 
         from paperforge.worker.ocr_pdf_spans import (
@@ -196,58 +199,127 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
 
         source_pdf_path = _resolve_source_pdf_for_rebuild(vault, key, ocr_meta)
         span_meta_patch: dict[str, object] = {}
-        covered_count, eligible_count, coverage = _compute_span_backfill_coverage(all_raw_blocks)
+        page_pdf_lines_by_page: dict[int, list[dict]] = {}
 
         if not source_pdf_path or not source_pdf_path.exists():
+            covered_count, eligible_count, coverage = _compute_span_backfill_coverage(all_raw_blocks)
             span_meta_patch = _update_span_status_meta(
-                ocr_meta,
-                covered_count=covered_count,
-                eligible_count=eligible_count,
-                coverage=coverage,
-                status="unavailable_pdf_missing",
+                ocr_meta, covered_count=covered_count, eligible_count=eligible_count,
+                coverage=coverage, status="unavailable_pdf_missing",
             )
-        else:
-            from paperforge.worker.ocr_artifacts import compute_pdf_fingerprint
+            return {"span_meta_patch": span_meta_patch, "source_pdf_path": source_pdf_path,
+                    "page_pdf_lines_by_page": page_pdf_lines_by_page}
 
-            current_fp = compute_pdf_fingerprint(source_pdf_path)
-            if current_fp != "unknown" and _span_backfill_is_valid(
-                ocr_meta,
-                current_pdf_fingerprint=current_fp,
-                coverage=coverage,
-            ):
-                span_meta_patch = _update_span_validity_meta(
-                    ocr_meta,
-                    fingerprint=current_fp,
-                    covered_count=covered_count,
-                    eligible_count=eligible_count,
-                    coverage=coverage,
-                    status="skipped_valid",
+        from paperforge.worker.ocr_artifacts import compute_pdf_fingerprint
+        import fitz
+
+        current_fp = compute_pdf_fingerprint(source_pdf_path)
+        if current_fp == "unknown":
+            covered_count, eligible_count, coverage = _compute_span_backfill_coverage(all_raw_blocks)
+            span_meta_patch = _update_span_status_meta(
+                ocr_meta, covered_count=covered_count, eligible_count=eligible_count,
+                coverage=coverage, status="skipped_pdf_unavailable",
+            )
+            return {"span_meta_patch": span_meta_patch, "source_pdf_path": source_pdf_path,
+                    "page_pdf_lines_by_page": page_pdf_lines_by_page}
+
+        covered_count, eligible_count, coverage = _compute_span_backfill_coverage(all_raw_blocks)
+        if _span_backfill_is_valid(ocr_meta, current_pdf_fingerprint=current_fp, coverage=coverage):
+            span_meta_patch = _update_span_validity_meta(
+                ocr_meta, fingerprint=current_fp,
+                covered_count=covered_count, eligible_count=eligible_count,
+                coverage=coverage, status="skipped_valid",
+            )
+            # Span skipped, but PDF lines still needed for figure inventory.
+            from paperforge.worker.ocr_pdf_spans import extract_pdf_lines_normalized
+            page_pdf_lines_by_page = extract_pdf_lines_normalized(source_pdf_path)
+            return {"span_meta_patch": span_meta_patch, "source_pdf_path": source_pdf_path,
+                    "page_pdf_lines_by_page": page_pdf_lines_by_page}
+
+        # ── Need span backfill: open PDF once, do both operations ──
+        from paperforge.worker.ocr_pdf_spans import (
+            _spans_from_rawdict, _extract_lines_from_rawdict,
+            _map_ocr_bbox_to_pdf_rect, _fitz_quiet_open,
+        )
+        from collections import defaultdict
+
+        raw_blocks_by_page: dict[int, list[dict]] = defaultdict(list)
+        for block in all_raw_blocks:
+            try:
+                pageno = int(block.get("page", 1)) - 1
+            except Exception:
+                pageno = 0
+            raw_blocks_by_page[pageno].append(block)
+
+        doc = _fitz_quiet_open(str(source_pdf_path))
+        try:
+            for pageno, page_blocks in raw_blocks_by_page.items():
+                if pageno < 0 or pageno >= len(doc):
+                    continue
+
+                need = [b for b in page_blocks if not b.get("span_metadata")]
+                if not need:
+                    continue  # all blocks on this page done, skip get_text
+
+                try:
+                    page = doc[pageno]
+                    page_rawdict = page.get_text("rawdict")
+                except Exception:
+                    continue
+
+                pdf_rect = page.rect
+                ocr_width = int(pdf_rect.width * 2) if pdf_rect.width > 0 else 1200
+                ocr_height = int(pdf_rect.height * 2) if pdf_rect.height > 0 else 1700
+
+                # Extract PDF lines from the same rawdict (replaces Phase 2a)
+                page_lines = _extract_lines_from_rawdict(
+                    page_rawdict, pageno, pdf_rect,
+                    ocr_width=ocr_width, ocr_height=ocr_height,
                 )
-            else:
-                from paperforge.worker.ocr_blocks import write_raw_blocks_jsonl
-                from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
+                if page_lines:
+                    page_pdf_lines_by_page[pageno + 1] = page_lines
 
-                backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
-                covered_count, eligible_count, coverage = _compute_span_backfill_coverage(all_raw_blocks)
-                write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
-                span_meta_patch = _update_span_validity_meta(
-                    ocr_meta,
-                    fingerprint=current_fp,
-                    covered_count=covered_count,
-                    eligible_count=eligible_count,
-                    coverage=coverage,
-                    status="rerun_backfill",
-                )
+                # Extract span metadata for blocks that need it
+                for block in need:
+                    bbox = block.get("bbox", [])
+                    if not bbox or len(bbox) < 4:
+                        continue
+                    try:
+                        pw = block.get("page_width")
+                        ph = block.get("page_height")
+                        if pw and ph and pw > 0 and ph > 0:
+                            rect = _map_ocr_bbox_to_pdf_rect(bbox, pw, ph, page)
+                        else:
+                            rect = fitz.Rect(*bbox)
+                    except Exception:
+                        continue
+                    if rect.is_empty or rect.width <= 0 or rect.height <= 0:
+                        continue
+                    spans = _spans_from_rawdict(page_rawdict, rect)
+                    if spans:
+                        block["span_metadata"] = spans
+        finally:
+            doc.close()
 
-        return {"span_meta_patch": span_meta_patch, "source_pdf_path": source_pdf_path}
+        covered_count, eligible_count, coverage = _compute_span_backfill_coverage(all_raw_blocks)
+        from paperforge.worker.ocr_blocks import write_raw_blocks_jsonl
+        write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
+        span_meta_patch = _update_span_validity_meta(
+            ocr_meta, fingerprint=current_fp,
+            covered_count=covered_count, eligible_count=eligible_count,
+            coverage=coverage, status="rerun_backfill",
+        )
 
-    # ── Phase 2: PDF lines, enrich meta, build structured blocks ──
-    def _phase2_build_structured(source_pdf_path: Path | None) -> dict:
-        """Extract PDF lines, enrich source metadata, build structured blocks.
+        return {"span_meta_patch": span_meta_patch, "source_pdf_path": source_pdf_path,
+                "page_pdf_lines_by_page": page_pdf_lines_by_page}
+
+    # ── Phase 2: enrich meta, build structured blocks ──
+    def _phase2_build_structured(
+        source_pdf_path: Path | None,
+        page_pdf_lines_by_page: dict[int, list[dict]],
+    ) -> dict:
+        """Enrich source metadata, build structured blocks.
         Returns {structured, doc_structure, resolved, source_meta, page_pdf_lines_by_page}."""
-        from paperforge.worker.ocr_pdf_spans import extract_pdf_lines_normalized
-
-        page_pdf_lines_by_page = extract_pdf_lines_normalized(source_pdf_path)
 
         _enrich_meta_from_paper_note(vault, key, artifacts.source_metadata)
         source_meta = read_json(artifacts.source_metadata) if artifacts.source_metadata.exists() else {}
@@ -470,16 +542,16 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         write_json(artifacts.meta_json, meta)
 
     # ── Execute phases ──
-    phase1_result = _phase1_span_backfill()
+    phase1_result = _phase1_span_and_lines()
     span_meta_patch = phase1_result["span_meta_patch"]
     source_pdf_path = phase1_result["source_pdf_path"]
+    page_pdf_lines_by_page = phase1_result["page_pdf_lines_by_page"]
 
-    phase2_result = _phase2_build_structured(source_pdf_path)
+    phase2_result = _phase2_build_structured(source_pdf_path, page_pdf_lines_by_page)
     structured = phase2_result["structured"]
     doc_structure = phase2_result["doc_structure"]
     resolved = phase2_result["resolved"]
     source_meta = phase2_result["source_meta"]
-    page_pdf_lines_by_page = phase2_result["page_pdf_lines_by_page"]
 
     phase3_result = _phase3_figure_tables(structured, page_pdf_lines_by_page, source_meta)
     figure_inventory = phase3_result["figure_inventory"]
@@ -494,7 +566,6 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     _phase5_finalize(resolved, structured, markdown, span_meta_patch)
 
     return {"key": key, "status": "ok"}
-
 
 def _run_parallel_rebuild(vault: Path, keys: list[str], workers: int, checkpoint_dir: Path | None) -> list[dict]:
     """Run rebuild in parallel using a process pool."""

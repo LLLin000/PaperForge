@@ -134,6 +134,57 @@ def _spans_from_rawdict(
     return spans if spans else None
 
 
+def _extract_lines_from_rawdict(
+    rawdict: dict,
+    page_num: int,
+    pdf_rect,
+    ocr_width: int = 1200,
+    ocr_height: int = 1700,
+) -> list[dict]:
+    """Extract line text from a rawdict page dict, normalized to OCR coordinates.
+
+    Avoids a separate page.get_text("dict") call when rawdict is already available.
+    Each line dict matches extract_pdf_lines_normalized output shape.
+    """
+    if ocr_width <= 0:
+        ocr_width = int(pdf_rect.width * 2) if pdf_rect.width > 0 else 1200
+    if ocr_height <= 0:
+        ocr_height = int(pdf_rect.height * 2) if pdf_rect.height > 0 else 1700
+
+    scale_x = ocr_width / pdf_rect.width if pdf_rect.width > 0 else 2.0
+    scale_y = ocr_height / pdf_rect.height if pdf_rect.height > 0 else 2.0
+
+    lines: list[dict] = []
+    for block in rawdict.get("blocks", []):
+        if block.get("type") != 0:
+            continue
+        for line in block.get("lines", []):
+            bbox_pdf = line.get("bbox", [0, 0, 0, 0])
+            if len(bbox_pdf) < 4:
+                continue
+            text_parts = []
+            for span in line.get("spans", []):
+                text_parts.append(str(span.get("text", "")))
+            text = "".join(text_parts).strip()
+            if not text:
+                continue
+            bbox_ocr = [
+                bbox_pdf[0] * scale_x,
+                bbox_pdf[1] * scale_y,
+                bbox_pdf[2] * scale_x,
+                bbox_pdf[3] * scale_y,
+            ]
+            direction = tuple(line.get("dir", (1.0, 0.0)))
+            lines.append({
+                "page": page_num + 1,
+                "text": text,
+                "bbox": bbox_ocr,
+                "source_bbox_pdf": bbox_pdf,
+                "dir": direction,
+                "source": "pdf_rawdict_line",
+            })
+    return lines
+
 def extract_pdf_spans_for_block(
     pdf_doc: Any,
     page_num: int,
