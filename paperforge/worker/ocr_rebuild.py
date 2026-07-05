@@ -503,7 +503,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
 
         write_decision_log(paper_root / "health" / "decision_log.jsonl", collect_decisions(structured))
 
-        return markdown
+        return markdown, health_report.get("overall", "unknown")
 
     # ── Phase 5: indexes, version flags, write meta ──
     def _phase5_finalize(
@@ -511,6 +511,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         structured: list[dict],
         markdown: str,
         span_meta_patch: dict,
+        health_overall: str = "unknown",
     ) -> None:
         """Rebuild indexes, apply version flags, write meta.json."""
         from paperforge.worker.ocr_index import build_role_indexes, write_role_index
@@ -544,6 +545,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         _status, _err = validate_ocr_meta(paths_dict, meta)
         meta["ocr_status"] = _status
         meta["error"] = _err if _err else ""
+        meta["ocr_health_overall"] = health_overall
         write_json(artifacts.meta_json, meta)
 
     # ── Execute phases ──
@@ -563,15 +565,13 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     table_inventory = phase3_result["table_inventory"]
     reader_payload = phase3_result["reader_payload"]
 
-    markdown = _phase4_render_health(
+    markdown, health_overall = _phase4_render_health(
         structured, resolved, figure_inventory, table_inventory,
         reader_payload, doc_structure, ocr_meta, source_pdf_path,
     )
 
-    _phase5_finalize(resolved, structured, markdown, span_meta_patch)
-
+    _phase5_finalize(resolved, structured, markdown, span_meta_patch, health_overall=health_overall)
     return {"key": key, "status": "ok"}
-
 def _run_parallel_rebuild(vault: Path, keys: list[str], workers: int, checkpoint_dir: Path | None) -> list[dict]:
     """Run rebuild in parallel using a process pool."""
     from concurrent.futures import ProcessPoolExecutor, as_completed
