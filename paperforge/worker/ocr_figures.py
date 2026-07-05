@@ -1196,10 +1196,17 @@ def _score_legend_to_group(
     # in the same column as the group with a tight vertical gap, and is
     # page-locally unique (no competing numbered legend in the same column).
     if _is_short_numbered_figure_caption(legend):
-        # Do not override page_assets groups (have their own gate) or
-        # safe_auto_match groups (already strongly matched).
+        # Do not override page_assets groups (have their own gate).
+        # safe_auto_match groups: skip geometry bypass when multiple short
+        # numbered legends share the page, so each short caption is scored
+        # against its column-local subset rather than one claiming everything.
         _sc_gt = group.get("group_type", "")
-        if _sc_gt != "page_assets" and not (group.get("safe_auto_match") and len(group.get("media_blocks", [])) >= 2):
+        _sc_geom_bypass = (
+            group.get("safe_auto_match")
+            and len(group.get("media_blocks", [])) >= 2
+            and not (page_numbered_legend_count > 1 and _is_short_numbered_figure_caption(legend))
+        )
+        if _sc_gt != "page_assets" and not _sc_geom_bypass:
             _leg_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
             _grp_bbox = group.get("cluster_bbox", [0, 0, 0, 0])
             _cap_top = _leg_bbox[1]
@@ -1248,11 +1255,15 @@ def _score_legend_to_group(
     if gt == "distance_cluster":
         num_assets = len(group.get("media_blocks", []))
         if group.get("safe_auto_match") and num_assets >= 2:
-            return {
-                "score": 0.85,
-                "decision": "matched",
-                "evidence": ["same_page", "distance_clustered", "safe_auto_match"],
-            }
+            # When multiple short numbered legends share a page, a single short
+            # caption must not auto-claim the whole group.  Fall through to
+            # normal distance_cluster scoring (geometry + orientation).
+            if not (page_numbered_legend_count > 1 and _is_short_numbered_figure_caption(legend)):
+                return {
+                    "score": 0.85,
+                    "decision": "matched",
+                    "evidence": ["same_page", "distance_clustered", "safe_auto_match"],
+                }
 
         cluster_bbox = group.get("cluster_bbox", [0, 0, 0, 0])
         match_score = _score_legend_to_asset_with_orientation(
@@ -1905,6 +1916,25 @@ def _same_page_narrow_caption_column(page_captions: list[dict], page_width: floa
     return sorted(best, key=lambda cap: (cap.get("bbox") or [0, 0, 0, 0])[1])
 
 
+def _is_single_narrow_sidecar_caption(
+    caption: dict, page_assets: list[dict], *, page_width: float = 1200
+) -> bool:
+    """Check if a single narrow caption qualifies for sidecar rescue (37-like pattern).
+
+    The 37-like invariant: one formal narrow caption on the page, an image
+    to the right at the same row (no x-overlap, bounded x-gap, strong y-overlap).
+    Primary same-page matching misses these because it expects overlap-style
+    evidence.  We rescue only when the geometry is strong.
+    """
+    if _extract_figure_number(str(caption.get("text", ""))) is None:
+        return False
+    if _caption_width_ratio(caption, page_width) >= 0.6:
+        return False
+    if _PANEL_LABEL_PATTERN.match(str(caption.get("text", "")).strip()):
+        return False
+    coupled = _caption_row_coupled_assets(caption, page_assets, page_width=page_width)
+    return len(coupled) > 0
+
 def _caption_row_coupled_assets(caption: dict, assets: list[dict], *, page_width: float = 1200) -> list[dict]:
     caption_bbox = caption.get("bbox") or [0, 0, 0, 0]
     if len(caption_bbox) < 4:
@@ -2362,9 +2392,15 @@ def _allow_previous_page_sequential_match(cap: dict, asset: dict) -> bool:
 
 
 def _partition_assets_by_caption_bands(
-    page_captions: list[dict], page_assets: list[dict], page_height: float
+    page_captions: list[dict], page_assets: list[dict], page_height: float,
+    page_width: float = 1200,
 ) -> dict[str, list[dict]]:
     if len(page_captions) < 2:
+        # Single-caption sidecar rescue: use row-coupled assets (37-like pattern).
+        if len(page_captions) == 1:
+            caption = page_captions[0]
+            coupled = _caption_row_coupled_assets(caption, page_assets, page_width=page_width)
+            return {str(caption.get("block_id", "")): coupled}
         return {}
 
     ordered = sorted(page_captions, key=lambda cap: (cap.get("bbox") or [0, 0, 0, 0])[1])

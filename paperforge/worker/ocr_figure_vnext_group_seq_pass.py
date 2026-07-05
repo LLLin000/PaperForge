@@ -158,6 +158,23 @@ class GroupSequentialPass:
                     scored.sort(key=lambda x: x[1], reverse=True)
                     best_group = scored[0][0]
 
+            # (a') Multi-legend multi-asset fallback: if same-page scoring
+            # rejected but the page has a multi-asset distance_cluster group
+            # with multiple short numbered legends, still select it so
+            # section 6b can do per-asset splitting.
+            if best_group is None and same_page:
+                _page_short_legends = [
+                    l for l in deduped_legends
+                    if _resource_page(l) == lg_page
+                    and ocr_figures._extract_figure_number(str(l.get("text", "") or "")) is not None
+                    and ocr_figures._is_short_numbered_figure_caption(l)
+                ]
+                if len(_page_short_legends) >= 2:
+                    for sg in same_page:
+                        if sg.get("group_type") == "distance_cluster" and len(sg.get("media_blocks", [])) >= 2:
+                            best_group = sg
+                            break
+
             # (b) Next-page fallback: first group on next page
             if best_group is None and next_page:
                 best_group = next_page[0]
@@ -178,6 +195,10 @@ class GroupSequentialPass:
             if best_group is None:
                 continue
 
+            # Flag: when set, the group stays in pool for sibling legends
+            # (multi-legend multi-asset restriction).
+            _keep_group_in_pool = False
+
             # ----- 6. Collect group assets -----
             group_page = int(best_group.get("page", 0) or 0)
             group_assets = []
@@ -190,6 +211,45 @@ class GroupSequentialPass:
 
             if not group_assets:
                 continue
+
+            # ----- 6a. Filter already-owned assets for idempotent group re-access -----
+            group_assets = [
+                a for a in group_assets
+                if state.ledger.owner_of_asset(
+                    page=group_page,
+                    block_id=str(a.get("block_id", "")),
+                ) is None
+            ]
+            if not group_assets:
+                continue
+
+            # ----- 6b. Multi-legend multi-asset veto -----
+            # When n explicit numbered legends share the same page as a group
+            # with n unowned assets, block the whole-group claim and restrict
+            # this legend to the geometrically closest single asset, keeping
+            # the group in the pool for sibling legends.
+            if len(group_assets) >= 2:
+                _page_legends = [
+                    l for l in deduped_legends
+                    if str(l.get("block_id", "")) not in matched_legend_ids
+                    and _resource_page(l) == lg_page
+                    and ocr_figures._extract_figure_number(str(l.get("text", "") or "")) is not None
+                ]
+                if len(_page_legends) >= len(group_assets):
+                    _all_explicit = all(
+                        ocr_figures._is_short_numbered_figure_caption(l)
+                        for l in _page_legends
+                    )
+                    if _all_explicit:
+                        # Manhattan center distance to find the single closest asset
+                        l_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
+                        l_cx = (l_bbox[0] + l_bbox[2]) / 2
+                        l_cy = (l_bbox[1] + l_bbox[3]) / 2
+                        def _mdist(a):
+                            ab = a.get("bbox") or a.get("block_bbox") or [0, 0, 0, 0]
+                            return abs(l_cx - (ab[0] + ab[2]) / 2) + abs(l_cy - (ab[1] + ab[3]) / 2)
+                        group_assets = [min(group_assets, key=_mdist)]
+                        _keep_group_in_pool = True
 
             # ----- 7. Build proposal and match record -----
             asset_refs = [
@@ -277,6 +337,9 @@ class GroupSequentialPass:
             report.accepted.append(proposal)
 
             # Remove claimed group from pool so subsequent legends don't compete
-            unmatched_groups = [g for g in unmatched_groups if g is not best_group]
+            if not _keep_group_in_pool:
+                # When we restricted a multi-asset group to a single asset, keep
+                # the group in the pool so sibling legends can claim remaining assets.
+                unmatched_groups = [g for g in unmatched_groups if g is not best_group]
 
         return report

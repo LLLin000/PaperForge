@@ -105,6 +105,19 @@ class FigureCandidateIndex:
             if len(narrow_set) >= 2:
                 sidecar_candidates[sp] = narrow_set
 
+        # Single-caption 37-like sidecar rescue: pages with one narrow caption
+        # that has a same-row right-side image (left-caption/right-image pattern).
+        # Primary same-page matching misses these — the sidecar pass can rescue them.
+        for sp, spl in _legends_by_page.items():
+            if sp in sidecar_candidates:
+                continue
+            for leg in spl:
+                if ocr_figures._is_single_narrow_sidecar_caption(
+                    leg, corpus.raw_assets, page_width=corpus.page_width
+                ):
+                    sidecar_candidates[sp] = [leg]
+                    break
+
         # Populate bundle_source_legend_ids: legends on pages with >=3 numbered legends
         # and zero assets on that page.
         bundle_source_legend_ids = ocr_figures._identify_bundle_source_legend_ids(

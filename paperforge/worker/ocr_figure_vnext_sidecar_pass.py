@@ -43,23 +43,36 @@ class SidecarPass:
             )
 
             bands = ocr_figures._partition_assets_by_caption_bands(
-                narrow_captions, page_assets, page_height
+                narrow_captions, page_assets, page_height,
+                page_width=state.corpus.page_width,
             )
 
             for caption in narrow_captions:
                 cid = str(caption.get("block_id", ""))
 
-                # Skip captions already protected by an earlier pass
-                protected = False
-                for match in state.matches:
-                    if (
-                        str(match.get("legend_block_id", "")) == cid
-                        and ocr_figures._has_protected_figure_ownership(match)
-                    ):
-                        protected = True
-                        break
-                if protected:
-                    continue
+                # For single-caption entries (37-like rescue), skip if already
+                # matched by any earlier pass — this rescue is only a last resort
+                # for captions the primary pass entirely missed.
+                if len(narrow_captions) == 1:
+                    already_matched = any(
+                        str(m.get("legend_block_id", "")) == cid
+                        for m in state.matches
+                    )
+                    if already_matched:
+                        continue
+                else:
+                    # Multi-caption path: skip only protected matches
+                    # (allows refinement of multi-asset figures).
+                    protected = False
+                    for match in state.matches:
+                        if (
+                            str(match.get("legend_block_id", "")) == cid
+                            and ocr_figures._has_protected_figure_ownership(match)
+                        ):
+                            protected = True
+                            break
+                    if protected:
+                        continue
 
                 band_assets = bands.get(cid, [])
                 if not band_assets:

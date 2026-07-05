@@ -18,14 +18,17 @@ class PrimarySamePagePass:
 
         proposals = []
 
-        # Precompute per-page context for short-caption geometry scoring
         _numbered_count_by_page: dict[int, int] = {}
+        _short_caption_count_by_page: dict[int, int] = {}
         _page_blocks_map: dict[int, list[dict]] = {}
         _page_height_map: dict[int, float] = {}
         for _leg in state.candidate_index.deduped_legends:
             _lp = _resource_page(_leg)
-            if _lp is not None and ocr_figures._extract_figure_number(str(_leg.get("text", ""))) is not None:
-                _numbered_count_by_page[_lp] = _numbered_count_by_page.get(_lp, 0) + 1
+            if _lp is not None:
+                if ocr_figures._extract_figure_number(str(_leg.get("text", ""))) is not None:
+                    _numbered_count_by_page[_lp] = _numbered_count_by_page.get(_lp, 0) + 1
+                if ocr_figures._is_short_numbered_figure_caption(_leg):
+                    _short_caption_count_by_page[_lp] = _short_caption_count_by_page.get(_lp, 0) + 1
         for _b in state.corpus.blocks:
             _bp = _resource_page(_b)
             if _bp is not None:
@@ -43,6 +46,19 @@ class PrimarySamePagePass:
                 continue
             page_groups = [g for g in state.candidate_index.candidate_groups if _resource_page(g) == page]
             for group in page_groups:
+                # VETO: When multiple explicit short numbered legends share a page,
+                # no single legend may claim an entire multi-asset distance_cluster
+                # group.  Such groups should be distributed by downstream passes
+                # (GroupSequentialPass) which handle per-asset splitting.
+                _gt = group.get("group_type", "")
+                _n_assets = len(group.get("media_blocks", []))
+                if (
+                    _gt == "distance_cluster"
+                    and _n_assets >= 2
+                    and _short_caption_count_by_page.get(page, 0) > 1
+                    and ocr_figures._is_short_numbered_figure_caption(legend)
+                ):
+                    continue
                 score = ocr_figures._score_legend_to_group(
                     legend,
                     group,

@@ -75,6 +75,101 @@ def test_sidecar_pass_skips_pages_with_fewer_than_two_narrow_captions():
     assert len(report.accepted) == 0
 
 
+
+def test_single_narrow_sidecar_rescue_fires_for_left_caption_right_image():
+    """Single narrow left caption with same-row right image → sidecar rescued."""
+    blocks = [
+        {"block_id": "c1", "page": 5, "role": "figure_caption",
+         "text": "Figure 1. Narrow caption with image to the right",
+         "bbox": [100, 100, 300, 200]},   # narrow, left column
+        {"block_id": "a1", "page": 5, "role": "figure_asset",
+         "bbox": [320, 100, 600, 250]},   # right of caption, same-row
+    ]
+    corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
+    index = FigureCandidateIndex.from_corpus(corpus)
+
+    # The single narrow caption must now appear in sidecar_candidates
+    assert 5 in index.sidecar_candidates
+    assert len(index.sidecar_candidates[5]) == 1
+    assert index.sidecar_candidates[5][0]["block_id"] == "c1"
+
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    report = SidecarPass().run(state)
+
+    assert len(report.accepted) >= 1
+    sidecar_matches = [m for m in state.matches if m.get("settlement_type") == "sidecar"]
+    assert len(sidecar_matches) == 1
+    assert sidecar_matches[0].get("legend_block_id") == "c1"
+    assert len(sidecar_matches[0].get("matched_assets", [])) >= 1
+    assert "sidecar_match" in sidecar_matches[0].get("flags", [])
+
+
+def test_single_narrow_sidecar_no_rescue_when_no_row_coupled_asset():
+    """Single narrow caption whose asset is not row-coupled → not rescued."""
+    blocks = [
+        {"block_id": "c1", "page": 5, "role": "figure_caption",
+         "text": "Figure 1. Narrow caption",
+         "bbox": [100, 300, 300, 340]},   # narrow, below asset
+        {"block_id": "a1", "page": 5, "role": "figure_asset",
+         "bbox": [50, 0, 250, 90]},       # above, no y-overlap
+    ]
+    corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
+    index = FigureCandidateIndex.from_corpus(corpus)
+
+    assert 5 not in index.sidecar_candidates
+
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    report = SidecarPass().run(state)
+    assert len(report.accepted) == 0
+
+
+def test_single_narrow_sidecar_does_not_break_grouped_baseline():
+    """Three narrow captions plus single narrow caption — grouped baseline intact."""
+    blocks = [
+        # Three grouped narrow captions on page 5 (existing multi-caption path)
+        {"block_id": "c1", "page": 5, "role": "figure_caption",
+         "text": "Figure 1. First", "bbox": [100, 100, 300, 130]},
+        {"block_id": "c2", "page": 5, "role": "figure_caption",
+         "text": "Figure 2. Second", "bbox": [100, 300, 310, 330]},
+        {"block_id": "c3", "page": 5, "role": "figure_caption",
+         "text": "Figure 3. Third", "bbox": [100, 500, 300, 530]},
+        {"block_id": "a1", "page": 5, "role": "figure_asset",
+         "bbox": [50, 0, 250, 90]},
+        {"block_id": "a2", "page": 5, "role": "figure_asset",
+         "bbox": [50, 180, 260, 270]},
+        {"block_id": "a3", "page": 5, "role": "figure_asset",
+         "bbox": [60, 400, 270, 480]},
+        # Single narrow caption on page 6 with row-coupled asset (37-like)
+        {"block_id": "c4", "page": 6, "role": "figure_caption",
+         "text": "Figure 4. Side rescued", "bbox": [100, 200, 280, 350]},
+        {"block_id": "a4", "page": 6, "role": "figure_asset",
+         "bbox": [300, 200, 600, 380]},
+    ]
+    corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
+    index = FigureCandidateIndex.from_corpus(corpus)
+
+    # Page 5: the three grouped captions still form a sidecar candidate
+    assert 5 in index.sidecar_candidates
+    assert len(index.sidecar_candidates[5]) == 3
+    assert {b["block_id"] for b in index.sidecar_candidates[5]} == {"c1", "c2", "c3"}
+
+    # Page 6: single caption rescued via the 37-like path
+    assert 6 in index.sidecar_candidates
+    assert len(index.sidecar_candidates[6]) == 1
+    assert index.sidecar_candidates[6][0]["block_id"] == "c4"
+
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    report = SidecarPass().run(state)
+
+    sidecar_matches = [m for m in state.matches if m.get("settlement_type") == "sidecar"]
+    assert len(sidecar_matches) == 4  # all four rescued
+
+    page5_matches = [m for m in sidecar_matches if m.get("page") == 5]
+    page6_matches = [m for m in sidecar_matches if m.get("page") == 6]
+    assert len(page5_matches) == 3
+    assert len(page6_matches) == 1
+    assert page6_matches[0].get("legend_block_id") == "c4"
+
 def test_sidecar_pass_does_not_steal_assets_from_protected_same_page_matches():
     """Two narrow captions on page 5; c1 already has a protected same-page match.
 

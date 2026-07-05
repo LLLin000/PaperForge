@@ -493,3 +493,253 @@ def test_short_caption_does_not_override_safe_auto_match():
         evidence = report.accepted[0].diagnostics.get("evidence", [])
         # safe_auto_match evidence includes "safe_auto_match", not "short_caption_geometry"
         assert not any("short_caption_geometry" in e for e in evidence), f"Unexpected short_caption_geometry: {evidence}"
+
+
+# --- PrimarySamePagePass multi-legend multi-asset veto tests (PR-2a follow-up) ---
+
+
+def test_primary_same_page_veto_two_short_legends_two_assets():
+    """Two short numbered explicit legends, distance_cluster with 2 assets on same page.
+    -> PrimarySamePagePass must veto whole-group claim."""
+    from paperforge.worker.ocr_figure_vnext_corpus import FigureCorpus, FigureCandidateIndex
+    from paperforge.worker.ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
+
+    blocks = [
+        {"block_id": "c1", "page": 5, "role": "figure_caption",
+         "text": "Figure 2", "bbox": [0, 100, 200, 130], "zone": "display_zone"},
+        {"block_id": "c2", "page": 5, "role": "figure_caption",
+         "text": "Figure 3", "bbox": [300, 100, 500, 130], "zone": "display_zone"},
+        {"block_id": "a1", "page": 5, "role": "figure_asset",
+         "bbox": [0, 200, 250, 400], "raw_label": "image"},
+        {"block_id": "a2", "page": 5, "role": "figure_asset",
+         "bbox": [300, 200, 550, 400], "raw_label": "image"},
+        {"block_id": "filler", "page": 1, "role": "paper_title",
+         "text": "Title", "bbox": [0, 0, 500, 50]},
+    ]
+    corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
+
+    groups = [
+        {
+            "group_id": "g1",
+            "page": 5,
+            "group_type": "distance_cluster",
+            "asset_block_ids": ["a1", "a2"],
+            "cluster_bbox": [0, 200, 550, 400],
+            "media_blocks": [{"block_id": "a1"}, {"block_id": "a2"}],
+            "safe_auto_match": True,
+        }
+    ]
+
+    index = FigureCandidateIndex(
+        formal_legends=[b for b in blocks if b.get("role") == "figure_caption"],
+        held_legends=[],
+        rejected_legends=[],
+        deduped_legends=[b for b in blocks if b.get("role") == "figure_caption"],
+        candidate_groups=groups,
+        competing_caption_pages=set(),
+        sidecar_candidates={},
+        bundle_source_legend_ids=set(),
+        locator_candidates=[],
+    )
+
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    report = PrimarySamePagePass().run(state)
+
+    # PrimarySamePagePass should not make a whole-group claim
+    assert len(report.accepted) == 0, \
+        f"expected 0 accepted (veto), got {len(report.accepted)}"
+
+
+def test_primary_same_page_veto_four_legends_four_assets():
+    """Four short numbered explicit legends, distance_cluster with 4 assets on same page.
+    -> PrimarySamePagePass must veto; no single legend claims the whole group."""
+    from paperforge.worker.ocr_figure_vnext_corpus import FigureCorpus, FigureCandidateIndex
+    from paperforge.worker.ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
+
+    blocks = [
+        {"block_id": "c1", "page": 3, "role": "figure_caption",
+         "text": "Figure 4", "bbox": [0, 100, 200, 130], "zone": "display_zone"},
+        {"block_id": "c2", "page": 3, "role": "figure_caption",
+         "text": "Figure 5", "bbox": [300, 100, 500, 130], "zone": "display_zone"},
+        {"block_id": "c3", "page": 3, "role": "figure_caption",
+         "text": "Figure 6", "bbox": [0, 160, 200, 190], "zone": "display_zone"},
+        {"block_id": "c4", "page": 3, "role": "figure_caption",
+         "text": "Figure 7", "bbox": [300, 160, 500, 190], "zone": "display_zone"},
+        {"block_id": "a1", "page": 3, "role": "figure_asset",
+         "bbox": [0, 200, 280, 350], "raw_label": "image"},
+        {"block_id": "a2", "page": 3, "role": "figure_asset",
+         "bbox": [320, 200, 600, 350], "raw_label": "image"},
+        {"block_id": "a3", "page": 3, "role": "figure_asset",
+         "bbox": [0, 360, 280, 510], "raw_label": "image"},
+        {"block_id": "a4", "page": 3, "role": "figure_asset",
+         "bbox": [320, 360, 600, 510], "raw_label": "image"},
+        {"block_id": "filler", "page": 1, "role": "paper_title",
+         "text": "Title", "bbox": [0, 0, 500, 50]},
+    ]
+    corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
+
+    groups = [
+        {
+            "group_id": "g1",
+            "page": 3,
+            "group_type": "distance_cluster",
+            "asset_block_ids": ["a1", "a2", "a3", "a4"],
+            "cluster_bbox": [0, 200, 600, 510],
+            "media_blocks": [
+                {"block_id": "a1"}, {"block_id": "a2"},
+                {"block_id": "a3"}, {"block_id": "a4"},
+            ],
+            "safe_auto_match": True,
+        }
+    ]
+
+    index = FigureCandidateIndex(
+        formal_legends=[b for b in blocks if b.get("role") == "figure_caption"],
+        held_legends=[],
+        rejected_legends=[],
+        deduped_legends=[b for b in blocks if b.get("role") == "figure_caption"],
+        candidate_groups=groups,
+        competing_caption_pages=set(),
+        sidecar_candidates={},
+        bundle_source_legend_ids=set(),
+        locator_candidates=[],
+    )
+
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    report = PrimarySamePagePass().run(state)
+
+    # PrimarySamePagePass should not make a whole-group claim
+    assert len(report.accepted) == 0, \
+        f"expected 0 accepted (veto), got {len(report.accepted)}"
+
+
+def test_primary_same_page_veto_grouped_figure_unaffected():
+    """Single descriptive legend with multi-asset distance_cluster group.
+    -> Normal grouped figure, one legend claims all assets (no veto)."""
+    from paperforge.worker.ocr_figure_vnext_corpus import FigureCorpus, FigureCandidateIndex
+    from paperforge.worker.ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
+
+    blocks = [
+        {"block_id": "c1", "page": 5, "role": "figure_caption",
+         "text": "Figure 2. Overview of system architecture. (A) Input (B) Processing.",
+         "bbox": [0, 100, 500, 150]},
+        {"block_id": "a1", "page": 5, "role": "figure_asset",
+         "bbox": [0, 200, 250, 400], "raw_label": "image"},
+        {"block_id": "a2", "page": 5, "role": "figure_asset",
+         "bbox": [300, 200, 550, 400], "raw_label": "image"},
+        {"block_id": "filler", "page": 1, "role": "paper_title",
+         "text": "Title", "bbox": [0, 0, 500, 50]},
+    ]
+    corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
+
+    groups = [
+        {
+            "group_id": "g1",
+            "page": 5,
+            "group_type": "distance_cluster",
+            "asset_block_ids": ["a1", "a2"],
+            "cluster_bbox": [0, 200, 550, 400],
+            "media_blocks": [{"block_id": "a1"}, {"block_id": "a2"}],
+            "safe_auto_match": True,
+        }
+    ]
+
+    index = FigureCandidateIndex(
+        formal_legends=[b for b in blocks if b.get("role") == "figure_caption"],
+        held_legends=[],
+        rejected_legends=[],
+        deduped_legends=[b for b in blocks if b.get("role") == "figure_caption"],
+        candidate_groups=groups,
+        competing_caption_pages=set(),
+        sidecar_candidates={},
+        bundle_source_legend_ids=set(),
+        locator_candidates=[],
+    )
+
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    report = PrimarySamePagePass().run(state)
+
+    # Single descriptive legend with multi-asset group — should still match normally
+    # (not affected by the veto, which only applies to short numbered captions)
+    assert len(report.accepted) >= 1, \
+        f"expected at least 1 accepted (grouped figure), got {len(report.accepted)}"
+    if report.accepted:
+        proposal = report.accepted[0]
+        # Should claim both assets
+        assert len(proposal.assets) == 2, \
+            f"expected 2 assets in grouped figure, got {len(proposal.assets)}"
+        # Should be a same_page primary match
+        assert proposal.reason == "same_page_primary"
+
+
+def test_primary_same_page_veto_two_legends_then_group_seq_splits(monkeypatch):
+    """Full pipeline: PrimarySamePagePass vetoes whole-group; GroupSequentialPass splits.
+    2 short legends + 2 assets -> each legend gets 1 asset."""
+    from paperforge.worker.ocr_figure_vnext_corpus import FigureCorpus, FigureCandidateIndex
+    from paperforge.worker.ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
+    from paperforge.worker.ocr_figure_vnext_group_seq_pass import GroupSequentialPass
+
+    blocks = [
+        {"block_id": "c1", "page": 5, "role": "figure_caption",
+         "text": "Figure 2", "bbox": [0, 100, 200, 130], "zone": "display_zone"},
+        {"block_id": "c2", "page": 5, "role": "figure_caption",
+         "text": "Figure 3", "bbox": [300, 100, 500, 130], "zone": "display_zone"},
+        {"block_id": "a1", "page": 5, "role": "figure_asset",
+         "bbox": [0, 200, 250, 400], "raw_label": "image"},
+        {"block_id": "a2", "page": 5, "role": "figure_asset",
+         "bbox": [300, 200, 550, 400], "raw_label": "image"},
+        {"block_id": "filler", "page": 1, "role": "paper_title",
+         "text": "Title", "bbox": [0, 0, 500, 50]},
+    ]
+    corpus = FigureCorpus.from_blocks(blocks, page_width=1200)
+
+    groups = [
+        {
+            "group_id": "g1",
+            "page": 5,
+            "group_type": "distance_cluster",
+            "asset_block_ids": ["a1", "a2"],
+            "cluster_bbox": [0, 200, 550, 400],
+            "media_blocks": [{"block_id": "a1"}, {"block_id": "a2"}],
+            "safe_auto_match": True,
+        }
+    ]
+
+    index = FigureCandidateIndex(
+        formal_legends=[b for b in blocks if b.get("role") == "figure_caption"],
+        held_legends=[],
+        rejected_legends=[],
+        deduped_legends=[b for b in blocks if b.get("role") == "figure_caption"],
+        candidate_groups=groups,
+        competing_caption_pages=set(),
+        sidecar_candidates={},
+        bundle_source_legend_ids=set(),
+        locator_candidates=[],
+    )
+
+    state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+
+    # Run PrimarySamePagePass — should veto
+    report1 = PrimarySamePagePass().run(state)
+    assert len(report1.accepted) == 0, \
+        f"PrimarySamePagePass should veto, got {len(report1.accepted)} accepted"
+
+    # Run GroupSequentialPass — should split
+    report2 = GroupSequentialPass().run(state)
+    assert len(report2.accepted) == 2, \
+        f"GroupSequentialPass should split, got {len(report2.accepted)} accepted"
+    assert len(state.matches) == 2, \
+        f"expected 2 matches overall, got {len(state.matches)}"
+
+    # Each match should have exactly one asset
+    for m in state.matches:
+        assert m["settlement_type"] == "group_sequential"
+        assert len(m.get("matched_assets", [])) == 1, \
+            f"expected 1 asset per match, got {len(m.get('matched_assets', []))}"
+
+    # c1 (Figure 2) should get a1 (left asset), c2 (Figure 3) should get a2 (right asset)
+    match_by_legend = {m["legend_block_id"]: m for m in state.matches}
+    assert match_by_legend["c1"]["asset_block_ids"] == ["a1"], \
+        f"expected c1 -> a1, got {match_by_legend['c1']['asset_block_ids']}"
+    assert match_by_legend["c2"]["asset_block_ids"] == ["a2"], \
+        f"expected c2 -> a2, got {match_by_legend['c2']['asset_block_ids']}"
