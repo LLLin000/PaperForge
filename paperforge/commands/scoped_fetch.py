@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
 from paperforge.retrieval import gateway
 
 
-def run(args) -> int:
+def run(args: argparse.Namespace) -> int:
     """Execute ``scoped-fetch`` via the Layer 4 gateway."""
     vault = Path(args.vault_path)
     result = gateway.route_gateway(

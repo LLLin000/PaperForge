@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 
 from paperforge import __version__ as PF_VERSION
@@ -9,7 +10,7 @@ from paperforge.core.result import PFResult
 from paperforge.retrieval import gateway
 
 
-def run(args) -> int:
+def run(args: argparse.Namespace) -> int:
     """Execute ``paper-navigation`` via the Layer 4 gateway."""
     result = gateway.route_gateway(
         args.vault_path,
