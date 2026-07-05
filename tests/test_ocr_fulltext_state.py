@@ -50,3 +50,33 @@ def test_prune_pre_rebuild_backups_only_deletes_matching_files(tmp_path: Path) -
     removed = prune_pre_rebuild_backups(backups, keep=5)
     assert len(removed) == 2
     assert keeper.exists()
+
+
+def test_write_render_outputs_updates_render_artifact_and_meta(tmp_path: Path) -> None:
+    import datetime as _dt
+    from paperforge.worker.ocr_render import write_render_outputs
+    from paperforge.worker.ocr_fulltext_state import compute_disk_fulltext_hash
+
+    paper_root = tmp_path / "ocr" / "KEY1"
+    render_root = paper_root / "render"
+    user_fulltext = paper_root / "fulltext.md"
+    user_fulltext.parent.mkdir(parents=True)
+    user_fulltext.write_text("old\n", encoding="utf-8")
+    meta = {"ocr_finished_at": "2026-07-05T12:00:00+00:00", "rebuild_count": 0}
+
+    def _fixed_utc() -> _dt.datetime:
+        return _dt.datetime(2026, 7, 5, 12, 0, 0, tzinfo=_dt.timezone.utc)
+
+    updated = write_render_outputs(
+        render_root=render_root,
+        user_fulltext=user_fulltext,
+        markdown="new\n",
+        meta=meta,
+        rebuild_increment=False,
+        now_utc=_fixed_utc(),
+    )
+
+    assert (render_root / "fulltext.md").read_text(encoding="utf-8") == "new\n"
+    assert user_fulltext.read_text(encoding="utf-8") == "new\n"
+    assert updated["machine_fulltext_hash"] == compute_disk_fulltext_hash(user_fulltext)
+    assert updated["last_backup_path"].startswith("backups/fulltext.pre-rebuild.")

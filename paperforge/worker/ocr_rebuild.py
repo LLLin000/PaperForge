@@ -363,10 +363,13 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
             document_structure=doc_structure,
             reader_payload=reader_payload,
         )
-        write_render_outputs(
+        meta = write_render_outputs(
             render_root=paper_root / "render",
-            compat_fulltext=artifacts.compat_fulltext,
+            user_fulltext=artifacts.compat_fulltext,
             markdown=markdown,
+            meta=ocr_meta,
+            rebuild_increment=True,
+            now_utc=datetime.datetime.now(datetime.timezone.utc),
         )
 
         # Rebuild health
@@ -405,7 +408,6 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str], progress_bar=None
         write_structure_tree(paper_root / "index", structure_tree)
 
         # Update version state in meta.json
-        meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
         meta.update(span_meta_patch)
         meta = _apply_post_rebuild_version_flags(meta)
         # Rebuild regenerated the derived outputs; validate from a clean

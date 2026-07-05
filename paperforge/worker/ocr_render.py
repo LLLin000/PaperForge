@@ -1962,7 +1962,37 @@ def render_fulltext_markdown(
     return "\n".join(lines).strip() + "\n"
 
 
-def write_render_outputs(render_root: Path, compat_fulltext: Path, markdown: str) -> None:
+import datetime as _dt
+from paperforge.worker.ocr_fulltext_state import (
+    atomic_replace_text,
+    compute_disk_fulltext_hash,
+    create_pre_rebuild_backup,
+    prune_pre_rebuild_backups,
+)
+
+
+def write_render_outputs(
+    render_root: Path,
+    user_fulltext: Path,
+    markdown: str,
+    *,
+    meta: dict,
+    rebuild_increment: bool,
+    now_utc: _dt.datetime | None = None,
+) -> dict:
+    now_utc = now_utc or _dt.datetime.now(_dt.timezone.utc)
     render_root.mkdir(parents=True, exist_ok=True)
     (render_root / "fulltext.md").write_text(markdown, encoding="utf-8")
-    compat_fulltext.write_text(markdown, encoding="utf-8")
+
+    backup_info = create_pre_rebuild_backup(user_fulltext, now_utc)
+    atomic_replace_text(user_fulltext, markdown)
+    machine_hash = compute_disk_fulltext_hash(user_fulltext)
+
+    if backup_info:
+        meta["last_backup_at"], meta["last_backup_path"] = backup_info
+        prune_pre_rebuild_backups(user_fulltext.parent / "backups", keep=5)
+    meta["machine_fulltext_hash"] = machine_hash
+    if rebuild_increment:
+        meta["rebuild_count"] = int(meta.get("rebuild_count") or 0) + 1
+        meta["rebuild_finished_at"] = now_utc.isoformat()
+    return meta

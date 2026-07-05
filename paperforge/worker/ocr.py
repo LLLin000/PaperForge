@@ -1988,10 +1988,12 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         document_structure=doc_structure,
         reader_payload=reader_payload,
     )
-    write_render_outputs(
+    meta = write_render_outputs(
         render_root=ocr_root / "render",
-        compat_fulltext=ocr_root / "fulltext.md",
+        user_fulltext=ocr_root / "fulltext.md",
         markdown=markdown,
+        meta=meta,
+        rebuild_increment=False,
     )
 
     # --- Phase 3: OCR health report ---
