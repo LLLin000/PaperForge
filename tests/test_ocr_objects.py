@@ -509,6 +509,7 @@ def test_extract_objects_renders_same_page_once_for_multiple_crops(tmp_path: Pat
     }
 
     render_calls = {"count": 0}
+    page_cache_created = {"exists": False}
 
     from paperforge.worker import ocr as ocr_module
     real_render = ocr_module.render_pdf_page_cached
@@ -528,7 +529,13 @@ def test_extract_objects_renders_same_page_once_for_multiple_crops(tmp_path: Pat
         page_dimensions_by_page={1: (600, 800)},
     )
 
-    assert render_calls["count"] == 1
+    # In rebuild/in-memory mode, render_pdf_page_cached is not called.
+    assert render_calls["count"] == 0, (
+        "Page should be rendered via PageRenderContext, not render_pdf_page_cached"
+    )
+    assert (
+        not (tmp_path / "pages" / "page_001.jpg").exists()
+    ), "Rebuild must not create pages/page_001.jpg"
 
 
 def test_extract_objects_cache_hit_does_not_eager_open_shared_pdf(tmp_path: Path, monkeypatch) -> None:
@@ -843,39 +850,49 @@ def test_rotated_crop_does_not_use_page_render_context(tmp_path: Path, monkeypat
     assert ok is True, "Rotated crop should succeed via PDF clip + PIL rotate"
 
 
-def test_phase4_uses_resolved_source_pdf_path(tmp_path: Path, monkeypatch) -> None:
-    """Phase 4 must use resolved source_pdf_path, not fall back to meta source_pdf."""
-    import fitz, json
-    from paperforge.worker.ocr_objects import extract_and_write_objects
+def test_resolve_object_crop_pdf_path_prefers_phase1_resolved_path(tmp_path: Path) -> None:
+    """_resolve_object_crop_pdf_path prefers Phase 1 resolved path over stale meta."""
+    from paperforge.worker.ocr_objects import _resolve_object_crop_pdf_path
+    import fitz
 
-    pdf_path = tmp_path / "resolved.pdf"
+    resolved = tmp_path / "resolved.pdf"
     doc = fitz.open()
     doc.new_page(width=300, height=400)
+    doc.save(resolved)
+    doc.close()
+
+    stale = tmp_path / "stale.pdf"
+    missing = tmp_path / "nonexistent.pdf"
+
+    # Case 1: resolved path exists, meta has stale -> resolved wins
+    got = _resolve_object_crop_pdf_path(resolved, {"source_pdf": str(stale)})
+    assert got == resolved, "Phase 1 resolved path should take priority"
+
+    # Case 2: resolved is None, meta has valid -> meta wins
+    got2 = _resolve_object_crop_pdf_path(None, {"source_pdf": str(resolved)})
+    assert got2 == resolved, "Should fall back to meta source_pdf when resolved is None"
+
+    # Case 3: resolved is None, meta is missing -> None
+    got3 = _resolve_object_crop_pdf_path(None, {"source_pdf": ""})
+    assert got3 is None, "Should return None when both paths are missing"
+
+    # Case 4: resolved doesn't exist, meta exists -> meta wins
+    got4 = _resolve_object_crop_pdf_path(missing, {"source_pdf": str(resolved)})
+    assert got4 == resolved, "Should fall back to meta when resolved path doesn't exist"
+
+
+def test_extract_and_write_objects_with_use_disk_page_cache_false_and_valid_pdf(tmp_path: Path) -> None:
+    """Verify use_disk_page_cache=False works with a valid PDF."""
+    import fitz
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    pdf_path = tmp_path / "sample.pdf"
+    doc = fitz.open()
+    page = doc.new_page(width=300, height=400)
+    page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(0, 0, 1), fill=(0, 0, 1))
     doc.save(pdf_path)
     doc.close()
 
-    # Set up meta with a non-existent source_pdf
-    meta_path = tmp_path / "meta.json"
-    meta_path.write_text(json.dumps({"source_pdf": "/nonexistent/missing.pdf"}), encoding="utf-8")
-
-    passed_paths = {"paths": []}
-    real_extract = extract_and_write_objects
-    def _tracking_extract(*args, **kwargs):
-        passed_paths["paths"].append(kwargs.get("pdf_path") or args[0])
-        return real_extract(*args, **kwargs)
-    monkeypatch.setattr("paperforge.worker.ocr_objects.extract_and_write_objects", _tracking_extract)
-
-    # Call _phase4_render_health with a resolved source_pdf_path
-    # We need _rebuild_one_paper context, so test via the module directly
-    import paperforge.worker.ocr_rebuild as rb
-
-    # Monkeypatch the phase4 to capture what pdf_path it passes
-    real_phase4 = rb._rebuild_one_paper.__wrapped__ if hasattr(rb._rebuild_one_paper, "__wrapped__") else rb._rebuild_one_paper
-    # Simpler: just call extract_and_write_objects directly with use_disk_page_cache=False
-    # and a real pdf_path, verifying it's received
-    
-    # Actually just test that use_disk_page_cache=False mode works with a valid PDF
-    # and ocr_meta mismatch scenario
     figure_inventory: dict[str, Any] = {
         "matched_figures": [
             {"figure_id": "figure_001", "text": "Figure 1.", "page": 1,
@@ -887,7 +904,6 @@ def test_phase4_uses_resolved_source_pdf_path(tmp_path: Path, monkeypatch) -> No
         "unresolved_clusters": [],
     }
 
-    # This call provides pdf_path explicitly, even though meta has a different source_pdf
     extract_and_write_objects(
         pdf_path=pdf_path,
         figure_inventory=figure_inventory,
@@ -899,6 +915,4 @@ def test_phase4_uses_resolved_source_pdf_path(tmp_path: Path, monkeypatch) -> No
     )
 
     asset_path = tmp_path / "assets" / "figures" / "figure_001.jpg"
-    assert asset_path.exists(), (
-        "Phase 4 should use the resolved pdf_path even when ocr_meta has a different source_pdf"
-    )
+    assert asset_path.exists(), "Asset should exist from in-memory render"

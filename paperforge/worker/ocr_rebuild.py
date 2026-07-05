@@ -442,14 +442,12 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     ) -> str:
         """Extract object artifacts, render fulltext markdown, build health report.
         Returns markdown string."""
-        from paperforge.worker.ocr_objects import extract_and_write_objects
+        from paperforge.worker.ocr_objects import (
+            extract_and_write_objects,
+            _resolve_object_crop_pdf_path,
+        )
 
-        # Use the resolved source_pdf_path from Phase 1, not ocr_meta fallback.
-        _source_pdf_path = source_pdf_path
-        if _source_pdf_path is None and ocr_meta.get("source_pdf"):
-            candidate = Path(str(ocr_meta["source_pdf"]))
-            if candidate.exists():
-                _source_pdf_path = candidate
+        _source_pdf_path = _resolve_object_crop_pdf_path(source_pdf_path, ocr_meta)
 
         page_dimensions_by_page: dict[int, tuple[int, int]] = {}
         for block in structured:

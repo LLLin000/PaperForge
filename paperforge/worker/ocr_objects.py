@@ -102,6 +102,26 @@ def _find_cached_page_image(page_cache_dir: Path | None, page_num: int) -> Path 
     return None
 
 
+
+
+def _resolve_object_crop_pdf_path(
+    source_pdf_path: Path | None,
+    ocr_meta: dict,
+) -> Path | None:
+    """Resolve the PDF path for object crops.
+
+    Priority:
+        1. source_pdf_path (resolved by Phase 1 rebuild pipeline)
+        2. ocr_meta['source_pdf'] (legacy fallback from full OCR run)
+    """
+    if source_pdf_path is not None and source_pdf_path.exists():
+        return source_pdf_path
+    src = ocr_meta.get("source_pdf")
+    if src:
+        candidate = Path(str(src))
+        if candidate.exists():
+            return candidate
+    return None
 class PageRenderContext:
     """In-memory page image cache for a single rebuild session.
 
@@ -147,18 +167,8 @@ class PageRenderContext:
                 zoom_x = (page_width / rect.width) if page_width > 0 else 2.0
                 zoom_y = (page_height / rect.height) if page_height > 0 else 2.0
                 mat = fitz.Matrix(zoom_x, zoom_y)
-                pix = page.get_pixmap(matrix=mat, alpha=False)
-                if pix.n == 1:
-                    mode = "L"
-                elif pix.n == 3:
-                    mode = "RGB"
-                elif pix.n == 4:
-                    mode = "RGBA"
-                else:
-                    return None
-                img = PILImage.frombytes(mode, (pix.width, pix.height), pix.samples)
-                if img.mode != "RGB":
-                    img = img.convert("RGB")
+                pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB, alpha=False)
+                img = PILImage.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 self._images[page_num] = img
                 return img
             except Exception:
