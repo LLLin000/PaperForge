@@ -450,6 +450,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="Use modular setup components (v2.1+)",
     )
 
+    # Layer 4 gateway commands
+    p_paper_lookup = sub.add_parser("paper-lookup", help="Locate a specific paper through the Layer 4 gateway")
+    p_paper_lookup.add_argument("query", help="Paper identifier, title fragment, author+year, DOI, or alias")
+    p_paper_lookup.add_argument("--json", action="store_true", help="Output JSON")
+    p_paper_lookup.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
+
+    p_content_discovery = sub.add_parser("content-discovery", help="Discover content within vault through the Layer 4 gateway")
+    p_content_discovery.add_argument("query", help="Topic, domain, or research question for content discovery")
+    p_content_discovery.add_argument("--json", action="store_true", help="Output JSON")
+    p_content_discovery.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
+
+    p_paper_navigation = sub.add_parser("paper-navigation", help="Navigate paper structure through the Layer 4 gateway")
+    p_paper_navigation.add_argument("query", help="Paper identifier or DOI for structural navigation")
+    p_paper_navigation.add_argument("--json", action="store_true", help="Output JSON")
+    p_paper_navigation.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
+
+    p_scoped_fetch = sub.add_parser("scoped-fetch", help="Fetch paper content scoped by query through the Layer 4 gateway")
+    p_scoped_fetch.add_argument("query", help="Paper identifier, title, or scoped query for targeted fetch")
+    p_scoped_fetch.add_argument("--json", action="store_true", help="Output JSON")
+    p_scoped_fetch.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
+
     return parser
 
 
@@ -499,6 +520,7 @@ def main(argv: list[str] | None = None) -> int:
         "query-plan", "prune", "paper-status", "paper-context", "reading-log",
         "project-log", "search", "agent-context", "runtime-health", "doctor",
         "update", "setup", "selection-sync", "index-refresh", "base-refresh",
+        "paper-lookup", "content-discovery", "paper-navigation", "scoped-fetch",
     }
     if args.command in lightweight_commands:
         _resolve_pipeline()
@@ -630,6 +652,26 @@ def main(argv: list[str] | None = None) -> int:
         from paperforge.commands.paper_context import run
 
         return run(args)
+
+    if args.command == "paper-lookup":
+        from paperforge.commands import paper_lookup
+
+        return paper_lookup.run(args)
+
+    if args.command == "content-discovery":
+        from paperforge.commands import content_discovery
+
+        return content_discovery.run(args)
+
+    if args.command == "paper-navigation":
+        from paperforge.commands import paper_navigation
+
+        return paper_navigation.run(args)
+
+    if args.command == "scoped-fetch":
+        from paperforge.commands import scoped_fetch
+
+        return scoped_fetch.run(args)
 
     if args.command == "reading-log":
         from paperforge.commands.reading_log import run
