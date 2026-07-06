@@ -12,7 +12,7 @@ from hashlib import sha256
 from typing import Any
 import json
 
-RETRIEVAL_POLICY_VERSION = "l4.body.v1"
+RETRIEVAL_POLICY_VERSION = "l4.body.v2"
 
 
 def compute_body_units_hash(units: list[dict]) -> str:

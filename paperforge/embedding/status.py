@@ -48,6 +48,7 @@ def get_embed_status(vault: Path) -> dict:
     body_chunk_count = 0
     error = ""
     corrupted = False
+    healthy = True
     if exists:
         # Count paperforge_fulltext
         try:
