@@ -86,6 +86,7 @@ const {
     reduceCardSelection,
     reduceSourceSelection,
     reduceLifecycleAction,
+    computeFallbackEligibility,
 } = require('./navigation');
 
 module.exports = {
@@ -155,4 +156,5 @@ module.exports = {
     reduceCardSelection,
     reduceSourceSelection,
     reduceLifecycleAction,
+    computeFallbackEligibility,
 };
