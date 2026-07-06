@@ -642,6 +642,122 @@ describe('ANN14-01 — Narrow canvas returns hidden (Task 2)', () => {
 
 });
 
+// ─── ANN14-04 Task 1: Boundary conditions around MIN_CANVAS_DIMENSION ──
+
+function makeFittingCardRect(overrides) {
+    return { x: 2, y: 2, width: 20, height: 10, ...overrides };
+}
+
+function makeFittingAnchorRect(overrides) {
+    return { x: 28, y: 2, width: 20, height: 10, ...overrides };
+}
+
+function makeFittingTallCardRect(overrides) {
+    return { x: 100, y: 2, width: 100, height: 20, ...overrides };
+}
+
+function makeFittingTallAnchorRect(overrides) {
+    return { x: 400, y: 2, width: 100, height: 20, ...overrides };
+}
+
+describe('ANN14-04 — Narrow-canvas boundary conditions (Task 1)', () => {
+
+    it('canvas just above MIN_CANVAS_DIMENSION width returns visible', () => {
+        const input = {
+            candidate: {
+                state: CONNECTOR_STATES.VISIBLE,
+                cardId: 'card-1',
+                anchorId: 'card-1',
+                reason: null,
+                card: makeCard(),
+                anchor: makeCard().anchor,
+            },
+            canvasRect: makeCanvasRect({ width: MIN_CANVAS_DIMENSION + 1, height: 600 }),
+            cardRect: makeFittingCardRect(),
+            anchorRect: makeFittingAnchorRect(),
+        };
+        const result = measureConnectorGeometry(input);
+        expect(result.state).toBe(CONNECTOR_STATES.VISIBLE);
+        // visible state has no reason set
+    });
+
+    it('canvas just below MIN_CANVAS_DIMENSION width returns hidden with NARROW_CANVAS', () => {
+        const input = {
+            candidate: {
+                state: CONNECTOR_STATES.VISIBLE,
+                cardId: 'card-1',
+                anchorId: 'card-1',
+                reason: null,
+                card: makeCard(),
+                anchor: makeCard().anchor,
+            },
+            canvasRect: makeCanvasRect({ width: MIN_CANVAS_DIMENSION - 1, height: 600 }),
+            cardRect: makeFittingCardRect(),
+            anchorRect: makeFittingAnchorRect(),
+        };
+        const result = measureConnectorGeometry(input);
+        expect(result.state).toBe(CONNECTOR_STATES.HIDDEN);
+        expect(result.reason).toBe(HIDDEN_REASONS.NARROW_CANVAS);
+    });
+
+    it('both dimensions below threshold returns hidden with NARROW_CANVAS', () => {
+        const input = {
+            candidate: {
+                state: CONNECTOR_STATES.VISIBLE,
+                cardId: 'card-1',
+                anchorId: 'card-1',
+                reason: null,
+                card: makeCard(),
+                anchor: makeCard().anchor,
+            },
+            canvasRect: makeCanvasRect({ width: 30, height: 20 }),
+            cardRect: makeFittingCardRect(),
+            anchorRect: makeFittingAnchorRect(),
+        };
+        const result = measureConnectorGeometry(input);
+        expect(result.state).toBe(CONNECTOR_STATES.HIDDEN);
+        expect(result.reason).toBe(HIDDEN_REASONS.NARROW_CANVAS);
+    });
+
+    it('canvas exactly MIN_CANVAS_DIMENSION height with fitting rects returns visible', () => {
+        const input = {
+            candidate: {
+                state: CONNECTOR_STATES.VISIBLE,
+                cardId: 'card-1',
+                anchorId: 'card-1',
+                reason: null,
+                card: makeCard(),
+                anchor: makeCard().anchor,
+            },
+            canvasRect: makeCanvasRect({ width: 800, height: MIN_CANVAS_DIMENSION }),
+            cardRect: makeFittingTallCardRect(),
+            anchorRect: makeFittingTallAnchorRect(),
+        };
+        const result = measureConnectorGeometry(input);
+        expect(result.state).toBe(CONNECTOR_STATES.VISIBLE);
+    });
+
+    it('canvas just below MIN_CANVAS_DIMENSION height returns hidden with NARROW_CANVAS', () => {
+        const input = {
+            candidate: {
+                state: CONNECTOR_STATES.VISIBLE,
+                cardId: 'card-1',
+                anchorId: 'card-1',
+                reason: null,
+                card: makeCard(),
+                anchor: makeCard().anchor,
+            },
+            canvasRect: makeCanvasRect({ width: 800, height: MIN_CANVAS_DIMENSION - 1 }),
+            cardRect: makeFittingTallCardRect(),
+            anchorRect: makeFittingTallAnchorRect(),
+        };
+        const result = measureConnectorGeometry(input);
+        expect(result.state).toBe(CONNECTOR_STATES.HIDDEN);
+        expect(result.reason).toBe(HIDDEN_REASONS.NARROW_CANVAS);
+    });
+
+});
+
 describe('ANN14-01 — Hidden candidate input returns hidden (Task 2)', () => {
 
     it('hidden candidate returns hidden geometry with HIDDEN_CANDIDATE reason', () => {

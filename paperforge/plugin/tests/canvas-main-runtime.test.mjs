@@ -1403,3 +1403,64 @@ describe('ANN14-03 Task 3 — Resize/scroll lifecycle', () => {
         expect(view._hoveredAnchorId).toBeNull();
     });
 });
+
+// ── ANN14-04 Task 1: Runtime guardrails — hidden connectors preserve card state ──
+
+describe('ANN14-04 Task 1 — Runtime responsiveness preservation', () => {
+
+    function makeCanvasView() {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const app = {
+            workspace: { openLinkText: vi.fn() },
+            vault: { adapter: { basePath: 'C:/vault' } },
+        };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl, app });
+        view.contentEl = contentEl;
+        view.app = app;
+        return { view, containerEl, contentEl };
+    }
+
+    // ── CANVAS-05: Fallback opening preserved ──
+
+    it('_handleFallbackClick still works when paperEntry has pdf_path [CANVAS-05]', () => {
+        const { view } = makeCanvasView();
+        view._paperEntry = { key: 'KEY_HIDDEN', pdf_path: 'storage/KEY/file.pdf' };
+        view._handleFallbackClick('3');
+        expect(view.app.workspace.openLinkText).toHaveBeenCalled();
+    });
+
+    it('_handleFallbackClick null guards still work [CANVAS-05]', () => {
+        const { view } = makeCanvasView();
+        view._paperEntry = { key: 'KEY_FB', pdf_path: 'storage/KEY/file.pdf' };
+        view._handleFallbackClick(null);
+        expect(view.app.workspace.openLinkText).not.toHaveBeenCalled();
+    });
+
+    it('_handleFallbackClick does nothing when entry missing [CANVAS-05]', () => {
+        const { view } = makeCanvasView();
+        view._paperEntry = null;
+        view._handleFallbackClick('3');
+        expect(view.app.workspace.openLinkText).not.toHaveBeenCalled();
+    });
+
+    // ── Connector hidden state does not remove existing behavior ──
+
+    it('source surface and card lanes coexist with connector layer', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_SRC';
+        view._paperEntry = { key: 'KEY_SRC', title: 'Source' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+        // Verify the connector layer is present alongside source surface
+        expect(contentEl.querySelector('.paperforge-canvas-connector-layer')).toBeTruthy();
+        expect(contentEl.querySelector('.paperforge-canvas-source-surface')).toBeTruthy();
+    });
+
+});

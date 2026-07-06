@@ -3059,6 +3059,7 @@
     padding: 16px;
     overflow-y: auto;
     height: 100%;
+    container-type: inline-size;
 }
 
 .paperforge-reading-canvas-view .paperforge-canvas-identity {
@@ -3244,4 +3245,12 @@
 
 .paperforge-reading-canvas-view .paperforge-canvas-connector--selected {
     opacity: 0.55;
+}
+
+/* ── ANN14-04: Responsive guardrails — hide connectors on narrow layouts ── */
+
+@container (max-width: 400px) {
+    .paperforge-reading-canvas-view .paperforge-canvas-connector-layer {
+        display: none;
+    }
 }

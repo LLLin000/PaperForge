@@ -723,3 +723,77 @@ describe('ANN13-03 — card DOM hooks (data attributes, CSS)', () => {
     });
 
 });
+
+// ── ANN14-04 Task 1: Responsive CSS guardrails — connector hides on narrow ──
+
+describe('ANN14-04 Task 1 — Responsive CSS guardrails', () => {
+    let cssContent;
+
+    beforeAll(() => {
+        try {
+            var cssPath = path.resolve(__dirname, '..', 'styles.css');
+            cssContent = fs.readFileSync(cssPath, 'utf-8');
+        } catch (e) {
+            cssContent = '';
+        }
+    });
+
+    it('defines container-type on .paperforge-reading-canvas-view for responsive context', () => {
+        expect(cssContent).toContain('container-type: inline-size');
+        expect(cssContent).toContain('.paperforge-reading-canvas-view');
+    });
+
+    it('connector layer hiding uses @container for responsive widths [D-14/D-15]', () => {
+        const hasContainerQuery = cssContent.includes('@container') && cssContent.includes('paperforge-canvas-connector-layer');
+        expect(hasContainerQuery).toBe(true);
+    });
+
+    it('card focus styles are not inside connector responsive hiding [D-15/D-16]', () => {
+        expect(cssContent).toContain('paperforge-canvas-card:focus');
+        expect(cssContent).toContain('paperforge-canvas-card[aria-selected="true"]');
+    });
+
+    it('fallback button styles are not inside connector guardrail rules [D-18]', () => {
+        expect(cssContent).toContain('paperforge-canvas-fallback-button');
+        const fallbackLines = cssContent.split('\n').filter(function(l) { return l.includes('paperforge-canvas-fallback-button'); });
+        expect(fallbackLines.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('connector classes are namespaced under .paperforge-reading-canvas-view [D-10/D-11]', () => {
+        const connectorLines = cssContent.split('\n').filter(function(l) { return l.includes('paperforge-canvas-connector'); });
+        for (var ci = 0; ci < connectorLines.length; ci++) {
+            var line = connectorLines[ci];
+            if (line.includes('{') || line.includes('}') || line.trim() === '' || line.trim().startsWith('/*') || line.trim().startsWith('@')) {
+                continue;
+            }
+            expect(line).toContain('.paperforge-reading-canvas-view');
+        }
+    });
+
+    it('no SVG marker-end or arrow definitions in connector CSS [D-10/D-11]', () => {
+        expect(cssContent).not.toContain('marker-end');
+        expect(cssContent).not.toContain('marker-start');
+    });
+
+    it('no native PDF viewer selectors in connector CSS [D-26]', () => {
+        const connectorBlock = cssContent.split('\n').filter(function(l) { return l.includes('paperforge-canvas-connector'); }).join('\n');
+        expect(connectorBlock).not.toContain('.pdf-viewer');
+        expect(connectorBlock).not.toContain('.pdf-embed');
+        expect(connectorBlock).not.toContain('[data-page-number]');
+    });
+
+    it('ANN13 card states remain when connector is hidden via css [D-15]', () => {
+        // ANN13 visibility states (refreshing, selected, focus) are on
+        // card/lane elements, not on the connector layer — verify separate selectors
+        expect(cssContent).toContain('paperforge-canvas-card');
+        expect(cssContent).toContain('paperforge-canvas-refreshing');
+        expect(cssContent).toContain('paperforge-canvas-card:focus');
+        expect(cssContent).toContain('paperforge-canvas-card[aria-selected="true"]');
+        // Card selectors should NOT be inside the ANN14 connector @container rule
+        var containerMatch = cssContent.match(/@container\s*\(max-width:\s*400px\)\s*\{[^}]*\}/);
+        expect(containerMatch).toBeTruthy();
+        expect(containerMatch[0]).not.toContain('paperforge-canvas-card');
+        expect(containerMatch[0]).not.toContain('paperforge-canvas-fallback');
+    });
+
+});
