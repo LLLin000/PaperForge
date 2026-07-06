@@ -1081,3 +1081,167 @@ describe('ANN14-03 Task 1 — Connector layer ownership', () => {
         expect(lastChild.classList.contains('paperforge-canvas-connector-layer')).toBe(true);
     });
 });
+
+// ── ANN14-03 Task 2: Wire selection + hover to connector render ──
+
+describe('ANN14-03 Task 2 — Hover + selection connector wiring', () => {
+
+    function makeCanvasView() {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl, app: makeStubApp() });
+        view.contentEl = contentEl;
+        view.app = makeStubApp();
+        return { view, containerEl, contentEl };
+    }
+
+    it('mouseover on card sets hoveredCardId', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_HOVER';
+        view._paperEntry = { key: 'KEY_HOVER', title: 'Hover Test' };
+        // DOM with cards
+        contentEl.innerHTML = '<div data-card-id="card-1">Card 1</div><div data-card-id="card-2">Card 2</div>';
+        // Attach hover events with DOM present
+        view._initConnectorHoverEvents(contentEl);
+
+        // Simulate mouseover on card-1
+        const card1 = contentEl.querySelector('[data-card-id="card-1"]');
+        const evt = new MouseEvent('mouseover', { bubbles: true });
+        card1.dispatchEvent(evt);
+
+        expect(view._hoveredCardId).toBe('card-1');
+        expect(view._hoveredAnchorId).toBe('card-1');
+    });
+
+    it('mouseout on card resets hover state', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_HOVER2';
+        view._paperEntry = { key: 'KEY_HOVER2', title: 'Hover Test 2' };
+        contentEl.innerHTML = '<div data-card-id="card-1">Card 1</div><div data-card-id="card-2">Card 2</div>';
+        view._initConnectorHoverEvents(contentEl);
+
+        // Set hover state
+        view._hoveredCardId = 'card-1';
+        view._hoveredAnchorId = 'card-1';
+
+        // Simulate mouseout on card-1
+        const card1 = contentEl.querySelector('[data-card-id="card-1"]');
+        const evt = new MouseEvent('mouseout', { bubbles: true });
+        card1.dispatchEvent(evt);
+
+        expect(view._hoveredCardId).toBeNull();
+        expect(view._hoveredAnchorId).toBeNull();
+    });
+
+    it('mouseout from card to inside contentEl does not clear hover', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_HOVER3';
+        view._paperEntry = { key: 'KEY_HOVER3', title: 'Hover Test 3' };
+        contentEl.innerHTML = '<div data-card-id="card-1">Card 1</div><div class="other">Note</div>';
+        view._initConnectorHoverEvents(contentEl);
+
+        // Set initial hover state
+        view._hoveredCardId = 'card-1';
+        view._hoveredAnchorId = 'card-1';
+
+        // Realistic: mouse leaves card-1 and enters .other (inside contentEl)
+        const card1 = contentEl.querySelector('[data-card-id="card-1"]');
+        const other = contentEl.querySelector('.other');
+        const evt = new MouseEvent('mouseout', {
+            bubbles: true,
+            relatedTarget: other,
+        });
+        card1.dispatchEvent(evt);
+
+        // relatedTarget inside contentEl → handler returns early → hover preserved
+        expect(view._hoveredCardId).toBe('card-1');
+    });
+
+    it('mouseout from card to outside contentEl clears hover', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_HOVER4';
+        view._paperEntry = { key: 'KEY_HOVER4', title: 'Hover Test 4' };
+        contentEl.innerHTML = '<div data-card-id="card-1">Card 1</div><div class="other">Note</div>';
+        view._initConnectorHoverEvents(contentEl);
+
+        view._hoveredCardId = 'card-1';
+        view._hoveredAnchorId = 'card-1';
+
+        // Realistic: mouse leaves card-1 and enters something outside contentEl
+        const outside = document.createElement('div');
+        const card1 = contentEl.querySelector('[data-card-id="card-1"]');
+        const evt = new MouseEvent('mouseout', {
+            bubbles: true,
+            relatedTarget: outside,
+        });
+        card1.dispatchEvent(evt);
+
+        // relatedTarget outside contentEl → handler clears hover
+        expect(view._hoveredCardId).toBeNull();
+    });
+
+    it('mouseout on non-hovered card does not clear hover state', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_HOVER5';
+        view._paperEntry = { key: 'KEY_HOVER5', title: 'Hover Test 5' };
+        contentEl.innerHTML = '<div data-card-id="card-1">Card 1</div><div data-card-id="card-2">Card 2</div><div class="other">Note</div>';
+        view._initConnectorHoverEvents(contentEl);
+
+        view._hoveredCardId = 'card-2';
+        view._hoveredAnchorId = 'card-2';
+
+        // Mouseout on card-1 (not hovered) with relatedTarget inside contentEl
+        const card1 = contentEl.querySelector('[data-card-id="card-1"]');
+        const other = contentEl.querySelector('.other');
+        const evt = new MouseEvent('mouseout', {
+            bubbles: true,
+            relatedTarget: other,
+        });
+        card1.dispatchEvent(evt);
+
+        // card-1 !== hovered card-2 and relatedTarget inside contentEl → hover preserved
+        expect(view._hoveredCardId).toBe('card-2');
+    });
+
+    it('mouseover sets anchorId to cardId when no more specific anchor', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_HOVER5';
+        view._paperEntry = { key: 'KEY_HOVER5', title: 'Hover Test 5' };
+        contentEl.innerHTML = '<div data-card-id="card-3">Card 3</div>';
+        view._initConnectorHoverEvents(contentEl);
+
+        const card3 = contentEl.querySelector('[data-card-id="card-3"]');
+        card3.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+
+        expect(view._hoveredCardId).toBe('card-3');
+        expect(view._hoveredAnchorId).toBe('card-3');
+    });
+
+    it('_applyCardNavigationState schedules connector update', () => {
+        const { view } = makeCanvasView();
+        view._paperKey = 'KEY_SEL';
+        view._paperEntry = { key: 'KEY_SEL', title: 'Sel' };
+        view._contentEl = document.createElement('div');
+        view.contentEl = view._contentEl;
+
+        const spy = vi.spyOn(view, '_scheduleConnectorUpdate');
+
+        view._applyCardNavigationState({
+            selectedCardId: 'card-1',
+            sourceFocusTargetId: null,
+            navSource: 'card',
+        });
+
+        expect(spy).toHaveBeenCalledTimes(1);
+        spy.mockRestore();
+    });
+
+    it('_initConnectorHoverEvents does not throw on null contentEl', () => {
+        const { view } = makeCanvasView();
+        expect(() => view._initConnectorHoverEvents(null)).not.toThrow();
+    });
+});

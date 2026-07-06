@@ -4746,6 +4746,9 @@ class PaperForgeReadingCanvasView extends ItemView {
      * @private
      */
     _initConnectorHoverEvents(contentEl) {
+        if (!contentEl) {
+            return;
+        }
         this._connectorBoundMouseover = (evt) => {
             var cardEl = evt.target.closest('[data-card-id]');
             if (cardEl) {
@@ -4839,6 +4842,10 @@ class PaperForgeReadingCanvasView extends ItemView {
      * @private
      */
     _updateConnector(modifier) {
+        // Guard: no layer element to render onto
+        if (!this._connectorLayerEl) {
+            return;
+        }
         var canvas = require('./src/canvas');
 
         // ── Compute connector candidate ──
@@ -4989,6 +4996,8 @@ class PaperForgeReadingCanvasView extends ItemView {
                 targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
+        // ANN14-03: Recompute connector after navigation state change (D-01/D-02)
+        this._scheduleConnectorUpdate();
     }
 
     _renderLoadedCanvas(sourceInputs) {
