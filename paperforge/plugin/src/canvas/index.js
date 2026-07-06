@@ -40,6 +40,7 @@ const {
     renderCanvasCard,
     renderCanvasCardLanes,
     renderCanvasRefreshing,
+    renderFallbackButton,
     renderCanvasSourceSurface,
     renderSourceBlock,
     renderExactAnchorText,
@@ -117,6 +118,8 @@ module.exports = {
     renderCanvasCard,
     renderCanvasCardLanes,
     renderCanvasRefreshing,
+    // ── Fallback button rendering (ANN13-03) ──
+    renderFallbackButton,
     // ── Source surface and anchor rendering (ANN12-02) ──
     renderCanvasSourceSurface,
     renderSourceBlock,

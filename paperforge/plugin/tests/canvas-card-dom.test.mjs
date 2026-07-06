@@ -28,6 +28,8 @@ const {
     renderExactAnchorText,
     renderPageLevelAnchorMarker,
     renderUnresolvedAnchorStatus,
+    renderCanvasCard,
+    renderFallbackButton,
 } = CANVAS_RENDER;
 
 // ── Forbidden control keywords ──
@@ -664,4 +666,51 @@ describe('ANN12-02 Task 3 — combined source surface + cards rendering [D-15/D-
         expect(html).not.toContain('draggable="true"');
         expect(html).not.toContain('contenteditable');
     });
+});
+
+// ── ANN13-03: CSS focus/selected hooks and DOM regression ──
+
+describe('ANN13-03 — card DOM hooks (data attributes, CSS)', () => {
+
+    it('card has tabindex and data attributes', () => {
+        const root = makeRootEl();
+        const card = makeCard({ id: 'ann-css', pageIndex: 3, anchor: { status: 'exact' } });
+        renderCanvasView(root, makeCardVM({ cards: [card] }));
+        const cardEl = root.querySelector('[data-card-id="ann-css"]');
+        expect(cardEl).toBeTruthy();
+        expect(cardEl.tabIndex).toBe(0);
+        expect(cardEl.getAttribute('aria-selected')).toBe('false');
+        expect(cardEl.getAttribute('data-page-index')).toBe('3');
+    });
+
+    it('no connector classes in ANN13 render output [D-26]', () => {
+        const root = makeRootEl();
+        const card = makeCard({ id: 'ann-nc', pageIndex: 1, anchor: { status: 'exact' } });
+        renderCanvasView(root, makeCardVM({ cards: [card] }));
+        renderCanvasSourceSurface(root, [], [], { unavailable: true });
+        const html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('paperforge-canvas-connector');
+    });
+
+    it('no native PDF selectors in ANN13 render output [D-27]', () => {
+        const root = makeRootEl();
+        const card = makeCard({ id: 'ann-pdf', pageIndex: 1, anchor: { status: 'exact' } });
+        renderCanvasView(root, makeCardVM({ cards: [card] }));
+        const html = root.innerHTML;
+        expect(html).not.toContain('.pdf-viewer');
+        expect(html).not.toContain('.pdf-embed');
+        expect(html).not.toContain('data-page-number="');
+    });
+
+    it('CSS defines .paperforge-canvas-fallback-button', () => {
+        const cssContent = fs.readFileSync(path.resolve(__dirname, '..', 'styles.css'), 'utf-8');
+        expect(cssContent).toContain('paperforge-canvas-fallback-button');
+    });
+
+    it('CSS defines card focus styles', () => {
+        const cssContent = fs.readFileSync(path.resolve(__dirname, '..', 'styles.css'), 'utf-8');
+        expect(cssContent).toContain('paperforge-canvas-card:focus');
+        expect(cssContent).toContain('paperforge-canvas-card[aria-selected="true"]');
+    });
+
 });

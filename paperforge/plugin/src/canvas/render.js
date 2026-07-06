@@ -285,6 +285,10 @@ function renderCanvasStaleBanner(contentEl, vm) {
 function renderCanvasCard(card) {
     var cardEl = createEl('div', { cls: 'paperforge-canvas-card' });
     cardEl.setAttribute('data-card-id', card.id || '');
+    cardEl.setAttribute('data-page-index', card.pageIndex != null ? String(card.pageIndex) : '');
+    cardEl.setAttribute('data-anchor-status', (card.anchor && card.anchor.status) || '');
+    cardEl.setAttribute('aria-selected', 'false');
+    cardEl.tabIndex = 0;
 
     // ── Selected text preview ──
     var selTextCls = 'paperforge-canvas-card-selected-text paperforge-canvas-card-selected-text-preview';
@@ -397,6 +401,10 @@ _I18N.en['anchor.unresolved'] = 'Unresolved';
 _I18N.en['anchor.page_marker'] = 'Page';
 _I18N.en['anchor.downgrade_short'] = 'Selected text is too short for exact anchoring.';
 _I18N.en['anchor.downgrade_ambiguous'] = 'Multiple matches found in source (ambiguous).';
+_I18N.en['fallback.open_pdf_page'] = 'Open PDF page';
+_I18N.en['fallback.unable_to_locate'] = 'Unable to locate anchor in source.';
+_I18N.en['fallback.card_unavailable'] = 'Card is no longer available.';
+_I18N.en['fallback.previous_unavailable'] = 'Previous selection is no longer available.';
 _I18N.en['anchor.downgrade_not_found'] = 'Text not found in source.';
 
 _I18N.zh['source.surface_label'] = '原文来源';
@@ -411,6 +419,10 @@ _I18N.zh['anchor.page_marker'] = '页';
 _I18N.zh['anchor.downgrade_short'] = '选中文本过短，无法精确锚定。';
 _I18N.zh['anchor.downgrade_ambiguous'] = '在原文中找到多处匹配（不精确）。';
 _I18N.zh['anchor.downgrade_not_found'] = '在原文中未找到匹配文本。';
+_I18N.zh['fallback.open_pdf_page'] = '打开 PDF 页面';
+_I18N.zh['fallback.unable_to_locate'] = '无法在原文中定位锚点。';
+_I18N.zh['fallback.card_unavailable'] = '该批注卡已不可用。';
+_I18N.zh['fallback.previous_unavailable'] = '之前的选中内容已不可用。';
 
 // ── ANN12-02 source surface rendering helpers ──
 
@@ -440,14 +452,16 @@ function _t(key) {
  * @param {string} afterText - Text after the exact match span.
  * @param {string|null} [color] - Optional annotation color (CSS color string).
  */
-function renderExactAnchorText(containerEl, beforeText, anchorText, afterText, color) {
-    // Before text as text node
+function renderExactAnchorText(containerEl, beforeText, anchorText, afterText, color, anchor) {
     if (beforeText) {
         containerEl.appendChild(document.createTextNode(beforeText));
     }
-    // Highlighted exact match span
     var highlight = document.createElement('span');
     highlight.className = 'paperforge-canvas-anchor paperforge-canvas-anchor--exact';
+    highlight.setAttribute('data-anchor-id', (anchor && anchor.cardId) || '');
+    highlight.setAttribute('data-anchor-status', 'exact');
+    highlight.setAttribute('data-page-index', (anchor && anchor.pageIndex != null) ? String(anchor.pageIndex) : '');
+    highlight.tabIndex = 0;
     if (color) {
         highlight.style.backgroundColor = color;
     }
@@ -470,6 +484,10 @@ function renderExactAnchorText(containerEl, beforeText, anchorText, afterText, c
  */
 function renderPageLevelAnchorMarker(containerEl, anchor) {
     var marker = createEl('div', { cls: 'paperforge-canvas-anchor paperforge-canvas-anchor--page-level' });
+    marker.setAttribute('data-anchor-id', (anchor && anchor.cardId) || '');
+    marker.setAttribute('data-anchor-status', 'page-level');
+    marker.setAttribute('data-page-index', (anchor && anchor.pageIndex != null) ? String(anchor.pageIndex) : '');
+    marker.tabIndex = 0;
     var pageInfo = anchor.pageIndex != null
         ? _t('anchor.page_marker') + ' ' + (anchor.pageLabel || anchor.pageIndex)
         : _t('anchor.page_marker');
@@ -492,6 +510,8 @@ function renderPageLevelAnchorMarker(containerEl, anchor) {
  */
 function renderUnresolvedAnchorStatus(containerEl, anchor) {
     var statusEl = createEl('div', { cls: 'paperforge-canvas-anchor paperforge-canvas-anchor--unresolved' });
+    statusEl.setAttribute('data-anchor-id', (anchor && anchor.cardId) || '');
+    statusEl.setAttribute('data-anchor-status', 'unresolved');
     var reason = anchor.reason || _t('source.unavailable_reason');
     statusEl.textContent = _t('anchor.unresolved') + ': ' + reason;
     containerEl.appendChild(statusEl);
@@ -569,6 +589,10 @@ function renderSourceBlock(containerEl, block, blockAnchors, options) {
             var color = getColor(anchor.cardId);
             var highlight = document.createElement('span');
             highlight.className = 'paperforge-canvas-anchor paperforge-canvas-anchor--exact';
+            highlight.setAttribute('data-anchor-id', anchor.cardId || '');
+            highlight.setAttribute('data-anchor-status', 'exact');
+            highlight.setAttribute('data-page-index', (anchor.pageIndex != null) ? String(anchor.pageIndex) : '');
+            highlight.tabIndex = 0;
             if (color) highlight.style.backgroundColor = color;
             highlight.textContent = anchorText;
             blockEl.appendChild(highlight);
@@ -740,6 +764,16 @@ function renderCanvasView(contentEl, vm) {
     }
 }
 
+function renderFallbackButton(containerEl, fallbackInfo) {
+    if (!fallbackInfo || !fallbackInfo.eligible) return;
+    var btn = document.createElement('button');
+    btn.className = 'paperforge-canvas-fallback-button';
+    btn.textContent = _t('fallback.open_pdf_page');
+    btn.setAttribute('aria-label', _t('fallback.open_pdf_page') + ' — ' + (_t('anchor.page_marker') + ' ' + (fallbackInfo.page || '')));
+    btn.setAttribute('data-fallback-page', fallbackInfo.page != null ? String(fallbackInfo.page) : '');
+    containerEl.appendChild(btn);
+}
+
 module.exports = {
     renderCanvasView,
     renderCanvasIdentity,
@@ -756,6 +790,8 @@ module.exports = {
     renderCanvasCard,
     renderCanvasCardLanes,
     renderCanvasRefreshing,
+    // ── ANN13-03 navigation and fallback rendering ──
+    renderFallbackButton,
     // ── ANN12-02 source surface and anchor rendering ──
     renderCanvasSourceSurface,
     renderSourceBlock,

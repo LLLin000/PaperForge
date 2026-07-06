@@ -31,6 +31,8 @@ const {
     renderExactAnchorText,
     renderPageLevelAnchorMarker,
     renderUnresolvedAnchorStatus,
+    renderCanvasCard,
+    renderFallbackButton,
 } = await import('../src/canvas/render.js');
 
 // ── Forbidden control keywords (must not appear in any canvas state) ──
@@ -886,7 +888,123 @@ describe('ANN12-02 — renderSourceBlock (D-19/D-20)', () => {
         ];
         renderSourceBlock(root, block, exactAnchors);
 
-        // Page-level marker should not appear for exact anchors
         expect(root.querySelector('.paperforge-canvas-anchor--page-level')).toBeNull();
+    });
+});
+
+// ── ANN13-03: DOM hooks, ARIA, selected state, fallback button ──
+
+describe('ANN13-03 — renderCanvasCard DOM hooks (D-20)', () => {
+    it('card has tabindex 0', () => {
+        const card = renderCanvasCard({ id: 'card-1', pageIndex: 3, anchor: { status: 'exact' } });
+        expect(card.tabIndex).toBe(0);
+    });
+
+    it('card has data-card-id attribute', () => {
+        const card = renderCanvasCard({ id: 'card-test', pageIndex: 0, anchor: null });
+        expect(card.getAttribute('data-card-id')).toBe('card-test');
+    });
+
+    it('card has data-page-index attribute', () => {
+        const card = renderCanvasCard({ id: 'card-1', pageIndex: 5, anchor: null });
+        expect(card.getAttribute('data-page-index')).toBe('5');
+    });
+
+    it('card has aria-selected set to false', () => {
+        const card = renderCanvasCard({ id: 'card-1', pageIndex: 0, anchor: null });
+        expect(card.getAttribute('aria-selected')).toBe('false');
+    });
+});
+
+describe('ANN13-03 — Exact anchor DOM hooks (D-20)', () => {
+    it('exact anchor highlight has tabindex 0', () => {
+        const root = makeRootEl();
+        renderSourceBlock(root, { id: 'b0', pageIndex: 1, text: 'Highlight this word.', sourceKind: 'fulltext' }, [
+            { cardId: 'c1', status: 'exact', sourceSpan: { rawStart: 0, rawEnd: 9 }, pageIndex: 1 },
+        ]);
+        const highlight = root.querySelector('.paperforge-canvas-anchor--exact');
+        expect(highlight).toBeTruthy();
+        expect(highlight.tabIndex).toBe(0);
+    });
+
+    it('exact anchor has data-anchor-id and data-anchor-status', () => {
+        const root = makeRootEl();
+        renderSourceBlock(root, { id: 'b0', pageIndex: 1, text: 'Highlight this word.', sourceKind: 'fulltext' }, [
+            { cardId: 'c1', status: 'exact', sourceSpan: { rawStart: 0, rawEnd: 9 }, pageIndex: 1 },
+        ]);
+        const highlight = root.querySelector('.paperforge-canvas-anchor--exact');
+        expect(highlight.getAttribute('data-anchor-id')).toBe('c1');
+        expect(highlight.getAttribute('data-anchor-status')).toBe('exact');
+        expect(highlight.getAttribute('data-page-index')).toBe('1');
+    });
+});
+
+describe('ANN13-03 — Page-level anchor markers (D-20)', () => {
+    it('page-level marker has tabindex 0 and data attributes', () => {
+        const root = makeRootEl();
+        renderPageLevelAnchorMarker(root, { cardId: 'c2', pageIndex: 2, status: 'page-level', reason: 'Approximate' });
+        const marker = root.querySelector('.paperforge-canvas-anchor--page-level');
+        expect(marker).toBeTruthy();
+        expect(marker.tabIndex).toBe(0);
+        expect(marker.getAttribute('data-anchor-id')).toBe('c2');
+        expect(marker.getAttribute('data-anchor-status')).toBe('page-level');
+        expect(marker.getAttribute('data-page-index')).toBe('2');
+    });
+});
+
+describe('ANN13-03 — Unresolved anchor (D-20 / D-24)', () => {
+    it('unresolved status has no tabindex', () => {
+        const root = makeRootEl();
+        renderUnresolvedAnchorStatus(root, { cardId: 'c3', status: 'unresolved', reason: 'No match' });
+        const statusEl = root.querySelector('.paperforge-canvas-anchor--unresolved');
+        expect(statusEl).toBeTruthy();
+        expect(statusEl.tabIndex).toBe(-1);
+    });
+
+    it('unresolved status has data-anchor-status', () => {
+        const root = makeRootEl();
+        renderUnresolvedAnchorStatus(root, { cardId: 'c3', status: 'unresolved', reason: 'No match' });
+        const statusEl = root.querySelector('.paperforge-canvas-anchor--unresolved');
+        expect(statusEl.getAttribute('data-anchor-status')).toBe('unresolved');
+    });
+});
+
+describe('ANN13-03 — Fallback button rendering (D-17/D-18/D-23)', () => {
+    it('renders button when eligible', () => {
+        const root = makeRootEl();
+        renderFallbackButton(root, { eligible: true, page: 3, reason: null });
+        const btn = root.querySelector('.paperforge-canvas-fallback-button');
+        expect(btn).toBeTruthy();
+        expect(btn.textContent).toBeTruthy();
+        expect(btn.getAttribute('data-fallback-page')).toBe('3');
+    });
+
+    it('button has aria-label with page info', () => {
+        const root = makeRootEl();
+        renderFallbackButton(root, { eligible: true, page: 5, reason: null });
+        const btn = root.querySelector('.paperforge-canvas-fallback-button');
+        expect(btn.getAttribute('aria-label')).toContain('5');
+    });
+
+    it('does not render button when ineligible', () => {
+        const root = makeRootEl();
+        renderFallbackButton(root, { eligible: false, reason: 'No page', page: null });
+        const btn = root.querySelector('.paperforge-canvas-fallback-button');
+        expect(btn).toBeNull();
+    });
+
+    it('does not render button when fallbackInfo is null', () => {
+        const root = makeRootEl();
+        renderFallbackButton(root, null);
+        const btn = root.querySelector('.paperforge-canvas-fallback-button');
+        expect(btn).toBeNull();
+    });
+
+    it('button is a real button element (D-23)', () => {
+        const root = makeRootEl();
+        renderFallbackButton(root, { eligible: true, page: 7, reason: null });
+        const btn = root.querySelector('button');
+        expect(btn).toBeTruthy();
+        expect(btn.tagName).toBe('BUTTON');
     });
 });
