@@ -5,8 +5,7 @@ import os
 import sys
 
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from itertools import islice
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 
 from paperforge.embedding.builder import (
     PaperEmbeddingJob,
@@ -98,19 +97,7 @@ def _assert_collections_healthy(vault: Path) -> tuple[bool, str]:
     return True, ""
 logger = logging.getLogger(__name__)
 
-PR9B_BATCH_SIZE = 8
 PR9B_MAX_WORKERS = 4
-
-
-def _batched(iterable, n):
-    it = iter(iterable)
-    while True:
-        batch = list(islice(it, n))
-        if not batch:
-            break
-        yield batch
-
-
 
 def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
@@ -311,133 +298,156 @@ def run(args: argparse.Namespace) -> int:
         mode=get_embed_status(vault)["mode"],
     )
 
-    i = 0
-    prepared = 0
-    jobs: list[PaperEmbeddingJob] = []
-    papers_iter = progress_bar(done_papers, desc="Embedding", disable=args.json)
-    for entry in papers_iter:
-        key = entry.get("zotero_key")
-        if not key:
-            continue
+    try:
+        max_workers = PR9B_MAX_WORKERS
+        window_size = max_workers * 4
 
-        # Check body_units and object_units first
-        has_body = _has_body_units_in_db(vault, key)
-        has_object = _has_object_units_in_db(vault, key)
+        processed_count = 0
+        papers_embedded = 0
+        papers_skipped = 0
+        chunks_embedded = 0
+        in_flight: dict = {}
 
-        if has_body or has_object:
-            body_units = get_body_units_for_embedding(vault, key) if has_body else []
-            object_units = get_object_units_for_embedding(vault, key) if has_object else []
+        def _submit_job(job: PaperEmbeddingJob, pool):
+            fut = pool.submit(encode_paper_job, vault, job)
+            in_flight[fut] = job
 
-            if resume:
-                body_ok = not body_units
-                object_ok = not object_units
+        def _complete_one(pool, block: bool = True) -> bool:
+            nonlocal processed_count, papers_embedded, chunks_embedded
+            if not in_flight:
+                return True
+            done, _ = wait(in_flight.keys(), return_when=FIRST_COMPLETED)
+            for fut in done:
+                job = in_flight.pop(fut)
+                try:
+                    bundle = fut.result()
+                except Exception as exc:
+                    mark_vector_build_state(vault,
+                        status="failed", message=str(exc),
+                        paper_id=job.paper_id, pid=0,
+                    )
+                    return False
 
-                if body_units:
-                    try:
-                        col = get_collection(vault, name="paperforge_body")
-                        existing = col.get(where={"paper_id": key}, limit=1)
-                        if existing.get("ids"):
-                            meta = existing.get("metadatas", [{}])[0]
-                            current_body_hash = compute_body_units_hash(body_units)
-                            body_ok = (meta.get("body_units_hash") == current_body_hash
-                                       and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
-                    except Exception:
-                        pass
+                delete_paper_vectors(vault, bundle.paper_id)
+                for payload in bundle.payloads:
+                    write_encoded_payload(vault, payload)
 
-                if object_units:
-                    try:
-                        col = get_collection(vault, name="paperforge_objects")
-                        existing = col.get(where={"paper_id": key}, limit=1)
-                        if existing.get("ids"):
-                            meta = existing.get("metadatas", [{}])[0]
-                            current_obj_hash = compute_object_units_hash(object_units)
-                            object_ok = (meta.get("object_units_hash") == current_obj_hash
-                                         and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
-                    except Exception:
-                        pass
+                processed_count += 1
+                papers_embedded += 1
+                chunks_embedded += bundle.chunk_count
 
-                if body_ok and object_ok:
-                    papers_skipped += 1
+                print(f"EMBED_PROGRESS:{processed_count}:{total}:{bundle.paper_id}", flush=True)
+                mark_vector_build_state(vault,
+                    current=processed_count, paper_id=bundle.paper_id,
+                    last_update=_now(),
+                )
+            return True
+
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            papers_iter = progress_bar(done_papers, desc="Embedding", disable=args.json)
+            for entry in papers_iter:
+                key = entry.get("zotero_key")
+                if not key:
                     continue
 
-            payloads = prepare_payloads_for_entry(
-                vault, key, has_body, has_object, body_units, object_units
-            )
-        else:
-            # Legacy fulltext path
-            fulltext_rel = entry.get("fulltext_path", "")
-            if not fulltext_rel:
-                continue
-            fulltext_path = vault / fulltext_rel
+                has_body = _has_body_units_in_db(vault, key)
+                has_object = _has_object_units_in_db(vault, key)
 
-            # Check if structured blocks exist without body_units
-            ocr_root = vault / "System" / "PaperForge" / "ocr" / key
-            has_files = ((ocr_root / "structure" / "blocks.structured.jsonl").exists()
-                         and (ocr_root / "index" / "structure-tree.json").exists())
-            if has_files and not has_body:
-                print(f"Skip {key}: has structured blocks but no body_units in DB. "
-                      f"Run `paperforge memory build` first.")
-                continue
+                if has_body or has_object:
+                    body_units = get_body_units_for_embedding(vault, key) if has_body else []
+                    object_units = get_object_units_for_embedding(vault, key) if has_object else []
 
-            if resume:
-                try:
-                    collection = get_collection(vault)
-                    existing = collection.get(where={"paper_id": key}, limit=1)
-                    if existing.get("ids") and len(existing["ids"]) > 0:
-                        papers_skipped += 1
-                        continue
-                except Exception as exc:
-                    err = str(exc).lower()
-                    if "hnsw" in err or "compaction" in err:
-                        logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
-                    pass
+                    if resume:
+                        body_ok = not body_units
+                        object_ok = not object_units
 
-            payloads = prepare_payloads_for_entry(
-                vault, key, has_body, has_object, [], [], fulltext_rel=fulltext_rel
-            )
+                        if body_units:
+                            try:
+                                col = get_collection(vault, name="paperforge_body")
+                                existing = col.get(where={"paper_id": key}, limit=1)
+                                if existing.get("ids"):
+                                    meta = existing.get("metadatas", [{}])[0]
+                                    current_body_hash = compute_body_units_hash(body_units)
+                                    body_ok = (meta.get("body_units_hash") == current_body_hash
+                                               and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
+                            except Exception:
+                                pass
 
-        if payloads:
-            prepared += 1
-            jobs.append(PaperEmbeddingJob(paper_id=key, payloads=payloads))
-            print(f"EMBED_PROGRESS:{prepared}:{total}:{key}", flush=True)
+                        if object_units:
+                            try:
+                                col = get_collection(vault, name="paperforge_objects")
+                                existing = col.get(where={"paper_id": key}, limit=1)
+                                if existing.get("ids"):
+                                    meta = existing.get("metadatas", [{}])[0]
+                                    current_obj_hash = compute_object_units_hash(object_units)
+                                    object_ok = (meta.get("object_units_hash") == current_obj_hash
+                                                 and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
+                            except Exception:
+                                pass
 
-    # Phase 2+3: ENCODE（线程池）+ WRITE（主线程串行）
-    try:
-        with ThreadPoolExecutor(max_workers=PR9B_MAX_WORKERS) as pool:
-            for batch in _batched(jobs, PR9B_BATCH_SIZE):
-                futures = {
-                    pool.submit(encode_paper_job, vault, job): job.paper_id
-                    for job in batch
-                }
+                        if body_ok and object_ok:
+                            processed_count += 1
+                            papers_skipped += 1
+                            print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                            mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
+                            continue
 
-                for future in as_completed(futures):
-                    paper_id = futures[future]
-                    try:
-                        bundle = future.result()
-                    except Exception as e:
-                        # encode 失败：不删旧 vectors，继续下一篇
-                        logger.error(f"Encode failed for {paper_id}: {e}")
-                        continue
-
-                    i += 1
-                    print(f"EMBED_PROGRESS:{i}:{total}:{paper_id}", flush=True)
-
-                    # encode 全部成功后才 replace old vectors
-                    delete_paper_vectors(vault, paper_id)
-
-                    for payload in bundle.payloads:
-                        try:
-                            write_encoded_payload(vault, payload)
-                        except Exception as e:
-                            # write 失败 → 已进入 replace 状态
-                            raise
-
-                    chunks_embedded += bundle.chunk_count
-                    papers_embedded += 1
-                    mark_vector_build_state(vault,
-                        current=i, paper_id=paper_id,
-                        last_update=_now(),
+                    payloads = prepare_payloads_for_entry(
+                        vault, key, has_body, has_object, body_units, object_units
                     )
+                else:
+                    fulltext_rel = entry.get("fulltext_path", "")
+                    if not fulltext_rel:
+                        continue
+                    fulltext_path = vault / fulltext_rel
+
+                    ocr_root = vault / "System" / "PaperForge" / "ocr" / key
+                    has_files = ((ocr_root / "structure" / "blocks.structured.jsonl").exists()
+                                 and (ocr_root / "index" / "structure-tree.json").exists())
+                    if has_files and not has_body:
+                        print(f"Skip {key}: has structured blocks but no body_units in DB. "
+                              f"Run `paperforge memory build` first.")
+                        continue
+
+                    if resume:
+                        try:
+                            collection = get_collection(vault)
+                            existing = collection.get(where={"paper_id": key}, limit=1)
+                            if existing.get("ids") and len(existing["ids"]) > 0:
+                                processed_count += 1
+                                papers_skipped += 1
+                                print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                                mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
+                                continue
+                        except Exception as exc:
+                            err = str(exc).lower()
+                            if "hnsw" in err or "compaction" in err:
+                                logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
+                            pass
+
+                    payloads = prepare_payloads_for_entry(
+                        vault, key, has_body, has_object, [], [], fulltext_rel=fulltext_rel
+                    )
+
+                if not payloads:
+                    processed_count += 1
+                    print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                    mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
+                    continue
+
+                job = PaperEmbeddingJob(paper_id=key, payloads=payloads)
+                _submit_job(job, pool)
+
+                if len(in_flight) >= window_size:
+                    ok = _complete_one(pool, block=True)
+                    if not ok:
+                        return 1
+
+            while in_flight:
+                ok = _complete_one(pool, block=True)
+                if not ok:
+                    return 1
+
     except Exception as e:
         try:
             _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
