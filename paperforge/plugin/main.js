@@ -4409,6 +4409,154 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._canvasContext = null;
         this._sessionController = null;
         this._vm = null;
+        // ANN12-02: source input cache for stale-load guard
+        this._sourceInputsPaperKey = null;
+        this._sourceInputsCache = null;
+    }
+
+    // ── ANN12-02: Runtime source loading ──
+
+    /**
+     * Read vault text from a given path using Obsidian vault APIs.
+     *
+     * Uses app.vault.getAbstractFileByPath() to check existence,
+     * then app.vault.read() to read content.  Returns a structured
+     * source input entry matching the ANN12-01 surface.js contract.
+     *
+     * @param {string|null} path - File path to read.
+     * @param {'fulltext'|'note'} sourceKind - Kind label for diagnostics.
+     * @returns {Promise<{ path: string|null, exists: boolean, readable: boolean, text: string|null, error: string|null }>}
+     * @private
+     */
+    async _readVaultText(path, sourceKind) {
+        if (!path || typeof path !== 'string' || path.trim() === '') {
+            return {
+                path: null,
+                exists: false,
+                readable: false,
+                text: null,
+                error: (sourceKind === 'fulltext' ? 'Fulltext' : 'Note') + ' path is missing from the paper entry.',
+            };
+        }
+
+        var file = null;
+        try {
+            file = this.app.vault.getAbstractFileByPath(path);
+        } catch (_) {
+            return {
+                path: path,
+                exists: false,
+                readable: false,
+                text: null,
+                error: 'Error accessing file at: ' + path,
+            };
+        }
+
+        if (!file) {
+            return {
+                path: path,
+                exists: false,
+                readable: false,
+                text: null,
+                error: 'File not found at: ' + path,
+            };
+        }
+
+        try {
+            var content = await this.app.vault.read(file);
+            return {
+                path: path,
+                exists: true,
+                readable: true,
+                text: content,
+                error: null,
+            };
+        } catch (readErr) {
+            var errMsg = (readErr && readErr.message) || 'Unknown error reading file';
+            return {
+                path: path,
+                exists: true,
+                readable: false,
+                text: null,
+                error: errMsg,
+            };
+        }
+    }
+
+    /**
+     * Load structured source inputs for a paper entry at runtime.
+     *
+     * Source priority per D-01/D-02/D-03:
+     *   1. If entry.fulltext_path is available and readable → use it.
+     *   2. Else if entry.note_path is available and readable → use it.
+     *   3. Otherwise → both inputs marked unavailable with diagnostics.
+     *
+     * Per D-17, distinguishes missing-path vs missing-file vs read-error
+     * by preserving the exact error from _readVaultText.
+     *
+     * Implements a stale-load guard (_sourceInputsPaperKey): when
+     * loadedInputs is called with the same paperKey as the previous
+     * call, the cached result is returned without I/O.  This prevents
+     * redundant reads on onload/onunload/re-render.
+     *
+     * @param {object} entry - Paper entry ({ key, fulltext_path?, note_path? }).
+     * @returns {Promise<{ fulltext: { path, exists, readable, text, error }, note: { path, exists, readable, text, error } }>}
+     */
+    async _loadCanvasSourceInputs(entry) {
+        var entryKey = (entry && entry.key) || null;
+
+        // ── Stale-load guard: skip I/O when same paperKey ──
+        if (entryKey && this._sourceInputsPaperKey === entryKey && this._sourceInputsCache) {
+            return this._sourceInputsCache;
+        }
+
+        var ftPath = (entry && entry.fulltext_path) || null;
+        var ntPath = (entry && entry.note_path) || null;
+
+        // Try fulltext first
+        var ftResult = await this._readVaultText(ftPath, 'fulltext');
+
+        if (ftResult.readable) {
+            // Fulltext available — skip note read, provide stub entry
+            var fulltextResult = {
+                fulltext: ftResult,
+                note: this._ntStub(ntPath),
+            };
+            this._cacheSourceInputs(entryKey, fulltextResult);
+            return fulltextResult;
+        }
+
+        // Fulltext unavailable — try note
+        var ntResultVal = await this._readVaultText(ntPath, 'note');
+
+        var result = {
+            fulltext: ftResult,
+            note: ntResultVal,
+        };
+        this._cacheSourceInputs(entryKey, result);
+        return result;
+    }
+
+    /**
+     * Build a stub note entry for when note path was never provided.
+     * @param {string|null} ntPath
+     * @returns {{ path: string|null, exists: boolean, readable: boolean, text: null, error: null }}
+     * @private
+     */
+    _ntStub(ntPath) {
+        return { path: ntPath, exists: false, readable: false, text: null, error: null };
+    }
+
+    /**
+     * Cache source inputs for stale-load guard.
+     * @param {string|null} paperKey
+     * @param {object} sourceInputs
+     * @private
+     */
+    _cacheSourceInputs(paperKey, sourceInputs) {
+        this._sourceInputsPaperKey = paperKey;
+        // Deep copy to prevent external mutation of cached data
+        this._sourceInputsCache = JSON.parse(JSON.stringify(sourceInputs));
     }
 
     getViewType() {
