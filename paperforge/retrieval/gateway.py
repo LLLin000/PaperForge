@@ -76,6 +76,18 @@ def _tokenize_for_fts(q: str) -> str:
     return " OR ".join(f'"{t}"' for t in tokens)
 
 
+def _get_body_coverage(conn) -> dict:
+    """Return coverage stats for body_units vs OCR papers."""
+    body = conn.execute(
+        "SELECT COUNT(DISTINCT paper_id) FROM body_units WHERE indexable=1"
+    ).fetchone()[0]
+    ocr = conn.execute(
+        "SELECT COUNT(*) FROM papers WHERE ocr_status='done'"
+    ).fetchone()[0]
+    lib = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+    return {"body_papers": body, "ocr_papers": ocr, "library_papers": lib}
+
+
 def _body_units_fts_exists(vault: Path) -> bool:
     """Check whether the body_units_fts table exists and has rows."""
     db_path = get_memory_db_path(vault)
@@ -192,7 +204,11 @@ def _run_paper_lookup(vault: Path, query: str, *, limit: int = 5) -> PFResult:
 def _run_body_unit_discovery(
     vault: Path, query: str, *, limit: int = 5
 ) -> PFResult:
-    """Search ``body_units_fts`` for content-level discovery."""
+    """Search ``body_units_fts`` for content-level discovery.
+
+    Returns empty results with coverage info when no matches found.
+    Does NOT fall back to metadata search.
+    """
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return PFResult(
@@ -221,6 +237,32 @@ def _run_body_unit_discovery(
             (fts_query, limit),
         ).fetchall()
         results = [dict(r) for r in rows]
+        coverage = _get_body_coverage(conn)
+        if not results:
+            return PFResult(
+                ok=True,
+                command="content-discovery",
+                version=PF_VERSION,
+                data={
+                    "intent": "content-discovery",
+                    "query": query,
+                    "results": [],
+                    "count": 0,
+                    "coverage": coverage,
+                    "route_explanation": {
+                        "primary_arm": "body_units_fts",
+                        "matched": False,
+                    },
+                    "next_action": {
+                        "command": f"paperforge search {query}",
+                        "reason": (
+                            f"正文检索无匹配。正文索引覆盖 "
+                            f"{coverage['body_papers']}/{coverage['ocr_papers']} 篇 OCR 完成论文。"
+                            f"尝试 paperforge search 进行元数据全文搜索。"
+                        ),
+                    },
+                },
+            )
         return PFResult(
             ok=True,
             command="content-discovery",
@@ -230,17 +272,32 @@ def _run_body_unit_discovery(
                 "query": query,
                 "results": results,
                 "count": len(results),
+                "coverage": coverage,
                 "route_explanation": {
                     "primary_arm": "body_units_fts",
                     "fallback_arms": ["vector_retrieve"],
                     "compatibility_mode": False,
+                    "matched": True,
                 },
             },
         )
     except Exception as exc:
-        logger.exception("body_units_fts query failed, falling back")
-        return _run_compat_content_discovery(
-            vault, query, limit=limit, explanation_note=str(exc)
+        coverage = _get_body_coverage(conn)
+        return PFResult(
+            ok=False,
+            command="content-discovery",
+            version=PF_VERSION,
+            data={
+                "intent": "content-discovery",
+                "query": query,
+                "results": [],
+                "error": str(exc),
+                "coverage": coverage,
+                "route_explanation": {
+                    "primary_arm": "body_units_fts",
+                    "error": f"fts_query_failed: {exc}",
+                },
+            },
         )
     finally:
         conn.close()
