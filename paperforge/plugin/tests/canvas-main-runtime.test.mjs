@@ -436,3 +436,307 @@ describe('runtime forbidden controls', () => {
         expect(html).not.toContain('draggable="true"');
     });
 });
+
+// ── ANN12-02 Task 1: Runtime source loading (_loadCanvasSourceInputs) ──
+
+describe('ANN12-02 Task 1 — Runtime source loading (_loadCanvasSourceInputs)', () => {
+    /**
+     * Create a view with a mock app that provides vault read capabilities.
+     */
+    function makeViewWithVault(vaultOverrides) {
+        const vault = {
+            getAbstractFileByPath: vi.fn(() => null),
+            read: vi.fn(() => Promise.resolve('')),
+            adapter: { basePath: 'C:/vault' },
+            ...vaultOverrides,
+        };
+        const app = { vault };
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl, app });
+        view.contentEl = contentEl;
+        view.app = app;
+        return { view, app, containerEl, contentEl };
+    }
+
+    // ── Method existence ──
+
+    it('has _loadCanvasSourceInputs method', () => {
+        const { view } = makeViewWithVault();
+        expect(typeof view._loadCanvasSourceInputs).toBe('function');
+    });
+
+    it('has _readVaultText helper method', () => {
+        const { view } = makeViewWithVault();
+        expect(typeof view._readVaultText).toBe('function');
+    });
+
+    // ── Source priority contract (D-01/D-02/D-03) ──
+
+    it('reads fulltext_path first when it exists and is readable', async () => {
+        const { view, app } = makeViewWithVault();
+        const mockFile = { path: 'ft.md', name: 'fulltext.md' };
+        app.vault.getAbstractFileByPath.mockImplementation((p) => {
+            if (p === 'path/to/fulltext.md') return mockFile;
+            return null;
+        });
+        app.vault.read.mockResolvedValue('Fulltext content here.');
+
+        const result = await view._loadCanvasSourceInputs({
+            key: 'KEY_A',
+            fulltext_path: 'path/to/fulltext.md',
+            note_path: 'path/to/note.md',
+        });
+
+        expect(result.fulltext.exists).toBe(true);
+        expect(result.fulltext.readable).toBe(true);
+        expect(result.fulltext.text).toBe('Fulltext content here.');
+        expect(app.vault.getAbstractFileByPath).toHaveBeenCalledWith('path/to/fulltext.md');
+        expect(app.vault.read).toHaveBeenCalledWith(mockFile);
+    });
+
+    it('falls back to note_path when fulltext_path is unavailable', async () => {
+        const { view, app } = makeViewWithVault();
+        // Fulltext file doesn't exist
+        app.vault.getAbstractFileByPath.mockImplementation((p) => {
+            if (p === 'path/to/note.md') return { path: 'note.md' };
+            return null;
+        });
+        app.vault.read.mockResolvedValue('Note content here.');
+
+        const result = await view._loadCanvasSourceInputs({
+            key: 'KEY_B',
+            fulltext_path: 'path/to/missing-ft.md',
+            note_path: 'path/to/note.md',
+        });
+
+        // Fulltext should be missing
+        expect(result.fulltext.exists).toBe(false);
+        expect(result.fulltext.readable).toBe(false);
+        // Note should be readable
+        expect(result.note.exists).toBe(true);
+        expect(result.note.readable).toBe(true);
+        expect(result.note.text).toBe('Note content here.');
+        expect(app.vault.getAbstractFileByPath).toHaveBeenCalledWith('path/to/missing-ft.md');
+        expect(app.vault.getAbstractFileByPath).toHaveBeenCalledWith('path/to/note.md');
+    });
+
+    it('returns both unavailable when neither fulltext_path nor note_path exist', async () => {
+        const { view, app } = makeViewWithVault();
+        app.vault.getAbstractFileByPath.mockReturnValue(null);
+
+        const result = await view._loadCanvasSourceInputs({
+            key: 'KEY_C',
+            fulltext_path: 'path/to/nowhere.md',
+            note_path: 'path/to/also-nowhere.md',
+        });
+
+        expect(result.fulltext.exists).toBe(false);
+        expect(result.fulltext.readable).toBe(false);
+        expect(result.note.exists).toBe(false);
+        expect(result.note.readable).toBe(false);
+        expect(result.fulltext.path).toBe('path/to/nowhere.md');
+        expect(result.note.path).toBe('path/to/also-nowhere.md');
+    });
+
+    // ── D-17: Path/file diagnostic distinctions ──
+
+    it('D-17: distinguishes missing fulltext path (null) from file read error', async () => {
+        const { view, app } = makeViewWithVault();
+        // Only note_path is provided; fulltext_path is null
+        app.vault.getAbstractFileByPath.mockImplementation((p) => {
+            if (p === 'path/to/note.md') return { path: 'note.md' };
+            return null;
+        });
+        app.vault.read.mockResolvedValue('Note text');
+
+        const result = await view._loadCanvasSourceInputs({
+            key: 'KEY_D',
+            fulltext_path: null,
+            note_path: 'path/to/note.md',
+        });
+
+        // Fulltext: path is null → no path at all
+        expect(result.fulltext.path).toBeNull();
+        expect(result.fulltext.exists).toBe(false);
+        expect(result.fulltext.readable).toBe(false);
+        // Error should mention missing path
+        expect(result.fulltext.error).toBeTruthy();
+        // Note: should work normally
+        expect(result.note.readable).toBe(true);
+        expect(result.note.text).toBe('Note text');
+    });
+
+    it('D-17: distinguishes missing file (getAbstractFileByPath returns null) from readable', async () => {
+        const { view, app } = makeViewWithVault();
+        app.vault.getAbstractFileByPath.mockReturnValue(null);
+
+        const result = await view._loadCanvasSourceInputs({
+            key: 'KEY_E',
+            fulltext_path: 'path/to/nonexistent.md',
+            note_path: null,
+        });
+
+        // Fulltext: path exists but file doesn't
+        expect(result.fulltext.path).toBe('path/to/nonexistent.md');
+        expect(result.fulltext.exists).toBe(false);
+        expect(result.fulltext.readable).toBe(false);
+        expect(result.fulltext.error).toBeTruthy();
+        // Error should NOT say "path is missing" — it should say file not found or similar
+        expect(result.fulltext.error).not.toMatch(/path.*missing/i);
+    });
+
+    it('D-17: captures read error when vault.read rejects', async () => {
+        const { view, app } = makeViewWithVault();
+        const mockFile = { path: 'bad.md' };
+        app.vault.getAbstractFileByPath.mockReturnValue(mockFile);
+        app.vault.read.mockRejectedValue(new Error('Permission denied'));
+
+        const result = await view._loadCanvasSourceInputs({
+            key: 'KEY_F',
+            fulltext_path: 'path/to/bad.md',
+            note_path: null,
+        });
+
+        expect(result.fulltext.exists).toBe(true);
+        expect(result.fulltext.readable).toBe(false);
+        expect(result.fulltext.text).toBeNull();
+        // Error message should be captured
+        expect(result.fulltext.error).toBeTruthy();
+        expect(result.fulltext.error).toContain('Permission denied');
+    });
+
+    // ── Stale load guard ──
+
+    it('stale guard skips I/O when same paperKey is loaded again', async () => {
+        const { view, app } = makeViewWithVault();
+        const mockFile = { path: 'ft.md' };
+        app.vault.getAbstractFileByPath.mockReturnValue(mockFile);
+        app.vault.read.mockResolvedValue('Content');
+
+        // First call — should do I/O
+        const first = await view._loadCanvasSourceInputs({
+            key: 'SAME_KEY',
+            fulltext_path: 'path/to/ft.md',
+        });
+        expect(first.fulltext.text).toBe('Content');
+        expect(app.vault.read).toHaveBeenCalledTimes(1);
+
+        // Second call with same key — should skip I/O, return cached
+        app.vault.read.mockClear();
+        app.vault.getAbstractFileByPath.mockClear();
+        const second = await view._loadCanvasSourceInputs({
+            key: 'SAME_KEY',
+            fulltext_path: 'path/to/ft.md',
+        });
+
+        expect(second.fulltext.text).toBe('Content');
+        // I/O should NOT have been called again
+        expect(app.vault.read).not.toHaveBeenCalled();
+        expect(app.vault.getAbstractFileByPath).not.toHaveBeenCalled();
+    });
+
+    it('stale guard does NOT skip when paperKey differs', async () => {
+        const { view, app } = makeViewWithVault();
+        const mockFile = { path: 'ft.md' };
+        app.vault.getAbstractFileByPath.mockReturnValue(mockFile);
+        let readCount = 0;
+        app.vault.read.mockImplementation(() => {
+            readCount++;
+            return Promise.resolve('Content v' + readCount);
+        });
+
+        // First paper
+        await view._loadCanvasSourceInputs({
+            key: 'KEY_1',
+            fulltext_path: 'path/to/ft.md',
+        });
+        expect(readCount).toBe(1);
+
+        // Different paper — should do I/O again
+        const result = await view._loadCanvasSourceInputs({
+            key: 'KEY_2',
+            fulltext_path: 'path/to/ft.md',
+        });
+        expect(readCount).toBe(2);
+        expect(result.fulltext.text).toBe('Content v2');
+    });
+
+    // ── Return shape contract ──
+
+    it('returns sourceInputs with correct fulltext/note shape', async () => {
+        const { view } = makeViewWithVault();
+        // Minimal: no paths at all
+        const result = await view._loadCanvasSourceInputs({
+            key: 'KEY_G',
+        });
+
+        // Both fulltext and note should have the standard shape
+        expect(result).toHaveProperty('fulltext');
+        expect(result).toHaveProperty('note');
+        expect(result.fulltext).toHaveProperty('path');
+        expect(result.fulltext).toHaveProperty('exists');
+        expect(result.fulltext).toHaveProperty('readable');
+        expect(result.fulltext).toHaveProperty('text');
+        expect(result.fulltext).toHaveProperty('error');
+        expect(result.note).toHaveProperty('path');
+        expect(result.note).toHaveProperty('exists');
+        expect(result.note).toHaveProperty('readable');
+        expect(result.note).toHaveProperty('text');
+        expect(result.note).toHaveProperty('error');
+    });
+
+    // ── D-15/D-16/D-18: Missing source doesn't break card state ──
+
+    it('missing source inputs still produce a valid result (not null/undefined)', async () => {
+        const { view } = makeViewWithVault();
+
+        const result = await view._loadCanvasSourceInputs({
+            key: 'KEY_H',
+        });
+
+        // Should be a valid object, not null/undefined/throw
+        expect(result).toBeTruthy();
+        expect(typeof result).toBe('object');
+        expect(result.fulltext.exists).toBe(false);
+        expect(result.note.exists).toBe(false);
+    });
+
+    // ── D-04/D-26: No native PDF selectors or PDF viewer internals ──
+
+    it('runtime source loading adds no native PDF DOM selectors/classes', () => {
+        const { view, containerEl } = makeViewWithVault();
+        view.setPaperContext('KEY_PDF_SAFE', { key: 'KEY_PDF_SAFE', title: 'Safe' });
+
+        const html = containerEl.innerHTML.toLowerCase();
+        // No native PDF classes (D-04, D-26)
+        expect(html).not.toContain('pdf-viewer');
+        expect(html).not.toContain('pdf-embed');
+        expect(html).not.toContain('data-page-number');
+        // No connector or SVG geometry (D-24)
+        expect(html).not.toContain('paperforge-canvas-connector');
+        expect(html).not.toContain('<svg');
+    });
+
+    // ── D-24/D-25: No mutation/edit/write controls ──
+
+    it('runtime adds no card-source navigation or mutation controls', () => {
+        const { view, containerEl } = makeViewWithVault();
+        view.setPaperContext('KEY_CTRL', { key: 'KEY_CTRL', title: 'Control' });
+
+        const text = containerEl.textContent.toLowerCase();
+        const forbidden = ['edit', 'delete', 'create', 'save', 'import', 'apply', 'write back', 'write-back',
+                           'evidence', 'concept card'];
+        for (const word of forbidden) {
+            expect(text).not.toContain(word);
+        }
+
+        const html = containerEl.innerHTML.toLowerCase();
+        expect(html).not.toContain('draggable="true"');
+        expect(html).not.toContain('contenteditable');
+    });
+});
