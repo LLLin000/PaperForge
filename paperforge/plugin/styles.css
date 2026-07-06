@@ -3216,3 +3216,32 @@
     outline: 2px solid var(--interactive-accent);
     outline-offset: 1px;
 }
+
+/* ── ANN14-02: Connector SVG layer (D-10/D-11/D-12) ── */
+
+.paperforge-reading-canvas-view .paperforge-canvas-connector-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-connector {
+    stroke: var(--text-muted);
+    stroke-width: 1.5px;
+    fill: none;
+    stroke-linecap: round;
+    pointer-events: none;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-connector--hovered {
+    opacity: 0.35;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-connector--selected {
+    opacity: 0.55;
+}

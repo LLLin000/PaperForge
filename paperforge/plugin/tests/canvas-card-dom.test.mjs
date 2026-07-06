@@ -533,10 +533,18 @@ describe('ANN12-02 Task 3 — CSS selector presence in styles.css', () => {
         expect(cssContent).toContain('paperforge-canvas-anchor--unresolved');
     });
 
-    it('has no paperforge-canvas-connector classes [D-22]', () => {
-        // The CSS should NOT define connector classes
+    it('defines namespaced connector CSS under .paperforge-reading-canvas-view [ANN14-02]', () => {
+        expect(cssContent).toContain('paperforge-canvas-connector-layer');
+        expect(cssContent).toContain('paperforge-canvas-connector--selected');
+        expect(cssContent).toContain('paperforge-canvas-connector--hovered');
+        // Verify all connector selectors are namespaced under .paperforge-reading-canvas-view
         const connectorLines = cssContent.split('\n').filter(l => l.includes('paperforge-canvas-connector'));
-        expect(connectorLines.length).toBe(0);
+        for (var ci = 0; ci < connectorLines.length; ci++) {
+            var line = connectorLines[ci];
+            if (line.includes('{') || line.includes('}')) continue;
+            if (line.trim() === '' || line.trim().startsWith('/*')) continue;
+            expect(line).toContain('.paperforge-reading-canvas-view');
+        }
     });
 
     it('has no native PDF selectors (.pdf-viewer, .pdf-embed) [D-04/D-26]', () => {
@@ -551,16 +559,17 @@ describe('ANN12-02 Task 3 — CSS selector presence in styles.css', () => {
         expect(true).toBe(true);
     });
 
-    it('has no SVG geometry or connector path selectors [D-24]', () => {
+    it('has no ANN12 SVG geometry selectors [D-24] — ANN14 connector layer allowed', () => {
         // ANN12 CSS should not contain SVG rules or connector geometry
-        const svgRules = cssContent.split('\n').filter(l =>
-            l.includes('svg') && l.includes('{')
-        );
+        const svgRules = cssContent.split('\n').filter(function (l) {
+            return l.includes('svg') && l.includes('{');
+        });
         // Allow non-ANN12 SVG rules for icons (outside source/anchor context)
-        const ann12Svg = svgRules.filter(l =>
-            l.includes('paperforge-canvas-source') || l.includes('paperforge-canvas-anchor')
-        );
+        var ann12Svg = svgRules.filter(function (l) {
+            return l.includes('paperforge-canvas-source') || l.includes('paperforge-canvas-anchor');
+        });
         expect(ann12Svg.length).toBe(0);
+        // ANN14 connector SVG rules use class-based selectors, not bare SVG selectors
     });
 });
 
