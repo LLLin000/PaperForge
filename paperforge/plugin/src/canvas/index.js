@@ -37,6 +37,9 @@ const {
     renderCanvasMissingSource,
     renderCanvasUnsupported,
     renderCanvasStaleBanner,
+    renderCanvasCard,
+    renderCanvasCardLanes,
+    renderCanvasRefreshing,
 } = require('./render');
 
 const {
@@ -77,6 +80,9 @@ module.exports = {
     renderCanvasMissingSource,
     renderCanvasUnsupported,
     renderCanvasStaleBanner,
+    renderCanvasCard,
+    renderCanvasCardLanes,
+    renderCanvasRefreshing,
 
     // ── Card view-models (ANN11) ──
     buildCanvasCard,

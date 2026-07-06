@@ -1,14 +1,19 @@
 /**
- * Canvas shell DOM rendering helpers for Phase ANN10.
+ * Canvas shell DOM rendering helpers for Phase ANN10 and ANN11.
  *
  * Renders read-only shell states: shell container, paper identity, loading,
  * empty, missing-paper, missing-db, CLI-error/invalid-json, missing-source,
- * unsupported, and stale banner.
+ * unsupported, stale banner, and card lane containers.
  *
  * All user-facing text is inserted via `textContent` / Obsidian `setText()`
  * — never `innerHTML` for annotation content.  No edit, delete, create,
  * save, import, apply, write-back, database, evidence, or concept-card
  * controls appear in any state.
+ *
+ * Card lane rendering (ANN11-02) produces left/right annotation card lanes
+ * from the view-model's lane output.  Cards are read-only with no expandable
+ * details, drawers, popovers, editable forms, anchors, connectors, or
+ * draggable handles.
  *
  * @module canvas/render
  */
@@ -59,6 +64,45 @@ function emptyEl(el) {
 //
 // Minimal states: idle | loading | ready | empty | missing-paper |
 //   missing-db | cli-error | invalid-json
+
+// ── i18n helper (ANN11 card labels) ──
+//
+// Provides zh/en text keys scoped to ANN11 card labels, placeholders,
+// provenance, read-only badges, and state copy.  No unrelated ANN10
+// shell text is duplicated here.
+
+const _I18N = {
+    en: {
+        'card.selected_text': 'Selected Text',
+        'card.comment': 'Comment',
+        'card.page': 'Page',
+        'card.type': 'Type',
+        'card.source': 'Source',
+        'card.read_only': 'Read-only',
+        'card.read_only_label': 'Read-only',
+        'card.no_comment': '',
+        'card.no_selected_text': '',
+        'card.attachment': 'Attachment',
+        'card.annotation': 'Annotation',
+        'state.refreshing': 'Refreshing annotations…',
+        'state.stale': 'Showing previously loaded (stale) data.',
+    },
+    zh: {
+        'card.selected_text': '选中文本',
+        'card.comment': '备注',
+        'card.page': '页码',
+        'card.type': '类型',
+        'card.source': '来源',
+        'card.read_only': '只读',
+        'card.read_only_label': '只读',
+        'card.no_comment': '',
+        'card.no_selected_text': '',
+        'card.attachment': '附件',
+        'card.annotation': '批注',
+        'state.refreshing': '正在刷新批注…',
+        'state.stale': '显示之前加载的（过期）数据。',
+    },
+};
 
 // ── State renderers ──
 
@@ -224,6 +268,120 @@ function renderCanvasStaleBanner(contentEl, vm) {
     contentEl.appendChild(banner);
 }
 
+// ── Card lane rendering (ANN11-02) ──
+
+/**
+ * Render a single read-only annotation card DOM element.
+ *
+ * Produces namespaced elements for selected-text preview, comment preview,
+ * page, type/color, source/provenance, and read-only status per D-01, D-02,
+ * D-19, and D-20.  All annotation-derived text uses textContent — no
+ * innerHTML.  No expandable details, drawers, popovers, editable forms,
+ * or controls per D-03, D-21, D-22.
+ *
+ * @param {object} card - Card object from buildCanvasCard().
+ * @returns {HTMLElement} The card DOM element.
+ */
+function renderCanvasCard(card) {
+    var cardEl = createEl('div', { cls: 'paperforge-canvas-card' });
+    cardEl.setAttribute('data-card-id', card.id || '');
+
+    // ── Selected text preview ──
+    var selTextEl = createEl('div', {
+        cls: 'paperforge-canvas-card-selected-text' + (card.selectedText === '' ? ' paperforge-canvas-card-selected-text--empty' : '') + (card.selectedTextPreview && card.selectedTextPreview.isLong ? ' paperforge-canvas-card-selected-text--long' : ''),
+        text: card.selectedText || '',
+    });
+    cardEl.appendChild(selTextEl);
+
+    // ── Comment preview ──
+    var commentEl = createEl('div', {
+        cls: 'paperforge-canvas-card-comment' + (card.comment === '' ? ' paperforge-canvas-card-comment--empty' : '') + (card.commentPreview && card.commentPreview.isLong ? ' paperforge-canvas-card-comment--long' : ''),
+        text: card.comment || '',
+    });
+    cardEl.appendChild(commentEl);
+
+    // ── Page label ──
+    var pageEl = createEl('div', { cls: 'paperforge-canvas-card-page', text: card.pageLabel || '' });
+    cardEl.appendChild(pageEl);
+
+    // ── Type / color indicator ──
+    var typeEl = createEl('div', { cls: 'paperforge-canvas-card-type', text: card.type || 'annotation' });
+    if (card.color) {
+        typeEl.style.borderLeftColor = card.color;
+    }
+    cardEl.appendChild(typeEl);
+
+    // ── Source / provenance ──
+    var sourceParts = [];
+    if (card.source) sourceParts.push(card.source);
+    if (card.sourceAttachmentKey) sourceParts.push(card.sourceAttachmentKey);
+    if (card.sourceAnnotationKey) sourceParts.push(card.sourceAnnotationKey);
+    var sourceEl = createEl('div', { cls: 'paperforge-canvas-card-source', text: sourceParts.join(' · ') || '' });
+    cardEl.appendChild(sourceEl);
+
+    // ── Read-only badge ──
+    var badgeCls = 'paperforge-canvas-card-readonly';
+    badgeCls += card.readOnly ? ' paperforge-canvas-card-readonly--true' : ' paperforge-canvas-card-readonly--false';
+    var badgeEl = createEl('span', { cls: badgeCls, text: card.readOnlyLabel || '' });
+    cardEl.appendChild(badgeEl);
+
+    return cardEl;
+}
+
+/**
+ * Render left and right card lane containers from a lanes object.
+ *
+ * Lane containers are named from ANN11-01's deterministic lane assignment
+ * (D-07, D-08).  Lane order and lane/laneIndex are preserved — no
+ * re-sorting, drag, or persistence.
+ *
+ * @param {HTMLElement} contentEl - Parent element.
+ * @param {object} lanes - Lane object { left: Array, right: Array }.
+ */
+function renderCanvasCardLanes(contentEl, lanes) {
+    if (!lanes) return;
+
+    var lanesContainer = createEl('div', { cls: 'paperforge-canvas-lanes' });
+
+    // Left lane
+    var leftLaneEl = createEl('div', { cls: 'paperforge-canvas-lane-left' });
+    leftLaneEl.setAttribute('data-lane-index', '0');
+    (lanes.left || []).forEach(function (card) {
+        leftLaneEl.appendChild(renderCanvasCard(card));
+    });
+    lanesContainer.appendChild(leftLaneEl);
+
+    // Right lane
+    var rightLaneEl = createEl('div', { cls: 'paperforge-canvas-lane-right' });
+    rightLaneEl.setAttribute('data-lane-index', '1');
+    (lanes.right || []).forEach(function (card) {
+        rightLaneEl.appendChild(renderCanvasCard(card));
+    });
+    lanesContainer.appendChild(rightLaneEl);
+
+    contentEl.appendChild(lanesContainer);
+}
+
+/**
+ * Render the refreshing state with preserved cards.
+ *
+ * Shows a "refreshing" message while existing cards remain visible.
+ *
+ * @param {HTMLElement} contentEl
+ * @param {object} vm - View-model.
+ */
+function renderCanvasRefreshing(contentEl, vm) {
+    var stateEl = createEl('div', { cls: 'paperforge-canvas-refreshing' });
+    var msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'Refreshing annotations…' });
+    stateEl.appendChild(msg);
+    contentEl.appendChild(stateEl);
+
+    // Preserve existing cards
+    if (vm.lanes) {
+        renderCanvasCardLanes(contentEl, vm.lanes);
+    }
+}
+
 // ── Main render dispatch ──
 
 /**
@@ -234,11 +392,15 @@ function renderCanvasStaleBanner(contentEl, vm) {
  *
  * @param {HTMLElement} contentEl - The DOM element to render into.
  * @param {object} vm - View-model with at minimum `{ state }`.
- * @param {string} vm.state - One of: 'idle', 'loading', 'ready', 'empty',
- *   'missing-paper', 'missing-db', 'cli-error', 'invalid-json'.
+ * @param {string} vm.state - One of: 'idle', 'loading', 'relaxed', 'ready',
+ *   'refreshing', 'stale', 'empty', 'missing-paper', 'missing-db',
+ *   'cli-error', 'invalid-json', 'missing-source', 'unsupported'.
  * @param {string|null} [vm.paperKey]
  * @param {string} [vm.message]
  * @param {boolean} [vm.stale]
+ * @param {boolean} [vm.refreshing]
+ * @param {Array} [vm.cards]
+ * @param {object} [vm.lanes] - { left: Array, right: Array }
  */
 function renderCanvasView(contentEl, vm) {
     if (!contentEl) return;
@@ -246,52 +408,66 @@ function renderCanvasView(contentEl, vm) {
     // Clear previous content
     emptyEl(contentEl);
 
-    const state = (vm && vm.state) || 'idle';
+    var v = vm || {};
+    var state = v.state || 'idle';
 
     // ── Render paper identity header when we have a paperKey ──
-    if (vm && vm.paperKey) {
-        renderCanvasIdentity(contentEl, vm.paperKey);
+    if (v.paperKey) {
+        renderCanvasIdentity(contentEl, v.paperKey);
     }
 
     // ── Render state-specific content ──
     switch (state) {
         case 'loading':
-            renderCanvasLoading(contentEl, vm);
+            renderCanvasLoading(contentEl, v);
             break;
         case 'ready':
-            // Phase ANN10 ready state is a placeholder — card lanes
-            // and source surface belong to Phase 11+.
-            renderCanvasEmpty(contentEl, { ...vm, message: vm.message || 'Annotations loaded. Card layout is available in a future phase.' });
+            // ANN11-02: render card lanes when available, else show empty
+            if (v.lanes) {
+                renderCanvasCardLanes(contentEl, v.lanes);
+            } else {
+                renderCanvasEmpty(contentEl, { ...v, message: v.message || 'Annotations loaded. Card layout is available in a future phase.' });
+            }
+            break;
+        case 'refreshing':
+            renderCanvasRefreshing(contentEl, v);
+            break;
+        case 'stale':
+            // Show cards + stale banner
+            if (v.lanes) {
+                renderCanvasCardLanes(contentEl, v.lanes);
+            }
+            renderCanvasStaleBanner(contentEl, v);
             break;
         case 'empty':
-            renderCanvasEmpty(contentEl, vm);
+            renderCanvasEmpty(contentEl, v);
             break;
         case 'missing-paper':
-            renderCanvasMissingPaper(contentEl, vm);
+            renderCanvasMissingPaper(contentEl, v);
             break;
         case 'missing-db':
-            renderCanvasMissingDb(contentEl, vm);
+            renderCanvasMissingDb(contentEl, v);
             break;
         case 'cli-error':
-            renderCanvasCliError(contentEl, vm);
+            renderCanvasCliError(contentEl, v);
             break;
         case 'invalid-json':
-            renderCanvasInvalidJson(contentEl, vm);
+            renderCanvasInvalidJson(contentEl, v);
             break;
         case 'missing-source':
-            renderCanvasMissingSource(contentEl, vm);
+            renderCanvasMissingSource(contentEl, v);
             break;
         case 'unsupported':
-            renderCanvasUnsupported(contentEl, vm);
+            renderCanvasUnsupported(contentEl, v);
             break;
         default:
             renderCanvasIdle(contentEl);
             break;
     }
 
-    // ── Stale overlay banner ──
-    if (vm && vm.stale) {
-        renderCanvasStaleBanner(contentEl, vm);
+    // ── Stale overlay banner for states without their own stale handling ──
+    if (v.stale && state !== 'stale') {
+        renderCanvasStaleBanner(contentEl, v);
     }
 }
 
@@ -308,4 +484,7 @@ module.exports = {
     renderCanvasMissingSource,
     renderCanvasUnsupported,
     renderCanvasStaleBanner,
+    renderCanvasCard,
+    renderCanvasCardLanes,
+    renderCanvasRefreshing,
 };
