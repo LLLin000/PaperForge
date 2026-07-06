@@ -76,6 +76,11 @@ def build_unit_id_v2(
     return f"{paper_id}:{kind}:{node_id}{part_suffix}"
 
 
+
+def _unit_kind_suffix(kind: str) -> str:
+    """Return suffix for unit_id to avoid collision between body and backmatter_body."""
+    return "" if kind == "body" else f":{kind}"
+
 def build_body_units(
     *,
     tree: dict[str, Any],
@@ -144,8 +149,9 @@ def build_body_units(
                 for p_idx, part_text in enumerate(parts):
                     part_ordinal = p_idx + 1 if n_parts > 1 else 0
                     suffix = f":part_{part_ordinal:03d}" if part_ordinal else ""
+                    kind_sfx = _unit_kind_suffix(unit_kind)
                     uid = build_unit_id_v2(
-                        paper_id, "body", node["node_id"], suffix,
+                        paper_id, "body", node["node_id"], f"{kind_sfx}{suffix}",
                     )
 
                     unit = {
@@ -176,6 +182,13 @@ def build_body_units(
     return units
 
 
+
+def _object_kind(entry: dict) -> str:
+    """Determine object kind from entry fields."""
+    if "figure_id" in entry or entry.get("role") == "figure_caption":
+        return "figure"
+    return "table"
+
 def build_object_units(
     *,
     tree: dict[str, Any],
@@ -201,7 +214,11 @@ def build_object_units(
             block_map[bid] = b
 
     # Collect all objects from role_index (figures, tables, etc.)
-    objects = role_index.get("figure_captions", []) + role_index.get("table_captions", [])
+    objects = (
+        role_index.get("figure_captions") or role_index.get("captions", [])
+    ) + (
+        role_index.get("table_captions") or role_index.get("tables", [])
+    )
 
     def find_owning_node(node: dict[str, Any], object_block_id: str) -> dict[str, Any] | None:
         """Find the most specific section that owns an object block."""
@@ -218,7 +235,7 @@ def build_object_units(
 
     for obj in objects:
         obj_id = obj.get("figure_id") or obj.get("table_id") or ""
-        obj_type = "figure" if "figure_id" in obj else "table"
+        obj_type = _object_kind(obj)
         caption = str(obj.get("text", "") or "")
         owning_node: dict[str, Any] | None = None
 

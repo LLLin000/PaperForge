@@ -158,6 +158,7 @@ def test_mixed_body_and_backmatter_split():
     assert "body" in kinds
     assert "backmatter_body" in kinds
     assert len(units) == 2
+    assert len({u["unit_id"] for u in units}) == len(units)
 
 
 def test_token_cap_splits_into_parts():
@@ -212,7 +213,7 @@ def test_build_object_units_from_role_index():
         {"block_id": "f2", "role": "body_paragraph", "text": "As shown in Figure 1."},
     ]
     role_index = {
-        "figure_captions": [
+        "captions": [
             {"figure_id": "Figure 1", "caption_block_id": "f2", "text": "Figure 1: Results"},
         ]
     }

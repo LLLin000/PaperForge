@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 
 from paperforge.embedding._chroma import get_collection
+from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash
 from paperforge.embedding.backends import get_vector_backend
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
 from paperforge.memory.db import get_connection, get_memory_db_path
@@ -33,12 +34,12 @@ def embed_paper(vault: Path, zotero_key: str, chunks: list[dict]) -> int:
     backend.add(ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
     return len(chunks)
 
-
 def embed_body_units(vault: Path, zotero_key: str, body_units: list[dict]) -> int:
     """Embed body units into the paperforge_body collection. Returns count."""
     if not body_units:
         return 0
     provider = OpenAICompatibleProvider(vault)
+    current_hash = compute_body_units_hash(body_units)
 
     texts = [u["unit_text"] for u in body_units]
     ids = [u["unit_id"] for u in body_units]
@@ -50,6 +51,8 @@ def embed_body_units(vault: Path, zotero_key: str, body_units: list[dict]) -> in
             "unit_kind": u.get("unit_kind", "body"),
             "section_level": u.get("section_level", 0),
             "token_estimate": u.get("token_estimate", 0),
+            "body_units_hash": current_hash,
+            "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
         }
         for u in body_units
     ]

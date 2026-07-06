@@ -10,6 +10,32 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Any
+import json
+
+RETRIEVAL_POLICY_VERSION = "l4.body.v1"
+
+
+def compute_body_units_hash(units: list[dict]) -> str:
+    """Compute a canonical hash for body units to detect changes."""
+    raw = json.dumps(
+        [
+            {
+                "unit_id": u["unit_id"],
+                "section_path": u["section_path"],
+                "section_level": u.get("section_level", 0),
+                "section_title": u.get("section_title", ""),
+                "unit_kind": u.get("unit_kind", "body"),
+                "part_ordinal": u.get("part_ordinal", 0),
+                "unit_text": u["unit_text"],
+                "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
+            }
+            for u in units
+        ],
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+    return sha256(raw.encode()).hexdigest()
+
 
 
 def build_paper_manifest(

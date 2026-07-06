@@ -25,10 +25,19 @@ def build_structure_tree(
     # ── stack algorithm ──
     root_nodes: list[dict[str, Any]] = []
     stack: list[dict[str, Any]] = []
-
+    seen_node_ids: set[str] = set()
+    
     for h in heading_events:
+        base_id = f"sec:{h['block_id']}"
+        # ponytail: same block_id appears on different pages for different
+        # headings (e.g. running headers). Disambiguate with emitted_order.
+        node_id = base_id
+        while node_id in seen_node_ids:
+            node_id = f"{base_id}:order{h['emitted_order']}"
+        seen_node_ids.add(node_id)
+        
         node = {
-            "node_id": f"sec:{h['block_id']}",
+            "node_id": node_id,
             "kind": "section",
             "title": h["title"],
             "level": h["markdown_level"],

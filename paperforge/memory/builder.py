@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from paperforge.core.io import read_json, read_jsonl
@@ -428,11 +429,18 @@ def _upsert_body_units(conn: sqlite3.Connection, body_units: list[dict]) -> None
     # Refresh FTS for all body units of the affected papers
     paper_ids = list({u["paper_id"] for u in body_units})
     for pid in paper_ids:
-        conn.execute("DELETE FROM body_units_fts WHERE paper_id = ?", (pid,))
-    conn.execute(
-        """INSERT INTO body_units_fts(rowid, unit_id, paper_id, section_path, unit_text)
-           SELECT rowid, unit_id, paper_id, section_path, unit_text FROM body_units"""
-    )
+        # ponytail: FTS5 external content table raises DatabaseError on DELETE
+        # when the index is empty (first build). Wrap to handle both cases.
+        try:
+            conn.execute("DELETE FROM body_units_fts WHERE paper_id = ?", (pid,))
+        except sqlite3.DatabaseError:
+            pass
+        conn.execute(
+            """INSERT INTO body_units_fts(rowid, unit_id, paper_id, section_path, unit_text)
+               SELECT rowid, unit_id, paper_id, section_path, unit_text
+               FROM body_units WHERE paper_id = ? AND indexable = 1""",
+            (pid,),
+        )
 
 
 def _upsert_object_units(conn: sqlite3.Connection, object_units: list[dict]) -> None:

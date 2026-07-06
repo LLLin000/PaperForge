@@ -6,6 +6,7 @@ import sys
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
+from paperforge.retrieval.manifest import compute_body_units_hash, RETRIEVAL_POLICY_VERSION
 from paperforge.core.result import PFError, PFResult
 from paperforge.embedding import (
     delete_paper_vectors,
@@ -212,22 +213,26 @@ def run(args: argparse.Namespace) -> int:
 
         if has_body:
             # Body units path
+            body_units = get_body_units_for_embedding(vault, key)
+            if not body_units:
+                continue
+
             if resume:
                 try:
                     col = get_collection(vault, name="paperforge_body")
                     existing = col.get(where={"paper_id": key}, limit=1)
-                    if existing.get("ids") and len(existing["ids"]) > 0:
-                        papers_skipped += 1
-                        continue
+                    if existing.get("ids"):
+                        meta = existing.get("metadatas", [{}])[0]
+                        current_hash = compute_body_units_hash(body_units)
+                        if (meta.get("body_units_hash") == current_hash
+                            and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION):
+                            papers_skipped += 1
+                            continue
                 except Exception as exc:
                     err = str(exc).lower()
                     if "hnsw" in err or "compaction" in err:
                         logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
                     pass
-
-            body_units = get_body_units_for_embedding(vault, key)
-            if not body_units:
-                continue
             try:
                 i += 1
                 print(f"EMBED_PROGRESS:{i}:{total}:{key}", flush=True)
