@@ -384,8 +384,277 @@ function renderCanvasRefreshing(contentEl, vm) {
 
 // ── Main render dispatch ──
 
+// ── ANN12 i18n source/anchor keys ──
+
+_I18N.en['source.surface_label'] = 'Source';
+_I18N.en['source.fulltext'] = 'Fulltext';
+_I18N.en['source.note'] = 'Note';
+_I18N.en['source.unavailable'] = 'Source content is not available for this paper.';
+_I18N.en['source.unavailable_reason'] = 'No source content available.';
+_I18N.en['anchor.exact'] = 'Exact match';
+_I18N.en['anchor.page_level'] = 'Page-level';
+_I18N.en['anchor.unresolved'] = 'Unresolved';
+_I18N.en['anchor.page_marker'] = 'Page';
+_I18N.en['anchor.downgrade_short'] = 'Selected text is too short for exact anchoring.';
+_I18N.en['anchor.downgrade_ambiguous'] = 'Multiple matches found in source (ambiguous).';
+_I18N.en['anchor.downgrade_not_found'] = 'Text not found in source.';
+
+_I18N.zh['source.surface_label'] = '原文来源';
+_I18N.zh['source.fulltext'] = '全文';
+_I18N.zh['source.note'] = '笔记';
+_I18N.zh['source.unavailable'] = '本文无法获取原文内容。';
+_I18N.zh['source.unavailable_reason'] = '无法获取原文内容。';
+_I18N.zh['anchor.exact'] = '精确匹配';
+_I18N.zh['anchor.page_level'] = '页面级别';
+_I18N.zh['anchor.unresolved'] = '无法定位';
+_I18N.zh['anchor.page_marker'] = '页';
+_I18N.zh['anchor.downgrade_short'] = '选中文本过短，无法精确锚定。';
+_I18N.zh['anchor.downgrade_ambiguous'] = '在原文中找到多处匹配（不精确）。';
+_I18N.zh['anchor.downgrade_not_found'] = '在原文中未找到匹配文本。';
+
+// ── ANN12-02 source surface rendering helpers ──
+
 /**
- * Render the canvas view from a view-model object.
+ * Look up an i18n string from the embedded render dictionary.
+ *
+ * @param {string} key - Dot-separated i18n key.
+ * @returns {string}
+ * @private
+ */
+function _t(key) {
+    var lang = typeof navigator !== 'undefined' && navigator.language && navigator.language.startsWith('zh') ? 'zh' : 'en';
+    var dict = _I18N[lang] || _I18N.en;
+    return dict[key] !== undefined ? dict[key] : key;
+}
+
+/**
+ * Render an exact anchor as a restrained inline highlight span.
+ *
+ * Exact anchors split source text around the match and wrap only the matched
+ * span in a namespaced highlight element.  All text content uses textContent,
+ * never innerHTML.  The optional color sets an inline background hint.
+ *
+ * @param {HTMLElement} containerEl - Parent element for the anchor fragment.
+ * @param {string} beforeText - Text before the exact match span.
+ * @param {string} anchorText - The exact matched text (highlighted).
+ * @param {string} afterText - Text after the exact match span.
+ * @param {string|null} [color] - Optional annotation color (CSS color string).
+ */
+function renderExactAnchorText(containerEl, beforeText, anchorText, afterText, color) {
+    // Before text as text node
+    if (beforeText) {
+        containerEl.appendChild(document.createTextNode(beforeText));
+    }
+    // Highlighted exact match span
+    var highlight = document.createElement('span');
+    highlight.className = 'paperforge-canvas-anchor paperforge-canvas-anchor--exact';
+    if (color) {
+        highlight.style.backgroundColor = color;
+    }
+    highlight.textContent = anchorText || '';
+    containerEl.appendChild(highlight);
+    // After text as text node
+    if (afterText) {
+        containerEl.appendChild(document.createTextNode(afterText));
+    }
+}
+
+/**
+ * Render a page-level anchor marker.
+ *
+ * Page-level anchors show a block/page marker with status text and reason.
+ * They do NOT render inline highlights or source span wrappers.
+ *
+ * @param {HTMLElement} containerEl - Parent element.
+ * @param {object} anchor - Anchor result ({ status, pageIndex, reason, ... }).
+ */
+function renderPageLevelAnchorMarker(containerEl, anchor) {
+    var marker = createEl('div', { cls: 'paperforge-canvas-anchor paperforge-canvas-anchor--page-level' });
+    var pageInfo = anchor.pageIndex != null
+        ? _t('anchor.page_marker') + ' ' + (anchor.pageLabel || anchor.pageIndex)
+        : _t('anchor.page_marker');
+    marker.appendChild(document.createTextNode(pageInfo));
+    if (anchor.reason) {
+        var reasonEl = createEl('span', { cls: 'paperforge-canvas-anchor-reason', text: ' — ' + anchor.reason });
+        marker.appendChild(reasonEl);
+    }
+    containerEl.appendChild(marker);
+}
+
+/**
+ * Render an unresolved anchor status explanation.
+ *
+ * Unresolved anchors render explanation/status text only.  No source marker,
+ * no highlight, no span wrapper.
+ *
+ * @param {HTMLElement} containerEl - Parent element.
+ * @param {object} anchor - Anchor result ({ status, reason, ... }).
+ */
+function renderUnresolvedAnchorStatus(containerEl, anchor) {
+    var statusEl = createEl('div', { cls: 'paperforge-canvas-anchor paperforge-canvas-anchor--unresolved' });
+    var reason = anchor.reason || _t('source.unavailable_reason');
+    statusEl.textContent = _t('anchor.unresolved') + ': ' + reason;
+    containerEl.appendChild(statusEl);
+}
+
+/**
+ * Render a single source block with anchor overlays.
+ *
+ * The block text and any matching anchors are rendered as a single DOM
+ * fragment.  Exact anchors produce inline highlights within the block text.
+ * Page-level anchors add markers after the block.  Unresolved anchors add
+ * explanation text.
+ *
+ * @param {HTMLElement} containerEl - Parent element.
+ * @param {object} block - Source block ({ id, pageIndex, text, sourceKind }).
+ * @param {Array} blockAnchors - Anchors whose page matches this block.
+ * @param {object} [options] - Options.
+ * @param {Function} [options.getAnchorColor] - Optional callback(cardId) -> color|null.
+ */
+function renderSourceBlock(containerEl, block, blockAnchors, options) {
+    var blockEl = createEl('div', { cls: 'paperforge-canvas-source-block' });
+    blockEl.setAttribute('data-block-id', block.id || '');
+
+    // Render block text with exact anchor highlights
+    var exactAnchors = Array.isArray(blockAnchors)
+        ? blockAnchors.filter(function (a) { return a && a.status === 'exact'; })
+        : [];
+    var pageLevelAnchors = Array.isArray(blockAnchors)
+        ? blockAnchors.filter(function (a) { return a && a.status === 'page-level'; })
+        : [];
+    var unresolvedAnchors = Array.isArray(blockAnchors)
+        ? blockAnchors.filter(function (a) { return a && a.status === 'unresolved'; })
+        : [];
+
+    if (exactAnchors.length === 0) {
+        // No exact anchors — render block text as a single text node
+        blockEl.textContent = block.text || '';
+    } else {
+        // Render source text with exact anchor highlights
+        // For simplicity with the current data model, render text with highlights
+        // by inserting highlighted spans at each exact anchor position.
+        var blockText = block.text || '';
+
+        // Sort exact anchors by sourceSpan.rawStart
+        var sorted = exactAnchors.slice().sort(function (a, b) {
+            var aStart = (a.sourceSpan && a.sourceSpan.rawStart != null) ? a.sourceSpan.rawStart : -1;
+            var bStart = (b.sourceSpan && b.sourceSpan.rawStart != null) ? b.sourceSpan.rawStart : -1;
+            return aStart - bStart;
+        });
+
+        // If the sourceSpan offsets map to this block's text range, split.
+        // For block-relative rendering, we assume sourceSpan raw offsets
+        // correspond to the block's trimmed text when the anchor was resolved
+        // against this block's segment.
+        var pos = 0;
+        var getColor = (options && options.getAnchorColor) || function () { return null; };
+        for (var ai = 0; ai < sorted.length; ai++) {
+            var anchor = sorted[ai];
+            var span = anchor.sourceSpan;
+            var rawStart = (span && span.rawStart != null) ? span.rawStart : -1;
+            var rawEnd = (span && span.rawEnd != null) ? span.rawEnd : -1;
+
+            if (rawStart < 0 || rawEnd < 0 || rawStart >= blockText.length) {
+                // Span out of range for this block — render as plain text
+                continue;
+            }
+            if (rawEnd > blockText.length) rawEnd = blockText.length;
+
+            // Text before this anchor
+            if (rawStart > pos) {
+                blockEl.appendChild(document.createTextNode(blockText.substring(pos, rawStart)));
+            }
+            // Highlighted anchor text
+            var anchorText = blockText.substring(rawStart, rawEnd);
+            var color = getColor(anchor.cardId);
+            var highlight = document.createElement('span');
+            highlight.className = 'paperforge-canvas-anchor paperforge-canvas-anchor--exact';
+            if (color) highlight.style.backgroundColor = color;
+            highlight.textContent = anchorText;
+            blockEl.appendChild(highlight);
+            pos = rawEnd;
+        }
+        // Text after last anchor
+        if (pos < blockText.length) {
+            blockEl.appendChild(document.createTextNode(blockText.substring(pos)));
+        }
+    }
+
+    // Render page-level anchor markers
+    for (var pi = 0; pi < pageLevelAnchors.length; pi++) {
+        renderPageLevelAnchorMarker(blockEl, pageLevelAnchors[pi]);
+    }
+
+    // Render unresolved anchor status
+    for (var ui = 0; ui < unresolvedAnchors.length; ui++) {
+        renderUnresolvedAnchorStatus(blockEl, unresolvedAnchors[ui]);
+    }
+
+    containerEl.appendChild(blockEl);
+}
+
+/**
+ * Render the central PaperForge-owned source surface.
+ *
+ * Renders a source surface container with source kind header and blocks.
+ * When source is unavailable, shows the unavailable state instead.
+ *
+ * @param {HTMLElement} contentEl - Parent element.
+ * @param {Array} sourceBlocks - Source blocks from buildSourceBlocks().
+ * @param {Array} cardAnchors - Card anchor objects from vm.cards[].anchor.
+ * @param {object} [options] - Options.
+ * @param {boolean} [options.unavailable] - Show source-unavailable state.
+ * @param {string} [options.reason] - Reason for unavailability.
+ * @param {string} [options.sourceKind] - 'fulltext' or 'note'.
+ * @param {Function} [options.getAnchorColor] - Optional callback(cardId) -> color|null.
+ */
+function renderCanvasSourceSurface(contentEl, sourceBlocks, cardAnchors, options) {
+    var opts = options || {};
+
+    // ── Source-unavailable state ──
+    if (opts.unavailable) {
+        var unavailableEl = createEl('div', { cls: 'paperforge-canvas-source-unavailable' });
+        var msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: opts.reason || _t('source.unavailable') });
+        unavailableEl.appendChild(msg);
+        contentEl.appendChild(unavailableEl);
+        return;
+    }
+
+    // ── Source surface container ──
+    var surfaceEl = createEl('div', { cls: 'paperforge-canvas-source-surface' });
+
+    // Source kind header
+    var headerEl = createEl('div', { cls: 'paperforge-canvas-source-header' });
+    var kindLabel = opts.sourceKind === 'note' ? _t('source.note') : _t('source.fulltext');
+    headerEl.textContent = _t('source.surface_label') + ': ' + kindLabel;
+    surfaceEl.appendChild(headerEl);
+
+    // Group card anchors by pageIndex
+    var anchorsByPage = {};
+    if (Array.isArray(cardAnchors)) {
+        for (var ai = 0; ai < cardAnchors.length; ai++) {
+            var a = cardAnchors[ai];
+            if (!a) continue;
+            // Use pageIndex from anchor or fallback to 0
+            var pageKey = a.pageIndex != null ? String(a.pageIndex) : '0';
+            if (!anchorsByPage[pageKey]) anchorsByPage[pageKey] = [];
+            anchorsByPage[pageKey].push(a);
+        }
+    }
+
+    // Render each source block with its matching anchors
+    var blocks = Array.isArray(sourceBlocks) ? sourceBlocks : [];
+    for (var bi = 0; bi < blocks.length; bi++) {
+        var block = blocks[bi];
+        var pageKey = block.pageIndex != null ? String(block.pageIndex) : '0';
+        var blockAnchors = anchorsByPage[pageKey] || [];
+        renderSourceBlock(surfaceEl, block, blockAnchors, opts);
+    }
+
+    contentEl.appendChild(surfaceEl);
+}
+
+/**
  *
  * Clears the content element, then renders the appropriate state UI.
  * All user-facing text uses textContent — no innerHTML for annotation data.
@@ -487,4 +756,10 @@ module.exports = {
     renderCanvasCard,
     renderCanvasCardLanes,
     renderCanvasRefreshing,
+    // ── ANN12-02 source surface and anchor rendering ──
+    renderCanvasSourceSurface,
+    renderSourceBlock,
+    renderExactAnchorText,
+    renderPageLevelAnchorMarker,
+    renderUnresolvedAnchorStatus,
 };

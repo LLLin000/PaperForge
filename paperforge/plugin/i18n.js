@@ -33,6 +33,20 @@ const _DICT = {
         // ── Canvas state copy ──
         'state.refreshing': '正在刷新批注…',
         'state.stale': '显示之前加载的（过期）数据。',
+
+        // ── ANN12 source and anchor copy ──
+        'source.surface_label': '原文来源',
+        'source.fulltext': '全文',
+        'source.note': '笔记',
+        'source.unavailable': '本文无法获取原文内容。',
+        'source.unavailable_reason': '无法获取原文内容。',
+        'anchor.exact': '精确匹配',
+        'anchor.page_level': '页面级别',
+        'anchor.unresolved': '无法定位',
+        'anchor.page_marker': '第',
+        'anchor.downgrade_short': '选中文本过短，无法精确锚定。',
+        'anchor.downgrade_ambiguous': '在原文中找到多处匹配（不精确）。',
+        'anchor.downgrade_not_found': '在原文中未找到匹配文本。',
     },
 
     en: {
@@ -56,6 +70,20 @@ const _DICT = {
         // ── Canvas state copy ──
         'state.refreshing': 'Refreshing annotations…',
         'state.stale': 'Showing previously loaded (stale) data.',
+
+        // ── ANN12 source and anchor copy ──
+        'source.surface_label': 'Source',
+        'source.fulltext': 'Fulltext',
+        'source.note': 'Note',
+        'source.unavailable': 'Source content is not available for this paper.',
+        'source.unavailable_reason': 'No source content available.',
+        'anchor.exact': 'Exact match',
+        'anchor.page_level': 'Page-level',
+        'anchor.unresolved': 'Unresolved',
+        'anchor.page_marker': 'Page',
+        'anchor.downgrade_short': 'Selected text is too short for exact anchoring.',
+        'anchor.downgrade_ambiguous': 'Multiple matches found in source (ambiguous).',
+        'anchor.downgrade_not_found': 'Text not found in source.',
     },
 };
 

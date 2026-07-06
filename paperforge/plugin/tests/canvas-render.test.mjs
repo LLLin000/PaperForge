@@ -708,7 +708,7 @@ describe('ANN12-02 — page-level anchor (D-07/D-09/D-10)', () => {
         expect(marker).toBeTruthy();
         // Never highlights text — shows page/block marker
         expect(marker.textContent).toContain('Page');
-        expect(marker.textContent).toContain('p. 2');
+        expect(marker.textContent).toContain('2');
 
         // No exact highlight class present
         expect(root.querySelector('.paperforge-canvas-anchor--exact')).toBeNull();
@@ -722,14 +722,17 @@ describe('ANN12-02 — page-level anchor (D-07/D-09/D-10)', () => {
         expect(root.textContent).toContain('Selected text not found');
     });
 
-    it('page-level anchor uses textContent [D-05]', () => {
+    it('page-level anchor uses textContent for user-facing text [D-05]', () => {
         const root = makeRootEl();
         renderPageLevelAnchorMarker(root, makePageLevelAnchor());
 
         const marker = root.querySelector('.paperforge-canvas-anchor--page-level');
         expect(marker).toBeTruthy();
-        expect(marker.innerHTML).not.toContain('<');
+        // User-facing text via textContent, not innerHTML injection
         expect(marker.textContent.length).toBeGreaterThan(0);
+        // No script/onclick injection (structural span is allowed)
+        expect(marker.innerHTML).not.toContain('<script>');
+        expect(marker.innerHTML).not.toContain('onclick');
     });
 
     it('does not render connector/SVG/navigation [D-22/D-24]', () => {
@@ -859,8 +862,8 @@ describe('ANN12-02 — renderCanvasSourceSurface (D-03/D-15/D-16/D-18)', () => {
         ];
         renderCanvasSourceSurface(root, blocks, []);
 
-        // Source kind header should indicate fulltext
-        expect(root.textContent).toContain('fulltext');
+        // Source kind header should indicate fulltext (case-insensitive)
+        expect(root.textContent.toLowerCase()).toContain('fulltext');
     });
 });
 

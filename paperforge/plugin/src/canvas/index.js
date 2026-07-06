@@ -40,6 +40,11 @@ const {
     renderCanvasCard,
     renderCanvasCardLanes,
     renderCanvasRefreshing,
+    renderCanvasSourceSurface,
+    renderSourceBlock,
+    renderExactAnchorText,
+    renderPageLevelAnchorMarker,
+    renderUnresolvedAnchorStatus,
 } = require('./render');
 
 const {
@@ -101,6 +106,12 @@ module.exports = {
     renderCanvasCard,
     renderCanvasCardLanes,
     renderCanvasRefreshing,
+    // ── Source surface and anchor rendering (ANN12-02) ──
+    renderCanvasSourceSurface,
+    renderSourceBlock,
+    renderExactAnchorText,
+    renderPageLevelAnchorMarker,
+    renderUnresolvedAnchorStatus,
 
     // ── Card view-models (ANN11) ──
     buildCanvasCard,
