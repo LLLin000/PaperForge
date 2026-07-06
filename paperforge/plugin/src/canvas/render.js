@@ -774,6 +774,119 @@ function renderFallbackButton(containerEl, fallbackInfo) {
     containerEl.appendChild(btn);
 }
 
+// ── ANN14-02: Connector state constants (from connectors module) ──
+
+const {
+    CONNECTOR_STATES,
+} = require('./connectors');
+
+// ── ANN14-02: Connector SVG layer rendering helpers ──
+
+/**
+ * The base CSS class for the connector SVG layer element.
+ * @type {string}
+ */
+var CANVAS_CONNECTOR_LAYER_CLS = 'paperforge-canvas-connector-layer';
+
+/**
+ * The base CSS class for a connector path/line element.
+ * @type {string}
+ */
+var CANVAS_CONNECTOR_CLS = 'paperforge-canvas-connector';
+
+/**
+ * CSS modifier class for a selected connector.
+ * @type {string}
+ */
+var CANVAS_CONNECTOR_SELECTED = 'paperforge-canvas-connector--selected';
+
+/**
+ * CSS modifier class for a hovered connector.
+ * @type {string}
+ */
+var CANVAS_CONNECTOR_HOVERED = 'paperforge-canvas-connector--hovered';
+
+/**
+ * Create an empty namespaced connector SVG layer element.
+ *
+ * Creates exactly one <svg> under .paperforge-reading-canvas-view using the
+ * namespaced class paperforge-canvas-connector-layer.  The layer is hidden
+ * from the accessibility tree (aria-hidden, role=presentation) and contains
+ * no paths by default.
+ *
+ * Must only be called by runtime after loaded canvas rendering.  Does NOT
+ * appear in idle, missing-paper, missing-db, missing-source, unsupported,
+ * or card-only shell states unless explicitly called (D-13/D-17/D-20).
+ *
+ * @param {HTMLElement} containerEl - Parent element (typically .paperforge-reading-canvas-view).
+ * @returns {SVGSVGElement} The created SVG layer element.
+ */
+function renderCanvasConnectorLayer(containerEl) {
+    var ns = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('class', CANVAS_CONNECTOR_LAYER_CLS);
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('role', 'presentation');
+    containerEl.appendChild(svg);
+    return svg;
+}
+
+/**
+ * Update a connector SVG layer with at most one connector path.
+ *
+ * Clears the layer and renders a single <line> element when the connector
+ * state is visible.  Applies the --selected (default) or --hovered modifier
+ * class based on the `modifier` parameter.
+ *
+ * For hidden states — page-level, unresolved, stale, missing-dom,
+ * hidden-candidate, and any other hidden reason — the layer is left empty
+ * (no path elements) per D-01/D-02/D-03/D-13/D-17.
+ *
+ * @param {SVGSVGElement} layerEl - The SVG layer from renderCanvasConnectorLayer.
+ * @param {object} connectorState - Connector geometry from measureConnectorGeometry().
+ * @param {string} [modifier] - 'selected' or 'hovered' (defaults to 'selected').
+ */
+function updateCanvasConnectorLayer(layerEl, connectorState, modifier) {
+    // Clear existing connector elements
+    while (layerEl.firstChild) {
+        layerEl.removeChild(layerEl.firstChild);
+    }
+
+    // Only render for visible connector state; hidden states leave the
+    // layer empty (no path elements)
+    if (!connectorState || connectorState.state !== CONNECTOR_STATES.VISIBLE) {
+        return;
+    }
+
+    var cardEp = connectorState.cardEndpoint;
+    var anchorEp = connectorState.anchorEndpoint;
+
+    // Guard: missing endpoints (shouldn't happen for visible state, but
+    // protect against malformed input)
+    if (!cardEp || !anchorEp) return;
+
+    var ns = 'http://www.w3.org/2000/svg';
+    var line = document.createElementNS(ns, 'line');
+
+    // Build class: base + modifier
+    var cls = CANVAS_CONNECTOR_CLS;
+    cls += (modifier === 'hovered')
+        ? ' ' + CANVAS_CONNECTOR_HOVERED
+        : ' ' + CANVAS_CONNECTOR_SELECTED;
+    line.setAttribute('class', cls);
+
+    // Endpoint coordinates
+    line.setAttribute('x1', String(cardEp.x));
+    line.setAttribute('y1', String(cardEp.y));
+    line.setAttribute('x2', String(anchorEp.x));
+    line.setAttribute('y2', String(anchorEp.y));
+
+    // Accessible presentation (hidden from AT — visual decoration only)
+    line.setAttribute('aria-hidden', 'true');
+
+    layerEl.appendChild(line);
+}
+
 module.exports = {
     renderCanvasView,
     renderCanvasIdentity,
@@ -798,4 +911,8 @@ module.exports = {
     renderExactAnchorText,
     renderPageLevelAnchorMarker,
     renderUnresolvedAnchorStatus,
+
+    // ── ANN14-02 connector layer rendering ──
+    renderCanvasConnectorLayer,
+    updateCanvasConnectorLayer,
 };

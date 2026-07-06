@@ -46,6 +46,8 @@ const {
     renderExactAnchorText,
     renderPageLevelAnchorMarker,
     renderUnresolvedAnchorStatus,
+    renderCanvasConnectorLayer,
+    updateCanvasConnectorLayer,
 } = require('./render');
 
 const {
@@ -113,6 +115,8 @@ module.exports = {
 
     // ── Canvas DOM rendering ──
     renderCanvasView,
+    renderCanvasConnectorLayer,
+    updateCanvasConnectorLayer,
     renderCanvasIdentity,
     renderCanvasIdle,
     renderCanvasLoading,
