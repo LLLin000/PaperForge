@@ -1422,6 +1422,19 @@ Object.assign(LANG.en, {
     feat_model_changed_warn: 'Model changed ({0} -> {1}). Existing vectors are incompatible — rebuild required.',
     feat_cache_removed: 'Model cache removed.',
     feat_cache_remove_failed: 'Failed: {0}',
+
+    /* ── ANN11 Reading Canvas card labels ── */
+    canvas_card_selected_text: 'Selected Text',
+    canvas_card_comment: 'Comment',
+    canvas_card_page: 'Page',
+    canvas_card_type: 'Type',
+    canvas_card_source: 'Source',
+    canvas_card_readonly: 'Read-only',
+    canvas_card_readonly_badge: 'Read-only',
+    canvas_refreshing: 'Refreshing annotations…',
+    canvas_card_selected_text_empty: '[No selected text]',
+    canvas_card_comment_empty: '[No comment]',
+    canvas_card_placeholder_label: 'Annotation Card',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */

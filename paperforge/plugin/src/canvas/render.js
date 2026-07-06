@@ -287,17 +287,17 @@ function renderCanvasCard(card) {
     cardEl.setAttribute('data-card-id', card.id || '');
 
     // ── Selected text preview ──
-    var selTextEl = createEl('div', {
-        cls: 'paperforge-canvas-card-selected-text' + (card.selectedText === '' ? ' paperforge-canvas-card-selected-text--empty' : '') + (card.selectedTextPreview && card.selectedTextPreview.isLong ? ' paperforge-canvas-card-selected-text--long' : ''),
-        text: card.selectedText || '',
-    });
+    var selTextCls = 'paperforge-canvas-card-selected-text paperforge-canvas-card-selected-text-preview';
+    if (card.selectedText === '') selTextCls += ' paperforge-canvas-card-selected-text--empty';
+    if (card.selectedTextPreview && card.selectedTextPreview.isLong) selTextCls += ' paperforge-canvas-card-selected-text--long';
+    var selTextEl = createEl('div', { cls: selTextCls, text: card.selectedText || '' });
     cardEl.appendChild(selTextEl);
 
     // ── Comment preview ──
-    var commentEl = createEl('div', {
-        cls: 'paperforge-canvas-card-comment' + (card.comment === '' ? ' paperforge-canvas-card-comment--empty' : '') + (card.commentPreview && card.commentPreview.isLong ? ' paperforge-canvas-card-comment--long' : ''),
-        text: card.comment || '',
-    });
+    var commentCls = 'paperforge-canvas-card-comment paperforge-canvas-card-comment-preview';
+    if (card.comment === '') commentCls += ' paperforge-canvas-card-comment--empty';
+    if (card.commentPreview && card.commentPreview.isLong) commentCls += ' paperforge-canvas-card-comment--long';
+    var commentEl = createEl('div', { cls: commentCls, text: card.comment || '' });
     cardEl.appendChild(commentEl);
 
     // ── Page label ──
