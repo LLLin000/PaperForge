@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: annotation v0.3
 milestone_name: milestone
 status: executing
-stopped_at: Phase ANN12 Plan 1 complete (source surface and anchor contracts)
-last_updated: "2026-07-06T11:49:00.000Z"
-last_activity: 2026-07-06 -- ANN12-01 executed: source surface and anchor resolver contracts
+stopped_at: Phase ANN12 complete (source DOM rendering, anchor visual states, CSS + safety)
+last_updated: "2026-07-06T12:15:00.000Z"
+last_activity: 2026-07-06 -- ANN12-02 executed: source DOM rendering and anchor visual states
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6 (ANN12 has 2)
-  completed_plans: 5
-  percent: 38
+  completed_plans: 6
+  percent: 55
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-07-02)
 
 ## Current Position
 
-Phase: ANN12 (Controlled Reading Surface and Source Anchors) — EXECUTING
-Plan: 2 of 2 (next: ANN12-02)
-Status: ANN12-01 complete — source surface and anchor resolver contracts done
-Last activity: 2026-07-06 -- ANN12-01 executed: source surface and anchor resolver
+Phase: ANN12 (Controlled Reading Surface and Source Anchors) — COMPLETE
+Plan: 2 of 2 (next: ANN13-01)
+Status: ANN12-02 complete — source DOM rendering, anchor visual states, CSS, runtime loading
+Last activity: 2026-07-06 -- ANN12-02 executed: source DOM rendering and anchor visual states
 
 ## Performance Metrics
 
@@ -55,6 +55,12 @@ Last activity: 2026-07-06 -- ANN12-01 executed: source surface and anchor resolv
 - [ANN12-01 executed]: Anchor resolution is conservative: exact requires exactly 1 normalized whitespace-collapse match; ambiguous/missing/short → page-level or unresolved.
 - [ANN12-01 executed]: Paper identity mismatch between card and source model triggers page-level downgrade with reason (T-ANN12-01-S mitigation).
 - [ANN12-01 executed]: sourceModel carries paperKey for downstream identity checks.
+- [ANN12-02 executed]: Runtime source loading (_loadCanvasSourceInputs, _readVaultText) with stale-load guard and path/file/error diagnostics.
+- [ANN12-02 executed]: Five rendering helpers (renderCanvasSourceSurface, renderSourceBlock, renderExactAnchorText, renderPageLevelAnchorMarker, renderUnresolvedAnchorStatus) exported via canvas/index.js.
+- [ANN12-02 executed]: All user-facing source/anchor/annotation text uses textContent/text nodes — verified with `innerHTML`-ban in plan gate and static scan.
+- [ANN12-02 executed]: CSS namespaced under .paperforge-reading-canvas-view with 7 classes for source surface, blocks, header, unavailable state, exact highlight, page-level marker, and unresolved status — no connector classes, SVG geometry, or native PDF selectors in ANN12 files.
+- [ANN12-02 executed]: 12 zh/en scoped i18n keys added to i18n.js for source labels, source-unavailable copy, anchor status copy, and downgrade reasons.
+- [ANN12-02 executed]: Canvas view type string centralized in a const (avoid duplicated literal string drift).
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
@@ -112,16 +118,16 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-07-06T09:17:23.000Z
-Stopped at: Phase ANN11 complete
-Resume file: .planning/phases/ANN11/ANN11-02-SUMMARY.md
-Next phase: Phase ANN12 - Annotation Card Evidence and Connector Rendering
+Stopped at: Phase ANN12 complete (source surface, anchors, runtime, rendering, CSS)
+Resume file: .planning/phases/ANN12/ANN12-02-SUMMARY.md
+Next phase: Phase ANN13 - Bidirectional Navigation and Fallback Paths
 
 ## Next Suggested Command
 
 Begin planning for next phase:
 
-`/gsd-plan-phase ANN12`
+`/gsd-plan-phase ANN13`
 
 ---
 
-*Updated: 2026-07-06* — Phase ANN11 complete (both plans executed: view-models/layout + card lane rendering/CSS)
+*Updated: 2026-07-06* — Phase ANN12 complete (both plans executed: source surface + anchor resolver contracts; runtime loading + rendering + CSS)

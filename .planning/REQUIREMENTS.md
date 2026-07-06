@@ -26,8 +26,8 @@ The milestone continues after Annotation Phase 9, so the roadmap starts at Annot
 
 ### Source Anchors and Navigation (ANCHOR/NAV)
 
-- [ ] **ANCHOR-01**: Source anchors render for annotations with supported PaperForge-owned position, text, or page data.
-- [ ] **ANCHOR-02**: Page-level or unresolved fallback anchors render when exact text/geometry anchoring is unavailable.
+- [x] **ANCHOR-01**: Source anchors render for annotations with supported PaperForge-owned position, text, or page data.
+- [x] **ANCHOR-02**: Page-level or unresolved fallback anchors render when exact text/geometry anchoring is unavailable.
 - [ ] **NAV-01**: Selecting a card focuses or scrolls to the corresponding source anchor when supported.
 - [ ] **NAV-02**: Selecting a source anchor focuses the corresponding card.
 - [ ] **NAV-03**: Unsupported canvas navigation can fall back to the existing v0.2 PDF page navigation path.
@@ -107,8 +107,8 @@ The milestone continues after Annotation Phase 9, so the roadmap starts at Annot
 | CARD-02 | Annotation Phase 11 | Planned |
 | CARD-03 | Annotation Phase 11 | Planned |
 | CARD-04 | Annotation Phase 11 | Planned |
-| ANCHOR-01 | Annotation Phase 12 | Planned |
-| ANCHOR-02 | Annotation Phase 12 | Planned |
+| ANCHOR-01 | Annotation Phase 12 | Done |
+| ANCHOR-02 | Annotation Phase 12 | Done |
 | NAV-01 | Annotation Phase 13 | Planned |
 | NAV-02 | Annotation Phase 13 | Planned |
 | NAV-03 | Annotation Phase 13 | Planned |

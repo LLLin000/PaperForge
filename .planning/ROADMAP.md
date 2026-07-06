@@ -78,7 +78,7 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 **Plans:** 2 plans
 
 - [x] `ANN12-01-PLAN.md` — Pure source surface and anchor resolver contracts (completed 2026-07-06).
-- [ ] `ANN12-02-PLAN.md` — Central source DOM rendering and anchor visual states.
+- [x] `ANN12-02-PLAN.md` — Central source DOM rendering and anchor visual states (completed 2026-07-06).
 
 ### Phase ANN13: Bidirectional Navigation and Fallback Paths
 
