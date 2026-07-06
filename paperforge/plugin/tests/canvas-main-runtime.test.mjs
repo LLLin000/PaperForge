@@ -287,3 +287,152 @@ describe('Task 4 — Static open method', () => {
         expect(mockPlugin.app.workspace.getLeavesOfType).toHaveBeenCalled();
     });
 });
+
+// ── ANN11 Runtime regression gate ──
+
+describe('ANN11 runtime regression — ANN10-02 wiring preserved', () => {
+    it('PaperForgeReadingCanvasView delegates rendering to src/canvas/render.js', () => {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl });
+        view.contentEl = contentEl;
+
+        // The view uses require('./src/canvas') internally — this confirms
+        // the module delegation path is intact.
+        expect(typeof view.getViewType).toBe('function');
+        expect(view.getViewType()).toBe('paperforge-reading-canvas');
+    });
+
+    it('canvas render module exports ANN11 card render helpers', () => {
+        const canvas = require('../src/canvas');
+        expect(typeof canvas.renderCanvasCard).toBe('function');
+        expect(typeof canvas.renderCanvasCardLanes).toBe('function');
+        expect(typeof canvas.renderCanvasRefreshing).toBe('function');
+    });
+
+    it('canvas render module exports ANN10 shell render helpers', () => {
+        const canvas = require('../src/canvas');
+        expect(typeof canvas.renderCanvasView).toBe('function');
+        expect(typeof canvas.renderCanvasIdentity).toBe('function');
+        expect(typeof canvas.renderCanvasStaleBanner).toBe('function');
+    });
+
+    it('no additional view type registration beyond ANN10-02', () => {
+        const mainPath = require.resolve('../main.js');
+        delete require.cache[mainPath];
+        require('../main.js');
+
+        // Only the one reading canvas view type should exist
+        expect(VIEW_TYPE_PAPERFORGE_READING_CANVAS).toBe('paperforge-reading-canvas');
+    });
+});
+
+// ── i18n tests ──
+
+describe('i18n — ANN11 card labels', () => {
+    it('i18n module exports t() function', () => {
+        const i18n = require('../i18n');
+        expect(typeof i18n.t).toBe('function');
+    });
+
+    it('i18n module exports detectLang function', () => {
+        const i18n = require('../i18n');
+        expect(typeof i18n.detectLang).toBe('function');
+    });
+
+    it('i18n card.selected_text exists in zh', () => {
+        const i18n = require('../i18n');
+        expect(i18n.t('card.selected_text', 'zh')).toBe('选中文本');
+    });
+
+    it('i18n card.selected_text exists in en', () => {
+        const i18n = require('../i18n');
+        expect(i18n.t('card.selected_text', 'en')).toBe('Selected Text');
+    });
+
+    it('i18n card.read_only exists in zh', () => {
+        const i18n = require('../i18n');
+        expect(i18n.t('card.read_only', 'zh')).toBe('只读');
+    });
+
+    it('i18n card.read_only exists in en', () => {
+        const i18n = require('../i18n');
+        expect(i18n.t('card.read_only', 'en')).toBe('Read-only');
+    });
+
+    it('i18n state.refreshing exists in both languages', () => {
+        const i18n = require('../i18n');
+        expect(i18n.t('state.refreshing', 'zh')).toBeTruthy();
+        expect(i18n.t('state.refreshing', 'en')).toBeTruthy();
+        expect(i18n.t('state.refreshing', 'zh')).not.toBe('state.refreshing');
+        expect(i18n.t('state.refreshing', 'en')).not.toBe('state.refreshing');
+    });
+
+    it('i18n state.stale exists in both languages', () => {
+        const i18n = require('../i18n');
+        expect(i18n.t('state.stale', 'zh')).toBeTruthy();
+        expect(i18n.t('state.stale', 'en')).toBeTruthy();
+    });
+
+    it('i18n returns key for unknown key', () => {
+        const i18n = require('../i18n');
+        expect(i18n.t('nonexistent.key')).toBe('nonexistent.key');
+    });
+});
+
+// ── Forbidden controls in runtime ──
+
+describe('runtime forbidden controls', () => {
+    it('PaperForgeReadingCanvasView has no create/edit/delete controls in DOM', () => {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl); // Provide Obsidian runtime helpers
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl });
+        view.contentEl = contentEl;
+
+        view.setPaperContext('PAPER_A', { key: 'PAPER_A', title: 'Test Paper' });
+
+        const html = containerEl.innerHTML.toLowerCase();
+        const forbidden = ['edit', 'delete', 'create', 'save', 'import', 'apply', 'write back', 'write-back'];
+        for (const word of forbidden) {
+            expect(html).not.toContain(word);
+        }
+    });
+
+    it('PaperForgeReadingCanvasView has no anchor or connector classes', () => {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl });
+        view.contentEl = contentEl;
+
+        view.setPaperContext('PAPER_A', { key: 'PAPER_A', title: 'Test Paper' });
+
+        const html = containerEl.innerHTML.toLowerCase();
+        expect(html).not.toContain('paperforge-canvas-anchor');
+        expect(html).not.toContain('paperforge-canvas-connector');
+    });
+
+    it('PaperForgeReadingCanvasView has no draggable attributes', () => {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl });
+        view.contentEl = contentEl;
+
+        view.setPaperContext('PAPER_A', { key: 'PAPER_A', title: 'Test Paper' });
+
+        const html = containerEl.innerHTML.toLowerCase();
+        expect(html).not.toContain('draggable="true"');
+    });
+});

@@ -1,11 +1,13 @@
 /**
- * Vitest DOM-focused tests for card rendering (ANN11-02).
+ * Vitest DOM-focused tests for card rendering (ANN11-02, ANN11-02 Task 3).
  *
  * Tests cover:
  *   - Long/missing/CJK text rendering with bounded DOM/CSS hooks
  *   - Read-only badge rendering
  *   - Source/provenance display
  *   - No forbidden controls, draggable handles, anchors, or connectors
+ *   - Card/lane CSS geometry and resilience (D-15, D-16, D-17)
+ *   - Refresh/stale-safe CSS classes (D-10, D-13)
  *
  * @module tests/canvas-card-dom
  */
@@ -378,5 +380,99 @@ describe('card DOM — structure', () => {
         expect(rightCardIds[0].getAttribute('data-card-id')).toBe('ann-second');
         expect(leftCardIds[1].getAttribute('data-card-id')).toBe('ann-third');
         expect(rightCardIds[1].getAttribute('data-card-id')).toBe('ann-fourth');
+    });
+});
+
+// ── CSS geometry / resilience (D-15, D-16, D-17) ──
+
+describe('card CSS — geometry and resilience', () => {
+    it('selected-text element has stable preview class', () => {
+        const root = makeRootEl();
+        const card = makeCard({ id: 'ann-1' });
+        renderCanvasView(root, makeCardVM({ cards: [card] }));
+
+        const el = root.querySelector('.paperforge-canvas-card-selected-text');
+        expect(el).toBeTruthy();
+        expect(el.classList.contains('paperforge-canvas-card-selected-text-preview')).toBe(true);
+    });
+
+    it('comment element has stable preview class', () => {
+        const root = makeRootEl();
+        const card = makeCard({ id: 'ann-1' });
+        renderCanvasView(root, makeCardVM({ cards: [card] }));
+
+        const el = root.querySelector('.paperforge-canvas-card-comment');
+        expect(el).toBeTruthy();
+        expect(el.classList.contains('paperforge-canvas-card-comment-preview')).toBe(true);
+    });
+
+    it('card element has no inline width or height styles', () => {
+        const root = makeRootEl();
+        const card = makeCard({ id: 'ann-1' });
+        renderCanvasView(root, makeCardVM({ cards: [card] }));
+
+        const cardEl = root.querySelector('.paperforge-canvas-card');
+        expect(cardEl).toBeTruthy();
+        expect(cardEl.style.width).toBe('');
+        expect(cardEl.style.height).toBe('');
+        // Card dimensions come from CSS, not inline styles
+    });
+
+    it('lane containers have no inline width or height', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' }), makeCard({ id: 'ann-2' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const leftLane = root.querySelector('.paperforge-canvas-lane-left');
+        const rightLane = root.querySelector('.paperforge-canvas-lane-right');
+        expect(leftLane).toBeTruthy();
+        expect(rightLane).toBeTruthy();
+        expect(leftLane.style.width).toBe('');
+        expect(rightLane.style.width).toBe('');
+    });
+
+    it('long selected-text element has preview-wrapper class', () => {
+        const root = makeRootEl();
+        const longText = 'A'.repeat(500);
+        const card = makeCard({
+            id: 'ann-1',
+            selectedText: longText,
+            selectedTextPreview: { text: longText.substring(0, 140) + '…', kind: 'selected-text', truncated: true, expandable: true, isLong: true },
+        });
+        renderCanvasView(root, makeCardVM({ cards: [card] }));
+
+        const el = root.querySelector('.paperforge-canvas-card-selected-text');
+        expect(el).toBeTruthy();
+        expect(el.classList.contains('paperforge-canvas-card-selected-text--long')).toBe(true);
+    });
+
+    it('refreshing state has refreshing class on state element', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' })];
+        renderCanvasView(root, makeCardVM({ state: 'refreshing', cards: cards, refreshing: true }));
+
+        const refreshingEl = root.querySelector('.paperforge-canvas-refreshing');
+        expect(refreshingEl).toBeTruthy();
+        expect(refreshingEl.classList.contains('paperforge-canvas-refreshing')).toBe(true);
+    });
+
+    it('stale state renders stale banner with stale class', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', stale: true })];
+        renderCanvasView(root, makeCardVM({ state: 'stale', cards: cards, stale: true }));
+
+        const staleBanner = root.querySelector('.paperforge-canvas-stale-banner');
+        expect(staleBanner).toBeTruthy();
+        expect(staleBanner.classList.contains('paperforge-canvas-stale-banner')).toBe(true);
+    });
+
+    it('read-only badge uses restrained badge class', () => {
+        const root = makeRootEl();
+        const card = makeCard({ id: 'ann-1', readOnly: true, readOnlyLabel: 'Read-only' });
+        renderCanvasView(root, makeCardVM({ cards: [card] }));
+
+        const badge = root.querySelector('.paperforge-canvas-card-readonly');
+        expect(badge).toBeTruthy();
+        expect(badge.classList.contains('paperforge-canvas-card-readonly--true')).toBe(true);
     });
 });
