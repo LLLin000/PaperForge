@@ -176,12 +176,48 @@ describe('buildCanvasCard — card field preservation (D-01 / CARD-01)', () => {
         expect(card.readOnly).toBe(true);
     });
 
-    it('includes an anchor placeholder with unresolved status', () => {
+    it('includes an anchor placeholder with unresolved status when no sourceModel', () => {
         const card = buildCanvasCard(rowStandard);
         expect(card.anchor).toEqual({
             status: 'unresolved',
             reason: expect.any(String),
         });
+    });
+
+    it('includes computed anchor when sourceModel is provided', () => {
+        const surface = { SOURCE_KINDS: { FULLTEXT: 'fulltext' }, SOURCE_STATES: { READY: 'ready' } };
+        const sourceModel = {
+            status: 'ready',
+            sourceKind: 'fulltext',
+            text: 'Sample text for testing the annotation card anchor resolution.',
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: null,
+        };
+        // Row has selected_text='selected text for testing' → should find exact match
+        const card = buildCanvasCard(rowStandard, sourceModel);
+        expect(card.anchor).toBeDefined();
+        expect(typeof card.anchor.status).toBe('string');
+        expect(['exact', 'page-level', 'unresolved']).toContain(card.anchor.status);
+        expect(card.anchor).toHaveProperty('anchorId');
+        expect(card.anchor).toHaveProperty('cardId');
+    });
+
+    it('anchor with sourceModel does not break card identity or display fields', () => {
+        const sourceModel = {
+            status: 'ready',
+            sourceKind: 'fulltext',
+            text: 'Some sample text for testing.',
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: null,
+        };
+        const card = buildCanvasCard(rowStandard, sourceModel);
+        expect(card.id).toBeTruthy();
+        expect(card.selectedText).toBe('Alpha bravo selected text');
+        expect(card.comment).toBe('Alpha comment');
+        expect(card.type).toBe('highlight');
+        expect(card.readOnly).toBe(false);
     });
 
     it('includes a stable id matching the row identity', async () => {
@@ -313,6 +349,92 @@ describe('buildCanvasCard — source identity (CARD-04)', () => {
 // ---------------------------------------------------------------------------
 // Task 1: buildCanvasCard — no action/control fields (D-21 / D-22)
 // ---------------------------------------------------------------------------
+
+describe('buildCanvasCard — cards visible when source missing (D-15 / D-18)', () => {
+    it('card has all fields when sourceModel is unavailable', () => {
+        const sourceModel = {
+            status: 'source-unavailable',
+            sourceKind: null,
+            text: null,
+            paperKey: 'PAPER_A',
+            diagnostics: { fulltext: { miss: true, reason: 'File missing.' }, note: { miss: true, reason: 'Note missing.' } },
+            reason: 'No source available.',
+        };
+        const card = buildCanvasCard(rowStandard, sourceModel);
+        expect(card.id).toBeTruthy();
+        expect(card.selectedText).toBe('Alpha bravo selected text');
+        expect(card.comment).toBe('Alpha comment');
+        expect(card.anchor.status).toBe('unresolved');
+        expect(card.anchor.reason).toBeTruthy();
+        // Card remains fully formed
+        expect(card.type).toBe('highlight');
+        expect(card.pageIndex).toBe(0);
+    });
+
+    it('cards remain visible with unresolved anchor when source is missing', () => {
+        const sourceModel = {
+            status: 'source-unavailable',
+            sourceKind: null,
+            text: null,
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: 'No reading source is available for this paper.',
+        };
+        const card = buildCanvasCard(rowStandard, sourceModel);
+        // Card fields are all present
+        expect(card).toHaveProperty('id');
+        expect(card).toHaveProperty('selectedText');
+        expect(card).toHaveProperty('comment');
+        expect(card).toHaveProperty('pageLabel');
+        expect(card).toHaveProperty('pageIndex');
+        expect(card).toHaveProperty('type');
+        expect(card).toHaveProperty('color');
+        expect(card).toHaveProperty('source');
+        // Anchor is unresolved (not absent)
+        expect(card.anchor.status).toBe('unresolved');
+    });
+
+    it('no forbidden verbs present when sourceModel is provided', () => {
+        const FORBIDDEN = ['edit', 'delete', 'create', 'save', 'import', 'apply', 'writeBack', 'writeback', 'write_back'];
+        const sourceModel = {
+            status: 'ready',
+            sourceKind: 'fulltext',
+            text: 'Example text for testing.',
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: null,
+        };
+        const card = buildCanvasCard(rowStandard, sourceModel);
+        const keys = Object.keys(card);
+        for (const verb of FORBIDDEN) {
+            expect(keys).not.toContain(verb);
+        }
+        // Anchor model should not have forbidden verbs either
+        const anchorKeys = Object.keys(card.anchor);
+        for (const verb of ['edit', 'delete', 'create', 'save', 'import', 'apply', 'writeBack']) {
+            expect(anchorKeys).not.toContain(verb);
+        }
+    });
+
+    it('no navigation, connector, or SVG in anchor when sourceModel provided', () => {
+        const sourceModel = {
+            status: 'ready',
+            sourceKind: 'fulltext',
+            text: 'Example text for navigation test.',
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: null,
+        };
+        const card = buildCanvasCard(rowStandard, sourceModel);
+        const anchor = card.anchor;
+        expect(anchor).not.toHaveProperty('navigation');
+        expect(anchor).not.toHaveProperty('connector');
+        expect(anchor).not.toHaveProperty('svg');
+        expect(anchor).not.toHaveProperty('svgPath');
+        expect(anchor).not.toHaveProperty('scrollTo');
+        expect(anchor).not.toHaveProperty('focus');
+    });
+});
 
 describe('buildCanvasCard — no action/control fields (D-21 / D-22)', () => {
     const FORBIDDEN_VERBS = [
@@ -709,6 +831,112 @@ describe('buildCanvasCardViewModel — lane integration', () => {
         const vm = buildCanvasCardViewModel(annState, { stale: true });
         expect(vm).toHaveProperty('lanes');
         expect(vm.lanes.left.length + vm.lanes.right.length).toBe(2);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Task 2: buildCanvasCardViewModel — sourceModel anchor integration (ANN12)
+// ---------------------------------------------------------------------------
+
+describe('buildCanvasCardViewModel — sourceModel anchor integration (ANN12)', () => {
+    it('passes sourceModel through buildCards and computes anchors', () => {
+        const surface = { SOURCE_KINDS: { FULLTEXT: 'fulltext' }, SOURCE_STATES: { READY: 'ready' } };
+        const sourceModel = {
+            status: 'ready',
+            sourceKind: 'fulltext',
+            text: 'Alpha bravo selected text for the test paper content.',
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: null,
+        };
+        const rows = [rowStandard];
+        const annState = makeAnnotationState('ready', {
+            paperKey: 'PAPER_A',
+            annotations: rows,
+        });
+        const vm = buildCanvasCardViewModel(annState, { sourceModel: sourceModel });
+        expect(vm.state).toBe('ready');
+        expect(vm.cards.length).toBe(1);
+        expect(vm.cards[0].anchor).toBeDefined();
+        expect(vm.cards[0].anchor.cardId).toBeTruthy();
+        expect(vm.cards[0].anchor.sourceKind).toBe('fulltext');
+    });
+
+    it('view-model with sourceModel still produces expected state fields', () => {
+        const sourceModel = {
+            status: 'ready',
+            sourceKind: 'fulltext',
+            text: 'Some text for anchor testing.',
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: null,
+        };
+        const rows = [rowStandard, rowNote];
+        const annState = makeAnnotationState('ready', {
+            paperKey: 'PAPER_A',
+            annotations: rows,
+        });
+        const vm = buildCanvasCardViewModel(annState, { sourceModel: sourceModel });
+        expect(vm.state).toBe('ready');
+        expect(Array.isArray(vm.cards)).toBe(true);
+        expect(vm.cards.length).toBe(2);
+        expect(vm).toHaveProperty('lanes');
+        expect(vm.lanes.left.length + vm.lanes.right.length).toBe(2);
+    });
+
+    it('view-model with sourceModel still handles stale correctly', () => {
+        const sourceModel = {
+            status: 'ready',
+            sourceKind: 'fulltext',
+            text: 'Text for testing.',
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: null,
+        };
+        const rows = [rowStandard];
+        const annState = makeAnnotationState('ready', {
+            paperKey: 'PAPER_A',
+            annotations: rows,
+        });
+        const vm = buildCanvasCardViewModel(annState, { sourceModel: sourceModel, stale: true });
+        expect(vm.state).toBe('stale');
+        expect(vm.cards.length).toBe(1);
+        expect(vm.cards[0].stale).toBe(true);
+        expect(vm.cards[0].anchor).toBeDefined();
+    });
+
+    it('view-model with missing source still shows cards with unresolved anchors', () => {
+        const sourceModel = {
+            status: 'source-unavailable',
+            sourceKind: null,
+            text: null,
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: 'No source available.',
+        };
+        const rows = [rowStandard, rowNote];
+        const annState = makeAnnotationState('ready', {
+            paperKey: 'PAPER_A',
+            annotations: rows,
+        });
+        const vm = buildCanvasCardViewModel(annState, { sourceModel: sourceModel });
+        expect(vm.state).toBe('ready');
+        expect(vm.cards.length).toBe(2);
+        expect(vm.cards[0].anchor.status).toBe('unresolved');
+        expect(vm.cards[1].anchor.status).toBe('unresolved');
+    });
+
+    it('view-model without sourceModel still produces unresolved anchors (backward compat)', () => {
+        const rows = [rowStandard];
+        const annState = makeAnnotationState('ready', {
+            paperKey: 'PAPER_A',
+            annotations: rows,
+        });
+        const vm = buildCanvasCardViewModel(annState);
+        expect(vm.state).toBe('ready');
+        expect(vm.cards.length).toBe(1);
+        expect(vm.cards[0].anchor.status).toBe('unresolved');
+        expect(vm.cards[0].anchor.reason).toBe('No source model provided for anchor resolution.');
     });
 });
 
