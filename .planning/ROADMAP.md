@@ -8,7 +8,7 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 ## Phases
 
-- [ ] **Phase ANN10: Canvas Data Contract and View Registration** - Add a PaperForge Reading Canvas view shell with explicit paper identity and reusable module seams.
+- [x] **Phase ANN10: Canvas Data Contract and View Registration** - Add a PaperForge Reading Canvas view shell with explicit paper identity and reusable module seams.
 - [ ] **Phase ANN11: Annotation Card View-Models and Layout** - Project existing annotations into read-only card models and deterministic side lanes.
 - [ ] **Phase ANN12: Controlled Reading Surface and Source Anchors** - Render a PaperForge-owned central source surface with exact, page-level, and unresolved anchors.
 - [ ] **Phase ANN13: Bidirectional Navigation and Fallback Paths** - Connect cards and source anchors through focus/scroll behavior while preserving v0.2 PDF navigation fallback.
@@ -35,8 +35,8 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 **Plans:** 2 plans
 
-- [ ] `ANN10-01-PLAN.md` - Canvas contract modules and pure tests (Wave 1).
-- [ ] `ANN10-02-PLAN.md` - Runtime ItemView, command/button wiring, shell styling, and final gate (Wave 2, depends on Wave 1).
+- [x] `ANN10-01-PLAN.md` - Canvas contract modules and pure tests (Wave 1).
+- [x] `ANN10-02-PLAN.md` - Runtime ItemView, command/button wiring, shell styling, and final gate (Wave 2, depends on Wave 1).
 
 ### Phase ANN11: Annotation Card View-Models and Layout
 

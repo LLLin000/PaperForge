@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: annotation v0.3
 milestone_name: milestone
-status: completed
-stopped_at: Plan 01 complete — ready for ANN10-02
-last_updated: "2026-07-05T12:16:45.833Z"
-last_activity: 2026-07-05 -- Phase ANN10 Plan 01 completed (82 tests passing)
+status: executing
+stopped_at: Phase ANN11 complete
+last_updated: "2026-07-06T09:17:23.000Z"
+last_activity: 2026-07-06 -- Phase ANN11 card lane rendering, CSS, and runtime complete
 progress:
   total_phases: 6
-  completed_phases: 0
-  total_plans: 2
-  completed_plans: 1
-  percent: 50
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
+  percent: 33
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-02)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Phase ANN10 — Canvas Data Contract and View Registration
+**Current focus:** Phase ANN11 — Annotation Card View-Models and Layout (COMPLETE)
 
 ## Current Position
 
-Phase: ANN10 (Canvas Data Contract and View Registration) — EXECUTING
-Plan: 2 of 2 (next: ANN10-02 — Obsidian view registration)
-Status: Plan 01 complete — all canvas data contract modules implemented and tested
-Last activity: 2026-07-05 -- Phase ANN10 Plan 01 completed (82 tests passing)
+Phase: ANN11 (Annotation Card View-Models and Layout) — COMPLETE
+Plan: 2 of 2
+Status: Phase ANN11 complete — Card view-models, layout, rendering, CSS, i18n, and runtime regression
+Last activity: 2026-07-06 -- Phase ANN11 card lane rendering, CSS, and runtime complete
 
 ## Performance Metrics
 
@@ -74,6 +74,13 @@ Recent decisions affecting current work:
 - [ANN10-01 executed]: Shell render dispatch explicitly lists all 10 handled states; default renders idle placeholder for unrecognized states.
 - [ANN10-01 executed]: All user-facing canvas text uses `textContent` — verified with XSS payload test.
 - [ANN10-01 executed]: Controller test helpers use `makeV02Loader()` + `createCanvasAnnotationLoader` wrapper pattern — avoids raw `{ loadForPaper }` mock bypass.
+- [ANN11-02 executed]: Card DOM rendering uses textContent for all annotation-derived fields — verified with XSS payload strings
+- [ANN11-02 executed]: Missing selected text and comment values render explicit quiet placeholders with CSS `--empty` modifier classes
+- [ANN11-02 executed]: Refreshing state preserves existing visible cards; stale state shows a warning banner alongside stale cards
+- [ANN11-02 executed]: CSS uses max-height + overflow: hidden + gradient fade pseudo-element for long text truncation (not line-clamp which has inconsistent CJK support)
+- [ANN11-02 executed]: All user-facing canvas text uses scoped i18n zh/en keys via the `t()` helper
+- [ANN11-02 executed]: Card lane CSS uses `word-break: break-word` for CJK-safe wrapping in card previews
+- [ANN11-02 executed]: Read-only badge uses `--true`/`--false` CSS modifier pattern for style-driven display
 
 ### Research Summary
 
@@ -92,23 +99,24 @@ None yet.
 ### Blockers/Concerns
 
 - **v0.2 live Obsidian native PDF overlay harness pending**: v0.3 can proceed because it does not depend on native PDF internals as the canvas foundation, but final verification must not claim native overlay reliability without the harness.
-- **Shipped-source module boundary**: Phase 10 must confirm whether `main.js` can require `src/canvas/*` modules in the Obsidian runtime; if not, temporary inlining requires parity/runtime tests.
+- ~~**Shipped-source module boundary**: Phase 10 must confirm whether `main.js` can require `src/canvas/*` modules in the Obsidian runtime; if not, temporary inlining requires parity/runtime tests.~~ **RESOLVED**: `node --check main.js` passes and runtime tests using `require('./src/canvas')` prove the full module delegation works. No inlining debt.
 - **Fulltext/source anchoring uncertainty**: Phase 12 may need focused research if central fulltext/formal-note source shapes vary more than current docs imply.
 - **Connector precision risk**: Phase 14 must hide connectors for page-only, unresolved, stale, or unmeasured anchors.
 - **Known baseline failures**: full non-focused test suites may still include unrelated baseline issues; v0.3 verification should keep focused gates explicit.
 
 ## Session Continuity
 
-Last session: 2026-07-05T19:35:00.000Z
-Stopped at: Plan 01 complete — ready for ANN10-02
-Resume file: .planning/phases/ANN10/ANN10-01-SUMMARY.md
-Next phase: Phase ANN10 - Canvas Data Contract and View Registration (Plan 02)
+Last session: 2026-07-06T09:17:23.000Z
+Stopped at: Phase ANN11 complete
+Resume file: .planning/phases/ANN11/ANN11-02-SUMMARY.md
+Next phase: Phase ANN12 - Annotation Card Evidence and Connector Rendering
 
 ## Next Suggested Command
 
-Execute remaining ANN10 plan:
+Begin planning for next phase:
 
-`/gsd-execute-phase ANN10 --wave 1 --plan 02`
+`/gsd-plan-phase ANN12`
 
 ---
-*Updated: 2026-07-05*
+
+*Updated: 2026-07-06* — Phase ANN11 complete (both plans executed: view-models/layout + card lane rendering/CSS)

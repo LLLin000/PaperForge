@@ -1,3 +1,42 @@
+---
+phase: ANN10
+plan: "02"
+subsystem: plugin-ui
+tags: [canvas, itemview, view-registration, command-palette, obsidian-plugin, vitest, commonjs]
+
+requires:
+  - phase: ANN10-01
+    provides: Canvas contract modules (context, annotations, controller, render)
+provides:
+  - PaperForgeReadingCanvasView ItemView with explicit paperKey
+  - Command palette command for active-paper canvas opening
+  - Paper panel "Open Reading Canvas" button with entry.key identity
+  - Minimal namespaced canvas shell CSS
+  - 17 Vitest tests (13 runtime + 4 DOM) proving view registration, command, button, and read-only safety
+affects: [ANN11, ANN12, ANN13]
+
+key-files:
+  created:
+    - paperforge/plugin/tests/canvas-main-runtime.test.mjs
+    - paperforge/plugin/tests/canvas-section-dom.test.mjs
+  modified:
+    - paperforge/plugin/main.js
+    - paperforge/plugin/styles.css
+
+key-decisions:
+  - "D-01/D-04: Paper panel button passes exact entry.key to canvas open helper; no re-resolution from file/title/path"
+  - "D-02/D-05: Command palette uses three-tier resolution (status view entry → frontmatter → Notice)"
+  - "D-06/D-08: PaperForgeReadingCanvasView stores explicit paperKey via setPaperContext(); no auto-switch on active paper changes"
+  - "D-20: Full module require('src/canvas') works in Obsidian runtime; no inlining debt"
+  - "D-26: canvas button and all shell states verified free of edit/delete/save/create/import/write-back controls"
+
+requirements-completed: [CANVAS-01, CANVAS-02]
+
+# Metrics
+duration: ~55min
+completed: 2026-07-05
+---
+
 # ANN10-02 Summary: Reading Canvas View Wiring
 
 ## Objective
@@ -64,12 +103,43 @@ npm test
 Pop-Location
 ```
 
+## Task Commits
+
+Each task was committed atomically:
+
+1. **Task 1: Register Reading Canvas ItemView and command** — `4c942ff` (feat)
+2. **Task 2: Add paper panel button, shell styles, and final gate** — `83f6fb4` (feat)
+3. **Plan documentation** — `c42a460` (docs)
+
+## Files Created/Modified
+
+- `paperforge/plugin/main.js` — `PaperForgeReadingCanvasView` class (228 insertions), `registerView()`, command, `openReadingCanvasForActivePaper()` helper, canvas button in `_renderPaperMode()`, `__test` exports
+- `paperforge/plugin/styles.css` — Minimal namespaced `.paperforge-reading-canvas-*` shell styling
+- `paperforge/plugin/tests/canvas-main-runtime.test.mjs` (13 tests) — View registration, explicit paperKey, idle/missing-paper rendering, no auto-switch, `open()` behavior
+- `paperforge/plugin/tests/canvas-section-dom.test.mjs` (4 tests) — Button appears in paper mode, forbidden-controls absence, early return without entry, click does not trigger PDF nav
+
+## Deviations from Plan
+
+None — plan executed exactly as written.
+
+## Issues Encountered
+
+- Initial gsd-executor subagent timed out during reading phase on first attempt. Re-executed with `deep` category which completed successfully in 24 min.
+
+## Self-Check: PASSED
+
+- `node --check main.js` passes
+- 17/17 ANN10-02 tests pass (13 runtime + 4 DOM)
+- All 329 ANN10-focused tests pass (10 test files)
+- v0.2 annotation focused tests still pass (annotation-bridge, annotation-navigation, annotation-overlay, annotation-main-runtime, annotation-section-dom)
+- No Phase 11+ cards, anchors, connectors, or write controls introduced
+
 ## Next Steps
 
-- **ANN10-03:** Reserved (card interaction or visual polish — not yet planned)
 - **ANN11-01/02:** Card view-models and lane DOM (depends on ANN10-02 wiring)
 
 ## Assets
 
 - Commit `4c942ff`: `feat(ANN10-02): register Reading Canvas ItemView and command`
 - Commit `83f6fb4`: `feat(ANN10-02): add canvas runtime and DOM tests`
+- Commit `c42a460`: `docs(ANN10-02): add execution summary for canvas view wiring`
