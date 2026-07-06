@@ -378,3 +378,208 @@ describe('forbidden controls absence', () => {
         expect(html).not.toContain('paperforge-canvas-connector');
     });
 });
+
+// ── Card lane rendering ──
+
+function makeCardVM(overrides) {
+    const cards = overrides.cards || [];
+    const left = overrides.leftCards !== undefined ? overrides.leftCards : cards.filter(function (_, i) { return i % 2 === 0; });
+    const right = overrides.rightCards !== undefined ? overrides.rightCards : cards.filter(function (_, i) { return i % 2 === 1; });
+    const lanes = cards.length > 0
+        ? (overrides.lanes || { left: left, right: right })
+        : undefined;
+    return {
+        state: 'ready',
+        paperKey: 'PAPER_A',
+        message: '',
+        cards: cards,
+        lanes: lanes,
+        refreshing: false,
+        stale: false,
+        ...overrides,
+    };
+}
+
+function makeCard(overrides) {
+    return {
+        id: 'ann-default',
+        selectedText: 'Some highlighted text from the paper.',
+        comment: 'A reader comment.',
+        pageLabel: 'p. 3',
+        pageIndex: 2,
+        type: 'highlight',
+        color: '#ff0',
+        source: 'annotation',
+        sourceAttachmentKey: 'ATTACH_001',
+        sourceAnnotationKey: 'ANN_001',
+        readOnly: true,
+        readOnlyLabel: 'Read-only',
+        selectedTextPreview: { text: 'Some highlighted text from the paper.', kind: 'selected-text', truncated: false, expandable: false, isLong: false },
+        commentPreview: { text: 'A reader comment.', kind: 'comment', truncated: false, expandable: false, isLong: false },
+        anchor: { status: 'unresolved', reason: 'Source anchors are implemented in ANN12.' },
+        ...overrides,
+    };
+}
+
+describe('renderCanvasView — card lanes', () => {
+    it('renders lane containers when vm.lanes exists', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' }), makeCard({ id: 'ann-2' }), makeCard({ id: 'ann-3' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const lanesEl = root.querySelector('.paperforge-canvas-lanes');
+        expect(lanesEl).toBeTruthy();
+
+        const leftLane = root.querySelector('.paperforge-canvas-lane-left');
+        expect(leftLane).toBeTruthy();
+        const rightLane = root.querySelector('.paperforge-canvas-lane-right');
+        expect(rightLane).toBeTruthy();
+    });
+
+    it('renders cards in correct lanes (left=even, right=odd)', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' }), makeCard({ id: 'ann-2' }), makeCard({ id: 'ann-3' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const leftCards = root.querySelectorAll('.paperforge-canvas-lane-left .paperforge-canvas-card');
+        const rightCards = root.querySelectorAll('.paperforge-canvas-lane-right .paperforge-canvas-card');
+
+        expect(leftCards.length).toBe(2); // ann-1, ann-3
+        expect(rightCards.length).toBe(1); // ann-2
+        expect(leftCards[0].getAttribute('data-card-id')).toBe('ann-1');
+        expect(rightCards[0].getAttribute('data-card-id')).toBe('ann-2');
+        expect(leftCards[1].getAttribute('data-card-id')).toBe('ann-3');
+    });
+
+    it('renders card selected-text preview as textContent', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', selectedText: 'Selected passage.' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const previewEl = root.querySelector('.paperforge-canvas-card-selected-text');
+        expect(previewEl).toBeTruthy();
+        expect(previewEl.textContent).toContain('Selected passage.');
+        expect(previewEl.innerHTML).not.toContain('<');
+    });
+
+    it('renders card comment preview as textContent', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', comment: 'Important finding.' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const commentEl = root.querySelector('.paperforge-canvas-card-comment');
+        expect(commentEl).toBeTruthy();
+        expect(commentEl.textContent).toContain('Important finding.');
+    });
+
+    it('renders card page label', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', pageLabel: 'p. 5' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const pageEl = root.querySelector('.paperforge-canvas-card-page');
+        expect(pageEl).toBeTruthy();
+        expect(pageEl.textContent).toContain('p. 5');
+    });
+
+    it('renders card type/color indicator', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', type: 'highlight', color: '#ff0' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const typeEl = root.querySelector('.paperforge-canvas-card-type');
+        expect(typeEl).toBeTruthy();
+        expect(typeEl.textContent).toContain('highlight');
+    });
+
+    it('renders read-only badge', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', readOnly: true, readOnlyLabel: 'Read-only' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const badgeEl = root.querySelector('.paperforge-canvas-card-readonly');
+        expect(badgeEl).toBeTruthy();
+        expect(badgeEl.textContent).toBe('Read-only');
+    });
+
+    it('renders source/provenance metadata', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', source: 'annotation', sourceAttachmentKey: 'ATTACH_001' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const sourceEl = root.querySelector('.paperforge-canvas-card-source');
+        expect(sourceEl).toBeTruthy();
+        expect(sourceEl.textContent).toContain('annotation');
+        expect(sourceEl.textContent).toContain('ATTACH_001');
+    });
+
+    it('ready state with no cards renders empty placeholder, not lanes', () => {
+        const root = makeRootEl();
+        renderCanvasView(root, makeCardVM({ state: 'ready', cards: [], lanes: undefined }));
+
+        expect(root.querySelector('.paperforge-canvas-empty')).toBeTruthy();
+        expect(root.querySelector('.paperforge-canvas-lanes')).toBeNull();
+    });
+
+    it('contains no forbidden controls with cards present', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' }), makeCard({ id: 'ann-2' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        assertNoForbiddenControls(root);
+    });
+
+    it('uses textContent for annotation-derived card fields', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', selectedText: '<script>alert(1)</script>' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+
+        const previewEl = root.querySelector('.paperforge-canvas-card-selected-text');
+        expect(previewEl).toBeTruthy();
+        // Raw HTML string preserved
+        expect(previewEl.textContent).toContain('<script>alert(1)</script>');
+        // No executable script in innerHTML
+        expect(previewEl.innerHTML).not.toContain('<script>');
+    });
+});
+
+describe('renderCanvasView — refreshing state', () => {
+    it('renders refreshing state with existing cards', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' })];
+        renderCanvasView(root, makeCardVM({ state: 'refreshing', cards: cards, refreshing: true }));
+
+        const refreshingEl = root.querySelector('.paperforge-canvas-refreshing');
+        expect(refreshingEl).toBeTruthy();
+        // Cards preserved during refresh
+        expect(root.querySelector('.paperforge-canvas-card')).toBeTruthy();
+        expect(root.textContent).toContain('Refreshing');
+    });
+
+    it('refreshing state contains no forbidden controls', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' })];
+        renderCanvasView(root, makeCardVM({ state: 'refreshing', cards: cards, refreshing: true }));
+        assertNoForbiddenControls(root);
+    });
+});
+
+describe('renderCanvasView — stale state', () => {
+    it('renders stale state with existing cards and stale marker', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', stale: true })];
+        renderCanvasView(root, makeCardVM({ state: 'stale', cards: cards, stale: true }));
+
+        const staleBanner = root.querySelector('.paperforge-canvas-stale-banner');
+        expect(staleBanner).toBeTruthy();
+        // Cards still visible
+        expect(root.querySelector('.paperforge-canvas-card')).toBeTruthy();
+    });
+
+    it('stale state contains no forbidden controls', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1', stale: true })];
+        renderCanvasView(root, makeCardVM({ state: 'stale', cards: cards, stale: true }));
+        assertNoForbiddenControls(root);
+    });
+});
