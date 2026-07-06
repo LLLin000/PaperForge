@@ -1233,3 +1233,105 @@ describe('ANN14-02 Task 2 — updateCanvasConnectorLayer', () => {
         expect(line.getAttribute('class')).toContain('paperforge-canvas-connector--selected');
     });
 });
+
+// ── ANN14-04 Task 2: Forbidden-scope connector surface scan ──
+
+describe('ANN14-04 Task 2 — Forbidden-scope connector verification', () => {
+
+    it('renderCanvasConnectorLayer output is only SVG layer — no arrows, dots, animations', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        var svg = renderCanvasConnectorLayer(root);
+        var html = root.innerHTML.toLowerCase();
+        // No arrow markers or dot elements
+        expect(html).not.toContain('marker');
+        expect(html).not.toContain('circle');
+        expect(html).not.toContain('polygon');
+        expect(html).not.toContain('polyline');
+        // SVG only has svg and line elements (no extraneous geometry)
+        var allElements = svg.querySelectorAll('*');
+        for (var ei = 0; ei < allElements.length; ei++) {
+            var tag = allElements[ei].tagName.toLowerCase();
+            expect(['svg', 'line', 'defs', 'g', 'title']).toContain(tag);
+        }
+    });
+
+    it('updateCanvasConnectorLayer line has no inline color or animation attributes', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        var svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, {
+            state: 'visible',
+            cardEndpoint: { x: 100, y: 200 },
+            anchorEndpoint: { x: 450, y: 200 },
+            cardRect: null,
+            anchorRect: null,
+        });
+        var line = svg.querySelector('line');
+        expect(line).toBeTruthy();
+        // No color, animation, or transition attributes
+        expect(line.hasAttribute('stroke-dasharray')).toBe(false);
+        expect(line.hasAttribute('opacity')).toBe(false);
+        expect(line.hasAttribute('animation')).toBe(false);
+        // Stroke is set via CSS class, not inline
+        expect(line.hasAttribute('stroke')).toBe(false);
+        // No marker-end or arrow-related attributes
+        expect(line.hasAttribute('marker-end')).toBe(false);
+    });
+
+    it('connector line has no animation or transition markup', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        var svg = renderCanvasConnectorLayer(root);
+        var html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('animation');
+        expect(html).not.toContain('transition');
+        expect(html).not.toContain('@keyframes');
+    });
+
+    it('hidden connector states do not render any SVG child elements', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        var svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, {
+            state: 'hidden',
+            reason: 'narrow-canvas',
+            cardEndpoint: null,
+            anchorEndpoint: null,
+            cardRect: null,
+            anchorRect: null,
+        });
+        expect(svg.querySelectorAll('line').length).toBe(0);
+    });
+
+    it('connector does not render for unresolved anchors [D-10/D-11]', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        var svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, {
+            state: 'hidden',
+            reason: 'unresolved',
+            cardEndpoint: null,
+            anchorEndpoint: null,
+            cardRect: null,
+            anchorRect: null,
+        });
+        expect(svg.querySelectorAll('line').length).toBe(0);
+    });
+
+    it('connector does not render for page-level anchors [D-10/D-11]', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        var svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, {
+            state: 'hidden',
+            reason: 'page-level',
+            cardEndpoint: null,
+            anchorEndpoint: null,
+            cardRect: null,
+            anchorRect: null,
+        });
+        expect(svg.querySelectorAll('line').length).toBe(0);
+    });
+
+});
