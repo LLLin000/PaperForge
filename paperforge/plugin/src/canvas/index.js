@@ -55,6 +55,24 @@ const {
     getCardIdentity,
 } = require('./layout');
 
+// ── Source surface (ANN12) ──
+const {
+    SOURCE_KINDS,
+    SOURCE_STATES,
+    buildCanvasSourceModel,
+    buildSourceBlocks,
+    normalizeSourceTextForAnchors,
+} = require('./surface');
+
+// ── Anchor resolver (ANN12) ──
+const {
+    ANCHOR_STATUSES,
+    MIN_EXACT_TEXT_CHARS,
+    resolveCanvasAnchor,
+    resolveCanvasAnchors,
+    findNormalizedSourceMatches,
+} = require('./anchors');
+
 module.exports = {
     // ── Context helpers ──
     buildCanvasContextFromEntry,
@@ -94,4 +112,18 @@ module.exports = {
     sortCanvasCardsForReadingOrder,
     assignCanvasCardsToLanes,
     getCardIdentity,
+
+    // ── Source surface (ANN12) ──
+    SOURCE_KINDS,
+    SOURCE_STATES,
+    buildCanvasSourceModel,
+    buildSourceBlocks,
+    normalizeSourceTextForAnchors,
+
+    // ── Anchor resolver (ANN12) ──
+    ANCHOR_STATUSES,
+    MIN_EXACT_TEXT_CHARS,
+    resolveCanvasAnchor,
+    resolveCanvasAnchors,
+    findNormalizedSourceMatches,
 };

@@ -114,6 +114,7 @@ function buildCanvasSourceModel(entry, sourceInputs, options) {
             fulltextPath: ftPath,
             notePath: ntPath,
             diagnostics: diagnostics,
+            paperKey: entryKey,
             reason: null,
         };
     }
@@ -132,6 +133,7 @@ function buildCanvasSourceModel(entry, sourceInputs, options) {
             fulltextPath: ftPath,
             notePath: ntPath,
             diagnostics: diagnostics,
+            paperKey: entryKey,
             reason: null,
         };
     }
@@ -164,6 +166,7 @@ function buildCanvasSourceModel(entry, sourceInputs, options) {
         fulltextPath: ftPath,
         notePath: ntPath,
         diagnostics: diagnostics,
+        paperKey: entryKey,
         reason: combinedReason,
     };
 }

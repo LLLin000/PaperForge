@@ -1,12 +1,15 @@
 /**
- * Canvas card view-model helpers (Phase ANN11, Plan 01).
+ * Canvas card view-model helpers (Phase ANN11, Plan 01; expanded ANN12).
  *
  * Pure CommonJS helpers for building read-only annotation card models
  * and explicit canvas/card state projections from the existing v0.2
  * normalized annotation state.
  *
+ * ANN12 extension: cards receive computed source anchors from an optional
+ * `sourceModel` parameter, resolving to exact/page-level/unresolved.
+ *
  * No Obsidian, subprocess, database, or Zotero dependencies.
- * No mutation controls, no action descriptors, no anchor/navigation code.
+ * No mutation controls, no action descriptors, no navigation/connector code.
  *
  * @module canvas/view-model
  */
@@ -16,6 +19,10 @@ const {
     assignCanvasCardsToLanes,
     getCardIdentity,
 } = require('./layout');
+
+const {
+    resolveCanvasAnchor,
+} = require('./anchors');
 
 // ── Preview metadata ──
 
@@ -75,10 +82,15 @@ function normalizeCanvasCardPreview(value, kind) {
  * Per D-03 and D-21, the card exposes no expandable details, drawers,
  * popovers, editable forms, local mutation state, or action controls.
  *
+ * ANN12 extension: when `sourceModel` is provided, the card receives a
+ * computed anchor via `resolveCanvasAnchor`.  Without sourceModel,
+ * the anchor is a safe fallback (unresolved with explanation).
+ *
  * @param {object} row - A normalized annotation row ({ display, provenance, pdfLocation }).
+ * @param {object} [sourceModel] - Optional source model from buildCanvasSourceModel().
  * @returns {object} Read-only card object.
  */
-function buildCanvasCard(row) {
+function buildCanvasCard(row, sourceModel) {
     const display = (row && row.display) || {};
     const provenance = (row && row.provenance) || {};
     const pdfLoc = (row && row.pdfLocation) || {};
@@ -88,6 +100,20 @@ function buildCanvasCard(row) {
 
     const id = getCardIdentity(row);
     const readOnly = !(provenance.isReadonly === false);
+
+    // ── Compute anchor from sourceModel if provided ──
+    var anchor;
+    if (sourceModel) {
+        var anchorCard = {
+            cardId: id,
+            selectedText: selectedText,
+            pageIndex: pdfLoc.pageIndex != null ? pdfLoc.pageIndex : null,
+            pageLabel: pdfLoc.pageLabel || display.pageLabel || '',
+        };
+        anchor = resolveCanvasAnchor(anchorCard, sourceModel);
+    } else {
+        anchor = { status: 'unresolved', reason: 'No source model provided for anchor resolution.' };
+    }
 
     return {
         // ── Identity ──
@@ -114,8 +140,8 @@ function buildCanvasCard(row) {
         selectedTextPreview: normalizeCanvasCardPreview(selectedText, 'selected-text'),
         commentPreview: normalizeCanvasCardPreview(comment, 'comment'),
 
-        // ── Anchor placeholder (ANN12) ──
-        anchor: { status: 'unresolved', reason: 'Source anchors are implemented in ANN12.' },
+        // ── Anchor (ANN12) ──
+        anchor: anchor,
     };
 }
 
@@ -136,12 +162,17 @@ function buildCanvasCard(row) {
  *     'refreshing' while preserving existing cards for display.
  *   - `stale` (boolean): When true, the view-model is marked as 'stale'
  *     while preserving existing cards with per-card stale flags.
+ *   - `sourceModel` (object): Optional source model from
+ *     buildCanvasSourceModel(). When provided, each card receives a
+ *     computed anchor (exact/page-level/unresolved) via the anchor
+ *     resolver.
  *
  * @param {object|null|undefined} annotationState - The annotation load state
  *   ({ state, paperKey, annotations, message, errorCode, raw, stale }).
  * @param {object} [options] - Optional display flags.
  * @param {boolean} [options.refreshing] - Mark as refreshing state.
  * @param {boolean} [options.stale] - Mark as stale state.
+ * @param {object} [options.sourceModel] - Source model for anchor resolution.
  * @returns {{ state: string, paperKey: string|null, cards: Array, lanes: ({ left: Array, right: Array })|undefined, message: string, refreshing: boolean, stale: boolean }}
  */
 function buildCanvasCardViewModel(annotationState, options) {
@@ -154,11 +185,13 @@ function buildCanvasCardViewModel(annotationState, options) {
     const hasRefreshing = Boolean(opts.refreshing);
 
     // ── Build cards if we have annotation rows ──
+    var sourceModel = opts.sourceModel || null;
+
     function buildCards() {
         if (rows.length === 0) return [];
         const sorted = sortCanvasCardsForReadingOrder(rows);
         return sorted.map(function (row) {
-            const card = buildCanvasCard(row);
+            const card = buildCanvasCard(row, sourceModel);
             if (hasStale) card.stale = true;
             return card;
         });
