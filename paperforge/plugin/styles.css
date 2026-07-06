@@ -3095,3 +3095,85 @@
     color: var(--text-faint);
     padding: 8px 16px;
 }
+
+/* ── ANN12-02: Source surface ── */
+
+.paperforge-reading-canvas-view .paperforge-canvas-source-surface {
+    border-top: 1px solid var(--background-modifier-border);
+    padding: 12px 16px;
+    margin-top: 8px;
+    max-height: 50vh;
+    overflow-y: auto;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    font-size: 13px;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-source-header {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-source-block {
+    margin-bottom: 12px;
+    padding: 4px 0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-source-unavailable {
+    border-top: 1px solid var(--background-modifier-border);
+    padding: 16px;
+    margin-top: 8px;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+}
+
+/* ── ANN12-02: Anchor states ── */
+
+.paperforge-reading-canvas-view .paperforge-canvas-anchor {
+    display: inline;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-anchor--exact {
+    background-color: rgba(255, 230, 0, 0.25);
+    border-radius: 2px;
+    padding: 0 1px;
+    display: inline;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-anchor--page-level {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    background-color: var(--background-primary);
+    border-left: 3px solid var(--color-yellow);
+    padding: 4px 8px;
+    margin: 4px 0;
+    border-radius: 2px;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-anchor--unresolved {
+    display: block;
+    font-size: 11px;
+    color: var(--text-faint);
+    font-style: italic;
+    padding: 4px 0;
+    margin: 4px 0;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-anchor-reason {
+    font-size: 11px;
+    color: var(--text-faint);
+}
