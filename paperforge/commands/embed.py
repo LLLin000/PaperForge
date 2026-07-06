@@ -312,6 +312,7 @@ def run(args: argparse.Namespace) -> int:
     )
 
     i = 0
+    prepared = 0
     jobs: list[PaperEmbeddingJob] = []
     papers_iter = progress_bar(done_papers, desc="Embedding", disable=args.json)
     for entry in papers_iter:
@@ -396,7 +397,9 @@ def run(args: argparse.Namespace) -> int:
             )
 
         if payloads:
+            prepared += 1
             jobs.append(PaperEmbeddingJob(paper_id=key, payloads=payloads))
+            print(f"EMBED_PROGRESS:{prepared}:{total}:{key}", flush=True)
 
     # Phase 2+3: ENCODE（线程池）+ WRITE（主线程串行）
     try:
