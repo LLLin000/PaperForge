@@ -90,6 +90,15 @@ const {
     computeFallbackEligibility,
 } = require('./navigation');
 
+// ── Connector eligibility and geometry (ANN14) ──
+const {
+    CONNECTOR_STATES,
+    HIDDEN_REASONS,
+    MIN_CANVAS_DIMENSION,
+    computeFocusedConnectorCandidate,
+    measureConnectorGeometry,
+} = require('./connectors');
+
 module.exports = {
     // ── Context helpers ──
     buildCanvasContextFromEntry,
@@ -160,4 +169,11 @@ module.exports = {
     reduceSourceSelection,
     reduceLifecycleAction,
     computeFallbackEligibility,
+
+    // ── Connector eligibility and geometry (ANN14) ──
+    CONNECTOR_STATES,
+    HIDDEN_REASONS,
+    MIN_CANVAS_DIMENSION,
+    computeFocusedConnectorCandidate,
+    measureConnectorGeometry,
 };
