@@ -4,6 +4,16 @@ import argparse
 import os
 import sys
 
+import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from itertools import islice
+
+from paperforge.embedding.builder import (
+    PaperEmbeddingJob,
+    encode_paper_job,
+    write_encoded_payload,
+    prepare_payloads_for_entry,
+)
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.retrieval.manifest import compute_body_units_hash, compute_object_units_hash, RETRIEVAL_POLICY_VERSION
@@ -86,6 +96,21 @@ def _assert_collections_healthy(vault: Path) -> tuple[bool, str]:
         except Exception as exc:
             return False, f"{name}: {exc}"
     return True, ""
+logger = logging.getLogger(__name__)
+
+PR9B_BATCH_SIZE = 8
+PR9B_MAX_WORKERS = 4
+
+
+def _batched(iterable, n):
+    it = iter(iterable)
+    while True:
+        batch = list(islice(it, n))
+        if not batch:
+            break
+        yield batch
+
+
 
 def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
@@ -333,55 +358,9 @@ def run(args: argparse.Namespace) -> int:
                     papers_skipped += 1
                     continue
 
-            try:
-                i += 1
-                print(f"EMBED_PROGRESS:{i}:{total}:{key}", flush=True)
-                delete_paper_vectors(vault, key)
-                chunks_body = 0
-                chunks_object = 0
-                if body_units:
-                    chunks_body = embed_body_units(vault, key, body_units)
-                if object_units:
-                    chunks_object = embed_object_units(vault, key, object_units)
-                chunks_embedded += chunks_body + chunks_object
-                papers_embedded += 1
-                mark_vector_build_state(vault,
-                    current=i, paper_id=key,
-                    last_update=_now(),
-                )
-            except Exception as e:
-                try:
-                    _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
-                    _mode = get_embed_status(vault).get("mode", "")
-                    _model = get_embed_status(vault).get("model", "")
-                except Exception:
-                    _actual = chunks_embedded
-                    _mode = ""
-                    _model = ""
-                mark_vector_build_state(vault,
-                    status="failed", message=str(e), pid=0,
-                )
-                write_vector_runtime(
-                    vault,
-                    enabled=bool(_mode),
-                    mode=_mode,
-                    model=_model,
-                    deps_installed=True,
-                    deps_missing=None,
-                    py_version=sys.version.split()[0],
-                    db_exists=get_vector_db_path(vault).exists(),
-                    chunk_count=_actual,
-                    body_chunk_count=0,
-                    object_chunk_count=0,
-                    total_chunks=_actual,
-                    build_state=read_vector_build_state(vault),
-                    healthy=False,
-                    error=str(e),
-                )
-                result = PFResult(ok=False, command="embed build", version=PF_VERSION,
-                                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
-                print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
-                return 1
+            payloads = prepare_payloads_for_entry(
+                vault, key, has_body, has_object, body_units, object_units
+            )
         else:
             # Legacy fulltext path
             fulltext_rel = entry.get("fulltext_path", "")
@@ -410,53 +389,84 @@ def run(args: argparse.Namespace) -> int:
                     if "hnsw" in err or "compaction" in err:
                         logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
                     pass
-            chunks = chunk_fulltext(fulltext_path)
-            if not chunks:
-                continue
-            try:
-                i += 1
-                print(f"EMBED_PROGRESS:{i}:{total}:{key}", flush=True)
-                delete_paper_vectors(vault, key)
-                n = embed_paper(vault, key, chunks)
-                chunks_embedded += n
-                papers_embedded += 1
-                mark_vector_build_state(vault,
-                    current=i, paper_id=key,
-                    last_update=_now(),
-                )
-            except Exception as e:
-                try:
-                    _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
-                    _mode = get_embed_status(vault).get("mode", "")
-                    _model = get_embed_status(vault).get("model", "")
-                except Exception:
-                    _actual = chunks_embedded
-                    _mode = ""
-                    _model = ""
-                mark_vector_build_state(vault,
-                    status="failed", message=str(e), pid=0,
-                )
-                write_vector_runtime(
-                    vault,
-                    enabled=bool(_mode),
-                    mode=_mode,
-                    model=_model,
-                    deps_installed=True,
-                    deps_missing=None,
-                    py_version=sys.version.split()[0],
-                    db_exists=get_vector_db_path(vault).exists(),
-                    chunk_count=_actual,
-                    body_chunk_count=0,
-                    object_chunk_count=0,
-                    total_chunks=_actual,
-                    build_state=read_vector_build_state(vault),
-                    healthy=False,
-                    error=str(e),
-                )
-                result = PFResult(ok=False, command="embed build", version=PF_VERSION,
-                                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
-                print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
-                return 1
+
+            payloads = prepare_payloads_for_entry(
+                vault, key, has_body, has_object, [], [], fulltext_rel=fulltext_rel
+            )
+
+        if payloads:
+            jobs.append(PaperEmbeddingJob(paper_id=key, payloads=payloads))
+
+    # Phase 2+3: ENCODE（线程池）+ WRITE（主线程串行）
+    try:
+        with ThreadPoolExecutor(max_workers=PR9B_MAX_WORKERS) as pool:
+            for batch in _batched(jobs, PR9B_BATCH_SIZE):
+                futures = {
+                    pool.submit(encode_paper_job, vault, job): job.paper_id
+                    for job in batch
+                }
+
+                for future in as_completed(futures):
+                    paper_id = futures[future]
+                    try:
+                        bundle = future.result()
+                    except Exception as e:
+                        # encode 失败：不删旧 vectors，继续下一篇
+                        logger.error(f"Encode failed for {paper_id}: {e}")
+                        continue
+
+                    i += 1
+                    print(f"EMBED_PROGRESS:{i}:{total}:{paper_id}", flush=True)
+
+                    # encode 全部成功后才 replace old vectors
+                    delete_paper_vectors(vault, paper_id)
+
+                    for payload in bundle.payloads:
+                        try:
+                            write_encoded_payload(vault, payload)
+                        except Exception as e:
+                            # write 失败 → 已进入 replace 状态
+                            raise
+
+                    chunks_embedded += bundle.chunk_count
+                    papers_embedded += 1
+                    mark_vector_build_state(vault,
+                        current=i, paper_id=paper_id,
+                        last_update=_now(),
+                    )
+    except Exception as e:
+        try:
+            _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
+            _mode = get_embed_status(vault).get("mode", "")
+            _model = get_embed_status(vault).get("model", "")
+        except Exception:
+            _actual = chunks_embedded
+            _mode = ""
+            _model = ""
+        mark_vector_build_state(vault,
+            status="failed", message=str(e), pid=0,
+        )
+        write_vector_runtime(
+            vault,
+            enabled=bool(_mode),
+            mode=_mode,
+            model=_model,
+            deps_installed=True,
+            deps_missing=None,
+            py_version=sys.version.split()[0],
+            db_exists=get_vector_db_path(vault).exists(),
+            chunk_count=_actual,
+            body_chunk_count=0,
+            object_chunk_count=0,
+            total_chunks=_actual,
+            build_state=read_vector_build_state(vault),
+            healthy=False,
+            error=str(e),
+        )
+        result = PFResult(ok=False, command="embed build", version=PF_VERSION,
+                         error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
+        print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+        return 1
 
     mark_vector_build_state(vault,
         status="completed",
