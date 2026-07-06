@@ -740,3 +740,142 @@ describe('ANN12-02 Task 1 — Runtime source loading (_loadCanvasSourceInputs)',
         expect(html).not.toContain('contenteditable');
     });
 });
+
+// ── ANN13-04 Task 1: Loaded canvas runtime rendering ──
+
+describe('ANN13-04 Task 1 — Loaded canvas rendering', () => {
+
+    function makeCanvasView() {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl, app: makeStubApp() });
+        view.contentEl = contentEl;
+        view.app = makeStubApp();
+        return { view, containerEl, contentEl };
+    }
+
+    it('has _renderLoadedCanvas method', () => {
+        const { view } = makeCanvasView();
+        expect(typeof view._renderLoadedCanvas).toBe('function');
+    });
+
+    it('has getNavigationState method', () => {
+        const { view } = makeCanvasView();
+        expect(typeof view.getNavigationState).toBe('function');
+    });
+
+    it('_renderLoadedCanvas renders content without throwing', () => {
+        const { view, containerEl } = makeCanvasView();
+        view._paperKey = 'KEY_TEST';
+        view._paperEntry = { key: 'KEY_TEST', title: 'Test' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+        expect(containerEl.querySelector('.paperforge-reading-canvas-view')).toBeTruthy();
+    });
+
+    it('_renderLoadedCanvas sets _vm and _navigationState', () => {
+        const { view } = makeCanvasView();
+        view._paperKey = 'KEY_STATE';
+        view._paperEntry = { key: 'KEY_STATE', title: 'State' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'none' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'none' },
+        });
+        expect(view._vm).toBeTruthy();
+        expect(view._navigationState).toBeTruthy();
+    });
+});
+
+// ── ANN13-04 Task 2/3: Event handlers and lifecycle ──
+
+describe('ANN13-04 Task 2/3 — Event delegation and lifecycle', () => {
+
+    function makeCanvasView() {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl, app: makeStubApp() });
+        view.contentEl = contentEl;
+        view.app = makeStubApp();
+        return { view, containerEl, contentEl };
+    }
+
+    it('click on card triggers _handleCanvasClick without error', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._vm = { cards: [{ id: 'card-1', pageIndex: 0 }] };
+        view._navigationState = { selectedCardId: null, selectedAnchorId: null, selectedGroupId: null, sourceFocusTargetId: null, statusMessage: null, navSource: null };
+        view._initDelegatedEvents(contentEl);
+
+        const cardEl = document.createElement('div');
+        cardEl.setAttribute('data-card-id', 'card-1');
+        contentEl.appendChild(cardEl);
+
+        expect(() => {
+            cardEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        }).not.toThrow();
+    });
+
+    it('Escape key reduces lifecycle state', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._vm = { cards: [] };
+        view._navigationState = { selectedCardId: 'card-1', selectedAnchorId: null, selectedGroupId: null, sourceFocusTargetId: null, statusMessage: null, navSource: null };
+        view._initDelegatedEvents(contentEl);
+
+        const evt = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+        contentEl.dispatchEvent(evt);
+
+        expect(view._navigationState.selectedCardId).toBeNull();
+    });
+});
+
+// ── ANN13-04 Task 4: Fallback opening ──
+
+describe('ANN13-04 Task 4 — Fallback PDF handling', () => {
+
+    function makeCanvasView() {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const app = {
+            workspace: { openLinkText: vi.fn() },
+            vault: { adapter: { basePath: 'C:/vault' } },
+        };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl, app });
+        view.contentEl = contentEl;
+        view.app = app;
+        return { view, containerEl, contentEl };
+    }
+
+    it('_handleFallbackClick calls openLinkText when paperEntry has pdf_path', () => {
+        const { view } = makeCanvasView();
+        view._paperEntry = { key: 'KEY_FB', pdf_path: 'storage/KEY/file.pdf' };
+        view._handleFallbackClick('3');
+        expect(view.app.workspace.openLinkText).toHaveBeenCalled();
+    });
+
+    it('_handleFallbackClick does nothing when no page', () => {
+        const { view } = makeCanvasView();
+        view._paperEntry = { key: 'KEY_FB', pdf_path: 'storage/KEY/file.pdf' };
+        view._handleFallbackClick(null);
+        expect(view.app.workspace.openLinkText).not.toHaveBeenCalled();
+    });
+
+    it('_handleFallbackClick does nothing when no entry', () => {
+        const { view } = makeCanvasView();
+        view._paperEntry = null;
+        view._handleFallbackClick('3');
+        expect(view.app.workspace.openLinkText).not.toHaveBeenCalled();
+    });
+});

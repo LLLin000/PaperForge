@@ -4412,6 +4412,10 @@ class PaperForgeReadingCanvasView extends ItemView {
         // ANN12-02: source input cache for stale-load guard
         this._sourceInputsPaperKey = null;
         this._sourceInputsCache = null;
+        // ANN13: navigation state + event handlers
+        this._navigationState = null;
+        this._boundHandleCanvasClick = null;
+        this._boundHandleCanvasKeydown = null;
     }
 
     // ── ANN12-02: Runtime source loading ──
@@ -4644,6 +4648,7 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     async onClose() {
+        this._cleanupNavigation();
         if (this._sessionController) {
             this._sessionController.teardown();
             this._sessionController = null;
@@ -4652,6 +4657,134 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._paperEntry = null;
         this._canvasContext = null;
         this._vm = null;
+        this._navigationState = null;
+    }
+
+    getNavigationState() {
+        return this._navigationState;
+    }
+
+    _initDelegatedEvents(contentEl) {
+        this._cleanupNavigation();
+        this._boundHandleCanvasClick = (evt) => this._handleCanvasClick(evt);
+        this._boundHandleCanvasKeydown = (evt) => this._handleCanvasKeydown(evt);
+        contentEl.addEventListener('click', this._boundHandleCanvasClick);
+        contentEl.addEventListener('keydown', this._boundHandleCanvasKeydown);
+    }
+
+    _cleanupNavigation() {
+        if (this.contentEl && this._boundHandleCanvasClick) {
+            this.contentEl.removeEventListener('click', this._boundHandleCanvasClick);
+        }
+        if (this.contentEl && this._boundHandleCanvasKeydown) {
+            this.contentEl.removeEventListener('keydown', this._boundHandleCanvasKeydown);
+        }
+        this._boundHandleCanvasClick = null;
+        this._boundHandleCanvasKeydown = null;
+    }
+
+    _handleCanvasClick(evt) {
+        var canvas = require('./src/canvas');
+        var nav = require('./src/canvas/navigation');
+
+        var cardEl = evt.target.closest('[data-card-id]');
+        if (cardEl) {
+            var cardId = cardEl.getAttribute('data-card-id');
+            if (!this._vm || !this._vm.cards) return;
+            var card = this._vm.cards.find(function (c) { return c.id === cardId; });
+            if (!card) return;
+            var nextState = nav.reduceCardSelection(this._navigationState || nav.createInitialNavState(), card);
+            this._applyCardNavigationState(nextState);
+            return;
+        }
+
+        var fbBtn = evt.target.closest('.paperforge-canvas-fallback-button');
+        if (fbBtn) {
+            var page = fbBtn.getAttribute('data-fallback-page');
+            this._handleFallbackClick(page);
+            return;
+        }
+
+        var anchorEl = evt.target.closest('[data-anchor-id]');
+        if (anchorEl) {
+            var anchorId = anchorEl.getAttribute('data-anchor-id');
+            if (!this._vm || !this._vm.cards) return;
+            var sourceCard = this._vm.cards.find(function (c) { return c.id === anchorId; });
+            if (!sourceCard) return;
+            var next = nav.reduceSourceSelection(this._navigationState || nav.createInitialNavState(), sourceCard);
+            this._applyCardNavigationState(next);
+            if (next.selectedCardId) {
+                var focusEl = this.contentEl.querySelector('[data-card-id="' + next.selectedCardId + '"]');
+                if (focusEl) focusEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            return;
+        }
+    }
+
+    _handleCanvasKeydown(evt) {
+        if (evt.key === 'Escape') {
+            var nav = require('./src/canvas/navigation');
+            var nextState = nav.reduceLifecycleAction(this._navigationState || nav.createInitialNavState(), nav.NAVIGATION_ACTIONS.ESCAPE);
+            this._applyCardNavigationState(nextState);
+            evt.preventDefault();
+        }
+    }
+
+    _handleFallbackClick(page) {
+        if (!this._paperEntry || !page) return;
+        this._openPdfForPage(page);
+    }
+
+    _openPdfForPage(page) {
+        var entry = this._paperEntry;
+        if (!entry || !entry.pdf_path) return;
+        var linkText = entry.pdf_path;
+        if (page != null) {
+            linkText = entry.pdf_path + '#page=' + page;
+        }
+        if (this.app && this.app.workspace && this.app.workspace.openLinkText) {
+            this.app.workspace.openLinkText(linkText, '');
+        }
+    }
+
+    _applyCardNavigationState(nextState) {
+        this._navigationState = nextState;
+        var cards = this.contentEl.querySelectorAll('[data-card-id]');
+        for (var ci = 0; ci < cards.length; ci++) {
+            var cardEl = cards[ci];
+            var cid = cardEl.getAttribute('data-card-id');
+            if (cid === nextState.selectedCardId) {
+                cardEl.setAttribute('aria-selected', 'true');
+            } else {
+                cardEl.setAttribute('aria-selected', 'false');
+            }
+        }
+        if (nextState.sourceFocusTargetId && nextState.navSource === 'card') {
+            var targetEl = this.contentEl.querySelector('[data-card-id="' + nextState.sourceFocusTargetId + '"]');
+            if (targetEl) {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    }
+
+    _renderLoadedCanvas(sourceInputs) {
+        var canvas = require('./src/canvas');
+        var contentEl = this.contentEl;
+        contentEl.empty();
+        contentEl.addClass('paperforge-reading-canvas-view');
+        var entry = this._paperEntry;
+        if (!entry) return;
+        var sourceModel = canvas.buildCanvasSourceModel(entry, sourceInputs || {});
+        var sourceBlocks = sourceModel && sourceModel.text
+            ? canvas.buildSourceBlocks(sourceModel.text, sourceModel.sourceKind)
+            : [];
+        var annState = { state: 'ready', paperKey: this._paperKey, annotations: [] };
+        var vm = canvas.buildCanvasCardViewModel(annState, { sourceModel: sourceModel });
+        canvas.renderCanvasView(contentEl, vm);
+        canvas.renderCanvasSourceSurface(contentEl, sourceBlocks, (vm.cards || []).map(function (c) { return c.anchor; }));
+        this._vm = vm;
+        this._navigationState = canvas.createInitialNavState();
+        this._initDelegatedEvents(contentEl);
     }
 
     /**
