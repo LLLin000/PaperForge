@@ -11,96 +11,11 @@
  * @module canvas/view-model
  */
 
-// ── Internal reading-order sort (mirrors testable.js algorithm) ──
-//
-// This is a standalone implementation used by view-model.js without
-// importing src/testable.js (which contains unrelated Node runtime code).
-// Tests may import sortAnnotationsForReadingOrder from testable.js to
-// prove parity.
-
-/**
- * Stable identity for a normalized annotation row.
- *
- * Mirrors getAnnotationIdentity() from src/testable.js without importing it.
- *
- * @param {object|null} row - Normalized annotation row.
- * @returns {string} Stable identity string.
- */
-function _getCardIdentity(row) {
-    if (!row) return '';
-    const p = (row.provenance || {});
-    const loc = (row.pdfLocation || {});
-    const d = (row.display || {});
-
-    if (p.sourceAnnotationKey) return String(p.sourceAnnotationKey);
-    if (loc.rowId) return String(loc.rowId);
-    if (p.source) return p.source + '|' + (p.sourceAttachmentKey || '') + '|' + (d.page != null ? d.page : '') + '|' + (loc.sortIndex != null ? loc.sortIndex : 0);
-    return 'row|' + (d.page != null ? d.page : '') + '|' + (loc.sortIndex != null ? loc.sortIndex : 0);
-}
-
-/**
- * Compare two normalized rows by reading order.
- *
- * Precedence: page index → sortIndex → stable identity.
- *
- * @param {object} a - First row.
- * @param {object} b - Second row.
- * @returns {number} -1, 0, or 1.
- */
-function _compareRowsByReadingOrder(a, b) {
-    const locA = (a && a.pdfLocation) || {};
-    const locB = (b && b.pdfLocation) || {};
-
-    // Page index (null/missing sorts last)
-    const pageA = locA.pageIndex != null ? locA.pageIndex : Number.MAX_SAFE_INTEGER;
-    const pageB = locB.pageIndex != null ? locB.pageIndex : Number.MAX_SAFE_INTEGER;
-    if (pageA !== pageB) return pageA - pageB;
-
-    // sortIndex within page
-    const sortA = locA.sortIndex != null ? locA.sortIndex : Number.MAX_SAFE_INTEGER;
-    const sortB = locB.sortIndex != null ? locB.sortIndex : Number.MAX_SAFE_INTEGER;
-    if (sortA !== sortB) return sortA - sortB;
-
-    // Stable identity tiebreaker
-    const idA = _getCardIdentity(a);
-    const idB = _getCardIdentity(b);
-    if (idA < idB) return -1;
-    if (idA > idB) return 1;
-    return 0;
-}
-
-/**
- * Sort rows by reading order without mutating the input.
- *
- * @param {Array<object>} rows - Normalized annotation rows.
- * @returns {Array<object>} New sorted array.
- */
-function _sortRowsForReadingOrder(rows) {
-    if (!Array.isArray(rows)) return [];
-    const copy = rows.slice();
-    copy.sort(_compareRowsByReadingOrder);
-    return copy;
-}
-
-/**
- * Assign sorted card objects to left/right lanes by alternation.
- *
- * @param {Array<object>} cards - Card objects (already in desired order).
- * @returns {{ left: Array<object>, right: Array<object> }}
- */
-function _assignCardsToLanes(cards) {
-    const lanes = { left: [], right: [] };
-    if (!Array.isArray(cards)) return lanes;
-
-    cards.forEach(function (card, index) {
-        const lane = index % 2 === 0 ? 'left' : 'right';
-        card.lane = lane;
-        card.laneIndex = Math.floor(index / 2);
-        lanes[lane].push(card);
-    });
-
-    return lanes;
-}
+const {
+    sortCanvasCardsForReadingOrder,
+    assignCanvasCardsToLanes,
+    getCardIdentity,
+} = require('./layout');
 
 // ── Preview metadata ──
 
@@ -171,7 +86,7 @@ function buildCanvasCard(row) {
     const selectedText = display.selectedText != null ? String(display.selectedText) : '';
     const comment = display.comment != null ? String(display.comment) : '';
 
-    const id = _getCardIdentity(row);
+    const id = getCardIdentity(row);
     const readOnly = !(provenance.isReadonly === false);
 
     return {
@@ -241,7 +156,7 @@ function buildCanvasCardViewModel(annotationState, options) {
     // ── Build cards if we have annotation rows ──
     function buildCards() {
         if (rows.length === 0) return [];
-        const sorted = _sortRowsForReadingOrder(rows);
+        const sorted = sortCanvasCardsForReadingOrder(rows);
         return sorted.map(function (row) {
             const card = buildCanvasCard(row);
             if (hasStale) card.stale = true;
@@ -289,7 +204,7 @@ function buildCanvasCardViewModel(annotationState, options) {
     // ── States with cards (ready, refreshing, stale) ──
     if (rawState === 'ready') {
         const cards = buildCards();
-        const lanes = cards.length > 0 ? _assignCardsToLanes(cards) : undefined;
+        const lanes = cards.length > 0 ? assignCanvasCardsToLanes(cards) : undefined;
 
         if (hasRefreshing) {
             return {

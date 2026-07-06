@@ -45,6 +45,13 @@ const {
     normalizeCanvasCardPreview,
 } = require('./view-model');
 
+const {
+    compareCanvasCardsByReadingOrder,
+    sortCanvasCardsForReadingOrder,
+    assignCanvasCardsToLanes,
+    getCardIdentity,
+} = require('./layout');
+
 module.exports = {
     // ── Context helpers ──
     buildCanvasContextFromEntry,
@@ -75,4 +82,10 @@ module.exports = {
     buildCanvasCard,
     buildCanvasCardViewModel,
     normalizeCanvasCardPreview,
+
+    // ── Layout helpers (ANN11) ──
+    compareCanvasCardsByReadingOrder,
+    sortCanvasCardsForReadingOrder,
+    assignCanvasCardsToLanes,
+    getCardIdentity,
 };
