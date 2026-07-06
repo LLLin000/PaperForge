@@ -14,6 +14,11 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const CANVAS_RENDER = await import('../src/canvas/render.js');
 const {
@@ -491,7 +496,8 @@ describe('ANN12-02 Task 3 — CSS selector presence in styles.css', () => {
 
     beforeAll(() => {
         try {
-            cssContent = fs.readFileSync(new URL('../styles.css', import.meta.url), 'utf-8');
+            var cssPath = path.resolve(__dirname, '..', 'styles.css');
+            cssContent = fs.readFileSync(cssPath, 'utf-8');
         } catch (e) {
             cssContent = '';
         }
