@@ -11,7 +11,7 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 - [x] **Phase ANN10: Canvas Data Contract and View Registration** - Add a PaperForge Reading Canvas view shell with explicit paper identity and reusable module seams.
 - [x] **Phase ANN11: Annotation Card View-Models and Layout** - Project existing annotations into read-only card models and deterministic side lanes.
 - [ ] **Phase ANN12: Controlled Reading Surface and Source Anchors** - Render a PaperForge-owned central source surface with exact, page-level, and unresolved anchors.
-- [ ] **Phase ANN13: Bidirectional Navigation and Fallback Paths** - Connect cards and source anchors through focus/scroll behavior while preserving v0.2 PDF navigation fallback.
+- [x] **Phase ANN13: Bidirectional Navigation and Fallback Paths** - Connect cards and source anchors through focus/scroll behavior while preserving v0.2 PDF navigation fallback.
 - [ ] **Phase ANN14: Focused Connector Layer and Visual Polish** - Draw guarded focused connectors and harden responsive/readable canvas presentation.
 - [ ] **Phase ANN15: Canvas Verification Gate and Live Harness Record** - Prove automated canvas behavior, preserve v0.2 gates, and record live Obsidian confidence.
 
@@ -96,7 +96,12 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 4. Selection state clears correctly on paper change, refresh, stale load, and teardown.
 5. Keyboard focus order and basic accessibility states work for cards, anchors, and fallback actions.
 
-**Plans:** TBD during phase planning.
+**Plans:** 4 plans
+
+- [x] `ANN13-01-PLAN.md` — Pure navigation state reducers (navigation.js + tests).
+- [x] `ANN13-02-PLAN.md` — Fallback eligibility helper and card fallback metadata.
+- [x] `ANN13-03-PLAN.md` — DOM hooks, ARIA, keyboard targets, fallback button rendering.
+- [x] `ANN13-04-PLAN.md` — Runtime integration, event delegation, lifecycle, explicit PDF opening.
 
 ### Phase ANN14: Focused Connector Layer and Visual Polish
 

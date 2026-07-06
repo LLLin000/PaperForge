@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: annotation v0.3
 milestone_name: milestone
 status: executing
-stopped_at: Phase ANN12 complete (source DOM rendering, anchor visual states, CSS + safety)
-last_updated: "2026-07-06T12:15:00.000Z"
-last_activity: 2026-07-06 -- ANN12-02 executed: source DOM rendering and anchor visual states
+stopped_at: Phase ANN13 complete (bidirectional navigation, fallback paths, lifecycle)
+last_updated: "2026-07-06T19:20:00.000Z"
+last_activity: "2026-07-06 -- ANN13-04 executed: runtime event delegation, lifecycle, fallback opening"
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 6 (ANN12 has 2)
-  completed_plans: 6
-  percent: 55
+  completed_phases: 4
+  total_plans: 10 (ANN12 has 2, ANN13 has 4)
+  completed_plans: 10
+  percent: 70
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-02)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Phase ANN12 — Controlled Reading Surface and Source Anchors
+**Current focus:** Phase ANN13 — Bidirectional Navigation and Fallback Paths
 
 ## Current Position
 
-Phase: ANN12 (Controlled Reading Surface and Source Anchors) — COMPLETE
-Plan: 2 of 2 (next: ANN13-01)
-Status: ANN12-02 complete — source DOM rendering, anchor visual states, CSS, runtime loading
-Last activity: 2026-07-06 -- ANN12-02 executed: source DOM rendering and anchor visual states
+Phase: ANN13 (Bidirectional Navigation and Fallback Paths) — COMPLETE
+Plan: 4 of 4 (next: ANN14-01)
+Status: All 4 plans executed — navigation reducers, fallback eligibility, DOM hooks, runtime integration
+Last activity: 2026-07-06 -- ANN13-04 executed: runtime event delegation, lifecycle, fallback opening
 
 ## Performance Metrics
 
