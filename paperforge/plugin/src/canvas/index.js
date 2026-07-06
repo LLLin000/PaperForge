@@ -39,6 +39,12 @@ const {
     renderCanvasStaleBanner,
 } = require('./render');
 
+const {
+    buildCanvasCard,
+    buildCanvasCardViewModel,
+    normalizeCanvasCardPreview,
+} = require('./view-model');
+
 module.exports = {
     // ── Context helpers ──
     buildCanvasContextFromEntry,
@@ -64,4 +70,9 @@ module.exports = {
     renderCanvasMissingSource,
     renderCanvasUnsupported,
     renderCanvasStaleBanner,
+
+    // ── Card view-models (ANN11) ──
+    buildCanvasCard,
+    buildCanvasCardViewModel,
+    normalizeCanvasCardPreview,
 };
