@@ -439,9 +439,9 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         doc_structure: dict,
         ocr_meta: dict,
         source_pdf_path: Path | None,
-    ) -> str:
+    ) -> tuple["RenderOutput", str]:
         """Extract object artifacts, render fulltext markdown, build health report.
-        Returns markdown string."""
+        Returns (RenderOutput, health_overall) tuple."""
         from paperforge.worker.ocr_objects import (
             extract_and_write_objects,
             _resolve_object_crop_pdf_path,
@@ -468,13 +468,13 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             use_disk_page_cache=False,
         )
 
-        from paperforge.worker.ocr_render import render_fulltext_markdown, write_render_outputs
+        from paperforge.worker.ocr_render import RenderOutput, render_fulltext_markdown, write_render_outputs
 
         rebuild_page_count = ocr_meta.get("page_count", 0) or 0
         if not rebuild_page_count:
             all_rebuild_pages = {int(b["page"]) for b in structured if b.get("page")}
             rebuild_page_count = max(all_rebuild_pages) if all_rebuild_pages else 0
-        markdown = render_fulltext_markdown(
+        rendered = render_fulltext_markdown(
             structured_blocks=structured,
             resolved_metadata=resolved,
             figure_inventory=figure_inventory,
@@ -482,8 +482,8 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             page_count=rebuild_page_count,
             document_structure=doc_structure,
             reader_payload=reader_payload,
+            return_events=True,
         )
-
         from paperforge.worker.ocr_health import build_ocr_health, build_ocr_raw_integrity_health, write_ocr_health
 
         health_report = build_ocr_health(
@@ -494,7 +494,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             table_inventory=table_inventory,
             doc_structure=doc_structure,
             reader_payload=reader_payload,
-            rendered_markdown=markdown,
+            rendered_markdown=rendered.markdown,
         )
         health_report["ocr_raw_integrity"] = build_ocr_raw_integrity_health(all_raw_blocks)
         write_ocr_health(paper_root / "health", health_report)
@@ -503,13 +503,13 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
 
         write_decision_log(paper_root / "health" / "decision_log.jsonl", collect_decisions(structured))
 
-        return markdown, health_report.get("overall", "unknown")
+        return rendered, health_report.get("overall", "unknown")
 
     # ── Phase 5: indexes, version flags, write meta ──
     def _phase5_finalize(
         resolved: dict,
         structured: list[dict],
-        markdown: str,
+        rendered: "RenderOutput",
         span_meta_patch: dict,
         health_overall: str = "unknown",
     ) -> None:
@@ -524,7 +524,11 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
 
         from paperforge.retrieval.structure_tree import build_structure_tree, write_structure_tree
 
-        structure_tree = build_structure_tree(structured)
+        structure_tree = build_structure_tree(
+            heading_events=rendered.heading_events,
+            emitted_block_events=rendered.emitted_block_events,
+            structured_blocks=structured,
+        )
         write_structure_tree(paper_root / "index", structure_tree)
 
         meta = ocr_meta
@@ -537,7 +541,9 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         meta = write_render_outputs(
             render_root=paper_root / "render",
             user_fulltext=artifacts.compat_fulltext,
-            markdown=markdown,
+            markdown=rendered.markdown,
+            heading_events=rendered.heading_events,
+            emitted_block_events=rendered.emitted_block_events,
             meta=meta,
             rebuild_increment=True,
         )
@@ -565,12 +571,12 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     table_inventory = phase3_result["table_inventory"]
     reader_payload = phase3_result["reader_payload"]
 
-    markdown, health_overall = _phase4_render_health(
+    rendered, health_overall = _phase4_render_health(
         structured, resolved, figure_inventory, table_inventory,
         reader_payload, doc_structure, ocr_meta, source_pdf_path,
     )
 
-    _phase5_finalize(resolved, structured, markdown, span_meta_patch, health_overall=health_overall)
+    _phase5_finalize(resolved, structured, rendered, span_meta_patch, health_overall=health_overall)
     return {"key": key, "status": "ok"}
 def _run_parallel_rebuild(vault: Path, keys: list[str], workers: int, checkpoint_dir: Path | None) -> list[dict]:
     """Run rebuild in parallel using a process pool."""

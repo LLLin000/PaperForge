@@ -5,7 +5,7 @@ import sqlite3
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SCHEMA_VERSION = 3  # Bump from 2 for unit_kind + object_units schema changes
+CURRENT_SCHEMA_VERSION = 4  # Bump from 3 for section_path_json, section_level, section_title, part_ordinal
 
 CREATE_META = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -180,8 +180,12 @@ CREATE TABLE IF NOT EXISTS body_units (
     unit_id TEXT PRIMARY KEY,
     paper_id TEXT NOT NULL,
     section_path TEXT NOT NULL,
+    section_path_json TEXT NOT NULL DEFAULT '[]',
+    section_level INTEGER NOT NULL DEFAULT 0,
+    section_title TEXT NOT NULL DEFAULT '',
     unit_text TEXT NOT NULL,
     unit_kind TEXT NOT NULL DEFAULT 'body',
+    part_ordinal INTEGER NOT NULL DEFAULT 0,
     page_span_json TEXT NOT NULL,
     block_span_json TEXT NOT NULL,
     token_estimate INTEGER NOT NULL,
@@ -241,6 +245,18 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         logger.info("Migrating schema v%s -> v3: rebuilding body_units, body_units_fts, object_units", current_version)
         for table in ("body_units", "body_units_fts", "object_units"):
             conn.execute(f"DROP TABLE IF EXISTS {table};")
+    if current_version < 4:
+        logger.info("Migrating schema v%s -> v4: adding body_units columns", current_version)
+        for col_sql in [
+            "ALTER TABLE body_units ADD COLUMN section_path_json TEXT NOT NULL DEFAULT '[]'",
+            "ALTER TABLE body_units ADD COLUMN section_level INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE body_units ADD COLUMN section_title TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE body_units ADD COLUMN part_ordinal INTEGER NOT NULL DEFAULT 0",
+        ]:
+            try:
+                conn.execute(col_sql)
+            except Exception:
+                pass  # column may already exist
 
     conn.execute(CREATE_BODY_UNITS)
     conn.execute(CREATE_BODY_UNITS_FTS)

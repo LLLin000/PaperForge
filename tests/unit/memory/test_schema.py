@@ -55,7 +55,7 @@ def test_get_schema_version_returns_zero_when_no_meta():
         db_path = Path(tmp.name)
     try:
         conn = get_connection(db_path)
-        ensure_schema(conn)
+        # No ensure_schema — meta table doesn't exist
         assert get_schema_version(conn) == 0
         conn.close()
     finally:
@@ -69,7 +69,7 @@ def test_get_schema_version_returns_stored_value():
         conn = get_connection(db_path)
         ensure_schema(conn)
         conn.execute(
-            "INSERT INTO meta (key, value) VALUES ('schema_version', '1')"
+            "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1')"
         )
         conn.commit()
         assert get_schema_version(conn) == 1
@@ -86,7 +86,7 @@ def test_schema_version_mismatch_triggers_rebuild_semantics():
         conn = get_connection(db_path)
         ensure_schema(conn)
         conn.execute(
-            "INSERT INTO meta (key, value) VALUES ('schema_version', '99')"
+            "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '99')"
         )
         conn.commit()
         stored = get_schema_version(conn)

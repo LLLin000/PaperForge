@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+from paperforge.worker.ocr_render import RenderOutput
+
 
 
 def test_rebuild_selector_only_targets_derived_stale_papers() -> None:
@@ -215,8 +217,7 @@ def test_run_derived_rebuild_skips_span_backfill_when_valid(tmp_path: Path, monk
     monkeypatch.setattr("paperforge.worker.ocr_tables.build_table_inventory", lambda *args, **kwargs: {"tables": [], "unmatched_assets": []})
     monkeypatch.setattr("paperforge.worker.ocr_tables.write_back_table_roles", lambda *args, **kwargs: None)
     monkeypatch.setattr("paperforge.worker.ocr_tables.write_table_inventory", lambda *args, **kwargs: None)
-    monkeypatch.setattr("paperforge.worker.ocr_objects.extract_and_write_objects", lambda *args, **kwargs: None)
-    monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *args, **kwargs: "")
+    monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *args, **kwargs: RenderOutput(markdown="", heading_events=[], emitted_block_events=[]))
     monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *args, meta=None, **kwargs: dict(meta) if meta else {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_health", lambda *args, **kwargs: {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_raw_integrity_health", lambda *args, **kwargs: {})
@@ -266,8 +267,7 @@ def test_run_derived_rebuild_records_unavailable_pdf_missing_without_rerun(tmp_p
     monkeypatch.setattr("paperforge.worker.ocr_tables.build_table_inventory", lambda *args, **kwargs: {"tables": [], "unmatched_assets": []})
     monkeypatch.setattr("paperforge.worker.ocr_tables.write_back_table_roles", lambda *args, **kwargs: None)
     monkeypatch.setattr("paperforge.worker.ocr_tables.write_table_inventory", lambda *args, **kwargs: None)
-    monkeypatch.setattr("paperforge.worker.ocr_objects.extract_and_write_objects", lambda *args, **kwargs: None)
-    monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *args, **kwargs: "")
+    monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *args, **kwargs: RenderOutput(markdown="", heading_events=[], emitted_block_events=[]))
     monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *args, meta=None, **kwargs: dict(meta) if meta else {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_health", lambda *args, **kwargs: {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_raw_integrity_health", lambda *args, **kwargs: {})
@@ -526,8 +526,7 @@ def test_run_derived_rebuild_for_keys_still_uses_public_build_table_inventory(tm
     monkeypatch.setattr("paperforge.worker.ocr_figure_reader.synthesize_reader_figures", lambda *a, **kw: {})
     monkeypatch.setattr("paperforge.worker.ocr_tables.write_back_table_roles", lambda *a, **kw: None)
     monkeypatch.setattr("paperforge.worker.ocr_tables.write_table_inventory", lambda *a, **kw: None)
-    monkeypatch.setattr("paperforge.worker.ocr_objects.extract_and_write_objects", lambda *a, **kw: None)
-    monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *a, **kw: "")
+    monkeypatch.setattr("paperforge.worker.ocr_render.render_fulltext_markdown", lambda *a, **kw: RenderOutput(markdown="", heading_events=[], emitted_block_events=[]))
     monkeypatch.setattr("paperforge.worker.ocr_render.write_render_outputs", lambda *a, meta=None, **kw: dict(meta) if meta else {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_health", lambda *a, **kw: {})
     monkeypatch.setattr("paperforge.worker.ocr_health.build_ocr_raw_integrity_health", lambda *a, **kw: {})

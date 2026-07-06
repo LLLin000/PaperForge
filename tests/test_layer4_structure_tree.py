@@ -1,9 +1,6 @@
-"""Tests for Layer 4 structure tree builder and paper navigation."""
+"""Tests for Layer 4 structure tree builder using heading_events + emitted_block_events."""
 
 from __future__ import annotations
-
-from pathlib import Path
-from unittest.mock import patch
 
 from paperforge.retrieval.structure_tree import (
     build_structure_tree,
@@ -12,71 +9,90 @@ from paperforge.retrieval.structure_tree import (
 )
 
 
-def test_build_structure_tree_creates_section_nodes_from_headings():
-    structured_blocks = [
-        {"paper_id": "ABCD1234", "page": 1, "block_id": "b1", "role": "section_heading", "text": "Methods"},
-        {"paper_id": "ABCD1234", "page": 1, "block_id": "b2", "role": "body_paragraph", "text": "We recruited 30 patients."},
-    ]
-    tree = build_structure_tree(structured_blocks)
+def _h(emitted_order, markdown_level, title, page=1, block_id=None):
+    return {
+        "line_number": emitted_order * 10,
+        "markdown_level": markdown_level,
+        "title": title,
+        "page": page,
+        "block_id": block_id or f"h_{emitted_order}",
+        "emitted_order": emitted_order,
+    }
+
+
+def _e(emitted_order, block_id, role="body_paragraph", page=1, emitted_as="body"):
+    return {
+        "emitted_order": emitted_order,
+        "line_start": emitted_order * 10,
+        "line_end": emitted_order * 10 + 5,
+        "page": page,
+        "block_id": block_id,
+        "role": role,
+        "emitted_as": emitted_as,
+    }
+
+
+def test_single_heading_with_body():
+    heading_events = [_h(0, 2, "Methods", block_id="b1")]
+    emitted = [_e(0, "b1"), _e(1, "b2")]
+    structured = [{"paper_id": "ABCD1234"}]
+    tree = build_structure_tree(heading_events, emitted, structured)
     assert tree["paper_id"] == "ABCD1234"
     assert len(tree["nodes"]) == 1
-    assert tree["nodes"][0]["title"] == "Methods"
-    assert tree["nodes"][0]["section_path"] == ["Methods"]
-    assert tree["nodes"][0]["level"] == 1
-    assert tree["nodes"][0]["page_span"] == [1, 1]
+    n = tree["nodes"][0]
+    assert n["title"] == "Methods"
+    assert n["level"] == 2
+    assert n["block_id"] == "b1"
+    assert set(n["subtree_block_ids"]) == {"b1", "b2"}
+    assert n["own_block_ids"] == ["b2"]
 
 
-def test_build_structure_tree_handles_subsection():
-    structured_blocks = [
-        {"paper_id": "ABCD1234", "page": 1, "block_id": "b1", "role": "section_heading", "text": "Methods"},
-        {"paper_id": "ABCD1234", "page": 1, "block_id": "b2", "role": "body_paragraph", "text": "We recruited 30 patients."},
-        {"paper_id": "ABCD1234", "page": 2, "block_id": "b3", "role": "subsection_heading", "text": "Statistical Analysis"},
-        {"paper_id": "ABCD1234", "page": 2, "block_id": "b4", "role": "body_paragraph", "text": "We used t-tests."},
+def test_h2_h3_nesting():
+    heading_events = [
+        _h(0, 2, "Methods", block_id="b1"),
+        _h(2, 3, "Statistics", block_id="b3"),
     ]
-    tree = build_structure_tree(structured_blocks)
-    assert tree["paper_id"] == "ABCD1234"
+    emitted = [_e(0, "b1"), _e(1, "b2"), _e(2, "b3"), _e(3, "b4")]
+    structured = [{"paper_id": "P001"}]
+    tree = build_structure_tree(heading_events, emitted, structured)
+    assert len(tree["nodes"]) == 1
+    parent = tree["nodes"][0]
+    child = parent["children"][0]
+    assert parent["title"] == "Methods"
+    assert child["title"] == "Statistics"
+    assert parent["own_block_ids"] == ["b2"]
+    assert child["own_block_ids"] == ["b4"]
+
+
+def test_h2_h3_h2_sibling():
+    heading_events = [
+        _h(0, 2, "Methods", block_id="b1"),
+        _h(2, 3, "Statistics", block_id="b3"),
+        _h(4, 2, "Results", block_id="b5"),
+    ]
+    emitted = [
+        _e(0, "b1"), _e(1, "b2"),
+        _e(2, "b3"), _e(3, "b4"),
+        _e(4, "b5"), _e(5, "b6"),
+    ]
+    structured = [{"paper_id": "P002"}]
+    tree = build_structure_tree(heading_events, emitted, structured)
     assert len(tree["nodes"]) == 2
-    assert tree["nodes"][1]["title"] == "Statistical Analysis"
-    assert tree["nodes"][1]["level"] == 2
-    assert tree["nodes"][1]["section_path"] == ["Methods", "Statistical Analysis"]
+    assert tree["nodes"][0]["title"] == "Methods"
+    assert tree["nodes"][1]["title"] == "Results"
+    assert len(tree["nodes"][0]["children"]) == 1
 
 
-def test_build_structure_tree_extends_page_span():
-    structured_blocks = [
-        {"paper_id": "X", "page": 1, "block_id": "s1", "role": "section_heading", "text": "Introduction"},
-        {"paper_id": "X", "page": 1, "block_id": "p1", "role": "body_paragraph", "text": "Para 1"},
-        {"paper_id": "X", "page": 2, "block_id": "p2", "role": "body_paragraph", "text": "Para 2"},
-        {"paper_id": "X", "page": 3, "block_id": "p3", "role": "body_paragraph", "text": "Para 3"},
-    ]
-    tree = build_structure_tree(structured_blocks)
+def test_page_span_extended_from_emitted_blocks():
+    heading_events = [_h(0, 2, "Intro", page=1, block_id="b1")]
+    emitted = [_e(0, "b1", page=1), _e(1, "b2", page=2), _e(2, "b3", page=3)]
+    structured = [{"paper_id": "P003"}]
+    tree = build_structure_tree(heading_events, emitted, structured)
     assert tree["nodes"][0]["page_span"] == [1, 3]
 
 
-def test_build_structure_tree_handles_introduction_and_abstract_headings():
-    blocks = [
-        {"paper_id": "Y", "page": 1, "block_id": "a1", "role": "abstract_heading", "text": "Abstract"},
-        {"paper_id": "Y", "page": 1, "block_id": "b1", "role": "abstract_body", "text": "Summary here."},
-        {"paper_id": "Y", "page": 1, "block_id": "i1", "role": "introduction_heading", "text": "Introduction"},
-        {"paper_id": "Y", "page": 2, "block_id": "b2", "role": "body_paragraph", "text": "Background."},
-    ]
-    tree = build_structure_tree(blocks)
-    assert len(tree["nodes"]) == 2
-    assert tree["nodes"][0]["title"] == "Abstract"
-    assert tree["nodes"][1]["title"] == "Introduction"
-    assert tree["nodes"][0]["kind"] == "section"
-
-
-def test_build_structure_tree_ignores_heading_roles_with_empty_text():
-    blocks = [
-        {"paper_id": "Z", "page": 1, "block_id": "h1", "role": "section_heading", "text": ""},
-        {"paper_id": "Z", "page": 1, "block_id": "b1", "role": "body_paragraph", "text": "Some text."},
-    ]
-    tree = build_structure_tree(blocks)
-    assert len(tree["nodes"]) == 0
-
-
-def test_build_structure_tree_empty_input():
-    tree = build_structure_tree([])
+def test_empty_heading_events():
+    tree = build_structure_tree([], [], [])
     assert tree["paper_id"] == ""
     assert tree["nodes"] == []
 
@@ -102,13 +118,45 @@ def test_summarize_role_index_counts_roles():
     assert summary["role_counts"]["figure_captions"] == 1
 
 
-def test_build_structure_tree_block_span_accumulates():
-    blocks = [
-        {"paper_id": "P", "page": 1, "block_id": "sec1", "role": "section_heading", "text": "Results"},
-        {"paper_id": "P", "page": 1, "block_id": "r1", "role": "body_paragraph", "text": "Result A"},
-        {"paper_id": "P", "page": 2, "block_id": "r2", "role": "body_paragraph", "text": "Result B"},
+def test_own_block_ids_excludes_children():
+    heading_events = [
+        _h(0, 2, "Discussion", block_id="d1"),
+        _h(2, 3, "Limitation", block_id="d3"),
     ]
-    tree = build_structure_tree(blocks)
-    assert len(tree["nodes"][0]["block_span"]) == 3
-    assert [1, "sec1"] in tree["nodes"][0]["block_span"]
-    assert [2, "r2"] in tree["nodes"][0]["block_span"]
+    emitted = [_e(0, "d1"), _e(1, "d2"), _e(2, "d3"), _e(3, "d4")]
+    structured = [{"paper_id": "P004"}]
+    tree = build_structure_tree(heading_events, emitted, structured)
+    parent = tree["nodes"][0]
+    child = parent["children"][0]
+    assert parent["own_block_ids"] == ["d2"]
+    assert child["own_block_ids"] == ["d4"]
+    assert parent["subtree_block_ids"] == ["d1", "d2", "d3", "d4"]
+    assert child["subtree_block_ids"] == ["d3", "d4"]
+
+
+def test_summary_in_last_child_scope():
+    """Summary after last child falls within child's scope (no boundary)."""
+    heading_events = [
+        _h(0, 2, "Discussion", block_id="d1"),
+        _h(2, 3, "Mechanism", block_id="d3"),
+    ]
+    emitted = [
+        _e(0, "d1"), _e(1, "d2"),
+        _e(2, "d3"), _e(3, "d4"), _e(4, "d5"),
+    ]
+    structured = [{"paper_id": "P005"}]
+    tree = build_structure_tree(heading_events, emitted, structured)
+    parent = tree["nodes"][0]
+    child = parent["children"][0]
+    assert parent["own_block_ids"] == ["d2"]
+    assert child["own_block_ids"] == ["d4", "d5"]
+
+
+def test_rendered_order_differs_from_structured_order():
+    heading_events = [_h(1, 2, "Results", block_id="b1")]
+    emitted = [_e(0, "b3", page=1), _e(1, "b1", page=1), _e(2, "b2", page=1)]
+    structured = [{"paper_id": "P006"}]
+    tree = build_structure_tree(heading_events, emitted, structured)
+    assert "b3" not in tree["nodes"][0]["subtree_block_ids"]
+    assert "b1" in tree["nodes"][0]["subtree_block_ids"]
+    assert "b2" in tree["nodes"][0]["subtree_block_ids"]

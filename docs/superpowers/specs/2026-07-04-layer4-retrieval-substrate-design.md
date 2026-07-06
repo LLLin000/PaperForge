@@ -87,6 +87,43 @@ Layer 4 不负责 PaperCard / SubmethodCard 这类理解层资产。那些内容
 5. **Unified surface, explicit routing**：对 agent 暴露少量统一子命令，内部做明确意图路由，而不是黑箱混查。
 6. **Decompose before concluding absence**：对于找文章任务，必须先拆 query、多路组合检索，禁止一次零结果就宣告不存在。
 
+## 设计决策：Chunker 切换策略
+
+### 背景
+当前 `memory/chunker.py` 仍使用固定 3 段一组的文本分块方式，且在向量构建（`embedding/builder.py`）中直接调用。但新 rebuild 系统产出的 fulltext 附带完整的结构化产物（structure-tree.json + structured-blocks.json），可以从中提取受章节/边界约束的 body units，作为更高质量的检索单元。
+
+### 约束
+库中同时存在两种 fulltext 来源：
+- **旧版 fulltext**：来自初始 `do_ocr`，只有 `fulltext.md`，无结构化角色信息
+- **新版 rebuild fulltext**：来自 `ocr rebuild`，附带 `structure/blocks.structured.jsonl`（块已过角色判断）+ `index/structure-tree.json`
+
+不能要求用户对整个库统一做 rebuild。切换必须是逐论文的。
+
+### 决策
+embedding 的切块逻辑根据每篇论文的 **最终角色确认产物** 做切换：
+
+| 检测信号 | 含义 | 切块策略 |
+|---------|------|---------|
+| `structure/blocks.structured.jsonl` 存在 | 该论文经过 rebuild，块已通过角色判断 | 从 body_units 构建 chunks（每 unit = 一个 chunk） |
+| 该文件不存在 | 旧版 fulltext，无角色信息 | 回退到 `memory/chunker.py` 的三段一组文本分块 |
+
+**不引入版本标号**：直接用文件存在性判断，与 `memory/builder.py` 现有检测逻辑一致。
+
+### 实现要点
+
+**检测点：** 在 `embedding/builder.py` 中，对每篇论文检查 `{ocr_dir}/structure/blocks.structured.jsonl` 是否存在。
+若存在，走新切块路径；否则走旧路径。与 `memory/builder.py` 的检测逻辑完全一致（见 `builder.py:284-285`）。
+1. 读取 `structure-tree.json` 和 `structure/blocks.structured.jsonl`
+2. 调用 `retrieval/units.build_body_units()` 得到 body units
+3. 每个 body unit 的 `unit_text` 作为一个 chunk
+4. chunk metadata 映射：`section=section_path`、`page_number=page_span[0]`、`chunk_index=unit_id`、`token_estimate` 复用原逻辑
+5. 写入向量库的 document = unit_text
+
+**旧回退路径（无结构树时）：**
+维持现有 `memory/chunker.py` → `embedding/builder.embed_paper()` 不变
+
+**不回溯旧论文：** 用户不主动触发 rebuild 的论文继续用旧 chunker，不做转换。重建时自动获得新路径。
+
 ## 非目标
 
 本层明确不做：
@@ -123,10 +160,9 @@ Layer 4 明确定义为两个模式：
 ### Retrieval Unit
 可被索引、召回、展示的最小检索单元。不是任意三段文本，而是带类型的论文原生对象。
 
-### Body Unit
-正文检索单元。来源于章节树、section/subsection 边界与正文 families。服务跨论文正文证据召回。
+### Body Unit ✅
 
-### Object Unit
+### Object Unit ✅
 对象检索单元。包含：
 - Figure Unit
 - Table Unit
@@ -138,10 +174,10 @@ Layer 4 明确定义为两个模式：
 - section path
 - page span
 
-### Structure Tree
+### Structure Tree ✅
 论文目录结构。描述 section / subsection / object 在论文中的组织关系。是 Mode 2 的核心导航面，不是向量检索结果。
 
-### Structure Tree Builder
+### Structure Tree Builder ✅
 Structure Tree 不是当前 OCR 的现成产物，而是 Layer 4 需要新增的中间层。它的最低构建链路是：
 
 ```text
@@ -174,9 +210,9 @@ structured_blocks / role-index
 }
 ```
 
-### Paper Manifest
-构建控制面资产，记录每篇论文当前 retrieval 产物与其输入、策略版本的绑定关系。
 
+### Paper Manifest ✅
+构建控制面资产，记录每篇论文当前 retrieval 产物与其输入、策略版本的绑定关系。
 最少字段：
 - `paper_id`
 - `ocr_result_hash`
@@ -237,10 +273,10 @@ paper_id:body:node_id:startPage-startBlock:endPage-endBlock
 ### 物理存储规则
 
 默认 SQLite 层：
-- `paper_fts` —— 只服务 metadata lookup / paper lookup
-- `body_units` table
-- `body_units_fts` virtual table
-- `object_units` table
+- ✅ `paper_fts` —— 只服务 metadata lookup / paper lookup
+- ✅ `body_units` table
+- ✅ `body_units_fts` virtual table
+- ✅ `object_units` table
 - `object_units_fts` —— optional / later
 
 Vector 层：
@@ -278,19 +314,19 @@ Layer 4 必须显式承认默认能力层与增强能力层的区别：
 ### Agent-facing surface
 
 对 agent 暴露四个统一子命令：
-- `paperforge paper-lookup`
-- `paperforge content-discovery`
-- `paperforge paper-navigation`
-- `paperforge scoped-fetch`
+- ✅ `paperforge paper-lookup`
+- ✅ `paperforge content-discovery`
+- ✅ `paperforge paper-navigation`
+- ✅ `paperforge scoped-fetch`
 
 这四个命令共享同一个内部 routing / resolution core，但对外保持显式 intent，而不是黑箱混查。
 
 关键不在于把一切折叠成一个万能命令，而在于**agent 默认不再直接编排一堆底层 CLI**。
 
 兼容规则：
-- 现有 `search / retrieve / query-plan / paper-status / paper-context / context` 保留
-- 新四个命令是 agent-facing gateway surface
-- 旧命令作为 compatibility aliases / low-level diagnostics，不在 Layer 4 删除
+- ✅ 现有 `search / retrieve / query-plan / paper-status / paper-context / context` 保留
+- ✅ 新四个命令是 agent-facing gateway surface
+- ✅ 旧命令作为 compatibility aliases / low-level diagnostics，不在 Layer 4 删除
 
 ### Internal arms
 
@@ -414,8 +450,8 @@ Do not introduce a second query decomposition implementation.
 只有多条高优先级路径都失败，才允许返回“暂未定位”。
 
 当前代码已有基础：
-- `QuerySignals` 已能拆 DOI / Zotero key / citation key / author tokens / year tokens / title-like tokens / content terms
-- `lookup_paper()` 已有 exact lookup、title token AND lookup、alias lookup
+- ✅ `QuerySignals` 已能拆 DOI / Zotero key / citation key / author tokens / year tokens / title-like tokens / content terms
+- ✅ `lookup_paper()` 已有 exact lookup、title token AND lookup、alias lookup
 
 Layer 4 需要补的是：
 - author/year 交集
@@ -518,30 +554,30 @@ Chroma 更适合作为：
 
 ## 分阶段迁移
 
-### Phase 1：Gateway over existing capabilities
+### Phase 1：Gateway over existing capabilities ✅
 先做统一入口和 routing shell，包装现有能力：
-- `paperforge paper-lookup` -> `lookup_paper()` / `paper-status` / `paper-context`
-- `paperforge content-discovery` -> metadata FTS + existing vector retrieve + warning
-- `paperforge paper-navigation` -> 暂时返回 `role-index` summary，不承诺 section tree
-- `paperforge scoped-fetch` -> 暂时支持 paper-level fulltext / block-id fetch
+- ✅ `paperforge paper-lookup` -> `lookup_paper()` / `paper-status` / `paper-context`
+- ✅ `paperforge content-discovery` -> metadata FTS + existing vector retrieve + warning
+- ✅ `paperforge paper-navigation` -> 暂时返回 `role-index` summary，不承诺 section tree
+- ✅ `paperforge scoped-fetch` -> 暂时支持 paper-level fulltext / block-id fetch
 
 此阶段的目标是解决“入口太碎”和 single-arm false absence，不强碰向量后端。
 
-### Phase 2：Structure Tree + BodyUnit FTS
+### Phase 2：Structure Tree + BodyUnit FTS ✅
 新增真正的 Layer 4 默认产物：
-- `structure-tree.json`
-- `body_units.jsonl`
-- `body_units_fts`
-- `object_units.jsonl`
-- `paper_manifest.json`
+- ✅ `structure-tree.json`
+- ⚠️ `body_units.jsonl`（在 memory DB 中，非独立 jsonl 文件）
+- ✅ `body_units_fts`
+- ⚠️ `object_units.jsonl`（在 memory DB 中）
+- ✅ `paper_manifest.json`（存储在 meta 表）
 
 UnitBuilder 输入源规则：
-- 优先 `structured_blocks`
-- `role-index` 只作辅助
-- `fulltext` 只作 fallback，不是主真相
+- ✅ 优先 `structured_blocks`
+- ✅ `role-index` 只作辅助
+- ✅ `fulltext` 只作 fallback，不是主真相
 
 ### Phase 3：Vector adapter
-把 Chroma 从“硬编码后端”降成“一个 backend adapter”。
+把 Chroma 从"硬编码后端"降成"一个 backend adapter"。
 
 当前 hard-coded 路径包括：
 - `embed_paper()` 直接调用 `get_collection()`
@@ -552,7 +588,7 @@ UnitBuilder 输入源规则：
 
 ### Phase 4：Lance backend 接入与对比
 在同一 retrieval contract 下，对比：
-- 命中质量
+
 - build 时间
 - 本地稳定性
 - agent 使用体验

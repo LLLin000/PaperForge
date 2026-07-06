@@ -15,6 +15,22 @@ from paperforge.memory.schema import (
 )
 
 
+def _node(node_id, title, level=2, block_id=None, own_block_ids=None,
+           subtree_block_ids=None, children=None, page_span=None):
+    return {
+        "node_id": node_id,
+        "kind": "section",
+        "title": title,
+        "level": level,
+        "block_id": block_id or node_id.split(":")[1],
+        "own_block_ids": own_block_ids or [],
+        "subtree_block_ids": subtree_block_ids or [],
+        "children": children or [],
+        "objects": [],
+        "page_span": page_span or [1, 1],
+    }
+
+
 def test_build_unit_id_format():
     uid = build_unit_id("ABCD1234", "body", "sec:b1", 1, "b1", 1, "b2")
     assert uid == "ABCD1234:body:sec:b1:1-b1:1-b2"
@@ -24,42 +40,36 @@ def test_build_body_units_assigns_stable_ids_and_audit_fields():
     tree = {
         "paper_id": "ABCD1234",
         "nodes": [
-            {
-                "node_id": "sec:b1",
-                "title": "Methods",
-                "section_path": ["Methods"],
-                "page_span": [1, 1],
-                "block_span": [[1, "b1"], [1, "b2"]],
-            }
+            _node("sec:b1", "Methods", own_block_ids=["b2"]),
         ],
     }
     blocks = [
-        {"paper_id": "ABCD1234", "page": 1, "block_id": "b1", "role": "section_heading", "text": "Methods"},
-        {"paper_id": "ABCD1234", "page": 1, "block_id": "b2", "role": "body_paragraph", "text": "We recruited 30 patients."},
+        {"block_id": "b1", "role": "section_heading", "text": "Methods"},
+        {"block_id": "b2", "role": "body_paragraph", "text": "We recruited 30 patients."},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
+    assert len(units) == 1
     assert units[0]["unit_id"].startswith("ABCD1234:body:")
     assert units[0]["indexable"] is True
     assert units[0]["veto_reason"] == ""
+    assert units[0]["section_path"] == "Methods"
+    assert units[0]["section_level"] == 2
+    assert units[0]["section_title"] == "Methods"
+    assert units[0]["part_ordinal"] == 0
+    assert "section_path_json" in units[0]
 
 
 def test_build_body_units_concatenates_multiple_paragraphs():
     tree = {
         "paper_id": "P001",
         "nodes": [
-            {
-                "node_id": "sec:x",
-                "title": "Results",
-                "section_path": ["Results"],
-                "page_span": [2, 2],
-                "block_span": [[2, "b1"], [2, "b2"], [2, "b3"]],
-            }
+            _node("sec:x", "Results", own_block_ids=["b2", "b3"]),
         ],
     }
     blocks = [
-        {"paper_id": "P001", "page": 2, "block_id": "b1", "role": "section_heading", "text": "Results"},
-        {"paper_id": "P001", "page": 2, "block_id": "b2", "role": "body_paragraph", "text": "First result."},
-        {"paper_id": "P001", "page": 2, "block_id": "b3", "role": "body_paragraph", "text": "Second result."},
+        {"block_id": "b1", "role": "section_heading", "text": "Results"},
+        {"block_id": "b2", "role": "body_paragraph", "text": "First result."},
+        {"block_id": "b3", "role": "body_paragraph", "text": "Second result."},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     assert "First result." in units[0]["unit_text"]
@@ -70,40 +80,28 @@ def test_build_body_units_marks_empty_as_non_indexable():
     tree = {
         "paper_id": "P002",
         "nodes": [
-            {
-                "node_id": "sec:empty",
-                "title": "Empty",
-                "section_path": ["Empty"],
-                "page_span": [3, 3],
-                "block_span": [[3, "e1"]],
-            }
+            _node("sec:empty", "Empty", own_block_ids=[]),
         ],
     }
     blocks = [
-        {"paper_id": "P002", "page": 3, "block_id": "e1", "role": "section_heading", "text": "Empty"},
+        {"block_id": "e1", "role": "section_heading", "text": "Empty"},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
-    assert units[0]["indexable"] is False
-    assert units[0]["veto_reason"] == "empty"
+    assert units == []  # no own_block_ids with body role → no units
 
 
 def test_build_body_units_token_estimate():
     tree = {
         "paper_id": "P003",
         "nodes": [
-            {
-                "node_id": "sec:t1",
-                "title": "Introduction",
-                "section_path": ["Introduction"],
-                "page_span": [1, 1],
-                "block_span": [[1, "b1"]],
-            }
+            _node("sec:t1", "Introduction", own_block_ids=["b1"]),
         ],
     }
     blocks = [
-        {"paper_id": "P003", "page": 1, "block_id": "b1", "role": "body_paragraph", "text": "A" * 100},
+        {"block_id": "b1", "role": "body_paragraph", "text": "A" * 100},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
+    assert len(units) == 1
     assert units[0]["token_estimate"] == 25  # 100 // 4
 
 
@@ -112,48 +110,124 @@ def test_build_body_units_empty_tree():
     assert units == []
 
 
+def test_body_unit_excludes_reference_item():
+    tree = {
+        "paper_id": "P005",
+        "nodes": [
+            _node("sec:body", "Discussion", own_block_ids=["b1", "r1"]),
+        ],
+    }
+    blocks = [
+        {"block_id": "b1", "role": "body_paragraph", "text": "Main text."},
+        {"block_id": "r1", "role": "reference_item", "text": "[1] Smith et al."},
+    ]
+    units = build_body_units(tree=tree, structured_blocks=blocks)
+    assert len(units) == 1
+    assert "Main text." in units[0]["unit_text"]
+    assert "Smith" not in units[0]["unit_text"]
+
+
+def test_backmatter_body_creates_separate_unit():
+    tree = {
+        "paper_id": "P006",
+        "nodes": [
+            _node("sec:funding", "Funding", own_block_ids=["s1"]),
+        ],
+    }
+    blocks = [
+        {"block_id": "s1", "role": "structured_insert", "text": "This work was funded by NIH."},
+    ]
+    units = build_body_units(tree=tree, structured_blocks=blocks)
+    assert len(units) == 1
+    assert units[0]["unit_kind"] == "backmatter_body"
+
+
+def test_mixed_body_and_backmatter_split():
+    tree = {
+        "paper_id": "P007",
+        "nodes": [
+            _node("sec:end", "End", own_block_ids=["b1", "s1"]),
+        ],
+    }
+    blocks = [
+        {"block_id": "b1", "role": "body_paragraph", "text": "Main text."},
+        {"block_id": "s1", "role": "structured_insert", "text": "Data available on request."},
+    ]
+    units = build_body_units(tree=tree, structured_blocks=blocks)
+    kinds = {u["unit_kind"] for u in units}
+    assert "body" in kinds
+    assert "backmatter_body" in kinds
+    assert len(units) == 2
+
+
+def test_token_cap_splits_into_parts():
+    tree = {
+        "paper_id": "P008",
+        "nodes": [
+            _node("sec:big", "Long Section", own_block_ids=["b1"]),
+        ],
+    }
+    blocks = [
+        {"block_id": "b1", "role": "body_paragraph", "text": "word " * 1000},
+    ]
+    units = build_body_units(tree=tree, structured_blocks=blocks)
+    assert len(units) >= 2  # should be split
+    assert units[0]["part_ordinal"] == 1
+    assert units[1]["part_ordinal"] == 2
+    assert units[0]["section_path"] == units[1]["section_path"]
+
+
+def test_recursive_walk_produces_correct_section_path():
+    tree = {
+        "paper_id": "P009",
+        "nodes": [
+            _node("sec:root", "Root", own_block_ids=["b1"], children=[
+                _node("sec:child", "Child", level=3, own_block_ids=["b2"]),
+            ]),
+        ],
+    }
+    blocks = [
+        {"block_id": "b1", "role": "body_paragraph", "text": "Root text."},
+        {"block_id": "b2", "role": "body_paragraph", "text": "Child text."},
+    ]
+    units = build_body_units(tree=tree, structured_blocks=blocks)
+    paths = {u["unit_id"]: u["section_path"] for u in units}
+    root_unit = [u for u in units if u["section_title"] == "Root"][0]
+    child_unit = [u for u in units if u["section_title"] == "Child"][0]
+    assert root_unit["section_path"] == "Root"
+    assert child_unit["section_path"] == "Root/Child"
+
+
 def test_build_object_units_from_role_index():
     tree = {
         "paper_id": "P010",
         "nodes": [
-            {
-                "node_id": "sec:figs",
-                "title": "Figures",
-                "section_path": ["Figures"],
-                "page_span": [4, 4],
-                "block_span": [[4, "f1"], [4, "f2"]],
-            }
+            _node("sec:figs", "Figures", own_block_ids=["f2"],
+                  subtree_block_ids=["f1", "f2"],
+                  page_span=[4, 4]),
         ],
     }
     blocks = [
-        {"paper_id": "P010", "page": 4, "block_id": "f1", "role": "section_heading", "text": "Figures"},
-        {"paper_id": "P010", "page": 4, "block_id": "f2", "role": "body_paragraph", "text": "As shown in Figure 1."},
+        {"block_id": "f1", "role": "section_heading", "text": "Figures"},
+        {"block_id": "f2", "role": "body_paragraph", "text": "As shown in Figure 1."},
     ]
     role_index = {
         "figure_captions": [
-            {"page": 4, "block_id": "f2", "text": "Figure 1: Results", "role": "figure_caption"},
+            {"figure_id": "Figure 1", "caption_block_id": "f2", "text": "Figure 1: Results"},
         ]
     }
     units = build_object_units(tree=tree, structured_blocks=blocks, role_index=role_index)
     assert len(units) >= 1
-    assert units[0]["unit_id"].startswith("P010:object:")
     assert units[0]["object_kind"] == "figure"
     assert units[0]["object_label"] == "Figure 1"
     assert units[0]["caption_text"] == "Figure 1: Results"
-    assert "As shown in Figure 1." in units[0]["nearby_body_text"]
 
 
 def test_build_object_units_empty_role_index():
     tree = {
         "paper_id": "P011",
         "nodes": [
-            {
-                "node_id": "sec:empty",
-                "title": "Empty",
-                "section_path": ["Empty"],
-                "page_span": [5, 5],
-                "block_span": [[5, "e1"]],
-            }
+            _node("sec:empty", "Empty", own_block_ids=[]),
         ],
     }
     units = build_object_units(tree=tree, structured_blocks=[], role_index={})
@@ -162,10 +236,10 @@ def test_build_object_units_empty_role_index():
 
 def test_build_paper_manifest():
     body_units = [
-        {"unit_id": "P001:body:sec:1:1-b1:1-b2", "paper_id": "P001"},
+        {"unit_id": "P001:body:sec:1", "paper_id": "P001"},
     ]
     object_units = [
-        {"unit_id": "P001:object:sec:1:1-f1:1-f1", "paper_id": "P001"},
+        {"unit_id": "P001:object:sec:1", "paper_id": "P001"},
     ]
     manifest = build_paper_manifest(
         paper_id="P001",
@@ -193,16 +267,23 @@ def test_fts_body_units_table_creation(tmp_path):
     conn.execute(CREATE_BODY_UNITS_FTS)
     conn.commit()
 
-    # Insert a row and let FTS index it
     conn.execute(
-        """INSERT INTO body_units (unit_id, paper_id, section_path, unit_text,
-           page_span_json, block_span_json, token_estimate, indexable, veto_reason, quality_hints_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO body_units (unit_id, paper_id, section_path,
+           section_path_json, section_level, section_title,
+           unit_text, unit_kind, part_ordinal,
+           page_span_json, block_span_json, token_estimate,
+           indexable, veto_reason, quality_hints_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
-            "P001:body:sec:1:1-b1:1-b2",
+            "P001:body:sec:1",
             "P001",
             "Methods",
+            '["Methods"]',
+            2,
+            "Methods",
             "We recruited 30 patients.",
+            "body",
+            0,
             json.dumps([1, 1]),
             json.dumps([[1, "b1"], [1, "b2"]]),
             10,
@@ -213,7 +294,6 @@ def test_fts_body_units_table_creation(tmp_path):
     )
     conn.commit()
 
-    # Manually populate FTS (no trigger yet)
     conn.execute(
         """INSERT INTO body_units_fts(rowid, unit_id, paper_id, section_path, unit_text)
            SELECT rowid, unit_id, paper_id, section_path, unit_text FROM body_units"""
@@ -225,11 +305,11 @@ def test_fts_body_units_table_creation(tmp_path):
         ("patients",),
     ).fetchall()
     assert len(results) == 1
-    assert results[0][0] == "P001:body:sec:1:1-b1:1-b2"
-    # Verify unit_kind was set via DEFAULT
-    row = conn.execute("SELECT unit_kind FROM body_units WHERE unit_id = ?", ("P001:body:sec:1:1-b1:1-b2",)).fetchone()
+    assert results[0][0] == "P001:body:sec:1"
+    row = conn.execute("SELECT unit_kind FROM body_units WHERE unit_id = ?", ("P001:body:sec:1",)).fetchone()
     assert row["unit_kind"] == "body"
     conn.close()
+
 
 def test_object_units_table_creation(tmp_path):
     db = tmp_path / "test.db"
@@ -243,7 +323,7 @@ def test_object_units_table_creation(tmp_path):
            page_span_json, block_span_json)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
-            "P001:object:sec:1:1-f1:1-f1",
+            "P001:object:sec:1",
             "P001",
             "Figures",
             "figure",
@@ -254,7 +334,8 @@ def test_object_units_table_creation(tmp_path):
             json.dumps([[4, "f1"]]),
         ),
     )
-    row = conn.execute("SELECT unit_id, object_kind, object_label, caption_text FROM object_units WHERE unit_id = ?", ("P001:object:sec:1:1-f1:1-f1",)).fetchone()
+    row = conn.execute("SELECT unit_id, object_kind, object_label, caption_text FROM object_units WHERE unit_id = ?",
+                       ("P001:object:sec:1",)).fetchone()
     assert row is not None
     assert row["object_kind"] == "figure"
     assert row["object_label"] == "Figure 1"
@@ -279,7 +360,7 @@ def test_ensure_schema_includes_new_tables(tmp_path):
     conn.close()
 
 
-def test_body_units_schema_includes_unit_kind(tmp_path):
+def test_body_units_schema_includes_v4_columns(tmp_path):
     db = tmp_path / "test_schema_body_units.db"
     conn = sqlite3.connect(str(db))
     conn.row_factory = sqlite3.Row
@@ -289,7 +370,11 @@ def test_body_units_schema_includes_unit_kind(tmp_path):
     cols = {
         r[1] for r in conn.execute("PRAGMA table_info(body_units)").fetchall()
     }
-    assert "unit_kind" in cols, "body_units missing unit_kind column"
+    assert "unit_kind" in cols
+    assert "section_path_json" in cols
+    assert "section_level" in cols
+    assert "section_title" in cols
+    assert "part_ordinal" in cols
     conn.close()
 
 

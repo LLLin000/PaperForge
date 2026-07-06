@@ -1977,9 +1977,9 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     )
 
     # --- Phase 3: structured renderer ---
-    from paperforge.worker.ocr_render import render_fulltext_markdown, write_render_outputs
+    from paperforge.worker.ocr_render import render_fulltext_markdown, write_render_outputs, RenderOutput
 
-    markdown = render_fulltext_markdown(
+    rendered = render_fulltext_markdown(
         structured_blocks=structured,
         resolved_metadata=resolved,
         figure_inventory=figure_inventory,
@@ -1987,10 +1987,11 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         page_count=page_num,
         document_structure=doc_structure,
         reader_payload=reader_payload,
+        return_events=True,
     )
     
 
-    # --- Phase 3: OCR health report ---
+    # --- health report ---
     from paperforge.worker.ocr_health import (
         build_ocr_health,
         build_ocr_raw_integrity_health,
@@ -2006,7 +2007,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         table_inventory=table_inventory,
         doc_structure=doc_structure,
         reader_payload=reader_payload,
-        rendered_markdown=markdown,
+        rendered_markdown=rendered.markdown,
     )
     health_report["ocr_raw_integrity"] = ocr_raw_integrity
     write_ocr_health(ocr_root / "health", health_report)
@@ -2016,6 +2017,16 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     from paperforge.worker.ocr_decisions import collect_decisions, write_decision_log
 
     write_decision_log(ocr_root / "health" / "decision_log.jsonl", collect_decisions(structured))
+    # --- Phase 4: render output ---
+    meta = write_render_outputs(
+        render_root=ocr_root / "render",
+        user_fulltext=ocr_root / "fulltext.md",
+        markdown=rendered.markdown,
+        heading_events=rendered.heading_events,
+        emitted_block_events=rendered.emitted_block_events,
+        meta=meta,
+        rebuild_increment=False,
+    )
 
     # --- Phase 5: role-based OCR index ---
     from paperforge.worker.ocr_index import build_role_indexes, write_role_index
@@ -2028,7 +2039,11 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     # --- Phase 6: structure tree ---
     from paperforge.retrieval.structure_tree import build_structure_tree, write_structure_tree
 
-    structure_tree = build_structure_tree(structured)
+    structure_tree = build_structure_tree(
+        heading_events=rendered.heading_events,
+        emitted_block_events=rendered.emitted_block_events,
+        structured_blocks=structured,
+    )
     write_structure_tree(ocr_root / "index", structure_tree)
 
     # Update meta.json with version payloads
@@ -2056,13 +2071,6 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     except ValueError:
         meta["legacy_images_path"] = str(images_dir)
     meta["path_map"] = {"structured_truth": "assets/", "legacy_compat": "images/"}
-    meta = write_render_outputs(
-        render_root=ocr_root / "render",
-        user_fulltext=ocr_root / "fulltext.md",
-        markdown=markdown,
-        meta=meta,
-        rebuild_increment=False,
-    )
     write_json(meta_path, meta)
 
     fulltext_path = ocr_root / "fulltext.md"

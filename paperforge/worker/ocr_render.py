@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from html import unescape
 from pathlib import Path
+from dataclasses import dataclass
+from typing import Any
 
 from paperforge.worker.ocr_document import (
     _TAIL_ROLES,
@@ -1247,6 +1249,26 @@ def _collect_frontmatter_fallback_fields(
     if fallback_doi:
         result["doi"] = fallback_doi
     return result
+@dataclass
+class RenderOutput:
+    markdown: str
+    heading_events: list[dict]
+    emitted_block_events: list[dict]
+
+
+def _determine_emitted_as(role: str) -> str:
+    emitted_map = {
+        "body_paragraph": "body",
+        "backmatter_body": "backmatter",
+        "tail_candidate_body": "body",
+        "structured_insert": "structured_insert",
+        "non_body_insert": "structured_insert",
+        "backmatter_boundary_heading": "backmatter_heading",
+        "backmatter_heading": "backmatter_heading",
+    }
+    return emitted_map.get(role, "other")
+
+
 
 
 def render_fulltext_markdown(
@@ -1258,8 +1280,12 @@ def render_fulltext_markdown(
     page_count: int | None = None,
     document_structure: DocumentStructure | None = None,
     reader_payload: dict | None = None,
-) -> str:
+    return_events: bool = False,
+) -> str | RenderOutput:
     lines: list[str] = []
+    heading_events: list[dict] = []
+    emitted_block_events: list[dict] = []
+    emitted_order_counter: int = 0
 
     emitted_figure_captions: set[str] = set()
 
@@ -1795,9 +1821,21 @@ def render_fulltext_markdown(
         if role == "backmatter_boundary_heading" or role == "backmatter_heading":
             last_structured_insert_page = None
             last_structured_insert_bbox = None
+            bm_start_line = len(lines)
             if text and not _should_suppress_frontmatter_heading(text):
                 lines.append(f"**{text}**")
                 lines.append("")
+            if len(lines) > bm_start_line:
+                emitted_block_events.append({
+                    "emitted_order": emitted_order_counter,
+                    "line_start": bm_start_line,
+                    "line_end": len(lines),
+                    "page": block_page,
+                    "block_id": block.get("block_id"),
+                    "role": role,
+                    "emitted_as": _determine_emitted_as(role),
+                })
+                emitted_order_counter += 1
         elif role == "reference_heading":
             last_structured_insert_page = None
             last_structured_insert_bbox = None
@@ -1842,7 +1880,18 @@ def render_fulltext_markdown(
                 prefix = "##" if depth <= 1 else "###"
             lines.append(f"{prefix} {text}")
             lines.append("")
+            h_level = len(prefix)  # "##" → 2, "###" → 3, "####" → 4
+            heading_events.append({
+                "line_number": len(lines) - 1,
+                "markdown_level": h_level,
+                "title": text,
+                "page": block.get("page"),
+                "block_id": block.get("block_id"),
+                "emitted_order": emitted_order_counter,
+            })
+            emitted_order_counter += 1
         elif role == "structured_insert":
+            si_start_line = len(lines)
             container_text = block.get("_container_text")
             if container_text and isinstance(container_text, str):
                 source_text = normalize_ocr_math_text(" ".join(container_text.replace("\n", " ").split()))
@@ -1886,6 +1935,17 @@ def render_fulltext_markdown(
                     lines.append("")
                 last_structured_insert_page = block_page
                 last_structured_insert_bbox = bbox if len(bbox) >= 4 else None
+            if len(lines) > si_start_line:
+                emitted_block_events.append({
+                    "emitted_order": emitted_order_counter,
+                    "line_start": si_start_line,
+                    "line_end": len(lines),
+                    "page": block.get("page"),
+                    "block_id": block.get("block_id"),
+                    "role": role,
+                    "emitted_as": _determine_emitted_as(role),
+                })
+                emitted_order_counter += 1
         elif role == "table_caption":
             tbl_ids_for_page = tables_by_page.get(block_page, [])
             if tbl_ids_for_page:
@@ -1900,6 +1960,7 @@ def render_fulltext_markdown(
                 lines.append(text)
                 lines.append("")
         elif role in ("backmatter_body", "tail_candidate_body", "body_paragraph"):
+            body_start_line = len(lines)
             if last_structured_insert_page is not None:
                 lines.append("")
             last_structured_insert_page = None
@@ -1915,7 +1976,19 @@ def render_fulltext_markdown(
                 _emitted_body_text_by_page.setdefault(block_page if block_page is not None else -1, []).append(text)
                 lines.append(text)
                 lines.append("")
+            if text and len(lines) > body_start_line:
+                emitted_block_events.append({
+                    "emitted_order": emitted_order_counter,
+                    "line_start": body_start_line,
+                    "line_end": len(lines),
+                    "page": block.get("page"),
+                    "block_id": block.get("block_id"),
+                    "role": role,
+                    "emitted_as": _determine_emitted_as(role),
+                })
+                emitted_order_counter += 1
         else:
+            else_start_line = len(lines)
             if last_structured_insert_page is not None:
                 lines.append("")
             last_structured_insert_page = None
@@ -1923,6 +1996,17 @@ def render_fulltext_markdown(
             if text:
                 lines.append(text)
                 lines.append("")
+            if text and len(lines) > else_start_line:
+                emitted_block_events.append({
+                    "emitted_order": emitted_order_counter,
+                    "line_start": else_start_line,
+                    "line_end": len(lines),
+                    "page": block.get("page"),
+                    "block_id": block.get("block_id"),
+                    "role": role,
+                    "emitted_as": _determine_emitted_as(role),
+                })
+                emitted_order_counter += 1
 
     # Emit objects for the last rendered page
     if current_page is not None:
@@ -1959,7 +2043,14 @@ def render_fulltext_markdown(
                 emitted_figure_captions=emitted_figure_captions,
             )
 
-    return "\n".join(lines).strip() + "\n"
+    markdown = "\n".join(lines).strip() + "\n"
+    if return_events:
+        return RenderOutput(
+            markdown=markdown,
+            heading_events=heading_events,
+            emitted_block_events=emitted_block_events,
+        )
+    return markdown
 
 
 import datetime as _dt
@@ -1979,10 +2070,16 @@ def write_render_outputs(
     meta: dict,
     rebuild_increment: bool,
     now_utc: _dt.datetime | None = None,
+    heading_events: list[dict] | None = None,
+    emitted_block_events: list[dict] | None = None,
 ) -> dict:
     now_utc = now_utc or _dt.datetime.now(_dt.timezone.utc)
     render_root.mkdir(parents=True, exist_ok=True)
     (render_root / "fulltext.md").write_text(markdown, encoding="utf-8")
+    if heading_events is not None and emitted_block_events is not None:
+        from paperforge.core.io import write_json
+        render_map = {"headings": heading_events, "emitted_blocks": emitted_block_events}
+        write_json(render_root / "render-map.json", render_map)
 
     backup_info = create_pre_rebuild_backup(user_fulltext, now_utc)
     atomic_replace_text(user_fulltext, markdown)
