@@ -1821,14 +1821,20 @@ def render_fulltext_markdown(
         if role == "backmatter_boundary_heading" or role == "backmatter_heading":
             last_structured_insert_page = None
             last_structured_insert_bbox = None
-            bm_start_line = len(lines)
             if text and not _should_suppress_frontmatter_heading(text):
                 lines.append(f"**{text}**")
                 lines.append("")
-            if len(lines) > bm_start_line:
+                heading_events.append({
+                    "line_number": len(lines) - 1,
+                    "markdown_level": 2,
+                    "title": text,
+                    "page": block_page,
+                    "block_id": block.get("block_id"),
+                    "emitted_order": emitted_order_counter,
+                })
                 emitted_block_events.append({
                     "emitted_order": emitted_order_counter,
-                    "line_start": bm_start_line,
+                    "line_start": len(lines) - 2,
                     "line_end": len(lines),
                     "page": block_page,
                     "block_id": block.get("block_id"),
@@ -1890,6 +1896,15 @@ def render_fulltext_markdown(
                 "emitted_order": emitted_order_counter,
             })
             emitted_order_counter += 1
+            emitted_block_events.append({
+                "emitted_order": emitted_order_counter - 1,
+                "line_start": len(lines) - 2,
+                "line_end": len(lines),
+                "page": block.get("page"),
+                "block_id": block.get("block_id"),
+                "role": role,
+                "emitted_as": "heading",
+            })
         elif role == "structured_insert":
             si_start_line = len(lines)
             container_text = block.get("_container_text")

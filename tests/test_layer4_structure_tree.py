@@ -43,8 +43,8 @@ def test_single_heading_with_body():
     assert n["title"] == "Methods"
     assert n["level"] == 2
     assert n["block_id"] == "b1"
-    assert set(n["subtree_block_ids"]) == {"b1", "b2"}
-    assert n["own_block_ids"] == ["b2"]
+    assert set(n["subtree_block_ids"]) == {"p1:b1", "p1:b2"}
+    assert n["own_block_ids"] == ["p1:b2"]
 
 
 def test_h2_h3_nesting():
@@ -60,8 +60,8 @@ def test_h2_h3_nesting():
     child = parent["children"][0]
     assert parent["title"] == "Methods"
     assert child["title"] == "Statistics"
-    assert parent["own_block_ids"] == ["b2"]
-    assert child["own_block_ids"] == ["b4"]
+    assert parent["own_block_ids"] == ["p1:b2"]
+    assert child["own_block_ids"] == ["p1:b4"]
 
 
 def test_h2_h3_h2_sibling():
@@ -128,10 +128,9 @@ def test_own_block_ids_excludes_children():
     tree = build_structure_tree(heading_events, emitted, structured)
     parent = tree["nodes"][0]
     child = parent["children"][0]
-    assert parent["own_block_ids"] == ["d2"]
-    assert child["own_block_ids"] == ["d4"]
-    assert parent["subtree_block_ids"] == ["d1", "d2", "d3", "d4"]
-    assert child["subtree_block_ids"] == ["d3", "d4"]
+    assert parent["own_block_ids"] == ["p1:d2"]
+    assert parent["subtree_block_ids"] == ["p1:d1", "p1:d2", "p1:d3", "p1:d4"]
+    assert child["subtree_block_ids"] == ["p1:d3", "p1:d4"]
 
 
 def test_summary_in_last_child_scope():
@@ -148,8 +147,8 @@ def test_summary_in_last_child_scope():
     tree = build_structure_tree(heading_events, emitted, structured)
     parent = tree["nodes"][0]
     child = parent["children"][0]
-    assert parent["own_block_ids"] == ["d2"]
-    assert child["own_block_ids"] == ["d4", "d5"]
+    assert parent["own_block_ids"] == ["p1:d2"]
+    assert child["own_block_ids"] == ["p1:d4", "p1:d5"]
 
 
 def test_rendered_order_differs_from_structured_order():
@@ -157,6 +156,6 @@ def test_rendered_order_differs_from_structured_order():
     emitted = [_e(0, "b3", page=1), _e(1, "b1", page=1), _e(2, "b2", page=1)]
     structured = [{"paper_id": "P006"}]
     tree = build_structure_tree(heading_events, emitted, structured)
-    assert "b3" not in tree["nodes"][0]["subtree_block_ids"]
-    assert "b1" in tree["nodes"][0]["subtree_block_ids"]
-    assert "b2" in tree["nodes"][0]["subtree_block_ids"]
+    assert "p1:b3" not in tree["nodes"][0]["subtree_block_ids"]
+    assert "p1:b1" in tree["nodes"][0]["subtree_block_ids"]
+    assert "p1:b2" in tree["nodes"][0]["subtree_block_ids"]

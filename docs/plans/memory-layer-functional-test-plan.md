@@ -52,6 +52,9 @@ KEYS = sorted(
     and (d / "index" / "structure-tree.json").exists()
     and (d / "render" / "render-map.json").exists()
 )[:10]
+if not KEYS:
+    print("No eligible OCR papers found")
+    sys.exit(1)
 
 pass_count = 0
 fail_count = 0
@@ -214,6 +217,9 @@ for key in KEYS:
 
     except Exception as e:
         check(f"{key}: no crash", False, str(e))
+# Global unit_id uniqueness
+check("global: unit_ids unique across all papers",
+      len(set(all_unit_ids)) == len(all_unit_ids))
 
 # ════════════════════════════════════════════════════════════════════════
 # 4. Object Units (from real role_index)
@@ -238,21 +244,21 @@ for key in KEYS:
 
         print(f"  {key}: {len(object_units)} object units")
 
-        # Verify both key formats work
-        role_index_a = {"captions": [{"figure_id": "FigT", "text": "Test fig"}]}
-        role_index_b = {"figure_captions": [{"figure_id": "FigT", "text": "Test fig"}]}
-        empty_tree = {"paper_id": "T", "nodes": [
-            {"node_id": "sec:0", "title": "T", "level": 1, "block_id": 0,
-             "own_block_ids": [], "subtree_block_ids": [], "children": [],
-             "objects": [], "page_span": [1, 1]},
-        ]}
-        ua = build_object_units(tree=empty_tree, structured_blocks=[], role_index=role_index_a)
-        ub = build_object_units(tree=empty_tree, structured_blocks=[], role_index=role_index_b)
-        check(f"{key}: key compat (captions)", len(ua) == 1)
-        check(f"{key}: key compat (figure_captions)", len(ub) == 1)
-
     except Exception as e:
         check(f"{key}: no crash", False, str(e))
+
+# Object key format compatibility (test once, not per-paper)
+role_index_a = {"captions": [{"figure_id": "FigT", "text": "Test fig"}]}
+role_index_b = {"figure_captions": [{"figure_id": "FigT", "text": "Test fig"}]}
+empty_tree = {"paper_id": "T", "nodes": [
+    {"node_id": "sec:0", "title": "T", "level": 1, "block_id": 0,
+     "own_block_ids": [], "subtree_block_ids": [], "children": [],
+     "objects": [], "page_span": [1, 1]},
+]}
+ua = build_object_units(tree=empty_tree, structured_blocks=[], role_index=role_index_a)
+ub = build_object_units(tree=empty_tree, structured_blocks=[], role_index=role_index_b)
+check("obj key compat (captions)", len(ua) == 1)
+check("obj key compat (figure_captions)", len(ub) == 1)
 
 # ════════════════════════════════════════════════════════════════════════
 # 5. FTS No Duplicate
@@ -554,11 +560,11 @@ Skip <KEY>: has structured blocks but no body_units in DB.
 - 按 score 降序排序
 
 ### TC-9.2: 去重
-- 同一 `(source, unit_id)` 不去重（不跨 source 去重文本）
-- 同一 paper 最多 2 条（per-paper cap）
+- 同一 `(source, unit_id)` 会去重；
+- 不同 source 即使文本相同也不跨 source 去重；
+- 最终依靠 per-paper cap 限制重复曝光。
 
 ### TC-9.3: Per-paper cap
-- 同一篇 paper 在 results 中出现 ≤ 2 次
 
 ### TC-9.4: 空结果处理
 - 返回空的 chunks

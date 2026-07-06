@@ -118,18 +118,17 @@ def build_body_units(
     if not paper_id or not tree.get("nodes"):
         return units
 
-    block_map: dict[str | int, dict[str, Any]] = {}
+    block_map: dict[str, dict[str, Any]] = {}
     for b in structured_blocks:
         bid = b.get("block_id")
-        if bid is not None:
-            key = str(bid)
-            # ponytail: same block_id appears on multiple pages in real OCR data
-            # (e.g. running headers like \"Materials\" on pages 1-7).
-            # Prefer the entry that has non-empty text content.
+        page = b.get("page")
+        if bid is not None and page is not None:
+            key = f"p{page}:{bid}"
+            # page-qualified key to avoid collisions when same block_id
+            # appears on multiple pages (common in real OCR data)
             existing = block_map.get(key)
             if existing is None or (b.get("text") and not existing.get("text")):
                 block_map[key] = b
-                block_map[bid] = b
     def walk(node: dict[str, Any], inherited_path: list[str]) -> None:
         this_path = inherited_path + [node["title"]]
 

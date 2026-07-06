@@ -42,6 +42,7 @@ def build_structure_tree(
             "title": h["title"],
             "level": h["markdown_level"],
             "block_id": h["block_id"],
+            "page": h["page"],
             "page_span": [h["page"], h["page"]],
             "own_block_ids": [],
             "subtree_block_ids": [],
@@ -77,9 +78,8 @@ def build_structure_tree(
 
         start = bounds["start"]
         end = bounds["end"]
-
         node["subtree_block_ids"] = [
-            str(e["block_id"]) for e in emitted_block_events if start <= e["emitted_order"] < end
+            f"p{e['page']}:{str(e['block_id'])}" for e in emitted_block_events if start <= e["emitted_order"] < end
         ]
 
         # Extend page_span from emitted blocks
@@ -99,7 +99,7 @@ def build_structure_tree(
         child_ids: set[str] = set()
         for child in node.get("children", []):
             child_ids.update(child.get("subtree_block_ids", []))
-        child_ids.add(str(node["block_id"]))
+        child_ids.add(f"p{node['page']}:{str(node['block_id'])}")
 
         node["own_block_ids"] = [bid for bid in node["subtree_block_ids"] if bid not in child_ids]
 

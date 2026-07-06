@@ -40,12 +40,12 @@ def test_build_body_units_assigns_stable_ids_and_audit_fields():
     tree = {
         "paper_id": "ABCD1234",
         "nodes": [
-            _node("sec:b1", "Methods", own_block_ids=["b2"]),
+            _node("sec:b1", "Methods", own_block_ids=["p1:b2"]),
         ],
     }
     blocks = [
-        {"block_id": "b1", "role": "section_heading", "text": "Methods"},
-        {"block_id": "b2", "role": "body_paragraph", "text": "We recruited 30 patients."},
+        {"block_id": "b1", "role": "section_heading", "text": "Methods", "page": 1},
+        {"block_id": "b2", "role": "body_paragraph", "text": "We recruited 30 patients.", "page": 1},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     assert len(units) == 1
@@ -63,13 +63,13 @@ def test_build_body_units_concatenates_multiple_paragraphs():
     tree = {
         "paper_id": "P001",
         "nodes": [
-            _node("sec:x", "Results", own_block_ids=["b2", "b3"]),
+            _node("sec:x", "Results", own_block_ids=["p1:b2", "p1:b3"]),
         ],
     }
     blocks = [
-        {"block_id": "b1", "role": "section_heading", "text": "Results"},
-        {"block_id": "b2", "role": "body_paragraph", "text": "First result."},
-        {"block_id": "b3", "role": "body_paragraph", "text": "Second result."},
+        {"block_id": "b1", "role": "section_heading", "text": "Results", "page": 1},
+        {"block_id": "b2", "role": "body_paragraph", "text": "First result.", "page": 1},
+        {"block_id": "b3", "role": "body_paragraph", "text": "Second result.", "page": 1},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     assert "First result." in units[0]["unit_text"]
@@ -84,7 +84,7 @@ def test_build_body_units_marks_empty_as_non_indexable():
         ],
     }
     blocks = [
-        {"block_id": "e1", "role": "section_heading", "text": "Empty"},
+        {"block_id": "e1", "role": "section_heading", "text": "Empty", "page": 1},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     assert units == []  # no own_block_ids with body role → no units
@@ -94,11 +94,11 @@ def test_build_body_units_token_estimate():
     tree = {
         "paper_id": "P003",
         "nodes": [
-            _node("sec:t1", "Introduction", own_block_ids=["b1"]),
+            _node("sec:t1", "Introduction", own_block_ids=["p1:b1"]),
         ],
     }
     blocks = [
-        {"block_id": "b1", "role": "body_paragraph", "text": "A" * 100},
+        {"block_id": "b1", "role": "body_paragraph", "text": "A" * 100, "page": 1},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     assert len(units) == 1
@@ -114,12 +114,12 @@ def test_body_unit_excludes_reference_item():
     tree = {
         "paper_id": "P005",
         "nodes": [
-            _node("sec:body", "Discussion", own_block_ids=["b1", "r1"]),
+            _node("sec:body", "Discussion", own_block_ids=["p1:b1", "p1:r1"]),
         ],
     }
     blocks = [
-        {"block_id": "b1", "role": "body_paragraph", "text": "Main text."},
-        {"block_id": "r1", "role": "reference_item", "text": "[1] Smith et al."},
+        {"block_id": "b1", "role": "body_paragraph", "text": "Main text.", "page": 1},
+        {"block_id": "r1", "role": "reference_item", "text": "[1] Smith et al.", "page": 1},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     assert len(units) == 1
@@ -131,11 +131,11 @@ def test_backmatter_body_creates_separate_unit():
     tree = {
         "paper_id": "P006",
         "nodes": [
-            _node("sec:funding", "Funding", own_block_ids=["s1"]),
+            _node("sec:funding", "Funding", own_block_ids=["p1:s1"]),
         ],
     }
     blocks = [
-        {"block_id": "s1", "role": "structured_insert", "text": "This work was funded by NIH."},
+        {"block_id": "s1", "role": "structured_insert", "text": "This work was funded by NIH.", "page": 1},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     assert len(units) == 1
@@ -146,12 +146,12 @@ def test_mixed_body_and_backmatter_split():
     tree = {
         "paper_id": "P007",
         "nodes": [
-            _node("sec:end", "End", own_block_ids=["b1", "s1"]),
+            _node("sec:end", "End", own_block_ids=["p1:b1", "p1:s1"]),
         ],
     }
     blocks = [
-        {"block_id": "b1", "role": "body_paragraph", "text": "Main text."},
-        {"block_id": "s1", "role": "structured_insert", "text": "Data available on request."},
+        {"block_id": "b1", "role": "body_paragraph", "text": "Main text.", "page": 1},
+        {"block_id": "s1", "role": "structured_insert", "text": "Data available on request.", "page": 1},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     kinds = {u["unit_kind"] for u in units}
@@ -165,11 +165,11 @@ def test_token_cap_splits_into_parts():
     tree = {
         "paper_id": "P008",
         "nodes": [
-            _node("sec:big", "Long Section", own_block_ids=["b1"]),
+            _node("sec:big", "Long Section", own_block_ids=["p1:b1"]),
         ],
     }
     blocks = [
-        {"block_id": "b1", "role": "body_paragraph", "text": "word " * 1000},
+        {"block_id": "b1", "role": "body_paragraph", "text": "word " * 1000, "page": 1},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     assert len(units) >= 2  # should be split
@@ -182,14 +182,14 @@ def test_recursive_walk_produces_correct_section_path():
     tree = {
         "paper_id": "P009",
         "nodes": [
-            _node("sec:root", "Root", own_block_ids=["b1"], children=[
-                _node("sec:child", "Child", level=3, own_block_ids=["b2"]),
+            _node("sec:root", "Root", own_block_ids=["p1:b1"], children=[
+                _node("sec:child", "Child", level=3, own_block_ids=["p1:b2"]),
             ]),
         ],
     }
     blocks = [
-        {"block_id": "b1", "role": "body_paragraph", "text": "Root text."},
-        {"block_id": "b2", "role": "body_paragraph", "text": "Child text."},
+        {"block_id": "b1", "role": "body_paragraph", "text": "Root text.", "page": 1},
+        {"block_id": "b2", "role": "body_paragraph", "text": "Child text.", "page": 1},
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     paths = {u["unit_id"]: u["section_path"] for u in units}
