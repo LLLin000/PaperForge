@@ -56,6 +56,37 @@ def _has_object_units_in_db(vault: Path, key: str) -> bool:
     finally:
         conn.close()
 
+def _pid_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            import subprocess
+            r = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}"],
+                capture_output=True, text=True, timeout=5
+            )
+            return str(pid) in r.stdout
+        except:
+            return False
+    else:
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+
+def _assert_collections_healthy(vault: Path) -> tuple[bool, str]:
+    """Probe three collections. Doesn't depend on get_embed_status."""
+    for name in ("paperforge_fulltext", "paperforge_body", "paperforge_objects"):
+        try:
+            col = get_collection(vault, name=name)
+            col.count()
+        except Exception as exc:
+            return False, f"{name}: {exc}"
+    return True, ""
+
 def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
     sub = getattr(args, "embed_subcommand", "build")
@@ -191,12 +222,48 @@ def run(args: argparse.Namespace) -> int:
 
     if resume:
         build_state = read_vector_build_state(vault)
-        stored_model = build_state.get("model", "")
-        if stored_model and _current_model and stored_model != _current_model:
-            msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
-            if not getattr(args, "json", False):
+
+        # 门一：stale running state 检测
+        if build_state.get("status") == "running":
+            stale = False
+            pid = build_state.get("pid", 0)
+            if not pid:
+                stale = True
+            elif not _pid_alive(pid):
+                stale = True
+            else:
+                started = build_state.get("started_at", "")
+                if started:
+                    try:
+                        dt = __import__('datetime').datetime.fromisoformat(started)
+                        if (__import__('datetime').datetime.now(__import__('datetime').timezone.utc) - dt).total_seconds() > 43200:
+                            stale = True
+                    except:
+                        pass
+            if stale:
+                msg = "Previous build appears stale (crashed?). Use --force to rebuild."
                 print(msg)
+                return 1
+
+        # 门二：missing DB → fresh build（不是 error）
+        db_path = get_vector_db_path(vault)
+        if not db_path.exists():
             resume = False
+        else:
+            # 门三：corrupted DB
+            ok, err = _assert_collections_healthy(vault)
+            if not ok:
+                msg = f"Vector DB corrupted ({err}). Use --force to rebuild."
+                print(msg)
+                return 1
+
+            # 过三道门后，正常 model check
+            stored_model = build_state.get("model", "")
+            if stored_model and _current_model and stored_model != _current_model:
+                msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
+                if not getattr(args, "json", False):
+                    print(msg)
+                resume = False
 
     _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
     if _force_rebuild:

@@ -101,7 +101,9 @@ def _apply_post_rebuild_version_flags(meta: dict) -> dict:
     - raw_upgradable is preserved (only raw OCR can clear this)
     - version_state_updated_at is refreshed
     """
+    from paperforge.worker.ocr_versions import expected_derived_payload
     updated = dict(meta)
+    updated["derived_version"] = expected_derived_payload()
     updated["derived_stale"] = False
     updated["version_state_updated_at"] = datetime.datetime.now().isoformat()
     return updated
@@ -121,22 +123,8 @@ def select_papers_for_derived_rebuild(papers: list[dict]) -> list[str]:
 
 
 
-def _filter_completed_keys(checkpoint_dir: Path | None, keys: list[str]) -> list[str]:
-    """Return keys that do not have a .done.<key> marker in checkpoint_dir."""
-    if not checkpoint_dir:
-        return keys
-    cp = Path(checkpoint_dir)
-    if not cp.exists():
-        return keys
-    done = {p.name.removeprefix(".done.") for p in cp.glob(".done.*")}
-    return [k for k in keys if k not in done]
 
 
-def _write_done_marker(checkpoint_dir: Path | None, key: str) -> None:
-    """Write a completion marker for a successfully rebuilt paper."""
-    if not checkpoint_dir:
-        return
-    (Path(checkpoint_dir) / f".done.{key}").touch()
 
 
 def _rebuild_one_paper(vault: Path, key: str) -> dict:
@@ -578,7 +566,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
 
     _phase5_finalize(resolved, structured, rendered, span_meta_patch, health_overall=health_overall)
     return {"key": key, "status": "ok"}
-def _run_parallel_rebuild(vault: Path, keys: list[str], workers: int, checkpoint_dir: Path | None) -> list[dict]:
+def _run_parallel_rebuild(vault: Path, keys: list[str], workers: int) -> list[dict]:
     """Run rebuild in parallel using a process pool."""
     from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -589,8 +577,6 @@ def _run_parallel_rebuild(vault: Path, keys: list[str], workers: int, checkpoint
             key = futures[future]
             try:
                 result = future.result()
-                if result.get("status") == "ok":
-                    _write_done_marker(checkpoint_dir, key)
                 results.append(result)
             except Exception as e:
                 results.append({"key": key, "status": "failed", "error": str(e)})
@@ -609,24 +595,23 @@ def run_derived_rebuild_for_keys(
     Rebuilds: structured blocks, metadata, figure/table inventories, objects,
     render outputs, and health — from stored raw blocks only.
 
-    If checkpoint_dir is provided, .done.<key> marker files track progress so
-    interrupted runs can skip completed work via --resume.
+    Note: checkpoint_dir / .done.<key> markers are no longer used; kept for
+    backward compatibility.
 
     Args:
         vault: Vault root path.
         keys: Paper keys to rebuild.
         progress_bar: Optional progress bar wrapper (tqdm-style).
-        checkpoint_dir: Directory for .done.<key> completion markers.
+        checkpoint_dir: Deprecated, kept for backward compatibility.
         parallel: Number of parallel workers (0 = serial). Default 4.
     """
-    keys = _filter_completed_keys(checkpoint_dir, keys)
     if not keys:
         return {"rebuild_count": 0}
 
     workers = int(parallel) if parallel else 0
 
     if workers > 0 and len(keys) > 1:
-        results = _run_parallel_rebuild(vault, keys, workers, checkpoint_dir)
+        results = _run_parallel_rebuild(vault, keys, workers)
         return {"rebuild_count": sum(1 for r in results if r.get("status") == "ok")}
 
     rebuilt_count = 0
@@ -635,7 +620,6 @@ def run_derived_rebuild_for_keys(
         result = _rebuild_one_paper(vault, key)
         if result.get("status") == "ok":
             rebuilt_count += 1
-            _write_done_marker(checkpoint_dir, key)
     return {"rebuild_count": rebuilt_count}
 
 

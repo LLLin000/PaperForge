@@ -9,6 +9,11 @@ from paperforge import __version__
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 
+from paperforge.worker.ocr_artifacts import artifact_paths_for_root
+from paperforge.worker.ocr_versions import classify_version_state, expected_derived_payload
+from paperforge.worker.ocr_maintenance import _can_rebuild
+from paperforge.core.io import read_json
+
 logger = logging.getLogger(__name__)
 
 
@@ -316,6 +321,82 @@ def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | Non
     return 0
 
 
+def _needs_derived_rebuild(vault: Path, key: str) -> tuple[bool, str]:
+    """检测一篇论文是否需要重建。返回 (need, reason)。"""
+    from paperforge.worker._utils import pipeline_paths
+
+    ocr_root = Path(pipeline_paths(vault)["ocr"])
+    artifacts = artifact_paths_for_root(ocr_root, key)
+    paper_dir = artifacts.paper_root
+
+    if not artifacts.meta_json.exists():
+        return False, "no_meta"
+
+    meta = read_json(artifacts.meta_json)
+
+    has_raw = artifacts.blocks_raw.exists()
+    has_source_meta = artifacts.source_metadata.exists()
+    if not _can_rebuild(meta, has_raw, has_source_meta):
+        return False, "cannot_rebuild"
+
+    # 版本检测（运行时比较，不依赖 meta.derived_stale）
+    state = classify_version_state(
+        meta,
+        expected_raw={},
+        expected_derived=expected_derived_payload(),
+    )
+    if state["derived_stale"]:
+        return True, "version_mismatch"
+
+    # 产物完整性检测
+    required = [
+        "structure/blocks.structured.jsonl",
+        "render/render-map.json",
+        "index/structure-tree.json",
+        "index/role-index.json",
+        "fulltext.md",
+        "health/ocr_health.json",
+    ]
+    for rel in required:
+        if not (paper_dir / rel).exists():
+            return True, f"missing:{rel.split('/')[-1]}"
+
+    return False, "current"
+
+
+def _select_rebuild_keys(vault, rows, all_papers, status_filter, keys):
+    """确定需要重建的论文列表。
+
+    --all: 只选 _needs_derived_rebuild()=True 的论文
+    --status: 按用户指定状态，不过滤版本
+    explicit keys: manual override，不过滤版本
+
+    Returns (selected_keys: list[str], reasons: dict[str, str])
+    """
+    by_key = {r.key: r for r in rows}
+
+    if all_papers:
+        selected = []
+        reasons = {}
+        for r in rows:
+            if not r.can_rebuild:
+                continue
+            need, reason = _needs_derived_rebuild(vault, r.key)
+            if need:
+                selected.append(r.key)
+                reasons[r.key] = reason
+        return selected, reasons
+
+    if status_filter:
+        selected = [r.key for r in rows if r.status == status_filter and r.can_rebuild]
+        return selected, {}
+
+    if keys:
+        selected = [k for k in keys if k in by_key and by_key[k].can_rebuild]
+        return selected, {}
+
+    return [], {}
+
 def _run_ocr_rebuild(
     vault: Path,
     keys: list[str] | None = None,
@@ -330,46 +411,26 @@ def _run_ocr_rebuild(
     from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
 
     rows = collect_maintenance_rows(vault)
+    selected, reasons = _select_rebuild_keys(vault, rows, all_papers, status_filter, keys)
 
-    if all_papers:
-        keys = [r.key for r in rows if r.can_rebuild]
-    elif status_filter:
-        keys = [r.key for r in rows if r.status == status_filter and r.can_rebuild]
-    elif keys:
-        valid = {r.key for r in rows}
-        keys = [k for k in keys if k in valid]
-    else:
-        print("Specify paper keys, --all, or --status")
-        return 1
-
-    if not keys:
+    if not selected:
         print("No papers matched for rebuild.")
         return 0
 
-    # Resume: skip keys already in checkpoint (.done.* markers)
-    cp_dir = vault / "System" / "PaperForge" / ".ocr_rebuild_checkpoint"
-    if resume and cp_dir.exists():
-        done = {p.name.removeprefix(".done.") for p in cp_dir.glob(".done.*")}
-        skipped = [k for k in keys if k in done]
-        keys = [k for k in keys if k not in done]
-        if skipped:
-            print(f"Skipped {len(skipped)} paper(s) already in checkpoint.")
-
-    if not keys:
-        print("No papers to rebuild (all done).")
-        return 0
+    if resume:
+        print("Note: OCR rebuild resume is now version/artifact based; .done markers are ignored.")
 
     if dry_run:
-        print(f"Would rebuild {len(keys)} paper(s):")
-        for k in keys:
-            print(f"  - {k}")
+        print(f"Would rebuild {len(selected)} paper(s):")
+        for k in selected:
+            reason = reasons.get(k, "manual_override")
+            print(f"  - {k}: {reason}")
         return 0
 
     from paperforge.worker._progress import progress_bar
     result = run_derived_rebuild_for_keys(
-        vault, keys,
+        vault, selected,
         progress_bar=progress_bar,
-        checkpoint_dir=cp_dir if resume else None,
         parallel=parallel_workers,
     )
     count = result.get("rebuild_count", 0)
