@@ -78,6 +78,16 @@ const {
     findNormalizedSourceMatches,
 } = require('./anchors');
 
+// ── Navigation reducers (ANN13) ──
+const {
+    NAVIGATION_ACTIONS,
+    SELECTION_STATUSES: NAV_SELECTION_STATUSES,
+    createInitialNavState,
+    reduceCardSelection,
+    reduceSourceSelection,
+    reduceLifecycleAction,
+} = require('./navigation');
+
 module.exports = {
     // ── Context helpers ──
     buildCanvasContextFromEntry,
@@ -137,4 +147,12 @@ module.exports = {
     resolveCanvasAnchor,
     resolveCanvasAnchors,
     findNormalizedSourceMatches,
+
+    // ── Navigation reducers (ANN13) ──
+    NAVIGATION_ACTIONS,
+    NAV_SELECTION_STATUSES,
+    createInitialNavState,
+    reduceCardSelection,
+    reduceSourceSelection,
+    reduceLifecycleAction,
 };
