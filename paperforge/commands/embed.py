@@ -312,6 +312,7 @@ def run(args: argparse.Namespace) -> int:
     )
 
     i = 0
+    jobs: list[PaperEmbeddingJob] = []
     papers_iter = progress_bar(done_papers, desc="Embedding", disable=args.json)
     for entry in papers_iter:
         key = entry.get("zotero_key")
