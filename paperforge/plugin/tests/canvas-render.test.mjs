@@ -33,6 +33,8 @@ const {
     renderUnresolvedAnchorStatus,
     renderCanvasCard,
     renderFallbackButton,
+    renderCanvasConnectorLayer,
+    updateCanvasConnectorLayer,
 } = await import('../src/canvas/render.js');
 
 // ── Forbidden control keywords (must not appear in any canvas state) ──
@@ -1006,5 +1008,228 @@ describe('ANN13-03 — Fallback button rendering (D-17/D-18/D-23)', () => {
         const btn = root.querySelector('button');
         expect(btn).toBeTruthy();
         expect(btn.tagName).toBe('BUTTON');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// ANN14-02 Task 1: Render an empty namespaced connector SVG layer
+// ---------------------------------------------------------------------------
+
+describe('ANN14-02 Task 1 — renderCanvasConnectorLayer', () => {
+    it('creates a namespaced SVG layer element', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        expect(svg).toBeTruthy();
+        expect(svg.tagName).toBe('svg');
+        expect(svg.getAttribute('class')).toContain('paperforge-canvas-connector-layer');
+    });
+
+    it('sets aria-hidden and role=presentation [D-10/D-11]', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        expect(svg.getAttribute('aria-hidden')).toBe('true');
+        expect(svg.getAttribute('role')).toBe('presentation');
+    });
+
+    it('creates no connector path by default', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        expect(svg.querySelectorAll('line').length).toBe(0);
+    });
+
+    it('returns the SVG element for later updates', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        expect(svg).toBeTruthy();
+        expect(svg.tagName).toBe('svg');
+        expect(root.querySelector('.paperforge-canvas-connector-layer')).toBe(svg);
+    });
+
+    it('does not appear in idle shell rendering (D-13/D-17/D-20)', () => {
+        const root = document.createElement('div');
+        renderCanvasView(root, { state: 'idle' });
+        expect(root.querySelector('.paperforge-canvas-connector-layer')).toBeNull();
+        expect(root.querySelector('svg')).toBeNull();
+    });
+
+    it('does not appear in empty shell rendering (D-13/D-17/D-20)', () => {
+        const root = document.createElement('div');
+        renderCanvasView(root, { state: 'empty', paperKey: 'TEST' });
+        expect(root.querySelector('.paperforge-canvas-connector-layer')).toBeNull();
+    });
+
+    it('does not appear in missing-paper shell (D-13/D-17)', () => {
+        const root = document.createElement('div');
+        renderCanvasView(root, { state: 'missing-paper' });
+        expect(root.querySelector('.paperforge-canvas-connector-layer')).toBeNull();
+    });
+
+    it('does not appear in unsupported shell (D-13/D-17)', () => {
+        const root = document.createElement('div');
+        renderCanvasView(root, { state: 'unsupported' });
+        expect(root.querySelector('.paperforge-canvas-connector-layer')).toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// ANN14-02 Task 2: Render only focused exact connector paths
+// ---------------------------------------------------------------------------
+
+describe('ANN14-02 Task 2 — updateCanvasConnectorLayer', () => {
+    function makeVisibleGeometry(overrides) {
+        return {
+            state: 'visible',
+            cardEndpoint: { x: 100, y: 200 },
+            anchorEndpoint: { x: 450, y: 200 },
+            cardRect: null,
+            anchorRect: null,
+            ...overrides,
+        };
+    }
+
+    function makeHiddenGeometry(reason) {
+        return {
+            state: 'hidden',
+            reason: reason || 'no-focus',
+            cardEndpoint: null,
+            anchorEndpoint: null,
+            cardRect: null,
+            anchorRect: null,
+        };
+    }
+
+    it('renders at most one line for visible connector state [D-03]', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, makeVisibleGeometry());
+        const lines = svg.querySelectorAll('line');
+        expect(lines.length).toBe(1);
+    });
+
+    it('line uses paperforge-canvas-connector class with --selected modifier', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, makeVisibleGeometry(), 'selected');
+        const line = svg.querySelector('line');
+        expect(line).toBeTruthy();
+        expect(line.getAttribute('class')).toContain('paperforge-canvas-connector');
+        expect(line.getAttribute('class')).toContain('paperforge-canvas-connector--selected');
+    });
+
+    it('line uses paperforge-canvas-connector class with --hovered modifier', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, makeVisibleGeometry(), 'hovered');
+        const line = svg.querySelector('line');
+        expect(line).toBeTruthy();
+        expect(line.getAttribute('class')).toContain('paperforge-canvas-connector');
+        expect(line.getAttribute('class')).toContain('paperforge-canvas-connector--hovered');
+    });
+
+    it('line endpoint coordinates match cardEndpoint and anchorEndpoint', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, makeVisibleGeometry({
+            cardEndpoint: { x: 50, y: 100 },
+            anchorEndpoint: { x: 300, y: 150 },
+        }));
+        const line = svg.querySelector('line');
+        expect(line.getAttribute('x1')).toBe('50');
+        expect(line.getAttribute('y1')).toBe('100');
+        expect(line.getAttribute('x2')).toBe('300');
+        expect(line.getAttribute('y2')).toBe('150');
+    });
+
+    it('line has aria-hidden attribute', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, makeVisibleGeometry());
+        const line = svg.querySelector('line');
+        expect(line.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    // Hidden connector states leave the SVG empty (D-01/D-02/D-13/D-17)
+    var hiddenReasons = ['page-level', 'unresolved', 'no-focus', 'stale', 'missing-dom', 'hidden-candidate'];
+    for (var ri = 0; ri < hiddenReasons.length; ri++) {
+        (function (reason) {
+            it('renders nothing for ' + reason + ' hidden state', () => {
+                var root = document.createElement('div');
+                root.className = 'paperforge-reading-canvas-view';
+                var svg = renderCanvasConnectorLayer(root);
+                updateCanvasConnectorLayer(svg, makeHiddenGeometry(reason));
+                expect(svg.querySelectorAll('line').length).toBe(0);
+            });
+        })(hiddenReasons[ri]);
+    }
+
+    it('replaces previous connector path on update', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, makeVisibleGeometry({ cardEndpoint: { x: 10, y: 20 } }));
+        expect(svg.querySelectorAll('line').length).toBe(1);
+        // Update with hidden state — should clear all paths
+        updateCanvasConnectorLayer(svg, makeHiddenGeometry('no-focus'));
+        expect(svg.querySelectorAll('line').length).toBe(0);
+    });
+
+    it('does nothing for null connectorState (guard)', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, null);
+        expect(svg.querySelectorAll('line').length).toBe(0);
+    });
+
+    it('does nothing for undefined connectorState (guard)', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, undefined);
+        expect(svg.querySelectorAll('line').length).toBe(0);
+    });
+
+    it('does nothing for missing endpoints in visible state (guard)', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, { state: 'visible', cardEndpoint: null, anchorEndpoint: null });
+        expect(svg.querySelectorAll('line').length).toBe(0);
+    });
+
+    it('layer classes do not leak into ANN12 anchor render [D-22/D-24]', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        renderExactAnchorText(root, 'before', 'match', 'after', null);
+        const html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('paperforge-canvas-connector');
+        expect(html).not.toContain('<svg');
+    });
+
+    it('layer classes do not leak into ANN12 source surface [D-22/D-24]', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        renderCanvasSourceSurface(root, [], [], { unavailable: true, reason: 'No source.' });
+        const html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('paperforge-canvas-connector');
+        expect(html).not.toContain('<svg');
+    });
+
+    it('default modifier is --selected when none provided', () => {
+        const root = document.createElement('div');
+        root.className = 'paperforge-reading-canvas-view';
+        const svg = renderCanvasConnectorLayer(root);
+        updateCanvasConnectorLayer(svg, makeVisibleGeometry());
+        const line = svg.querySelector('line');
+        expect(line.getAttribute('class')).toContain('paperforge-canvas-connector--selected');
     });
 });
