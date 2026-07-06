@@ -24,9 +24,12 @@ def _body_unit_role_kind(role: str) -> str | None:
 
 
 def _split_if_oversized(text: str, max_tokens: int = 1000) -> list[str]:
-    """Split text by paragraph if token estimate exceeds max_tokens."""
+    """Split text by paragraph if token estimate exceeds max_tokens.
+    Recursively splits oversized paragraphs until each part fits."""
     if len(text) // 4 <= max_tokens:
         return [text]
+
+    # Try paragraph boundaries first
     paragraphs = text.split("\n\n")
     parts: list[str] = []
     current: list[str] = []
@@ -42,15 +45,33 @@ def _split_if_oversized(text: str, max_tokens: int = 1000) -> list[str]:
             current_tokens += para_tokens
     if current:
         parts.append("\n\n".join(current))
-    # Fallback: if a single oversized paragraph wasn't split, halve it
-    if len(parts) == 1 and len(parts[0]) // 4 > max_tokens:
-        mid = len(parts[0]) // 2
-        break_at = parts[0].rfind(". ", 0, mid)
-        if break_at < mid // 2:
-            break_at = parts[0].rfind(" ", 0, mid)
-        if break_at > 0:
-            return [parts[0][:break_at + 1].strip(), parts[0][break_at + 1:].strip()]
-    return parts if parts else [text]
+
+    # Recursively split any part that's still oversized
+    result: list[str] = []
+    for part in parts:
+        if len(part) // 4 > max_tokens:
+            result.extend(_halve_text(part, max_tokens))
+        else:
+            result.append(part)
+    return result if result else [text]
+
+
+def _halve_text(text: str, max_tokens: int) -> list[str]:
+    """Recursively split oversized text by sentence/word boundary."""
+    if len(text) // 4 <= max_tokens:
+        return [text]
+    mid = len(text) // 2
+    break_at = text.rfind(". ", 0, mid)
+    if break_at < mid // 2:
+        break_at = text.rfind(" ", 0, mid)
+    if break_at <= 0:
+        break_at = mid
+    left = text[:break_at + 1].strip()
+    right = text[break_at + 1:].strip()
+    if not left or not right:
+        # Can't split further, return as-is even if oversized
+        return [text]
+    return _halve_text(left, max_tokens) + _halve_text(right, max_tokens)
 
 
 def build_unit_id(

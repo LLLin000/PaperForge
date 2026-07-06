@@ -19,7 +19,7 @@ from paperforge.memory.schema import (
     ensure_schema,
     get_schema_version,
 )
-from paperforge.retrieval.manifest import build_paper_manifest
+from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, build_paper_manifest
 from paperforge.retrieval.units import build_body_units, build_object_units
 from paperforge.worker.asset_index import read_index
 from paperforge.worker.asset_state import (
@@ -489,7 +489,8 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
         ).fetchone()
         if row:
             stored = json.loads(row[0])
-            if stored.get("ocr_result_hash") == current_hash:
+            if (stored.get("ocr_result_hash") == current_hash
+                and stored.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION):
                 continue
         _rebuild_paper_units(conn, key, paper_dir, tree_path, blocks_path)
         built_count += 1
@@ -520,7 +521,7 @@ def _rebuild_paper_units(conn: sqlite3.Connection, key: str, paper_dir: Path,
         paper_id=key,
         ocr_result_hash=current_hash,
         structure_tree_bytes=tree_path.read_bytes(),
-        retrieval_policy_version="l4.body.v1",
+        retrieval_policy_version=RETRIEVAL_POLICY_VERSION,
         body_units=body_units,
         object_units=object_units,
         source_paths={
