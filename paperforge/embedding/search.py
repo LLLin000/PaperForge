@@ -9,7 +9,7 @@ from paperforge.embedding.providers.openai_compatible import OpenAICompatiblePro
 
 logger = logging.getLogger(__name__)
 
-RETRIEVAL_COLLECTIONS = ["paperforge_fulltext", "paperforge_body"]
+RETRIEVAL_COLLECTIONS = ["paperforge_fulltext", "paperforge_body", "paperforge_objects"]
 
 
 def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True) -> list[dict]:
@@ -41,8 +41,14 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True)
                     "section_path": meta.get("section_path", meta.get("section", "")),
                     "chunk_text": doc,
                     "score": round(1.0 - dist, 4),
-                    "source": "legacy_chunk" if name == "paperforge_fulltext" else "body_unit",
+                    "source": {
+                        "paperforge_fulltext": "legacy_chunk",
+                        "paperforge_body": "body_unit",
+                        "paperforge_objects": "object_unit",
+                    }[name],
                     "unit_id": meta.get("unit_id") or meta.get("chunk_index", ""),
+                    "object_kind": meta.get("object_kind", ""),
+                    "object_label": meta.get("object_label", ""),
                 })
         except Exception:
             continue

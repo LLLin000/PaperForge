@@ -235,10 +235,17 @@ def test_build_object_units_empty_role_index():
 
 def test_build_paper_manifest():
     body_units = [
-        {"unit_id": "P001:body:sec:1", "paper_id": "P001"},
+        {"unit_id": "P001:body:sec:1", "paper_id": "P001",
+         "section_path": "Intro", "section_path_json": '["Intro"]',
+         "section_level": 2, "section_title": "Intro",
+         "page_span": [1, 1], "unit_text": "Hello world",
+         "token_estimate": 3, "unit_kind": "body", "part_ordinal": 0},
     ]
     object_units = [
-        {"unit_id": "P001:object:sec:1", "paper_id": "P001"},
+        {"unit_id": "P001:obj:p1:15", "paper_id": "P001",
+         "section_path": "Methods", "object_kind": "figure",
+         "object_label": "p1:15", "caption_text": "Figure 1: test",
+         "nearby_body_text": "", "page_span": [1, 1], "token_estimate": 3},
     ]
     manifest = build_paper_manifest(
         paper_id="P001",
@@ -252,11 +259,12 @@ def test_build_paper_manifest():
     assert manifest["paper_id"] == "P001"
     assert manifest["body_unit_count"] == 1
     assert manifest["object_unit_count"] == 1
+    assert manifest["body_units_hash"]
+    assert manifest["object_units_hash"]
     assert manifest["ocr_result_hash"] == "abc123"
     assert manifest["retrieval_policy_version"] == "l4.body.v1"
     assert "built_at" in manifest
     assert "structure_tree_hash" in manifest
-
 
 def test_fts_body_units_table_creation(tmp_path):
     db = tmp_path / "test.db"
@@ -265,7 +273,6 @@ def test_fts_body_units_table_creation(tmp_path):
     conn.execute(CREATE_BODY_UNITS)
     conn.execute(CREATE_BODY_UNITS_FTS)
     conn.commit()
-
     conn.execute(
         """INSERT INTO body_units (unit_id, paper_id, section_path,
            section_path_json, section_level, section_title,

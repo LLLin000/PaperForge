@@ -37,6 +37,28 @@ def compute_body_units_hash(units: list[dict]) -> str:
     return sha256(raw.encode()).hexdigest()
 
 
+def compute_object_units_hash(units: list[dict]) -> str:
+    """Compute a canonical hash for object units to detect changes."""
+    raw = json.dumps(
+        [
+            {
+                "unit_id": u["unit_id"],
+                "paper_id": u["paper_id"],
+                "section_path": u.get("section_path", ""),
+                "object_kind": u.get("object_kind", ""),
+                "object_label": u.get("object_label", ""),
+                "caption_text": u.get("caption_text", ""),
+                "nearby_body_text": u.get("nearby_body_text", ""),
+                "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
+            }
+            for u in units
+        ],
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+    return sha256(raw.encode()).hexdigest()
+
+
 
 def build_paper_manifest(
     *,
@@ -56,7 +78,9 @@ def build_paper_manifest(
         "structure_tree_hash": structure_tree_hash,
         "retrieval_policy_version": retrieval_policy_version,
         "body_unit_count": len(body_units),
+        "body_units_hash": compute_body_units_hash(body_units),
         "object_unit_count": len(object_units),
+        "object_units_hash": compute_object_units_hash(object_units),
         "built_at": datetime.now(timezone.utc).isoformat(),
         "source_paths": dict(source_paths),
     }

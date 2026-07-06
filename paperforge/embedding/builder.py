@@ -82,3 +82,68 @@ def get_body_units_for_embedding(vault: Path, key: str) -> list[dict]:
         return [dict(r) for r in rows]
     finally:
         conn.close()
+
+
+def get_object_units_for_embedding(vault: Path, key: str) -> list[dict]:
+    """Fetch object_units from the memory DB for a given paper."""
+    db_path = get_memory_db_path(vault)
+    if not db_path.exists():
+        return []
+    conn = get_connection(db_path, read_only=True)
+    try:
+        rows = conn.execute(
+            """SELECT unit_id, paper_id, section_path,
+                      object_kind, object_label, caption_text, nearby_body_text,
+                      page_span_json, token_estimate
+               FROM object_units
+               WHERE paper_id=? AND indexable=1
+               ORDER BY unit_id""",
+            (key,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def embed_object_units(vault: Path, zotero_key: str, object_units: list[dict]) -> int:
+    """Embed object_units into paperforge_objects collection."""
+    if not object_units:
+        return 0
+
+    from paperforge.retrieval.manifest import compute_object_units_hash, RETRIEVAL_POLICY_VERSION
+
+    provider = OpenAICompatibleProvider(vault)
+    current_hash = compute_object_units_hash(object_units)
+
+    texts = [
+        "\n".join(
+            x for x in [
+                u.get("object_label", ""),
+                u.get("caption_text", ""),
+                u.get("nearby_body_text", ""),
+            ]
+            if x
+        )
+        for u in object_units
+    ]
+
+    ids = [u["unit_id"] for u in object_units]
+    metadatas = [
+        {
+            "paper_id": zotero_key,
+            "section_path": u.get("section_path", ""),
+            "unit_id": u["unit_id"],
+            "unit_kind": "object",
+            "object_kind": u.get("object_kind", ""),
+            "object_label": u.get("object_label", ""),
+            "object_units_hash": current_hash,
+            "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
+            "token_estimate": u.get("token_estimate", 0),
+        }
+        for u in object_units
+    ]
+
+    embeddings = provider.encode(texts)
+    collection = get_collection(vault, name="paperforge_objects")
+    collection.add(ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
+    return len(object_units)

@@ -44,8 +44,8 @@ def get_embed_status(vault: Path) -> dict:
     db_path = get_vector_db_path(vault)
     exists = db_path.exists()
     chunk_count = 0
+    object_chunk_count = 0
     body_chunk_count = 0
-    healthy = True
     error = ""
     corrupted = False
     if exists:
@@ -61,6 +61,12 @@ def get_embed_status(vault: Path) -> dict:
             body_chunk_count = col_body.count()
         except Exception:
             pass
+        # Count paperforge_objects
+        try:
+            col_o = get_collection(vault, name="paperforge_objects")
+            object_chunk_count = col_o.count()
+        except Exception:
+            pass
         # Backend health (checks primary collection)
         backend = get_vector_backend(vault)
         health = backend.health()
@@ -70,11 +76,13 @@ def get_embed_status(vault: Path) -> dict:
 
     model = get_api_model(vault)
 
+
     return {
         "db_exists": exists,
         "chunk_count": chunk_count,
         "body_chunk_count": body_chunk_count,
-        "total_chunks": chunk_count + body_chunk_count,
+        "object_chunk_count": object_chunk_count,
+        "total_chunks": chunk_count + body_chunk_count + object_chunk_count,
         "model": model,
         "mode": "api",
         "healthy": healthy,

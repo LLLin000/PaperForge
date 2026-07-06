@@ -16,7 +16,7 @@ from paperforge.embedding.build_state import (
     read_vector_build_state,
     write_vector_build_state,
 )
-from paperforge.embedding.builder import embed_body_units, embed_paper, get_body_units_for_embedding
+from paperforge.embedding.builder import embed_body_units, embed_paper, get_body_units_for_embedding, get_object_units_for_embedding, embed_object_units
 from paperforge.embedding.preflight import _preflight_check
 from paperforge.embedding.search import merge_retrieve, retrieve_chunks
 from paperforge.embedding.status import get_embed_status
@@ -28,8 +28,10 @@ __all__ = [
     "embed_body_units",
     "embed_paper",
     "get_body_units_for_embedding",
+    "embed_object_units",
     "get_collection",
     "get_embed_status",
+    "get_object_units_for_embedding",
     "get_vector_backend",
     "get_vector_build_state_path",
     "get_vector_db_path",

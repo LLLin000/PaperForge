@@ -6,7 +6,7 @@ import sys
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
-from paperforge.retrieval.manifest import compute_body_units_hash, RETRIEVAL_POLICY_VERSION
+from paperforge.retrieval.manifest import compute_body_units_hash, compute_object_units_hash, RETRIEVAL_POLICY_VERSION
 from paperforge.core.result import PFError, PFResult
 from paperforge.embedding import (
     delete_paper_vectors,
@@ -22,7 +22,7 @@ from paperforge.memory.chunker import chunk_fulltext
 from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.worker.asset_index import read_index
 from paperforge.worker._progress import progress_bar
-from paperforge.embedding.builder import embed_body_units, get_body_units_for_embedding
+from paperforge.embedding.builder import embed_body_units, embed_object_units, get_body_units_for_embedding, get_object_units_for_embedding
 from paperforge.memory.db import get_connection, get_memory_db_path
 
 
@@ -35,6 +35,21 @@ def _has_body_units_in_db(vault: Path, key: str) -> bool:
     try:
         cnt = conn.execute(
             "SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1",
+            (key,),
+        ).fetchone()[0]
+        return cnt > 0
+    finally:
+        conn.close()
+
+def _has_object_units_in_db(vault: Path, key: str) -> bool:
+    """Check if paper has object_units in the memory DB."""
+    db_path = get_memory_db_path(vault)
+    if not db_path.exists():
+        return False
+    conn = get_connection(db_path, read_only=True)
+    try:
+        cnt = conn.execute(
+            "SELECT COUNT(*) FROM object_units WHERE paper_id=? AND indexable=1",
             (key,),
         ).fetchone()[0]
         return cnt > 0
@@ -69,6 +84,9 @@ def run(args: argparse.Namespace) -> int:
             py_version=sys.version.split()[0],
             db_exists=status.get("db_exists", False),
             chunk_count=status.get("chunk_count", 0),
+            body_chunk_count=status.get("body_chunk_count", 0),
+            object_chunk_count=status.get("object_chunk_count", 0),
+            total_chunks=status.get("total_chunks", 0),
             build_state=status.get("build_state"),
             healthy=status.get("healthy", True),
             corrupted=status.get("corrupted", False),
@@ -208,37 +226,57 @@ def run(args: argparse.Namespace) -> int:
         if not key:
             continue
 
-        # Check body_units first
+        # Check body_units and object_units first
         has_body = _has_body_units_in_db(vault, key)
+        has_object = _has_object_units_in_db(vault, key)
 
-        if has_body:
-            # Body units path
-            body_units = get_body_units_for_embedding(vault, key)
-            if not body_units:
-                continue
+        if has_body or has_object:
+            body_units = get_body_units_for_embedding(vault, key) if has_body else []
+            object_units = get_object_units_for_embedding(vault, key) if has_object else []
 
             if resume:
-                try:
-                    col = get_collection(vault, name="paperforge_body")
-                    existing = col.get(where={"paper_id": key}, limit=1)
-                    if existing.get("ids"):
-                        meta = existing.get("metadatas", [{}])[0]
-                        current_hash = compute_body_units_hash(body_units)
-                        if (meta.get("body_units_hash") == current_hash
-                            and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION):
-                            papers_skipped += 1
-                            continue
-                except Exception as exc:
-                    err = str(exc).lower()
-                    if "hnsw" in err or "compaction" in err:
-                        logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
-                    pass
+                body_ok = not body_units
+                object_ok = not object_units
+
+                if body_units:
+                    try:
+                        col = get_collection(vault, name="paperforge_body")
+                        existing = col.get(where={"paper_id": key}, limit=1)
+                        if existing.get("ids"):
+                            meta = existing.get("metadatas", [{}])[0]
+                            current_body_hash = compute_body_units_hash(body_units)
+                            body_ok = (meta.get("body_units_hash") == current_body_hash
+                                       and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
+                    except Exception:
+                        pass
+
+                if object_units:
+                    try:
+                        col = get_collection(vault, name="paperforge_objects")
+                        existing = col.get(where={"paper_id": key}, limit=1)
+                        if existing.get("ids"):
+                            meta = existing.get("metadatas", [{}])[0]
+                            current_obj_hash = compute_object_units_hash(object_units)
+                            object_ok = (meta.get("object_units_hash") == current_obj_hash
+                                         and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
+                    except Exception:
+                        pass
+
+                if body_ok and object_ok:
+                    papers_skipped += 1
+                    continue
+
             try:
                 i += 1
                 print(f"EMBED_PROGRESS:{i}:{total}:{key}", flush=True)
                 delete_paper_vectors(vault, key)
-                n = embed_body_units(vault, key, body_units)
-                chunks_embedded += n
+                chunks_body = 0
+                chunks_object = 0
+                if body_units:
+                    chunks_body = embed_body_units(vault, key, body_units)
+                if object_units:
+                    chunks_object = embed_object_units(vault, key, object_units)
+                chunks_embedded += chunks_body + chunks_object
                 papers_embedded += 1
                 mark_vector_build_state(vault,
                     current=i, paper_id=key,
@@ -266,6 +304,9 @@ def run(args: argparse.Namespace) -> int:
                     py_version=sys.version.split()[0],
                     db_exists=get_vector_db_path(vault).exists(),
                     chunk_count=_actual,
+                    body_chunk_count=0,
+                    object_chunk_count=0,
+                    total_chunks=_actual,
                     build_state=read_vector_build_state(vault),
                     healthy=False,
                     error=str(e),
@@ -338,6 +379,9 @@ def run(args: argparse.Namespace) -> int:
                     py_version=sys.version.split()[0],
                     db_exists=get_vector_db_path(vault).exists(),
                     chunk_count=_actual,
+                    body_chunk_count=0,
+                    object_chunk_count=0,
+                    total_chunks=_actual,
                     build_state=read_vector_build_state(vault),
                     healthy=False,
                     error=str(e),
@@ -358,10 +402,16 @@ def run(args: argparse.Namespace) -> int:
         _real_chunks = _status.get("chunk_count", chunks_embedded)
         _mode = _status.get("mode", "")
         _model = _status.get("model", "")
+        _body_chunks = _status.get("body_chunk_count", 0)
+        _object_chunks = _status.get("object_chunk_count", 0)
+        _total_chunks = _status.get("total_chunks", 0)
     except Exception:
         _real_chunks = chunks_embedded
         _mode = ""
         _model = ""
+        _body_chunks = 0
+        _object_chunks = 0
+        _total_chunks = 0
 
     write_vector_runtime(
         vault,
@@ -373,6 +423,9 @@ def run(args: argparse.Namespace) -> int:
         py_version=sys.version.split()[0],
         db_exists=True,
         chunk_count=_real_chunks,
+        body_chunk_count=_body_chunks,
+        object_chunk_count=_object_chunks,
+        total_chunks=_total_chunks,
         build_state=read_vector_build_state(vault),
         healthy=True,
         error="",

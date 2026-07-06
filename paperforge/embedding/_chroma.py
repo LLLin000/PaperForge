@@ -6,7 +6,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-_COLLECTION_NAMES = ["paperforge_fulltext", "paperforge_body"]
+_COLLECTION_NAMES = ["paperforge_fulltext", "paperforge_body", "paperforge_objects"]
 
 
 def get_vector_db_path(vault: Path) -> Path:
