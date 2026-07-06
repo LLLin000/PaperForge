@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: annotation v0.3
 milestone_name: milestone
 status: executing
-stopped_at: Phase ANN11 complete
-last_updated: "2026-07-06T09:17:23.000Z"
-last_activity: 2026-07-06 -- Phase ANN11 card lane rendering, CSS, and runtime complete
+stopped_at: Phase ANN12 Plan 1 complete (source surface and anchor contracts)
+last_updated: "2026-07-06T11:49:00.000Z"
+last_activity: 2026-07-06 -- ANN12-01 executed: source surface and anchor resolver contracts
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 33
+  total_plans: 6 (ANN12 has 2)
+  completed_plans: 5
+  percent: 38
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-02)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Phase ANN11 — Annotation Card View-Models and Layout (COMPLETE)
+**Current focus:** Phase ANN12 — Controlled Reading Surface and Source Anchors
 
 ## Current Position
 
-Phase: ANN11 (Annotation Card View-Models and Layout) — COMPLETE
-Plan: 2 of 2
-Status: Phase ANN11 complete — Card view-models, layout, rendering, CSS, i18n, and runtime regression
-Last activity: 2026-07-06 -- Phase ANN11 card lane rendering, CSS, and runtime complete
+Phase: ANN12 (Controlled Reading Surface and Source Anchors) — EXECUTING
+Plan: 2 of 2 (next: ANN12-02)
+Status: ANN12-01 complete — source surface and anchor resolver contracts done
+Last activity: 2026-07-06 -- ANN12-01 executed: source surface and anchor resolver
 
 ## Performance Metrics
 
@@ -50,6 +50,11 @@ Last activity: 2026-07-06 -- Phase ANN11 card lane rendering, CSS, and runtime c
 ## Accumulated Context
 
 ### Decisions
+
+- [ANN12-01 executed]: Source surface model uses strict priority: fulltext_path → note_path → source-unavailable, with D-17 path/file diagnostics.
+- [ANN12-01 executed]: Anchor resolution is conservative: exact requires exactly 1 normalized whitespace-collapse match; ambiguous/missing/short → page-level or unresolved.
+- [ANN12-01 executed]: Paper identity mismatch between card and source model triggers page-level downgrade with reason (T-ANN12-01-S mitigation).
+- [ANN12-01 executed]: sourceModel carries paperKey for downstream identity checks.
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:

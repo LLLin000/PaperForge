@@ -9,7 +9,7 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 ## Phases
 
 - [x] **Phase ANN10: Canvas Data Contract and View Registration** - Add a PaperForge Reading Canvas view shell with explicit paper identity and reusable module seams.
-- [ ] **Phase ANN11: Annotation Card View-Models and Layout** - Project existing annotations into read-only card models and deterministic side lanes.
+- [x] **Phase ANN11: Annotation Card View-Models and Layout** - Project existing annotations into read-only card models and deterministic side lanes.
 - [ ] **Phase ANN12: Controlled Reading Surface and Source Anchors** - Render a PaperForge-owned central source surface with exact, page-level, and unresolved anchors.
 - [ ] **Phase ANN13: Bidirectional Navigation and Fallback Paths** - Connect cards and source anchors through focus/scroll behavior while preserving v0.2 PDF navigation fallback.
 - [ ] **Phase ANN14: Focused Connector Layer and Visual Polish** - Draw guarded focused connectors and harden responsive/readable canvas presentation.
@@ -56,8 +56,8 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 
 **Plans:** 2 plans
 
-- [ ] `ANN11-01-PLAN.md` - Card view-models and deterministic layout pure contracts (Wave 1).
-- [ ] `ANN11-02-PLAN.md` - Card lane DOM, CSS resilience, i18n, and guarded runtime gate (Wave 2, depends on ANN10-02 and ANN11-01).
+- [x] `ANN11-01-PLAN.md` - Card view-models and deterministic layout pure contracts (Wave 1).
+- [x] `ANN11-02-PLAN.md` - Card lane DOM, CSS resilience, i18n, and guarded runtime gate (Wave 2, depends on ANN10-02 and ANN11-01).
 
 ### Phase ANN12: Controlled Reading Surface and Source Anchors
 
@@ -75,7 +75,10 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 4. Anchor rendering uses safe text insertion and namespaced classes.
 5. The implementation avoids native PDF DOM selectors and treats any future PDF-aware surface as a separate hidden seam.
 
-**Plans:** TBD during phase planning.
+**Plans:** 2 plans
+
+- [x] `ANN12-01-PLAN.md` — Pure source surface and anchor resolver contracts (completed 2026-07-06).
+- [ ] `ANN12-02-PLAN.md` — Central source DOM rendering and anchor visual states.
 
 ### Phase ANN13: Bidirectional Navigation and Fallback Paths
 
