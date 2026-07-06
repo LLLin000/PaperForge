@@ -39,8 +39,16 @@ def write_vector_build_state(vault: Path, state: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
-    tmp.replace(path)
-
+    try:
+        tmp.replace(path)
+    except OSError:
+        # Windows: target file may be locked (e.g., Obsidian plugin reading it).
+        # Fall back to direct write — atomicity is secondary to avoiding crash.
+        path.write_text(tmp.read_text(encoding="utf-8"), encoding="utf-8")
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
 
 def mark_vector_build_state(vault: Path, **fields) -> dict:
     state = read_vector_build_state(vault)
