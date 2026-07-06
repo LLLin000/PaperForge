@@ -96,9 +96,14 @@ def build_body_units(
     for b in structured_blocks:
         bid = b.get("block_id")
         if bid is not None:
-            block_map[str(bid)] = b
-            block_map[bid] = b
-
+            key = str(bid)
+            # ponytail: same block_id appears on multiple pages in real OCR data
+            # (e.g. running headers like \"Materials\" on pages 1-7).
+            # Prefer the entry that has non-empty text content.
+            existing = block_map.get(key)
+            if existing is None or (b.get("text") and not existing.get("text")):
+                block_map[key] = b
+                block_map[bid] = b
     def walk(node: dict[str, Any], inherited_path: list[str]) -> None:
         this_path = inherited_path + [node["title"]]
 
