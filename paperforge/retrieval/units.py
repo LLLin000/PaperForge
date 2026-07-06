@@ -15,12 +15,12 @@ from typing import Any
 # ── Role helper ──
 
 def _body_unit_role_kind(role: str) -> str | None:
-    """Map a block's role to body unit kind, or None if excluded."""
-    if role == "body_paragraph":
-        return "body"
-    if role in {"structured_insert", "non_body_insert", "backmatter_body"}:
-        return "backmatter_body"
-    return None  # reference_item, reference_heading, heading, caption, asset, etc.
+    """Map a block's role to body unit kind, or None if excluded.
+    Only reference-zone blocks are excluded; everything that appears
+    in the rendered fulltext is fair game."""
+    if role in {"reference_item", "reference_heading"}:
+        return None
+    return "body"
 
 
 def _split_if_oversized(text: str, max_tokens: int = 1000) -> list[str]:

@@ -65,14 +65,14 @@ def build_structure_tree(
             if h2["markdown_level"] <= h["markdown_level"]:
                 next_sibling = h2["emitted_order"]
                 break
-        bounds_map[h["block_id"]] = {
+        bounds_map[f"p{h['page']}:{h['block_id']}"] = {
             "start": h["emitted_order"],
             "end": next_sibling or float("inf"),
         }
 
     # ── interval assignment (recursive) ──
     def _assign_intervals(node: dict[str, Any]) -> None:
-        bounds = bounds_map.get(node["block_id"])
+        bounds = bounds_map.get(f"p{node['page']}:{node['block_id']}")
         if bounds is None:
             return
 

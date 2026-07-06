@@ -113,7 +113,7 @@ for key in KEYS:
         tree = read_json(OCR_ROOT / key / "index" / "structure-tree.json")
         nodes = all_nodes(tree)
         render_map = read_json(OCR_ROOT / key / "render" / "render-map.json")
-        emitted_ids = {str(e["block_id"]) for e in render_map["emitted_blocks"] if e.get("block_id")}
+        emitted_ids = {f"p{e["page"]}:{str(e["block_id"])}" for e in render_map["emitted_blocks"] if e.get("page") is not None and e.get("block_id") is not None}
 
         check(f"{key}: tree has nodes", len(nodes) > 0)
 

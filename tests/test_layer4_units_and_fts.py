@@ -139,7 +139,7 @@ def test_backmatter_body_creates_separate_unit():
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     assert len(units) == 1
-    assert units[0]["unit_kind"] == "backmatter_body"
+    assert units[0]["unit_kind"] == "body"
 
 
 def test_mixed_body_and_backmatter_split():
@@ -155,10 +155,8 @@ def test_mixed_body_and_backmatter_split():
     ]
     units = build_body_units(tree=tree, structured_blocks=blocks)
     kinds = {u["unit_kind"] for u in units}
-    assert "body" in kinds
-    assert "backmatter_body" in kinds
-    assert len(units) == 2
-    assert len({u["unit_id"] for u in units}) == len(units)
+    assert kinds == {"body"}
+    assert len(units) == 1  # merged since same kind now
 
 
 def test_token_cap_splits_into_parts():
