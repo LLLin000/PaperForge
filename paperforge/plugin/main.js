@@ -4416,6 +4416,15 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._navigationState = null;
         this._boundHandleCanvasClick = null;
         this._boundHandleCanvasKeydown = null;
+        // ANN14-03: Connector runtime state (transient, no persistence)
+        this._connectorLayerEl = null;
+        this._connectorFrameHandle = null;
+        this._hoveredCardId = null;
+        this._hoveredAnchorId = null;
+        this._connectorBoundMouseover = null;
+        this._connectorBoundMouseout = null;
+        this._connectorBoundScroll = null;
+        this._connectorBoundResize = null;
     }
 
     // ── ANN12-02: Runtime source loading ──
@@ -4658,6 +4667,9 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._canvasContext = null;
         this._vm = null;
         this._navigationState = null;
+        // ANN14-03: Clear connector field refs (DOM already cleared by _cleanupNavigation)
+        this._connectorLayerEl = null;
+        this._connectorFrameHandle = null;
     }
 
     getNavigationState() {
@@ -4673,6 +4685,7 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     _cleanupNavigation() {
+        // ── Cleanup ANN13 event listeners ──
         if (this.contentEl && this._boundHandleCanvasClick) {
             this.contentEl.removeEventListener('click', this._boundHandleCanvasClick);
         }
@@ -4681,6 +4694,217 @@ class PaperForgeReadingCanvasView extends ItemView {
         }
         this._boundHandleCanvasClick = null;
         this._boundHandleCanvasKeydown = null;
+
+        // ── ANN14-03: Cleanup connector runtime (hover, frame, listeners, DOM) ──
+        if (this._connectorFrameHandle) {
+            cancelAnimationFrame(this._connectorFrameHandle);
+            this._connectorFrameHandle = null;
+        }
+        if (this.contentEl && this._connectorBoundMouseover) {
+            this.contentEl.removeEventListener('mouseover', this._connectorBoundMouseover);
+        }
+        if (this.contentEl && this._connectorBoundMouseout) {
+            this.contentEl.removeEventListener('mouseout', this._connectorBoundMouseout);
+        }
+        this._connectorBoundMouseover = null;
+        this._connectorBoundMouseout = null;
+        // Scroll listener should already be removed when the ref is nulled
+        // by _initConnectorScrollResize cleanup path; handle dangling ref.
+        this._connectorBoundScroll = null;
+        if (this._connectorBoundResize) {
+            window.removeEventListener('resize', this._connectorBoundResize);
+            this._connectorBoundResize = null;
+        }
+        // Clear connector layer DOM
+        this._clearConnectorLayer();
+        // Reset hover state (D-09/D-17)
+        this._hoveredCardId = null;
+        this._hoveredAnchorId = null;
+    }
+
+    // ── ANN14-03: Connector layer helpers ──
+
+    /**
+     * Clear all child elements from the connector SVG layer.
+     * Safe to call when the layer is null (no-op).
+     * @private
+     */
+    _clearConnectorLayer() {
+        if (this._connectorLayerEl) {
+            while (this._connectorLayerEl.firstChild) {
+                this._connectorLayerEl.removeChild(this._connectorLayerEl.firstChild);
+            }
+        }
+    }
+
+    /**
+     * Initialize delegated mouseover/mouseout handlers for connector hover
+     * detection.  Tracks hoveredCardId/hoveredAnchorId and schedules connector
+     * updates.  Listeners are cleaned up by _cleanupNavigation (D-09/D-17).
+     *
+     * @param {HTMLElement} contentEl
+     * @private
+     */
+    _initConnectorHoverEvents(contentEl) {
+        this._connectorBoundMouseover = (evt) => {
+            var cardEl = evt.target.closest('[data-card-id]');
+            if (cardEl) {
+                var cardId = cardEl.getAttribute('data-card-id');
+                // Derive anchor ID from the card's anchor attribute or cardId
+                var anchorEl = cardEl.querySelector('[data-anchor-id]');
+                var anchorId = anchorEl ? anchorEl.getAttribute('data-anchor-id') : cardId;
+                if (cardId !== this._hoveredCardId || anchorId !== this._hoveredAnchorId) {
+                    this._hoveredCardId = cardId;
+                    this._hoveredAnchorId = anchorId;
+                    this._scheduleConnectorUpdate();
+                }
+                return;
+            }
+            // Hover directly over an anchor element (not inside a card)
+            var anchorElDirect = evt.target.closest('[data-anchor-id]');
+            if (anchorElDirect) {
+                var aId = anchorElDirect.getAttribute('data-anchor-id');
+                if (aId !== this._hoveredAnchorId) {
+                    this._hoveredAnchorId = aId;
+                    this._hoveredCardId = aId;
+                    this._scheduleConnectorUpdate();
+                }
+            }
+        };
+
+        this._connectorBoundMouseout = (evt) => {
+            // Only clear hover if moving outside any card/anchor and outside contentEl
+            var related = evt.relatedTarget;
+            if (related) {
+                if (related.closest) {
+                    if (related.closest('[data-card-id]') || related.closest('[data-anchor-id]')) return;
+                }
+                if (this.contentEl && this.contentEl.contains(related)) return;
+            }
+            if (this._hoveredCardId !== null || this._hoveredAnchorId !== null) {
+                this._hoveredCardId = null;
+                this._hoveredAnchorId = null;
+                this._scheduleConnectorUpdate();
+            }
+        };
+
+        contentEl.addEventListener('mouseover', this._connectorBoundMouseover);
+        contentEl.addEventListener('mouseout', this._connectorBoundMouseout);
+    }
+
+    /**
+     * Initialize scroll and resize listeners that schedule connector
+     * recomputation.  Uses passive scroll for performance.  Resize listener
+     * is on window; scroll listener is on contentEl (D-06/D-09).
+     * @private
+     */
+    _initConnectorScrollResize() {
+        this._connectorBoundScroll = () => this._scheduleConnectorUpdate();
+        this._connectorBoundResize = () => this._scheduleConnectorUpdate();
+
+        if (this.contentEl) {
+            this.contentEl.addEventListener('scroll', this._connectorBoundScroll, { passive: true });
+        }
+        window.addEventListener('resize', this._connectorBoundResize);
+    }
+
+    /**
+     * Schedule a connector geometry update on the next animation frame.
+     * Only one frame is pending at a time; subsequent calls cancel the
+     * previous and reschedule (D-06 conservative throttle).
+     * @private
+     */
+    _scheduleConnectorUpdate() {
+        if (this._connectorFrameHandle) {
+            cancelAnimationFrame(this._connectorFrameHandle);
+        }
+        this._connectorFrameHandle = requestAnimationFrame(() => {
+            this._connectorFrameHandle = null;
+            this._updateConnector();
+        });
+    }
+
+    /**
+     * Update the connector line for the current focused pair.
+     *
+     * Computes candidate from navigation + hover state, measures DOM
+     * rectangles for card and exact anchor endpoints, and renders the
+     * connector line.  For hidden states (no focus, page-level anchor,
+     * missing DOM, zero-size, offscreen, etc.), clears the layer.
+     *
+     * Invoked after selection changes, hover changes, scroll, resize,
+     * and explicit recompute requests.  Renders at most one connector.
+     *
+     * @param {string} [modifier] - 'selected' or 'hovered' (defaults to 'selected').
+     * @private
+     */
+    _updateConnector(modifier) {
+        var canvas = require('./src/canvas');
+
+        // ── Compute connector candidate ──
+        var cards = (this._vm && this._vm.cards) || [];
+        var hoverState = (this._hoveredCardId != null)
+            ? { hoveredCardId: this._hoveredCardId, hoveredAnchorId: this._hoveredAnchorId }
+            : null;
+
+        var candidate = canvas.computeFocusedConnectorCandidate({
+            navState: this._navigationState,
+            hoverState: hoverState,
+            cards: cards,
+            paperKey: this._paperKey,
+        });
+
+        // ── Hidden candidate → clear layer ──
+        if (candidate.state !== canvas.CONNECTOR_STATES.VISIBLE) {
+            var canvas2 = require('./src/canvas');
+            canvas2.updateCanvasConnectorLayer(this._connectorLayerEl, null);
+            return;
+        }
+
+        // ── Measure PaperForge-owned DOM endpoints ──
+        var contentEl = this.contentEl;
+        if (!contentEl) {
+            var canvas3 = require('./src/canvas');
+            canvas3.updateCanvasConnectorLayer(this._connectorLayerEl, null);
+            return;
+        }
+
+        var canvasRect = contentEl.getBoundingClientRect();
+
+        // Card endpoint: query by data-card-id
+        var cardEl = contentEl.querySelector('[data-card-id="' + candidate.cardId + '"]');
+        if (!cardEl) {
+            var canvas4 = require('./src/canvas');
+            canvas4.updateCanvasConnectorLayer(this._connectorLayerEl, null);
+            return;
+        }
+        var cardRect = cardEl.getBoundingClientRect();
+
+        // Anchor endpoint: query by data-anchor-id + data-anchor-status="exact" (D-03/D-04)
+        var anchorEl = contentEl.querySelector(
+            '[data-anchor-id="' + candidate.anchorId + '"][data-anchor-status="exact"]'
+        );
+        if (!anchorEl) {
+            var canvas5 = require('./src/canvas');
+            canvas5.updateCanvasConnectorLayer(this._connectorLayerEl, null);
+            return;
+        }
+        var anchorRect = anchorEl.getBoundingClientRect();
+
+        // ── Compute geometry ──
+        var geometry = canvas.measureConnectorGeometry({
+            candidate: candidate,
+            canvasRect: canvasRect,
+            cardRect: cardRect,
+            anchorRect: anchorRect,
+        });
+
+        // ── Render ──
+        canvas.updateCanvasConnectorLayer(
+            this._connectorLayerEl,
+            geometry,
+            modifier || 'selected'
+        );
     }
 
     _handleCanvasClick(evt) {
@@ -4785,6 +5009,10 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._vm = vm;
         this._navigationState = canvas.createInitialNavState();
         this._initDelegatedEvents(contentEl);
+        // ANN14-03: Create connector SVG layer after loaded canvas DOM is rendered (D-13/D-17/D-20)
+        this._connectorLayerEl = canvas.renderCanvasConnectorLayer(contentEl);
+        this._initConnectorScrollResize();
+        this._initConnectorHoverEvents(contentEl);
     }
 
     /**

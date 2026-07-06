@@ -879,3 +879,205 @@ describe('ANN13-04 Task 4 — Fallback PDF handling', () => {
         expect(view.app.workspace.openLinkText).not.toHaveBeenCalled();
     });
 });
+
+// ── ANN14-03 Task 1: Connector layer ownership ──
+
+describe('ANN14-03 Task 1 — Connector layer ownership', () => {
+
+    function makeCanvasView() {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl, app: makeStubApp() });
+        view.contentEl = contentEl;
+        view.app = makeStubApp();
+        return { view, containerEl, contentEl };
+    }
+
+    it('constructor initializes connector fields to null/zero', () => {
+        const { view } = makeCanvasView();
+        expect(view._connectorLayerEl).toBeNull();
+        expect(view._connectorFrameHandle).toBeNull();
+        expect(view._hoveredCardId).toBeNull();
+        expect(view._hoveredAnchorId).toBeNull();
+        expect(view._connectorBoundMouseover).toBeNull();
+        expect(view._connectorBoundMouseout).toBeNull();
+        expect(view._connectorBoundScroll).toBeNull();
+        expect(view._connectorBoundResize).toBeNull();
+    });
+
+    it('has _clearConnectorLayer method', () => {
+        const { view } = makeCanvasView();
+        expect(typeof view._clearConnectorLayer).toBe('function');
+    });
+
+    it('has _initConnectorHoverEvents method', () => {
+        const { view } = makeCanvasView();
+        expect(typeof view._initConnectorHoverEvents).toBe('function');
+    });
+
+    it('has _initConnectorScrollResize method', () => {
+        const { view } = makeCanvasView();
+        expect(typeof view._initConnectorScrollResize).toBe('function');
+    });
+
+    it('has _scheduleConnectorUpdate method', () => {
+        const { view } = makeCanvasView();
+        expect(typeof view._scheduleConnectorUpdate).toBe('function');
+    });
+
+    it('has _updateConnector method', () => {
+        const { view } = makeCanvasView();
+        expect(typeof view._updateConnector).toBe('function');
+    });
+
+    it('_renderLoadedCanvas creates connector layer with correct class', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_CONN';
+        view._paperEntry = { key: 'KEY_CONN', title: 'Connector Test' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        const layer = contentEl.querySelector('.paperforge-canvas-connector-layer');
+        expect(layer).toBeTruthy();
+        expect(layer.tagName).toBe('svg');
+        expect(layer.getAttribute('aria-hidden')).toBe('true');
+        expect(view._connectorLayerEl).toBe(layer);
+    });
+
+    it('_renderLoadedCanvas layer is empty (no default paths)', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_EMPTY';
+        view._paperEntry = { key: 'KEY_EMPTY', title: 'Empty' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        const layer = contentEl.querySelector('.paperforge-canvas-connector-layer');
+        expect(layer).toBeTruthy();
+        // Layer should have no child elements initially
+        expect(layer.children.length).toBe(0);
+    });
+
+    it('_clearConnectorLayer is safe on null layer and on empty layer', () => {
+        const { view } = makeCanvasView();
+        // Null layer
+        expect(() => view._clearConnectorLayer()).not.toThrow();
+        // Empty layer (after _renderLoadedCanvas)
+        view._paperKey = 'KEY_SAFE';
+        view._paperEntry = { key: 'KEY_SAFE', title: 'Safe' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+        expect(() => view._clearConnectorLayer()).not.toThrow();
+    });
+
+    it('onClose clears connector layer and resets hover state', () => {
+        const { view } = makeCanvasView();
+        view._paperKey = 'KEY_CLOSE';
+        view._paperEntry = { key: 'KEY_CLOSE', title: 'Close' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        // Set some hover state
+        view._hoveredCardId = 'card-1';
+        view._hoveredAnchorId = 'card-1';
+
+        view.onClose();
+
+        expect(view._connectorLayerEl).toBeNull();
+        expect(view._connectorFrameHandle).toBeNull();
+        expect(view._hoveredCardId).toBeNull();
+        expect(view._hoveredAnchorId).toBeNull();
+    });
+
+    it('_cleanupNavigation clears connector hover state and bound refs', () => {
+        const { view } = makeCanvasView();
+        view._paperKey = 'KEY_CLEAN';
+        view._paperEntry = { key: 'KEY_CLEAN', title: 'Clean' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        // Verify initial state after render
+        expect(view._connectorLayerEl).toBeTruthy();
+        expect(view._connectorBoundScroll).toBeTruthy();
+        expect(view._connectorBoundResize).toBeTruthy();
+
+        view._cleanupNavigation();
+
+        expect(view._hoveredCardId).toBeNull();
+        expect(view._hoveredAnchorId).toBeNull();
+        expect(view._connectorBoundMouseover).toBeNull();
+        expect(view._connectorBoundMouseout).toBeNull();
+    });
+
+    it('consecutive _cleanupNavigation calls are safe', () => {
+        const { view } = makeCanvasView();
+        expect(() => {
+            view._cleanupNavigation();
+            view._cleanupNavigation();
+        }).not.toThrow();
+    });
+
+    it('_cleanupNavigation preserves ANN13 event cleanup', () => {
+        const { view } = makeCanvasView();
+        view._paperKey = 'KEY_PRESERVE';
+        view._paperEntry = { key: 'KEY_PRESERVE', title: 'Preserve' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        view._cleanupNavigation();
+
+        // ANN13 cleanup should still work
+        expect(view._boundHandleCanvasClick).toBeNull();
+        expect(view._boundHandleCanvasKeydown).toBeNull();
+    });
+
+    it('empty contentEl in _cleanupNavigation does not throw', () => {
+        const { view, contentEl } = makeCanvasView();
+        // Remove contentEl to simulate edge case
+        view.contentEl = null;
+        expect(() => view._cleanupNavigation()).not.toThrow();
+    });
+
+    it('_renderLoadedCanvas scroll listener references are set', () => {
+        const { view } = makeCanvasView();
+        view._paperKey = 'KEY_SCROLL';
+        view._paperEntry = { key: 'KEY_SCROLL', title: 'Scroll' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        expect(typeof view._connectorBoundScroll).toBe('function');
+        expect(typeof view._connectorBoundResize).toBe('function');
+    });
+
+    it('_renderLoadedCanvas adds connector layer after source surface', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_ORDER';
+        view._paperEntry = { key: 'KEY_ORDER', title: 'Order' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        // The connector layer should be the last child of contentEl
+        const allChildren = contentEl.children;
+        const lastChild = allChildren[allChildren.length - 1];
+        expect(lastChild.classList.contains('paperforge-canvas-connector-layer')).toBe(true);
+    });
+});
