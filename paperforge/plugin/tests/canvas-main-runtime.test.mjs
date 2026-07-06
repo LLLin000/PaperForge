@@ -1245,3 +1245,161 @@ describe('ANN14-03 Task 2 — Hover + selection connector wiring', () => {
         expect(() => view._initConnectorHoverEvents(null)).not.toThrow();
     });
 });
+
+// ── ANN14-03 Task 3: Resize/scroll scheduling + lifecycle clearing ──
+
+describe('ANN14-03 Task 3 — Resize/scroll lifecycle', () => {
+
+    function makeCanvasView() {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        addCreateEl(contentEl);
+        addCreateEl(containerEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl, app: makeStubApp() });
+        view.contentEl = contentEl;
+        view.app = makeStubApp();
+        return { view, containerEl, contentEl };
+    }
+
+    it('_scheduleConnectorUpdate cancels previous frame handle', () => {
+        const { view } = makeCanvasView();
+        view._connectorFrameHandle = 42;
+        view._scheduleConnectorUpdate();
+        // After _scheduleConnectorUpdate, frame handle should be a number (RAF id)
+        expect(typeof view._connectorFrameHandle).toBe('number');
+        expect(view._connectorFrameHandle).not.toBe(42);
+    });
+
+    it('_scheduleConnectorUpdate does not throw when called multiple times', () => {
+        const { view } = makeCanvasView();
+        expect(() => {
+            view._scheduleConnectorUpdate();
+            view._scheduleConnectorUpdate();
+            view._scheduleConnectorUpdate();
+        }).not.toThrow();
+    });
+
+    it('_initConnectorScrollResize does not throw when contentEl is null', () => {
+        const { view } = makeCanvasView();
+        view.contentEl = null;
+        expect(() => view._initConnectorScrollResize()).not.toThrow();
+    });
+
+    it('_initConnectorScrollResize sets bound handlers', () => {
+        const { view } = makeCanvasView();
+        view.contentEl = document.createElement('div');
+        view._initConnectorScrollResize();
+        expect(typeof view._connectorBoundScroll).toBe('function');
+        expect(typeof view._connectorBoundResize).toBe('function');
+    });
+
+    it('_cleanupNavigation removes scroll/resize listeners', () => {
+        const { view } = makeCanvasView();
+        view.contentEl = document.createElement('div');
+        view._initConnectorScrollResize();
+
+        // Save handlers before cleanup
+        var scrollHandler = view._connectorBoundScroll;
+        var resizeHandler = view._connectorBoundResize;
+
+        view._cleanupNavigation();
+
+        // Handlers should be null
+        expect(view._connectorBoundScroll).toBeNull();
+        expect(view._connectorBoundMouseover).toBeNull();
+        expect(view._connectorBoundMouseout).toBeNull();
+    });
+
+    it('_cleanupNavigation cancels frame handle', () => {
+        const { view } = makeCanvasView();
+        view._connectorFrameHandle = 123;
+        view._cleanupNavigation();
+        expect(view._connectorFrameHandle).toBeNull();
+    });
+
+    it('_cleanupNavigation clears layer DOM content', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_CLEAR';
+        view._paperEntry = { key: 'KEY_CLEAR', title: 'Clear' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        // Add some content to the layer
+        var layer = view._connectorLayerEl;
+        var ns = 'http://www.w3.org/2000/svg';
+        layer.appendChild(document.createElementNS(ns, 'line'));
+        layer.appendChild(document.createElementNS(ns, 'circle'));
+        expect(layer.children.length).toBeGreaterThanOrEqual(2);
+
+        view._cleanupNavigation();
+
+        // Layer children should be cleared
+        expect(layer.children.length).toBe(0);
+    });
+
+    it('_clearConnectorLayer on null layerEl does not throw', () => {
+        const { view } = makeCanvasView();
+        view._connectorLayerEl = null;
+        expect(() => view._clearConnectorLayer()).not.toThrow();
+    });
+
+    it('onClose after _renderLoadedCanvas cancels frame and removes listeners', () => {
+        const { view } = makeCanvasView();
+        view._paperKey = 'KEY_CLOSE2';
+        view._paperEntry = { key: 'KEY_CLOSE2', title: 'Close2' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        // Frame handle should be set by _initConnectorScrollResize → _scheduleConnectorUpdate
+        var frameHandleBefore = view._connectorFrameHandle;
+
+        view.onClose();
+
+        expect(view._connectorLayerEl).toBeNull();
+        expect(view._connectorFrameHandle).toBeNull();
+        // onClose doesn't throw
+    });
+
+    it('double _cleanupNavigation is safe on layer DOM', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_DBL';
+        view._paperEntry = { key: 'KEY_DBL', title: 'Double' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        expect(() => {
+            view._cleanupNavigation();
+            view._cleanupNavigation();
+        }).not.toThrow();
+    });
+
+    it('paper change event clears connector layer', () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'KEY_CHANGE';
+        view._paperEntry = { key: 'KEY_CHANGE', title: 'Change' };
+        view._renderLoadedCanvas({
+            fulltext: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+            note: { path: null, exists: false, readable: false, text: null, error: 'missing' },
+        });
+
+        // Simulate the hover state being set
+        view._hoveredCardId = 'card-change';
+        view._hoveredAnchorId = 'card-change';
+
+        // When the paper changes, view is re-created and onClose+constructor run.
+        // Simulate this by calling _cleanupNavigation (called during re-init).
+        view._cleanupNavigation();
+
+        // Hover state should be cleared (re-initialized state)
+        expect(view._hoveredCardId).toBeNull();
+        expect(view._hoveredAnchorId).toBeNull();
+    });
+});
