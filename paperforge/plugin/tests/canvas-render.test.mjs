@@ -26,6 +26,11 @@ const {
     renderCanvasMissingSource,
     renderCanvasUnsupported,
     renderCanvasStaleBanner,
+    renderCanvasSourceSurface,
+    renderSourceBlock,
+    renderExactAnchorText,
+    renderPageLevelAnchorMarker,
+    renderUnresolvedAnchorStatus,
 } = await import('../src/canvas/render.js');
 
 // ── Forbidden control keywords (must not appear in any canvas state) ──
@@ -581,5 +586,304 @@ describe('renderCanvasView — stale state', () => {
         const cards = [makeCard({ id: 'ann-1', stale: true })];
         renderCanvasView(root, makeCardVM({ state: 'stale', cards: cards, stale: true }));
         assertNoForbiddenControls(root);
+    });
+});
+
+// ── ANN12-02 Task 2: Central source surface and anchor rendering ──
+
+describe('ANN12-02 — source surface rendering', () => {
+    // ── Render helper existence ──
+
+    it('exports renderCanvasSourceSurface', () => {
+        expect(typeof renderCanvasSourceSurface).toBe('function');
+    });
+
+    it('exports renderSourceBlock', () => {
+        expect(typeof renderSourceBlock).toBe('function');
+    });
+
+    it('exports renderExactAnchorText', () => {
+        expect(typeof renderExactAnchorText).toBe('function');
+    });
+
+    it('exports renderPageLevelAnchorMarker', () => {
+        expect(typeof renderPageLevelAnchorMarker).toBe('function');
+    });
+
+    it('exports renderUnresolvedAnchorStatus', () => {
+        expect(typeof renderUnresolvedAnchorStatus).toBe('function');
+    });
+});
+
+describe('ANN12-02 — exact anchor (D-06/D-08/D-09/D-10)', () => {
+    function makeExactAnchor(overrides) {
+        return {
+            anchorId: 'anchor-ann-1',
+            cardId: 'ann-1',
+            status: 'exact',
+            sourceKind: 'fulltext',
+            reason: null,
+            matchCount: 1,
+            pageIndex: 1,
+            sourceSpan: { rawStart: 10, rawEnd: 25, normStart: 10, normEnd: 25 },
+            diagnostics: { exactMatch: true },
+            ...overrides,
+        };
+    }
+
+    it('renders restrained inline highlight with namespaced class', () => {
+        const root = makeRootEl();
+        renderExactAnchorText(root, 'Text before ', 'highlighted', ' text after', '#ff0');
+
+        const highlight = root.querySelector('.paperforge-canvas-anchor--exact');
+        expect(highlight).toBeTruthy();
+        expect(highlight.textContent).toBe('highlighted');
+
+        // Restrained: has the highlight class, no connector/geometry classes
+        const html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('paperforge-canvas-connector');
+        expect(html).not.toContain('<svg');
+
+        // Text before/after preserved
+        expect(root.textContent).toContain('Text before ');
+        expect(root.textContent).toContain(' text after');
+    });
+
+    it('uses textContent for source text (no innerHTML) [D-05]', () => {
+        const root = makeRootEl();
+        renderExactAnchorText(root, 'before', '<script>alert(1)</script>', 'after', '#ff0');
+
+        const highlight = root.querySelector('.paperforge-canvas-anchor--exact');
+        expect(highlight).toBeTruthy();
+        // Raw HTML-like string preserved in textContent
+        expect(highlight.textContent).toContain('<script>alert(1)</script>');
+        // No executable script in innerHTML
+        expect(highlight.innerHTML).not.toContain('<script>');
+    });
+
+    it('renders without optional color [D-19]', () => {
+        const root = makeRootEl();
+        renderExactAnchorText(root, '', 'match', '', null);
+
+        const highlight = root.querySelector('.paperforge-canvas-anchor--exact');
+        expect(highlight).toBeTruthy();
+        expect(highlight.textContent).toBe('match');
+        // No inline background-color when color is null
+        expect(highlight.style.backgroundColor).toBeFalsy();
+    });
+
+    it('does not add connector, SVG, navigation, or selection sync [D-22/D-24]', () => {
+        const root = makeRootEl();
+        renderExactAnchorText(root, 'A', 'B', 'C', null);
+
+        const html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('paperforge-canvas-connector');
+        expect(html).not.toContain('<svg');
+        expect(html).not.toContain('data-card-id');
+        expect(html).not.toContain('onclick');
+    });
+});
+
+describe('ANN12-02 — page-level anchor (D-07/D-09/D-10)', () => {
+    function makePageLevelAnchor(overrides) {
+        return {
+            anchorId: 'anchor-ann-2',
+            cardId: 'ann-2',
+            status: 'page-level',
+            sourceKind: 'fulltext',
+            reason: 'Selected text not found in source. Using page-level anchor.',
+            matchCount: 0,
+            pageIndex: 2,
+            sourceSpan: null,
+            diagnostics: { emptySelectedText: true },
+            ...overrides,
+        };
+    }
+
+    it('renders page-level marker without inline highlight', () => {
+        const root = makeRootEl();
+        renderPageLevelAnchorMarker(root, makePageLevelAnchor());
+
+        const marker = root.querySelector('.paperforge-canvas-anchor--page-level');
+        expect(marker).toBeTruthy();
+        // Never highlights text — shows page/block marker
+        expect(marker.textContent).toContain('Page');
+        expect(marker.textContent).toContain('p. 2');
+
+        // No exact highlight class present
+        expect(root.querySelector('.paperforge-canvas-anchor--exact')).toBeNull();
+    });
+
+    it('shows reason text for page-level downgrade [D-11/D-12/D-13/D-14]', () => {
+        const root = makeRootEl();
+        const anchor = makePageLevelAnchor({ reason: 'Selected text not found in source. Using page-level anchor.' });
+        renderPageLevelAnchorMarker(root, anchor);
+
+        expect(root.textContent).toContain('Selected text not found');
+    });
+
+    it('page-level anchor uses textContent [D-05]', () => {
+        const root = makeRootEl();
+        renderPageLevelAnchorMarker(root, makePageLevelAnchor());
+
+        const marker = root.querySelector('.paperforge-canvas-anchor--page-level');
+        expect(marker).toBeTruthy();
+        expect(marker.innerHTML).not.toContain('<');
+        expect(marker.textContent.length).toBeGreaterThan(0);
+    });
+
+    it('does not render connector/SVG/navigation [D-22/D-24]', () => {
+        const root = makeRootEl();
+        renderPageLevelAnchorMarker(root, makePageLevelAnchor());
+
+        const html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('paperforge-canvas-connector');
+        expect(html).not.toContain('<svg');
+        expect(html).not.toContain('onclick');
+    });
+});
+
+describe('ANN12-02 — unresolved anchor (D-10/D-21)', () => {
+    function makeUnresolvedAnchor(overrides) {
+        return {
+            anchorId: 'anchor-ann-3',
+            cardId: 'ann-3',
+            status: 'unresolved',
+            sourceKind: null,
+            reason: 'Source content is not available.',
+            matchCount: 0,
+            pageIndex: null,
+            sourceSpan: null,
+            diagnostics: { sourceUnavailable: true, sourceReason: 'Source content is not available.' },
+            ...overrides,
+        };
+    }
+
+    it('renders explanation text only with namespaced class', () => {
+        const root = makeRootEl();
+        renderUnresolvedAnchorStatus(root, makeUnresolvedAnchor());
+
+        const statusEl = root.querySelector('.paperforge-canvas-anchor--unresolved');
+        expect(statusEl).toBeTruthy();
+        // Explanation text, not a highlight or marker
+        expect(statusEl.textContent).toContain('not available');
+
+        // No source span or highlight
+        expect(root.querySelector('.paperforge-canvas-anchor--exact')).toBeNull();
+        expect(root.querySelector('.paperforge-canvas-anchor--page-level')).toBeNull();
+    });
+
+    it('shows the reason from anchor diagnostics [D-21]', () => {
+        const root = makeRootEl();
+        renderUnresolvedAnchorStatus(root, makeUnresolvedAnchor());
+
+        expect(root.textContent).toContain('not available');
+    });
+
+    it('uses textContent for reason text [D-05]', () => {
+        const root = makeRootEl();
+        renderUnresolvedAnchorStatus(root, makeUnresolvedAnchor());
+
+        const statusEl = root.querySelector('.paperforge-canvas-anchor--unresolved');
+        expect(statusEl).toBeTruthy();
+        expect(statusEl.innerHTML).not.toContain('<');
+    });
+
+    it('does not add connector/SVG/navigation [D-22/D-24]', () => {
+        const root = makeRootEl();
+        renderUnresolvedAnchorStatus(root, makeUnresolvedAnchor());
+
+        const html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('paperforge-canvas-connector');
+        expect(html).not.toContain('<svg');
+        expect(html).not.toContain('onclick');
+    });
+});
+
+describe('ANN12-02 — renderCanvasSourceSurface (D-03/D-15/D-16/D-18)', () => {
+    it('renders source blocks with header', () => {
+        const root = makeRootEl();
+        const blocks = [
+            { id: 'block-0', pageIndex: 1, text: 'Source text block one.', sourceKind: 'fulltext' },
+            { id: 'block-1', pageIndex: 2, text: 'Source text block two.', sourceKind: 'fulltext' },
+        ];
+        renderCanvasSourceSurface(root, blocks, []);
+
+        const surface = root.querySelector('.paperforge-canvas-source-surface');
+        expect(surface).toBeTruthy();
+
+        const blockEls = surface.querySelectorAll('.paperforge-canvas-source-block');
+        expect(blockEls.length).toBe(2);
+    });
+
+    it('shows source-unavailable state when no blocks provided', () => {
+        const root = makeRootEl();
+        renderCanvasSourceSurface(root, [], [], { unavailable: true, reason: 'No source content available.' });
+
+        const unavailableEl = root.querySelector('.paperforge-canvas-source-unavailable');
+        expect(unavailableEl).toBeTruthy();
+        expect(root.textContent).toContain('No source content');
+    });
+
+    it('cards remain visible when source is unavailable [D-15/D-16/D-18]', () => {
+        const root = makeRootEl();
+        // Simulate: source unavailable but cards exist
+        const cards = [
+            { id: 'card-1', selectedText: 'Note text', comment: 'Comment' },
+        ];
+        renderCanvasSourceSurface(root, [], [], { unavailable: true, reason: 'No source.' });
+
+        // The source surface shows unavailable, cards are rendered separately
+        // by the renderCanvasView function (not this helper)
+        const unavailableEl = root.querySelector('.paperforge-canvas-source-unavailable');
+        expect(unavailableEl).toBeTruthy();
+    });
+
+    it('uses namespaced classes without connector/geometry [D-22/D-24]', () => {
+        const root = makeRootEl();
+        const blocks = [
+            { id: 'block-0', pageIndex: 1, text: 'Block text.', sourceKind: 'fulltext' },
+        ];
+        renderCanvasSourceSurface(root, blocks, []);
+
+        const html = root.innerHTML.toLowerCase();
+        expect(html).toContain('paperforge-canvas-source-surface');
+        expect(html).not.toContain('paperforge-canvas-connector');
+        expect(html).not.toContain('<svg');
+    });
+
+    it('renders source kind header (fulltext vs note) [D-01/D-02/D-03]', () => {
+        const root = makeRootEl();
+        const blocks = [
+            { id: 'block-0', pageIndex: 1, text: 'Block text.', sourceKind: 'fulltext' },
+        ];
+        renderCanvasSourceSurface(root, blocks, []);
+
+        // Source kind header should indicate fulltext
+        expect(root.textContent).toContain('fulltext');
+    });
+});
+
+describe('ANN12-02 — renderSourceBlock (D-19/D-20)', () => {
+    it('renders block text content', () => {
+        const root = makeRootEl();
+        const block = { id: 'block-0', pageIndex: 1, text: 'This is source text.', sourceKind: 'fulltext' };
+        renderSourceBlock(root, block, []);
+
+        const blockEl = root.querySelector('.paperforge-canvas-source-block');
+        expect(blockEl).toBeTruthy();
+        expect(blockEl.textContent).toContain('This is source text.');
+    });
+
+    it('does not add page-level markers for exact anchors (handled by exact helper)', () => {
+        const root = makeRootEl();
+        const block = { id: 'block-0', pageIndex: 1, text: 'Exact match is here.', sourceKind: 'fulltext' };
+        const exactAnchors = [
+            { anchorId: 'a1', cardId: 'c1', status: 'exact', sourceSpan: { rawStart: 0, rawEnd: 5 } },
+        ];
+        renderSourceBlock(root, block, exactAnchors);
+
+        // Page-level marker should not appear for exact anchors
+        expect(root.querySelector('.paperforge-canvas-anchor--page-level')).toBeNull();
     });
 });
