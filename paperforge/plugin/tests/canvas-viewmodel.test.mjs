@@ -989,4 +989,34 @@ describe('buildCanvasCard — long/CJK/HTML values (D-18)', () => {
         expect(card.comment).toBe(htmlComment);
         expect(card.commentPreview.text).toContain('<img');
     });
+
+});
+
+describe('ANN13-02 — Fallback metadata preserved in card', () => {
+
+    it('card preserves pageIndex for fallback eligibility', () => {
+        const row = makeRow({ id: 'fallback-test', page_index: 5 });
+        const card = buildCanvasCard(row);
+        expect(card.pageIndex).toBe(5);
+    });
+
+    it('card preserves sourceAttachmentKey for fallback', () => {
+        const row = makeRow({ id: 'fallback-key', source_attachment_key: 'attach-xyz' });
+        const card = buildCanvasCard(row);
+        expect(card.sourceAttachmentKey).toBe('attach-xyz');
+    });
+
+    it('card preserves sourceAnnotationKey', () => {
+        const row = makeRow({ id: 'fallback-ann', source_annotation_key: 'ann-123' });
+        const card = buildCanvasCard(row);
+        expect(card.sourceAnnotationKey).toBe('ann-123');
+    });
+
+    it('card preserves id identity', () => {
+        const row = makeRow({ id: 'fallback-identity' });
+        const card = buildCanvasCard(row);
+        expect(card.id).toBeTruthy();
+        expect(typeof card.id).toBe('string');
+    });
+
 });

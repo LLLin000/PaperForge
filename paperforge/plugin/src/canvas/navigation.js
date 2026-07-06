@@ -118,6 +118,22 @@ function reduceLifecycleAction(state, action, options) {
     return _cloneState(state);
 }
 
+function computeFallbackEligibility(card, paperKey, resolvedTarget) {
+    if (!card) {
+        return { eligible: false, reason: 'No card provided.', page: null };
+    }
+    if (card.pageIndex == null) {
+        return { eligible: false, reason: 'Annotation has no page number.', page: null };
+    }
+    if (!resolvedTarget || !resolvedTarget.ok) {
+        return { eligible: false, reason: (resolvedTarget && resolvedTarget.reason) || 'No valid PDF target available.', page: null };
+    }
+    if (paperKey && card.paperKey && paperKey !== card.paperKey) {
+        return { eligible: false, reason: 'Paper identity mismatch.', page: null };
+    }
+    return { eligible: true, reason: null, page: resolvedTarget.page || card.pageIndex };
+}
+
 module.exports = {
     NAVIGATION_ACTIONS: NAVIGATION_ACTIONS,
     SELECTION_STATUSES: SELECTION_STATUSES,
@@ -125,4 +141,5 @@ module.exports = {
     reduceCardSelection: reduceCardSelection,
     reduceSourceSelection: reduceSourceSelection,
     reduceLifecycleAction: reduceLifecycleAction,
+    computeFallbackEligibility: computeFallbackEligibility,
 };

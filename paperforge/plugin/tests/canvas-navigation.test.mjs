@@ -9,6 +9,7 @@ const {
     reduceCardSelection,
     reduceSourceSelection,
     reduceLifecycleAction,
+    computeFallbackEligibility,
 } = NAV;
 
 describe('ANN13-01 — Navigation state shapes (Task 1)', () => {
@@ -237,6 +238,68 @@ describe('ANN13-01 — Scope boundaries (D-25 / D-26 / D-27)', () => {
         expect(json).not.toContain('pdf-viewer');
         expect(json).not.toContain('pdfEmbed');
         expect(json).not.toContain('data-page-number');
+    });
+
+});
+
+describe('ANN13-02 — Fallback eligibility', () => {
+
+    const makeCard = (overrides) => ({
+        cardId: 'card-1',
+        pageIndex: 3,
+        sourceAttachmentKey: 'attach-abc',
+        paperKey: 'PAPER_A',
+        ...overrides,
+    });
+
+    const makeTarget = (overrides) => ({
+        ok: true,
+        path: 'storage/KEY/file.pdf',
+        page: 3,
+        reason: null,
+        ...overrides,
+    });
+
+    it('D-15: eligible when safe target with valid page', () => {
+        const card = makeCard();
+        const result = computeFallbackEligibility(card, 'PAPER_A', makeTarget());
+        expect(result.eligible).toBe(true);
+        expect(result.reason).toBeNull();
+        expect(result.page).toBe(3);
+    });
+
+    it('D-18: ineligible when pageIndex is missing', () => {
+        const card = makeCard({ pageIndex: null });
+        const result = computeFallbackEligibility(card, 'PAPER_A', makeTarget());
+        expect(result.eligible).toBe(false);
+        expect(result.reason).toBeTruthy();
+    });
+
+    it('D-18: ineligible when resolved target is not ok', () => {
+        const card = makeCard();
+        const result = computeFallbackEligibility(card, 'PAPER_A', makeTarget({ ok: false, reason: 'No PDF candidates.' }));
+        expect(result.eligible).toBe(false);
+        expect(result.reason).toContain('No PDF');
+    });
+
+    it('D-18: ineligible when paperKey mismatches', () => {
+        const card = makeCard({ paperKey: 'PAPER_B' });
+        const result = computeFallbackEligibility(card, 'PAPER_A', makeTarget());
+        expect(result.eligible).toBe(false);
+        expect(result.reason).toContain('mismatch');
+    });
+
+    it('D-18: ineligible when no card provided', () => {
+        const result = computeFallbackEligibility(null, 'PAPER_A', makeTarget());
+        expect(result.eligible).toBe(false);
+        expect(result.reason).toBeTruthy();
+    });
+
+    it('D-19: returns page from resolved target', () => {
+        const card = makeCard({ pageIndex: 5 });
+        const result = computeFallbackEligibility(card, 'PAPER_A', makeTarget({ page: 7 }));
+        expect(result.eligible).toBe(true);
+        expect(result.page).toBe(7);
     });
 
 });
