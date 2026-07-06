@@ -6,7 +6,7 @@ import sys
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
-from paperforge.embedding import retrieve_chunks
+from paperforge.embedding import merge_retrieve, retrieve_chunks
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.query_planning import build_query_plan, enrich_query_plan_with_runtime
 
@@ -72,7 +72,7 @@ def run(args: argparse.Namespace) -> int:
             print(f"Error: {result.error.message}", file=sys.stderr)
         return 1
 
-    if status.get("chunk_count", 0) == 0:
+    if status.get("total_chunks", 0) == 0:
         plan = enrich_query_plan_with_runtime(build_query_plan(query, "content"), vault)
         result = PFResult(
             ok=False,
@@ -96,7 +96,7 @@ def run(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        chunks = retrieve_chunks(vault, query, limit=limit, expand=args.expand)
+        chunks = merge_retrieve(vault, query, limit=limit, expand=args.expand)
     except Exception as e:
         result = PFResult(
             ok=False,
@@ -199,6 +199,5 @@ def run(args: argparse.Namespace) -> int:
         print(f"{len(chunks)} chunks for: {query}")
         for c in chunks:
             print(
-                f"  [{c.get('section', '')}] {c.get('citation_key', '')} p{c.get('page_number', 0)}: {c['chunk_text'][:80]}..."
+                f"  [{c.get('section_path', '')}] {c.get('citation_key', '')} p{c.get('page_number', 0)}: {c['chunk_text'][:80]}..."
             )
-    return 0
