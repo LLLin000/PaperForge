@@ -13,10 +13,17 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'node:fs';
 
+const CANVAS_RENDER = await import('../src/canvas/render.js');
 const {
     renderCanvasView,
-} = await import('../src/canvas/render.js');
+    renderCanvasSourceSurface,
+    renderSourceBlock,
+    renderExactAnchorText,
+    renderPageLevelAnchorMarker,
+    renderUnresolvedAnchorStatus,
+} = CANVAS_RENDER;
 
 // ── Forbidden control keywords ──
 
@@ -474,5 +481,181 @@ describe('card CSS — geometry and resilience', () => {
         const badge = root.querySelector('.paperforge-canvas-card-readonly');
         expect(badge).toBeTruthy();
         expect(badge.classList.contains('paperforge-canvas-card-readonly--true')).toBe(true);
+    });
+});
+
+// ── ANN12-02 Task 3: CSS integration and combined source + cards rendering ──
+
+describe('ANN12-02 Task 3 — CSS selector presence in styles.css', () => {
+    let cssContent;
+
+    beforeAll(() => {
+        try {
+            cssContent = fs.readFileSync(new URL('../styles.css', import.meta.url), 'utf-8');
+        } catch (e) {
+            cssContent = '';
+        }
+    });
+
+    it('defines .paperforge-canvas-source-surface CSS class', () => {
+        expect(cssContent).toContain('paperforge-canvas-source-surface');
+    });
+
+    it('defines .paperforge-canvas-source-block CSS class', () => {
+        expect(cssContent).toContain('paperforge-canvas-source-block');
+    });
+
+    it('defines .paperforge-canvas-source-header CSS class', () => {
+        expect(cssContent).toContain('paperforge-canvas-source-header');
+    });
+
+    it('defines .paperforge-canvas-source-unavailable CSS class', () => {
+        expect(cssContent).toContain('paperforge-canvas-source-unavailable');
+    });
+
+    it('defines .paperforge-canvas-anchor--exact CSS class [D-06]', () => {
+        expect(cssContent).toContain('paperforge-canvas-anchor--exact');
+    });
+
+    it('defines .paperforge-canvas-anchor--page-level CSS class [D-07]', () => {
+        expect(cssContent).toContain('paperforge-canvas-anchor--page-level');
+    });
+
+    it('defines .paperforge-canvas-anchor--unresolved CSS class [D-10]', () => {
+        expect(cssContent).toContain('paperforge-canvas-anchor--unresolved');
+    });
+
+    it('has no paperforge-canvas-connector classes [D-22]', () => {
+        // The CSS should NOT define connector classes
+        const connectorLines = cssContent.split('\n').filter(l => l.includes('paperforge-canvas-connector'));
+        expect(connectorLines.length).toBe(0);
+    });
+
+    it('has no native PDF selectors (.pdf-viewer, .pdf-embed) [D-04/D-26]', () => {
+        const lines = cssContent.split('\n');
+        for (const line of lines) {
+            if (line.includes('.paperforge-canvas') && (line.includes('.pdf-viewer') || line.includes('.pdf-embed') || line.includes('[data-page-number]'))) {
+                // This would be a violation — ANN12 CSS should not contain native PDF selectors
+                expect('Native PDF selector in ANN12 CSS: ' + line).toBe('');
+            }
+        }
+        // Pass if no violations found
+        expect(true).toBe(true);
+    });
+
+    it('has no SVG geometry or connector path selectors [D-24]', () => {
+        // ANN12 CSS should not contain SVG rules or connector geometry
+        const svgRules = cssContent.split('\n').filter(l =>
+            l.includes('svg') && l.includes('{')
+        );
+        // Allow non-ANN12 SVG rules for icons (outside source/anchor context)
+        const ann12Svg = svgRules.filter(l =>
+            l.includes('paperforge-canvas-source') || l.includes('paperforge-canvas-anchor')
+        );
+        expect(ann12Svg.length).toBe(0);
+    });
+});
+
+describe('ANN12-02 Task 3 — combined source surface + cards rendering [D-15/D-16/D-18]', () => {
+    function makeRootEl() {
+        return document.createElement('div');
+    }
+
+    function makeCardVM(overrides) {
+        const cards = overrides.cards || [];
+        const left = cards.filter(function (_, i) { return i % 2 === 0; });
+        const right = cards.filter(function (_, i) { return i % 2 === 1; });
+        const lanes = cards.length > 0 ? { left: left, right: right } : undefined;
+        return {
+            state: 'ready',
+            paperKey: 'PAPER_A',
+            message: '',
+            cards: cards,
+            lanes: lanes,
+            refreshing: false,
+            stale: false,
+            ...overrides,
+        };
+    }
+
+    function makeCard(overrides) {
+        return {
+            id: 'ann-test',
+            selectedText: 'Test annotation text.',
+            comment: 'Test comment.',
+            pageLabel: 'p. 3',
+            pageIndex: 2,
+            type: 'highlight',
+            color: '#ff0',
+            source: 'annotation',
+            sourceAttachmentKey: 'ATTACH_001',
+            sourceAnnotationKey: 'ANN_001',
+            readOnly: true,
+            readOnlyLabel: 'Read-only',
+            selectedTextPreview: { text: 'Test annotation text.', kind: 'selected-text', truncated: false, expandable: false, isLong: false },
+            commentPreview: { text: 'Test comment.', kind: 'comment', truncated: false, expandable: false, isLong: false },
+            anchor: { status: 'unresolved', reason: 'Test anchor.' },
+            ...overrides,
+        };
+    }
+
+    it('renders source surface alongside card lanes', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' }), makeCard({ id: 'ann-2' })];
+        // 1. Render cards via renderCanvasView
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+        // 2. Render source surface separately
+        const blocks = [
+            { id: 'block-0', pageIndex: 1, text: 'Source text content.', sourceKind: 'fulltext' },
+        ];
+        renderCanvasSourceSurface(root, blocks, []);
+
+        // Both cards and source surface should coexist in the DOM
+        expect(root.querySelector('.paperforge-canvas-card')).toBeTruthy();
+        expect(root.querySelector('.paperforge-canvas-source-surface')).toBeTruthy();
+        expect(root.querySelector('.paperforge-canvas-source-block')).toBeTruthy();
+    });
+
+    it('cards remain visible when source is unavailable [D-15/D-16/D-18]', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' })];
+        // Render cards
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+        // Render source unavailable
+        renderCanvasSourceSurface(root, [], [], { unavailable: true, reason: 'No source content.' });
+
+        // Cards should still be visible
+        expect(root.querySelector('.paperforge-canvas-card')).toBeTruthy();
+        // Source unavailable state should be present
+        expect(root.querySelector('.paperforge-canvas-source-unavailable')).toBeTruthy();
+    });
+
+    it('source surface and card lanes have no connector/geometry classes [D-22/D-24]', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+        renderCanvasSourceSurface(root, [], [], { unavailable: true, reason: 'No source.' });
+
+        const html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('paperforge-canvas-connector');
+        expect(html).not.toContain('<svg');
+    });
+
+    it('combined view has no forbidden controls or navigation [D-24/D-25]', () => {
+        const root = makeRootEl();
+        const cards = [makeCard({ id: 'ann-1' })];
+        renderCanvasView(root, makeCardVM({ cards: cards }));
+        renderCanvasSourceSurface(root, [], [], { unavailable: true, reason: 'No source.' });
+
+        const text = root.textContent.toLowerCase();
+        const forbidden = ['edit', 'delete', 'create', 'save', 'import', 'apply', 'write back', 'write-back',
+                           'evidence', 'concept card'];
+        for (const word of forbidden) {
+            expect(text).not.toContain(word);
+        }
+
+        const html = root.innerHTML.toLowerCase();
+        expect(html).not.toContain('draggable="true"');
+        expect(html).not.toContain('contenteditable');
     });
 });
