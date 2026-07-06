@@ -21,7 +21,24 @@ from paperforge.memory.chunker import chunk_fulltext
 from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.worker.asset_index import read_index
 from paperforge.worker._progress import progress_bar
+from paperforge.embedding.builder import embed_body_units, get_body_units_for_embedding
+from paperforge.memory.db import get_connection, get_memory_db_path
 
+
+def _has_body_units_in_db(vault: Path, key: str) -> bool:
+    """Check if paper has body_units in the memory DB."""
+    db_path = get_memory_db_path(vault)
+    if not db_path.exists():
+        return False
+    conn = get_connection(db_path, read_only=True)
+    try:
+        cnt = conn.execute(
+            "SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1",
+            (key,),
+        ).fetchone()[0]
+        return cnt > 0
+    finally:
+        conn.close()
 
 def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
@@ -187,67 +204,143 @@ def run(args: argparse.Namespace) -> int:
     papers_iter = progress_bar(done_papers, desc="Embedding", disable=args.json)
     for entry in papers_iter:
         key = entry.get("zotero_key")
-        fulltext_rel = entry.get("fulltext_path", "")
-        if not fulltext_rel:
+        if not key:
             continue
-        fulltext_path = vault / fulltext_rel
-        # Skip if already embedded and --resume is set
-        if resume:
+
+        # Check body_units first
+        has_body = _has_body_units_in_db(vault, key)
+
+        if has_body:
+            # Body units path
+            if resume:
+                try:
+                    col = get_collection(vault, name="paperforge_body")
+                    existing = col.get(where={"paper_id": key}, limit=1)
+                    if existing.get("ids") and len(existing["ids"]) > 0:
+                        papers_skipped += 1
+                        continue
+                except Exception as exc:
+                    err = str(exc).lower()
+                    if "hnsw" in err or "compaction" in err:
+                        logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
+                    pass
+
+            body_units = get_body_units_for_embedding(vault, key)
+            if not body_units:
+                continue
             try:
-                collection = get_collection(vault)
-                existing = collection.get(where={"paper_id": key}, limit=1)
-                if existing and existing.get("ids") and len(existing["ids"]) > 0:
-                    papers_skipped += 1
-                    continue
-            except Exception as exc:
-                err = str(exc).lower()
-                if "hnsw" in err or "compaction" in err:
-                    logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
-                pass
-        chunks = chunk_fulltext(fulltext_path)
-        if not chunks:
-            continue
-        try:
-            i += 1
-            print(f"EMBED_PROGRESS:{i}:{total}:{key}", flush=True)
-            delete_paper_vectors(vault, key)
-            n = embed_paper(vault, key, chunks)
-            chunks_embedded += n
-            papers_embedded += 1
-            mark_vector_build_state(vault,
-                current=i, paper_id=key,
-                last_update=_now(),
-            )
-        except Exception as e:
+                i += 1
+                print(f"EMBED_PROGRESS:{i}:{total}:{key}", flush=True)
+                delete_paper_vectors(vault, key)
+                n = embed_body_units(vault, key, body_units)
+                chunks_embedded += n
+                papers_embedded += 1
+                mark_vector_build_state(vault,
+                    current=i, paper_id=key,
+                    last_update=_now(),
+                )
+            except Exception as e:
+                try:
+                    _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
+                    _mode = get_embed_status(vault).get("mode", "")
+                    _model = get_embed_status(vault).get("model", "")
+                except Exception:
+                    _actual = chunks_embedded
+                    _mode = ""
+                    _model = ""
+                mark_vector_build_state(vault,
+                    status="failed", message=str(e), pid=0,
+                )
+                write_vector_runtime(
+                    vault,
+                    enabled=bool(_mode),
+                    mode=_mode,
+                    model=_model,
+                    deps_installed=True,
+                    deps_missing=None,
+                    py_version=sys.version.split()[0],
+                    db_exists=get_vector_db_path(vault).exists(),
+                    chunk_count=_actual,
+                    build_state=read_vector_build_state(vault),
+                    healthy=False,
+                    error=str(e),
+                )
+                result = PFResult(ok=False, command="embed build", version=PF_VERSION,
+                                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
+                print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+                return 1
+        else:
+            # Legacy fulltext path
+            fulltext_rel = entry.get("fulltext_path", "")
+            if not fulltext_rel:
+                continue
+            fulltext_path = vault / fulltext_rel
+
+            # Check if structured blocks exist without body_units
+            ocr_root = vault / "System" / "PaperForge" / "ocr" / key
+            has_files = ((ocr_root / "structure" / "blocks.structured.jsonl").exists()
+                         and (ocr_root / "index" / "structure-tree.json").exists())
+            if has_files and not has_body:
+                print(f"Skip {key}: has structured blocks but no body_units in DB. "
+                      f"Run `paperforge memory build` first.")
+                continue
+
+            if resume:
+                try:
+                    collection = get_collection(vault)
+                    existing = collection.get(where={"paper_id": key}, limit=1)
+                    if existing.get("ids") and len(existing["ids"]) > 0:
+                        papers_skipped += 1
+                        continue
+                except Exception as exc:
+                    err = str(exc).lower()
+                    if "hnsw" in err or "compaction" in err:
+                        logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
+                    pass
+            chunks = chunk_fulltext(fulltext_path)
+            if not chunks:
+                continue
             try:
-                _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
-                _mode = get_embed_status(vault).get("mode", "")
-                _model = get_embed_status(vault).get("model", "")
-            except Exception:
-                _actual = chunks_embedded
-                _mode = ""
-                _model = ""
-            mark_vector_build_state(vault,
-                status="failed", message=str(e), pid=0,
-            )
-            write_vector_runtime(
-                vault,
-                enabled=bool(_mode),
-                mode=_mode,
-                model=_model,
-                deps_installed=True,
-                deps_missing=None,
-                py_version=sys.version.split()[0],
-                db_exists=get_vector_db_path(vault).exists(),
-                chunk_count=_actual,
-                build_state=read_vector_build_state(vault),
-                healthy=False,
-                error=str(e),
-            )
-            result = PFResult(ok=False, command="embed build", version=PF_VERSION,
-                             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
-            print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
-            return 1
+                i += 1
+                print(f"EMBED_PROGRESS:{i}:{total}:{key}", flush=True)
+                delete_paper_vectors(vault, key)
+                n = embed_paper(vault, key, chunks)
+                chunks_embedded += n
+                papers_embedded += 1
+                mark_vector_build_state(vault,
+                    current=i, paper_id=key,
+                    last_update=_now(),
+                )
+            except Exception as e:
+                try:
+                    _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
+                    _mode = get_embed_status(vault).get("mode", "")
+                    _model = get_embed_status(vault).get("model", "")
+                except Exception:
+                    _actual = chunks_embedded
+                    _mode = ""
+                    _model = ""
+                mark_vector_build_state(vault,
+                    status="failed", message=str(e), pid=0,
+                )
+                write_vector_runtime(
+                    vault,
+                    enabled=bool(_mode),
+                    mode=_mode,
+                    model=_model,
+                    deps_installed=True,
+                    deps_missing=None,
+                    py_version=sys.version.split()[0],
+                    db_exists=get_vector_db_path(vault).exists(),
+                    chunk_count=_actual,
+                    build_state=read_vector_build_state(vault),
+                    healthy=False,
+                    error=str(e),
+                )
+                result = PFResult(ok=False, command="embed build", version=PF_VERSION,
+                                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
+                print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+                return 1
 
     mark_vector_build_state(vault,
         status="completed",

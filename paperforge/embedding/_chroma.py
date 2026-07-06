@@ -6,6 +6,9 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+_COLLECTION_NAMES = ["paperforge_fulltext", "paperforge_body"]
+
+
 def get_vector_db_path(vault: Path) -> Path:
     from paperforge.config import paperforge_paths
     paths = paperforge_paths(vault)
@@ -17,24 +20,27 @@ def _get_chroma():
     return chromadb
 
 
-def get_collection(vault: Path):
+def get_collection(vault: Path, name: str = "paperforge_fulltext"):
     chroma = _get_chroma()
     db_path = get_vector_db_path(vault)
     db_path.mkdir(parents=True, exist_ok=True)
     client = chroma.PersistentClient(path=str(db_path))
     return client.get_or_create_collection(
-        name="paperforge_fulltext",
+        name=name,
         metadata={"hnsw:space": "cosine"},
     )
 
 
 def delete_paper_vectors(vault: Path, zotero_key: str) -> int:
-    collection = get_collection(vault)
-    try:
-        results = collection.get(where={"paper_id": zotero_key})
-        ids = results.get("ids", [])
-        if ids:
-            collection.delete(ids=ids)
-        return len(ids)
-    except Exception:
-        return 0
+    total = 0
+    for col_name in _COLLECTION_NAMES:
+        try:
+            collection = get_collection(vault, name=col_name)
+            results = collection.get(where={"paper_id": zotero_key})
+            ids = results.get("ids", [])
+            if ids:
+                collection.delete(ids=ids)
+            total += len(ids)
+        except Exception:
+            pass
+    return total
