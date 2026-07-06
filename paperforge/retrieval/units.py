@@ -226,12 +226,15 @@ def build_object_units(
     paper_id = tree.get("paper_id", "")
 
     # Build block_map for text resolution
-    block_map: dict[str | int, dict[str, Any]] = {}
+    block_map: dict[str, dict[str, Any]] = {}
     for b in structured_blocks:
         bid = b.get("block_id")
-        if bid is not None:
-            block_map[str(bid)] = b
-            block_map[bid] = b
+        page = b.get("page")
+        if bid is not None and page is not None:
+            key = f"p{page}:{bid}"
+            existing = block_map.get(key)
+            if existing is None or (b.get("text") and not existing.get("text")):
+                block_map[key] = b
 
     # Collect all objects from role_index (figures, tables, etc.)
     objects = (
@@ -254,31 +257,40 @@ def build_object_units(
         return None
 
     for obj in objects:
-        obj_id = obj.get("figure_id") or obj.get("table_id") or ""
         obj_type = _object_kind(obj)
+        page = obj.get("page")
+        block_id = obj.get("block_id")
+        obj_id = (
+            obj.get("figure_id")
+            or obj.get("table_id")
+            or f"{obj_type}:p{page}:{block_id}"
+        )
         caption = str(obj.get("text", "") or "")
         owning_node: dict[str, Any] | None = None
 
         # Try to find a caption block or asset block in this object
-        caption_bid = obj.get("caption_block_id")
+        caption_bid = obj.get("caption_block_id") or obj.get("block_id")
         if caption_bid:
+            page = obj.get("page")
+            caption_key = f"p{page}:{caption_bid}"
             for root in tree.get("nodes", []):
-                owning_node = find_owning_node(root, str(caption_bid))
+                owning_node = find_owning_node(root, caption_key)
                 if owning_node:
                     break
 
         if not owning_node:
             # Fallback: iterate all roots to find the first that contains object block_ids
-            consumed_ids = [
-                str(x) if not isinstance(x, dict) else str(x.get("block_id", ""))
-                for x in obj.get("consumed_block_ids", [])
-            ]
+            page = obj.get("page")
+            consumed_ids: list[str] = []
+            for x in obj.get("consumed_block_ids", []):
+                raw = str(x) if not isinstance(x, dict) else str(x.get("block_id", ""))
+                if raw:
+                    consumed_ids.append(f"p{page}:{raw}")
             for cid in consumed_ids:
-                if cid:
-                    for root in tree.get("nodes", []):
-                        owning_node = find_owning_node(root, cid)
-                        if owning_node:
-                            break
+                for root in tree.get("nodes", []):
+                    owning_node = find_owning_node(root, cid)
+                    if owning_node:
+                        break
                 if owning_node:
                     break
 

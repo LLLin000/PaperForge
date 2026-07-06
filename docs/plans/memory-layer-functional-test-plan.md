@@ -15,7 +15,9 @@
 3. [Structure Tree](#2-structure-tree)
 4. [Body Units](#3-body-units)
 5. [Object Units](#4-object-units)
+   - [4b. Object Units DB Persistence](#4b-object-units-db-persistence)
 6. [FTS No Duplicate](#5-fts-no-duplicate)
+   - [5b. Coverage Gate](#5b-coverage-gate)
 7. [Content Discovery](#6-content-discovery)
 8. [Memory Builder Incremental](#7-memory-builder-incremental)
 9. [Embed Build（Layer B）](#8-embed-build-layer-b)
@@ -37,7 +39,7 @@ from paperforge.core.io import read_json, read_jsonl
 from paperforge.worker.ocr_index import build_role_indexes
 from paperforge.retrieval.structure_tree import build_structure_tree
 from paperforge.retrieval.units import build_body_units, build_object_units
-from paperforge.memory.builder import _upsert_body_units
+from paperforge.memory.builder import _upsert_body_units, _upsert_object_units
 from paperforge.memory.schema import ensure_schema
 from paperforge.retrieval.manifest import (
     compute_body_units_hash, RETRIEVAL_POLICY_VERSION,
@@ -261,6 +263,36 @@ check("obj key compat (captions)", len(ua) == 1)
 check("obj key compat (figure_captions)", len(ub) == 1)
 
 # ════════════════════════════════════════════════════════════════════════
+# 4b. Object Units DB persistence
+# ════════════════════════════════════════════════════════════════════════
+print("\n=== 4b. Object Units DB Persistence ===")
+from paperforge.memory.builder import _upsert_object_units
+conn_obj = sqlite3.connect(":memory:")
+ensure_schema(conn_obj)
+for key in KEYS:
+    try:
+        blocks = read_jsonl(OCR_ROOT / key / "structure" / "blocks.structured.jsonl")
+        tree = read_json(OCR_ROOT / key / "index" / "structure-tree.json")
+        role_index = read_json(OCR_ROOT / key / "index" / "role-index.json")
+        object_units = build_object_units(tree=tree, structured_blocks=blocks, role_index=role_index)
+
+        ids = [u["unit_id"] for u in object_units]
+        check(f"{key}: obj unit_ids unique", len(set(ids)) == len(ids), f"{len(ids)} units, {len(set(ids))} unique")
+        check(f"{key}: obj unit_ids non-empty", all(u["unit_id"].split(":")[-1] for u in object_units))
+        check(f"{key}: obj labels non-empty", all(u["object_label"].strip() for u in object_units))
+        check(f"{key}: obj section_path non-empty", all(u["section_path"].strip() for u in object_units))
+        check(f"{key}: obj indexable non-empty caption", sum(1 for u in object_units if u["indexable"]), f"{sum(1 for u in object_units if u['indexable'])}/{len(object_units)}")
+
+        # Persist check
+        _upsert_object_units(conn_obj, object_units)
+        db_cnt = conn_obj.execute(
+            "SELECT COUNT(*) FROM object_units WHERE paper_id=?", (key,)
+        ).fetchone()[0]
+        check(f"{key}: obj DB count matches list", db_cnt == len(object_units), f"db={db_cnt} list={len(object_units)}")
+    except Exception as e:
+        check(f"{key}: no crash", False, str(e))
+
+# ════════════════════════════════════════════════════════════════════════
 # 5. FTS No Duplicate
 # ════════════════════════════════════════════════════════════════════════
 print("\n=== 5. FTS No Duplicate ===")
@@ -294,6 +326,18 @@ conn.commit()
 fts_after = conn.execute("SELECT COUNT(*) FROM body_units_fts WHERE paper_id=?", (key0,)).fetchone()[0]
 body_after = conn.execute("SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1", (key0,)).fetchone()[0]
 check(f"FTS: {key0} re-upsert no accumulation", fts_after == body_after)
+
+# ════════════════════════════════════════════════════════════════════════
+# 5b. Coverage Gate
+# ════════════════════════════════════════════════════════════════════════
+print("\n=== 5b. Coverage Gate ===")
+total_ocr = len(KEYS)
+v2_tree = sum(1 for k in KEYS if (OCR_ROOT / k / "index" / "structure-tree.json").exists())
+has_render = sum(1 for k in KEYS if (OCR_ROOT / k / "render" / "render-map.json").exists())
+bu_papers = conn.execute("SELECT COUNT(DISTINCT paper_id) FROM body_units WHERE indexable=1").fetchone()[0]
+print(f"  KEYS sample: {total_ocr} papers (subset)")
+print(f"  v2_tree: {v2_tree}/{total_ocr}")
+print(f"  render_map: {has_render}/{total_ocr}")
 
 # ════════════════════════════════════════════════════════════════════════
 # 6. Backmatter section_path check

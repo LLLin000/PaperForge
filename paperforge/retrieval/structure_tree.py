@@ -28,9 +28,9 @@ def build_structure_tree(
     seen_node_ids: set[str] = set()
     
     for h in heading_events:
-        base_id = f"sec:{h['block_id']}"
-        # ponytail: same block_id appears on different pages for different
-        # headings (e.g. running headers). Disambiguate with emitted_order.
+        # ponytail: page-qualified base_id resolves most collisions (same block_id
+        # on different pages, e.g. running headers). emitted_order is extreme fallback.
+        base_id = f"sec:p{h['page']}:{h['block_id']}"
         node_id = base_id
         while node_id in seen_node_ids:
             node_id = f"{base_id}:order{h['emitted_order']}"

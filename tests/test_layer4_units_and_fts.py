@@ -201,18 +201,18 @@ def test_build_object_units_from_role_index():
     tree = {
         "paper_id": "P010",
         "nodes": [
-            _node("sec:figs", "Figures", own_block_ids=["f2"],
-                  subtree_block_ids=["f1", "f2"],
+            _node("sec:figs", "Figures", own_block_ids=["p4:f2"],
+                  subtree_block_ids=["p4:f1", "p4:f2"],
                   page_span=[4, 4]),
         ],
     }
     blocks = [
-        {"block_id": "f1", "role": "section_heading", "text": "Figures"},
-        {"block_id": "f2", "role": "body_paragraph", "text": "As shown in Figure 1."},
+        {"block_id": "f1", "role": "section_heading", "text": "Figures", "page": 4},
+        {"block_id": "f2", "role": "body_paragraph", "text": "As shown in Figure 1.", "page": 4},
     ]
     role_index = {
         "captions": [
-            {"figure_id": "Figure 1", "caption_block_id": "f2", "text": "Figure 1: Results"},
+            {"figure_id": "Figure 1", "caption_block_id": "f2", "text": "Figure 1: Results", "page": 4},
         ]
     }
     units = build_object_units(tree=tree, structured_blocks=blocks, role_index=role_index)
