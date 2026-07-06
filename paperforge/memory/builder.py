@@ -5,7 +5,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from paperforge.core.io import read_json
+from paperforge.core.io import read_json, read_jsonl
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
@@ -149,16 +149,22 @@ def build_from_index(vault: Path) -> dict:
     canonical_hash = compute_hash(items) if isinstance(items, list) and items and isinstance(items[0], dict) else ""
 
     db_path = get_memory_db_path(vault)
-    # fast-path: if index hash matches, nothing changed
+    index_changed = True
     if canonical_hash and db_path.exists():
         try:
             conn = get_connection(db_path, read_only=False)
             cached = conn.execute("SELECT value FROM meta WHERE key='canonical_index_hash'").fetchone()
             stored_version = get_schema_version(conn)
             if cached and cached[0] == canonical_hash and stored_version == CURRENT_SCHEMA_VERSION:
+                index_changed = False
+                # Incremental: update only body/object units without full rebuild
+                ocr_root = vault / "System" / "PaperForge" / "ocr"
+                if ocr_root.exists():
+                    _incremental_units_only(conn, items, ocr_root)
+                    conn.commit()
                 papers_count = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
                 conn.close()
-                logger.info("Index unchanged, skipping memory rebuild (%s papers)", papers_count)
+                logger.info("Index unchanged, incremental unit update done (%s papers)", papers_count)
                 return {
                     "papers_indexed": papers_count,
                     "db_path": str(db_path),
@@ -167,7 +173,9 @@ def build_from_index(vault: Path) -> dict:
             conn.close()
         except Exception:
             pass
-
+    # Full rebuild needed if index changed or first build
+    if not index_changed:
+        logger.info("Index hash matched but proceeding to full rebuild (exception in fast-path)")
     conn = get_connection(db_path, read_only=False)
     try:
         stored_version = get_schema_version(conn)
@@ -281,11 +289,11 @@ def build_from_index(vault: Path) -> dict:
                 ocr_dir = ocr_root / zotero_key
                 index_root = ocr_dir / "index"
                 tree_path = index_root / "structure-tree.json"
-                structured_path = ocr_dir / "structured-blocks.json"
+                structured_path = ocr_dir / "structure" / "blocks.structured.jsonl"
                 if not tree_path.exists() or not structured_path.exists():
                     continue
                 tree = read_json(tree_path)
-                structured_blocks = read_json(structured_path)
+                structured_blocks = read_jsonl(structured_path)
                 role_index_path = index_root / "role-index.json"
                 role_index = read_json(role_index_path) if role_index_path.exists() else {}
                 body_units = build_body_units(tree=tree, structured_blocks=structured_blocks)
@@ -295,7 +303,7 @@ def build_from_index(vault: Path) -> dict:
                 _upsert_body_units(conn, body_units)
                 _upsert_object_units(conn, object_units)
 
-                ocr_result_hash = _read_result_hash(ocr_dir)
+                ocr_result_hash = _resolve_ocr_result_hash(ocr_dir)
                 manifest = build_paper_manifest(
                     paper_id=zotero_key,
                     ocr_result_hash=ocr_result_hash,
@@ -356,11 +364,35 @@ def build_from_index(vault: Path) -> dict:
     finally:
         conn.close()
 
-def _read_result_hash(paper_dir: Path) -> str:
-    """Read the OCR result hash from a paper's index directory."""
-    result_hash_path = paper_dir / "index" / "result-hash.txt"
-    if result_hash_path.exists():
-        return result_hash_path.read_text(encoding="utf-8").strip()
+def _resolve_ocr_result_hash(paper_dir: Path) -> str:
+    """Resolve OCR result hash with 3-level fallback.
+    
+    1. index/result-hash.txt (fastest, preferred)
+    2. SHA-256 of structured artifacts (structure/blocks.structured.jsonl,
+       index/structure-tree.json, index/role-index.json)
+    3. meta.json derived_version hash
+    """
+    # Level 1: explicit result-hash.txt
+    rp = paper_dir / "index" / "result-hash.txt"
+    if rp.exists():
+        return rp.read_text(encoding="utf-8").strip()
+    # Level 2: hash of structured artifacts
+    h = hashlib.sha256()
+    for rel in ["structure/blocks.structured.jsonl", "index/structure-tree.json",
+                 "index/role-index.json"]:
+        p = paper_dir / rel
+        if p.exists():
+            h.update(p.read_bytes())
+    if h.hexdigest() != hashlib.sha256(b"").hexdigest():
+        return h.hexdigest()
+    # Level 3: meta.json derived_version
+    meta_p = paper_dir / "meta.json"
+    if meta_p.exists():
+        try:
+            dv = json.loads(meta_p.read_bytes()).get("derived_version", {})
+            return hashlib.sha256(json.dumps(dv, sort_keys=True).encode()).hexdigest()
+        except Exception:
+            pass
     return ""
 
 
@@ -369,16 +401,22 @@ def _upsert_body_units(conn: sqlite3.Connection, body_units: list[dict]) -> None
     for unit in body_units:
         conn.execute(
             """INSERT OR REPLACE INTO body_units
-               (unit_id, paper_id, section_path, unit_text,
-                unit_kind, page_span_json, block_span_json,
+               (unit_id, paper_id, section_path,
+                section_path_json, section_level, section_title,
+                unit_text, unit_kind, part_ordinal,
+                page_span_json, block_span_json,
                 token_estimate, indexable, veto_reason, quality_hints_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 unit["unit_id"],
                 unit["paper_id"],
                 unit["section_path"],
+                unit.get("section_path_json", "[]"),
+                unit.get("section_level", 0),
+                unit.get("section_title", ""),
                 unit["unit_text"],
                 unit.get("unit_kind", "body"),
+                unit.get("part_ordinal", 0),
                 json.dumps(unit.get("page_span", [])),
                 json.dumps(unit.get("block_span", [])),
                 unit.get("token_estimate", 0),
@@ -423,6 +461,67 @@ def _upsert_object_units(conn: sqlite3.Connection, object_units: list[dict]) -> 
                 json.dumps(unit.get("quality_hints", [])),
             ),
         )
+
+
+def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_root: Path) -> None:
+    """Incremental: rebuild only body/object units for papers whose OCR hash changed."""
+    built_count = 0
+    for entry in items:
+        key = entry.get("zotero_key", "")
+        if not key:
+            continue
+        paper_dir = ocr_root / key
+        tree_path = paper_dir / "index" / "structure-tree.json"
+        blocks_path = paper_dir / "structure" / "blocks.structured.jsonl"
+        if not tree_path.exists() or not blocks_path.exists():
+            continue
+        current_hash = _resolve_ocr_result_hash(paper_dir)
+        row = conn.execute(
+            "SELECT value FROM meta WHERE key=?", (f"manifest:{key}",)
+        ).fetchone()
+        if row:
+            stored = json.loads(row[0])
+            if stored.get("ocr_result_hash") == current_hash:
+                continue
+        _rebuild_paper_units(conn, key, paper_dir, tree_path, blocks_path)
+        built_count += 1
+    if built_count:
+        logger.info("Incremental units rebuilt for %d papers", built_count)
+    else:
+        logger.info("No papers needed incremental unit rebuild")
+
+
+def _rebuild_paper_units(conn: sqlite3.Connection, key: str, paper_dir: Path,
+                          tree_path: Path, blocks_path: Path) -> None:
+    """Delete and rebuild body + object units for a single paper."""
+    conn.execute("DELETE FROM body_units WHERE paper_id = ?", (key,))
+    conn.execute("DELETE FROM body_units_fts WHERE paper_id = ?", (key,))
+    conn.execute("DELETE FROM object_units WHERE paper_id = ?", (key,))
+    tree = read_json(tree_path)
+    blocks = read_jsonl(blocks_path)
+    role_index_path = paper_dir / "index" / "role-index.json"
+    role_index = read_json(role_index_path) if role_index_path.exists() else {}
+    body_units = build_body_units(tree=tree, structured_blocks=blocks)
+    object_units = build_object_units(
+        tree=tree, structured_blocks=blocks, role_index=role_index
+    )
+    _upsert_body_units(conn, body_units)
+    _upsert_object_units(conn, object_units)
+    current_hash = _resolve_ocr_result_hash(paper_dir)
+    manifest = build_paper_manifest(
+        paper_id=key,
+        ocr_result_hash=current_hash,
+        structure_tree_bytes=tree_path.read_bytes(),
+        retrieval_policy_version="l4.body.v1",
+        body_units=body_units,
+        object_units=object_units,
+        source_paths={
+            "structured_blocks": str(blocks_path),
+            "role_index": str(role_index_path),
+            "fulltext": str(paper_dir / "fulltext.md"),
+        },
+    )
+    _write_manifest_row(conn, manifest)
 
 
 def _write_manifest_row(conn: sqlite3.Connection, manifest: dict) -> None:
