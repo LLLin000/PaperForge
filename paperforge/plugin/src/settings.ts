@@ -1222,8 +1222,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const embedInfo = getVectorRuntime(vp);
         const embedChunks =
           (embedInfo?.chunk_count ?? 0) +
-          (embedInfo?.body_chunk_count ?? 0) +
-          (embedInfo?.object_chunk_count ?? 0);
+          ((embedInfo?.body_chunk_count as number) ?? 0) +
+          ((embedInfo?.object_chunk_count as number) ?? 0);
         const hasChunks = embedChunks > 0;
         const isCorrupted = embedInfo ? !!embedInfo.corrupted : false;
 
