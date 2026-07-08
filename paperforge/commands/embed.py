@@ -87,11 +87,14 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _assert_collections_healthy(vault: Path) -> tuple[bool, str]:
-    """Probe three collections. Doesn't depend on get_embed_status."""
+    """Probe three collections: connectivity + lightweight query probe."""
     for name in ("paperforge_fulltext", "paperforge_body", "paperforge_objects"):
         try:
             col = get_collection(vault, name=name)
             col.count()
+            # Lightweight query probe to catch HNSW index corruption
+            probe = [0.0] * 256
+            col.query(query_embeddings=[probe], n_results=1)
         except Exception as exc:
             return False, f"{name}: {exc}"
     return True, ""
@@ -328,9 +331,10 @@ def run(args: argparse.Namespace) -> int:
                     )
                     return False
 
-                delete_paper_vectors(vault, bundle.paper_id)
                 for payload in bundle.payloads:
                     write_encoded_payload(vault, payload)
+                # Delete old vectors only after all new payloads are written safely
+                delete_paper_vectors(vault, bundle.paper_id)
 
                 processed_count += 1
                 papers_embedded += 1
@@ -370,8 +374,8 @@ def run(args: argparse.Namespace) -> int:
                                     current_body_hash = compute_body_units_hash(body_units)
                                     body_ok = (meta.get("body_units_hash") == current_body_hash
                                                and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
-                            except Exception:
-                                pass
+                            except Exception as exc:
+                                logger.warning("Resume body_units check failed for %s: %s", key, exc)
 
                         if object_units:
                             try:
@@ -382,8 +386,8 @@ def run(args: argparse.Namespace) -> int:
                                     current_obj_hash = compute_object_units_hash(object_units)
                                     object_ok = (meta.get("object_units_hash") == current_obj_hash
                                                  and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
-                            except Exception:
-                                pass
+                            except Exception as exc:
+                                logger.warning("Resume object_units check failed for %s: %s", key, exc)
 
                         if body_ok and object_ok:
                             processed_count += 1
@@ -423,7 +427,8 @@ def run(args: argparse.Namespace) -> int:
                             err = str(exc).lower()
                             if "hnsw" in err or "compaction" in err:
                                 logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
-                            pass
+                            else:
+                                logger.warning("Resume fulltext check failed for %s: %s", key, exc)
 
                     payloads = prepare_payloads_for_entry(
                         vault, key, has_body, has_object, [], [], fulltext_rel=fulltext_rel

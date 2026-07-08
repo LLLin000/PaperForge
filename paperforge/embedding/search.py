@@ -50,7 +50,8 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True)
                     "object_kind": meta.get("object_kind", ""),
                     "object_label": meta.get("object_label", ""),
                 })
-        except Exception:
+        except Exception as exc:
+            logger.warning("merge_retrieve: collection %s query failed: %s", name, exc)
             continue
 
     all_results.sort(key=lambda r: r["score"], reverse=True)

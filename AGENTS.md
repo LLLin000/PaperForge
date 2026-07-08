@@ -62,6 +62,20 @@ One logical change per commit. A logical change is: a bug fix, a feature, a refa
 
 Update `PROJECT-MANAGEMENT.md` with a timeline entry, fix table row, and decision log entry. Archive stale `project/current/` files to `project/archive/`.
 
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues, with external PRs as a triage surface. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-label vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Multi-context — CONTEXT-MAP.md at root pointing to per-context CONTEXT.md files. See `docs/agents/domain.md`.
 ---
 
 ## Reference
@@ -69,7 +83,7 @@ Update `PROJECT-MANAGEMENT.md` with a timeline entry, fix table row, and decisio
 | Topic | Location |
 |-------|----------|
 | Architecture | `docs/ARCHITECTURE.md` |
-| OCR spec index | `docs/superpowers/specs/README-ocr.md` |
+| OCR spec index | `docs/archive/superpowers/specs/README-ocr.md` |
 | Command docs | `docs/COMMANDS.md` |
 | Project state | `project/current/ocr-v2-active-queue.md` |
 | Full history | `PROJECT-MANAGEMENT.md` |

@@ -122,8 +122,10 @@ def prepare_object_payload(zotero_key: str, object_units: list[dict]) -> Embeddi
     )
 
 
-def encode_payload(vault: Path, payload: EmbeddingPayload) -> EncodedPayload:
-    provider = OpenAICompatibleProvider(vault)
+def encode_payload(vault: Path, payload: EmbeddingPayload,
+                    provider: OpenAICompatibleProvider | None = None) -> EncodedPayload:
+    if provider is None:
+        provider = OpenAICompatibleProvider(vault)
     embeddings = provider.encode(payload.texts)
     return EncodedPayload(
         collection_name=payload.collection_name,
@@ -135,10 +137,11 @@ def encode_payload(vault: Path, payload: EmbeddingPayload) -> EncodedPayload:
 
 
 def encode_paper_job(vault: Path, job: PaperEmbeddingJob) -> PaperEncodedBundle:
+    provider = OpenAICompatibleProvider(vault)
     encoded_payloads: list[EncodedPayload] = []
     total_chunks = 0
     for payload in job.payloads:
-        encoded = encode_payload(vault, payload)
+        encoded = encode_payload(vault, payload, provider=provider)
         encoded_payloads.append(encoded)
         total_chunks += len(payload.ids)
     return PaperEncodedBundle(
