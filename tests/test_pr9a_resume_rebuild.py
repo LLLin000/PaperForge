@@ -267,7 +267,7 @@ class TestAssertCollectionsHealthy:
 
     @patch("paperforge.commands.embed.get_collection")
     def test_healthy_collections(self, mock_get_collection):
-        """Three healthy collections -> (True, '')."""
+        """Three healthy collections -> (True, ''). Ensure get(limit=1) is called, query is not."""
         mock_col = MagicMock()
         mock_col.count.return_value = 42
         mock_get_collection.return_value = mock_col
@@ -275,6 +275,9 @@ class TestAssertCollectionsHealthy:
         ok, msg = _assert_collections_healthy(Path("/vault"))
         assert ok is True
         assert msg == ""
+        # Regression: get(limit=1) must be called; query must not be called
+        mock_col.get.assert_called_with(limit=1)
+        assert mock_col.query.call_count == 0
 
     @patch("paperforge.commands.embed.get_collection")
     def test_corrupted_collection(self, mock_get_collection):
