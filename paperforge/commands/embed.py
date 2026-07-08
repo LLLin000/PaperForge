@@ -87,14 +87,13 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _assert_collections_healthy(vault: Path) -> tuple[bool, str]:
-    """Probe three collections: connectivity + lightweight query probe."""
+    """Probe three collections: connectivity + metadata accessibility."""
     for name in ("paperforge_fulltext", "paperforge_body", "paperforge_objects"):
         try:
             col = get_collection(vault, name=name)
             col.count()
-            # Lightweight query probe to catch HNSW index corruption
-            probe = [0.0] * 256
-            col.query(query_embeddings=[probe], n_results=1)
+            # Lightweight metadata probe — no embedding dimension dependency
+            col.get(limit=1)
         except Exception as exc:
             return False, f"{name}: {exc}"
     return True, ""
