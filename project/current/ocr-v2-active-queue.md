@@ -1,50 +1,53 @@
 # OCR-v2 Active Queue
-> Status: ACTIVE QUEUE — Four-layer release readiness. Layer 2 delivered. 1278 tests green on `master`.
-> Last updated: 2026-07-05
-> Scope: UI polish → downstream tools
+> Status: Embedding pipeline overhaul complete. PR9A-C all merged to `master`.
+> Last updated: 2026-07-08
 
-## Current Priorities
-1. ✅ **Workstream X: Layout-category truth audit** — 11 papers, 6 bug patterns. Report in `docs/superpowers/analysis/2026-07-05-layout-truth-audit-findings.md`
-2. ✅ **Layer 2: OCR Quality Report + Readiness Policy** — `build_quality_indicators()`, `evaluate_readiness()`, human feedback sidecar. Contract polished at commit `96fd9771`.
-3. 🟡 **Plugin UI polish** — dashboard cleanliness, maintenance display
-4. 🟡 **Downstream tooling** — section-aware vector chunking, figure/table separate handling
+## Completed (this session)
 
-## Completed This Session (cumulative)
-- **Workstream A — object writeback seam**:
-  - Added `paperforge/worker/ocr_object_writeback.py`
-  - Unified figure/table asset writeback, contained text, side-adjacent text, and consumed-block ownership evidence
-  - Added `tests/test_ocr_object_writeback.py`
-- **Workstream B — tail settlement seam**:
-  - Added `paperforge/worker/ocr_tail_settlement.py`
-  - Added `TailSettlementReport` and attached it to `DocumentStructure`
-  - Preserved legacy tail/body/backmatter behavior with focused regressions
-- **Workstream C — v3 pre/post normalize split**:
-  - Added `paperforge/worker/ocr_pre_match_normalize.py`
-  - Added `paperforge/worker/ocr_post_match_normalize.py`
-  - Added `OCR_PIPELINE_V3` toggle and `normalize_mode="seed_only"`
-  - Updated figure/table matching to accept `role_candidate > role > seed_role`
-- **Pre-merge blocker cleanup**:
-  - Fixed page-qualified object writeback lookup
-  - Guarded contained figure claims by page
-  - Restored rescue equivalence inside `post_match_normalize()`
-  - Added merge-gate regression tests for all four blockers
-- **Verification**:
-  - `tests/test_ocr_pipeline_v3.py`
-  - `tests/test_ocr_tail_settlement.py`
-  - `tests/test_ocr_object_writeback.py`
-  - `tests/test_appendix_figure_numbering.py`
-  - `tests/test_ocr_rendering.py`
-  - Result: **105 passed, 0 failed**
-- **Layer 2: OCR Quality Report + Readiness Policy**:
-  - Added `paperforge/worker/ocr_quality.py` — `build_quality_indicators()` with 5 normalizers
-  - Added `paperforge/worker/ocr_quality_feedback.py` — human feedback sidecar (per-mark hash, stale detection)
-  - Added `paperforge/policies/ocr_readiness_v1.yaml` — default readiness policy (weights, hard-red, use-case gates)
-  - Added `evaluate_readiness()` — policy evaluator with deep-merge, user override bypass
-  - Contract polish: `status/gates/reasons` output shape, hash validation, non-mutating append
-  - 22 new tests (17 quality + 5 feedback), 1278 total green
-  - Master commit: `96fd9771`
+### PR9A: Resume & Rebuild Correctness
+- OCR rebuild `--all`: version/artifact-based selection via `_needs_derived_rebuild()`
+- `--status` and explicit keys: manual override, no version filter
+- `.done.{key}` checkpoint markers removed from selection
+- `_apply_post_rebuild_version_flags` now writes `derived_version`
+- Embed resume entry: three-gate protection (stale state / missing DB / corrupt DB)
+- `_pid_alive()` cross-platform PID health check
+- 14 regression tests
 
-## Immediate Next Checks
-- [ ] Send 6 bug patterns to GPT for solution design
-- [ ] Fix 37LK5T97 two-column figure 1 bug (Round 2 RED)
-- [ ] Archive stale queue docs from pairing-framework phase
+### PR9B: Embed Parallel Encode
+- Four dataclasses: `EmbeddingPayload`, `EncodedPayload`, `PaperEmbeddingJob`, `PaperEncodedBundle`
+- `prepare_legacy/body/object_payload` — prepare phase extraction
+- `encode_payload` / `encode_paper_job` — worker-thread-safe encode
+- `write_encoded_payload` — ChromaDB serial write
+- Existing `embed_body_units`/`embed_paper` refactored as wrappers
+- 23 regression tests
+
+### Provider Fix
+- Switched `OpenAICompatibleProvider` from `openai` client to `requests`
+- Fixed SiliconFlow NAT connection hang (openai-python#3269)
+- 0.3s vs 2.3s init, no more hanging
+
+### PR9C: Streaming Embed Pipeline
+- Sliding-window pipeline: prepare + submit bounded in-flight papers
+- `wait(FIRST_COMPLETED)` in main thread for encode results
+- `processed_count` = skip + embedded, monotonic EMBED_PROGRESS
+- Resume skip and no-payload paths also advance processed_count
+- Encode failure fails closed (return 1, no silent skip)
+- `write_vector_build_state` fallback when file locked (Windows)
+- 4 integration tests
+
+### Plugin Fixes
+- Status text shows total chunks across all three collections
+- "chunks embedded" text below progress bar also uses total
+
+## Test Status
+| Suite | Result |
+|-------|--------|
+| Python unit tests (PR9A) | 14/14 pass |
+| Python unit tests (PR9B) | 23/23 pass |
+| Python unit tests (PR9C) | 4/4 pass |
+| Plugin tests | 58/58 pass |
+| Full vault embed build | 729/729 papers, 20,655 chunks |
+
+## Immediate Next
+- [ ] Full vault embed build (`--force`) on fresh ChromaDB
+- [ ] Verify chunk counts in Obsidian plugin display

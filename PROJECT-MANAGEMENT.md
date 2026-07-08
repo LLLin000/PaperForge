@@ -1,11 +1,9 @@
-# OCR-v2 Project Management Log
-
-> **Branch:** `master` | **Last Updated:** 2026-07-05
-> **Active work:** Layer 3 — Plugin UI polish. Layer 2 (OCR Quality Report + Readiness Policy) delivered at `96fd9771`. Full test suite: 1278 passed, 8 pre-existing failures, 275 skipped.
+> **Branch:** `master` | **Last Updated:** 2026-07-08
+> **Active work:** Embedding pipeline overhaul (PR9A-C). Previous: Layer 3 — Plugin UI polish. Layer 2 (OCR Quality Report + Readiness Policy) delivered at `96fd9771`. Full Python test suite: 41 passed (14 PR9A + 23 PR9B + 4 PR9C), plugin tests: 58 passed.
 >
 > ---
 >
-> **Current state:** All four architecture-hardening PRs (frontmatter fallback, caption heuristic, column-aware zone, pairing column) merged. V3 normalize split ON by default. Layer 2 (Quality Indicators + Readiness Policy + Feedback Sidecar) implemented with contract polish complete. Next: Plugin UI polish (Layer 3), then downstream tooling (Layer 4). Architecture cleanup deferred post-release.
+> **Current state:** Memory/Embedding layer rearchitected. PR9A (correctness) — resume/rebuild deterministic selection, `.done` markers removed, three-gate embed resume protection. PR9B (performance) — three-stage pipeline (prepare/encode/write) with parallel encode via ThreadPoolExecutor. PR9C (UX) — sliding-window streaming pipeline with continuous EMBED_PROGRESS. Provider switched from `openai` client to `requests` to fix SiliconFlow NAT hang. Plugin chunk display fixed to sum all three collections. Next: full vault embed build with new pipeline.
 
 ## 1. Architecture
 

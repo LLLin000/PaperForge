@@ -1220,8 +1220,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
       } else {
         const embedInfo = getVectorRuntime(vp);
-        const hasChunks = !!(embedInfo && (embedInfo.chunk_count ?? 0) > 0);
-        const isCorrupted = embedInfo && (embedInfo as any).corrupted;
+        const embedChunks =
+          (embedInfo?.chunk_count ?? 0) +
+          (embedInfo?.body_chunk_count ?? 0) +
+          (embedInfo?.object_chunk_count ?? 0);
+        const hasChunks = embedChunks > 0;
+        const isCorrupted = embedInfo ? !!embedInfo.corrupted : false;
 
         const startBuild = (flag: string) => {
           const py = getCachedPython(vp, this.plugin.settings);
@@ -1313,7 +1317,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
         if (hasChunks && !isCorrupted) {
           embedControls.createEl("span", {
-            text: embedInfo.chunk_count + " chunks embedded",
+            text: embedChunks + " chunks embedded",
             cls: "setting-item-description",
           });
         }
@@ -1720,9 +1724,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ── Helpers ──
     const buildActionArgs = (keys: string[], action: string) => {
       if (action === "retry_ocr" || action === "upgrade_legacy")
-        return { cmd: ["-m", "paperforge", "ocr", "redo", ...keys], timeout: 300000 };
+        return {
+          cmd: ["-m", "paperforge", "ocr", "redo", ...keys],
+          timeout: 300000,
+        };
       if (action === "rebuild_result")
-        return { cmd: ["-m", "paperforge", "ocr", "rebuild", ...keys], timeout: 120000 };
+        return {
+          cmd: ["-m", "paperforge", "ocr", "rebuild", ...keys],
+          timeout: 120000,
+        };
       return null;
     };
 
@@ -1751,9 +1761,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const renderTable = (papers: MaintenanceDisplayRow[]) => {
       statusEl.empty();
 
-      const visible = papers.filter(p => p.visible_in_maintenance);
+      const visible = papers.filter((p) => p.visible_in_maintenance);
       if (visible.length === 0) {
-        statusEl.createEl("p", { text: t("maintenance_all_good") || "✅ 全部正常" });
+        statusEl.createEl("p", {
+          text: t("maintenance_all_good") || "✅ 全部正常",
+        });
         return;
       }
 
@@ -1761,13 +1773,29 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const pyExtra = (py.extraArgs || []) as string[];
 
       // Group by display_group
-      const groups: { key: string; title: string; items: MaintenanceDisplayRow[] }[] = [
-        { key: "retry", title: t("maintenance_group_retry") || "需要重试", items: [] },
-        { key: "rebuild", title: t("maintenance_group_rebuild") || "可重建结果", items: [] },
-        { key: "legacy_optional", title: t("maintenance_group_legacy") || "可升级旧结果（可选）", items: [] },
+      const groups: {
+        key: string;
+        title: string;
+        items: MaintenanceDisplayRow[];
+      }[] = [
+        {
+          key: "retry",
+          title: t("maintenance_group_retry") || "需要重试",
+          items: [],
+        },
+        {
+          key: "rebuild",
+          title: t("maintenance_group_rebuild") || "可重建结果",
+          items: [],
+        },
+        {
+          key: "legacy_optional",
+          title: t("maintenance_group_legacy") || "可升级旧结果（可选）",
+          items: [],
+        },
       ];
       for (const p of visible) {
-        const g = groups.find(g => g.key === p.display_group);
+        const g = groups.find((g) => g.key === p.display_group);
         if (g) g.items.push(p);
       }
 
@@ -1781,9 +1809,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
         if (isLegacy) {
           const summary = (section as HTMLDetailsElement).createEl("summary");
-          summary.createEl("strong", { text: group.title + " (" + group.items.length + ")" });
+          summary.createEl("strong", {
+            text: group.title + " (" + group.items.length + ")",
+          });
         } else {
-          section.createEl("h3", { text: group.title + " (" + group.items.length + ")" });
+          section.createEl("h3", {
+            text: group.title + " (" + group.items.length + ")",
+          });
         }
 
         // Selection state per row
@@ -1794,11 +1826,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const toolbar = section.createEl("div", { cls: "pf-maint-toolbar" });
         const selAllBtn = toolbar.createEl("button", { text: "全选" });
         const deselAllBtn = toolbar.createEl("button", { text: "取消全选" });
-        const execBtn = toolbar.createEl("button", { text: "▶ 执行已选", cls: "mod-cta" });
-        const execLabel = toolbar.createEl("span", { cls: "pf-maint-exec-label" });
+        const execBtn = toolbar.createEl("button", {
+          text: "▶ 执行已选",
+          cls: "mod-cta",
+        });
+        const execLabel = toolbar.createEl("span", {
+          cls: "pf-maint-exec-label",
+        });
 
         const updateExecLabel = () => {
-          const n = group.items.filter(p => selState.get(p.key)).length;
+          const n = group.items.filter((p) => selState.get(p.key)).length;
           execLabel.setText("已选 " + n + " 篇");
         };
         updateExecLabel();
@@ -1807,18 +1844,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           for (const p of group.items) selState.set(p.key, true);
           updateExecLabel();
           // Update checkboxes
-          const cbs = section.querySelectorAll("input[type=checkbox].pf-maint-sel");
-          cbs.forEach((cb) => { (cb as HTMLInputElement).checked = true; });
+          const cbs = section.querySelectorAll(
+            "input[type=checkbox].pf-maint-sel"
+          );
+          cbs.forEach((cb) => {
+            (cb as HTMLInputElement).checked = true;
+          });
         });
         deselAllBtn.addEventListener("click", () => {
           for (const p of group.items) selState.set(p.key, false);
           updateExecLabel();
-          const cbs = section.querySelectorAll("input[type=checkbox].pf-maint-sel");
-          cbs.forEach((cb) => { (cb as HTMLInputElement).checked = false; });
+          const cbs = section.querySelectorAll(
+            "input[type=checkbox].pf-maint-sel"
+          );
+          cbs.forEach((cb) => {
+            (cb as HTMLInputElement).checked = false;
+          });
         });
 
         execBtn.addEventListener("click", () => {
-          const selected = group.items.filter(p => selState.get(p.key));
+          const selected = group.items.filter((p) => selState.get(p.key));
           if (selected.length === 0) {
             new Notice("请先选择要处理的论文。");
             return;
@@ -1843,16 +1888,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const thead = table.createEl("thead");
         const tbody = table.createEl("tbody");
         const headerRow = thead.insertRow();
-        ["", "Key", "Title", "建议操作", "原因", "操作"].forEach(h => {
+        ["", "Key", "Title", "建议操作", "原因", "操作"].forEach((h) => {
           const th = document.createElement("th");
           th.textContent = h;
           headerRow.appendChild(th);
         });
 
         const btnText = (action: string) => {
-          if (action === "retry_ocr") return t("maintenance_btn_retry") || "重试";
-          if (action === "rebuild_result") return t("maintenance_btn_rebuild") || "重建";
-          if (action === "upgrade_legacy") return t("maintenance_btn_upgrade") || "升级";
+          if (action === "retry_ocr")
+            return t("maintenance_btn_retry") || "重试";
+          if (action === "rebuild_result")
+            return t("maintenance_btn_rebuild") || "重建";
+          if (action === "upgrade_legacy")
+            return t("maintenance_btn_upgrade") || "升级";
           return "";
         };
 
@@ -1874,12 +1922,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
           // Key
           const keyTd = tr.insertCell();
-          keyTd.style.cssText = "padding:3px 4px;white-space:nowrap;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;";
+          keyTd.style.cssText =
+            "padding:3px 4px;white-space:nowrap;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;";
           keyTd.textContent = p.key;
 
           // Title
           const titleTd = tr.insertCell();
-          titleTd.style.cssText = "padding:3px 4px;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;";
+          titleTd.style.cssText =
+            "padding:3px 4px;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;";
           titleTd.textContent = p.title || p.key;
 
           // Display label (建议操作)
@@ -1889,12 +1939,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
           // Reason
           const reasonTd = tr.insertCell();
-          reasonTd.style.cssText = "padding:3px 4px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--text-muted);";
+          reasonTd.style.cssText =
+            "padding:3px 4px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--text-muted);";
           reasonTd.textContent = p.display_reason || "";
 
           // Action button
           const actionTd = tr.insertCell();
-          actionTd.style.cssText = "padding:3px 4px;text-align:center;white-space:nowrap;";
+          actionTd.style.cssText =
+            "padding:3px 4px;text-align:center;white-space:nowrap;";
           const actionBtn = document.createElement("button");
           actionBtn.textContent = btnText(p.display_action);
           if (actionBtn.textContent) {
@@ -1905,7 +1957,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 pyPath,
                 [...pyExtra, ...args.cmd],
                 { cwd: vaultPath, timeout: args.timeout, windowsHide: true },
-                () => { new Notice(p.display_label + " — " + p.key); }
+                () => {
+                  new Notice(p.display_label + " — " + p.key);
+                }
               );
             });
             actionTd.appendChild(actionBtn);
@@ -1923,20 +1977,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     // ── Phase 2: Background refresh ──
-    refreshMaintenanceData(vaultPath, py.path, py.extraArgs || [], cache || null)
-      .then(result => {
+    refreshMaintenanceData(
+      vaultPath,
+      py.path,
+      py.extraArgs || [],
+      cache || null
+    )
+      .then((result) => {
         if (result.changed) {
           renderTable(result.data);
           writeMaintenanceCache(vaultPath, {
             manifest: {},
-            papers: Object.fromEntries(result.data.map(p => [p.key, p])),
+            papers: Object.fromEntries(result.data.map((p) => [p.key, p])),
             cached_at: new Date().toISOString(),
           });
         } else if (!cache) {
           renderTable(result.data);
           writeMaintenanceCache(vaultPath, {
             manifest: {},
-            papers: Object.fromEntries(result.data.map(p => [p.key, p])),
+            papers: Object.fromEntries(result.data.map((p) => [p.key, p])),
             cached_at: new Date().toISOString(),
           });
         }
@@ -1954,27 +2013,44 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ── Global operations ──
     containerEl.createEl("hr");
     containerEl.createEl("h3", { text: "全局操作" });
-    const globalActions = containerEl.createEl("div", { cls: "pf-maint-global" });
+    const globalActions = containerEl.createEl("div", {
+      cls: "pf-maint-global",
+    });
 
-    const rebuildIndexBtn = globalActions.createEl("button", { text: "重建搜索索引" });
+    const rebuildIndexBtn = globalActions.createEl("button", {
+      text: "重建搜索索引",
+    });
     rebuildIndexBtn.addEventListener("click", () => {
       new Notice("正在重建搜索索引…");
       execFile(
         py.path,
-        [...(py.extraArgs || []), "-m", "paperforge", "embed", "build", "--force"],
+        [
+          ...(py.extraArgs || []),
+          "-m",
+          "paperforge",
+          "embed",
+          "build",
+          "--force",
+        ],
         { cwd: vaultPath, timeout: 300000, windowsHide: true },
-        () => { new Notice("搜索索引重建完成。"); }
+        () => {
+          new Notice("搜索索引重建完成。");
+        }
       );
     });
 
-    const rebuildMemBtn = globalActions.createEl("button", { text: "重建记忆库" });
+    const rebuildMemBtn = globalActions.createEl("button", {
+      text: "重建记忆库",
+    });
     rebuildMemBtn.addEventListener("click", () => {
       new Notice("正在重建记忆库…");
       execFile(
         py.path,
         [...(py.extraArgs || []), "-m", "paperforge", "repair", "--fix"],
         { cwd: vaultPath, timeout: 120000, windowsHide: true },
-        () => { new Notice("记忆库重建完成。"); }
+        () => {
+          new Notice("记忆库重建完成。");
+        }
       );
     });
   }
