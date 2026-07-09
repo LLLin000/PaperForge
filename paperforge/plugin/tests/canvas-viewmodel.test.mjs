@@ -1108,6 +1108,40 @@ describe('buildCanvasCardViewModel — highlights, cards, and unresolved', () =>
         }
         expect(annotationNeedsSideCard(populatedImageData)).toBe(true);
     });
+
+    it('builds a navigable card from a real CLI image annotation without preview payload', () => {
+        const image = makeRow({
+            id: 'real-image-annotation',
+            type: 'image',
+            page_index: 4,
+            page_label: '5',
+            selected_text: '',
+            comment: '',
+            position_json: '{"pageIndex":4,"rects":[{"x":12,"y":24,"w":160,"h":90}]}',
+        });
+
+        expect(image.display.imagePath).toBeUndefined();
+        expect(image.display.imageData).toBeUndefined();
+        expect(annotationNeedsSideCard(image)).toBe(true);
+        expect(annotationNeedsSideCard(makeRow({
+            id: 'empty-note-type',
+            type: 'note',
+            selected_text: '',
+            comment: '',
+        }))).toBe(false);
+
+        const vm = buildCanvasCardViewModel(
+            makeAnnotationState('ready', { paperKey: 'PAPER_A', annotations: [image] }),
+        );
+
+        expect(vm.cards).toHaveLength(1);
+        expect(vm.cards[0].type).toBe('image');
+        expect(vm.cards[0].pageIndex).toBe(4);
+        expect(vm.cards[0].pageLabel).toBe('5');
+        expect(vm.cards[0].positionJson).toBe(image.pdfLocation.positionJson);
+        expect(vm.cards[0].imagePath).toBeUndefined();
+        expect(vm.cards[0].imageData).toBeUndefined();
+    });
 });
 
 // ---------------------------------------------------------------------------

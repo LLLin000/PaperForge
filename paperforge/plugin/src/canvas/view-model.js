@@ -50,6 +50,7 @@ const _COMMENT_LIMIT = 70;
 function annotationNeedsSideCard(annotation) {
     const payload = annotation || {};
     const display = payload.display || {};
+    const pdfLocation = payload.pdfLocation || {};
     const raw = payload.raw || {};
     const values = [
         display.comment, display.note, display.imagePath, display.imageData,
@@ -70,7 +71,23 @@ function annotationNeedsSideCard(annotation) {
         return true;
     }
 
-    return values.some(hasContent);
+    if (values.some(hasContent)) return true;
+
+    const type = display.type || payload.type || raw.type;
+    const pageIndex = pdfLocation.pageIndex != null ? pdfLocation.pageIndex : raw.page_index;
+    const positionValue = pdfLocation.positionJson != null
+        ? pdfLocation.positionJson
+        : raw.position_json;
+    if (type !== 'image' || pageIndex == null || positionValue == null) return false;
+
+    try {
+        const position = typeof positionValue === 'string'
+            ? JSON.parse(positionValue)
+            : positionValue;
+        return Boolean(position && Array.isArray(position.rects) && position.rects.length > 0);
+    } catch (_error) {
+        return false;
+    }
 }
 
 /**
@@ -162,6 +179,7 @@ function buildCanvasCard(row, sourceModel) {
         imageData: display.imageData,
         pageLabel: pdfLoc.pageLabel || display.pageLabel || '',
         pageIndex: pdfLoc.pageIndex != null ? pdfLoc.pageIndex : null,
+        positionJson: pdfLoc.positionJson != null ? pdfLoc.positionJson : null,
         type: display.type || 'annotation',
         color: display.color != null ? display.color : null,
 
