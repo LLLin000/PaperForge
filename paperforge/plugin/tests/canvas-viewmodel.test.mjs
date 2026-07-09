@@ -16,6 +16,7 @@
 import { describe, it, expect } from 'vitest';
 
 const {
+    annotationNeedsSideCard,
     buildCanvasCard,
     buildCanvasCardViewModel,
     normalizeCanvasCardPreview,
@@ -65,6 +66,7 @@ function makeRow(overrides = {}) {
 // Standard rows
 const rowStandard = makeRow({ id: 'r1', page_index: 0, page_label: '1', sort_index: 0, type: 'highlight', color: '#ffd400', selected_text: 'Alpha bravo selected text', comment: 'Alpha comment' });
 const rowNote = makeRow({ id: 'r2', page_index: 1, page_label: '2', sort_index: 0, type: 'note', color: null, selected_text: 'Beta selected', comment: '' });
+rowNote.display.note = 'Beta note';
 const rowReadOnly = makeRow({ id: 'r3', page_index: 0, page_label: '1', sort_index: 1, type: 'highlight', color: '#ff6666', selected_text: 'Gamma selected', comment: 'Gamma comment', is_readonly: 1 });
 const rowMissingSelectedText = makeRow({ id: 'r4', page_index: 2, page_label: '3', sort_index: 0, type: 'highlight', color: '#00ff00', selected_text: '', comment: 'Only a comment' });
 const rowMissingComment = makeRow({ id: 'r5', page_index: 2, page_label: '3', sort_index: 1, type: 'sticky_note', color: null, selected_text: 'Only selected', comment: '' });
@@ -879,9 +881,9 @@ describe('buildCanvasCardViewModel — sourceModel anchor integration (ANN12)', 
         const vm = buildCanvasCardViewModel(annState, { sourceModel: sourceModel });
         expect(vm.state).toBe('ready');
         expect(Array.isArray(vm.cards)).toBe(true);
-        expect(vm.cards.length).toBe(2);
-        expect(vm).toHaveProperty('lanes');
-        expect(vm.lanes.left.length + vm.lanes.right.length).toBe(2);
+        expect(vm.cards.length).toBe(0);
+        expect(vm.unresolved.length).toBe(2);
+        expect(vm.lanes).toBeUndefined();
     });
 
     it('view-model with sourceModel still handles stale correctly', () => {
@@ -900,12 +902,13 @@ describe('buildCanvasCardViewModel — sourceModel anchor integration (ANN12)', 
         });
         const vm = buildCanvasCardViewModel(annState, { sourceModel: sourceModel, stale: true });
         expect(vm.state).toBe('stale');
-        expect(vm.cards.length).toBe(1);
-        expect(vm.cards[0].stale).toBe(true);
-        expect(vm.cards[0].anchor).toBeDefined();
+        expect(vm.cards.length).toBe(0);
+        expect(vm.unresolved.length).toBe(1);
+        expect(vm.unresolved[0].stale).toBe(true);
+        expect(vm.unresolved[0].anchor).toBeDefined();
     });
 
-    it('view-model with missing source still shows cards with unresolved anchors', () => {
+    it('view-model with missing source keeps annotations as unresolved instead of cards', () => {
         const sourceModel = {
             status: 'source-unavailable',
             sourceKind: null,
@@ -921,9 +924,11 @@ describe('buildCanvasCardViewModel — sourceModel anchor integration (ANN12)', 
         });
         const vm = buildCanvasCardViewModel(annState, { sourceModel: sourceModel });
         expect(vm.state).toBe('ready');
-        expect(vm.cards.length).toBe(2);
-        expect(vm.cards[0].anchor.status).toBe('unresolved');
-        expect(vm.cards[1].anchor.status).toBe('unresolved');
+        expect(vm.cards).toEqual([]);
+        expect(vm.highlights).toEqual([]);
+        expect(vm.unresolved.length).toBe(2);
+        expect(vm.unresolved[0].anchor.status).toBe('unresolved');
+        expect(vm.unresolved[1].anchor.status).toBe('unresolved');
     });
 
     it('view-model without sourceModel still produces unresolved anchors (backward compat)', () => {
@@ -937,6 +942,108 @@ describe('buildCanvasCardViewModel — sourceModel anchor integration (ANN12)', 
         expect(vm.cards.length).toBe(1);
         expect(vm.cards[0].anchor.status).toBe('unresolved');
         expect(vm.cards[0].anchor.reason).toBe('No source model provided for anchor resolution.');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Visual Reading Canvas Correction Task 4 — projection separation
+// ---------------------------------------------------------------------------
+
+describe('buildCanvasCardViewModel — highlights, cards, and unresolved', () => {
+    function makeSourceModel(text) {
+        return {
+            status: 'ready',
+            sourceKind: 'fulltext',
+            text: text,
+            paperKey: 'PAPER_A',
+            diagnostics: {},
+            reason: null,
+        };
+    }
+
+    it('keeps plain and commented resolved annotations as highlights but only comments as cards', () => {
+        const plain = makeRow({
+            id: 'plain-highlight',
+            selected_text: 'Plain resolved highlight',
+            comment: '',
+        });
+        const commented = makeRow({
+            id: 'commented-highlight',
+            selected_text: 'Commented resolved highlight',
+            comment: 'Keep this beside the text',
+        });
+        const annState = makeAnnotationState('ready', {
+            paperKey: 'PAPER_A',
+            annotations: [plain, commented],
+        });
+
+        const vm = buildCanvasCardViewModel(annState, {
+            sourceModel: makeSourceModel('Plain resolved highlight. Commented resolved highlight.'),
+        });
+
+        expect(vm.highlights.map((item) => item.selectedText)).toEqual([
+            'Plain resolved highlight',
+            'Commented resolved highlight',
+        ]);
+        expect(vm.cards.map((item) => item.selectedText)).toEqual(['Commented resolved highlight']);
+        expect(vm.unresolved).toEqual([]);
+        expect(vm.unresolvedCount).toBe(0);
+    });
+
+    it('keeps source misses in unresolved and excludes them from highlights and cards', () => {
+        const missed = makeRow({
+            id: 'source-miss',
+            selected_text: 'Text absent from source',
+            comment: 'This would otherwise need a card',
+        });
+        const annState = makeAnnotationState('ready', {
+            paperKey: 'PAPER_A',
+            annotations: [missed],
+        });
+
+        const vm = buildCanvasCardViewModel(annState, {
+            sourceModel: makeSourceModel('A completely different source body.'),
+        });
+
+        expect(vm.unresolved).toHaveLength(1);
+        expect(vm.unresolved[0].selectedText).toBe('Text absent from source');
+        expect(vm.unresolvedCount).toBe(1);
+        expect(vm.highlights).toEqual([]);
+        expect(vm.cards).toEqual([]);
+    });
+
+    it('uses note and image payloads for side cards, not selection metadata', () => {
+        const plain = makeRow({
+            id: 'plain-payload',
+            selected_text: 'Plain payload',
+            comment: '',
+            type: 'note',
+            color: '#ffd400',
+        });
+        const withNote = makeRow({ id: 'note-payload', selected_text: 'Note payload', comment: '' });
+        withNote.display.note = 'A side note';
+        const withImagePath = makeRow({ id: 'image-path', selected_text: 'Image path payload', comment: '' });
+        withImagePath.display.imagePath = 'assets/figure.png';
+        const withImageData = makeRow({ id: 'image-data', selected_text: 'Image data payload', comment: '' });
+        withImageData.display.imageData = { width: 320, height: 180 };
+
+        expect(annotationNeedsSideCard(plain)).toBe(false);
+        expect(annotationNeedsSideCard(withNote)).toBe(true);
+        expect(annotationNeedsSideCard(withImagePath)).toBe(true);
+        expect(annotationNeedsSideCard(withImageData)).toBe(true);
+
+        const rows = [plain, withNote, withImagePath, withImageData];
+        const vm = buildCanvasCardViewModel(
+            makeAnnotationState('ready', { paperKey: 'PAPER_A', annotations: rows }),
+            { sourceModel: makeSourceModel(rows.map((row) => row.display.selectedText).join('. ')) },
+        );
+
+        expect(vm.highlights).toHaveLength(4);
+        expect(vm.cards.map((item) => item.selectedText)).toEqual([
+            'Note payload',
+            'Image path payload',
+            'Image data payload',
+        ]);
     });
 });
 

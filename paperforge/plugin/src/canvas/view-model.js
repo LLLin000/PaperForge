@@ -39,6 +39,32 @@ const _SELECTED_TEXT_LIMIT = 140;
 const _COMMENT_LIMIT = 70;
 
 /**
+ * Return whether an annotation payload contains content for a side card.
+ *
+ * Anchor resolution is intentionally irrelevant here: card eligibility is
+ * determined only by authored annotation content.
+ *
+ * @param {object} annotation - Normalized annotation row or raw payload.
+ * @returns {boolean}
+ */
+function annotationNeedsSideCard(annotation) {
+    const payload = annotation || {};
+    const display = payload.display || {};
+    const raw = payload.raw || {};
+    const values = [
+        display.comment, display.note, display.imagePath, display.imageData,
+        payload.comment, payload.note, payload.imagePath, payload.imageData,
+        raw.comment, raw.note, raw.imagePath, raw.imageData,
+        raw.image_path, raw.image_data,
+    ];
+
+    return values.some(function (value) {
+        if (typeof value === 'string') return value.trim().length > 0;
+        return value != null;
+    });
+}
+
+/**
  * Normalize a text value into a card preview metadata object.
  *
  * Returns safe preview metadata without DOM measurement:
@@ -187,60 +213,93 @@ function buildCanvasCardViewModel(annotationState, options) {
     // ── Build cards if we have annotation rows ──
     var sourceModel = opts.sourceModel || null;
 
-    function buildCards() {
+    function buildAnnotationProjections() {
         if (rows.length === 0) return [];
         const sorted = sortCanvasCardsForReadingOrder(rows);
         return sorted.map(function (row) {
             const card = buildCanvasCard(row, sourceModel);
             if (hasStale) card.stale = true;
-            return card;
+            return { row: row, card: card };
         });
+    }
+
+    function completeViewModel(viewModel) {
+        if (!Object.prototype.hasOwnProperty.call(viewModel, 'sourceModel')) {
+            viewModel.sourceModel = sourceModel;
+        }
+        if (!Array.isArray(viewModel.highlights)) viewModel.highlights = [];
+        if (!Array.isArray(viewModel.unresolved)) viewModel.unresolved = [];
+        if (viewModel.unresolvedCount == null) {
+            viewModel.unresolvedCount = viewModel.unresolved.length;
+        }
+        return viewModel;
     }
 
     // ── States with no cards ──
     if (rawState === 'idle') {
-        return { state: 'idle', paperKey: paperKey, cards: [], message: aState.message || '', refreshing: false, stale: false };
+        return completeViewModel({ state: 'idle', paperKey: paperKey, cards: [], message: aState.message || '', refreshing: false, stale: false });
     }
 
     if (rawState === 'loading') {
-        return { state: 'loading', paperKey: paperKey, cards: [], message: aState.message || 'Loading annotations…', refreshing: false, stale: false };
+        return completeViewModel({ state: 'loading', paperKey: paperKey, cards: [], message: aState.message || 'Loading annotations…', refreshing: false, stale: false });
     }
 
     if (rawState === 'empty') {
-        return { state: 'empty', paperKey: paperKey, cards: [], message: aState.message || 'This paper has no annotations yet.', refreshing: false, stale: hasStale };
+        return completeViewModel({ state: 'empty', paperKey: paperKey, cards: [], message: aState.message || 'This paper has no annotations yet.', refreshing: false, stale: hasStale });
     }
 
     if (rawState === 'missing-paper') {
-        return { state: 'missing-paper', paperKey: null, cards: [], message: aState.message || 'No paper is currently active.', refreshing: false, stale: false };
+        return completeViewModel({ state: 'missing-paper', paperKey: null, cards: [], message: aState.message || 'No paper is currently active.', refreshing: false, stale: false });
     }
 
     if (rawState === 'missing-db') {
-        return { state: 'missing-db', paperKey: paperKey, cards: [], message: aState.message || 'Annotation database is not available.', refreshing: false, stale: false };
+        return completeViewModel({ state: 'missing-db', paperKey: paperKey, cards: [], message: aState.message || 'Annotation database is not available.', refreshing: false, stale: false });
     }
 
     if (rawState === 'cli-error') {
-        return { state: 'cli-error', paperKey: paperKey, cards: [], message: aState.message || 'Failed to load annotations.', refreshing: false, stale: false };
+        return completeViewModel({ state: 'cli-error', paperKey: paperKey, cards: [], message: aState.message || 'Failed to load annotations.', refreshing: false, stale: false });
     }
 
     if (rawState === 'invalid-json') {
-        return { state: 'invalid-json', paperKey: paperKey, cards: [], message: aState.message || 'Could not read annotation data.', refreshing: false, stale: false };
+        return completeViewModel({ state: 'invalid-json', paperKey: paperKey, cards: [], message: aState.message || 'Could not read annotation data.', refreshing: false, stale: false });
     }
 
     if (rawState === 'missing-source') {
-        return { state: 'missing-source', paperKey: paperKey, cards: [], message: aState.message || 'Reading source is not available for this paper.', refreshing: false, stale: false };
+        return completeViewModel({ state: 'missing-source', paperKey: paperKey, cards: [], message: aState.message || 'Reading source is not available for this paper.', refreshing: false, stale: false });
     }
 
     if (rawState === 'unsupported') {
-        return { state: 'unsupported', paperKey: paperKey, cards: [], message: aState.message || 'This paper type is not supported.', refreshing: false, stale: false };
+        return completeViewModel({ state: 'unsupported', paperKey: paperKey, cards: [], message: aState.message || 'This paper type is not supported.', refreshing: false, stale: false });
     }
 
     // ── States with cards (ready, refreshing, stale) ──
     if (rawState === 'ready') {
-        const cards = buildCards();
+        const projections = buildAnnotationProjections();
+        const highlights = projections
+            .filter(function (item) {
+                return item.card.anchor.status === 'exact' || item.card.anchor.status === 'resolved';
+            })
+            .map(function (item) { return item.card; });
+        const unresolved = projections
+            .filter(function (item) {
+                return item.card.anchor.status !== 'exact' && item.card.anchor.status !== 'resolved';
+            })
+            .map(function (item) { return item.card; });
+        const cardCandidates = sourceModel ? highlights : projections.map(function (item) { return item.card; });
+        const cards = cardCandidates.filter(function (card) {
+            const projection = projections.find(function (item) { return item.card === card; });
+            return annotationNeedsSideCard(projection.row);
+        });
         const lanes = cards.length > 0 ? assignCanvasCardsToLanes(cards) : undefined;
+        const projectionFields = {
+            sourceModel: sourceModel,
+            highlights: highlights,
+            unresolved: unresolved,
+            unresolvedCount: unresolved.length,
+        };
 
         if (hasRefreshing) {
-            return {
+            return completeViewModel({
                 state: 'refreshing',
                 paperKey: paperKey,
                 cards: cards,
@@ -248,11 +307,12 @@ function buildCanvasCardViewModel(annotationState, options) {
                 message: aState.message || 'Refreshing annotations…',
                 refreshing: true,
                 stale: false,
-            };
+                ...projectionFields,
+            });
         }
 
         if (hasStale) {
-            return {
+            return completeViewModel({
                 state: 'stale',
                 paperKey: paperKey,
                 cards: cards,
@@ -260,10 +320,11 @@ function buildCanvasCardViewModel(annotationState, options) {
                 message: (aState.message || '') + ' — Showing previously loaded (stale) data.',
                 refreshing: false,
                 stale: true,
-            };
+                ...projectionFields,
+            });
         }
 
-        return {
+        return completeViewModel({
             state: 'ready',
             paperKey: paperKey,
             cards: cards,
@@ -271,14 +332,16 @@ function buildCanvasCardViewModel(annotationState, options) {
             message: aState.message || (cards.length + ' annotation(s) loaded.'),
             refreshing: false,
             stale: false,
-        };
+            ...projectionFields,
+        });
     }
 
     // ── Unknown state → fallback to idle ──
-    return { state: 'idle', paperKey: paperKey, cards: [], message: '', refreshing: false, stale: false };
+    return completeViewModel({ state: 'idle', paperKey: paperKey, cards: [], message: '', refreshing: false, stale: false });
 }
 
 module.exports = {
+    annotationNeedsSideCard,
     buildCanvasCard,
     buildCanvasCardViewModel,
     normalizeCanvasCardPreview,
