@@ -68,23 +68,19 @@ def _has_object_units_in_db(vault: Path, key: str) -> bool:
 
 
 def _pid_alive(pid: int) -> bool:
+    """Check if a process with the given PID is still running (Windows)."""
     if pid <= 0:
         return False
-    if os.name == "nt":
-        try:
-            import subprocess
-
-            r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], capture_output=True, text=True, timeout=5)
-            return str(pid) in r.stdout
-        except:
-            return False
-    else:
-        try:
-            os.kill(pid, 0)
-            return True
-        except OSError:
-            return False
-
+    try:
+        import subprocess
+        r = subprocess.run(
+            ["tasklist", "/FI", f"PID eq {pid}"],
+            capture_output=True,
+            timeout=5,
+        )
+        return str(pid) in r.stdout.decode("utf-8", errors="replace")
+    except Exception:
+        return False
 
 def _assert_collections_healthy(vault: Path) -> tuple[bool, str]:
     """Probe sqlite-vec companion tables: connectivity + metadata accessibility."""
@@ -286,12 +282,14 @@ def run(args: argparse.Namespace) -> int:
                             __import__("datetime").datetime.now(__import__("datetime").timezone.utc) - dt
                         ).total_seconds() > 43200:
                             stale = True
-                    except:
+                    except Exception:
                         pass
             if stale:
-                msg = "Previous build appears stale (crashed?). Use --force to rebuild."
+                msg = "Previous build appears stale (crashed?). Recovering and rebuilding from scratch."
                 print(msg)
-                return 1
+                from paperforge.embedding.build_state import mark_vector_build_state
+                mark_vector_build_state(vault, status="idle", current=0, pid=0)
+                resume = False
 
         # 门二：missing DB → fresh build（不是 error）
         db_path = get_vector_db_path(vault)
