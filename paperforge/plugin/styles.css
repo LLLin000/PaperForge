@@ -3902,7 +3902,7 @@
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
   padding: 10px 12px;
-  cursor: default;
+  cursor: pointer;
   transition:
     border-color 0.15s,
     background 0.15s;
@@ -3916,7 +3916,6 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-normal);
-  cursor: pointer;
   margin-bottom: 4px;
 }
 .paperforge-search-result-title:hover {

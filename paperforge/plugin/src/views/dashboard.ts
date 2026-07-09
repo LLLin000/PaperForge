@@ -51,6 +51,11 @@ import {
   restoreVersion,
   compareVersions,
 } from "../services/version-history";
+import {
+  initDatabase,
+  searchMetadata,
+  type SearchResultItem,
+} from "../services/db";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -95,7 +100,9 @@ export class PaperForgeStatusView extends ItemView {
   _searchContainer: HTMLElement | null = null;
   _searchInput: HTMLInputElement | null = null;
   _searchResultsEl: HTMLElement | null = null;
-  _searchTimer: ReturnType<typeof setTimeout> | null = null;
+  _searchTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  _sqlJsInitialized: boolean = false;
+  _sqlJsFailed: boolean = false;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -2389,7 +2396,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-search-results",
     });
 
-    // Detect @ mode prefix
+    // Detect @ mode prefix + debounced metadata search via sql.js
     this._searchInput.addEventListener("input", () => {
       const val = this._searchInput?.value || "";
       if (val.startsWith("@") && !val.startsWith("@ ")) {
@@ -2399,18 +2406,30 @@ export class PaperForgeStatusView extends ItemView {
         modeBadge.setText("M");
         modeBadge.removeClass("deep");
       }
+      // Cancel pending debounce
+      clearTimeout(this._searchTimer);
+      // Debounced metadata search for non-@ queries
+      if (!val.startsWith("@") && val.trim()) {
+        this._searchTimer = setTimeout(() => {
+          this.executeSearch({ source: "sqljs" });
+        }, 200);
+      }
     });
 
-    // Enter triggers search
+    // Enter triggers CLI search (full search for @ or explicit)
     this._searchInput.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        this.executeSearch();
+        if (this._searchTimer) {
+          clearTimeout(this._searchTimer);
+          this._searchTimer = undefined;
+        }
+        this.executeSearch({ source: "cli" });
       }
     });
   }
 
-  executeSearch() {
+  async executeSearch(options: { source?: "auto" | "cli" | "sqljs" } = {}) {
     if (!this._searchInput || !this._searchResultsEl) return;
     const raw = this._searchInput.value.trim();
     if (!raw) return;
@@ -2421,19 +2440,48 @@ export class PaperForgeStatusView extends ItemView {
 
     const mode = isDeep ? "retrieve" : "search";
 
-    this._searchResultsEl.empty();
-    this._searchResultsEl.createEl("div", {
-      cls: "paperforge-search-loading",
-      text: "Searching...",
-    });
-
-    // Resolve vault path and plugin settings (avoid as any)
+    // Resolve vault path (used by both sql.js and CLI paths)
     const adapter = this.app.vault.adapter;
     let vaultPath = "";
     if (adapter && typeof adapter === "object" && "basePath" in adapter) {
       const bp = (adapter as Record<string, unknown>).basePath;
       vaultPath = typeof bp === "string" ? bp : "";
     }
+
+    this._searchResultsEl.empty();
+
+    // ── sql.js metadata search path (non-@ queries only) ──
+    if (
+      mode === "search" &&
+      (options.source === "auto" || options.source === "sqljs")
+    ) {
+      if (vaultPath) {
+        try {
+          if (!this._sqlJsInitialized && !this._sqlJsFailed) {
+            await initDatabase(vaultPath);
+            this._sqlJsInitialized = true;
+          }
+          if (this._sqlJsInitialized) {
+            const results = searchMetadata(query, 20);
+            if (results !== null) {
+              this.renderSearchResults(results, false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error("PaperForge sql.js search failed:", e);
+          this._sqlJsFailed = true;
+        }
+      }
+      // sql.js unavailable — fall through to CLI
+    }
+
+    // ── CLI search path (deep search or sql.js fallback) ──
+    this._searchResultsEl.createEl("div", {
+      cls: "paperforge-search-loading",
+      text: "Searching...",
+    });
+
     if (!vaultPath) {
       this._renderSearchError("Could not determine vault path");
       return;
@@ -2506,14 +2554,22 @@ export class PaperForgeStatusView extends ItemView {
         return;
       }
       try {
-        const data = JSON.parse(jsonStr) as Record<string, unknown> | unknown[];
+        const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
         let results: unknown[] = [];
-        if (Array.isArray(data)) {
-          results = data;
-        } else if (data && typeof data === "object" && "results" in data) {
-          const r = (data as Record<string, unknown>).results;
-          results = Array.isArray(r) ? r : [];
+
+        if (parsed && typeof parsed === "object" && "data" in parsed) {
+          const d = (parsed as Record<string, unknown>).data;
+          if (d && typeof d === "object") {
+            const dd = d as Record<string, unknown>;
+            // search output: data.matches
+            if ("matches" in dd && Array.isArray(dd.matches)) {
+              results = dd.matches as unknown[];
+            } else if ("results" in dd && Array.isArray(dd.results)) {
+              results = dd.results as unknown[];
+            }
+          }
         }
+
         this.renderSearchResults(results, isDeep);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -2551,30 +2607,65 @@ export class PaperForgeStatusView extends ItemView {
     for (const r of results) {
       if (!r || typeof r !== "object") continue;
       const rec = r as Record<string, unknown>;
-
       const card = this._searchResultsEl.createEl("div", {
         cls: "paperforge-search-result-card",
+        attr: { role: "button" },
       });
 
-      // Title — clickable
+      // Title
       const titleText =
         typeof rec["title"] === "string"
           ? rec["title"]
           : typeof rec["file_name"] === "string"
             ? rec["file_name"]
             : "(untitled)";
-      const titleEl = card.createEl("div", {
+      card.createEl("div", {
         cls: "paperforge-search-result-title",
         text: titleText,
       });
-      const filePath =
-        typeof rec["file_path"] === "string" ? rec["file_path"] : null;
-      if (filePath) {
-        titleEl.addEventListener("click", () => {
-          const abstractFile = this.app.vault.getAbstractFileByPath(filePath);
-          if (abstractFile instanceof TFile) {
-            this.app.workspace.getLeaf(false).openFile(abstractFile);
-          }
+
+      // Note path resolution: main_note_path → note_path → zotero_key lookup in cached index
+      const zoteroKey =
+        typeof rec["zotero_key"] === "string" ? rec["zotero_key"] : "";
+      const mainNotePath =
+        typeof rec["main_note_path"] === "string" && rec["main_note_path"]
+          ? rec["main_note_path"]
+          : null;
+      const notePath =
+        typeof rec["note_path"] === "string" && rec["note_path"]
+          ? rec["note_path"]
+          : null;
+      let resolvedPath: string | null = mainNotePath || notePath;
+
+      // Fallback: look up zotero_key in cached index for main_note_path / note_path
+      if (!resolvedPath && zoteroKey) {
+        const cachedIndex = this._getCachedIndex();
+        const entry = cachedIndex.find(
+          (item: unknown) =>
+            item !== null &&
+            typeof item === "object" &&
+            "zotero_key" in item &&
+            (item as Record<string, unknown>).zotero_key === zoteroKey
+        );
+        if (entry && typeof entry === "object") {
+          const e = entry as Record<string, unknown>;
+          resolvedPath =
+            typeof e["main_note_path"] === "string" && e["main_note_path"]
+              ? e["main_note_path"]
+              : typeof e["note_path"] === "string" && e["note_path"]
+                ? e["note_path"]
+                : null;
+        }
+      }
+
+      if (resolvedPath) {
+        card.addEventListener("click", (e: MouseEvent) => {
+          const newLeaf = e.ctrlKey || e.metaKey;
+          this.app.workspace.openLinkText(resolvedPath, "", newLeaf);
+        });
+      } else {
+        card.addEventListener("click", () => {
+          new Notice("[!!] Note not found: " + (zoteroKey || "unknown"), 6000);
         });
       }
 
