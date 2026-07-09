@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/sql.js": "^1.4.11",
     "builtin-modules": "^3.3.0",
     "esbuild": "^0.25.0",
     "husky": "^9.1.7",
@@ -23,5 +24,8 @@
     "prettier": "^3.8.4",
     "typescript": "^5.4.0",
     "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "sql.js": "^1.14.1"
   }
 }
