@@ -14,7 +14,7 @@ describe('canvas DOM anchors', () => {
             '<p>Alpha <strong>beta</strong> gamma.</p>',
             '<script>ignored script</script>',
             '<style>ignored style</style>',
-            '<mark class="paperforge-canvas-highlight">ignored mark</mark>',
+            '<mark>ignored mark</mark>',
         ].join('');
 
         const index = buildTextNodeIndex(article);
@@ -37,8 +37,8 @@ describe('canvas DOM anchors', () => {
 
         const result = applyDomHighlights(article, [{
             id: 'ANN-1',
-            rawStart: 6,
-            rawEnd: 16,
+            renderedStart: 6,
+            renderedEnd: 16,
             color: '#ffe08a',
         }]);
 
@@ -63,8 +63,8 @@ describe('canvas DOM anchors', () => {
 
         const result = applyDomHighlights(article, [{
             id: 'ANN-OOB',
-            rawStart: 6,
-            rawEnd: 99,
+            renderedStart: 6,
+            renderedEnd: 99,
         }]);
 
         expect(result).toEqual({ applied: [], unresolved: ['ANN-OOB'] });
@@ -76,8 +76,8 @@ describe('canvas DOM anchors', () => {
         article.innerHTML = '<p>Alpha <strong>beta</strong> gamma.</p>';
 
         const result = applyDomHighlights(article, [
-            { id: 'ANN-A', rawStart: 0, rawEnd: 5 },
-            { id: 'ANN-B', rawStart: 6, rawEnd: 16 },
+            { id: 'ANN-A', renderedStart: 0, renderedEnd: 5 },
+            { id: 'ANN-B', renderedStart: 6, renderedEnd: 16 },
         ]);
 
         expect(result).toEqual({ applied: ['ANN-A', 'ANN-B'], unresolved: [] });
@@ -92,9 +92,9 @@ describe('canvas DOM anchors', () => {
         article.innerHTML = '<p>Alpha beta gamma.</p>';
 
         const result = applyDomHighlights(article, [
-            { id: 'ANN-VALID', rawStart: 0, rawEnd: 5 },
-            { id: 'ANN-OVERLAP', rawStart: 4, rawEnd: 10 },
-            { id: 'ANN-INVALID', rawStart: 12, rawEnd: 12 },
+            { id: 'ANN-VALID', renderedStart: 0, renderedEnd: 5 },
+            { id: 'ANN-OVERLAP', renderedStart: 4, renderedEnd: 10 },
+            { id: 'ANN-INVALID', renderedStart: 12, renderedEnd: 12 },
         ]);
 
         expect(result).toEqual({
@@ -103,5 +103,56 @@ describe('canvas DOM anchors', () => {
         });
         expect(article.querySelectorAll('[data-anchor-id]')).toHaveLength(1);
         expect(article.textContent).toBe('Alpha beta gamma.');
+    });
+
+    it('does not treat markdown source offsets as rendered text offsets', () => {
+        const article = document.createElement('article');
+        article.innerHTML = '<p>Alpha <strong>beta</strong></p>';
+        const originalHtml = article.innerHTML;
+
+        const rawOnly = applyDomHighlights(article, [{
+            id: 'ANN-MARKDOWN',
+            rawStart: 6,
+            rawEnd: 10,
+        }]);
+
+        expect(rawOnly).toEqual({
+            applied: [],
+            unresolved: ['ANN-MARKDOWN'],
+        });
+        expect(article.innerHTML).toBe(originalHtml);
+
+        const rendered = applyDomHighlights(article, [{
+            id: 'ANN-MARKDOWN',
+            rawStart: 6,
+            rawEnd: 10,
+            renderedStart: 6,
+            renderedEnd: 10,
+        }]);
+
+        expect(rendered).toEqual({
+            applied: ['ANN-MARKDOWN'],
+            unresolved: [],
+        });
+        expect(article.querySelector('[data-anchor-id="ANN-MARKDOWN"]').textContent)
+            .toBe('beta');
+    });
+
+    it('reports duplicate ids as unresolved and creates one navigation target', () => {
+        const article = document.createElement('article');
+        article.textContent = 'Alpha beta gamma.';
+
+        const result = applyDomHighlights(article, [
+            { id: 'ANN-DUP', renderedStart: 0, renderedEnd: 5 },
+            { id: 'ANN-DUP', renderedStart: 6, renderedEnd: 10 },
+        ]);
+
+        expect(result).toEqual({
+            applied: ['ANN-DUP'],
+            unresolved: ['ANN-DUP'],
+        });
+        expect(article.querySelectorAll('[data-anchor-id="ANN-DUP"]')).toHaveLength(1);
+        expect(article.querySelector('[data-anchor-id="ANN-DUP"]').textContent)
+            .toBe('Alpha');
     });
 });

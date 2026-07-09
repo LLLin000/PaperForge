@@ -1,5 +1,8 @@
 /**
- * Build an offset index over text that can receive canvas highlights.
+ * Build rendered article text offsets over nodes that can receive highlights.
+ *
+ * Offsets are measured against the concatenated eligible text nodes in the
+ * rendered article, not against the source Markdown.
  *
  * @param {Node} root
  * @returns {Array<{node: Text, start: number, end: number}>}
@@ -16,7 +19,7 @@ function buildTextNodeIndex(root) {
         acceptNode: function (node) {
             var parent = node.parentElement;
             if (parent && parent.closest(
-                'script, style, .paperforge-canvas-highlight'
+                'script, style, mark'
             )) {
                 return filterReject;
             }
@@ -45,10 +48,9 @@ function getAnchorId(anchor) {
 }
 
 function getAnchorRange(anchor) {
-    var span = anchor && anchor.sourceSpan ? anchor.sourceSpan : anchor;
     return {
-        start: span && span.rawStart,
-        end: span && span.rawEnd,
+        start: anchor && anchor.renderedStart,
+        end: anchor && anchor.renderedEnd,
     };
 }
 
@@ -78,7 +80,11 @@ function wrapTextSegment(entry, start, end, anchor) {
 }
 
 /**
- * Apply exact annotation ranges to an already-rendered markdown article.
+ * Apply exact annotation ranges to an already-rendered Markdown article.
+ *
+ * Anchors must provide renderedStart/renderedEnd offsets measured against the
+ * eligible rendered article text indexed by buildTextNodeIndex(). Source
+ * Markdown rawStart/rawEnd coordinates are intentionally not accepted.
  *
  * @param {Node} article
  * @param {Array<object>} anchors
@@ -90,6 +96,7 @@ function applyDomHighlights(article, anchors) {
     var accepted = [];
     var applied = [];
     var unresolved = [];
+    var seenIds = new Set();
 
     (Array.isArray(anchors) ? anchors : []).forEach(function (anchor) {
         var id = getAnchorId(anchor);
@@ -106,11 +113,13 @@ function applyDomHighlights(article, anchors) {
             && candidate.start >= 0
             && candidate.end > candidate.start
             && candidate.end <= textLength;
+        var duplicate = id && seenIds.has(id);
         var overlaps = valid && accepted.some(function (existing) {
             return rangesOverlap(candidate, existing);
         });
 
-        if (!valid || overlaps) {
+        if (id) seenIds.add(id);
+        if (!valid || duplicate || overlaps) {
             unresolved.push(id);
             return;
         }
