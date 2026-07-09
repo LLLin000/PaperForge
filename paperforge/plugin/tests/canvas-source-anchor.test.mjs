@@ -355,6 +355,17 @@ describe('anchors.js — anchor status constants and MIN_EXACT_TEXT_CHARS', () =
 });
 
 describe('anchors.js — resolveCanvasAnchor (D-06 through D-14, D-23)', () => {
+    it('normalizes OCR punctuation and preserves raw source offsets', async () => {
+        const { normalizeForAnchor } = await import('../src/canvas/anchors.js');
+        const raw = '\uFF34\uFF45\uFF53\uFF54 \u201Cvalue\u201D\uFF0C next \u3002';
+        const result = normalizeForAnchor(raw);
+
+        expect(result.normalized).toBe('Test value next');
+        expect(result.offsetMap).toHaveLength(result.normalized.length);
+        expect(result.offsetMap[0].rawStart).toBe(0);
+        expect(result.offsetMap[result.offsetMap.length - 1].rawEnd).toBe(raw.indexOf('next') + 4);
+    });
+
     let ANCHOR_STATUSES, SOURCE_KINDS, SOURCE_STATES;
     let buildCanvasSourceModel, resolveCanvasAnchor, resolveCanvasAnchors;
     let entry, sourceInputs, sourceModel;
@@ -431,6 +442,52 @@ describe('anchors.js — resolveCanvasAnchor (D-06 through D-14, D-23)', () => {
     });
 
     // ── D-08/D-09: page-level when page metadata exists but no unique text ──
+
+    it('resolves a unique OCR line-end hyphen match with staged metadata', () => {
+        const ocrModel = buildCanvasSourceModel(entry, {
+            fulltext: {
+                path: 'ft.md',
+                text: 'The immune-\ncheckpoint response, was durable.',
+                exists: true,
+                readable: true,
+            },
+            note: { path: null, text: null, exists: false, readable: false },
+        });
+        const anchor = resolveCanvasAnchor({
+            cardId: 'card-ocr',
+            selectedText: 'The immune checkpoint response was durable.',
+            pageIndex: 0,
+        }, ocrModel);
+
+        expect(anchor.status).toBe(ANCHOR_STATUSES.EXACT);
+        expect(anchor.strategy).toBe('ocr-normalized');
+        expect(anchor.confidence).toBeGreaterThanOrEqual(0.9);
+        expect(anchor.candidateCount).toBe(1);
+        expect(anchor.rawStart).toBe(0);
+        expect(anchor.rawEnd).toBe(ocrModel.text.length);
+    });
+
+    it('keeps repeated text unresolved when no context can disambiguate it', () => {
+        const repeatedModel = buildCanvasSourceModel(entry, {
+            fulltext: {
+                path: 'ft.md',
+                text: 'Repeated result.\nSome intervening text.\nRepeated result.',
+                exists: true,
+                readable: true,
+            },
+            note: { path: null, text: null, exists: false, readable: false },
+        });
+        const anchor = resolveCanvasAnchor({
+            cardId: 'card-repeated',
+            selectedText: 'Repeated result.',
+            pageIndex: 0,
+        }, repeatedModel);
+
+        expect(anchor.status).toBe(ANCHOR_STATUSES.UNRESOLVED);
+        expect(anchor.strategy).toBe('none');
+        expect(anchor.candidateCount).toBe(2);
+        expect(anchor.reason).toMatch(/ambiguous/i);
+    });
 
     it('D-08: page-level when page metadata exists but text is ambiguous or missing', () => {
         const card = { cardId: 'card-page', selectedText: '', pageIndex: 1, pageLabel: '1' };

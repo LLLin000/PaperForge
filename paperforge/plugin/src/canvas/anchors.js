@@ -215,6 +215,106 @@ function findNormalizedSourceMatches(sourceText, selectedText) {
     return matches;
 }
 
+/**
+ * OCR-tolerant normalization with a character-level raw offset map.
+ *
+ * @param {string} value
+ * @returns {{ normalized: string, offsetMap: Array<{rawStart: number, rawEnd: number, normStart: number, normEnd: number}> }}
+ */
+function normalizeForAnchor(value) {
+    if (typeof value !== 'string' || value.length === 0) {
+        return { normalized: '', offsetMap: [] };
+    }
+
+    var units = [];
+    var i = 0;
+    while (i < value.length) {
+        var rawStart = i;
+        var ch = value[i];
+
+        if (/[-\u00ad\u2010\u2011]/.test(ch) && (value[i + 1] === '\n' || value[i + 1] === '\r')) {
+            i += 1;
+            if (value[i] === '\r' && value[i + 1] === '\n') i += 1;
+            i += 1;
+            units.push({ text: ' ', rawStart: rawStart, rawEnd: i });
+            continue;
+        }
+
+        var codePoint = value.codePointAt(i);
+        var rawChar = String.fromCodePoint(codePoint);
+        i += rawChar.length;
+        var normalizedChar = rawChar.normalize('NFKC')
+            .replace(/[\u2018\u2019\u201b\u2032]/g, "'")
+            .replace(/[\u201c\u201d\u201f\u2033]/g, '"');
+
+        for (var j = 0; j < normalizedChar.length; j++) {
+            var out = normalizedChar[j];
+            if (/\s/u.test(out) || /[\p{P}\p{S}]/u.test(out)) out = ' ';
+            units.push({ text: out, rawStart: rawStart, rawEnd: i });
+        }
+    }
+
+    var normalized = '';
+    var offsetMap = [];
+    var pendingSpace = null;
+    for (var k = 0; k < units.length; k++) {
+        var unit = units[k];
+        if (unit.text === ' ') {
+            if (normalized.length > 0) {
+                if (pendingSpace) {
+                    pendingSpace.rawEnd = unit.rawEnd;
+                } else {
+                    pendingSpace = { rawStart: unit.rawStart, rawEnd: unit.rawEnd };
+                }
+            }
+            continue;
+        }
+        if (pendingSpace) {
+            offsetMap.push({
+                rawStart: pendingSpace.rawStart,
+                rawEnd: pendingSpace.rawEnd,
+                normStart: normalized.length,
+                normEnd: normalized.length + 1,
+            });
+            normalized += ' ';
+            pendingSpace = null;
+        }
+        offsetMap.push({
+            rawStart: unit.rawStart,
+            rawEnd: unit.rawEnd,
+            normStart: normalized.length,
+            normEnd: normalized.length + 1,
+        });
+        normalized += unit.text;
+    }
+
+    return { normalized: normalized, offsetMap: offsetMap };
+}
+
+function _findOcrNormalizedMatches(sourceText, selectedText) {
+    var source = normalizeForAnchor(sourceText);
+    var selected = normalizeForAnchor(selectedText);
+    if (!source.normalized || !selected.normalized) return [];
+
+    var matches = [];
+    var searchFrom = 0;
+    while (searchFrom <= source.normalized.length - selected.normalized.length) {
+        var pos = source.normalized.indexOf(selected.normalized, searchFrom);
+        if (pos === -1) break;
+        var end = pos + selected.normalized.length;
+        matches.push({
+            normStart: pos,
+            normEnd: end,
+            rawStart: source.offsetMap[pos].rawStart,
+            rawEnd: end === source.normalized.length
+                ? sourceText.length
+                : source.offsetMap[end - 1].rawEnd,
+        });
+        searchFrom = pos + 1;
+    }
+    return matches;
+}
+
 // ── Anchor resolution ──
 
 /**
@@ -237,7 +337,7 @@ function findNormalizedSourceMatches(sourceText, selectedText) {
  *            reason: string|null, matchCount: number, pageIndex: number|null,
  *            sourceSpan: object|null, diagnostics: object }}
  */
-function resolveCanvasAnchor(card, sourceModel, options) {
+function _resolveCanvasAnchorLegacy(card, sourceModel, options) {
     var cardId = (card && card.cardId) || '';
     var selectedText = (card && card.selectedText) || '';
     var pageIndex = (card && card.pageIndex) != null ? card.pageIndex : null;
@@ -452,6 +552,87 @@ function resolveCanvasAnchor(card, sourceModel, options) {
     };
 }
 
+function _withMatchingMetadata(anchor, strategy, confidence, candidateCount, match) {
+    var result = Object.assign({}, anchor, {
+        strategy: strategy,
+        confidence: confidence,
+        candidateCount: candidateCount,
+        rawStart: match ? match.rawStart : null,
+        rawEnd: match ? match.rawEnd : null,
+    });
+    result.matchCount = candidateCount;
+    return result;
+}
+
+/**
+ * Resolve an anchor in conservative literal, OCR-normalized, then page-context stages.
+ */
+function resolveCanvasAnchor(card, sourceModel, options) {
+    var legacy = _resolveCanvasAnchorLegacy(card, sourceModel, options);
+    var selectedText = card && typeof card.selectedText === 'string' ? card.selectedText : '';
+    var sourceText = sourceModel && typeof sourceModel.text === 'string' ? sourceModel.text : '';
+    var canMatch = card && card.cardId && selectedText.trim().length >= MIN_EXACT_TEXT_CHARS &&
+        sourceText.length > 0 && !legacy.diagnostics.identityMismatch;
+
+    if (!canMatch) {
+        var fallbackStrategy = legacy.status === ANCHOR_STATUSES.PAGE_LEVEL ? 'page-context' : 'none';
+        return _withMatchingMetadata(
+            legacy,
+            fallbackStrategy,
+            legacy.status === ANCHOR_STATUSES.PAGE_LEVEL ? 0.5 : 0,
+            legacy.matchCount || 0,
+            null
+        );
+    }
+
+    var literalMatches = findNormalizedSourceMatches(sourceText, selectedText);
+    if (literalMatches.length === 1) {
+        var literal = literalMatches[0];
+        return _withMatchingMetadata(_resolveCanvasAnchorLegacy(card, sourceModel, options), 'literal', 1, 1, literal);
+    }
+    if (literalMatches.length > 1) {
+        return _withMatchingMetadata(Object.assign({}, legacy, {
+            status: ANCHOR_STATUSES.UNRESOLVED,
+            reason: 'Selected text has ambiguous literal matches in source.',
+            sourceSpan: null,
+            diagnostics: { ambiguousMatch: true, matchCount: literalMatches.length },
+        }), 'none', 0, literalMatches.length, null);
+    }
+
+    var ocrMatches = _findOcrNormalizedMatches(sourceText, selectedText);
+    if (ocrMatches.length === 1) {
+        var ocr = ocrMatches[0];
+        return _withMatchingMetadata(Object.assign({}, legacy, {
+            status: ANCHOR_STATUSES.EXACT,
+            reason: null,
+            sourceSpan: {
+                rawStart: ocr.rawStart,
+                rawEnd: ocr.rawEnd,
+                normStart: ocr.normStart,
+                normEnd: ocr.normEnd,
+            },
+            diagnostics: { exactMatch: true, ocrNormalizedMatch: true },
+        }), 'ocr-normalized', 0.95, 1, ocr);
+    }
+    if (ocrMatches.length > 1) {
+        return _withMatchingMetadata(Object.assign({}, legacy, {
+            status: ANCHOR_STATUSES.UNRESOLVED,
+            reason: 'Selected text has ambiguous OCR-normalized matches in source.',
+            sourceSpan: null,
+            diagnostics: { ambiguousMatch: true, matchCount: ocrMatches.length },
+        }), 'none', 0, ocrMatches.length, null);
+    }
+
+    var strategy = legacy.status === ANCHOR_STATUSES.PAGE_LEVEL ? 'page-context' : 'none';
+    return _withMatchingMetadata(
+        legacy,
+        strategy,
+        legacy.status === ANCHOR_STATUSES.PAGE_LEVEL ? 0.5 : 0,
+        0,
+        null
+    );
+}
+
 /**
  * Resolve anchors for multiple cards in batch.
  *
@@ -473,4 +654,5 @@ module.exports = {
     resolveCanvasAnchor: resolveCanvasAnchor,
     resolveCanvasAnchors: resolveCanvasAnchors,
     findNormalizedSourceMatches: findNormalizedSourceMatches,
+    normalizeForAnchor: normalizeForAnchor,
 };
