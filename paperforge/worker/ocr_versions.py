@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import datetime
+import shutil
 from pathlib import Path
+
+from paperforge.core.io import read_json, write_json
 
 # Version constants - single source of truth
 EXPECTED_OCR_PROVIDER = "PaddleOCR"
@@ -139,3 +143,75 @@ def compute_structured_hash(vault: Path, key: str) -> str | None:
                 break
             hasher.update(chunk)
     return hasher.hexdigest()
+
+def backup_render_before_rebuild(paper_root: Path) -> str | None:
+    """Backup current render/ before rebuild overwrites it.
+
+    Copies render/fulltext.md (and related artifacts) to versions/v{N}/.
+    Creates or updates versions/manifest.json. Idempotent: skips when
+    render/fulltext.md doesn't exist (no prior render to preserve).
+
+    Returns version label (e.g. "v1") or None if nothing was backed up.
+    """
+    render_dir = paper_root / "render"
+    ft_path = render_dir / "fulltext.md"
+    if not ft_path.exists():
+        return None
+
+    versions_root = paper_root / "versions"
+    manifest_path = versions_root / "manifest.json"
+
+    # Read existing manifest
+    manifest: dict = {"versions": [], "current": {}}
+    if manifest_path.exists():
+        try:
+            manifest = read_json(manifest_path)
+        except Exception:
+            manifest = {"versions": [], "current": {}}
+
+    # Determine next version label
+    existing = manifest.get("versions", [])
+    next_num = 1
+    if existing:
+        labels = [v.get("label", "") for v in existing]
+        nums = [int(l[1:]) for l in labels if l.startswith("v") and l[1:].isdigit()]
+        if nums:
+            next_num = max(nums) + 1
+    label = f"v{next_num}"
+
+    # Copy backup files
+    dest = versions_root / label
+    dest.mkdir(parents=True, exist_ok=True)
+    for fname in ["fulltext.md", "render-map.json", "heading-events.json"]:
+        src = render_dir / fname
+        if src.exists():
+            shutil.copy2(src, dest / fname)
+
+    # Build version entry
+    entry: dict = {
+        "label": label,
+        "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "source": "pre-rebuild",
+        "fulltext_size": ft_path.stat().st_size,
+    }
+
+    # Carry forward structured_content_hash from meta.json if available
+    meta_path = paper_root / "meta.json"
+    if meta_path.exists():
+        try:
+            meta = read_json(meta_path)
+            h = meta.get("structured_content_hash")
+            if h:
+                entry["structured_content_hash"] = h
+            rv = meta.get("derived_version", {})
+            if rv:
+                entry["renderer_version"] = rv.get("renderer_version", "")
+        except Exception:
+            pass
+
+    existing.append(entry)
+    manifest["versions"] = existing
+    manifest["current"] = {"label": label}
+
+    write_json(manifest_path, manifest)
+    return label

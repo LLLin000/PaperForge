@@ -576,6 +576,10 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     table_inventory = phase3_result["table_inventory"]
     reader_payload = phase3_result["reader_payload"]
 
+    # ── Backup current render before overwriting ──
+    from paperforge.worker.ocr_versions import backup_render_before_rebuild
+    backup_render_before_rebuild(paper_root)
+
     rendered, health_overall = _phase4_render_health(
         structured, resolved, figure_inventory, table_inventory,
         reader_payload, doc_structure, ocr_meta, source_pdf_path,
