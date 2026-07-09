@@ -65,8 +65,7 @@ function makeRow(overrides = {}) {
 
 // Standard rows
 const rowStandard = makeRow({ id: 'r1', page_index: 0, page_label: '1', sort_index: 0, type: 'highlight', color: '#ffd400', selected_text: 'Alpha bravo selected text', comment: 'Alpha comment' });
-const rowNote = makeRow({ id: 'r2', page_index: 1, page_label: '2', sort_index: 0, type: 'note', color: null, selected_text: 'Beta selected', comment: '' });
-rowNote.display.note = 'Beta note';
+const rowNote = makeRow({ id: 'r2', page_index: 1, page_label: '2', sort_index: 0, type: 'note', color: null, selected_text: 'Beta selected', comment: '', note: 'Beta note' });
 const rowReadOnly = makeRow({ id: 'r3', page_index: 0, page_label: '1', sort_index: 1, type: 'highlight', color: '#ff6666', selected_text: 'Gamma selected', comment: 'Gamma comment', is_readonly: 1 });
 const rowMissingSelectedText = makeRow({ id: 'r4', page_index: 2, page_label: '3', sort_index: 0, type: 'highlight', color: '#00ff00', selected_text: '', comment: 'Only a comment' });
 const rowMissingComment = makeRow({ id: 'r5', page_index: 2, page_label: '3', sort_index: 1, type: 'sticky_note', color: null, selected_text: 'Only selected', comment: '' });
@@ -1020,12 +1019,24 @@ describe('buildCanvasCardViewModel — highlights, cards, and unresolved', () =>
             type: 'note',
             color: '#ffd400',
         });
-        const withNote = makeRow({ id: 'note-payload', selected_text: 'Note payload', comment: '' });
-        withNote.display.note = 'A side note';
-        const withImagePath = makeRow({ id: 'image-path', selected_text: 'Image path payload', comment: '' });
-        withImagePath.display.imagePath = 'assets/figure.png';
-        const withImageData = makeRow({ id: 'image-data', selected_text: 'Image data payload', comment: '' });
-        withImageData.display.imageData = { width: 320, height: 180 };
+        const withNote = makeRow({
+            id: 'note-payload',
+            selected_text: 'Note payload',
+            comment: '',
+            note: 'A side note',
+        });
+        const withImagePath = makeRow({
+            id: 'image-path',
+            selected_text: 'Image path payload',
+            comment: '',
+            image_path: 'assets/figure.png',
+        });
+        const withImageData = makeRow({
+            id: 'image-data',
+            selected_text: 'Image data payload',
+            comment: '',
+            image_data: { width: 320, height: 180 },
+        });
 
         expect(annotationNeedsSideCard(plain)).toBe(false);
         expect(annotationNeedsSideCard(withNote)).toBe(true);
@@ -1044,6 +1055,58 @@ describe('buildCanvasCardViewModel — highlights, cards, and unresolved', () =>
             'Image path payload',
             'Image data payload',
         ]));
+        expect(vm.cards.find((item) => item.selectedText === 'Note payload').note).toBe('A side note');
+        expect(vm.cards.find((item) => item.selectedText === 'Image path payload').imagePath).toBe('assets/figure.png');
+        expect(vm.cards.find((item) => item.selectedText === 'Image data payload').imageData).toEqual({
+            width: 320,
+            height: 180,
+        });
+    });
+
+    it('preserves the complete normalized annotation in unresolved projections', () => {
+        const missed = makeRow({
+            id: 'complete-unresolved',
+            selected_text: 'Missing source selection',
+            comment: 'Keep payload',
+            note: 'Keep note',
+            image_path: 'assets/missing.png',
+            image_data: { width: 10 },
+            position_json: '{"pageIndex":0,"rects":[{"x":1,"y":2,"w":3,"h":4}]}',
+        });
+        const vm = buildCanvasCardViewModel(
+            makeAnnotationState('ready', { paperKey: 'PAPER_A', annotations: [missed] }),
+            { sourceModel: makeSourceModel('No matching selection here.') },
+        );
+
+        expect(vm.unresolved).toHaveLength(1);
+        expect(vm.unresolved[0].annotation).toBe(missed);
+        expect(vm.unresolved[0].raw).toBe(missed.raw);
+        expect(vm.unresolved[0].pdfLocation.positionJson).toBe(missed.pdfLocation.positionJson);
+        expect(vm.unresolved[0].provenance).toBe(missed.provenance);
+        expect(vm.unresolved[0].card.note).toBe('Keep note');
+        expect(vm.unresolved[0].card.imagePath).toBe('assets/missing.png');
+        expect(vm.unresolved[0].selectedText).toBe('Missing source selection');
+        expect(vm.unresolved[0].anchor).toBe(vm.unresolved[0].card.anchor);
+    });
+
+    it('requires actual comment, note, or image content for side cards', () => {
+        const emptyPayloads = [
+            makeRow({ id: 'empty-comment', comment: '' }),
+            makeRow({ id: 'blank-comment', comment: '   ' }),
+            makeRow({ id: 'blank-note', comment: '', note: '\t' }),
+            makeRow({ id: 'blank-image-path', comment: '', image_path: '  ' }),
+            makeRow({ id: 'empty-image-data', comment: '', image_data: {} }),
+        ];
+        const populatedImageData = makeRow({
+            id: 'populated-image-data',
+            comment: '',
+            image_data: { width: 320 },
+        });
+
+        for (const annotation of emptyPayloads) {
+            expect(annotationNeedsSideCard(annotation)).toBe(false);
+        }
+        expect(annotationNeedsSideCard(populatedImageData)).toBe(true);
     });
 });
 

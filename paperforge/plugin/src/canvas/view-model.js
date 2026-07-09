@@ -58,10 +58,19 @@ function annotationNeedsSideCard(annotation) {
         raw.image_path, raw.image_data,
     ];
 
-    return values.some(function (value) {
+    function hasContent(value) {
+        if (value == null) return false;
         if (typeof value === 'string') return value.trim().length > 0;
-        return value != null;
-    });
+        if (Array.isArray(value)) return value.some(hasContent);
+        if (typeof value === 'object') {
+            return Object.keys(value).some(function (key) {
+                return hasContent(value[key]);
+            });
+        }
+        return true;
+    }
+
+    return values.some(hasContent);
 }
 
 /**
@@ -148,6 +157,9 @@ function buildCanvasCard(row, sourceModel) {
         // ── Display fields ──
         selectedText: selectedText,
         comment: comment,
+        note: display.note,
+        imagePath: display.imagePath,
+        imageData: display.imageData,
         pageLabel: pdfLoc.pageLabel || display.pageLabel || '',
         pageIndex: pdfLoc.pageIndex != null ? pdfLoc.pageIndex : null,
         type: display.type || 'annotation',
@@ -275,21 +287,26 @@ function buildCanvasCardViewModel(annotationState, options) {
     // ── States with cards (ready, refreshing, stale) ──
     if (rawState === 'ready') {
         const projections = buildAnnotationProjections();
-        const highlights = projections
+        const resolvedProjections = projections
             .filter(function (item) {
                 return item.card.anchor.status === 'exact' || item.card.anchor.status === 'resolved';
-            })
-            .map(function (item) { return item.card; });
+            });
+        const highlights = resolvedProjections.map(function (item) { return item.card; });
         const unresolved = projections
             .filter(function (item) {
                 return item.card.anchor.status !== 'exact' && item.card.anchor.status !== 'resolved';
             })
+            .map(function (item) {
+                return Object.assign({}, item.row, item.card, {
+                    annotation: item.row,
+                    card: item.card,
+                    anchor: item.card.anchor,
+                });
+            });
+        const cardProjections = sourceModel ? resolvedProjections : projections;
+        const cards = cardProjections
+            .filter(function (item) { return annotationNeedsSideCard(item.row); })
             .map(function (item) { return item.card; });
-        const cardCandidates = sourceModel ? highlights : projections.map(function (item) { return item.card; });
-        const cards = cardCandidates.filter(function (card) {
-            const projection = projections.find(function (item) { return item.card === card; });
-            return annotationNeedsSideCard(projection.row);
-        });
         const lanes = cards.length > 0 ? assignCanvasCardsToLanes(cards) : undefined;
         const projectionFields = {
             sourceModel: sourceModel,

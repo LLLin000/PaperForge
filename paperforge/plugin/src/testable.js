@@ -242,6 +242,9 @@ function normalizeAnnotationExportRow(row) {
         color: row.color,
         selectedText: row.selected_text,
         comment: row.comment,
+        note: row.note,
+        imagePath: row.image_path != null ? row.image_path : row.imagePath,
+        imageData: row.image_data != null ? row.image_data : row.imageData,
     };
 
     const provenance = {

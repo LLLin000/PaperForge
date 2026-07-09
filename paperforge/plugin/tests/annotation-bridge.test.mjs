@@ -181,6 +181,22 @@ describe('normalizeAnnotationExportRow', () => {
         expect(result.display.comment).toBe('my comment');
     });
 
+    it('maps note and image payloads into display from a production export row', () => {
+        const imageData = { mimeType: 'image/png', width: 320, height: 180 };
+        const row = makeExportRow({
+            note: 'A structured side note',
+            image_path: 'assets/annotation.png',
+            image_data: imageData,
+        });
+
+        const result = normalizeAnnotationExportRow(row);
+
+        expect(result.display.note).toBe('A structured side note');
+        expect(result.display.imagePath).toBe('assets/annotation.png');
+        expect(result.display.imageData).toBe(imageData);
+        expect(result.raw).toBe(row);
+    });
+
     it('maps provenance fields from full export row', () => {
         const row = makeExportRow({
             source: 'zotero',
