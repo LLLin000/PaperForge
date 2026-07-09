@@ -1,0 +1,29 @@
+Deep Learning for Medical Image Segmentation
+A Benchmark Evaluation of U-Net Variants
+
+Emily Zhang, James Lee, Priya Patel
+School of Computing, University of Toronto
+
+Abstract
+
+Medical image segmentation is a critical task in computer-aided diagnosis. Deep learning models, particularly U-Net and its variants, have achieved state-of-the-art performance. We systematically evaluate six U-Net variants on three public segmentation benchmarks (BraTS, ISIC, and Kvasir-SEG). Attention U-Net achieves the highest Dice score (0.913) on the BraTS dataset, while nnU-Net shows the best generalizability across all three tasks.
+
+1. Introduction
+
+Accurate segmentation of anatomical structures and pathological regions is fundamental to many clinical applications. In recent years, convolutional neural network architectures have dramatically advanced the state of the art in medical image segmentation.
+
+2. Methods
+
+We implemented six U-Net variants: standard U-Net, Attention U-Net, Residual U-Net, Dense U-Net, UNet++, and nnU-Net. Each model was trained on identical train/validation splits using the Adam optimizer with a learning rate of 1e-4.
+
+Figure 1: Schematic of the U-Net architecture showing encoder-decoder pathway with skip connections.
+
+3. Results
+
+Table 3 summarizes the Dice scores across all datasets. Attention U-Net consistently outperformed the standard U-Net, particularly on challenging boundary regions.
+
+Figure 2: Qualitative segmentation results on the BraTS validation set.
+
+4. Discussion and Conclusion
+
+Our comprehensive benchmark provides practical guidance for model selection in medical image segmentation tasks.

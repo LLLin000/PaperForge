@@ -180,3 +180,19 @@ def test_vault_preserved() -> Generator[Path, None, None]:
     """Pytest fixture providing a test vault without automatic cleanup."""
     vault = create_test_vault()
     yield vault
+
+@pytest.fixture(scope="session")
+def e2e_fixture_dir() -> Path:
+    """Return the path to E2E test fixture directories."""
+    return REPO_ROOT / "tests" / "fixtures"
+
+
+@pytest.fixture(scope="session")
+def synthetic_paper_paths(e2e_fixture_dir: Path) -> list[tuple[str, Path]]:
+    """Return list of (paper_id, pdf_path) for synthetic E2E test papers."""
+    papers_dir = e2e_fixture_dir / "papers"
+    return [
+        ("paper_a", papers_dir / "paper_a.pdf"),
+        ("paper_b", papers_dir / "paper_b.pdf"),
+        ("paper_c", papers_dir / "paper_c.pdf"),
+    ]

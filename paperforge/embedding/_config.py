@@ -37,3 +37,8 @@ def get_api_base_url(vault: Path) -> str:
 def get_api_model(vault: Path) -> str:
     settings = _read_plugin_settings(vault)
     return os.environ.get("VECTOR_DB_API_MODEL", "") or settings.get("vector_db_api_model", "text-embedding-3-small")
+
+
+def get_provider_type(vault: Path) -> str:
+    settings = _read_plugin_settings(vault)
+    return os.environ.get("VECTOR_DB_PROVIDER_TYPE", "") or settings.get("vector_db_provider_type", "") or "openai_sdk"

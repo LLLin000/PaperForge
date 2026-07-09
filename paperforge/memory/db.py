@@ -33,3 +33,17 @@ def get_connection(db_path: Path, read_only: bool = False) -> sqlite3.Connection
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA foreign_keys=ON;")
     return conn
+
+
+def ensure_vec_extension(conn: sqlite3.Connection) -> None:
+    """Load the sqlite-vec extension if available.
+
+    Enables vec0 virtual table support for vector similarity search.
+    Gracefully no-ops when the extension is not installed.
+    """
+    try:
+        conn.enable_load_extension(True)
+        conn.load("vec0")
+        conn.enable_load_extension(False)
+    except (sqlite3.OperationalError, AttributeError):
+        pass  # extension not available
