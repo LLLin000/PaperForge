@@ -8,7 +8,7 @@ const {
 } = require('../src/canvas');
 
 describe('canvas DOM anchors', () => {
-    it('indexes eligible text nodes with stable article offsets', () => {
+    it('indexes all text nodes and marks blocked nodes without compressing offsets', () => {
         const article = document.createElement('article');
         article.innerHTML = [
             '<p>Alpha <strong>beta</strong> gamma.</p>',
@@ -19,14 +19,18 @@ describe('canvas DOM anchors', () => {
 
         const index = buildTextNodeIndex(article);
 
-        expect(index.map(({ start, end, node }) => ({
+        expect(index.map(({ start, end, node, blocked }) => ({
             start,
             end,
             text: node.nodeValue,
+            blocked,
         }))).toEqual([
-            { start: 0, end: 6, text: 'Alpha ' },
-            { start: 6, end: 10, text: 'beta' },
-            { start: 10, end: 17, text: ' gamma.' },
+            { start: 0, end: 6, text: 'Alpha ', blocked: false },
+            { start: 6, end: 10, text: 'beta', blocked: false },
+            { start: 10, end: 17, text: ' gamma.', blocked: false },
+            { start: 17, end: 31, text: 'ignored script', blocked: true },
+            { start: 31, end: 44, text: 'ignored style', blocked: true },
+            { start: 44, end: 56, text: 'ignored mark', blocked: true },
         ]);
     });
 
@@ -154,5 +158,42 @@ describe('canvas DOM anchors', () => {
         expect(article.querySelectorAll('[data-anchor-id="ANN-DUP"]')).toHaveLength(1);
         expect(article.querySelector('[data-anchor-id="ANN-DUP"]').textContent)
             .toBe('Alpha');
+    });
+
+    it('preserves complete article offsets after an existing mark', () => {
+        const article = document.createElement('article');
+        article.innerHTML = 'A<mark>OLD</mark> beta longtail';
+        const originalText = article.textContent;
+
+        const result = applyDomHighlights(article, [{
+            id: 'ANN-BETA',
+            renderedStart: 5,
+            renderedEnd: 9,
+        }]);
+
+        expect(result).toEqual({ applied: ['ANN-BETA'], unresolved: [] });
+        expect(article.querySelector('[data-anchor-id="ANN-BETA"]').textContent)
+            .toBe('beta');
+        expect(article.querySelector('mark').textContent).toBe('OLD');
+        expect(article.querySelector('mark mark')).toBeNull();
+        expect(article.textContent).toBe(originalText);
+    });
+
+    it('reports a range intersecting blocked text as unresolved', () => {
+        const article = document.createElement('article');
+        article.innerHTML = 'A<mark>OLD</mark> beta longtail';
+        const originalHtml = article.innerHTML;
+
+        const result = applyDomHighlights(article, [{
+            id: 'ANN-BLOCKED',
+            renderedStart: 1,
+            renderedEnd: 6,
+        }]);
+
+        expect(result).toEqual({
+            applied: [],
+            unresolved: ['ANN-BLOCKED'],
+        });
+        expect(article.innerHTML).toBe(originalHtml);
     });
 });
