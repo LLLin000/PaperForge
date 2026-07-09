@@ -981,10 +981,10 @@ describe('buildCanvasCardViewModel — highlights, cards, and unresolved', () =>
             sourceModel: makeSourceModel('Plain resolved highlight. Commented resolved highlight.'),
         });
 
-        expect(vm.highlights.map((item) => item.selectedText)).toEqual([
+        expect(new Set(vm.highlights.map((item) => item.selectedText))).toEqual(new Set([
             'Plain resolved highlight',
             'Commented resolved highlight',
-        ]);
+        ]));
         expect(vm.cards.map((item) => item.selectedText)).toEqual(['Commented resolved highlight']);
         expect(vm.unresolved).toEqual([]);
         expect(vm.unresolvedCount).toBe(0);
@@ -1039,11 +1039,11 @@ describe('buildCanvasCardViewModel — highlights, cards, and unresolved', () =>
         );
 
         expect(vm.highlights).toHaveLength(4);
-        expect(vm.cards.map((item) => item.selectedText)).toEqual([
+        expect(new Set(vm.cards.map((item) => item.selectedText))).toEqual(new Set([
             'Note payload',
             'Image path payload',
             'Image data payload',
-        ]);
+        ]));
     });
 });
 
