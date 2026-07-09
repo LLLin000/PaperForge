@@ -500,6 +500,42 @@ describe('anchors.js — resolveCanvasAnchor (D-06 through D-14, D-23)', () => {
         expect(anchor.strategy).toBe('ocr-normalized');
     });
 
+    it('does not include trailing source punctuation or whitespace in rawEnd', () => {
+        const text = '\uFF34\uFF41\uFF52\uFF47\uFF45\uFF54 ...   ';
+        const fullwidthModel = buildCanvasSourceModel(entry, {
+            fulltext: { path: 'ft.md', text, exists: true, readable: true },
+            note: { path: null, text: null, exists: false, readable: false },
+        });
+        const anchor = resolveCanvasAnchor({
+            cardId: 'card-precise-raw-end',
+            selectedText: 'Target',
+            pageIndex: null,
+        }, fullwidthModel);
+
+        expect(anchor.status).toBe(ANCHOR_STATUSES.EXACT);
+        expect(anchor.strategy).toBe('ocr-normalized');
+        expect(anchor.rawStart).toBe(0);
+        expect(anchor.rawEnd).toBe(6);
+    });
+
+    it('matches canonically equivalent text with complete combining-character offsets', () => {
+        const text = 'Cafe\u0301 result';
+        const canonicalModel = buildCanvasSourceModel(entry, {
+            fulltext: { path: 'ft.md', text, exists: true, readable: true },
+            note: { path: null, text: null, exists: false, readable: false },
+        });
+        const anchor = resolveCanvasAnchor({
+            cardId: 'card-canonical-equivalence',
+            selectedText: 'Caf\u00E9 result',
+            pageIndex: null,
+        }, canonicalModel);
+
+        expect(anchor.status).toBe(ANCHOR_STATUSES.EXACT);
+        expect(anchor.strategy).toBe('ocr-normalized');
+        expect(anchor.rawStart).toBe(0);
+        expect(anchor.rawEnd).toBe(text.length);
+    });
+
     it('does not equate different mathematical comparison symbols', () => {
         const symbolModel = buildCanvasSourceModel(entry, {
             fulltext: { path: 'ft.md', text: 'p < 0.05', exists: true, readable: true },

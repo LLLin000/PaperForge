@@ -221,38 +221,81 @@ function findNormalizedSourceMatches(sourceText, selectedText) {
  * @param {string} value
  * @returns {{ normalized: string, offsetMap: Array<{rawStart: number, rawEnd: number, normStart: number, normEnd: number}> }}
  */
+function _nfkcUnits(value) {
+    var previousNormalized = '';
+    var previousUnits = [];
+    var rawEnd = 0;
+
+    while (rawEnd < value.length) {
+        var rawStart = rawEnd;
+        var codePoint = value.codePointAt(rawEnd);
+        rawEnd += String.fromCodePoint(codePoint).length;
+
+        var currentNormalized = value.slice(0, rawEnd).normalize('NFKC');
+        var commonLength = 0;
+        while (
+            commonLength < previousNormalized.length &&
+            commonLength < currentNormalized.length &&
+            previousNormalized[commonLength] === currentNormalized[commonLength]
+        ) {
+            commonLength += 1;
+        }
+
+        var changedRawStart = rawStart;
+        if (commonLength < previousUnits.length) {
+            changedRawStart = previousUnits[commonLength].rawStart;
+        }
+
+        var currentUnits = previousUnits.slice(0, commonLength);
+        for (var i = commonLength; i < currentNormalized.length; i++) {
+            currentUnits.push({
+                text: currentNormalized[i],
+                rawStart: changedRawStart,
+                rawEnd: rawEnd,
+            });
+        }
+        previousNormalized = currentNormalized;
+        previousUnits = currentUnits;
+    }
+
+    return previousUnits;
+}
+
+function _isOcrPunctuation(value) {
+    return /[.,;:!?'"()[\]{}\u2013\u2014，。；：！？、（）【】《》]/u.test(value);
+}
+
 function normalizeForAnchor(value, options) {
     if (typeof value !== 'string' || value.length === 0) {
         return { normalized: '', offsetMap: [] };
     }
 
     var units = [];
-    var i = 0;
-    while (i < value.length) {
-        var rawStart = i;
-        var ch = value[i];
+    var nfkcUnits = _nfkcUnits(value);
+    for (var unitIndex = 0; unitIndex < nfkcUnits.length; unitIndex++) {
+        var nfkcUnit = nfkcUnits[unitIndex];
+        var nextRaw = value[nfkcUnit.rawEnd];
 
-        if (/[-\u00ad\u2010\u2011]/.test(ch) && (value[i + 1] === '\n' || value[i + 1] === '\r')) {
-            i += 1;
-            if (value[i] === '\r' && value[i + 1] === '\n') i += 1;
-            i += 1;
+        if (/[-\u00ad\u2010\u2011]/.test(nfkcUnit.text) && (nextRaw === '\n' || nextRaw === '\r')) {
+            var breakEnd = nfkcUnit.rawEnd + 1;
+            if (nextRaw === '\r' && value[breakEnd] === '\n') breakEnd += 1;
             if (options && options.lineEndHyphenAsSpace) {
-                units.push({ text: ' ', rawStart: rawStart, rawEnd: i });
+                units.push({ text: ' ', rawStart: nfkcUnit.rawStart, rawEnd: breakEnd });
+            }
+            while (unitIndex + 1 < nfkcUnits.length && nfkcUnits[unitIndex + 1].rawEnd <= breakEnd) {
+                unitIndex += 1;
             }
             continue;
         }
 
-        var codePoint = value.codePointAt(i);
-        var rawChar = String.fromCodePoint(codePoint);
-        i += rawChar.length;
-        var normalizedChar = rawChar.normalize('NFKC')
+        var normalizedChar = nfkcUnit.text
             .replace(/[\u2018\u2019\u201b\u2032]/g, "'")
             .replace(/[\u201c\u201d\u201f\u2033]/g, '"');
 
         for (var j = 0; j < normalizedChar.length; j++) {
             var out = normalizedChar[j];
-            if (/\s/u.test(out) || /[.,;:!?'"()[\]{}\u2013\u2014，。；：！？、（）【】《》]/u.test(out)) out = ' ';
-            units.push({ text: out, rawStart: rawStart, rawEnd: i });
+            if (/\s/u.test(out) || _isOcrPunctuation(out)) out = ' ';
+            units.push({ text: out, rawStart: nfkcUnit.rawStart, rawEnd: nfkcUnit.rawEnd });
         }
     }
 
@@ -296,6 +339,9 @@ function normalizeForAnchor(value, options) {
 function _findOcrNormalizedMatches(sourceText, selectedText) {
     var selected = normalizeForAnchor(selectedText);
     if (!selected.normalized) return [];
+    var selectedHasTrailingPunctuation =
+        selected.offsetMap[selected.offsetMap.length - 1].rawEnd < selectedText.length &&
+        _isOcrPunctuation(selectedText.trimEnd().slice(-1));
 
     var matches = [];
     var sourceVariants = [
@@ -312,9 +358,12 @@ function _findOcrNormalizedMatches(sourceText, selectedText) {
             if (pos === -1) break;
             var end = pos + selected.normalized.length;
             var rawStart = source.offsetMap[pos].rawStart;
-            var rawEnd = end === source.normalized.length
-                ? sourceText.length
-                : source.offsetMap[end - 1].rawEnd;
+            var rawEnd = source.offsetMap[end - 1].rawEnd;
+            if (selectedHasTrailingPunctuation) {
+                while (rawEnd < sourceText.length && _isOcrPunctuation(sourceText[rawEnd])) {
+                    rawEnd += 1;
+                }
+            }
             var spanKey = rawStart + ':' + rawEnd;
             if (!seenRawSpans[spanKey]) {
                 seenRawSpans[spanKey] = true;
