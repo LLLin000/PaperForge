@@ -1,0 +1,107 @@
+import { describe, expect, it } from 'vitest';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const {
+    applyDomHighlights,
+    buildTextNodeIndex,
+} = require('../src/canvas');
+
+describe('canvas DOM anchors', () => {
+    it('indexes eligible text nodes with stable article offsets', () => {
+        const article = document.createElement('article');
+        article.innerHTML = [
+            '<p>Alpha <strong>beta</strong> gamma.</p>',
+            '<script>ignored script</script>',
+            '<style>ignored style</style>',
+            '<mark class="paperforge-canvas-highlight">ignored mark</mark>',
+        ].join('');
+
+        const index = buildTextNodeIndex(article);
+
+        expect(index.map(({ start, end, node }) => ({
+            start,
+            end,
+            text: node.nodeValue,
+        }))).toEqual([
+            { start: 0, end: 6, text: 'Alpha ' },
+            { start: 6, end: 10, text: 'beta' },
+            { start: 10, end: 17, text: ' gamma.' },
+        ]);
+    });
+
+    it('applies a range across text nodes without changing article text', () => {
+        const article = document.createElement('article');
+        article.innerHTML = '<p>Alpha <strong>beta</strong> gamma.</p>';
+        const originalText = article.textContent;
+
+        const result = applyDomHighlights(article, [{
+            id: 'ANN-1',
+            rawStart: 6,
+            rawEnd: 16,
+            color: '#ffe08a',
+        }]);
+
+        const marks = article.querySelectorAll('[data-anchor-id="ANN-1"]');
+        expect(result).toEqual({ applied: ['ANN-1'], unresolved: [] });
+        expect(marks.length).toBeGreaterThan(0);
+        expect(Array.from(marks).map((mark) => mark.textContent).join('')).toBe('beta gamma');
+        expect(Array.from(marks).every((mark) => (
+            mark.tagName === 'MARK'
+            && mark.className === 'paperforge-canvas-highlight'
+            && mark.getAttribute('data-anchor-status') === 'exact'
+            && mark.getAttribute('tabindex') === '0'
+            && mark.style.getPropertyValue('--paperforge-highlight-color') === '#ffe08a'
+        ))).toBe(true);
+        expect(article.textContent).toBe(originalText);
+    });
+
+    it('reports an out-of-bounds range without modifying the DOM', () => {
+        const article = document.createElement('article');
+        article.innerHTML = '<p>Alpha beta.</p>';
+        const originalHtml = article.innerHTML;
+
+        const result = applyDomHighlights(article, [{
+            id: 'ANN-OOB',
+            rawStart: 6,
+            rawEnd: 99,
+        }]);
+
+        expect(result).toEqual({ applied: [], unresolved: ['ANN-OOB'] });
+        expect(article.innerHTML).toBe(originalHtml);
+    });
+
+    it('applies multiple non-overlapping anchors without offset drift', () => {
+        const article = document.createElement('article');
+        article.innerHTML = '<p>Alpha <strong>beta</strong> gamma.</p>';
+
+        const result = applyDomHighlights(article, [
+            { id: 'ANN-A', rawStart: 0, rawEnd: 5 },
+            { id: 'ANN-B', rawStart: 6, rawEnd: 16 },
+        ]);
+
+        expect(result).toEqual({ applied: ['ANN-A', 'ANN-B'], unresolved: [] });
+        expect(article.querySelector('[data-anchor-id="ANN-A"]').textContent).toBe('Alpha');
+        expect(Array.from(article.querySelectorAll('[data-anchor-id="ANN-B"]'))
+            .map((mark) => mark.textContent).join('')).toBe('beta gamma');
+        expect(article.textContent).toBe('Alpha beta gamma.');
+    });
+
+    it('reports invalid and overlapping anchors without partially applying them', () => {
+        const article = document.createElement('article');
+        article.innerHTML = '<p>Alpha beta gamma.</p>';
+
+        const result = applyDomHighlights(article, [
+            { id: 'ANN-VALID', rawStart: 0, rawEnd: 5 },
+            { id: 'ANN-OVERLAP', rawStart: 4, rawEnd: 10 },
+            { id: 'ANN-INVALID', rawStart: 12, rawEnd: 12 },
+        ]);
+
+        expect(result).toEqual({
+            applied: ['ANN-VALID'],
+            unresolved: ['ANN-OVERLAP', 'ANN-INVALID'],
+        });
+        expect(article.querySelectorAll('[data-anchor-id]')).toHaveLength(1);
+        expect(article.textContent).toBe('Alpha beta gamma.');
+    });
+});

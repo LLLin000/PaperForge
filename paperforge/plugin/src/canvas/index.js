@@ -29,6 +29,11 @@ const {
 } = require('./markdown-surface');
 
 const {
+    applyDomHighlights,
+    buildTextNodeIndex,
+} = require('./dom-anchors');
+
+const {
     renderCanvasView,
     renderCanvasIdentity,
     renderCanvasIdle,
@@ -119,6 +124,8 @@ module.exports = {
 
     // ── Markdown reading surface ──
     renderMarkdownSurface,
+    applyDomHighlights,
+    buildTextNodeIndex,
 
     // ── Canvas DOM rendering ──
     renderCanvasView,
