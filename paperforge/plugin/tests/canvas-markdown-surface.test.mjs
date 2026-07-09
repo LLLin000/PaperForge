@@ -84,4 +84,30 @@ describe('renderMarkdownSurface', () => {
         expect(article.hidden).toBe(false);
         expect(host.children).toHaveLength(1);
     });
+
+    it('renders a visible error state when the renderer throws null', async () => {
+        const host = document.createElement('div');
+        const renderMarkdown = vi.fn(() => {
+            throw null;
+        });
+
+        const result = await renderMarkdownSurface({
+            host,
+            markdown: '# Paper',
+            sourcePath: 'fulltext.md',
+            renderMarkdown,
+        });
+
+        const article = host.querySelector('article[data-canvas-state="render-error"]');
+        expect(result).toEqual({
+            state: 'render-error',
+            article,
+            error: null,
+        });
+        expect(article).not.toBeNull();
+        expect(article.textContent).toBe(
+            'Could not render fulltext.md: Unknown error'
+        );
+        expect(article.hidden).toBe(false);
+    });
 });

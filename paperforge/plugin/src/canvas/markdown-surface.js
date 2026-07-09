@@ -8,6 +8,20 @@ function clearHost(host) {
     host.replaceChildren();
 }
 
+function formatErrorMessage(error) {
+    if (
+        error &&
+        typeof error.message === 'string' &&
+        error.message.trim()
+    ) {
+        return error.message;
+    }
+    if (typeof error === 'string' && error.trim()) {
+        return error;
+    }
+    return 'Unknown error';
+}
+
 async function renderMarkdownSurface({
     host,
     markdown,
@@ -25,7 +39,8 @@ async function renderMarkdownSurface({
         return { state: 'ready', article };
     } catch (error) {
         article.dataset.canvasState = 'render-error';
-        article.textContent = `Could not render ${sourcePath}: ${error.message}`;
+        article.textContent =
+            `Could not render ${sourcePath}: ${formatErrorMessage(error)}`;
         return { state: 'render-error', article, error };
     }
 }
