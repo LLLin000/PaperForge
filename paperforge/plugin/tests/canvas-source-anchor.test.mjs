@@ -485,6 +485,21 @@ describe('anchors.js — resolveCanvasAnchor (D-06 through D-14, D-23)', () => {
         expect(anchor.rawEnd).toBe(text.length);
     });
 
+    it('does not equate different mathematical comparison symbols', () => {
+        const symbolModel = buildCanvasSourceModel(entry, {
+            fulltext: { path: 'ft.md', text: 'p < 0.05', exists: true, readable: true },
+            note: { path: null, text: null, exists: false, readable: false },
+        });
+        const anchor = resolveCanvasAnchor({
+            cardId: 'card-semantic-symbol',
+            selectedText: 'p > 0.05',
+            pageIndex: null,
+        }, symbolModel);
+
+        expect(anchor.status).toBe(ANCHOR_STATUSES.UNRESOLVED);
+        expect(anchor.strategy).toBe('none');
+    });
+
     it('keeps repeated text unresolved when no context can disambiguate it', () => {
         const repeatedModel = buildCanvasSourceModel(entry, {
             fulltext: {

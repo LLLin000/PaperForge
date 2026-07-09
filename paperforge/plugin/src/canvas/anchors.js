@@ -251,7 +251,7 @@ function normalizeForAnchor(value, options) {
 
         for (var j = 0; j < normalizedChar.length; j++) {
             var out = normalizedChar[j];
-            if (/\s/u.test(out) || /[\p{P}\p{S}]/u.test(out)) out = ' ';
+            if (/\s/u.test(out) || /[.,;:!?'"()[\]{}，。；：！？、（）【】《》]/u.test(out)) out = ' ';
             units.push({ text: out, rawStart: rawStart, rawEnd: i });
         }
     }
