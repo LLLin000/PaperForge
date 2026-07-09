@@ -223,27 +223,17 @@ CREATE TABLE IF NOT EXISTS object_units (
     quality_hints_json TEXT NOT NULL DEFAULT '[]'
 );
 """
-
-CREATE_VEC_FULLTEXT = """
-CREATE VIRTUAL TABLE IF NOT EXISTS vec_fulltext USING vec0(embedding float[1536]);
+VEC_EMBEDDING_DIM = 1536
+"""Default embedding dimension for vec0 tables.
+Overridden at runtime if the model produces a different dimension.
 """
 
-CREATE_VEC_BODY = """
-CREATE VIRTUAL TABLE IF NOT EXISTS vec_body USING vec0(embedding float[1536]);
-"""
+def _vec_table_ddl(name: str, dim: int = VEC_EMBEDDING_DIM) -> str:
+    return f"CREATE VIRTUAL TABLE IF NOT EXISTS {name} USING vec0(embedding float[{dim}]);"
 
-CREATE_VEC_OBJECTS = """
-CREATE VIRTUAL TABLE IF NOT EXISTS vec_objects USING vec0(embedding float[1536]);
-"""
-
-CREATE_VEC_FULLTEXT_META = """
-CREATE TABLE IF NOT EXISTS vec_fulltext_meta (
-  rowid INTEGER PRIMARY KEY,
-  paper_id TEXT NOT NULL,
-  chunk_index INTEGER,
-  text TEXT
-);
-"""
+CREATE_VEC_FULLTEXT = _vec_table_ddl("vec_fulltext")
+CREATE_VEC_BODY = _vec_table_ddl("vec_body")
+CREATE_VEC_OBJECTS = _vec_table_ddl("vec_objects")
 
 CREATE_VEC_BODY_META = """
 CREATE TABLE IF NOT EXISTS vec_body_meta (
@@ -360,6 +350,16 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_OBJECT_UNITS)
     for idx_sql in INDEX_SQL:
         conn.execute(idx_sql)
+
+    # Always attempt vec0 creation — they may have been skipped in v5 migration
+    # due to sqlite-vec extension not being available at that time.
+    # CREATE VIRTUAL TABLE IF NOT EXISTS is idempotent.
+    for vec_sql in [CREATE_VEC_FULLTEXT, CREATE_VEC_BODY, CREATE_VEC_OBJECTS]:
+        try:
+            conn.execute(vec_sql)
+        except sqlite3.OperationalError:
+            pass  # extension still not available
+
     for idx_sql in EVENT_INDEX_SQL:
         conn.execute(idx_sql)
     for trigger_sql in FTS_TRIGGERS:
