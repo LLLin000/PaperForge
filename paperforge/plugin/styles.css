@@ -3823,3 +3823,181 @@
 .pf-maint-advanced summary:hover {
   color: var(--text-normal);
 }
+
+/* ==========================================================================
+   Search Section (Collection Mode)
+   ========================================================================== */
+.paperforge-search-section {
+  margin-top: 16px;
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 12px;
+}
+
+.paperforge-search-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.paperforge-search-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paperforge-search-mode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.paperforge-search-mode.deep {
+  background: var(--color-orange);
+}
+
+.paperforge-search-input {
+  flex: 1;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text-normal);
+  outline: none;
+}
+.paperforge-search-input:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+}
+
+.paperforge-search-results {
+  margin-top: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.paperforge-search-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+
+.paperforge-search-result-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 10px 12px;
+  cursor: default;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.paperforge-search-result-card:hover {
+  border-color: var(--background-modifier-border-hover);
+  background: var(--background-primary-alt);
+}
+
+.paperforge-search-result-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+.paperforge-search-result-title:hover {
+  color: var(--interactive-accent);
+}
+
+.paperforge-search-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.paperforge-search-result-author {
+  color: var(--text-normal);
+}
+
+.paperforge-search-result-year {
+  color: var(--text-muted);
+}
+
+.paperforge-search-result-journal {
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+.paperforge-search-result-score {
+  font-size: 11px;
+  color: var(--text-accent);
+}
+
+.paperforge-search-result-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-bottom: 4px;
+}
+
+.paperforge-search-result-abstract {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.paperforge-search-result-source {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-top: 4px;
+  padding: 4px 6px;
+  background: var(--background-modifier-form-field);
+  border-radius: var(--radius-s);
+  font-family: var(--font-monospace);
+  font-size: 11px;
+}
+
+.paperforge-search-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.paperforge-search-error {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-error);
+  font-size: 13px;
+}
+
+.paperforge-search-empty {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+}

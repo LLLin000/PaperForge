@@ -338,6 +338,10 @@ def _needs_derived_rebuild(vault: Path, key: str) -> tuple[bool, str]:
     has_source_meta = artifacts.source_metadata.exists()
     if not _can_rebuild(meta, has_raw, has_source_meta):
         return False, "cannot_rebuild"
+    # ── Legacy OCR detection ──
+    has_structured = artifacts.blocks_structured.exists()
+    if not has_structured and not meta.get("derived_version"):
+        return False, "legacy_ocr"
     # ── Two-tier content-hash detection ──
     content_hash = meta.get("structured_content_hash")
     if content_hash is not None:

@@ -222,8 +222,27 @@ class TestNeedsDerivedRebuild:
 
 
 # ---------------------------------------------------------------------------
-# _select_rebuild_keys
-# ---------------------------------------------------------------------------
+
+    @patch(PATCH_PP)
+    @patch(PATCH_ART)
+    @patch("paperforge.commands.ocr._can_rebuild", return_value=True)
+    def test_legacy_ocr_detection(self, mock_cr, mock_art, mock_pp):
+        """Legacy OCR (no structured blocks, no derived_version) -> (False, 'legacy_ocr')."""
+        tmp_path = Path("/tmp/test_log")
+        mock_pp.return_value = {"ocr": tmp_path}
+        meta = {"ocr_status": "done"}  # no derived_version
+        mock_artifacts, paper_dir = _make_artifact_paths_mock(
+            tmp_path, "key", meta_content=json.dumps(meta)
+        )
+        # Explicitly set blocks_structured to non-existent path
+        mock_artifacts.blocks_structured = paper_dir / "structure" / "blocks.structured.jsonl"
+        mock_art.return_value = mock_artifacts
+
+        ok, reason = _needs_derived_rebuild(Path("/vault"), "key")
+        assert ok is False
+        assert reason == "legacy_ocr"
+
+
 
 class FakeRow:
     """Minimal replacement for OCRMaintenanceRow."""

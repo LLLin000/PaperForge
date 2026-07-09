@@ -4,6 +4,7 @@ from paperforge.embedding._chroma import (
     delete_paper_vectors,
     get_collection,
     get_vector_db_path,
+    migrate_chroma_to_vec0,
 )
 from paperforge.embedding.backends import (
     ChromaBackend,
@@ -37,6 +38,7 @@ __all__ = [
     "get_vector_db_path",
     "mark_vector_build_state",
     "merge_retrieve",
+    "migrate_chroma_to_vec0",
     "read_vector_build_state",
     "retrieve_chunks",
     "write_vector_build_state",

@@ -191,6 +191,19 @@ def run(args: argparse.Namespace) -> int:
             print("Stop requested." if result.data["state"] == "stopping" else "No active build.")
         return 0
 
+
+    if sub == "migrate":
+        from paperforge.embedding._chroma import migrate_chroma_to_vec0
+
+        count = migrate_chroma_to_vec0(vault)
+
+        result = PFResult(ok=True, command="embed migrate", version=PF_VERSION, data={"migrated": count})
+        if args.json:
+            print(result.to_json())
+        else:
+            print(f"Migrated {count} vectors from ChromaDB to vec0")
+        return 0
+
     # Build
 
     # Read plugin settings for preflight

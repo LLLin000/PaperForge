@@ -233,7 +233,7 @@ def _error_stage(meta: dict) -> str:
     return str(meta.get("error_stage", "") or "")
 
 
-def _can_rebuild(meta: dict, has_raw: bool, has_source_meta: bool) -> bool:
+def _can_rebuild(meta: dict, has_raw: bool, has_source_meta: bool, has_structured: bool = False) -> bool:
     status = str(meta.get("ocr_status", "") or "").lower()
     if status in ("running", "pending", "nopdf", "blocked"):
         return False
@@ -241,6 +241,9 @@ def _can_rebuild(meta: dict, has_raw: bool, has_source_meta: bool) -> bool:
         stage = _error_stage(meta)
         if stage in ("submit", "poll", "upload", "ocr_parse"):
             return False
+    # Legacy OCR (no structured blocks, no derived_version) cannot be rebuilt
+    if not has_structured and not meta.get("derived_version"):
+        return False
     return has_raw and has_source_meta
 
 
@@ -309,7 +312,7 @@ def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
         has_structured = artifacts.blocks_structured.exists()
         version = _detect_version(meta, has_structured, has_raw)
         can_redo = _can_redo(meta)
-        can_rebuild = _can_rebuild(meta, has_raw, has_source_meta)
+        can_rebuild = _can_rebuild(meta, has_raw, has_source_meta, has_structured)
         rec_action = _recommended_action(meta, has_raw, has_source_meta)
 
         # Compute display fields for hash
@@ -421,7 +424,7 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
             error_summary=_error_summary(meta),
             error_stage=_error_stage(meta),
             can_redo=_can_redo(meta),
-            can_rebuild=_can_rebuild(meta, has_raw, has_source_meta),
+            can_rebuild=_can_rebuild(meta, has_raw, has_source_meta, has_structured),
             recommended_action=_recommended_action(meta, has_raw, has_source_meta),
             structured_content_hash=meta.get("structured_content_hash", ""),
         )

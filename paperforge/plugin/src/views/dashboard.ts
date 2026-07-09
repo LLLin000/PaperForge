@@ -80,6 +80,11 @@ export class PaperForgeStatusView extends ItemView {
   _ocrTrack: HTMLElement | null = null;
   _ocrCounts: HTMLElement | null = null;
   _driftBannerEl: HTMLElement | null = null;
+  // ── Search state ──
+  _searchContainer: HTMLElement | null = null;
+  _searchInput: HTMLInputElement | null = null;
+  _searchResultsEl: HTMLElement | null = null;
+  _searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -1999,6 +2004,7 @@ export class PaperForgeStatusView extends ItemView {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr-redo");
       if (action) this._runAction(action, redoBtn);
     });
+    this.renderSearchSection(view);
   }
 
   /* ── Refresh current mode (called on index change, D-09, REFR-01) ── */
@@ -2030,6 +2036,304 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
+  /* ── Search Section ── */
+
+  renderSearchSection(view: HTMLElement) {
+    this._searchContainer = view.createEl("div", {
+      cls: "paperforge-search-section",
+    });
+    const header = this._searchContainer.createEl("div", {
+      cls: "paperforge-search-header",
+    });
+    header.createEl("span", {
+      cls: "pf-label",
+      text: "Search",
+    });
+    const inputRow = this._searchContainer.createEl("div", {
+      cls: "paperforge-search-input-row",
+    });
+    const modeBadge = inputRow.createEl("span", {
+      cls: "paperforge-search-mode",
+      text: "M",
+    });
+    this._searchInput = inputRow.createEl("input", {
+      cls: "paperforge-search-input",
+      attr: {
+        type: "text",
+        placeholder: "Search papers... (@ for deep search)",
+      },
+    }) as HTMLInputElement;
+    this._searchResultsEl = this._searchContainer.createEl("div", {
+      cls: "paperforge-search-results",
+    });
+
+    // Detect @ mode prefix
+    this._searchInput.addEventListener("input", () => {
+      const val = this._searchInput?.value || "";
+      if (val.startsWith("@") && !val.startsWith("@ ")) {
+        modeBadge.setText("@");
+        modeBadge.addClass("deep");
+      } else {
+        modeBadge.setText("M");
+        modeBadge.removeClass("deep");
+      }
+    });
+
+    // Enter triggers search
+    this._searchInput.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.executeSearch();
+      }
+    });
+  }
+
+  executeSearch() {
+    if (!this._searchInput || !this._searchResultsEl) return;
+    const raw = this._searchInput.value.trim();
+    if (!raw) return;
+
+    const isDeep = raw.startsWith("@");
+    const query = isDeep ? raw.slice(1).trim() : raw;
+    if (!query) return;
+
+    const mode = isDeep ? "retrieve" : "search";
+
+    this._searchResultsEl.empty();
+    this._searchResultsEl.createEl("div", {
+      cls: "paperforge-search-loading",
+      text: "Searching...",
+    });
+
+    // Resolve vault path and plugin settings (avoid as any)
+    const adapter = this.app.vault.adapter;
+    let vaultPath = "";
+    if (adapter && typeof adapter === "object" && "basePath" in adapter) {
+      const bp = (adapter as Record<string, unknown>).basePath;
+      vaultPath = typeof bp === "string" ? bp : "";
+    }
+    if (!vaultPath) {
+      this._renderSearchError("Could not determine vault path");
+      return;
+    }
+
+    let pluginSettings: unknown = null;
+    const appRecord = this.app as unknown as Record<string, unknown>;
+    const pluginsVal = appRecord["plugins"];
+    if (
+      pluginsVal &&
+      typeof pluginsVal === "object" &&
+      "plugins" in pluginsVal
+    ) {
+      const pluginsMap = (pluginsVal as Record<string, unknown>)["plugins"];
+      if (
+        pluginsMap &&
+        typeof pluginsMap === "object" &&
+        "paperforge" in pluginsMap
+      ) {
+        const pf = (pluginsMap as Record<string, unknown>)["paperforge"];
+        if (pf && typeof pf === "object" && "settings" in pf) {
+          pluginSettings = (pf as Record<string, unknown>)["settings"];
+        }
+      }
+    }
+
+    const { path: pythonExe, extraArgs: pyExtra = [] } =
+      resolvePythonExecutable(
+        vaultPath,
+        pluginSettings as PaperForgeSettings | null | undefined,
+        undefined,
+        undefined
+      );
+
+    const child = spawn(
+      pythonExe,
+      [...pyExtra, "-m", "paperforge", mode, query, "--json"],
+      { cwd: vaultPath, timeout: 30000 }
+    );
+
+    const chunks: string[] = [];
+    child.stdout.on("data", (data: Buffer) => {
+      chunks.push(data.toString("utf-8"));
+    });
+    child.stderr.on("data", () => {
+      // ignore stderr (progress bars, etc.)
+    });
+    child.on("close", (code: number | null) => {
+      if (code !== 0) {
+        this._renderSearchError(`Search failed (exit ${code})`);
+        return;
+      }
+      const rawOutput = chunks.join("");
+      // Strip INFO/WARNING log lines: find JSON between first { and last }
+      const firstBrace = rawOutput.indexOf("{");
+      const lastBrace = rawOutput.lastIndexOf("}");
+      let jsonStr = "";
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        jsonStr = rawOutput.slice(firstBrace, lastBrace + 1);
+      } else {
+        // Try array form
+        const firstBracket = rawOutput.indexOf("[");
+        const lastBracket = rawOutput.lastIndexOf("]");
+        if (firstBracket !== -1 && lastBracket > firstBracket) {
+          jsonStr = rawOutput.slice(firstBracket, lastBracket + 1);
+        }
+      }
+      if (!jsonStr) {
+        this._renderSearchError("No JSON output from CLI");
+        return;
+      }
+      try {
+        const data = JSON.parse(jsonStr) as Record<string, unknown> | unknown[];
+        let results: unknown[] = [];
+        if (Array.isArray(data)) {
+          results = data;
+        } else if (data && typeof data === "object" && "results" in data) {
+          const r = (data as Record<string, unknown>).results;
+          results = Array.isArray(r) ? r : [];
+        }
+        this.renderSearchResults(results, isDeep);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        this._renderSearchError("Failed to parse results: " + msg);
+      }
+    });
+    child.on("error", (err: Error) => {
+      this._renderSearchError("Process error: " + err.message);
+    });
+  }
+
+  renderSearchResults(results: unknown[], isDeep: boolean) {
+    if (!this._searchResultsEl) return;
+    this._searchResultsEl.empty();
+
+    if (results.length === 0) {
+      this._searchResultsEl.createEl("div", {
+        cls: "paperforge-search-empty",
+        text: "No results found.",
+      });
+      return;
+    }
+
+    const header = this._searchResultsEl.createEl("div", {
+      cls: "paperforge-search-results-header",
+    });
+    header.createEl("span", {
+      text: `${results.length} result${results.length !== 1 ? "s" : ""}`,
+    });
+    header.createEl("span", {
+      cls: "paperforge-search-mode",
+      text: isDeep ? "@" : "M",
+    });
+
+    for (const r of results) {
+      if (!r || typeof r !== "object") continue;
+      const rec = r as Record<string, unknown>;
+
+      const card = this._searchResultsEl.createEl("div", {
+        cls: "paperforge-search-result-card",
+      });
+
+      // Title — clickable
+      const titleText =
+        typeof rec["title"] === "string"
+          ? rec["title"]
+          : typeof rec["file_name"] === "string"
+            ? rec["file_name"]
+            : "(untitled)";
+      const titleEl = card.createEl("div", {
+        cls: "paperforge-search-result-title",
+        text: titleText,
+      });
+      const filePath =
+        typeof rec["file_path"] === "string" ? rec["file_path"] : null;
+      if (filePath) {
+        titleEl.addEventListener("click", () => {
+          const abstractFile = this.app.vault.getAbstractFileByPath(filePath);
+          if (abstractFile instanceof TFile) {
+            this.app.workspace.getLeaf(false).openFile(abstractFile);
+          }
+        });
+      }
+
+      // Meta row
+      const meta = card.createEl("div", {
+        cls: "paperforge-search-result-meta",
+      });
+
+      if (typeof rec["authors"] === "string") {
+        meta.createEl("span", {
+          cls: "paperforge-search-result-author",
+          text: rec["authors"],
+        });
+      } else if (Array.isArray(rec["authors"])) {
+        meta.createEl("span", {
+          cls: "paperforge-search-result-author",
+          text: (rec["authors"] as string[]).slice(0, 3).join("; "),
+        });
+      }
+      if (typeof rec["year"] === "number" || typeof rec["year"] === "string") {
+        meta.createEl("span", {
+          cls: "paperforge-search-result-year",
+          text: String(rec["year"]),
+        });
+      }
+      if (typeof rec["journal"] === "string" && rec["journal"]) {
+        meta.createEl("span", {
+          cls: "paperforge-search-result-journal",
+          text: rec["journal"],
+        });
+      }
+      if (rec["score"] !== undefined) {
+        const score = rec["score"];
+        const scoreText =
+          typeof score === "number" ? score.toFixed(3) : String(score);
+        meta.createEl("span", {
+          cls: "paperforge-search-result-score",
+          text: "Score: " + scoreText,
+        });
+      }
+
+      // Domain tag
+      if (typeof rec["domain"] === "string" && rec["domain"]) {
+        card.createEl("span", {
+          cls: "paperforge-search-result-tag",
+          text: rec["domain"],
+        });
+      }
+
+      // Abstract snippet
+      if (typeof rec["abstract"] === "string" && rec["abstract"]) {
+        const abs = rec["abstract"] as string;
+        card.createEl("div", {
+          cls: "paperforge-search-result-abstract",
+          text: abs.length > 200 ? abs.slice(0, 200) + "..." : abs,
+        });
+      }
+
+      // @ mode: matched text
+      if (
+        isDeep &&
+        typeof rec["matched_text"] === "string" &&
+        rec["matched_text"]
+      ) {
+        const mt = rec["matched_text"] as string;
+        card.createEl("div", {
+          cls: "paperforge-search-result-source",
+          text: mt.length > 300 ? mt.slice(0, 300) + "..." : mt,
+        });
+      }
+    }
+  }
+
+  _renderSearchError(msg: string) {
+    if (!this._searchResultsEl) return;
+    this._searchResultsEl.empty();
+    this._searchResultsEl.createEl("div", {
+      cls: "paperforge-search-error",
+      text: msg,
+    });
+  }
   /* ── Run Action ── */
   _runAction(a: any, card: HTMLElement) {
     if (a.disabled) {
