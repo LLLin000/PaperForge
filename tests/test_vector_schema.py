@@ -88,10 +88,10 @@ def test_schema_creation_is_idempotent():
     conn.close()
 
 
-def test_schema_version_is_5():
+def test_schema_version_is_6():
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
     ensure_schema(conn)
-    assert get_schema_version(conn) == 5
-    assert CURRENT_SCHEMA_VERSION == 5
+    assert get_schema_version(conn) == 6
+    assert CURRENT_SCHEMA_VERSION == 6
     conn.close()

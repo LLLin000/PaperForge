@@ -157,18 +157,26 @@ class TestProcessedCount:
             {"zotero_key": "k2", "ocr_status": "done", "fulltext_path": "p2.pdf"},
         ]
 
-        # Simulate matching body & object hashes so resume skips
-        mock_collection = MagicMock()
-        mock_collection.get.return_value = {
-            "ids": ["id1"],
-            "metadatas": [
-                {
-                    "body_units_hash": "hash_v1",
-                    "object_units_hash": "hash_v1",
-                    "retrieval_policy_version": "v1",
-                }
-            ],
-        }
+        # Set up paperforge.db with matching hashes so resume skips
+        from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
+        from paperforge.memory.schema import ensure_schema
+        db_path = get_memory_db_path(tmp_path)
+        conn = get_connection(db_path)
+        try:
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            for key in ("k1", "k2"):
+                conn.execute(
+                    "INSERT INTO vec_body_meta(rowid, paper_id, body_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?)",
+                    (1 if key == "k1" else 2, key, "hash_v1", "v1")
+                )
+                conn.execute(
+                    "INSERT INTO vec_objects_meta(rowid, paper_id, object_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?)",
+                    (3 if key == "k1" else 4, key, "hash_v1", "v1")
+                )
+            conn.commit()
+        finally:
+            conn.close()
 
         mock_body_units = [{"some": "data"}]
         mock_obj_units = [{"some": "data"}]
@@ -182,7 +190,6 @@ class TestProcessedCount:
                 "_has_object_units_in_db": MagicMock(return_value=True),
                 "get_body_units_for_embedding": MagicMock(return_value=mock_body_units),
                 "get_object_units_for_embedding": MagicMock(return_value=mock_obj_units),
-                "get_collection": MagicMock(return_value=mock_collection),
                 "compute_body_units_hash": MagicMock(return_value="hash_v1"),
                 "compute_object_units_hash": MagicMock(return_value="hash_v1"),
                 "RETRIEVAL_POLICY_VERSION": "v1",

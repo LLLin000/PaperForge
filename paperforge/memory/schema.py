@@ -5,7 +5,7 @@ import sqlite3
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SCHEMA_VERSION = 5  # Bump from 4 for vec0 vector tables, companion meta, build_state
+CURRENT_SCHEMA_VERSION = 6  # Bump from 5: add hash/policy cols to vec companion meta tables
 
 CREATE_META = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -250,16 +250,19 @@ CREATE TABLE IF NOT EXISTS vec_body_meta (
   rowid INTEGER PRIMARY KEY,
   paper_id TEXT NOT NULL,
   chunk_index INTEGER,
-  text TEXT
+  text TEXT,
+  body_units_hash TEXT,
+  retrieval_policy_version TEXT
 );
 """
-
 CREATE_VEC_OBJECTS_META = """
 CREATE TABLE IF NOT EXISTS vec_objects_meta (
   rowid INTEGER PRIMARY KEY,
   paper_id TEXT NOT NULL,
   chunk_index INTEGER,
-  text TEXT
+  text TEXT,
+  object_units_hash TEXT,
+  retrieval_policy_version TEXT
 );
 """
 
@@ -272,7 +275,23 @@ CREATE TABLE IF NOT EXISTS build_state (
 """
 
 
-ALL_TABLES = ["body_units", "body_units_fts", "object_units", "paper_fts", "reading_log", "project_log", "paper_events", "paper_assets", "paper_aliases", "papers", "meta", "vec_fulltext_meta", "vec_body_meta", "vec_objects_meta", "build_state"]
+ALL_TABLES = [
+    "body_units",
+    "body_units_fts",
+    "object_units",
+    "paper_fts",
+    "reading_log",
+    "project_log",
+    "paper_events",
+    "paper_assets",
+    "paper_aliases",
+    "papers",
+    "meta",
+    "vec_fulltext_meta",
+    "vec_body_meta",
+    "vec_objects_meta",
+    "build_state",
+]
 VEC_TABLES = ["vec_fulltext", "vec_body", "vec_objects"]
 
 
@@ -307,7 +326,9 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
                 pass  # column may already exist
 
     if current_version < 5:
-        logger.info("Migrating schema v%s -> v5: adding vec0 vector tables, companion meta, and build_state", current_version)
+        logger.info(
+            "Migrating schema v%s -> v5: adding vec0 vector tables, companion meta, and build_state", current_version
+        )
         try:
             conn.execute(CREATE_VEC_FULLTEXT)
             conn.execute(CREATE_VEC_BODY)
@@ -318,6 +339,21 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         conn.execute(CREATE_VEC_BODY_META)
         conn.execute(CREATE_VEC_OBJECTS_META)
         conn.execute(CREATE_BUILD_STATE)
+
+    if current_version < 6:
+        logger.info(
+            "Migrating schema v%s -> v6: adding hash/policy columns to vec companion meta tables", current_version
+        )
+        for col_sql in [
+            "ALTER TABLE vec_body_meta ADD COLUMN body_units_hash TEXT",
+            "ALTER TABLE vec_body_meta ADD COLUMN retrieval_policy_version TEXT",
+            "ALTER TABLE vec_objects_meta ADD COLUMN object_units_hash TEXT",
+            "ALTER TABLE vec_objects_meta ADD COLUMN retrieval_policy_version TEXT",
+        ]:
+            try:
+                conn.execute(col_sql)
+            except Exception:
+                pass  # column may already exist
 
     conn.execute(CREATE_BODY_UNITS)
     conn.execute(CREATE_BODY_UNITS_FTS)
@@ -351,9 +387,7 @@ def clear_fts(conn: sqlite3.Connection) -> None:
 def get_schema_version(conn: sqlite3.Connection) -> int:
     """Read the stored schema version from meta table, or 0 if not found."""
     try:
-        row = conn.execute(
-            "SELECT value FROM meta WHERE key = 'schema_version'"
-        ).fetchone()
+        row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
         return int(row["value"]) if row else 0
     except sqlite3.OperationalError:
         return 0

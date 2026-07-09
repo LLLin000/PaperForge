@@ -348,35 +348,26 @@ class TestPidAlive:
 # ---------------------------------------------------------------------------
 
 class TestAssertCollectionsHealthy:
-    """Tests for _assert_collections_healthy."""
+    """Tests for _assert_collections_healthy (sqlite-vec path)."""
 
-    @patch("paperforge.commands.embed.get_collection")
-    def test_healthy_collections(self, mock_get_collection):
-        """Three healthy collections -> (True, ''). Ensure get(limit=1) is called, query is not."""
-        mock_col = MagicMock()
-        mock_col.count.return_value = 42
-        mock_get_collection.return_value = mock_col
+    def test_healthy_collections(self, tmp_path):
+        """All three meta tables accessible -> (True, '')."""
+        from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
+        from paperforge.memory.schema import ensure_schema
+        db_path = get_memory_db_path(tmp_path)
+        conn = get_connection(db_path)
+        try:
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+        finally:
+            conn.close()
 
-        ok, msg = _assert_collections_healthy(Path("/vault"))
+        ok, msg = _assert_collections_healthy(tmp_path)
         assert ok is True
         assert msg == ""
-        # Regression: get(limit=1) must be called; query must not be called
-        mock_col.get.assert_called_with(limit=1)
-        assert mock_col.query.call_count == 0
 
-    @patch("paperforge.commands.embed.get_collection")
-    def test_corrupted_collection(self, mock_get_collection):
-        """One corrupted collection -> (False, 'name: error')."""
-        def mock_get(vault_arg, *, name):
-            if name == "paperforge_body":
-                raise RuntimeError("connection refused")
-            mock_col = MagicMock()
-            mock_col.count.return_value = 42
-            return mock_col
-
-        mock_get_collection.side_effect = mock_get
-
-        ok, msg = _assert_collections_healthy(Path("/vault"))
+    def test_corrupted_collection(self, tmp_path):
+        """Missing paperforge.db -> (False, 'paperforge.db not found')."""
+        ok, msg = _assert_collections_healthy(tmp_path)
         assert ok is False
-        assert "paperforge_body" in msg
-        assert "connection refused" in msg
+        assert "paperforge.db not found" in msg

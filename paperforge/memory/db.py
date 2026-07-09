@@ -40,10 +40,30 @@ def ensure_vec_extension(conn: sqlite3.Connection) -> None:
 
     Enables vec0 virtual table support for vector similarity search.
     Gracefully no-ops when the extension is not installed.
+
+    Supports Python 3.12/3.13 (conn.load) and 3.14+ (conn.load_extension).
     """
     try:
         conn.enable_load_extension(True)
-        conn.load("vec0")
-        conn.enable_load_extension(False)
+
+        # Python 3.12/3.13 API — searches system library path
+        try:
+            conn.load("vec0")
+            return
+        except AttributeError:
+            pass  # conn.load removed in Python 3.14
+
+        # Python 3.14+ — use sqlite_vec convenience wrapper or direct path
+        try:
+            from sqlite_vec import loadable_path
+
+            conn.load_extension(str(loadable_path()))
+        except ImportError:
+            conn.load_extension("vec0")
     except (sqlite3.OperationalError, AttributeError):
         pass  # extension not available
+    finally:
+        try:
+            conn.enable_load_extension(False)
+        except AttributeError:
+            pass

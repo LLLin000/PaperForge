@@ -343,50 +343,70 @@ class TestEncodePaperJob:
 # ---------------------------------------------------------------------------
 
 class TestWriteEncodedPayload:
-    """Tests for write_encoded_payload."""
+    """Tests for write_encoded_payload (sqlite-vec path)."""
 
-    @patch("paperforge.embedding.builder.get_collection")
-    def test_calls_collection_add(self, mock_get_collection):
-        mock_col = MagicMock()
-        mock_get_collection.return_value = mock_col
+    EMBEDDING_DIM = 1536
+
+    def test_writes_to_vec_and_meta_tables(self, tmp_path):
+        """write_encoded_payload inserts into vec0 and companion meta tables."""
+        from paperforge.memory.db import get_connection, get_memory_db_path
 
         encoded = EncodedPayload(
             collection_name="paperforge_body",
-            texts=["hello"], ids=["a"],
-            metadatas=[{"paper_id": "k1"}],
-            embeddings=[[0.1]],
+            ids=["a", "b"],
+            texts=["hello", "world"],
+            embeddings=[[0.1] * self.EMBEDDING_DIM, [0.2] * self.EMBEDDING_DIM],
+            metadatas=[{"paper_id": "k1", "chunk_index": 0, "body_units_hash": "hash1", "retrieval_policy_version": "v1"},
+                       {"paper_id": "k1", "chunk_index": 1, "body_units_hash": "hash1", "retrieval_policy_version": "v1"}],
         )
-        write_encoded_payload(Path("/vault"), encoded)
+        write_encoded_payload(tmp_path, encoded)
 
-        mock_get_collection.assert_called_once_with(
-            Path("/vault"), name="paperforge_body",
-        )
-        mock_col.add.assert_called_once_with(
-            ids=["a"],
-            embeddings=[[0.1]],
-            documents=["hello"],
-            metadatas=[{"paper_id": "k1"}],
-        )
+        db_path = get_memory_db_path(tmp_path)
+        assert db_path.exists()
+        conn = get_connection(db_path)
+        try:
+            rows = conn.execute("SELECT rowid, paper_id, body_units_hash, retrieval_policy_version FROM vec_body_meta").fetchall()
+            assert len(rows) == 2
+            assert rows[0]["paper_id"] == "k1"
+            assert rows[0]["body_units_hash"] == "hash1"
+            assert rows[0]["retrieval_policy_version"] == "v1"
+        finally:
+            conn.close()
 
-    @patch("paperforge.embedding.builder.get_collection")
-    def test_multiple_rows(self, mock_get_collection):
-        mock_col = MagicMock()
-        mock_get_collection.return_value = mock_col
+    def test_stores_hash_fields(self, tmp_path):
+        """Hash and policy fields from metadata are stored in companion table."""
+        from paperforge.memory.db import get_connection, get_memory_db_path
 
+        meta = {"paper_id": "k1", "chunk_index": 0, "body_units_hash": "abc123",
+                "retrieval_policy_version": "v2"}
         encoded = EncodedPayload(
-            collection_name="paperforge_objects",
-            texts=["a", "b"], ids=["a1", "b1"],
-            metadatas=[{"paper_id": "k"}, {"paper_id": "k"}],
-            embeddings=[[0.1], [0.2]],
+            collection_name="paperforge_body",
+            ids=["id1"], texts=["text"],
+            embeddings=[[0.5] * self.EMBEDDING_DIM],
+            metadatas=[meta],
         )
-        write_encoded_payload(Path("/vault"), encoded)
+        write_encoded_payload(tmp_path, encoded)
 
-        mock_col.add.assert_called_once_with(
-            ids=["a1", "b1"],
-            embeddings=[[0.1], [0.2]],
-            documents=["a", "b"],
-            metadatas=[{"paper_id": "k"}, {"paper_id": "k"}],
+        db_path = get_memory_db_path(tmp_path)
+        conn = get_connection(db_path, read_only=True)
+        try:
+            row = conn.execute(
+                "SELECT body_units_hash, retrieval_policy_version FROM vec_body_meta WHERE paper_id = ?",
+                ("k1",)
+            ).fetchone()
+            assert row["body_units_hash"] == "abc123"
+            assert row["retrieval_policy_version"] == "v2"
+        finally:
+            conn.close()
+
+    def test_unknown_collection_raises(self):
+        """Unknown collection name raises ValueError."""
+        encoded = EncodedPayload(
+            collection_name="unknown",
+            ids=[], texts=[], embeddings=[], metadatas=[],
         )
+        with pytest.raises(ValueError, match="Unknown collection"):
+            write_encoded_payload(Path("/vault"), encoded)
 
 
 # ---------------------------------------------------------------------------

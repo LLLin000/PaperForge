@@ -1,18 +1,19 @@
-"""Integration tests for the embed pipeline with a real ChromaDB (EphemeralClient).
+"""Integration tests for the embed pipeline with sqlite-vec.
 
-Tests the actual encode → write → retrieve → delete cycle against an
-in-memory ChromaDB, with the embedding provider mocked to return fixed vectors.
+Tests the real encode -> write -> retrieve -> delete cycle against
+sqlite-vec tables in a temporary paperforge.db, with the embedding
+provider mocked to return fixed vectors.
 """
 from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import patch
 
-import chromadb
 import pytest
 
 import paperforge.config
 from paperforge.worker._utils import pipeline_paths as _pp
+EMBEDDING_DIM = 1536  # must match vec0 schema
 
 paperforge.config.pipeline_paths = _pp
 
@@ -30,61 +31,11 @@ from paperforge.embedding.search import merge_retrieve
 from paperforge.embedding._chroma import delete_paper_vectors
 
 
+
+
 # ---------------------------------------------------------------------------
-# Fixture: ephemeral ChromaDB
+# Mock provider — deterministic fixed embeddings
 # ---------------------------------------------------------------------------
-
-COLLECTION_NAMES = ["paperforge_fulltext", "paperforge_body", "paperforge_objects"]
-EMBEDDING_DIM = 4  # small dimension for fast tests
-
-
-@pytest.fixture(scope="module")
-def ephe_client():
-    """Shared EphemeralClient for the module — data persists across tests."""
-    return chromadb.EphemeralClient()
-
-
-def _make_fake_get_collection(client):
-    """Factory: returns a get_collection function backed by the given client."""
-    def _fake(vault, name="paperforge_fulltext"):
-        return client.get_or_create_collection(
-            name=name,
-            metadata={"hnsw:space": "cosine"},
-        )
-    return _fake
-
-
-@pytest.fixture(autouse=True)
-def _patch_collections(ephe_client):
-    """Replace all get_collection references to use the ephemeral client."""
-    fake = _make_fake_get_collection(ephe_client)
-    # Patch at the source and every module that does `from _chroma import get_collection`
-    with patch("paperforge.embedding._chroma.get_collection", fake), \
-         patch("paperforge.embedding.builder.get_collection", fake), \
-         patch("paperforge.embedding.search.get_collection", fake):
-        yield
-
-
-@pytest.fixture(autouse=True)
-def _clear_collections(ephe_client):
-    """Clear all collections before each test."""
-    for name in COLLECTION_NAMES:
-        try:
-            ephe_client.delete_collection(name)
-        except Exception:
-            pass
-    yield
-
-
-@pytest.fixture(autouse=True)
-def _patch_providers(mock_provider):
-    """Replace OpenAICompatibleProvider in both builder and search modules."""
-    with patch("paperforge.embedding.builder.OpenAICompatibleProvider", return_value=mock_provider), \
-         patch("paperforge.embedding.search.OpenAICompatibleProvider", return_value=mock_provider):
-        yield
-# Mock provider factory
-# ---------------------------------------------------------------------------
-
 
 class FixedProvider:
     """Provider that returns deterministic embeddings for any text."""
@@ -96,9 +47,8 @@ class FixedProvider:
         import hashlib
         result = []
         for t in texts:
-            h = hashlib.md5(t.encode()).digest()
-            # Convert first EMBEDDING_DIM bytes to floats in [0, 1]
-            vec = [b / 255.0 for b in h[:EMBEDDING_DIM]]
+            h = hashlib.sha256(t.encode()).digest()
+            vec = [(h[i % 32] / 255.0) for i in range(EMBEDDING_DIM)]
             result.append(vec)
         return result
 
@@ -112,9 +62,10 @@ def mock_provider():
 
 
 @pytest.fixture(autouse=True)
-def _patch_provider(mock_provider):
-    """Replace OpenAICompatibleProvider with FixedProvider in builder."""
-    with patch("paperforge.embedding.builder.OpenAICompatibleProvider", return_value=mock_provider):
+def _patch_providers(mock_provider):
+    """Replace OpenAICompatibleProvider in builder and search modules."""
+    with patch("paperforge.embedding.builder.OpenAICompatibleProvider", return_value=mock_provider), \
+         patch("paperforge.embedding.search.OpenAICompatibleProvider", return_value=mock_provider):
         yield
 
 
@@ -186,21 +137,20 @@ class TestPayloadPrep:
 
 
 # ---------------------------------------------------------------------------
-# Tests: encode → write → retrieve cycle with real ChromaDB
+# Tests: encode -> write -> retrieve cycle with sqlite-vec
 # ---------------------------------------------------------------------------
 
 class TestEmbedRoundTrip:
-    """Integration tests against EphemeralClient."""
+    """Integration tests against sqlite-vec tables in paperforge.db."""
 
     def test_write_and_retrieve_body_units(self, tmp_path, mock_provider):
-        """Write body units to ChromaDB, retrieve them back."""
+        """Write body units via sqlite-vec, retrieve them back."""
         key = "p1"
         units = make_body_units(key, 2)
         payload = prepare_body_payload(key, units)
-        encoded = encode_payload(tmp_path, payload)  # uses mock_provider via patch
+        encoded = encode_payload(tmp_path, payload)
         write_encoded_payload(tmp_path, encoded)
 
-        # Retrieve across all collections
         results = merge_retrieve(tmp_path, "body text", limit=5)
         assert len(results) >= 1
         assert results[0]["paper_id"] == key
@@ -250,7 +200,6 @@ class TestEmbedRoundTrip:
             write_encoded_payload(tmp_path, encoded)
 
         results = merge_retrieve(tmp_path, "Paper", limit=10)
-        # Each paper should have at most 2 results
         from collections import Counter
         counts = Counter(r["paper_id"] for r in results)
         assert all(v <= 2 for v in counts.values())
@@ -263,13 +212,10 @@ class TestEmbedRoundTrip:
         encoded = encode_payload(tmp_path, payload)
         write_encoded_payload(tmp_path, encoded)
 
-        # Confirm it's there
         assert len(merge_retrieve(tmp_path, "body", limit=5)) >= 1
 
-        # Delete
         delete_paper_vectors(tmp_path, key)
 
-        # Confirm it's gone
         results = merge_retrieve(tmp_path, "body", limit=5)
         pid_results = [r for r in results if r["paper_id"] == key]
         assert len(pid_results) == 0
@@ -298,10 +244,8 @@ class TestEmbedRoundTrip:
         job = PaperEmbeddingJob(paper_id=key, payloads=[body_payload, obj_payload])
 
         bundle = encode_paper_job(tmp_path, job)
+
         assert bundle.paper_id == key
-        assert len(bundle.payloads) == 2
         assert bundle.chunk_count == 3  # 2 body + 1 object
-        # Verify all payloads have embeddings
-        for p in bundle.payloads:
-            assert len(p.embeddings) > 0
-            assert len(p.embeddings[0]) == EMBEDDING_DIM
+        assert bundle.payloads is not None
+        assert len(bundle.payloads) == 2

@@ -1,14 +1,15 @@
 from __future__ import annotations
-from dataclasses import dataclass
 
+import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 
-from paperforge.embedding._chroma import get_collection
-from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
 from paperforge.embedding.backends import get_vector_backend
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
-from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+from paperforge.memory.schema import ensure_schema
+from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EmbeddingPayload:
     """准备阶段产出的载荷：未 encode。"""
+
     collection_name: str
     texts: list[str]
     ids: list[str]
@@ -25,6 +27,7 @@ class EmbeddingPayload:
 @dataclass
 class EncodedPayload:
     """encode 后的载荷。必须带 texts（不可从 metadata 反推）。"""
+
     collection_name: str
     texts: list[str]
     ids: list[str]
@@ -35,6 +38,7 @@ class EncodedPayload:
 @dataclass
 class PaperEmbeddingJob:
     """一篇论文的所有载荷。"""
+
     paper_id: str
     payloads: list[EmbeddingPayload]
 
@@ -42,6 +46,7 @@ class PaperEmbeddingJob:
 @dataclass
 class PaperEncodedBundle:
     """一篇论文 encode 完成后的结果。"""
+
     paper_id: str
     payloads: list[EncodedPayload]
     chunk_count: int
@@ -62,7 +67,9 @@ def prepare_legacy_payload(zotero_key: str, chunks: list[dict]) -> EmbeddingPayl
     ]
     return EmbeddingPayload(
         collection_name="paperforge_fulltext",
-        texts=texts, ids=ids, metadatas=metadatas,
+        texts=texts,
+        ids=ids,
+        metadatas=metadatas,
     )
 
 
@@ -84,7 +91,9 @@ def prepare_body_payload(zotero_key: str, body_units: list[dict]) -> EmbeddingPa
     ]
     return EmbeddingPayload(
         collection_name="paperforge_body",
-        texts=texts, ids=ids, metadatas=metadatas,
+        texts=texts,
+        ids=ids,
+        metadatas=metadatas,
     )
 
 
@@ -92,7 +101,8 @@ def prepare_object_payload(zotero_key: str, object_units: list[dict]) -> Embeddi
     current_hash = compute_object_units_hash(object_units)
     texts = [
         "\n".join(
-            x for x in [
+            x
+            for x in [
                 u.get("object_label", ""),
                 u.get("caption_text", ""),
                 u.get("nearby_body_text", ""),
@@ -118,12 +128,15 @@ def prepare_object_payload(zotero_key: str, object_units: list[dict]) -> Embeddi
     ]
     return EmbeddingPayload(
         collection_name="paperforge_objects",
-        texts=texts, ids=ids, metadatas=metadatas,
+        texts=texts,
+        ids=ids,
+        metadatas=metadatas,
     )
 
 
-def encode_payload(vault: Path, payload: EmbeddingPayload,
-                    provider: OpenAICompatibleProvider | None = None) -> EncodedPayload:
+def encode_payload(
+    vault: Path, payload: EmbeddingPayload, provider: OpenAICompatibleProvider | None = None
+) -> EncodedPayload:
     if provider is None:
         provider = OpenAICompatibleProvider(vault)
     embeddings = provider.encode(payload.texts)
@@ -151,19 +164,74 @@ def encode_paper_job(vault: Path, job: PaperEmbeddingJob) -> PaperEncodedBundle:
     )
 
 
+_VEC_TABLE_MAP = {
+    "paperforge_fulltext": ("vec_fulltext", "vec_fulltext_meta"),
+    "paperforge_body": ("vec_body", "vec_body_meta"),
+    "paperforge_objects": ("vec_objects", "vec_objects_meta"),
+}
+
+
 def write_encoded_payload(vault: Path, encoded: EncodedPayload):
-    col = get_collection(vault, name=encoded.collection_name)
-    col.add(
-        ids=encoded.ids,
-        embeddings=encoded.embeddings,
-        documents=encoded.texts,
-        metadatas=encoded.metadatas,
-    )
+    db_path = get_memory_db_path(vault)
+    conn = get_connection(db_path)
+    ensure_vec_extension(conn)
+    ensure_schema(conn)
+
+    name = encoded.collection_name
+    if name not in _VEC_TABLE_MAP:
+        conn.close()
+        raise ValueError(f"Unknown collection name: {name}")
+
+    vec_table, meta_table = _VEC_TABLE_MAP[name]
+
+    for i, embedding in enumerate(encoded.embeddings):
+        embedding_json = json.dumps(embedding)
+        cur = conn.execute(f"INSERT INTO {vec_table}(embedding) VALUES (?)", [embedding_json])
+        rowid = cur.lastrowid
+        meta = encoded.metadatas[i]
+        if meta_table == "vec_body_meta":
+            conn.execute(
+                f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, text, body_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    rowid,
+                    meta.get("paper_id", ""),
+                    meta.get("chunk_index", i),
+                    encoded.texts[i],
+                    meta.get("body_units_hash"),
+                    meta.get("retrieval_policy_version"),
+                ],
+            )
+        elif meta_table == "vec_objects_meta":
+            conn.execute(
+                f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, text, object_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    rowid,
+                    meta.get("paper_id", ""),
+                    meta.get("chunk_index", i),
+                    encoded.texts[i],
+                    meta.get("object_units_hash"),
+                    meta.get("retrieval_policy_version"),
+                ],
+            )
+        else:
+            conn.execute(
+                f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, text) VALUES (?, ?, ?, ?)",
+                [rowid, meta.get("paper_id", ""), meta.get("chunk_index", i), encoded.texts[i]],
+            )
+    conn.commit()
+
+    conn.close()
 
 
-def prepare_payloads_for_entry(vault: Path, key: str, has_body: bool, has_object: bool,
-                                body_units: list, object_units: list,
-                                fulltext_rel: str = "") -> list[EmbeddingPayload] | None:
+def prepare_payloads_for_entry(
+    vault: Path,
+    key: str,
+    has_body: bool,
+    has_object: bool,
+    body_units: list,
+    object_units: list,
+    fulltext_rel: str = "",
+) -> list[EmbeddingPayload] | None:
     payloads: list[EmbeddingPayload] = []
     if has_body and body_units:
         payloads.append(prepare_body_payload(key, body_units))
@@ -171,6 +239,7 @@ def prepare_payloads_for_entry(vault: Path, key: str, has_body: bool, has_object
         payloads.append(prepare_object_payload(key, object_units))
     if not has_body and not has_object and fulltext_rel:
         from paperforge.memory.chunker import chunk_fulltext
+
         fulltext_path = vault / fulltext_rel
         chunks = chunk_fulltext(fulltext_path)
         if chunks:
@@ -184,6 +253,7 @@ def embed_paper(vault: Path, zotero_key: str, chunks: list[dict]) -> int:
     encoded = encode_payload(vault, payload)
     write_encoded_payload(vault, encoded)
     return len(chunks)
+
 
 def embed_body_units(vault: Path, zotero_key: str, body_units: list[dict]) -> int:
     """Embed body units into the paperforge_body collection. Returns count."""

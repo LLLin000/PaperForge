@@ -1,38 +1,38 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import sys
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 
-import logging
-from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
-
-from paperforge.embedding.builder import (
-    PaperEmbeddingJob,
-    encode_paper_job,
-    write_encoded_payload,
-    prepare_payloads_for_entry,
-)
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
-from paperforge.retrieval.manifest import compute_body_units_hash, compute_object_units_hash, RETRIEVAL_POLICY_VERSION
 from paperforge.core.result import PFError, PFResult
 from paperforge.embedding import (
     delete_paper_vectors,
-    embed_paper,
-    get_collection,
     get_embed_status,
     get_vector_db_path,
     mark_vector_build_state,
     read_vector_build_state,
 )
+from paperforge.embedding.builder import (
+    PaperEmbeddingJob,
+    embed_body_units,
+    embed_object_units,
+    encode_paper_job,
+    get_body_units_for_embedding,
+    get_object_units_for_embedding,
+    prepare_payloads_for_entry,
+    write_encoded_payload,
+)
 from paperforge.embedding.preflight import _preflight_check
 from paperforge.memory.chunker import chunk_fulltext
-from paperforge.memory.state_snapshot import write_vector_runtime
-from paperforge.worker.asset_index import read_index
-from paperforge.worker._progress import progress_bar
-from paperforge.embedding.builder import embed_body_units, embed_object_units, get_body_units_for_embedding, get_object_units_for_embedding
 from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.state_snapshot import write_vector_runtime
+from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
+from paperforge.worker._progress import progress_bar
+from paperforge.worker.asset_index import read_index
 
 
 def _has_body_units_in_db(vault: Path, key: str) -> bool:
@@ -50,6 +50,7 @@ def _has_body_units_in_db(vault: Path, key: str) -> bool:
     finally:
         conn.close()
 
+
 def _has_object_units_in_db(vault: Path, key: str) -> bool:
     """Check if paper has object_units in the memory DB."""
     db_path = get_memory_db_path(vault)
@@ -65,16 +66,15 @@ def _has_object_units_in_db(vault: Path, key: str) -> bool:
     finally:
         conn.close()
 
+
 def _pid_alive(pid: int) -> bool:
     if pid <= 0:
         return False
     if os.name == "nt":
         try:
             import subprocess
-            r = subprocess.run(
-                ["tasklist", "/FI", f"PID eq {pid}"],
-                capture_output=True, text=True, timeout=5
-            )
+
+            r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], capture_output=True, text=True, timeout=5)
             return str(pid) in r.stdout
         except:
             return False
@@ -87,19 +87,30 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _assert_collections_healthy(vault: Path) -> tuple[bool, str]:
-    """Probe three collections: connectivity + metadata accessibility."""
-    for name in ("paperforge_fulltext", "paperforge_body", "paperforge_objects"):
-        try:
-            col = get_collection(vault, name=name)
-            col.count()
-            # Lightweight metadata probe — no embedding dimension dependency
-            col.get(limit=1)
-        except Exception as exc:
-            return False, f"{name}: {exc}"
+    """Probe sqlite-vec companion tables: connectivity + metadata accessibility."""
+    from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+    from paperforge.memory.schema import ensure_schema
+
+    db_path = get_memory_db_path(vault)
+    if not db_path.exists():
+        return False, "paperforge.db not found"
+    conn = get_connection(db_path)
+    try:
+        ensure_vec_extension(conn)
+        ensure_schema(conn)
+        for meta_table in ["vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"]:
+            conn.execute(f"SELECT COUNT(*) FROM {meta_table}").fetchone()
+    except Exception as exc:
+        return False, f"{meta_table}: {exc}"
+    finally:
+        conn.close()
     return True, ""
+
+
 logger = logging.getLogger(__name__)
 
 PR9B_MAX_WORKERS = 4
+
 
 def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
@@ -154,6 +165,7 @@ def run(args: argparse.Namespace) -> int:
         pid = state.get("pid", 0)
         if pid and state["status"] == "running":
             import signal
+
             try:
                 os.kill(pid, signal.SIGTERM)
             except Exception as exc:
@@ -210,9 +222,14 @@ def run(args: argparse.Namespace) -> int:
 
     envelope = read_index(vault)
     if not envelope:
-        result = PFResult(ok=False, command="embed build", version=PF_VERSION,
-                         error=PFError(code=ErrorCode.PATH_NOT_FOUND,
-                                       message="Canonical index not found. Run paperforge sync first."))
+        result = PFResult(
+            ok=False,
+            command="embed build",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.PATH_NOT_FOUND, message="Canonical index not found. Run paperforge sync first."
+            ),
+        )
         print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
         return 1
 
@@ -224,7 +241,8 @@ def run(args: argparse.Namespace) -> int:
 
     import gc as _gc
     import os as _os
-    _now = __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat
+
+    _now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat
 
     papers_embedded = 0
     chunks_embedded = 0
@@ -232,6 +250,7 @@ def run(args: argparse.Namespace) -> int:
     resume = getattr(args, "resume", False)
 
     from paperforge.embedding._config import get_api_model
+
     _current_model = get_api_model(vault)
 
     if resume:
@@ -249,8 +268,10 @@ def run(args: argparse.Namespace) -> int:
                 started = build_state.get("started_at", "")
                 if started:
                     try:
-                        dt = __import__('datetime').datetime.fromisoformat(started)
-                        if (__import__('datetime').datetime.now(__import__('datetime').timezone.utc) - dt).total_seconds() > 43200:
+                        dt = __import__("datetime").datetime.fromisoformat(started)
+                        if (
+                            __import__("datetime").datetime.now(__import__("datetime").timezone.utc) - dt
+                        ).total_seconds() > 43200:
                             stale = True
                     except:
                         pass
@@ -285,17 +306,24 @@ def run(args: argparse.Namespace) -> int:
         db_path = get_vector_db_path(vault)
         if db_path.exists():
             import shutil
+
             shutil.rmtree(str(db_path), ignore_errors=True)
             if db_path.exists():
                 import time
+
                 time.sleep(0.5)
                 shutil.rmtree(str(db_path), ignore_errors=True)
 
-    mark_vector_build_state(vault,
+    mark_vector_build_state(
+        vault,
         status="running",
-        current=0, total=total, paper_id="",
-        started_at=_now(), finished_at="",
-        message="", pid=_os.getpid(),
+        current=0,
+        total=total,
+        paper_id="",
+        started_at=_now(),
+        finished_at="",
+        message="",
+        pid=_os.getpid(),
         model=_current_model,
         mode=get_embed_status(vault)["mode"],
     )
@@ -324,9 +352,12 @@ def run(args: argparse.Namespace) -> int:
                 try:
                     bundle = fut.result()
                 except Exception as exc:
-                    mark_vector_build_state(vault,
-                        status="failed", message=str(exc),
-                        paper_id=job.paper_id, pid=0,
+                    mark_vector_build_state(
+                        vault,
+                        status="failed",
+                        message=str(exc),
+                        paper_id=job.paper_id,
+                        pid=0,
                     )
                     return False
 
@@ -340,8 +371,10 @@ def run(args: argparse.Namespace) -> int:
                 chunks_embedded += bundle.chunk_count
 
                 print(f"EMBED_PROGRESS:{processed_count}:{total}:{bundle.paper_id}", flush=True)
-                mark_vector_build_state(vault,
-                    current=processed_count, paper_id=bundle.paper_id,
+                mark_vector_build_state(
+                    vault,
+                    current=processed_count,
+                    paper_id=bundle.paper_id,
                     last_update=_now(),
                 )
             return True
@@ -366,25 +399,59 @@ def run(args: argparse.Namespace) -> int:
 
                         if body_units:
                             try:
-                                col = get_collection(vault, name="paperforge_body")
-                                existing = col.get(where={"paper_id": key}, limit=1)
-                                if existing.get("ids"):
-                                    meta = existing.get("metadatas", [{}])[0]
-                                    current_body_hash = compute_body_units_hash(body_units)
-                                    body_ok = (meta.get("body_units_hash") == current_body_hash
-                                               and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
+                                from paperforge.memory.db import (
+                                    ensure_vec_extension,
+                                    get_connection,
+                                    get_memory_db_path,
+                                )
+                                from paperforge.memory.schema import ensure_schema
+
+                                db_path = get_memory_db_path(vault)
+                                conn = get_connection(db_path)
+                                try:
+                                    ensure_vec_extension(conn)
+                                    ensure_schema(conn)
+                                    row = conn.execute(
+                                        "SELECT body_units_hash, retrieval_policy_version FROM vec_body_meta WHERE paper_id = ? LIMIT 1",
+                                        (key,),
+                                    ).fetchone()
+                                    if row:
+                                        current_body_hash = compute_body_units_hash(body_units)
+                                        body_ok = (
+                                            row["body_units_hash"] == current_body_hash
+                                            and row["retrieval_policy_version"] == RETRIEVAL_POLICY_VERSION
+                                        )
+                                finally:
+                                    conn.close()
                             except Exception as exc:
                                 logger.warning("Resume body_units check failed for %s: %s", key, exc)
 
                         if object_units:
                             try:
-                                col = get_collection(vault, name="paperforge_objects")
-                                existing = col.get(where={"paper_id": key}, limit=1)
-                                if existing.get("ids"):
-                                    meta = existing.get("metadatas", [{}])[0]
-                                    current_obj_hash = compute_object_units_hash(object_units)
-                                    object_ok = (meta.get("object_units_hash") == current_obj_hash
-                                                 and meta.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION)
+                                from paperforge.memory.db import (
+                                    ensure_vec_extension,
+                                    get_connection,
+                                    get_memory_db_path,
+                                )
+                                from paperforge.memory.schema import ensure_schema
+
+                                db_path = get_memory_db_path(vault)
+                                conn = get_connection(db_path)
+                                try:
+                                    ensure_vec_extension(conn)
+                                    ensure_schema(conn)
+                                    row = conn.execute(
+                                        "SELECT object_units_hash, retrieval_policy_version FROM vec_objects_meta WHERE paper_id = ? LIMIT 1",
+                                        (key,),
+                                    ).fetchone()
+                                    if row:
+                                        current_obj_hash = compute_object_units_hash(object_units)
+                                        object_ok = (
+                                            row["object_units_hash"] == current_obj_hash
+                                            and row["retrieval_policy_version"] == RETRIEVAL_POLICY_VERSION
+                                        )
+                                finally:
+                                    conn.close()
                             except Exception as exc:
                                 logger.warning("Resume object_units check failed for %s: %s", key, exc)
 
@@ -395,9 +462,7 @@ def run(args: argparse.Namespace) -> int:
                             mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
                             continue
 
-                    payloads = prepare_payloads_for_entry(
-                        vault, key, has_body, has_object, body_units, object_units
-                    )
+                    payloads = prepare_payloads_for_entry(vault, key, has_body, has_object, body_units, object_units)
                 else:
                     fulltext_rel = entry.get("fulltext_path", "")
                     if not fulltext_rel:
@@ -405,29 +470,41 @@ def run(args: argparse.Namespace) -> int:
                     fulltext_path = vault / fulltext_rel
 
                     ocr_root = vault / "System" / "PaperForge" / "ocr" / key
-                    has_files = ((ocr_root / "structure" / "blocks.structured.jsonl").exists()
-                                 and (ocr_root / "index" / "structure-tree.json").exists())
+                    has_files = (ocr_root / "structure" / "blocks.structured.jsonl").exists() and (
+                        ocr_root / "index" / "structure-tree.json"
+                    ).exists()
                     if has_files and not has_body:
-                        print(f"Skip {key}: has structured blocks but no body_units in DB. "
-                              f"Run `paperforge memory build` first.")
+                        print(
+                            f"Skip {key}: has structured blocks but no body_units in DB. "
+                            f"Run `paperforge memory build` first."
+                        )
                         continue
 
                     if resume:
                         try:
-                            collection = get_collection(vault)
-                            existing = collection.get(where={"paper_id": key}, limit=1)
-                            if existing.get("ids") and len(existing["ids"]) > 0:
-                                processed_count += 1
-                                papers_skipped += 1
-                                print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
-                                mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
-                                continue
+                            from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+                            from paperforge.memory.schema import ensure_schema
+
+                            db_path = get_memory_db_path(vault)
+                            conn = get_connection(db_path)
+                            try:
+                                ensure_vec_extension(conn)
+                                ensure_schema(conn)
+                                row = conn.execute(
+                                    "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? LIMIT 1", (key,)
+                                ).fetchone()
+                                if row:
+                                    processed_count += 1
+                                    papers_skipped += 1
+                                    print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                                    mark_vector_build_state(
+                                        vault, current=processed_count, paper_id=key, last_update=_now()
+                                    )
+                                    continue
+                            finally:
+                                conn.close()
                         except Exception as exc:
-                            err = str(exc).lower()
-                            if "hnsw" in err or "compaction" in err:
-                                logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
-                            else:
-                                logger.warning("Resume fulltext check failed for %s: %s", key, exc)
+                            logger.warning("Resume fulltext check failed for %s: %s", key, exc)
 
                     payloads = prepare_payloads_for_entry(
                         vault, key, has_body, has_object, [], [], fulltext_rel=fulltext_rel
@@ -461,8 +538,11 @@ def run(args: argparse.Namespace) -> int:
             _actual = chunks_embedded
             _mode = ""
             _model = ""
-        mark_vector_build_state(vault,
-            status="failed", message=str(e), pid=0,
+        mark_vector_build_state(
+            vault,
+            status="failed",
+            message=str(e),
+            pid=0,
         )
         write_vector_runtime(
             vault,
@@ -481,15 +561,22 @@ def run(args: argparse.Namespace) -> int:
             healthy=False,
             error=str(e),
         )
-        result = PFResult(ok=False, command="embed build", version=PF_VERSION,
-                         error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
+        result = PFResult(
+            ok=False,
+            command="embed build",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
+        )
         print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
         return 1
 
-    mark_vector_build_state(vault,
+    mark_vector_build_state(
+        vault,
         status="completed",
-        current=total, finished_at=_now(),
-        message="", pid=0,
+        current=total,
+        finished_at=_now(),
+        message="",
+        pid=0,
     )
 
     try:
