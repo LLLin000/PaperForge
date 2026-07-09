@@ -17,18 +17,16 @@ async function renderMarkdownSurface({
     clearHost(host);
 
     const article = host.ownerDocument.createElement('article');
+    article.className = 'paperforge-canvas-article markdown-rendered';
     host.appendChild(article);
 
     try {
         await renderMarkdown(markdown, article, sourcePath);
         return { state: 'ready', article };
     } catch (error) {
-        clearHost(host);
-        const errorElement = host.ownerDocument.createElement('div');
-        errorElement.dataset.canvasState = 'render-error';
-        errorElement.textContent = 'Unable to render this Markdown document.';
-        host.appendChild(errorElement);
-        return { state: 'render-error' };
+        article.dataset.canvasState = 'render-error';
+        article.textContent = `Could not render ${sourcePath}: ${error.message}`;
+        return { state: 'render-error', article, error };
     }
 }
 
