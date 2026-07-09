@@ -25,6 +25,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
+    "xxhash>=3.4.0",
     "requests>=2.31.0",
     "pymupdf>=1.23.0",
     "pillow>=10.0.0",

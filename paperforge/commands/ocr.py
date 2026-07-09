@@ -10,9 +10,9 @@ from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 
 from paperforge.worker.ocr_artifacts import artifact_paths_for_root
-from paperforge.worker.ocr_versions import classify_version_state, expected_derived_payload
+from paperforge.worker.ocr_versions import classify_version_state, compute_structured_hash, expected_derived_payload
 from paperforge.worker.ocr_maintenance import _can_rebuild
-from paperforge.core.io import read_json
+from paperforge.core.io import read_json, write_json
 
 logger = logging.getLogger(__name__)
 
@@ -338,8 +338,36 @@ def _needs_derived_rebuild(vault: Path, key: str) -> tuple[bool, str]:
     has_source_meta = artifacts.source_metadata.exists()
     if not _can_rebuild(meta, has_raw, has_source_meta):
         return False, "cannot_rebuild"
+    # ── Two-tier content-hash detection ──
+    content_hash = meta.get("structured_content_hash")
+    if content_hash is not None:
+        blocks_path = artifacts.blocks_structured
+        if not blocks_path.exists():
+            return True, "missing:blocks.structured.jsonl"
+        try:
+            stat = blocks_path.stat()
+            stored_mtime = meta.get("structured_mtime")
+            stored_size = meta.get("structured_size")
 
-    # 版本检测（运行时比较，不依赖 meta.derived_stale）
+            # Tier 1: stat check — skip I/O when mtime+size unchanged
+            if stored_mtime == stat.st_mtime and stored_size == stat.st_size:
+                return False, "current"
+
+            # Tier 2: hash check
+            current_hash = compute_structured_hash(vault, key)
+            if current_hash == content_hash:
+                # False alarm — mtime changed but content identical
+                meta["structured_mtime"] = stat.st_mtime
+                meta["structured_size"] = stat.st_size
+                write_json(artifacts.meta_json, meta)
+                return False, "current"
+
+            return True, "content_hash_changed"
+        except OSError:
+            # Stat failed — fall through to version constants
+            pass
+
+    # ── 版本检测（运行时比较，不依赖 meta.derived_stale）──
     state = classify_version_state(
         meta,
         expected_raw={},

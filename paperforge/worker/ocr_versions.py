@@ -113,3 +113,29 @@ def classify_version_state(
         "derived_reasons": derived_reasons,
         "has_version_state": "raw_version" in meta or "derived_version" in meta,
     }
+
+
+def compute_structured_hash(vault: Path, key: str) -> str | None:
+    """Compute xxhash of blocks.structured.jsonl for a paper.
+
+    Returns hex digest string, or None if the file doesn't exist.
+    """
+    from paperforge.worker._utils import pipeline_paths
+    from paperforge.worker.ocr_artifacts import artifact_paths_for_root
+
+    import xxhash
+
+    ocr_root = Path(pipeline_paths(vault)["ocr"])
+    artifacts = artifact_paths_for_root(ocr_root, key)
+
+    if not artifacts.blocks_structured.exists():
+        return None
+
+    hasher = xxhash.xxh64()
+    with artifacts.blocks_structured.open("rb") as f:
+        while True:
+            chunk = f.read(8192)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    return hasher.hexdigest()

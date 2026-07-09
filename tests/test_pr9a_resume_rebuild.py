@@ -135,6 +135,91 @@ class TestNeedsDerivedRebuild:
 
         assert _needs_derived_rebuild(Path("/vault"), "key") == (False, "cannot_rebuild")
 
+    def _write_blocks_structured(self, paper_dir, content="test content"):
+        """Create a blocks.structured.jsonl with given content."""
+        path = paper_dir / "structure" / "blocks.structured.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return path
+
+    @patch(PATCH_PP)
+    @patch(PATCH_ART)
+    @patch("paperforge.commands.ocr._can_rebuild", return_value=True)
+    def test_hash_stat_skip(self, mock_cr, mock_art, mock_pp):
+        """Tier 1: mtime+size match stored values -> current, no hash call."""
+        tmp_path = Path("/tmp/test_hss")
+        mock_pp.return_value = {"ocr": tmp_path}
+        mock_artifacts, paper_dir = _make_artifact_paths_mock(tmp_path, "key")
+        mock_art.return_value = mock_artifacts
+
+        blocks_path = self._write_blocks_structured(paper_dir)
+        st = blocks_path.stat()
+        mock_artifacts.blocks_structured = blocks_path
+
+        # Write meta with matching hash + stat values
+        meta = {"structured_content_hash": "abc123", "structured_mtime": st.st_mtime,
+                "structured_size": st.st_size}
+        meta_file = mock_artifacts.meta_json
+
+        meta_file.write_text(json.dumps(meta))
+
+        ok, reason = _needs_derived_rebuild(Path("/vault"), "key")
+        assert ok is False
+        assert reason == "current"
+
+    @patch(PATCH_PP)
+    @patch(PATCH_ART)
+    @patch("paperforge.commands.ocr._can_rebuild", return_value=True)
+    @patch("paperforge.commands.ocr.compute_structured_hash", return_value="abc")
+    def test_hash_match_false_alarm(self, mock_csh, mock_cr, mock_art, mock_pp):
+        """Tier 2: stat changed but hash matches -> false alarm recovery -> current."""
+        tmp_path = Path("/tmp/test_hfa")
+        mock_pp.return_value = {"ocr": tmp_path}
+        mock_artifacts, paper_dir = _make_artifact_paths_mock(tmp_path, "key")
+        mock_art.return_value = mock_artifacts
+
+        blocks_path = self._write_blocks_structured(paper_dir)
+        st = blocks_path.stat()
+        mock_artifacts.blocks_structured = blocks_path
+
+        # Deliberately wrong mtime/size to trigger Tier 2
+        meta = {"structured_content_hash": "abc", "structured_mtime": 0, "structured_size": 0}
+
+        meta_file = mock_artifacts.meta_json
+        meta_file.write_text(json.dumps(meta))
+
+        ok, reason = _needs_derived_rebuild(Path("/vault"), "key")
+        assert ok is False
+        assert reason == "current"
+
+        # Verify meta was updated with correct stat values
+        updated_meta = json.loads(meta_file.read_text())
+        assert updated_meta["structured_mtime"] == st.st_mtime
+        assert updated_meta["structured_size"] == st.st_size
+
+    @patch(PATCH_PP)
+    @patch(PATCH_ART)
+    @patch("paperforge.commands.ocr._can_rebuild", return_value=True)
+    @patch("paperforge.commands.ocr.compute_structured_hash", return_value="xyz")
+    def test_hash_mismatch_triggers_rebuild(self, mock_csh, mock_cr, mock_art, mock_pp):
+        """Tier 2: hash differs -> content_hash_changed."""
+        tmp_path = Path("/tmp/test_hm")
+        mock_pp.return_value = {"ocr": tmp_path}
+        mock_artifacts, paper_dir = _make_artifact_paths_mock(tmp_path, "key")
+        mock_art.return_value = mock_artifacts
+
+        blocks_path = self._write_blocks_structured(paper_dir)
+        mock_artifacts.blocks_structured = blocks_path
+
+        meta = {"structured_content_hash": "abc", "structured_mtime": 0, "structured_size": 0}
+
+        meta_file = mock_artifacts.meta_json
+        meta_file.write_text(json.dumps(meta))
+
+        ok, reason = _needs_derived_rebuild(Path("/vault"), "key")
+        assert ok is True
+        assert reason == "content_hash_changed"
+
 
 # ---------------------------------------------------------------------------
 # _select_rebuild_keys

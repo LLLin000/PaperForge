@@ -94,18 +94,35 @@ def _update_span_validity_meta(
     return updated
 
 
-def _apply_post_rebuild_version_flags(meta: dict) -> dict:
+def _apply_post_rebuild_version_flags(meta: dict, vault: Path | None = None, key: str | None = None) -> dict:
     """Update version state flags after a derived-layer rebuild.
 
     - derived_stale becomes False (derived artifacts are now current)
     - raw_upgradable is preserved (only raw OCR can clear this)
     - version_state_updated_at is refreshed
+    - structured_content_hash / mtime / size are stored when vault+key provided
     """
-    from paperforge.worker.ocr_versions import expected_derived_payload
+    from paperforge.worker.ocr_versions import compute_structured_hash, expected_derived_payload
     updated = dict(meta)
     updated["derived_version"] = expected_derived_payload()
     updated["derived_stale"] = False
     updated["version_state_updated_at"] = datetime.datetime.now().isoformat()
+
+    if vault is not None and key is not None:
+        content_hash = compute_structured_hash(vault, key)
+        if content_hash is not None:
+            updated["structured_content_hash"] = content_hash
+            from paperforge.worker._utils import pipeline_paths
+            from paperforge.worker.ocr_artifacts import artifact_paths_for_root
+            ocr_root = Path(pipeline_paths(vault)["ocr"])
+            artifacts = artifact_paths_for_root(ocr_root, key)
+            try:
+                stat = artifacts.blocks_structured.stat()
+                updated["structured_mtime"] = stat.st_mtime
+                updated["structured_size"] = stat.st_size
+            except OSError:
+                pass
+
     return updated
 
 
@@ -521,7 +538,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
 
         meta = ocr_meta
         meta.update(span_meta_patch)
-        meta = _apply_post_rebuild_version_flags(meta)
+        meta = _apply_post_rebuild_version_flags(meta, vault=vault, key=key)
         meta["ocr_status"] = "done"
 
         from paperforge.worker.ocr_render import write_render_outputs
