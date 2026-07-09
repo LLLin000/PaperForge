@@ -20,25 +20,29 @@ def get_embed_status(vault: Path) -> dict:
     error = ""
     healthy = True
     if exists:
+        conn = None
         try:
             conn = get_connection(db_path, read_only=True)
             try:
                 ensure_vec_extension(conn)
-                ensure_schema(conn)
-                row_ft = conn.execute("SELECT COUNT(*) AS cnt FROM vec_fulltext_meta").fetchone()
-                chunk_count = row_ft["cnt"] if row_ft else 0
-                row_body = conn.execute("SELECT COUNT(*) AS cnt FROM vec_body_meta").fetchone()
-                body_chunk_count = row_body["cnt"] if row_body else 0
-                row_obj = conn.execute("SELECT COUNT(*) AS cnt FROM vec_objects_meta").fetchone()
-                object_chunk_count = row_obj["cnt"] if row_obj else 0
-            except Exception as exc:
-                healthy = False
-                error = str(exc)
-            finally:
-                conn.close()
+            except Exception:
+                pass
+            ensure_schema(conn)
+            row_ft = conn.execute("SELECT COUNT(*) AS cnt FROM vec_fulltext_meta").fetchone()
+            chunk_count = row_ft["cnt"] if row_ft else 0
+            row_body = conn.execute("SELECT COUNT(*) AS cnt FROM vec_body_meta").fetchone()
+            body_chunk_count = row_body["cnt"] if row_body else 0
+            row_obj = conn.execute("SELECT COUNT(*) AS cnt FROM vec_objects_meta").fetchone()
+            object_chunk_count = row_obj["cnt"] if row_obj else 0
         except Exception as exc:
             healthy = False
             error = str(exc)
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     model = get_api_model(vault)
 
