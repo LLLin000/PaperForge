@@ -309,16 +309,16 @@ def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | Non
     if not rows:
         print("No OCR papers found.")
         return 0
-    header = f"{'Key':12s} {'Title':42s} {'Status':8s} {'Health':6s} {'Ver':4s} {'Time':11s} {'Pg':>3s} {'Blk':>4s} {'Act'}"
+    header = f"{'Key':12s} {'Title':42s} {'Status':8s} {'Health':6s} {'Hash':12s} {'Ver':4s} {'Time':11s} {'Pg':>3s} {'Blk':>4s} {'Act'}"
     print(header)
     print("-" * len(header))
     for r in rows:
         act = r.recommended_action or "-"
+        h = (r.structured_content_hash[:12] if r.structured_content_hash else "-")
         print(
             f"{r.key:12s} {r.title:42s} {r.status:8s} {r.health:6s} "
-            f"{r.version:4s} {r.finished_at:11s} {r.pages:>3d} {r.blocks:>4d} {act}"
+            f"{h:12s} {r.version:4s} {r.finished_at:11s} {r.pages:>3d} {r.blocks:>4d} {act}"
         )
-    return 0
 
 
 def _needs_derived_rebuild(vault: Path, key: str) -> tuple[bool, str]:

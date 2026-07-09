@@ -1,10 +1,11 @@
-> **Branch:** `master` | **Last Updated:** 2026-07-08
-> **Active work:** Embedding pipeline overhaul (PR9A-C). Previous: Layer 3 — Plugin UI polish. Layer 2 (OCR Quality Report + Readiness Policy) delivered at `96fd9771`. Full Python test suite: 41 passed (14 PR9A + 23 PR9B + 4 PR9C), plugin tests: 58 passed.
+> **Branch:** `master` | **Last Updated:** 2026-07-09
+> **Active work:** sqlite-vec migration complete. ChromaDB replaced with sqlite-vec for vector storage. Embedding provider switched to openai SDK. Hash-based OCR change detection deployed.
 >
 > ---
 >
-> **Current state:** Memory/Embedding layer rearchitected. PR9A (correctness) — resume/rebuild deterministic selection, `.done` markers removed, three-gate embed resume protection. PR9B (performance) — three-stage pipeline (prepare/encode/write) with parallel encode via ThreadPoolExecutor. PR9C (UX) — sliding-window streaming pipeline with continuous EMBED_PROGRESS. Provider switched from `openai` client to `requests` to fix SiliconFlow NAT hang. Plugin chunk display fixed to sum all three collections. Next: full vault embed build with new pipeline.
-
+> **Current state:** All 10 open issues implemented and merged to master. ChromaDB fully replaced with sqlite-vec (vec0 k-NN search, companion meta tables, build_state in SQLite). Embedding provider uses openai SDK (requests fallback available). Hash-based OCR staleness detection (two-tier mtime+xxhash). E2E fixture PDFs + test scaffolding ready. Schema at v6. Test suite: 76 passed across embed/OCR/schema/version/provider suites.
+>
+> Next: push origin, CI validation, downstream tickets (#21 display, #22 cleanup, remaining E2E assertions).
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -139,12 +140,21 @@ Remaining legacy OCR issues (carried forward):
 4. 🟡 **Downstream tooling** — section-aware chunking, figure/table separate handling
 5. ⏳ **Architecture cleanup** — deferred post-release
 6. ⏳ **Compatibility naming cleanup** — deferred post-release
-
 ### 4.1 Immediate Next Steps
 
-- [ ] Enter Layer 3: Plugin UI polish (`PaperForgeStatusView`)
-- [ ] Archive stale queue docs from pairing-framework phase
-
+- [x] #20 Hash-based OCR change detection
+- [x] #31 OpenAI SDK embedding provider
+- [x] #33 E2E test fixtures (3 synthetic PDFs)
+- [x] #26 sqlite-vec schema (v6: vec0 + meta + build_state)
+- [x] #27 sqlite-vec write/delete (builder + _chroma)
+- [x] #28 sqlite-vec merge_retrieve (search)
+- [x] #29 build_state migration to SQLite
+- [x] #30 E2E embed+retrieve tests
+- [x] #32 E2E OCR pipeline tests
+- [ ] Push master to origin
+- [ ] CI validation
+- [ ] #21 Display hash staleness in status output
+- [ ] #22 Remove legacy version constants
 ---
 
 ## 5. Key File Map
@@ -275,6 +285,11 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-05 | `user_readiness` must state `"basis": "policy_estimate"` | Pipeline produces signals, not ground truth. Gaps are real, but code doesn't know if a gap is actual missing text or a proper skip. |
 | 2026-07-05 | `recommended_use` output shape: `status`/`gates`/`reasons` | Contract fixed at `96fd9771` from the initial `recommended`/`gate_results` shape. |
 | 2026-07-05 | Feedback hashes per-mark, not just root | `append_mark()` injects `result_hash` and `fulltext_hash` into each mark; stale detection compares latest mark's hash with current run. |
+| 2026-07-08 | Hash-based OCR staleness detection (two-tier mtime+xxhash) | Version constants require manual bumps; content hash of blocks.structured.jsonl is faster and self-consistent. |
+| 2026-07-08 | OpenAI SDK over raw requests for embedding provider | openai SDK has built-in retry, timeout, and error classification; removes hand-rolled HTTP code. Requests fallback available via provider_type config. |
+| 2026-07-08 | sqlite-vec replaces ChromaDB for vector storage | ChromaDB HNSW index corruption, heavy deps (~100MB), and separate storage. sqlite-vec is ~1MB, stores vectors in same paperforge.db. Brute force at ~50k vectors <100ms. |
+| 2026-07-08 | E2E test fixtures as synthetic PDFs (PyMuPDF) instead of real arXiv PDFs | Avoids license/distribution issues; deterministic and fast to generate. |
+| 2026-07-09 | Schema v6: hash/policy columns in vec companion meta tables | Resume hash checks need body_units_hash, object_units_hash, retrieval_policy_version persisted alongside vectors. |
 
 ---
 

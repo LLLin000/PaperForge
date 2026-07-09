@@ -40,9 +40,9 @@ class OCRMaintenanceRow:
     display_label_key: str = ""
     display_reason: str = ""
     display_reason_key: str = ""
-    display_group: str = "hidden"
-    display_severity: str = "normal"
     visible_in_maintenance: bool = False
+    structured_content_hash: str = ""
+    display_severity: str = "normal"
     fulltext_drift_state: str = "UNKNOWN"
     fulltext_drift_reason: str = ""
     show_in_base: bool = True
@@ -170,6 +170,7 @@ class OCRMaintenanceRow:
             "show_in_base": self.show_in_base,
             "fulltext_drift_state": self.fulltext_drift_state,
             "fulltext_drift_reason": self.fulltext_drift_reason,
+            "structured_content_hash": _safe_str(self.structured_content_hash),
         }
 
 
@@ -422,6 +423,7 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
             can_redo=_can_redo(meta),
             can_rebuild=_can_rebuild(meta, has_raw, has_source_meta),
             recommended_action=_recommended_action(meta, has_raw, has_source_meta),
+            structured_content_hash=meta.get("structured_content_hash", ""),
         )
         row_status = status if status != "-" else "pending"
         df = _compute_display_fields(
