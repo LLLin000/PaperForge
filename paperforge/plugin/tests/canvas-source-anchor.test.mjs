@@ -485,6 +485,21 @@ describe('anchors.js — resolveCanvasAnchor (D-06 through D-14, D-23)', () => {
         expect(anchor.rawEnd).toBe(text.length);
     });
 
+    it('normalizes OCR dash punctuation as a word separator', () => {
+        const dashModel = buildCanvasSourceModel(entry, {
+            fulltext: { path: 'ft.md', text: 'alpha\u2014beta', exists: true, readable: true },
+            note: { path: null, text: null, exists: false, readable: false },
+        });
+        const anchor = resolveCanvasAnchor({
+            cardId: 'card-dash-punctuation',
+            selectedText: 'alpha beta',
+            pageIndex: null,
+        }, dashModel);
+
+        expect(anchor.status).toBe(ANCHOR_STATUSES.EXACT);
+        expect(anchor.strategy).toBe('ocr-normalized');
+    });
+
     it('does not equate different mathematical comparison symbols', () => {
         const symbolModel = buildCanvasSourceModel(entry, {
             fulltext: { path: 'ft.md', text: 'p < 0.05', exists: true, readable: true },
