@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from paperforge.embedding.backends import get_vector_backend
+from paperforge.embedding.dim_detect import ensure_vec_tables
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
 from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
 from paperforge.memory.schema import ensure_schema
@@ -175,6 +175,7 @@ def write_encoded_payload(vault: Path, encoded: EncodedPayload):
     db_path = get_memory_db_path(vault)
     conn = get_connection(db_path)
     ensure_vec_extension(conn)
+    ensure_vec_tables(conn, vault)
     ensure_schema(conn)
 
     name = encoded.collection_name
