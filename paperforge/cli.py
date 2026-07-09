@@ -302,6 +302,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_retrieve.add_argument("query", help="Search query")
     p_retrieve.add_argument("--json", action="store_true")
     p_retrieve.add_argument("--limit", type=int, default=5)
+    p_retrieve.add_argument("--deep", action="store_true", help="Enable @ Deep Search mode with query rewrite + hybrid retrieval (BM25 + vec0)")
     p_retrieve.add_argument("--expand", action="store_true", default=True)
 
     p_qp = sub.add_parser("query-plan", help="Classify a literature query and recommend the first retrieval command")

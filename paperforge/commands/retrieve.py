@@ -6,7 +6,7 @@ import sys
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
-from paperforge.embedding import merge_retrieve, retrieve_chunks
+from paperforge.embedding import hybrid_search, merge_retrieve, retrieve_chunks
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.query_planning import build_query_plan, enrich_query_plan_with_runtime
 
@@ -43,8 +43,49 @@ def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
     query = args.query
     limit = args.limit or 5
+    deep = getattr(args, "deep", False)
 
-    # Check if vector index exists
+    # ── @ Deep Search mode: query rewrite + hybrid retrieval ──────
+    if deep:
+        try:
+            chunks = hybrid_search(vault, query, limit=limit)
+        except Exception as e:
+            result = PFResult(
+                ok=False,
+                command="retrieve",
+                version=PF_VERSION,
+                error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
+            )
+            print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+            return 1
+
+        data = {
+            "query": query,
+            "chunks": chunks,
+            "count": len(chunks),
+            "deep": True,
+            "route_explanation": {
+                "primary_arm": "deep_search",
+                "query_rewrite": True,
+                "hybrid": True,
+            },
+        }
+        warnings: list[str] = []
+        next_actions: list[dict] = []
+        if len(chunks) == 0:
+            warnings.append("Deep search returned no results for the query.")
+        result = PFResult(
+            ok=True, command="retrieve", version=PF_VERSION, data=data, warnings=warnings, next_actions=next_actions
+        )
+        if args.json:
+            print(result.to_json())
+        else:
+            print(f"{len(chunks)} deep search results for: {query}")
+            for c in chunks:
+                print(f"  [{c.get('source', '?')}] {c.get('title', c.get('paper_id', '?'))} ({c.get('year', '?')}): {c.get('text', '')[:80]}...")
+        return 0
+
+    # ── Standard vector retrieve ──────────────────────────────────
     from paperforge.embedding import get_embed_status
 
     status = get_embed_status(vault)

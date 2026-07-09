@@ -19,7 +19,7 @@ from paperforge.embedding.build_state import (
 )
 from paperforge.embedding.builder import embed_body_units, embed_paper, get_body_units_for_embedding, get_object_units_for_embedding, embed_object_units
 from paperforge.embedding.preflight import _preflight_check
-from paperforge.embedding.search import merge_retrieve, retrieve_chunks
+from paperforge.embedding.search import hybrid_search, merge_retrieve, retrieve_chunks
 from paperforge.embedding.status import get_embed_status
 
 __all__ = [
@@ -37,8 +37,8 @@ __all__ = [
     "get_vector_build_state_path",
     "get_vector_db_path",
     "mark_vector_build_state",
+    "hybrid_search",
     "merge_retrieve",
-    "migrate_chroma_to_vec0",
     "read_vector_build_state",
     "retrieve_chunks",
     "write_vector_build_state",

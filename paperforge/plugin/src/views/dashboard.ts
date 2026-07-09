@@ -44,6 +44,13 @@ import {
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
+import {
+  type PaperVersionInfo,
+  listPapersWithBackups,
+  scanVersions,
+  restoreVersion,
+  compareVersions,
+} from "../services/version-history";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -55,7 +62,7 @@ interface IPluginRef {
 }
 
 export class PaperForgeStatusView extends ItemView {
-  _currentMode: "global" | "paper" | "collection" | null = null;
+  _currentMode: "global" | "paper" | "collection" | "versions" | null = null;
   _currentDomain: string | null = null;
   _currentPaperKey: string | null = null;
   _currentPaperEntry: Record<string, any> | null = null;
@@ -80,6 +87,10 @@ export class PaperForgeStatusView extends ItemView {
   _ocrTrack: HTMLElement | null = null;
   _ocrCounts: HTMLElement | null = null;
   _driftBannerEl: HTMLElement | null = null;
+  // ── Search state ──
+  // ── Version state ──
+  _versionPapers: PaperVersionInfo[] | null = null;
+  _versionFilter: string = "";
   // ── Search state ──
   _searchContainer: HTMLElement | null = null;
   _searchInput: HTMLInputElement | null = null;
@@ -919,6 +930,9 @@ export class PaperForgeStatusView extends ItemView {
       case "collection":
         this._renderCollectionMode();
         break;
+      case "versions":
+        this._renderVersionMode();
+        break;
     }
   }
 
@@ -1353,6 +1367,14 @@ export class PaperForgeStatusView extends ItemView {
         this._openFulltext(entry.fulltext_path)
       );
     }
+    // Version history button — always visible, versions mode handles empty state
+    const verBtn = stripRight.createEl("button", {
+      cls: "paperforge-contextual-btn",
+    });
+    verBtn.createEl("span", { text: t("version_panel_title") });
+    verBtn.addEventListener("click", () => {
+      this._switchToVersionMode(key!);
+    });
     this._renderPaperOverviewCard(view, entry);
     if (entry.next_step === "ready" && entry.deep_reading_status === "done") {
       const complete = view.createEl("div", { cls: "paperforge-complete-row" });
@@ -2028,12 +2050,312 @@ export class PaperForgeStatusView extends ItemView {
         case "collection":
           this._renderCollectionMode();
           break;
+        case "versions":
+          this._renderVersionMode();
+          break;
       }
     } finally {
       setTimeout(() => {
         if (this._contentEl) this._contentEl.removeClass("switching");
       }, 50);
     }
+  }
+
+  /* ── Switch to Version Mode ── */
+  _switchToVersionMode(paperKey: string) {
+    const adapter = this.app.vault.adapter as unknown as Record<
+      string,
+      unknown
+    >;
+    const vp = adapter.basePath;
+    const vaultPath = typeof vp === "string" ? vp : "";
+    if (!vaultPath) {
+      new Notice("Cannot determine vault path");
+      return;
+    }
+    this._versionPapers = listPapersWithBackups(vaultPath);
+    this._versionFilter = "";
+    this._currentMode = "versions";
+    this._currentFilePath = null;
+    this._techDetailsExpanded = false;
+    if (!this._contentEl) return;
+    this._contentEl.empty();
+    this._contentEl.removeClass("switching");
+    this._renderModeHeader("versions");
+    this._renderVersionMode();
+  }
+
+  /* ── Version Mode Render: File Recovery-style Panel ── */
+  _renderVersionMode() {
+    if (!this._contentEl) return;
+    const view = this._contentEl.createEl("div", {
+      cls: "paperforge-version-panel",
+    });
+
+    const adapter = this.app.vault.adapter as unknown as Record<
+      string,
+      unknown
+    >;
+    const vp = adapter.basePath;
+    const vaultPath = typeof vp === "string" ? vp : "";
+    if (!vaultPath) {
+      view.createEl("div", {
+        cls: "paperforge-status-error",
+        text: "Could not determine vault path",
+      });
+      return;
+    }
+
+    // Re-scan if null
+    if (!this._versionPapers || this._versionPapers.length === 0) {
+      this._versionPapers = listPapersWithBackups(vaultPath);
+    }
+
+    // ── Left Panel: Filter + Paper List ──
+    const left = view.createEl("div", { cls: "paperforge-version-left" });
+    const right = view.createEl("div", { cls: "paperforge-version-right" });
+
+    // Filter input
+    const filterInput = left.createEl("input", {
+      cls: "paperforge-version-filter",
+      attr: { type: "text", placeholder: t("version_filter_placeholder") },
+    }) as HTMLInputElement;
+    filterInput.value = this._versionFilter;
+
+    // Paper list container
+    const paperList = left.createEl("div", {
+      cls: "paperforge-version-paper-list",
+    });
+
+    const renderPaperList = () => {
+      paperList.empty();
+      const filter = this._versionFilter.toLowerCase();
+      const filtered = this._versionPapers
+        ? this._versionPapers.filter(
+            (p) =>
+              !filter ||
+              p.key.toLowerCase().includes(filter) ||
+              p.title.toLowerCase().includes(filter)
+          )
+        : [];
+
+      if (filtered.length === 0) {
+        paperList.createEl("div", {
+          cls: "paperforge-meta",
+          text: t("version_no_backups"),
+        });
+        return;
+      }
+
+      const countLabel = paperList.createEl("div", {
+        cls: "paperforge-meta",
+        text: t("version_papers_count").replace("{n}", String(filtered.length)),
+      });
+
+      for (const paper of filtered) {
+        const row = paperList.createEl("div", {
+          cls: "paperforge-version-paper-item",
+        });
+        const titleEl = row.createEl("span", {
+          cls: "paperforge-version-paper-title",
+          text: paper.title,
+        });
+        const badge = row.createEl("span", {
+          cls: "paperforge-version-paper-versions",
+          text: paper.versions.map((v) => v.label).join(" "),
+        });
+        row.addEventListener("click", () => {
+          // Highlight selected, show version timeline in right panel
+          paperList
+            .querySelectorAll(".paperforge-version-paper-item.selected")
+            .forEach((el) => el.removeClass("selected"));
+          row.addClass("selected");
+          renderTimeline(paper);
+        });
+      }
+    };
+
+    // Filter on input
+    filterInput.addEventListener("input", () => {
+      this._versionFilter = filterInput.value;
+      renderPaperList();
+    });
+
+    // ── Right Panel: Timeline ──
+    const timelineArea = right.createEl("div", {
+      cls: "paperforge-version-timeline-area",
+    });
+
+    const renderTimeline = (paper: PaperVersionInfo) => {
+      timelineArea.empty();
+      const header = timelineArea.createEl("div", {
+        cls: "paperforge-version-timeline-header",
+      });
+      header.createEl("span", { cls: "pf-title", text: paper.title });
+
+      if (paper.versions.length === 0) {
+        timelineArea.createEl("div", {
+          cls: "paperforge-meta",
+          text: t("version_no_backups"),
+        });
+        return;
+      }
+
+      // Version list as timeline
+      const timeline = timelineArea.createEl("div", {
+        cls: "paperforge-version-timeline",
+      });
+
+      for (const ver of paper.versions) {
+        const isCurrent = ver.label === paper.currentLabel;
+        const entry = timeline.createEl("div", {
+          cls:
+            "paperforge-version-entry" +
+            (isCurrent ? " paperforge-version-current" : ""),
+        });
+        const dot = entry.createEl("div", { cls: "paperforge-version-dot" });
+        const content = entry.createEl("div", {
+          cls: "paperforge-version-content",
+        });
+        const labelRow = content.createEl("div", {
+          cls: "paperforge-version-label-row",
+        });
+        labelRow.createEl("span", {
+          cls: "paperforge-version-label",
+          text: ver.label,
+        });
+        if (isCurrent) {
+          labelRow.createEl("span", {
+            cls: "paperforge-version-current-tag",
+            text: t("version_current"),
+          });
+        }
+        const dateStr = ver.created_at ? ver.created_at.slice(0, 10) : "";
+        content.createEl("div", {
+          cls: "paperforge-meta",
+          text: dateStr + " \u2014 " + ver.source,
+        });
+        const sizeStr = ver.fulltext_size
+          ? ver.fulltext_size > 1024
+            ? (ver.fulltext_size / 1024).toFixed(0) + "KB"
+            : ver.fulltext_size + "B"
+          : "";
+        if (sizeStr) {
+          content.createEl("div", { cls: "paperforge-meta", text: sizeStr });
+        }
+
+        // Action buttons
+        const actions = content.createEl("div", {
+          cls: "paperforge-version-actions",
+        });
+        const restoreBtn = actions.createEl("button", {
+          cls: "pf-btn-primary",
+          text: t("version_restore_btn"),
+        });
+        restoreBtn.addEventListener("click", () => {
+          const ok = restoreVersion(vaultPath, paper.key, ver.label);
+          if (ok) {
+            new Notice(t("version_restore_done").replace("{label}", ver.label));
+          } else {
+            new Notice("Restore failed", 6000);
+          }
+        });
+
+        if (paper.versions.length > 1 && !isCurrent) {
+          const compareBtn = actions.createEl("button", {
+            cls: "pf-btn-secondary",
+            text: t("version_compare_btn"),
+          });
+          compareBtn.addEventListener("click", () => {
+            renderComparison(paper, ver.label, paper.currentLabel);
+          });
+        }
+      }
+    };
+
+    // ── Comparison Area ──
+    const compareArea = right.createEl("div", {
+      cls: "paperforge-version-compare",
+    });
+    compareArea.style.display = "none";
+
+    const renderComparison = (
+      paper: PaperVersionInfo,
+      vA: string,
+      vB: string
+    ) => {
+      const diffs = compareVersions(vaultPath, paper.key, vA, vB);
+      compareArea.style.display = "block";
+      compareArea.empty();
+      const header = compareArea.createEl("div", {
+        cls: "paperforge-version-compare-header",
+      });
+      header.createEl("span", {
+        cls: "pf-title",
+        text: t("version_compare_title")
+          .replace("{vA}", vA)
+          .replace("{vB}", vB),
+      });
+      header.createEl("span", {
+        cls: "paperforge-meta",
+        text: t("version_compare_paragraphs").replace(
+          "{n}",
+          String(diffs.length)
+        ),
+      });
+
+      if (diffs.length === 0) {
+        compareArea.createEl("div", {
+          cls: "paperforge-meta",
+          text: "No changes",
+        });
+        return;
+      }
+
+      const diffList = compareArea.createEl("div", {
+        cls: "paperforge-version-diff-list",
+      });
+      for (const d of diffs) {
+        const diffRow = diffList.createEl("div", {
+          cls: "paperforge-version-diff-row",
+        });
+        const typeLabel =
+          d.type === "added" ? "[+]" : d.type === "removed" ? "[-]" : "[~]";
+        const headingLabel = d.heading || "paragraph " + (d.paragraphIndex + 1);
+        diffRow.createEl("span", {
+          cls: "paperforge-version-diff-label",
+          text: typeLabel + " " + headingLabel,
+        });
+        if (d.oldText) {
+          diffRow.createEl("pre", {
+            cls: "paperforge-version-diff-old",
+            text: d.oldText.slice(0, 200),
+          });
+        }
+        if (d.newText) {
+          diffRow.createEl("pre", {
+            cls: "paperforge-version-diff-new",
+            text: d.newText.slice(0, 200),
+          });
+        }
+      }
+    };
+
+    // ── Bottom Action Bar ──
+    const actionBar = view.createEl("div", {
+      cls: "paperforge-version-actions-bar",
+    });
+    const restoreSelectedBtn = actionBar.createEl("button", {
+      cls: "pf-btn-primary",
+      text: t("version_restore_selected"),
+    });
+    const clearOldBtn = actionBar.createEl("button", {
+      cls: "pf-btn-secondary",
+      text: t("version_clear_old").replace("{size}", ""),
+    });
+
+    // Initial render
+    renderPaperList();
   }
 
   /* ── Search Section ── */
@@ -2556,6 +2878,12 @@ export class PaperForgeStatusView extends ItemView {
         badge.setText("Collection");
         if (this._headerTitle) this._headerTitle.setText("Collection");
         modeName = this._currentDomain || "Unknown Domain";
+        break;
+      case "versions":
+        badge.addClass("versions");
+        badge.setText(t("version_panel_title"));
+        if (this._headerTitle)
+          this._headerTitle.setText(t("version_panel_title"));
         break;
     }
     if (modeName) {
