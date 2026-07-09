@@ -43,6 +43,14 @@ _REQUIRED_IDENTITY_FIELDS = frozenset({
 })
 """Fields that must be present and non-empty in every raw row."""
 
+_ZOTERO_NUMERIC_TYPES = {
+    "1": "highlight",
+    "2": "note",
+    "3": "image",
+    "4": "ink",
+    "5": "underline",
+}
+
 
 # ---------------------------------------------------------------------------
 # Normalized annotation model
@@ -210,6 +218,10 @@ def normalize_zotero_annotation(
             return val
         return str(val)
 
+    def _annotation_type(val: Any) -> str:
+        raw = _str(val)
+        return _ZOTERO_NUMERIC_TYPES.get(raw, raw)
+
     # -- JSON field construction ---------------------------------------------
     tags_raw = raw_row.get("tags")
     if isinstance(tags_raw, list):
@@ -239,7 +251,7 @@ def normalize_zotero_annotation(
         source_attachment_key=_str(raw_row.get("attachment_key", "")),
         source_parent_key=_str(raw_row.get("parent_key", "")),
         source_modified_at=_str(raw_row.get("dateModified", "")),
-        type=_str(raw_row.get("type", "")),
+        type=_annotation_type(raw_row.get("type", "")),
         page_index=raw_row.get("page_index") if raw_row.get("page_index") is not None else None,
         page_label=_str(raw_row.get("pageLabel", "")),
         selected_text=_str(raw_row.get("text", "")),

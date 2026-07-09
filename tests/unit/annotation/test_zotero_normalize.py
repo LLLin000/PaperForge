@@ -315,3 +315,12 @@ def test_type_passthrough():
         raw = {**SAMPLE_RAW, "type": ann_type}
         result = normalize_zotero_annotation(raw, paper_id="PAPER001")
         assert result.type == ann_type
+
+
+def test_numeric_zotero_type_codes_are_human_readable():
+    """Real Zotero SQLite stores annotation type as integer codes."""
+    from paperforge.annotation.zotero_normalize import normalize_zotero_annotation
+
+    assert normalize_zotero_annotation({**SAMPLE_RAW, "type": 1}, paper_id="PAPER001").type == "highlight"
+    assert normalize_zotero_annotation({**SAMPLE_RAW, "type": 3}, paper_id="PAPER001").type == "image"
+    assert normalize_zotero_annotation({**SAMPLE_RAW, "type": 5}, paper_id="PAPER001").type == "underline"
