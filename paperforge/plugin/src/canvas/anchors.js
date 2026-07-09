@@ -221,7 +221,7 @@ function findNormalizedSourceMatches(sourceText, selectedText) {
  * @param {string} value
  * @returns {{ normalized: string, offsetMap: Array<{rawStart: number, rawEnd: number, normStart: number, normEnd: number}> }}
  */
-function normalizeForAnchor(value) {
+function normalizeForAnchor(value, options) {
     if (typeof value !== 'string' || value.length === 0) {
         return { normalized: '', offsetMap: [] };
     }
@@ -236,7 +236,9 @@ function normalizeForAnchor(value) {
             i += 1;
             if (value[i] === '\r' && value[i + 1] === '\n') i += 1;
             i += 1;
-            units.push({ text: ' ', rawStart: rawStart, rawEnd: i });
+            if (options && options.lineEndHyphenAsSpace) {
+                units.push({ text: ' ', rawStart: rawStart, rawEnd: i });
+            }
             continue;
         }
 
@@ -292,25 +294,39 @@ function normalizeForAnchor(value) {
 }
 
 function _findOcrNormalizedMatches(sourceText, selectedText) {
-    var source = normalizeForAnchor(sourceText);
     var selected = normalizeForAnchor(selectedText);
-    if (!source.normalized || !selected.normalized) return [];
+    if (!selected.normalized) return [];
 
     var matches = [];
-    var searchFrom = 0;
-    while (searchFrom <= source.normalized.length - selected.normalized.length) {
-        var pos = source.normalized.indexOf(selected.normalized, searchFrom);
-        if (pos === -1) break;
-        var end = pos + selected.normalized.length;
-        matches.push({
-            normStart: pos,
-            normEnd: end,
-            rawStart: source.offsetMap[pos].rawStart,
-            rawEnd: end === source.normalized.length
+    var sourceVariants = [
+        normalizeForAnchor(sourceText),
+        normalizeForAnchor(sourceText, { lineEndHyphenAsSpace: true }),
+    ];
+    var seenRawSpans = Object.create(null);
+
+    for (var variantIndex = 0; variantIndex < sourceVariants.length; variantIndex++) {
+        var source = sourceVariants[variantIndex];
+        var searchFrom = 0;
+        while (searchFrom <= source.normalized.length - selected.normalized.length) {
+            var pos = source.normalized.indexOf(selected.normalized, searchFrom);
+            if (pos === -1) break;
+            var end = pos + selected.normalized.length;
+            var rawStart = source.offsetMap[pos].rawStart;
+            var rawEnd = end === source.normalized.length
                 ? sourceText.length
-                : source.offsetMap[end - 1].rawEnd,
-        });
-        searchFrom = pos + 1;
+                : source.offsetMap[end - 1].rawEnd;
+            var spanKey = rawStart + ':' + rawEnd;
+            if (!seenRawSpans[spanKey]) {
+                seenRawSpans[spanKey] = true;
+                matches.push({
+                    normStart: pos,
+                    normEnd: end,
+                    rawStart: rawStart,
+                    rawEnd: rawEnd,
+                });
+            }
+            searchFrom = pos + 1;
+        }
     }
     return matches;
 }

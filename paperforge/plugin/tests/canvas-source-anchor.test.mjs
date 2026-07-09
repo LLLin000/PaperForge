@@ -467,6 +467,24 @@ describe('anchors.js — resolveCanvasAnchor (D-06 through D-14, D-23)', () => {
         expect(anchor.rawEnd).toBe(ocrModel.text.length);
     });
 
+    it('removes an OCR line-end hyphen inside a split word', () => {
+        const text = 'A multi-\nmodal model.';
+        const ocrModel = buildCanvasSourceModel(entry, {
+            fulltext: { path: 'ft.md', text, exists: true, readable: true },
+            note: { path: null, text: null, exists: false, readable: false },
+        });
+        const anchor = resolveCanvasAnchor({
+            cardId: 'card-hyphenated-word',
+            selectedText: 'A multimodal model.',
+            pageIndex: 0,
+        }, ocrModel);
+
+        expect(anchor.status).toBe(ANCHOR_STATUSES.EXACT);
+        expect(anchor.strategy).toBe('ocr-normalized');
+        expect(anchor.rawStart).toBe(0);
+        expect(anchor.rawEnd).toBe(text.length);
+    });
+
     it('keeps repeated text unresolved when no context can disambiguate it', () => {
         const repeatedModel = buildCanvasSourceModel(entry, {
             fulltext: {
