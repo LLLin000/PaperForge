@@ -25,6 +25,10 @@ const {
 } = require('./controller');
 
 const {
+    renderMarkdownSurface,
+} = require('./markdown-surface');
+
+const {
     renderCanvasView,
     renderCanvasIdentity,
     renderCanvasIdle,
@@ -112,6 +116,9 @@ module.exports = {
 
     // ── Canvas session controller ──
     createCanvasSessionController,
+
+    // ── Markdown reading surface ──
+    renderMarkdownSurface,
 
     // ── Canvas DOM rendering ──
     renderCanvasView,
