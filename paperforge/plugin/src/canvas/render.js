@@ -56,6 +56,104 @@ function emptyEl(el) {
     }
 }
 
+function createCanvasAction(action, label, icon) {
+    var button = createEl('button', { cls: 'paperforge-canvas-tool-button' });
+    button.type = 'button';
+    button.setAttribute('data-canvas-action', action);
+    button.setAttribute('aria-label', label);
+    button.setAttribute('title', label);
+    var iconEl = createEl('span', { cls: 'paperforge-canvas-tool-icon', text: icon });
+    iconEl.setAttribute('aria-hidden', 'true');
+    button.appendChild(iconEl);
+    return button;
+}
+
+function renderReadingCanvasShell(root, options) {
+    var opts = options || {};
+    emptyEl(root);
+    var shell = createEl('div', { cls: 'paperforge-canvas-reading-shell' });
+    shell.setAttribute('data-canvas-role', 'shell');
+    var toolbar = createEl('div', { cls: 'paperforge-canvas-toolbar' });
+    toolbar.setAttribute('data-canvas-role', 'toolbar');
+    toolbar.appendChild(createCanvasAction('refresh', 'Refresh annotations', '\u21bb'));
+    var countValue = String(Number.isFinite(opts.unresolvedCount) ? opts.unresolvedCount : 0);
+    var count = createCanvasAction('unresolved-count', countValue + ' unresolved annotations', '\u25cf');
+    count.classList.add('paperforge-canvas-unresolved-count');
+    count.setAttribute('data-canvas-role', 'unresolved-count');
+    count.appendChild(createEl('span', { cls: 'paperforge-canvas-unresolved-value', text: countValue }));
+    toolbar.appendChild(count);
+    toolbar.appendChild(createCanvasAction('open-pdf', 'Open PDF', '\u2197'));
+    toolbar.appendChild(createCanvasAction('toggle-annotations', 'Toggle annotations', '\u25d0'));
+    var layout = createEl('div', { cls: 'paperforge-canvas-reading-layout' });
+    var leftRail = createEl('aside', { cls: 'paperforge-canvas-reading-rail paperforge-canvas-reading-rail--left' });
+    leftRail.setAttribute('data-canvas-role', 'left-rail');
+    var articleHost = createEl('main', { cls: 'paperforge-canvas-article-host' });
+    articleHost.setAttribute('data-canvas-role', 'article-host');
+    var rightRail = createEl('aside', { cls: 'paperforge-canvas-reading-rail paperforge-canvas-reading-rail--right' });
+    rightRail.setAttribute('data-canvas-role', 'right-rail');
+    layout.appendChild(leftRail);
+    layout.appendChild(articleHost);
+    layout.appendChild(rightRail);
+    var drawer = createEl('div', { cls: 'paperforge-canvas-unresolved-drawer' });
+    drawer.setAttribute('data-canvas-role', 'drawer');
+    shell.appendChild(toolbar);
+    shell.appendChild(layout);
+    shell.appendChild(drawer);
+    root.appendChild(shell);
+    return { shell, toolbar, leftRail, articleHost, rightRail, drawer };
+}
+
+function renderCanvasFailure(root, failure) {
+    var data = failure || {};
+    emptyEl(root);
+    var failureEl = createEl('div', {
+        cls: 'paperforge-canvas-failure',
+        text: data.message || 'Reading Canvas could not be loaded.',
+    });
+    failureEl.setAttribute('data-canvas-state', data.state || 'error');
+    failureEl.setAttribute('role', 'alert');
+    failureEl.appendChild(createCanvasAction('retry', 'Retry', '\u21bb'));
+    root.appendChild(failureEl);
+    return failureEl;
+}
+
+function appendAnnotationText(parent, cls, value) {
+    if (value == null || value === '') return;
+    parent.appendChild(createEl('div', { cls, text: String(value) }));
+}
+
+function renderHighlightPopover(root, annotation) {
+    var item = annotation || {};
+    var popover = createEl('div', { cls: 'paperforge-canvas-highlight-popover' });
+    popover.setAttribute('data-annotation-id', item.id || '');
+    popover.setAttribute('role', 'dialog');
+    appendAnnotationText(popover, 'paperforge-canvas-highlight-quote', item.selectedText);
+    appendAnnotationText(popover, 'paperforge-canvas-highlight-comment', item.comment);
+    appendAnnotationText(popover, 'paperforge-canvas-highlight-page', item.pageLabel);
+    root.appendChild(popover);
+    return popover;
+}
+
+function renderUnresolvedDrawer(root, annotations) {
+    var drawer = root.matches && root.matches('[data-canvas-role="drawer"]')
+        ? root
+        : root.querySelector && root.querySelector('[data-canvas-role="drawer"]');
+    if (!drawer) {
+        drawer = createEl('div', { cls: 'paperforge-canvas-unresolved-drawer' });
+        drawer.setAttribute('data-canvas-role', 'drawer');
+        root.appendChild(drawer);
+    }
+    emptyEl(drawer);
+    (annotations || []).forEach(function (annotation) {
+        var item = createEl('div', { cls: 'paperforge-canvas-unresolved-item' });
+        item.setAttribute('data-annotation-id', annotation.id || '');
+        appendAnnotationText(item, 'paperforge-canvas-unresolved-quote', annotation.selectedText);
+        appendAnnotationText(item, 'paperforge-canvas-unresolved-comment', annotation.comment);
+        drawer.appendChild(item);
+    });
+    return drawer;
+}
+
 // ── View-model shape ──
 //
 // The view-model passed to `renderCanvasView()` should have:
@@ -635,17 +733,18 @@ function renderSourceBlock(containerEl, block, blockAnchors, options) {
 function renderCanvasSourceSurface(contentEl, sourceBlocks, cardAnchors, options) {
     var opts = options || {};
 
+    // ── Source surface container ──
+    var surfaceEl = createEl('div', { cls: 'paperforge-canvas-source-surface' });
+
     // ── Source-unavailable state ──
     if (opts.unavailable) {
         var unavailableEl = createEl('div', { cls: 'paperforge-canvas-source-unavailable' });
         var msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: opts.reason || _t('source.unavailable') });
         unavailableEl.appendChild(msg);
-        contentEl.appendChild(unavailableEl);
+        surfaceEl.appendChild(unavailableEl);
+        contentEl.appendChild(surfaceEl);
         return;
     }
-
-    // ── Source surface container ──
-    var surfaceEl = createEl('div', { cls: 'paperforge-canvas-source-surface' });
 
     // Source kind header
     var headerEl = createEl('div', { cls: 'paperforge-canvas-source-header' });
@@ -888,6 +987,10 @@ function updateCanvasConnectorLayer(layerEl, connectorState, modifier) {
 }
 
 module.exports = {
+    renderReadingCanvasShell,
+    renderCanvasFailure,
+    renderHighlightPopover,
+    renderUnresolvedDrawer,
     renderCanvasView,
     renderCanvasIdentity,
     renderCanvasIdle,

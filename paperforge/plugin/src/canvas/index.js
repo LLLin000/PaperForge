@@ -34,6 +34,10 @@ const {
 } = require('./dom-anchors');
 
 const {
+    renderReadingCanvasShell,
+    renderCanvasFailure,
+    renderHighlightPopover,
+    renderUnresolvedDrawer,
     renderCanvasView,
     renderCanvasIdentity,
     renderCanvasIdle,
@@ -128,6 +132,10 @@ module.exports = {
     buildTextNodeIndex,
 
     // ── Canvas DOM rendering ──
+    renderReadingCanvasShell,
+    renderCanvasFailure,
+    renderHighlightPopover,
+    renderUnresolvedDrawer,
     renderCanvasView,
     renderCanvasConnectorLayer,
     updateCanvasConnectorLayer,

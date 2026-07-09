@@ -35,7 +35,63 @@ const {
     renderFallbackButton,
     renderCanvasConnectorLayer,
     updateCanvasConnectorLayer,
+    renderReadingCanvasShell,
+    renderCanvasFailure,
+    renderUnresolvedDrawer,
 } = await import('../src/canvas/render.js');
+
+describe('Visual Reading Canvas shell', () => {
+    it('renders the required regions and returns stable refs', () => {
+        const root = makeRootEl();
+        const refs = renderReadingCanvasShell(root, { unresolvedCount: 3 });
+
+        expect(refs).toEqual({
+            shell: root.querySelector('[data-canvas-role="shell"]'),
+            toolbar: root.querySelector('[data-canvas-role="toolbar"]'),
+            leftRail: root.querySelector('[data-canvas-role="left-rail"]'),
+            articleHost: root.querySelector('[data-canvas-role="article-host"]'),
+            rightRail: root.querySelector('[data-canvas-role="right-rail"]'),
+            drawer: root.querySelector('[data-canvas-role="drawer"]'),
+        });
+    });
+
+    it('renders accessible toolbar actions and a visible unresolved count', () => {
+        const root = makeRootEl();
+        renderReadingCanvasShell(root, { unresolvedCount: 3 });
+
+        for (const action of ['refresh', 'open-pdf', 'toggle-annotations']) {
+            const button = root.querySelector(`[data-canvas-action="${action}"]`);
+            expect(button?.tagName).toBe('BUTTON');
+            expect(button?.getAttribute('aria-label')).toBeTruthy();
+            expect(button?.getAttribute('title')).toBeTruthy();
+            expect(button?.querySelector('[aria-hidden="true"]')).toBeTruthy();
+        }
+
+        const count = root.querySelector('[data-canvas-role="unresolved-count"]');
+        expect(count?.textContent).toContain('3');
+        expect(count?.getAttribute('aria-label')).toContain('3');
+    });
+
+    it('renders terminal failure text and a retry action', () => {
+        const root = makeRootEl();
+        renderCanvasFailure(root, { state: 'invalid-json', message: 'Could not read annotations.' });
+
+        expect(root.textContent).toContain('Could not read annotations.');
+        expect(root.querySelector('[data-canvas-state="invalid-json"]')).toBeTruthy();
+        expect(root.querySelector('[data-canvas-action="retry"]')?.tagName).toBe('BUTTON');
+    });
+
+    it('renders an unresolved drawer with annotation-derived text safely', () => {
+        const root = makeRootEl();
+        const payload = '<img src=x onerror=alert(1)>';
+        renderUnresolvedDrawer(root, [{ id: 'a1', selectedText: payload, comment: 'Needs review' }]);
+
+        expect(root.textContent).toContain(payload);
+        expect(root.querySelector('img')).toBeNull();
+        expect(root.querySelector('[data-canvas-role="drawer"]')).toBeTruthy();
+        expect(root.querySelector('[data-annotation-id="a1"]')).toBeTruthy();
+    });
+});
 
 // ── Forbidden control keywords (must not appear in any canvas state) ──
 

@@ -3254,3 +3254,83 @@
         display: none;
     }
 }
+
+/* Visual Reading Canvas shell */
+.paperforge-reading-canvas-view .paperforge-canvas-reading-shell {
+    --paperforge-mark-color: rgba(255, 221, 87, 0.42);
+    position: relative;
+    min-width: 0;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-tool-button {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-tool-icon {
+    line-height: 1;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-unresolved-count {
+    min-width: 2ch;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-reading-layout {
+    display: grid;
+    grid-template-columns: minmax(144px, 240px) minmax(0, 760px) minmax(144px, 240px);
+    justify-content: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-reading-rail,
+.paperforge-reading-canvas-view .paperforge-canvas-article-host {
+    min-width: 0;
+}
+
+.paperforge-reading-canvas-view mark,
+.paperforge-reading-canvas-view .paperforge-canvas-anchor--exact {
+    background-color: var(--paperforge-mark-color);
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-highlight-popover,
+.paperforge-reading-canvas-view .paperforge-canvas-unresolved-item,
+.paperforge-reading-canvas-view .paperforge-canvas-failure {
+    overflow-wrap: anywhere;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.paperforge-reading-canvas-view .paperforge-canvas-unresolved-drawer {
+    display: grid;
+    gap: 8px;
+    max-height: 45vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+    .paperforge-reading-canvas-view .paperforge-canvas-reading-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .paperforge-reading-canvas-view .paperforge-canvas-reading-rail,
+    .paperforge-reading-canvas-view .paperforge-canvas-connector-layer {
+        display: none;
+    }
+}

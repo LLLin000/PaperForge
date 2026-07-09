@@ -30,7 +30,27 @@ const {
     renderUnresolvedAnchorStatus,
     renderCanvasCard,
     renderFallbackButton,
+    renderHighlightPopover,
 } = CANVAS_RENDER;
+
+describe('highlight popover DOM', () => {
+    it('renders annotation-derived text with textContent only', () => {
+        const root = makeRootEl();
+        const payload = '<script>window.compromised = true</script>';
+        const popover = renderHighlightPopover(root, {
+            id: 'highlight-1',
+            selectedText: payload,
+            comment: '<b>Important</b>',
+            pageLabel: 'Page 4',
+        });
+
+        expect(popover.getAttribute('data-annotation-id')).toBe('highlight-1');
+        expect(popover.textContent).toContain(payload);
+        expect(popover.textContent).toContain('<b>Important</b>');
+        expect(popover.querySelector('script')).toBeNull();
+        expect(popover.querySelector('b')).toBeNull();
+    });
+});
 
 // ── Forbidden control keywords ──
 
