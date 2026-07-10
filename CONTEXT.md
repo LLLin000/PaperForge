@@ -56,6 +56,15 @@ An explicit user or developer mark on a specific OCR result.
 - **Implicit:** user opens fulltext and does not report an error (very weak signal)
 Only explicit marks carry weight in the validation loop.
 
+### Source Corpus
+The authoritative research content from which retrieval data is derived: paper notes, OCR outputs, structured blocks, metadata, and user-authored annotations. Source Corpus data must survive retrieval-layer repair or rebuild.
+
+### Retrieval Experience
+The user-facing capability for finding either a known paper or knowledge inside papers. It includes metadata lookup, semantic/deep retrieval, and the build/status controls required to keep those paths usable.
+
+### Retrieval Artifact
+Regenerable data derived from the Source Corpus for search: FTS indexes, embeddings, vector tables, and their companion metadata. Retrieval Artifacts may be discarded and rebuilt; they are not preservation targets or sources of truth.
+
 ## Architecture layers
 
 ```
