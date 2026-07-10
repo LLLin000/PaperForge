@@ -263,11 +263,7 @@ def run(args: argparse.Namespace) -> int:
                 mark_vector_build_state(vault, status="idle", current=0, pid=0)
                 resume = False
         # 门二：no vec0 rows → fresh build（不是 error）
-        from paperforge.memory.db import (
-            ensure_vec_extension,
-            get_connection,
-            get_memory_db_path,
-        )
+        from paperforge.memory.db import ensure_vec_extension
         from paperforge.memory.schema import ensure_schema
 
         _db_path = get_memory_db_path(vault)
@@ -404,11 +400,7 @@ def run(args: argparse.Namespace) -> int:
 
                         if body_units:
                             try:
-                                from paperforge.memory.db import (
-                                    ensure_vec_extension,
-                                    get_connection,
-                                    get_memory_db_path,
-                                )
+                                from paperforge.memory.db import ensure_vec_extension
                                 from paperforge.memory.schema import ensure_schema
 
                                 db_path = get_memory_db_path(vault)
@@ -433,11 +425,7 @@ def run(args: argparse.Namespace) -> int:
 
                         if object_units:
                             try:
-                                from paperforge.memory.db import (
-                                    ensure_vec_extension,
-                                    get_connection,
-                                    get_memory_db_path,
-                                )
+                                from paperforge.memory.db import ensure_vec_extension
                                 from paperforge.memory.schema import ensure_schema
 
                                 db_path = get_memory_db_path(vault)
@@ -487,7 +475,7 @@ def run(args: argparse.Namespace) -> int:
 
                     if resume:
                         try:
-                            from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+                            from paperforge.memory.db import ensure_vec_extension
                             from paperforge.memory.schema import ensure_schema
 
                             db_path = get_memory_db_path(vault)
