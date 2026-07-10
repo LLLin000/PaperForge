@@ -386,12 +386,9 @@ def run(args: argparse.Namespace) -> int:
                         paper_id=job.paper_id,
                         pid=0,
                     )
-                    return False
-
+                delete_paper_vectors(vault, bundle.paper_id)
                 for payload in bundle.payloads:
                     write_encoded_payload(vault, payload)
-                # Delete old vectors only after all new payloads are written safely
-                delete_paper_vectors(vault, bundle.paper_id)
 
                 processed_count += 1
                 papers_embedded += 1
