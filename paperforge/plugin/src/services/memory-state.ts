@@ -164,9 +164,48 @@ export function getMemoryRuntime(vaultPath: string): MemoryRuntime | null {
   return readJSONFile(paths.memoryStatePath) as MemoryRuntime | null;
 }
 
+let _vectorRuntimeCache: { vaultPath: string; result: VectorRuntime | null; ts: number } | null = null;
+
 export function getVectorRuntime(vaultPath: string): VectorRuntime | null {
   const paths = resolveVaultPaths(vaultPath);
-  return readJSONFile(paths.vectorStatePath) as VectorRuntime | null;
+  // Time-based cache: use snapshot within the 2s window
+  const now = Date.now();
+  if (_vectorRuntimeCache && _vectorRuntimeCache.vaultPath === vaultPath && now - _vectorRuntimeCache.ts < 2000) {
+    return _vectorRuntimeCache.result;
+  }
+  // Try live embed status --json; fall back to JSON snapshot
+  let pythonPath = "";
+  const venvCandidates = [
+    path.join(vaultPath, ".paperforge-test-venv", "Scripts", "python.exe"),
+    path.join(vaultPath, ".venv", "Scripts", "python.exe"),
+    path.join(vaultPath, "venv", "Scripts", "python.exe"),
+  ];
+  for (let i = 0; i < venvCandidates.length; i++) {
+    if (fs.existsSync(venvCandidates[i])) {
+      pythonPath = venvCandidates[i];
+      break;
+    }
+  }
+  if (pythonPath) {
+    try {
+      const out = execFileSync(pythonPath, ["-m", "paperforge", "--vault", vaultPath, "embed", "status", "--json"], {
+        encoding: "utf-8",
+        timeout: 10000,
+        windowsHide: true,
+      });
+      const parsed = JSON.parse(out);
+      if (parsed.ok && parsed.data) {
+        const result = parsed.data as VectorRuntime;
+        _vectorRuntimeCache = { vaultPath, result, ts: now };
+        return result;
+      }
+    } catch {
+      // fall through to snapshot
+    }
+  }
+  const result = readJSONFile(paths.vectorStatePath) as VectorRuntime | null;
+  _vectorRuntimeCache = { vaultPath, result, ts: now };
+  return result;
 }
 
 export function getRuntimeHealth(
