@@ -122,10 +122,6 @@ def run(args: argparse.Namespace) -> int:
             import openai  # noqa: F401
         except ImportError:
             _dep_missing.append("openai")
-        try:
-            import chromadb  # noqa: F401
-        except ImportError:
-            _dep_missing.append("chromadb")
         write_vector_runtime(
             vault,
             enabled=bool(status.get("mode", "")),
