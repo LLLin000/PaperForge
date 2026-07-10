@@ -6,7 +6,8 @@ from pathlib import Path
 
 from paperforge.embedding._config import get_api_model
 from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
-from paperforge.memory.schema import VEC_EMBEDDING_DIM, ensure_schema
+from paperforge.embedding.dim_detect import detect_embedding_dim
+from paperforge.memory.schema import ensure_schema
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ def get_embed_status(vault: Path) -> dict:
             # -- vec0 k-NN health probe --
             total_meta = chunk_count + body_chunk_count + object_chunk_count
             if total_meta > 0:
-                zero_vec = [0.0] * VEC_EMBEDDING_DIM
+                zero_vec = [0.0] * detect_embedding_dim(vault)
                 zero_json = _json.dumps(zero_vec)
                 for vec_table, meta_count in [
                     ("vec_fulltext", chunk_count),
