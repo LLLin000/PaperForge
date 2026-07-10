@@ -46,6 +46,23 @@ def run(args: argparse.Namespace) -> int:
             lifecycle=args.lifecycle or "",
             next_step=args.next_step or "",
         )
+        # Normalize to unified PFResult match format
+        unified: list[dict] = []
+        for r in results:
+            unified.append({
+                "zotero_key": r.get("zotero_key", ""),
+                "title": r.get("title", ""),
+                "first_author": r.get("first_author", ""),
+                "year": r.get("year", ""),
+                "journal": r.get("journal", ""),
+                "domain": r.get("domain", ""),
+                "abstract": r.get("abstract", ""),
+                "score": r.get("rank", 0),
+                "text": r.get("abstract", ""),
+                "heading": "",
+                "source": "fts",
+            })
+        results = unified
         data = {
             "query": query,
             "matches": results,
