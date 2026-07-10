@@ -21,6 +21,8 @@ let originalLoad;
 let PaperForgeReadingCanvasView;
 let VIEW_TYPE_PAPERFORGE_READING_CANVAS;
 let openReadingCanvasForActivePaper;
+let markdownRenderCalls;
+let markdownRenderImpl;
 
 /**
  * Global capture for Notice calls during tests.
@@ -29,6 +31,22 @@ const noticeCalls = [];
 
 function installObsidianStub() {
     originalLoad = Module._load;
+    markdownRenderCalls = [];
+    markdownRenderImpl = async (_app, markdown, el, sourcePath) => {
+        markdownRenderCalls.push({ markdown, el, sourcePath });
+        const headingMatch = markdown.match(/^#\s+(.+)$/m);
+        if (headingMatch) {
+            const h1 = document.createElement('h1');
+            h1.textContent = headingMatch[1];
+            el.appendChild(h1);
+        }
+        const body = document.createElement('p');
+        body.textContent = markdown
+            .replace(/^#\s+.+$/m, '')
+            .replace(/\*\*/g, '')
+            .trim();
+        el.appendChild(body);
+    };
     Module._load = function patchedLoad(request, parent, isMain) {
         if (request === 'obsidian') {
             return {
@@ -50,6 +68,11 @@ function installObsidianStub() {
                 Modal: class Modal {},
                 Setting: class Setting {},
                 PluginSettingTab: class PluginSettingTab {},
+                MarkdownRenderer: {
+                    render: vi.fn((app, markdown, el, sourcePath, component) => {
+                        return markdownRenderImpl(app, markdown, el, sourcePath, component);
+                    }),
+                },
                 addIcon: vi.fn(),
             };
         }
@@ -125,6 +148,8 @@ afterEach(() => {
     vi.restoreAllMocks();
     document.body.innerHTML = '';
     noticeCalls.length = 0;
+    markdownRenderCalls = [];
+    markdownRenderImpl = null;
 });
 
 // ── Task 1: View type constant and class export ──
@@ -199,6 +224,16 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
 
         expect(view._canvasContext).toBeTruthy();
         expect(view._canvasContext.ok).toBe(false);
+    });
+
+    it('onOpen renders a visible fallback instead of leaving a blank pane before context arrives', async () => {
+        const view = makeCanvasView();
+
+        await view.onOpen();
+
+        expect(view._canvasContext).toBeTruthy();
+        expect(view._canvasContext.ok).toBe(false);
+        expect(view.contentEl.textContent).toContain('No paper context has been attached yet');
     });
 });
 
@@ -285,6 +320,32 @@ describe('Task 4 — Static open method', () => {
         await PaperForgeReadingCanvasView.open(mockPlugin, 'KEY_C', { key: 'KEY_C', title: 'C' });
         // The method completes without error
         expect(mockPlugin.app.workspace.getLeavesOfType).toHaveBeenCalled();
+    });
+
+    it('static open waits for a newly created leaf view before attaching paper context', async () => {
+        const mockLeaf = {
+            view: null,
+            setViewState: vi.fn(() => {
+                setTimeout(() => {
+                    mockLeaf.view = { setPaperContext: vi.fn() };
+                }, 0);
+                return Promise.resolve();
+            }),
+        };
+        const mockPlugin = {
+            app: {
+                workspace: {
+                    getLeavesOfType: vi.fn(() => []),
+                    getRightLeaf: vi.fn(() => mockLeaf),
+                    revealLeaf: vi.fn(),
+                },
+            },
+        };
+
+        await PaperForgeReadingCanvasView.open(mockPlugin, 'KEY_DELAY', { key: 'KEY_DELAY', title: 'Delayed' });
+
+        expect(mockLeaf.view.setPaperContext).toHaveBeenCalledWith('KEY_DELAY', { key: 'KEY_DELAY', title: 'Delayed' });
+        expect(mockPlugin.app.workspace.revealLeaf).toHaveBeenCalledWith(mockLeaf);
     });
 });
 
@@ -779,6 +840,154 @@ describe('ANN13-04 Task 1 — Loaded canvas rendering', () => {
         expect(containerEl.querySelector('.paperforge-reading-canvas-view')).toBeTruthy();
     });
 
+    it('_renderLoadedCanvas renders loaded annotation cards', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_LOAD';
+        view._paperEntry = {
+            key: 'PAPER_LOAD',
+            title: 'Loaded paper',
+            fulltext_path: 'fulltext.md',
+        };
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: {
+                    path: 'fulltext.md',
+                    exists: true,
+                    readable: true,
+                    text: '<!-- page 1 --> Important anchor text appears here.',
+                    error: null,
+                },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            {
+                state: 'ready',
+                paperKey: 'PAPER_LOAD',
+                annotations: [
+                    {
+                        display: {
+                            selectedText: 'Important anchor text',
+                            comment: 'Keep this finding',
+                            pageLabel: '1',
+                            type: 'highlight',
+                            color: '#ffd54f',
+                        },
+                        provenance: {
+                            source: 'zotero',
+                            sourceAnnotationKey: 'ann-load-1',
+                        },
+                        pdfLocation: {
+                            pageIndex: 1,
+                            pageLabel: '1',
+                            sortIndex: 0,
+                        },
+                    },
+                ],
+            }
+        );
+
+        expect(contentEl.querySelectorAll('.paperforge-canvas-card')).toHaveLength(1);
+        expect(contentEl.textContent).toContain('Important anchor text');
+        expect(contentEl.textContent).toContain('Keep this finding');
+    });
+
+    it('_renderLoadedCanvas renders fulltext.md through MarkdownRenderer inside article host', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_MD';
+        view._paperEntry = {
+            key: 'PAPER_MD',
+            title: 'Markdown paper',
+            fulltext_path: 'fulltext.md',
+        };
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: {
+                    path: 'fulltext.md',
+                    exists: true,
+                    readable: true,
+                    text: '# 第一卷\n\n原文中的重要句子在这里。',
+                    error: null,
+                },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            { state: 'empty', paperKey: 'PAPER_MD', annotations: [] }
+        );
+
+        const articleHost = contentEl.querySelector('[data-canvas-role="article-host"]');
+        expect(articleHost).toBeTruthy();
+        expect(markdownRenderCalls).toHaveLength(1);
+        expect(markdownRenderCalls[0].markdown).toContain('原文中的重要句子');
+        expect(markdownRenderCalls[0].sourcePath).toBe('fulltext.md');
+        expect(articleHost.textContent).toContain('第一卷');
+        expect(articleHost.textContent).toContain('原文中的重要句子在这里');
+    });
+
+    it('_renderLoadedCanvas highlights rendered markdown text, not raw markdown offsets', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_MARK';
+        view._paperEntry = {
+            key: 'PAPER_MARK',
+            title: 'Rendered offsets',
+            fulltext_path: 'fulltext.md',
+        };
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: {
+                    path: 'fulltext.md',
+                    exists: true,
+                    readable: true,
+                    text: '# Heading\n\n**Important anchor text** appears here.',
+                    error: null,
+                },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            {
+                state: 'ready',
+                paperKey: 'PAPER_MARK',
+                annotations: [
+                    {
+                        display: {
+                            selectedText: 'Important anchor text',
+                            comment: '',
+                            pageLabel: '1',
+                            type: 'highlight',
+                            color: '#ffd54f',
+                        },
+                        provenance: { source: 'zotero', sourceAnnotationKey: 'ann-rendered-1' },
+                        pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    },
+                ],
+            }
+        );
+
+        const mark = contentEl.querySelector('mark[data-anchor-id]');
+        expect(mark).toBeTruthy();
+        expect(mark.textContent).toBe('Important anchor text');
+        expect(mark.closest('[data-canvas-role="article-host"]')).toBeTruthy();
+    });
+
+    it('_renderLoadedCanvas shows visible failure when MarkdownRenderer rejects', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_FAIL';
+        view._paperEntry = { key: 'PAPER_FAIL', title: 'Fail', fulltext_path: 'fulltext.md' };
+        markdownRenderImpl = async () => {
+            throw new Error('renderer exploded');
+        };
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: { path: 'fulltext.md', exists: true, readable: true, text: 'Body', error: null },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            { state: 'empty', paperKey: 'PAPER_FAIL', annotations: [] }
+        );
+
+        expect(contentEl.textContent).toContain('renderer exploded');
+        expect(contentEl.querySelector('[data-canvas-action="retry"]')).toBeTruthy();
+    });
+
     it('_renderLoadedCanvas sets _vm and _navigationState', () => {
         const { view } = makeCanvasView();
         view._paperKey = 'KEY_STATE';
@@ -789,6 +998,17 @@ describe('ANN13-04 Task 1 — Loaded canvas rendering', () => {
         });
         expect(view._vm).toBeTruthy();
         expect(view._navigationState).toBeTruthy();
+    });
+
+    it('escapes special characters before building data-id selectors', () => {
+        const { view, contentEl } = makeCanvasView();
+        const rawId = 'ann"quoted\\slash';
+        const card = document.createElement('div');
+        card.setAttribute('data-card-id', rawId);
+        contentEl.appendChild(card);
+
+        const found = contentEl.querySelector('[data-card-id="' + view._escapeSelectorValue(rawId) + '"]');
+        expect(found).toBe(card);
     });
 });
 

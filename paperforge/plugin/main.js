@@ -1,4 +1,4 @@
-const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon } = require('obsidian');
+const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon, MarkdownRenderer } = require('obsidian');
 const { exec, execFile, spawn, execFileSync } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
@@ -4425,6 +4425,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._connectorBoundMouseout = null;
         this._connectorBoundScroll = null;
         this._connectorBoundResize = null;
+        this._canvasLoadSeq = 0;
     }
 
     // ── ANN12-02: Runtime source loading ──
@@ -4606,9 +4607,11 @@ class PaperForgeReadingCanvasView extends ItemView {
 
         this._sessionController = canvas.createCanvasSessionController({
             paperKey: canvasCtx.ok ? canvasCtx.paperKey : null,
+            annotationLoader: canvas.createCanvasAnnotationLoader({ loadAnnotationsForPaper }),
         });
 
         this._renderCanvas(canvas);
+        this._loadAndRenderCanvas(canvas);
     }
 
     /**
@@ -4653,11 +4656,16 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     async onOpen() {
-        // Context is set via setPaperContext() — nothing extra needed.
+        if (!this._canvasContext && this.contentEl) {
+            const canvas = require('./src/canvas');
+            this._canvasContext = canvas.buildMissingCanvasContext('No paper context has been attached yet.');
+            this._renderCanvas(canvas);
+        }
     }
 
     async onClose() {
         this._cleanupNavigation();
+        this._canvasLoadSeq++;
         if (this._sessionController) {
             this._sessionController.teardown();
             this._sessionController = null;
@@ -4672,8 +4680,66 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._connectorFrameHandle = null;
     }
 
+    async _loadAndRenderCanvas(canvas) {
+        if (!this._canvasContext || !this._canvasContext.ok || !this._sessionController) {
+            return;
+        }
+        if (!this.app || !this.app.vault || !this.app.vault.adapter) {
+            return;
+        }
+
+        var capturedSeq = ++this._canvasLoadSeq;
+        var capturedKey = this._paperKey;
+        var vp = this.app.vault.adapter.basePath;
+        var plugin = this.app.plugins && this.app.plugins.plugins
+            ? this.app.plugins.plugins.paperforge
+            : null;
+        var pyResult = resolvePythonExecutable(vp, plugin && plugin.settings);
+
+        try {
+            var loaded = await Promise.all([
+                this._sessionController.loadAnnotations({
+                    pythonExe: pyResult.path,
+                    pythonExtraArgs: pyResult.extraArgs || [],
+                    cwd: vp,
+                    timeout: 30000,
+                }),
+                this._loadCanvasSourceInputs(this._paperEntry),
+            ]);
+
+            if (capturedSeq !== this._canvasLoadSeq || capturedKey !== this._paperKey) {
+                return;
+            }
+
+            var annotationState = loaded[0] || {
+                state: 'empty',
+                paperKey: capturedKey,
+                annotations: [],
+                message: 'No annotations found.',
+            };
+            annotationState.paperKey = capturedKey;
+            await this._renderLoadedCanvas(loaded[1], annotationState);
+        } catch (err) {
+            if (capturedSeq !== this._canvasLoadSeq || capturedKey !== this._paperKey) {
+                return;
+            }
+            canvas.renderCanvasFailure(this.contentEl, {
+                state: 'cli-error',
+                message: (err && err.message) || 'Failed to load Reading Canvas.',
+            });
+        }
+    }
+
     getNavigationState() {
         return this._navigationState;
+    }
+
+    _escapeSelectorValue(value) {
+        var text = value != null ? String(value) : '';
+        if (typeof CSS !== 'undefined' && CSS && typeof CSS.escape === 'function') {
+            return CSS.escape(text);
+        }
+        return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     }
 
     _initDelegatedEvents(contentEl) {
@@ -4879,7 +4945,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         var canvasRect = contentEl.getBoundingClientRect();
 
         // Card endpoint: query by data-card-id
-        var cardEl = contentEl.querySelector('[data-card-id="' + candidate.cardId + '"]');
+        var cardEl = contentEl.querySelector('[data-card-id="' + this._escapeSelectorValue(candidate.cardId) + '"]');
         if (!cardEl) {
             var canvas4 = require('./src/canvas');
             canvas4.updateCanvasConnectorLayer(this._connectorLayerEl, null);
@@ -4889,7 +4955,7 @@ class PaperForgeReadingCanvasView extends ItemView {
 
         // Anchor endpoint: query by data-anchor-id + data-anchor-status="exact" (D-03/D-04)
         var anchorEl = contentEl.querySelector(
-            '[data-anchor-id="' + candidate.anchorId + '"][data-anchor-status="exact"]'
+            '[data-anchor-id="' + this._escapeSelectorValue(candidate.anchorId) + '"][data-anchor-status="exact"]'
         );
         if (!anchorEl) {
             var canvas5 = require('./src/canvas');
@@ -4945,7 +5011,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             var next = nav.reduceSourceSelection(this._navigationState || nav.createInitialNavState(), sourceCard);
             this._applyCardNavigationState(next);
             if (next.selectedCardId) {
-                var focusEl = this.contentEl.querySelector('[data-card-id="' + next.selectedCardId + '"]');
+                var focusEl = this.contentEl.querySelector('[data-card-id="' + this._escapeSelectorValue(next.selectedCardId) + '"]');
                 if (focusEl) focusEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
             return;
@@ -4991,7 +5057,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             }
         }
         if (nextState.sourceFocusTargetId && nextState.navSource === 'card') {
-            var targetEl = this.contentEl.querySelector('[data-card-id="' + nextState.sourceFocusTargetId + '"]');
+            var targetEl = this.contentEl.querySelector('[data-card-id="' + this._escapeSelectorValue(nextState.sourceFocusTargetId) + '"]');
             if (targetEl) {
                 targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
@@ -5000,7 +5066,30 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._scheduleConnectorUpdate();
     }
 
-    _renderLoadedCanvas(sourceInputs) {
+    _resolveRenderedHighlightAnchors(canvas, article, vm) {
+        var text = article && article.textContent ? article.textContent : '';
+        if (!text || !vm || !Array.isArray(vm.highlights)) return [];
+        return vm.highlights.map(function (card) {
+            var selected = card && card.selectedText ? String(card.selectedText) : '';
+            var matches = selected ? canvas.findNormalizedSourceMatches(text, selected) : [];
+            if (matches.length !== 1) {
+                return {
+                    id: card && card.id,
+                    renderedStart: null,
+                    renderedEnd: null,
+                    color: card && card.color,
+                };
+            }
+            return {
+                id: card.id,
+                renderedStart: matches[0].rawStart,
+                renderedEnd: matches[0].rawEnd,
+                color: card.color,
+            };
+        });
+    }
+
+    async _renderLoadedCanvas(sourceInputs, annotationState) {
         var canvas = require('./src/canvas');
         var contentEl = this.contentEl;
         contentEl.empty();
@@ -5011,10 +5100,57 @@ class PaperForgeReadingCanvasView extends ItemView {
         var sourceBlocks = sourceModel && sourceModel.text
             ? canvas.buildSourceBlocks(sourceModel.text, sourceModel.sourceKind)
             : [];
-        var annState = { state: 'ready', paperKey: this._paperKey, annotations: [] };
+        var annState = annotationState || { state: 'empty', paperKey: this._paperKey, annotations: [] };
+        annState.paperKey = this._paperKey;
         var vm = canvas.buildCanvasCardViewModel(annState, { sourceModel: sourceModel });
-        canvas.renderCanvasView(contentEl, vm);
-        canvas.renderCanvasSourceSurface(contentEl, sourceBlocks, (vm.cards || []).map(function (c) { return c.anchor; }));
+        var shellRefs = canvas.renderReadingCanvasShell(contentEl, {
+            unresolvedCount: vm.unresolvedCount || 0,
+        });
+        if (sourceModel && sourceModel.status === canvas.SOURCE_STATES.UNAVAILABLE) {
+            canvas.renderCanvasSourceSurface(shellRefs.articleHost, [], (vm.cards || []).map(function (c) { return c.anchor; }), {
+                unavailable: true,
+                reason: sourceModel.reason,
+            });
+        } else {
+            var markdownText = sourceModel && sourceModel.text ? sourceModel.text : '';
+            var sourcePath = sourceModel && sourceModel.sourceKind === canvas.SOURCE_KINDS.NOTE
+                ? sourceModel.notePath
+                : sourceModel.fulltextPath;
+            var renderResult = await canvas.renderMarkdownSurface({
+                host: shellRefs.articleHost,
+                markdown: markdownText,
+                sourcePath: sourcePath || '',
+                renderMarkdown: function (markdown, article, pathValue) {
+                    return MarkdownRenderer.render(this.app, markdown, article, pathValue || '', this);
+                }.bind(this),
+            });
+            if (!renderResult || renderResult.state !== 'ready') {
+                var err = renderResult && renderResult.error;
+                canvas.renderCanvasFailure(contentEl, {
+                    state: 'render-error',
+                    message: (err && err.message) || 'Could not render Reading Canvas.',
+                });
+                this._vm = vm;
+                return;
+            }
+            var domAnchors = this._resolveRenderedHighlightAnchors(canvas, renderResult.article, vm);
+            var highlightResult = canvas.applyDomHighlights(renderResult.article, domAnchors);
+            if (highlightResult && Array.isArray(highlightResult.unresolved) && highlightResult.unresolved.length > 0) {
+                vm.unresolved = (vm.unresolved || []).concat(highlightResult.unresolved.map(function (id) {
+                    return {
+                        id: id,
+                        selectedText: id,
+                        comment: 'Could not place this annotation in the rendered text.',
+                    };
+                }));
+                vm.unresolvedCount = vm.unresolved.length;
+            }
+        }
+        if (vm.lanes) {
+            canvas.renderCanvasCardLanes(shellRefs.leftRail, { left: vm.lanes.left || [], right: [] });
+            canvas.renderCanvasCardLanes(shellRefs.rightRail, { left: [], right: vm.lanes.right || [] });
+        }
+        canvas.renderUnresolvedDrawer(shellRefs.drawer, vm.unresolved || []);
         this._vm = vm;
         this._navigationState = canvas.createInitialNavState();
         this._initDelegatedEvents(contentEl);
@@ -5038,7 +5174,7 @@ class PaperForgeReadingCanvasView extends ItemView {
     static async open(plugin, paperKey, entry) {
         const leaves = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE_READING_CANVAS);
         if (leaves.length > 0) {
-            const view = leaves[0].view;
+            const view = await PaperForgeReadingCanvasView._waitForLeafView(leaves[0]);
             if (view && view.setPaperContext) {
                 view.setPaperContext(paperKey, entry);
             }
@@ -5051,12 +5187,22 @@ class PaperForgeReadingCanvasView extends ItemView {
                 type: VIEW_TYPE_PAPERFORGE_READING_CANVAS,
                 active: true,
             });
-            const view = leaf.view;
+            const view = await PaperForgeReadingCanvasView._waitForLeafView(leaf);
             if (view && view.setPaperContext) {
                 view.setPaperContext(paperKey, entry);
             }
             plugin.app.workspace.revealLeaf(leaf);
         }
+    }
+
+    static async _waitForLeafView(leaf) {
+        for (var i = 0; i < 10; i++) {
+            if (leaf && leaf.view && typeof leaf.view.setPaperContext === 'function') {
+                return leaf.view;
+            }
+            await new Promise(function (resolve) { setTimeout(resolve, 0); });
+        }
+        return leaf && leaf.view ? leaf.view : null;
     }
 }
 
