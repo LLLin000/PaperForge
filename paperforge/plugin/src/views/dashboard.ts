@@ -51,11 +51,6 @@ import {
   restoreVersion,
   compareVersions,
 } from "../services/version-history";
-import {
-  initDatabase,
-  searchMetadata,
-  type SearchResultItem,
-} from "../services/db";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -101,8 +96,6 @@ export class PaperForgeStatusView extends ItemView {
   _searchInput: HTMLInputElement | null = null;
   _searchResultsEl: HTMLElement | null = null;
   _searchTimer: ReturnType<typeof setTimeout> | undefined = undefined;
-  _sqlJsInitialized: boolean = false;
-  _sqlJsFailed: boolean = false;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -2396,7 +2389,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-search-results",
     });
 
-    // Detect @ mode prefix + debounced metadata search via sql.js
+    // Detect @ mode prefix + debounced metadata search
     this._searchInput.addEventListener("input", () => {
       const val = this._searchInput?.value || "";
       if (val.startsWith("@") && !val.startsWith("@ ")) {
@@ -2411,7 +2404,7 @@ export class PaperForgeStatusView extends ItemView {
       // Debounced metadata search for non-@ queries
       if (!val.startsWith("@") && val.trim()) {
         this._searchTimer = setTimeout(() => {
-          this.executeSearch({ source: "sqljs" });
+          this.executeSearch();
         }, 200);
       }
     });
@@ -2424,12 +2417,12 @@ export class PaperForgeStatusView extends ItemView {
           clearTimeout(this._searchTimer);
           this._searchTimer = undefined;
         }
-        this.executeSearch({ source: "cli" });
+        this.executeSearch();
       }
     });
   }
 
-  async executeSearch(options: { source?: "auto" | "cli" | "sqljs" } = {}) {
+  async executeSearch() {
     if (!this._searchInput || !this._searchResultsEl) return;
     const raw = this._searchInput.value.trim();
     if (!raw) return;
@@ -2440,7 +2433,7 @@ export class PaperForgeStatusView extends ItemView {
 
     const mode = isDeep ? "retrieve" : "search";
 
-    // Resolve vault path (used by both sql.js and CLI paths)
+    // Resolve vault path for CLI search
     const adapter = this.app.vault.adapter;
     let vaultPath = "";
     if (adapter && typeof adapter === "object" && "basePath" in adapter) {
@@ -2449,34 +2442,7 @@ export class PaperForgeStatusView extends ItemView {
     }
 
     this._searchResultsEl.empty();
-
-    // ── sql.js metadata search path (non-@ queries only) ──
-    if (
-      mode === "search" &&
-      (options.source === "auto" || options.source === "sqljs")
-    ) {
-      if (vaultPath) {
-        try {
-          if (!this._sqlJsInitialized && !this._sqlJsFailed) {
-            await initDatabase(vaultPath);
-            this._sqlJsInitialized = true;
-          }
-          if (this._sqlJsInitialized) {
-            const results = searchMetadata(query, 20);
-            if (results !== null) {
-              this.renderSearchResults(results, false);
-              return;
-            }
-          }
-        } catch (e) {
-          console.error("PaperForge sql.js search failed:", e);
-          this._sqlJsFailed = true;
-        }
-      }
-      // sql.js unavailable — fall through to CLI
-    }
-
-    // ── CLI search path (deep search or sql.js fallback) ──
+    // ── CLI search path (deep search only) ──
     this._searchResultsEl.createEl("div", {
       cls: "paperforge-search-loading",
       text: "Searching...",
@@ -2515,10 +2481,10 @@ export class PaperForgeStatusView extends ItemView {
         undefined,
         undefined
       );
-
+    const deepFlag = mode === "retrieve" ? ["--deep"] : [];
     const child = spawn(
       pythonExe,
-      [...pyExtra, "-m", "paperforge", mode, query, "--json"],
+      [...pyExtra, "-m", "paperforge", mode, query, ...deepFlag, "--json"],
       { cwd: vaultPath, timeout: 30000 }
     );
 
@@ -2561,11 +2527,9 @@ export class PaperForgeStatusView extends ItemView {
           const d = (parsed as Record<string, unknown>).data;
           if (d && typeof d === "object") {
             const dd = d as Record<string, unknown>;
-            // search output: data.matches
+            // Unified PFResult v1: data.matches
             if ("matches" in dd && Array.isArray(dd.matches)) {
               results = dd.matches as unknown[];
-            } else if ("results" in dd && Array.isArray(dd.results)) {
-              results = dd.results as unknown[];
             }
           }
         }
@@ -2674,21 +2638,10 @@ export class PaperForgeStatusView extends ItemView {
         cls: "paperforge-search-result-meta",
       });
 
-      if (typeof rec["authors"] === "string") {
+      if (typeof rec["first_author"] === "string" && rec["first_author"]) {
         meta.createEl("span", {
           cls: "paperforge-search-result-author",
-          text: rec["authors"],
-        });
-      } else if (Array.isArray(rec["authors"])) {
-        meta.createEl("span", {
-          cls: "paperforge-search-result-author",
-          text: (rec["authors"] as string[]).slice(0, 3).join("; "),
-        });
-      }
-      if (typeof rec["year"] === "number" || typeof rec["year"] === "string") {
-        meta.createEl("span", {
-          cls: "paperforge-search-result-year",
-          text: String(rec["year"]),
+          text: rec["first_author"],
         });
       }
       if (typeof rec["journal"] === "string" && rec["journal"]) {
@@ -2727,10 +2680,10 @@ export class PaperForgeStatusView extends ItemView {
       // @ mode: matched text
       if (
         isDeep &&
-        typeof rec["matched_text"] === "string" &&
-        rec["matched_text"]
+        typeof rec["text"] === "string" &&
+        rec["text"]
       ) {
-        const mt = rec["matched_text"] as string;
+        const mt = rec["text"] as string;
         card.createEl("div", {
           cls: "paperforge-search-result-source",
           text: mt.length > 300 ? mt.slice(0, 300) + "..." : mt,
