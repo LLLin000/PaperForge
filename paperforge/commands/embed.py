@@ -17,6 +17,7 @@ from paperforge.embedding import (
     mark_vector_build_state,
     read_vector_build_state,
 )
+from paperforge.embedding.dim_detect import ensure_vec_tables
 from paperforge.embedding.builder import (
     PaperEmbeddingJob,
     encode_paper_job,
@@ -300,12 +301,12 @@ def run(args: argparse.Namespace) -> int:
         if _db_path.exists():
             _conn = get_connection(_db_path)
             try:
-                from paperforge.memory.db import ensure_vec_extension
-                from paperforge.memory.schema import ensure_schema
                 ensure_vec_extension(_conn)
-                for _t in ("vec_fulltext", "vec_body", "vec_objects",
-                           "vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
+                # Drop and recreate vec0 tables first with correct dimension
+                ensure_vec_tables(_conn, vault)
+                for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
                     _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
+                # ensure_schema recreates meta tables (vec v-tables already correct from ensure_vec_tables)
                 ensure_schema(_conn)
                 _conn.commit()
             except Exception:
