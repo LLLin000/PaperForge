@@ -227,7 +227,9 @@ export function isVectorReady(vaultPath: string): boolean {
   if (!s.deps_installed) return false;
   if (!s.db_exists) return false;
   if (s.healthy === false) return false;
-  if (s.chunk_count === 0) return false;
+  // Use total_chunks (body + object + fulltext) — chunk_count alone is vec_fulltext_meta which may be empty
+  const total = (s.chunk_count ?? 0) + ((s.body_chunk_count as number) ?? 0) + ((s.object_chunk_count as number) ?? 0);
+  if (total === 0) return false;
   return true;
 }
 
