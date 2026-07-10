@@ -287,20 +287,34 @@ def run(args: argparse.Namespace) -> int:
                 print(msg)
                 mark_vector_build_state(vault, status="idle", current=0, pid=0)
                 resume = False
+        # 门二：no vec0 rows → fresh build（不是 error）
+        from paperforge.memory.db import (
+            ensure_vec_extension,
+            get_connection,
+            get_memory_db_path,
+        )
+        from paperforge.memory.schema import ensure_schema
 
-        # 门二：missing DB → fresh build（不是 error）
-        db_path = get_vector_db_path(vault)
-        if not db_path.exists():
+        _db_path = get_memory_db_path(vault)
+        _any_rows = False
+        if _db_path.exists():
+            _conn = get_connection(_db_path)
+            try:
+                ensure_vec_extension(_conn)
+                ensure_schema(_conn)
+                for _mt in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
+                    _r = _conn.execute(f"SELECT COUNT(*) AS cnt FROM {_mt}").fetchone()
+                    if _r and _r["cnt"] > 0:
+                        _any_rows = True
+                        break
+            except Exception:
+                pass
+            finally:
+                _conn.close()
+        if not _any_rows:
             resume = False
         else:
-            # 门三：corrupted DB
-            ok, err = _assert_collections_healthy(vault)
-            if not ok:
-                msg = f"Vector DB corrupted ({err}). Use --force to rebuild."
-                print(msg)
-                return 1
-
-            # 过三道门后，正常 model check
+            # 门三：过三道门后，正常 model check
             stored_model = build_state.get("model", "")
             if stored_model and _current_model and stored_model != _current_model:
                 msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
