@@ -159,32 +159,34 @@ def run(args: argparse.Namespace) -> int:
     if sub == "stop":
         state = read_vector_build_state(vault)
         pid = state.get("pid", 0)
-        if pid and state["status"] == "running":
-            import signal
-
-            try:
-                os.kill(pid, signal.SIGTERM)
-            except Exception as exc:
-                result = PFResult(
-                    ok=False,
-                    command="embed stop",
-                    version=PF_VERSION,
-                    error=PFError(code=ErrorCode.INTERNAL_ERROR, message=f"Failed to stop embed build: {exc}"),
-                    data={"state": "running", "pid": pid},
-                )
-                if args.json:
-                    print(result.to_json())
-                else:
-                    print(result.error.message, file=sys.stderr)
-                return 1
+        _st = state.get("status", "")
+        if pid and _st in ("running", "stopping"):
             mark_vector_build_state(vault, status="stopping", message="Stop requested")
-            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "stopping", "pid": pid})
+            # Wait for build process to notice the flag and exit (8s timeout)
+            import time as _time
+            _deadline = _time.time() + 8.0
+            while _time.time() < _deadline:
+                if not _pid_alive(pid):
+                    break
+                _time.sleep(0.2)
+            # Force-kill if still alive after timeout
+            if _pid_alive(pid):
+                import signal
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except Exception:
+                    pass
+            # Settle to idle, preserving progress
+            _current = read_vector_build_state(vault).get("current", state.get("current", 0))
+            mark_vector_build_state(vault, status="idle", current=_current, pid=0, message="")
+            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "stopped"})
         else:
             result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "idle"})
         if args.json:
             print(result.to_json())
         else:
-            print("Stop requested." if result.data["state"] == "stopping" else "No active build.")
+            msg = "Build stopped." if result.data["state"] == "stopped" else "No active build."
+            print(msg)
         return 0
 
 
@@ -287,7 +289,6 @@ def run(args: argparse.Namespace) -> int:
             if stale:
                 msg = "Previous build appears stale (crashed?). Recovering and rebuilding from scratch."
                 print(msg)
-                from paperforge.embedding.build_state import mark_vector_build_state
                 mark_vector_build_state(vault, status="idle", current=0, pid=0)
                 resume = False
 
@@ -396,6 +397,11 @@ def run(args: argparse.Namespace) -> int:
                 key = entry.get("zotero_key")
                 if not key:
                     continue
+
+                # ponytail: check cancellation flag between papers
+                if read_vector_build_state(vault).get("status") == "stopping":
+                    logger.info("Build cancelled at paper %s", key)
+                    break
 
                 has_body = _has_body_units_in_db(vault, key)
                 has_object = _has_object_units_in_db(vault, key)
@@ -580,6 +586,13 @@ def run(args: argparse.Namespace) -> int:
         )
         print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
         return 1
+
+
+    # Check if we stopped or were cancelled — exit cleanly without marking completed
+    if read_vector_build_state(vault).get("status") == "stopping":
+        logger.info("Build stopped, exiting cleanly")
+        print("EMBED_DONE", flush=True)
+        return 0
 
     mark_vector_build_state(
         vault,
