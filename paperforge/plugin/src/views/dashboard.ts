@@ -2788,7 +2788,7 @@ export class PaperForgeStatusView extends ItemView {
     const deepFlag = mode === "retrieve" ? ["--deep"] : [];
     const child = spawn(
       pythonExe,
-      [...pyExtra, "-m", "paperforge", mode, query, ...deepFlag, "--json"],
+      [...pyExtra, "-m", "paperforge", "--vault", vaultPath, mode, query, ...deepFlag, "--json"],
       { cwd: vaultPath, timeout: 30000 }
     );
 
