@@ -39,6 +39,55 @@ describe('classifyError', () => {
         expect(result.action).toBe('retry');
     });
 
+
+    it('classifies NO_PYTHON as no_python with open-setup action', () => {
+        const result = classifyError('NO_PYTHON');
+        expect(result.type).toBe('no_python');
+        expect(result.recoverable).toBe(true);
+        expect(result.action).toBe('open-setup');
+    });
+
+    it('classifies VECTOR_NOT_BUILT as vectors_not_built with open-vector-settings action', () => {
+        const result = classifyError('VECTOR_NOT_BUILT');
+        expect(result.type).toBe('vectors_not_built');
+        expect(result.recoverable).toBe(true);
+        expect(result.action).toBe('open-vector-settings');
+    });
+
+    it('classifies VECTOR_CORRUPTED as vectors_corrupted with force-rebuild action', () => {
+        const result = classifyError('VECTOR_CORRUPTED');
+        expect(result.type).toBe('vectors_corrupted');
+        expect(result.recoverable).toBe(true);
+        expect(result.action).toBe('force-rebuild');
+    });
+
+    it('classifies MODEL_CHANGED as model_changed with rebuild-vectors action', () => {
+        const result = classifyError('MODEL_CHANGED');
+        expect(result.type).toBe('model_changed');
+        expect(result.recoverable).toBe(true);
+        expect(result.action).toBe('rebuild-vectors');
+    });
+
+    it('classifies BACKEND_UNAVAILABLE as backend_unavailable with run-doctor action', () => {
+        const result = classifyError('BACKEND_UNAVAILABLE');
+        expect(result.type).toBe('backend_unavailable');
+        expect(result.recoverable).toBe(true);
+        expect(result.action).toBe('run-doctor');
+    });
+
+    it('classifies TIMEOUT as timeout with retry action', () => {
+        const result = classifyError('TIMEOUT');
+        expect(result.type).toBe('timeout');
+        expect(result.recoverable).toBe(true);
+        expect(result.action).toBe('retry');
+        expect(result.message).toContain('Search');
+    });
+
+    it('classifies INTERNAL_ERROR as internal_error not recoverable', () => {
+        const result = classifyError('INTERNAL_ERROR');
+        expect(result.type).toBe('internal_error');
+        expect(result.recoverable).toBe(false);
+    });
     it('classifies unknown error strings as unknown', () => {
         const result = classifyError('SOME_RANDOM_ERROR');
         expect(result.type).toBe('unknown');

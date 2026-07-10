@@ -147,6 +147,13 @@ export function classifyError(errorCode: string): ErrorClassification {
         "pip-failed": { type: "pip_install_failure", message: "pip install command failed", recoverable: true },
         ETIMEDOUT: { type: "timeout", message: "Subprocess timed out", recoverable: true, action: "retry" },
         timeout: { type: "timeout", message: "Subprocess timed out", recoverable: true, action: "retry" },
+        NO_PYTHON: { type: "no_python", message: "Python executable not found", recoverable: true, action: "open-setup" },
+        VECTOR_NOT_BUILT: { type: "vectors_not_built", message: "Vector index has not been built yet", recoverable: true, action: "open-vector-settings" },
+        VECTOR_CORRUPTED: { type: "vectors_corrupted", message: "Vector index is corrupted", recoverable: true, action: "force-rebuild" },
+        MODEL_CHANGED: { type: "model_changed", message: "Embedding model has changed since vectors were built", recoverable: true, action: "rebuild-vectors" },
+        BACKEND_UNAVAILABLE: { type: "backend_unavailable", message: "Python CLI search backend is not responding", recoverable: true, action: "run-doctor" },
+        TIMEOUT: { type: "timeout", message: "Search timed out", recoverable: true, action: "retry" },
+        INTERNAL_ERROR: { type: "internal_error", message: "An internal error occurred", recoverable: false },
     };
     const match = patterns[code];
     if (match) return { ...match };
