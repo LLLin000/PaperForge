@@ -1,53 +1,43 @@
 # OCR-v2 Active Queue
-> Status: Embedding pipeline overhaul complete. PR9A-C all merged to `master`.
-> Last updated: 2026-07-08
+> Status: OCR-v2 remains stable; Retrieval Experience recovery is now the active blocking workstream.
+> Last updated: 2026-07-10
 
-## Completed (this session)
+## Current checkpoint
 
-### PR9A: Resume & Rebuild Correctness
-- OCR rebuild `--all`: version/artifact-based selection via `_needs_derived_rebuild()`
-- `--status` and explicit keys: manual override, no version filter
-- `.done.{key}` checkpoint markers removed from selection
-- `_apply_post_rebuild_version_flags` now writes `derived_version`
-- Embed resume entry: three-gate protection (stale state / missing DB / corrupt DB)
-- `_pid_alive()` cross-platform PID health check
-- 14 regression tests
+- [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) is the canonical recovery map.
+- [Inventory the live retrieval architecture and contract drift](https://github.com/LLLin000/PaperForge/issues/53) is resolved with a reviewed [architecture audit](https://gist.github.com/LLLin000/aaf5505a991e85ad9bb4cafa922f48bf).
+- Source Corpus data remains authoritative and must be preserved. FTS indexes, embeddings, vec0 tables, and companion metadata are disposable Retrieval Artifacts.
+- No retrieval implementation fix or production build-success claim was made at this checkpoint.
 
-### PR9B: Embed Parallel Encode
-- Four dataclasses: `EmbeddingPayload`, `EncodedPayload`, `PaperEmbeddingJob`, `PaperEncodedBundle`
-- `prepare_legacy/body/object_payload` — prepare phase extraction
-- `encode_payload` / `encode_paper_job` — worker-thread-safe encode
-- `write_encoded_payload` — ChromaDB serial write
-- Existing `embed_body_units`/`embed_paper` refactored as wrappers
-- 23 regression tests
+## Confirmed blocking findings
 
-### Provider Fix
-- Switched `OpenAICompatibleProvider` from `openai` client to `requests`
-- Fixed SiliconFlow NAT connection hang (openai-python#3269)
-- 0.3s vs 2.3s init, no more hanging
+1. sql.js metadata search cannot prepare its query because `paper_fts.year` does not exist.
+2. The plugin `@` path invokes `retrieve` without `--deep`.
+3. Retrieve emits `data.chunks`; the plugin accepts only `data.matches` or `data.results`.
+4. Embed build writes new vec0 rows and then deletes every row for that paper.
+5. Resume and force still use the legacy Chroma vectors directory as their active-store gate/cleanup target.
+6. SQLite `build_state` is live truth, but the plugin renders a nested copy from `vector-runtime-state.json`.
+7. The repository and Literature-hub plugin bundles have different checksums; the exact deployed delta is not yet resolved.
 
-### PR9C: Streaming Embed Pipeline
-- Sliding-window pipeline: prepare + submit bounded in-flight papers
-- `wait(FIRST_COMPLETED)` in main thread for encode results
-- `processed_count` = skip + embedded, monotonic EMBED_PROGRESS
-- Resume skip and no-payload paths also advance processed_count
-- Encode failure fails closed (return 1, no silent skip)
-- `write_vector_build_state` fallback when file locked (Windows)
-- 4 integration tests
+## Frontier
 
-### Plugin Fixes
-- Status text shows total chunks across all three collections
-- "chunks embedded" text below progress bar also uses total
+- [ ] [Capture a non-destructive retrieval failure matrix](https://github.com/LLLin000/PaperForge/issues/49)
+- [ ] [Audit source-to-vault deployment parity](https://github.com/LLLin000/PaperForge/issues/47)
 
-## Test Status
-| Suite | Result |
-|-------|--------|
-| Python unit tests (PR9A) | 14/14 pass |
-| Python unit tests (PR9B) | 23/23 pass |
-| Python unit tests (PR9C) | 4/4 pass |
-| Plugin tests | 58/58 pass |
-| Full vault embed build | 729/729 papers, 20,655 chunks |
+These tickets are independent and may run in parallel. They must not mutate Source Corpus data or apply production fixes.
 
-## Immediate Next
-- [ ] Full vault embed build (`--force`) on fresh ChromaDB
-- [ ] Verify chunk counts in Obsidian plugin display
+## Blocked after the frontier
+
+- [ ] [Choose the canonical retrieval architecture and ownership boundary](https://github.com/LLLin000/PaperForge/issues/46)
+- [ ] [Specify the retrieval build lifecycle and crash recovery semantics](https://github.com/LLLin000/PaperForge/issues/52)
+- [ ] [Specify metadata and deep-search contracts](https://github.com/LLLin000/PaperForge/issues/54)
+- [ ] [Define safe repair, rebuild, and model-change policy](https://github.com/LLLin000/PaperForge/issues/51)
+- [ ] [Prototype retrieval panel states and recovery flows](https://github.com/LLLin000/PaperForge/issues/48)
+- [ ] [Define the retrieval acceptance matrix and release gate](https://github.com/LLLin000/PaperForge/issues/50)
+
+## Verification status
+
+- Read-only Literature-hub DB probe confirmed that `paper_fts` has no `year` column and the sql.js query fails with `OperationalError: no such column: year`.
+- Refreshed code-graph traces confirmed that `get_vector_backend()` is tests-only while production retrieval accesses vec0 directly.
+- Evidence review confirmed the execution maps and P0 contract failures; build-control-only and explicit-CLI-deep findings were downgraded below P0.
+- No test suite was run because this checkpoint is an architecture investigation, not an implementation completion claim.

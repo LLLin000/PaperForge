@@ -1,11 +1,11 @@
-> **Branch:** `master` | **Last Updated:** 2026-07-09
-> **Active work:** sqlite-vec migration complete. ChromaDB replaced with sqlite-vec for vector storage. Embedding provider switched to openai SDK. Hash-based OCR change detection deployed.
+> **Branch:** `master` | **Last Updated:** 2026-07-10
+> **Active work:** Retrieval Experience recovery Wayfinder active. The live-architecture inventory is complete; non-destructive failure capture and source-to-vault deployment parity are the current frontier.
 >
 > ---
 >
-> **Current state:** All 10 open issues implemented and merged to master. ChromaDB fully replaced with sqlite-vec (vec0 k-NN search, companion meta tables, build_state in SQLite). Embedding provider uses openai SDK (requests fallback available). Hash-based OCR staleness detection (two-tier mtime+xxhash). E2E fixture PDFs + test scaffolding ready. Schema at v6. Test suite: 76 passed across embed/OCR/schema/version/provider suites.
+> **Current state:** OCR-v2 status is unchanged. Retrieval is **not production-ready** despite the sqlite-vec/search implementation issues being closed: the architecture audit confirmed broken M-search SQL, an unreachable `@` hybrid path, an incompatible retrieve result envelope, write-then-delete vector replacement, legacy Chroma resume/force gates, and SQLite/JSON build-state split-brain. No production fix or test-suite claim was made in this investigation session.
 >
-> Next: push origin, CI validation, downstream tickets (#21 display, #22 cleanup, remaining E2E assertions).
+> Next: resolve [Capture a non-destructive retrieval failure matrix](https://github.com/LLLin000/PaperForge/issues/49) and [Audit source-to-vault deployment parity](https://github.com/LLLin000/PaperForge/issues/47), then unblock [Choose the canonical retrieval architecture and ownership boundary](https://github.com/LLLin000/PaperForge/issues/46).
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -69,6 +69,10 @@ raw observations → structural signatures → stable anchors/families → zone 
 | **Quality indicators** (Layer 2) | ✅ `paperforge/worker/ocr_quality.py` — `build_quality_indicators()` with 5 normalizers |
 | **Readiness policy** (Layer 2) | ✅ `evaluate_readiness()` + YAML policy evaluator with deep-merge, hard-red, use-case gates |
 | **Feedback sidecar** (Layer 2) | ✅ `paperforge/worker/ocr_quality_feedback.py` — per-mark hash, stale detection, no UI |
+| **Retrieval architecture** | 🔴 Wayfinder recovery active; [live architecture audit](https://gist.github.com/LLLin000/aaf5505a991e85ad9bb4cafa922f48bf) completed |
+| **M metadata search** | 🔴 sql.js selects nonexistent `paper_fts.year`; CLI fallback is the only viable arm |
+| **@ deep search** | 🔴 plugin omits `--deep` and discards CLI `data.chunks` |
+| **Vector build control** | 🔴 new vec0 rows are deleted after write; resume/force still gate on legacy Chroma path; UI reads stale JSON build state |
 
 ### 2.3 Fix Status
 
@@ -125,6 +129,10 @@ raw observations → structural signatures → stable anchors/families → zone 
 - `paperforge/worker/ocr_quality_feedback.py` — human feedback sidecar (per-mark hash, stale detection)
 22 new tests. Contract polish: `status/gates/reasons` output shape, hash validation, user override bypass.
 
+### Retrieval Experience Recovery
+
+[Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) is the active recovery map. [Inventory the live retrieval architecture and contract drift](https://github.com/LLLin000/PaperForge/issues/53) established that current failures are cross-contract defects, not one vector-backend bug. The next frontier is runtime failure evidence plus deployed-artifact parity; implementation remains intentionally paused until the canonical backend, build lifecycle, query/result contract, repair policy, UI states, and acceptance gate are decided.
+
 ### Layer 3: Plugin UI
 `PaperForgeStatusView` dashboard is 2300+ lines in one file. Status display, OCR maintenance UI, and user-facing health presentation not yet polished.
 
@@ -134,14 +142,20 @@ raw observations → structural signatures → stable anchors/families → zone 
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. ✅ **Layout-category truth audit (Workstream X)** — 6 bug patterns identified.
-2. ✅ **Layer 2: OCR Quality Report + Readiness Policy** — `96fd9771`.
-3. 🟡 **Plugin UI polish** — dashboard cleanup, status clarity
-4. 🟡 **Downstream tooling** — section-aware chunking, figure/table separate handling
-5. ⏳ **Architecture cleanup** — deferred post-release
-6. ⏳ **Compatibility naming cleanup** — deferred post-release
+1. 🔴 **Retrieval recovery Wayfinder** — architecture inventory resolved; implementation paused until decisions are complete.
+2. 🟡 **Runtime evidence frontier** — non-destructive Literature-hub/test-vault failure matrix.
+3. 🟡 **Deployment parity frontier** — Python/plugin/source/deployed artifact audit.
+4. ⏳ **Canonical retrieval architecture** — blocked by the three evidence tickets.
+5. 🟡 **Plugin UI polish** — retrieval UI behavior will follow the lifecycle/query contracts.
+6. 🟡 **Downstream tooling** — section-aware chunking, figure/table separate handling.
+7. ⏳ **Compatibility naming cleanup** — deferred post-release.
 ### 4.1 Immediate Next Steps
 
+- [x] [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45)
+- [x] [Inventory the live retrieval architecture and contract drift](https://github.com/LLLin000/PaperForge/issues/53)
+- [ ] [Capture a non-destructive retrieval failure matrix](https://github.com/LLLin000/PaperForge/issues/49)
+- [ ] [Audit source-to-vault deployment parity](https://github.com/LLLin000/PaperForge/issues/47)
+- [ ] [Choose the canonical retrieval architecture and ownership boundary](https://github.com/LLLin000/PaperForge/issues/46)
 - [x] #20 Hash-based OCR change detection
 - [x] #31 OpenAI SDK embedding provider
 - [x] #33 E2E test fixtures (3 synthetic PDFs)
@@ -290,6 +304,8 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-08 | sqlite-vec replaces ChromaDB for vector storage | ChromaDB HNSW index corruption, heavy deps (~100MB), and separate storage. sqlite-vec is ~1MB, stores vectors in same paperforge.db. Brute force at ~50k vectors <100ms. |
 | 2026-07-08 | E2E test fixtures as synthetic PDFs (PyMuPDF) instead of real arXiv PDFs | Avoids license/distribution issues; deterministic and fast to generate. |
 | 2026-07-09 | Schema v6: hash/policy columns in vec companion meta tables | Resume hash checks need body_units_hash, object_units_hash, retrieval_policy_version persisted alongside vectors. |
+| 2026-07-10 | Retrieval scope is the entire user experience, not only vec0 | M metadata search, `@` retrieval, build lifecycle, status, deployment, and persistence share contracts; auditing only the vector table would miss the observed failures. |
+| 2026-07-10 | Source Corpus is preserved; Retrieval Artifacts are disposable | Paper/OCR/structured/user-authored content is authoritative, while FTS indexes, embeddings, vector tables, and companion metadata may be cleared and rebuilt instead of migrated. |
 
 ---
 
@@ -384,6 +400,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-02 | Zone/role robustness completion — Figure caption prefix recovery + inline table fix + table matching audit | Figure caption prefix recovery from PDF text layer (`_recover_figure_heading_prefix`): 5S7UI34M 4→9 matched figures, 33→1 unmatched. Inline `<table>` HTML role fix: 650 blocks now `table_html` after rebuild (priority bug: raw_label=table fired before `<table>` check). Table matching audit: 620 remaining `media_asset` pending full rebuild. 585 figure/table/role tests pass. | §9.21 |
 | 2026-07-03 | Figure pipeline vnext cutover completed | Implemented all remaining vnext passes (composite parent, group/classic sequential, unresolved consolidation, accounting), expanded compare harness, curated 5-paper cutover corpus covering all 9 spec categories, generated diff review (improvement=2 / equivalent=2 / parity=1 / regression=0), updated legacy figure tests for vnext contract, and switched `build_figure_inventory(...)` wrapper to vnext on branch `feat/figure-pipeline-vnext`. Verification: 346 tests passed. | §9.22 |
 | 2026-07-03 | OCR pairing framework merge-unblock pass | Cleared the remaining merge blockers on `feat/ocr-pairing-framework`: moved figure-only rotation enrichment out of generic state, upgraded table cutover validation to semantic parity across 6 runnable real-paper fixtures including `37LK5T97`, and cleaned touched-file lint/format issues. Verification: 357 targeted tests passed; merge-ready. | §9.23 |
+| 2026-07-10 | Retrieval architecture Wayfinder inventory | Charted the end-to-end recovery map and resolved the live-architecture ticket. Confirmed four P0 contract breaks: invalid sql.js metadata SQL, missing `--deep`, ignored `data.chunks`, and build write-then-delete. Published the evidence audit; no production fix applied. | [Architecture audit](https://gist.github.com/LLLin000/aaf5505a991e85ad9bb4cafa922f48bf) |
 
 ## 9. Historical Detail Archive
 
