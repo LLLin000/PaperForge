@@ -235,6 +235,16 @@ CREATE_VEC_FULLTEXT = _vec_table_ddl("vec_fulltext")
 CREATE_VEC_BODY = _vec_table_ddl("vec_body")
 CREATE_VEC_OBJECTS = _vec_table_ddl("vec_objects")
 
+CREATE_VEC_FULLTEXT_META = """
+CREATE TABLE IF NOT EXISTS vec_fulltext_meta (
+  rowid INTEGER PRIMARY KEY,
+  paper_id TEXT NOT NULL,
+  chunk_index INTEGER,
+  text TEXT,
+  source TEXT
+);
+"""
+
 CREATE_VEC_BODY_META = """
 CREATE TABLE IF NOT EXISTS vec_body_meta (
   rowid INTEGER PRIMARY KEY,
