@@ -12,7 +12,6 @@ from paperforge.core.result import PFError, PFResult
 from paperforge.embedding import (
     delete_paper_vectors,
     get_embed_status,
-    get_vector_db_path,
     mark_vector_build_state,
     read_vector_build_state,
 )
@@ -324,16 +323,22 @@ def run(args: argparse.Namespace) -> int:
     _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
     if _force_rebuild:
         _gc.collect()
-        db_path = get_vector_db_path(vault)
-        if db_path.exists():
-            import shutil
-
-            shutil.rmtree(str(db_path), ignore_errors=True)
-            if db_path.exists():
-                import time
-
-                time.sleep(0.5)
-                shutil.rmtree(str(db_path), ignore_errors=True)
+        _db_path = get_memory_db_path(vault)
+        if _db_path.exists():
+            _conn = get_connection(_db_path)
+            try:
+                from paperforge.memory.db import ensure_vec_extension
+                from paperforge.memory.schema import ensure_schema
+                ensure_vec_extension(_conn)
+                ensure_schema(_conn)
+                for _t in ("vec_fulltext", "vec_body", "vec_objects",
+                           "vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
+                    _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
+                _conn.commit()
+            except Exception:
+                pass
+            finally:
+                _conn.close()
 
     mark_vector_build_state(
         vault,
@@ -570,7 +575,7 @@ def run(args: argparse.Namespace) -> int:
             deps_installed=True,
             deps_missing=None,
             py_version=sys.version.split()[0],
-            db_exists=get_vector_db_path(vault).exists(),
+            db_exists=get_memory_db_path(vault).exists(),
             chunk_count=_actual,
             body_chunk_count=0,
             object_chunk_count=0,
