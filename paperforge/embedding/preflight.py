@@ -17,16 +17,6 @@ def _preflight_check(vault: Path, settings: dict | None = None) -> dict:
             "fix": 'Run: pip install "paperforge[vector]"',
         }
 
-    # 2. chromadb package
-    try:
-        import chromadb  # noqa: F401
-    except ImportError:
-        return {
-            "ok": False,
-            "error": "chromadb is not installed",
-            "fix": 'Run: pip install "paperforge[vector]"',
-        }
-
     # 3. API key
     api_key = None
     if settings:
