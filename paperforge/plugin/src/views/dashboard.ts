@@ -51,11 +51,6 @@ import {
   restoreVersion,
   compareVersions,
 } from "../services/version-history";
-import {
-  initDatabase,
-  searchMetadata,
-  type SearchResultItem,
-} from "../services/db";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -101,8 +96,11 @@ export class PaperForgeStatusView extends ItemView {
   _searchInput: HTMLInputElement | null = null;
   _searchResultsEl: HTMLElement | null = null;
   _searchTimer: ReturnType<typeof setTimeout> | undefined = undefined;
-  _sqlJsInitialized: boolean = false;
-  _sqlJsFailed: boolean = false;
+  _searchState: string = "idle";
+  _searchMode: "M" | "@" = "M";
+  _searchResults: unknown[] | null = null;
+  _searchActiveIndex: number = -1;
+  _onKeyDown: ((e: KeyboardEvent) => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -134,8 +132,20 @@ export class PaperForgeStatusView extends ItemView {
     this._setupEventSubscriptions();
     this._fetchVersion();
     this._detectAndSwitch();
-  }
 
+    // Global "/" keyboard shortcut to focus search input
+    this._onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // Only focus search when not already in an input/textarea
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          this._searchInput?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", this._onKeyDown);
+  }
   async onClose() {
     if (this._modeSubscribers && this._modeSubscribers.length > 0) {
       for (const sub of this._modeSubscribers) {
@@ -151,6 +161,16 @@ export class PaperForgeStatusView extends ItemView {
       clearTimeout(this._leafChangeTimer);
       this._leafChangeTimer = null;
     }
+    // Remove global keydown listener
+    if (this._onKeyDown) {
+      document.removeEventListener("keydown", this._onKeyDown);
+      this._onKeyDown = null;
+    }
+    // Reset search state
+    this._searchState = "idle";
+    this._searchResults = null;
+    this._searchActiveIndex = -1;
+    this._searchTimer = undefined;
     this._cachedItems = null;
     this._cachedStats = null;
   }
@@ -187,7 +207,10 @@ export class PaperForgeStatusView extends ItemView {
       this._invalidateIndex();
       this._detectAndSwitch();
     });
-    this._messageEl = root.createEl("div", { cls: "paperforge-message" });
+    this._messageEl = root.createEl("div", {
+      cls: "paperforge-message",
+      attr: { "aria-live": "polite" },
+    });
     this._contentEl = root.createEl("div", { cls: "paperforge-content-area" });
   }
 
@@ -2396,51 +2419,361 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-search-results",
     });
 
-    // Detect @ mode prefix + debounced metadata search via sql.js
+    // Update placeholder from i18n on init
+    this._searchInput.placeholder = t("retrieval_search_placeholder");
+
+    // Detect @ mode prefix + debounced metadata search
     this._searchInput.addEventListener("input", () => {
       const val = this._searchInput?.value || "";
       if (val.startsWith("@") && !val.startsWith("@ ")) {
+        this._searchMode = "@";
         modeBadge.setText("@");
         modeBadge.addClass("deep");
+        if (this._searchInput)
+          this._searchInput.placeholder = t(
+            "retrieval_search_placeholder_deep"
+          );
       } else {
+        this._searchMode = "M";
         modeBadge.setText("M");
         modeBadge.removeClass("deep");
+        if (this._searchInput)
+          this._searchInput.placeholder = t("retrieval_search_placeholder");
       }
       // Cancel pending debounce
       clearTimeout(this._searchTimer);
+      // Reset results & show idle when input cleared
+      if (!val.trim()) {
+        this._searchState = "idle";
+        this._searchResults = null;
+        this._searchActiveIndex = -1;
+        this._renderSearchState();
+        return;
+      }
       // Debounced metadata search for non-@ queries
-      if (!val.startsWith("@") && val.trim()) {
+      if (!val.startsWith("@")) {
         this._searchTimer = setTimeout(() => {
-          this.executeSearch({ source: "sqljs" });
+          this.executeSearch();
         }, 200);
       }
     });
 
-    // Enter triggers CLI search (full search for @ or explicit)
+    // Keyboard: Enter triggers search, Escape clears, arrows navigate, Ctrl+Enter forces CLI
     this._searchInput.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (this._searchInput) {
+          this._searchInput.value = "";
+          this._searchInput.blur();
+        }
+        this._searchState = "idle";
+        this._searchResults = null;
+        this._searchActiveIndex = -1;
+        this._renderSearchState();
+        return;
+      }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (this._searchState !== "results" || !this._searchResults?.length)
+          return;
+        e.preventDefault();
+        const max = this._searchResults.length;
+        if (e.key === "ArrowDown") {
+          this._searchActiveIndex = Math.min(
+            this._searchActiveIndex + 1,
+            max - 1
+          );
+        } else {
+          this._searchActiveIndex = Math.max(this._searchActiveIndex - 1, -1);
+        }
+        // Update aria-selected on result cards
+        const cards = this._searchResultsEl?.querySelectorAll(
+          ".paperforge-search-result-card"
+        );
+        if (cards) {
+          cards.forEach((c, i) => {
+            if (i === this._searchActiveIndex) {
+              c.setAttribute("aria-selected", "true");
+              c.classList.add("active");
+            } else {
+              c.setAttribute("aria-selected", "false");
+              c.classList.remove("active");
+            }
+          });
+        }
+        return;
+      }
+      if (e.key === "Enter" && e.ctrlKey) {
+        // Ctrl+Enter forces CLI deep search regardless of mode
+        e.preventDefault();
+        if (this._searchTimer) {
+          clearTimeout(this._searchTimer);
+          this._searchTimer = undefined;
+        }
+        // Override mode to @ for this search
+        const originalMode = this._searchMode;
+        this._searchMode = "@";
+        this.executeSearch();
+        this._searchMode = originalMode;
+        return;
+      }
       if (e.key === "Enter") {
         e.preventDefault();
         if (this._searchTimer) {
           clearTimeout(this._searchTimer);
           this._searchTimer = undefined;
         }
-        this.executeSearch({ source: "cli" });
+        this.executeSearch();
       }
     });
   }
 
-  async executeSearch(options: { source?: "auto" | "cli" | "sqljs" } = {}) {
+  _renderSearchState() {
+    if (!this._searchResultsEl) return;
+    this._searchResultsEl.empty();
+    this._searchResultsEl.removeAttribute("role");
+    this._searchResultsEl.removeAttribute("aria-live");
+    // Re-enable input on any state change
+    if (this._searchInput) this._searchInput.disabled = false;
+    const state = this._searchState;
+
+    switch (state) {
+      case "idle": {
+        // Show placeholder hint in the input's placeholder — already set by input handler
+        // Keep results area empty
+        break;
+      }
+      case "searching": {
+        const isDeep = this._searchMode === "@";
+        this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-loading",
+          text: isDeep
+            ? t("retrieval_searching_deep")
+            : t("retrieval_searching_metadata"),
+        });
+        this._searchResultsEl.setAttr("aria-live", "polite");
+        // Disable input during deep search
+        if (isDeep && this._searchInput) {
+          this._searchInput.disabled = true;
+        }
+        break;
+      }
+      case "results": {
+        this._searchResultsEl.setAttr("role", "listbox");
+        this._searchResultsEl.setAttr("aria-live", "polite");
+        if (this._searchResults) {
+          this._renderSearchResultsList(
+            this._searchResults,
+            this._searchMode === "@"
+          );
+        }
+        // Focus management: focus first result after a short delay
+        setTimeout(() => {
+          const firstCard = this._searchResultsEl?.querySelector(
+            ".paperforge-search-result-card"
+          );
+          if (firstCard && firstCard instanceof HTMLElement) {
+            firstCard.focus();
+          }
+        }, 100);
+        break;
+      }
+      case "empty": {
+        const emptyEl = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-empty",
+        });
+        emptyEl.setAttr("role", "alert");
+        emptyEl.createEl("div", {
+          text: t("retrieval_empty"),
+        });
+        emptyEl.createEl("div", {
+          cls: "paperforge-search-empty-tips",
+          text: t("retrieval_empty_tips"),
+        });
+        break;
+      }
+      case "vectors-not-built": {
+        const warn = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        warn.addClass("warning-soft");
+        warn.createEl("div", {
+          cls: "paperforge-search-state-title",
+          text: t("retrieval_vectors_not_built"),
+        });
+        warn.createEl("div", {
+          cls: "paperforge-search-state-desc",
+          text: t("retrieval_vectors_not_built_desc"),
+        });
+        const btn = warn.createEl("button", {
+          cls: "pf-btn-link",
+          text: t("retrieval_open_vector_settings"),
+        });
+        btn.addEventListener("click", () => {
+          const setting = (this.app as unknown as Record<string, unknown>)[
+            "setting"
+          ];
+          if (setting && typeof setting === "object") {
+            const openTab = (setting as Record<string, unknown>)["openTab"];
+            if (typeof openTab === "function") {
+              openTab.call(setting, "paperforge");
+            }
+          }
+        });
+        // Focus management: focus the action button
+        setTimeout(() => {
+          btn.focus();
+        }, 100);
+        break;
+      }
+      case "backend-unavailable": {
+        const err = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        err.addClass("error-soft");
+        err.createEl("div", {
+          cls: "paperforge-search-state-title",
+          text: t("retrieval_backend_unavailable"),
+        });
+        err.createEl("div", {
+          cls: "paperforge-search-state-desc",
+          text: t("retrieval_backend_unavailable_desc"),
+        });
+        const actions = err.createEl("div", {
+          cls: "paperforge-search-state-actions",
+        });
+        const doctorBtn = actions.createEl("button", {
+          cls: "pf-btn-primary",
+          text: t("retrieval_run_doctor"),
+        });
+        doctorBtn.addEventListener("click", () => {
+          const vp = (
+            this.app.vault.adapter as unknown as Record<string, unknown>
+          )["basePath"];
+          if (typeof vp === "string") {
+            const { path: pyExe, extraArgs = [] } = resolvePythonExecutable(
+              vp,
+              null,
+              undefined,
+              undefined
+            );
+            spawn(pyExe, [...extraArgs, "-m", "paperforge", "doctor"], {
+              cwd: vp,
+              stdio: "inherit",
+            });
+          }
+        });
+        const retryBtn = actions.createEl("button", {
+          cls: "pf-btn-secondary",
+          text: t("retrieval_retry"),
+        });
+        retryBtn.addEventListener("click", () => {
+          this.executeSearch();
+        });
+        // Focus: primary action
+        setTimeout(() => {
+          doctorBtn.focus();
+        }, 100);
+        break;
+      }
+      case "timeout": {
+        const err = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        err.addClass("warning-soft");
+        err.createEl("div", {
+          cls: "paperforge-search-state-title",
+          text: t("retrieval_timeout_title"),
+        });
+        err.createEl("div", {
+          cls: "paperforge-search-state-desc",
+          text: t("retrieval_timeout_desc"),
+        });
+        const retryBtn = err.createEl("button", {
+          cls: "pf-btn-primary",
+          text: t("retrieval_retry"),
+        });
+        retryBtn.addEventListener("click", () => {
+          this.executeSearch();
+        });
+        // Focus: retry button
+        setTimeout(() => {
+          retryBtn.focus();
+        }, 100);
+        break;
+      }
+      case "model-changed": {
+        const warn = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        warn.addClass("warning-soft");
+        warn.createEl("div", {
+          cls: "paperforge-search-state-title",
+          text: t("retrieval_model_changed"),
+        });
+        warn.createEl("div", {
+          cls: "paperforge-search-state-desc",
+          text: t("retrieval_model_changed_desc"),
+        });
+        const rebuildBtn = warn.createEl("button", {
+          cls: "pf-btn-primary",
+          text: t("retrieval_rebuild_vectors"),
+        });
+        rebuildBtn.addEventListener("click", () => {
+          // Trigger rebuild from settings
+          const setting = (this.app as unknown as Record<string, unknown>)[
+            "setting"
+          ];
+          if (setting && typeof setting === "object") {
+            const openTab = (setting as Record<string, unknown>)["openTab"];
+            if (typeof openTab === "function") {
+              openTab.call(setting, "paperforge");
+            }
+          }
+        });
+        // Focus: rebuild button
+        setTimeout(() => {
+          rebuildBtn.focus();
+        }, 100);
+        break;
+      }
+      default: {
+        // Fallback: show internal error for unknown states
+        const err = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          text: t("retrieval_internal_error"),
+          attr: { role: "alert" },
+        });
+        err.addClass("error-soft");
+        setTimeout(() => {
+          if (this._searchInput) this._searchInput.focus();
+        }, 100);
+        break;
+      }
+    }
+  }
+
+  async executeSearch() {
     if (!this._searchInput || !this._searchResultsEl) return;
     const raw = this._searchInput.value.trim();
     if (!raw) return;
 
-    const isDeep = raw.startsWith("@");
-    const query = isDeep ? raw.slice(1).trim() : raw;
+    const isDeep = this._searchMode === "@" || raw.startsWith("@");
+    const query = isDeep ? raw.replace(/^@\s*/, "").trim() : raw;
     if (!query) return;
 
     const mode = isDeep ? "retrieve" : "search";
 
-    // Resolve vault path (used by both sql.js and CLI paths)
+    // Set searching state immediately
+    this._searchState = "searching";
+    this._searchResults = null;
+    this._searchActiveIndex = -1;
+    this._renderSearchState();
+
+    // Resolve vault path for CLI search
     const adapter = this.app.vault.adapter;
     let vaultPath = "";
     if (adapter && typeof adapter === "object" && "basePath" in adapter) {
@@ -2448,42 +2781,9 @@ export class PaperForgeStatusView extends ItemView {
       vaultPath = typeof bp === "string" ? bp : "";
     }
 
-    this._searchResultsEl.empty();
-
-    // ── sql.js metadata search path (non-@ queries only) ──
-    if (
-      mode === "search" &&
-      (options.source === "auto" || options.source === "sqljs")
-    ) {
-      if (vaultPath) {
-        try {
-          if (!this._sqlJsInitialized && !this._sqlJsFailed) {
-            await initDatabase(vaultPath);
-            this._sqlJsInitialized = true;
-          }
-          if (this._sqlJsInitialized) {
-            const results = searchMetadata(query, 20);
-            if (results !== null) {
-              this.renderSearchResults(results, false);
-              return;
-            }
-          }
-        } catch (e) {
-          console.error("PaperForge sql.js search failed:", e);
-          this._sqlJsFailed = true;
-        }
-      }
-      // sql.js unavailable — fall through to CLI
-    }
-
-    // ── CLI search path (deep search or sql.js fallback) ──
-    this._searchResultsEl.createEl("div", {
-      cls: "paperforge-search-loading",
-      text: "Searching...",
-    });
-
     if (!vaultPath) {
-      this._renderSearchError("Could not determine vault path");
+      this._searchState = "backend-unavailable";
+      this._renderSearchState();
       return;
     }
 
@@ -2515,10 +2815,20 @@ export class PaperForgeStatusView extends ItemView {
         undefined,
         undefined
       );
-
+    const deepFlag = mode === "retrieve" ? ["--deep"] : [];
     const child = spawn(
       pythonExe,
-      [...pyExtra, "-m", "paperforge", mode, query, "--json"],
+      [
+        ...pyExtra,
+        "-m",
+        "paperforge",
+        "--vault",
+        vaultPath,
+        mode,
+        query,
+        ...deepFlag,
+        "--json",
+      ],
       { cwd: vaultPath, timeout: 30000 }
     );
 
@@ -2531,7 +2841,10 @@ export class PaperForgeStatusView extends ItemView {
     });
     child.on("close", (code: number | null) => {
       if (code !== 0) {
-        this._renderSearchError(`Search failed (exit ${code})`);
+        // Map exit code to error state
+        const classification = classifyError(String(code));
+        this._searchState = this._mapErrorToSearchState(classification.type);
+        this._renderSearchState();
         return;
       }
       const rawOutput = chunks.join("");
@@ -2550,7 +2863,8 @@ export class PaperForgeStatusView extends ItemView {
         }
       }
       if (!jsonStr) {
-        this._renderSearchError("No JSON output from CLI");
+        this._searchState = "internal-error";
+        this._renderSearchState();
         return;
       }
       try {
@@ -2561,29 +2875,64 @@ export class PaperForgeStatusView extends ItemView {
           const d = (parsed as Record<string, unknown>).data;
           if (d && typeof d === "object") {
             const dd = d as Record<string, unknown>;
-            // search output: data.matches
+            // Unified PFResult v1: data.matches
             if ("matches" in dd && Array.isArray(dd.matches)) {
               results = dd.matches as unknown[];
-            } else if ("results" in dd && Array.isArray(dd.results)) {
-              results = dd.results as unknown[];
             }
           }
         }
 
-        this.renderSearchResults(results, isDeep);
+        this._searchResults = results;
+        this._searchState = results.length > 0 ? "results" : "empty";
+        this._renderSearchState();
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        this._renderSearchError("Failed to parse results: " + msg);
+        this._searchState = "internal-error";
+        this._renderSearchState();
       }
     });
     child.on("error", (err: Error) => {
-      this._renderSearchError("Process error: " + err.message);
+      // Check for structured error in stderr
+      const errCode = (err as unknown as Record<string, unknown>)["code"];
+      if (typeof errCode === "string") {
+        const classification = classifyError(errCode);
+        this._searchState = this._mapErrorToSearchState(classification.type);
+      } else {
+        this._searchState = "backend-unavailable";
+      }
+      this._renderSearchState();
     });
   }
 
-  renderSearchResults(results: unknown[], isDeep: boolean) {
+  /** Map classifyError types to _searchState values */
+  _mapErrorToSearchState(errorType: string): string {
+    switch (errorType) {
+      case "vectors_not_built":
+        return "vectors-not-built";
+      case "vectors_corrupted":
+        return "vectors-not-built";
+      case "backend_unavailable":
+        return "backend-unavailable";
+      case "model_changed":
+        return "model-changed";
+      case "timeout":
+        return "timeout";
+      case "no_python":
+      case "python_missing":
+      case "import_failed":
+      case "version_mismatch":
+        return "backend-unavailable";
+      default:
+        return "backend-unavailable";
+    }
+  }
+
+  _renderSearchResultsList(results: unknown[], isDeep: boolean) {
     if (!this._searchResultsEl) return;
-    this._searchResultsEl.empty();
+
+    // Container already has role="listbox" set by _renderSearchState
+    // Add aria-live polite for live updates
+    this._searchResultsEl.setAttr("aria-live", "polite");
 
     if (results.length === 0) {
       this._searchResultsEl.createEl("div", {
@@ -2596,21 +2945,33 @@ export class PaperForgeStatusView extends ItemView {
     const header = this._searchResultsEl.createEl("div", {
       cls: "paperforge-search-results-header",
     });
-    header.createEl("span", {
-      text: `${results.length} result${results.length !== 1 ? "s" : ""}`,
+    const countSpan = header.createEl("span", {
+      text: t("retrieval_results_count")
+        .replace("{n}", String(results.length))
+        .replace("{s}", results.length !== 1 ? "s" : ""),
     });
+    countSpan.setAttr("aria-live", "polite");
     header.createEl("span", {
       cls: "paperforge-search-mode",
       text: isDeep ? "@" : "M",
     });
 
-    for (const r of results) {
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
       if (!r || typeof r !== "object") continue;
       const rec = r as Record<string, unknown>;
+      const isActive = i === this._searchActiveIndex;
       const card = this._searchResultsEl.createEl("div", {
         cls: "paperforge-search-result-card",
-        attr: { role: "button" },
+        attr: {
+          role: "option",
+          tabindex: "0",
+          "aria-selected": isActive ? "true" : "false",
+          "aria-posinset": String(i + 1),
+          "aria-setsize": String(results.length),
+        },
       });
+      if (isActive) card.addClass("active");
 
       // Title
       const titleText =
@@ -2669,26 +3030,24 @@ export class PaperForgeStatusView extends ItemView {
         });
       }
 
+      // Enter key on card opens the note
+      card.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter" && resolvedPath) {
+          e.preventDefault();
+          const newLeaf = e.ctrlKey || e.metaKey;
+          this.app.workspace.openLinkText(resolvedPath, "", newLeaf);
+        }
+      });
+
       // Meta row
       const meta = card.createEl("div", {
         cls: "paperforge-search-result-meta",
       });
 
-      if (typeof rec["authors"] === "string") {
+      if (typeof rec["first_author"] === "string" && rec["first_author"]) {
         meta.createEl("span", {
           cls: "paperforge-search-result-author",
-          text: rec["authors"],
-        });
-      } else if (Array.isArray(rec["authors"])) {
-        meta.createEl("span", {
-          cls: "paperforge-search-result-author",
-          text: (rec["authors"] as string[]).slice(0, 3).join("; "),
-        });
-      }
-      if (typeof rec["year"] === "number" || typeof rec["year"] === "string") {
-        meta.createEl("span", {
-          cls: "paperforge-search-result-year",
-          text: String(rec["year"]),
+          text: rec["first_author"],
         });
       }
       if (typeof rec["journal"] === "string" && rec["journal"]) {
@@ -2725,12 +3084,8 @@ export class PaperForgeStatusView extends ItemView {
       }
 
       // @ mode: matched text
-      if (
-        isDeep &&
-        typeof rec["matched_text"] === "string" &&
-        rec["matched_text"]
-      ) {
-        const mt = rec["matched_text"] as string;
+      if (isDeep && typeof rec["text"] === "string" && rec["text"]) {
+        const mt = rec["text"] as string;
         card.createEl("div", {
           cls: "paperforge-search-result-source",
           text: mt.length > 300 ? mt.slice(0, 300) + "..." : mt,

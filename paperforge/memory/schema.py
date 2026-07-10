@@ -243,6 +243,16 @@ CREATE TABLE IF NOT EXISTS vec_fulltext_meta (
 );
 """
 
+CREATE_VEC_FULLTEXT_META = """
+CREATE TABLE IF NOT EXISTS vec_fulltext_meta (
+  rowid INTEGER PRIMARY KEY,
+  paper_id TEXT NOT NULL,
+  chunk_index INTEGER,
+  text TEXT,
+  source TEXT
+);
+"""
+
 CREATE_VEC_BODY_META = """
 CREATE TABLE IF NOT EXISTS vec_body_meta (
   rowid INTEGER PRIMARY KEY,
@@ -304,6 +314,12 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_READING_LOG)
     conn.execute(CREATE_PROJECT_LOG)
 
+
+    # vec0 companion meta and build_state — created unconditionally so force-rebuild works
+    conn.execute(CREATE_VEC_FULLTEXT_META)
+    conn.execute(CREATE_VEC_BODY_META)
+    conn.execute(CREATE_VEC_OBJECTS_META)
+    conn.execute(CREATE_BUILD_STATE)
     # Migration: derived tables are rebuildable, drop and recreate when shape changes
     current_version = get_schema_version(conn)
     if current_version < 3:
@@ -333,10 +349,6 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
             conn.execute(CREATE_VEC_OBJECTS)
         except sqlite3.OperationalError:
             logger.warning("sqlite-vec extension not available, skipping vector virtual tables")
-        conn.execute(CREATE_VEC_FULLTEXT_META)
-        conn.execute(CREATE_VEC_BODY_META)
-        conn.execute(CREATE_VEC_OBJECTS_META)
-        conn.execute(CREATE_BUILD_STATE)
 
     if current_version < 6:
         logger.info(

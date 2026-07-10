@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 import os
 import sys
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from pathlib import Path
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
@@ -15,10 +17,9 @@ from paperforge.embedding import (
     mark_vector_build_state,
     read_vector_build_state,
 )
+from paperforge.embedding.dim_detect import ensure_vec_tables
 from paperforge.embedding.builder import (
     PaperEmbeddingJob,
-    embed_body_units,
-    embed_object_units,
     encode_paper_job,
     get_body_units_for_embedding,
     get_object_units_for_embedding,
@@ -26,7 +27,6 @@ from paperforge.embedding.builder import (
     write_encoded_payload,
 )
 from paperforge.embedding.preflight import _preflight_check
-from paperforge.memory.chunker import chunk_fulltext
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
@@ -81,25 +81,6 @@ def _pid_alive(pid: int) -> bool:
     except Exception:
         return False
 
-def _assert_collections_healthy(vault: Path) -> tuple[bool, str]:
-    """Probe sqlite-vec companion tables: connectivity + metadata accessibility."""
-    from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
-    from paperforge.memory.schema import ensure_schema
-
-    db_path = get_memory_db_path(vault)
-    if not db_path.exists():
-        return False, "paperforge.db not found"
-    conn = get_connection(db_path)
-    try:
-        ensure_vec_extension(conn)
-        ensure_schema(conn)
-        for meta_table in ["vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"]:
-            conn.execute(f"SELECT COUNT(*) FROM {meta_table}").fetchone()
-    except Exception as exc:
-        return False, f"{meta_table}: {exc}"
-    finally:
-        conn.close()
-    return True, ""
 
 
 logger = logging.getLogger(__name__)
@@ -154,32 +135,32 @@ def run(args: argparse.Namespace) -> int:
     if sub == "stop":
         state = read_vector_build_state(vault)
         pid = state.get("pid", 0)
-        if pid and state["status"] == "running":
-            import signal
-
-            try:
-                os.kill(pid, signal.SIGTERM)
-            except Exception as exc:
-                result = PFResult(
-                    ok=False,
-                    command="embed stop",
-                    version=PF_VERSION,
-                    error=PFError(code=ErrorCode.INTERNAL_ERROR, message=f"Failed to stop embed build: {exc}"),
-                    data={"state": "running", "pid": pid},
-                )
-                if args.json:
-                    print(result.to_json())
-                else:
-                    print(result.error.message, file=sys.stderr)
-                return 1
+        _st = state.get("status", "")
+        if pid and _st in ("running", "stopping"):
             mark_vector_build_state(vault, status="stopping", message="Stop requested")
-            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "stopping", "pid": pid})
+            # Wait for build process to notice the flag and exit (8s timeout)
+            import time as _time
+            _deadline = _time.time() + 8.0
+            while _time.time() < _deadline:
+                if not _pid_alive(pid):
+                    break
+                _time.sleep(0.2)
+            # Force-kill if still alive after timeout
+            if _pid_alive(pid):
+                import signal
+                with contextlib.suppress(Exception):
+                    os.kill(pid, signal.SIGTERM)
+            # Settle to idle, preserving progress
+            _current = read_vector_build_state(vault).get("current", state.get("current", 0))
+            mark_vector_build_state(vault, status="idle", current=_current, pid=0, message="")
+            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "stopped"})
         else:
             result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "idle"})
         if args.json:
             print(result.to_json())
         else:
-            print("Stop requested." if result.data["state"] == "stopping" else "No active build.")
+            msg = "Build stopped." if result.data["state"] == "stopped" else "No active build."
+            print(msg)
         return 0
 
 
@@ -264,9 +245,7 @@ def run(args: argparse.Namespace) -> int:
         if build_state.get("status") == "running":
             stale = False
             pid = build_state.get("pid", 0)
-            if not pid:
-                stale = True
-            elif not _pid_alive(pid):
+            if not pid or not _pid_alive(pid):
                 stale = True
             else:
                 started = build_state.get("started_at", "")
@@ -282,15 +261,10 @@ def run(args: argparse.Namespace) -> int:
             if stale:
                 msg = "Previous build appears stale (crashed?). Recovering and rebuilding from scratch."
                 print(msg)
-                from paperforge.embedding.build_state import mark_vector_build_state
                 mark_vector_build_state(vault, status="idle", current=0, pid=0)
                 resume = False
         # 门二：no vec0 rows → fresh build（不是 error）
-        from paperforge.memory.db import (
-            ensure_vec_extension,
-            get_connection,
-            get_memory_db_path,
-        )
+        from paperforge.memory.db import ensure_vec_extension
         from paperforge.memory.schema import ensure_schema
 
         _db_path = get_memory_db_path(vault)
@@ -327,13 +301,13 @@ def run(args: argparse.Namespace) -> int:
         if _db_path.exists():
             _conn = get_connection(_db_path)
             try:
-                from paperforge.memory.db import ensure_vec_extension
-                from paperforge.memory.schema import ensure_schema
                 ensure_vec_extension(_conn)
-                ensure_schema(_conn)
-                for _t in ("vec_fulltext", "vec_body", "vec_objects",
-                           "vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
+                # Drop and recreate vec0 tables first with correct dimension
+                ensure_vec_tables(_conn, vault)
+                for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
                     _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
+                # ensure_schema recreates meta tables (vec v-tables already correct from ensure_vec_tables)
+                ensure_schema(_conn)
                 _conn.commit()
             except Exception:
                 pass
@@ -409,6 +383,11 @@ def run(args: argparse.Namespace) -> int:
                 if not key:
                     continue
 
+                # ponytail: check cancellation flag between papers
+                if read_vector_build_state(vault).get("status") == "stopping":
+                    logger.info("Build cancelled at paper %s", key)
+                    break
+
                 has_body = _has_body_units_in_db(vault, key)
                 has_object = _has_object_units_in_db(vault, key)
 
@@ -422,11 +401,7 @@ def run(args: argparse.Namespace) -> int:
 
                         if body_units:
                             try:
-                                from paperforge.memory.db import (
-                                    ensure_vec_extension,
-                                    get_connection,
-                                    get_memory_db_path,
-                                )
+                                from paperforge.memory.db import ensure_vec_extension
                                 from paperforge.memory.schema import ensure_schema
 
                                 db_path = get_memory_db_path(vault)
@@ -451,11 +426,7 @@ def run(args: argparse.Namespace) -> int:
 
                         if object_units:
                             try:
-                                from paperforge.memory.db import (
-                                    ensure_vec_extension,
-                                    get_connection,
-                                    get_memory_db_path,
-                                )
+                                from paperforge.memory.db import ensure_vec_extension
                                 from paperforge.memory.schema import ensure_schema
 
                                 db_path = get_memory_db_path(vault)
@@ -490,7 +461,7 @@ def run(args: argparse.Namespace) -> int:
                     fulltext_rel = entry.get("fulltext_path", "")
                     if not fulltext_rel:
                         continue
-                    fulltext_path = vault / fulltext_rel
+                    vault / fulltext_rel
 
                     ocr_root = vault / "System" / "PaperForge" / "ocr" / key
                     has_files = (ocr_root / "structure" / "blocks.structured.jsonl").exists() and (
@@ -505,7 +476,7 @@ def run(args: argparse.Namespace) -> int:
 
                     if resume:
                         try:
-                            from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+                            from paperforge.memory.db import ensure_vec_extension
                             from paperforge.memory.schema import ensure_schema
 
                             db_path = get_memory_db_path(vault)
@@ -592,6 +563,13 @@ def run(args: argparse.Namespace) -> int:
         )
         print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
         return 1
+
+
+    # Check if we stopped or were cancelled — exit cleanly without marking completed
+    if read_vector_build_state(vault).get("status") == "stopping":
+        logger.info("Build stopped, exiting cleanly")
+        print("EMBED_DONE", flush=True)
+        return 0
 
     mark_vector_build_state(
         vault,

@@ -56,6 +56,8 @@ interface ISettingPlugin {
   _embedProcess?: unknown;
   _embedProgress?: { current: number; total: number; key: string };
   _embedStderr?: string;
+  _embedPollInterval?: ReturnType<typeof setInterval> | null;
+  _embedPolling?: boolean;
 }
 
 export class PaperForgeSettingTab extends PluginSettingTab {
@@ -74,6 +76,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _customPathDescEl: HTMLElement | null = null;
   private _checkEl: HTMLDivElement | null = null;
   activeTab = "setup";
+  private _buildState: string = "idle";
+  private _buildProgress: { current: number; total: number; key: string } = {
+    current: 0,
+    total: 0,
+    key: "",
+  };
 
   constructor(app: App, plugin: ISettingPlugin) {
     super(app, plugin as any);
@@ -1146,7 +1154,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "paperforge-embed-header",
     });
     embedHeader.createEl("span", {
-      text: t("feat_rebuild_vectors"),
+      text: t("retrieval_rebuild_vectors"),
       cls: "setting-item-name",
     });
 
@@ -1156,12 +1164,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     const embedStatusText = embedSection.createEl("div", {
       cls: "paperforge-embed-status-text",
+      attr: { "aria-live": "polite" },
     });
 
     const renderEmbedUI = () => {
       embedControls.empty();
       embedStatusText.empty();
-      const buildState: any = (getVectorRuntime(vp) || {}).build_state || {};
+
+      const vr = getVectorRuntime(vp);
+      const bsRaw = vr?.build_state;
+      const buildState: Record<string, unknown> =
+        bsRaw && typeof bsRaw === "object" && !Array.isArray(bsRaw)
+          ? (bsRaw as Record<string, unknown>)
+          : {};
       this.plugin._embedProgress = this.plugin._embedProgress || {
         current: 0,
         total: 0,
@@ -1170,168 +1185,391 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
       if (!this.plugin._embedProcess && buildState.status === "running") {
         this.plugin._embedProgress = {
-          current: buildState.current || 0,
-          total: buildState.total || 1,
-          key: buildState.paper_id || "",
+          current:
+            typeof buildState.current === "number" ? buildState.current : 0,
+          total: typeof buildState.total === "number" ? buildState.total : 1,
+          key:
+            typeof buildState.paper_id === "string" ? buildState.paper_id : "",
         };
       }
 
       const { current, total, key } = this.plugin._embedProgress;
-      const isRunning =
-        !!this.plugin._embedProcess || buildState.status === "running";
 
-      if (isRunning) {
-        const track = embedControls.createEl("div", {
-          cls: "paperforge-progress-track",
-        });
-        track.style.cssText = "flex:1;";
-        const pct = total > 0 ? ((current / total) * 100).toFixed(1) : "0";
-        const doneSeg = track.createEl("div", {
-          cls: "paperforge-progress-seg done",
-        });
-        doneSeg.style.cssText = `width:${pct}%; min-width:${current > 0 ? "2px" : "0"};`;
-        if (current < total) {
-          const pendingSeg = track.createEl("div", {
-            cls: "paperforge-progress-seg pending",
-          });
-          pendingSeg.style.cssText = `width:${(100 - parseFloat(pct)).toFixed(1)}%;`;
-        }
-        embedStatusText.createEl("span", {
-          cls: "paperforge-embed-progress-text",
-          text: `${current}/${total} papers`,
-        });
-        if (key) {
-          embedStatusText.createEl("span", {
-            cls: "paperforge-embed-progress-key",
-            text: ` (${key})`,
-          });
-        }
+      // Safely access fields from VectorRuntime index signature
+      const bodyChunkCount =
+        typeof vr?.body_chunk_count === "number" ? vr.body_chunk_count : 0;
+      const objectChunkCount =
+        typeof vr?.object_chunk_count === "number" ? vr.object_chunk_count : 0;
+      const chunkCount =
+        typeof vr?.chunk_count === "number" ? vr.chunk_count : 0;
+      const totalChunks = chunkCount + bodyChunkCount + objectChunkCount;
+      const hasChunks = totalChunks > 0;
+      const isCorrupted =
+        vr !== null && typeof vr.corrupted === "boolean" && vr.corrupted;
+      const isBuilding = !!this.plugin._embedProcess;
+      const isStale =
+        !this.plugin._embedProcess && buildState.status === "running";
+      // deps_installed is a defined boolean? property on VectorRuntime
+      const depsInstalled =
+        vr?.deps_installed !== undefined ? !!vr.deps_installed : true;
 
-        const stopBtn = embedControls.createEl("button");
-        stopBtn.setText("Stop");
-        stopBtn.className = "mod-warning";
-        stopBtn.addEventListener("click", () => {
-          this._callPython(["embed", "stop", "--json"], { timeout: 8000 });
-          if (this.plugin._embedProcess) {
-            (this.plugin._embedProcess as any).kill();
-            this.plugin._embedProcess = null;
-          }
-          this.display();
-        });
-      } else {
-        const embedInfo = getVectorRuntime(vp);
-        const embedChunks =
-          (embedInfo?.chunk_count ?? 0) +
-          ((embedInfo?.body_chunk_count as number) ?? 0) +
-          ((embedInfo?.object_chunk_count as number) ?? 0);
-        const hasChunks = embedChunks > 0;
-        const isCorrupted = embedInfo ? !!embedInfo.corrupted : false;
+      const status =
+        typeof buildState.status === "string" ? buildState.status : "";
+      const buildMessage =
+        typeof buildState.message === "string" ? buildState.message : "";
 
-        const startBuild = (flag: string) => {
-          const py = getCachedPython(vp, this.plugin.settings);
-          if (!py.path) {
-            new Notice(t("feat_no_python"));
-            return;
-          }
-          const env = Object.assign({}, process.env, {
-            PYTHONIOENCODING: "utf-8",
-            PYTHONUTF8: "1",
-            VECTOR_DB_API_KEY: this.plugin.settings.vector_db_api_key || "",
-            VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || "",
-            VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || "",
-          });
-          this.plugin._embedStderr = "";
-          this.plugin._embedProgress = { current: 0, total: 0, key: "" };
-          this.plugin._embedProcess = this._callPython(
-            ["embed", "build", flag],
-            {
-              stream: true,
-              env: env,
-              onData: (data: any) => {
-                const lines = data.toString("utf-8").split("\n");
-                for (const line of lines) {
-                  if (line.startsWith("EMBED_START:")) {
-                    this.plugin._embedProgress!.total =
-                      parseInt(line.split(":")[1]) || 0;
-                  } else if (line.startsWith("EMBED_PROGRESS:")) {
-                    const parts = line.split(":");
-                    this.plugin._embedProgress!.current =
-                      parseInt(parts[1]) || 0;
-                    this.plugin._embedProgress!.key = parts[3] || "";
-                  } else if (line.startsWith("EMBED_DONE")) {
-                    this.plugin._embedProcess = null;
-                    this.plugin._embedProgress!.current =
-                      this.plugin._embedProgress!.total;
-                  }
-                }
-                this.display();
-              },
-              onStderr: (data: any) => {
-                if (!this.plugin._embedStderr) this.plugin._embedStderr = "";
-                this.plugin._embedStderr += data.toString("utf-8");
-              },
-              onError: (err: any) => {
-                this.plugin._embedProcess = null;
-                new Notice(
-                  t("feat_build_failed") + ": " + (err.message || err)
-                );
-                this.display();
-              },
-              onClose: (code: number | null) => {
-                this.plugin._embedProcess = null;
-                if (code === 0) {
-                  this.plugin._embedProgress!.current =
-                    this.plugin._embedProgress!.total;
-                  this.plugin.saveSettings();
-                  this._embedStatusText = getVectorStatusText(vp);
-                  new Notice(t("feat_build_complete"));
-                } else {
-                  this._embedStatusText = null;
-                  const errMsg = (this.plugin._embedStderr || "").slice(0, 200);
-                  new Notice(
-                    t("feat_build_failed") + (errMsg ? ": " + errMsg : ""),
-                    8000
-                  );
-                }
-                this.plugin._embedStderr = "";
-                this.display();
-                this._refreshSnapshots(vp);
-              },
-            }
+      const startBuild = (flag: string) => {
+        // ── Destructive warnings ──
+        if (flag === "--resume" && hasChunks && !isCorrupted) {
+          const msg = t("retrieval_rebuild_warning").replace(
+            "{n}",
+            String(totalChunks)
           );
+          if (!confirm(msg)) return;
+        }
+        if (flag === "--force" && hasChunks && !isCorrupted) {
+          const msg =
+            "Force rebuild will replace " +
+            totalChunks +
+            " existing chunk(s). Continue?";
+          if (!confirm(msg)) return;
+        }
 
-          this.display();
-        };
+        const py = getCachedPython(vp, this.plugin.settings);
+        if (!py.path) {
+          new Notice(t("retrieval_no_python"));
+          return;
+        }
+        const env = Object.assign({}, process.env, {
+          PYTHONIOENCODING: "utf-8",
+          PYTHONUTF8: "1",
+          VECTOR_DB_API_KEY: this.plugin.settings.vector_db_api_key || "",
+          VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || "",
+          VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || "",
+        });
+        this.plugin._embedStderr = "";
+        this.plugin._embedProgress = { current: 0, total: 0, key: "" };
+        this.plugin._embedProcess = this._callPython(["embed", "build", flag], {
+          stream: true,
+          env: env,
+          onData: (data: unknown) => {
+            // Node stream emits Buffer; data can also be string
+            const text =
+              typeof data === "string"
+                ? data
+                : Buffer.isBuffer(data)
+                  ? data.toString("utf-8")
+                  : String(data);
+            const lines = text.split("\n");
+            for (const line of lines) {
+              if (line.startsWith("EMBED_START:")) {
+                this.plugin._embedProgress!.total =
+                  parseInt(line.split(":")[1]) || 0;
+              } else if (line.startsWith("EMBED_PROGRESS:")) {
+                const parts = line.split(":");
+                this.plugin._embedProgress!.current = parseInt(parts[1]) || 0;
+                this.plugin._embedProgress!.key = parts[3] || "";
+              } else if (line.startsWith("EMBED_DONE")) {
+                this.plugin._embedProcess = null;
+                this.plugin._embedProgress!.current =
+                  this.plugin._embedProgress!.total;
+              }
+            }
+            this.display();
+          },
+          onStderr: (data: unknown) => {
+            if (!this.plugin._embedStderr) this.plugin._embedStderr = "";
+            this.plugin._embedStderr += String(data);
+          },
+          onError: (err: Error) => {
+            this.plugin._embedProcess = null;
+            new Notice(t("feat_build_failed") + ": " + (err.message || err));
+            this.display();
+          },
+          onClose: (code: number | null) => {
+            clearInterval(this.plugin._embedPollInterval ?? undefined);
+            this.plugin._embedPollInterval = null;
+            this.plugin._embedProcess = null;
+            if (code === 0) {
+              this.plugin._embedProgress!.current =
+                this.plugin._embedProgress!.total;
+              this.plugin.saveSettings();
+              this._embedStatusText = getVectorStatusText(vp);
+              new Notice(t("feat_build_complete"));
+            } else {
+              this._embedStatusText = null;
+              const errMsg = (this.plugin._embedStderr || "").slice(0, 200);
+              new Notice(
+                t("feat_build_failed") + (errMsg ? ": " + errMsg : ""),
+                8000
+              );
+            }
+            this.plugin._embedStderr = "";
+            this.display();
+            this._refreshSnapshots(vp);
+          },
+        });
 
-        if (isCorrupted) {
-          const warnEl = embedSection.createEl("div");
-          warnEl.style.cssText =
-            "padding:8px 12px; margin:8px 0; background:var(--background-modifier-warning); border-radius:4px; font-size:12px; display:flex; align-items:center; justify-content:space-between;";
-          warnEl.createEl("span", { text: t("feat_vector_corrupted") });
-          const forceBtn = warnEl.createEl("button", {
-            text: t("feat_vector_rebuild_force_btn"),
+        // Poll embed status every 2s during build for live state
+        clearInterval(this.plugin._embedPollInterval ?? undefined);
+        this.plugin._embedPollInterval = setInterval(() => {
+          if (this.plugin._embedPolling) return;
+          this.plugin._embedPolling = true;
+          this._callPython(["embed", "status", "--json"], {
+            timeout: 5000,
+            onClose: (_code: number | null, stdout: string) => {
+              this.plugin._embedPolling = false;
+              if (_code === 0 && stdout) {
+                try {
+                  const result = JSON.parse(stdout);
+                  const data = result.data;
+                  if (data && data.build_state) {
+                    const bs = data.build_state;
+                    if (bs.status === "stopping" || bs.status === "idle") {
+                      if (this.plugin._embedProcess) {
+                        this.plugin._embedProcess = null;
+                        clearInterval(
+                          this.plugin._embedPollInterval ?? undefined
+                        );
+                        this.plugin._embedPollInterval = null;
+                        this.display();
+                      }
+                    }
+                    if (bs.current !== undefined && bs.total !== undefined) {
+                      this.plugin._embedProgress!.current = bs.current;
+                      this.plugin._embedProgress!.total = bs.total || 1;
+                      this.plugin._embedProgress!.key = bs.paper_id || "";
+                    }
+                  }
+                } catch {}
+              }
+            },
           });
+        }, 2000);
+
+        this.display();
+      };
+
+      // Detect runtime version mismatch from health data
+      const health = getRuntimeHealth(vp);
+      let runtimeMismatch = false;
+      if (
+        health &&
+        typeof health.summary === "object" &&
+        health.summary !== null &&
+        "status" in health.summary
+      ) {
+        runtimeMismatch = health.summary.status === "version_mismatch";
+      }
+
+      // ── State determination (priority order) ──
+      let uiState: string;
+      if (!depsInstalled) {
+        uiState = "deps-missing";
+      } else if (runtimeMismatch) {
+        uiState = "runtime-mismatch";
+      } else if (status === "stopping") {
+        uiState = "stopping";
+      } else if (isBuilding && status === "running") {
+        uiState = "building";
+      } else if (status === "failed") {
+        uiState = "failed";
+      } else if (status === "stopped") {
+        uiState = "stopped";
+      } else if (isStale) {
+        uiState = "stale";
+      } else if (isCorrupted) {
+        uiState = "corrupted";
+      } else if (hasChunks) {
+        uiState = "ready";
+      } else {
+        uiState = "idle";
+      }
+
+      // ── State rendering ──
+      switch (uiState) {
+        case "building": {
+          const track = embedControls.createEl("div", {
+            cls: "paperforge-progress-track",
+          });
+          track.style.cssText = "flex:1;";
+          const pct = total > 0 ? ((current / total) * 100).toFixed(1) : "0";
+          const doneSeg = track.createEl("div", {
+            cls: "paperforge-progress-seg done",
+          });
+          doneSeg.style.cssText = `width:${pct}%; min-width:${current > 0 ? "2px" : "0"};`;
+          if (current < total) {
+            const pendingSeg = track.createEl("div", {
+              cls: "paperforge-progress-seg pending",
+            });
+            pendingSeg.style.cssText = `width:${(100 - parseFloat(pct)).toFixed(1)}%;`;
+          }
+          embedStatusText.createEl("span", {
+            cls: "paperforge-embed-progress-text",
+            text: `${current}/${total} papers`,
+          });
+          if (key) {
+            embedStatusText.createEl("span", {
+              cls: "paperforge-embed-progress-key",
+              text: ` (${key})`,
+            });
+          }
+          // Warning button: Stop
+          const stopBtn = embedControls.createEl("button");
+          stopBtn.setText(t("retrieval_stop"));
+          stopBtn.className = "mod-warning";
+          stopBtn.addEventListener("click", () => {
+            this._callPython(["embed", "stop", "--json"], {
+              timeout: 8000,
+            });
+            this.display();
+          });
+          break;
+        }
+
+        case "stopping": {
+          const track = embedControls.createEl("div", {
+            cls: "paperforge-progress-track",
+          });
+          track.style.cssText = "flex:1; opacity:0.5;";
+          const pct = total > 0 ? ((current / total) * 100).toFixed(1) : "0";
+          const doneSeg = track.createEl("div", {
+            cls: "paperforge-progress-seg done",
+          });
+          doneSeg.style.cssText = `width:${pct}%; min-width:${current > 0 ? "2px" : "0"};`;
+          if (current < total) {
+            const pendingSeg = track.createEl("div", {
+              cls: "paperforge-progress-seg pending",
+            });
+            pendingSeg.style.cssText = `width:${(100 - parseFloat(pct)).toFixed(1)}%;`;
+          }
+          embedStatusText.createEl("span", {
+            text: t("retrieval_build_stopping"),
+          });
+          const stopBtn = embedControls.createEl("button");
+          stopBtn.setText(t("retrieval_stop"));
+          stopBtn.className = "mod-warning";
+          stopBtn.setAttr("disabled", "");
+          break;
+        }
+
+        case "failed": {
+          embedStatusText.createEl("div", {
+            cls: "paperforge-desc-box",
+            text:
+              t("retrieval_build_failed") +
+              (buildMessage ? ": " + buildMessage : ""),
+            attr: { style: "color:var(--text-error);" },
+          });
+          // Primary CTA: Retry
+          const retryBtn = embedControls.createEl("button");
+          retryBtn.setText(t("retrieval_retry"));
+          retryBtn.className = "mod-cta";
+          retryBtn.addEventListener("click", () => startBuild("--resume"));
+          // Secondary: Force Rebuild
+          const forceBtn = embedControls.createEl("button");
+          forceBtn.setText(t("retrieval_force_rebuild"));
+          forceBtn.style.marginLeft = "6px";
+          forceBtn.addEventListener("click", () => startBuild("--force"));
+          break;
+        }
+
+        case "stopped": {
+          embedStatusText.setText(t("retrieval_build_stopped"));
+          // Primary CTA: Resume
+          const resumeBtn = embedControls.createEl("button");
+          resumeBtn.setText(t("retrieval_retry"));
+          resumeBtn.className = "mod-cta";
+          resumeBtn.addEventListener("click", () => startBuild("--resume"));
+          break;
+        }
+
+        case "corrupted": {
+          embedStatusText.createEl("div", {
+            cls: "paperforge-desc-box",
+            text: t("feat_vector_corrupted"),
+            attr: {
+              style: "background:var(--background-modifier-warning);",
+            },
+          });
+          // Primary CTA: Force Rebuild (no destructive warning on corrupted)
+          const forceBtn = embedControls.createEl("button");
+          forceBtn.setText(t("retrieval_force_rebuild"));
           forceBtn.className = "mod-cta";
           forceBtn.addEventListener("click", () => startBuild("--force"));
+          break;
         }
 
-        if (hasChunks && !isCorrupted) {
+        case "stale": {
+          embedStatusText.createEl("div", {
+            cls: "paperforge-desc-box",
+            text: t("retrieval_build_stale"),
+            attr: { style: "color:var(--text-warning);" },
+          });
+          // Primary CTA: Rebuild
+          const rebuildBtn = embedControls.createEl("button");
+          rebuildBtn.setText(t("retrieval_rebuild_vectors"));
+          rebuildBtn.className = "mod-cta";
+          rebuildBtn.addEventListener("click", () => startBuild("--resume"));
+          break;
+        }
+
+        case "ready": {
           embedControls.createEl("span", {
-            text: embedChunks + " chunks embedded",
+            text: totalChunks + " chunks embedded",
             cls: "setting-item-description",
           });
+          // Primary CTA: Rebuild Vectors
+          const rebuildBtn = embedControls.createEl("button");
+          rebuildBtn.setText(t("retrieval_rebuild_vectors"));
+          rebuildBtn.className = "mod-cta";
+          rebuildBtn.addEventListener("click", () => startBuild("--resume"));
+          // Secondary: Force Rebuild
+          const forceBtn = embedControls.createEl("button");
+          forceBtn.setText(t("retrieval_force_rebuild"));
+          forceBtn.style.marginLeft = "6px";
+          forceBtn.addEventListener("click", () => startBuild("--force"));
+          break;
         }
-        const buildBtn = embedControls.createEl("button");
-        buildBtn.setText(
-          hasChunks ? t("feat_rebuild_btn") : t("feat_build_btn")
-        );
-        buildBtn.addClass("mod-cta");
-        buildBtn.addEventListener("click", () => startBuild("--resume"));
-        if (!isCorrupted && hasChunks) {
-          const forceBtn2 = embedControls.createEl("button");
-          forceBtn2.setText(t("feat_vector_rebuild_force_btn"));
-          forceBtn2.style.marginLeft = "6px";
-          forceBtn2.addEventListener("click", () => startBuild("--force"));
+
+        case "deps-missing": {
+          embedStatusText.setText(t("retrieval_build_deps_missing"));
+          // Link-style: Install Dependencies redirects to full settings display
+          const installBtn = embedControls.createEl("a");
+          installBtn.setText(t("feat_install_deps"));
+          installBtn.style.cssText =
+            "cursor:pointer; text-decoration:underline;";
+          installBtn.addEventListener("click", () => {
+            this.display();
+          });
+          break;
+        }
+
+        case "runtime-mismatch": {
+          embedStatusText.createEl("div", {
+            cls: "paperforge-desc-box",
+            text: t("retrieval_build_runtime_mismatch"),
+            attr: { style: "color:var(--text-warning);" },
+          });
+          // Link-style: Sync Runtime navigates to Runtime Health section
+          const syncLink = embedControls.createEl("a");
+          syncLink.setText(t("runtime_health_sync"));
+          syncLink.style.cssText = "cursor:pointer; text-decoration:underline;";
+          syncLink.addEventListener("click", () => {
+            this.display();
+          });
+          break;
+        }
+
+        case "idle":
+        default: {
+          embedStatusText.setText(t("retrieval_build_idle"));
+          // Primary CTA: Build
+          const buildBtn = embedControls.createEl("button");
+          buildBtn.setText(t("feat_build_btn"));
+          buildBtn.className = "mod-cta";
+          buildBtn.addEventListener("click", () => startBuild("--resume"));
+          break;
         }
       }
     };
