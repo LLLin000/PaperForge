@@ -48,7 +48,7 @@ def run(args: argparse.Namespace) -> int:
     # ── @ Deep Search mode: query rewrite + hybrid retrieval ──────
     if deep:
         try:
-            chunks = hybrid_search(vault, query, limit=limit)
+            raw_chunks = hybrid_search(vault, query, limit=limit)
         except Exception as e:
             result = PFResult(
                 ok=False,
@@ -59,10 +59,26 @@ def run(args: argparse.Namespace) -> int:
             print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
             return 1
 
+        # Normalize to unified PFResult match format
+        matches: list[dict] = []
+        for c in raw_chunks:
+            matches.append({
+                "zotero_key": c.get("paper_id", ""),
+                "title": c.get("title", ""),
+                "first_author": c.get("first_author", ""),
+                "year": c.get("year", ""),
+                "journal": c.get("journal", ""),
+                "domain": c.get("domain", ""),
+                "abstract": "",
+                "score": c.get("score", 0),
+                "text": c.get("text", ""),
+                "heading": c.get("heading", ""),
+                "source": c.get("source", "deep"),
+            })
         data = {
             "query": query,
-            "chunks": chunks,
-            "count": len(chunks),
+            "matches": matches,
+            "count": len(matches),
             "deep": True,
             "route_explanation": {
                 "primary_arm": "deep_search",
@@ -72,7 +88,7 @@ def run(args: argparse.Namespace) -> int:
         }
         warnings: list[str] = []
         next_actions: list[dict] = []
-        if len(chunks) == 0:
+        if len(matches) == 0:
             warnings.append("Deep search returned no results for the query.")
         result = PFResult(
             ok=True, command="retrieve", version=PF_VERSION, data=data, warnings=warnings, next_actions=next_actions
@@ -80,9 +96,9 @@ def run(args: argparse.Namespace) -> int:
         if args.json:
             print(result.to_json())
         else:
-            print(f"{len(chunks)} deep search results for: {query}")
-            for c in chunks:
-                print(f"  [{c.get('source', '?')}] {c.get('title', c.get('paper_id', '?'))} ({c.get('year', '?')}): {c.get('text', '')[:80]}...")
+            print(f"{len(matches)} deep search results for: {query}")
+            for c in matches:
+                print(f"  [{c.get('source', '?')}] {c.get('title', c.get('zotero_key', '?'))} ({c.get('year', '?')}): {c.get('text', '')[:80]}...")
         return 0
 
     # ── Standard vector retrieve ──────────────────────────────────
@@ -156,7 +172,7 @@ def run(args: argparse.Namespace) -> int:
             try:
                 for c in chunks:
                     row = conn.execute(
-                        "SELECT citation_key, title, year, first_author FROM papers WHERE zotero_key=?",
+                        "SELECT citation_key, title, year, first_author, journal, domain FROM papers WHERE zotero_key=?",
                         (c["paper_id"],),
                     ).fetchone()
                     if row:
@@ -164,13 +180,32 @@ def run(args: argparse.Namespace) -> int:
                         c["title"] = row["title"]
                         c["year"] = row["year"]
                         c["first_author"] = row["first_author"]
+                        c["journal"] = row["journal"] or ""
+                        c["domain"] = row["domain"] or ""
             finally:
                 conn.close()
 
+    # Normalize to unified PFResult match format
+    matches: list[dict] = []
+    for c in chunks:
+        matches.append({
+            "zotero_key": c.get("paper_id", ""),
+            "title": c.get("title", ""),
+            "first_author": c.get("first_author", ""),
+            "year": c.get("year", ""),
+            "journal": c.get("journal", ""),
+            "domain": c.get("domain", ""),
+            "abstract": "",
+            "score": c.get("score", 0),
+            "text": c.get("chunk_text", ""),
+            "heading": c.get("section_path", ""),
+            "source": c.get("source", "vector"),
+        })
+
     data = {
         "query": query,
-        "chunks": chunks,
-        "count": len(chunks),
+        "matches": matches,
+        "count": len(matches),
         "route_explanation": {
             "primary_arm": "vector_retrieve",
             "compatibility_mode": False,
@@ -237,8 +272,8 @@ def run(args: argparse.Namespace) -> int:
     if args.json:
         print(result.to_json())
     else:
-        print(f"{len(chunks)} chunks for: {query}")
-        for c in chunks:
+        print(f"{len(matches)} matches for: {query}")
+        for c in matches:
             print(
-                f"  [{c.get('section_path', '')}] {c.get('citation_key', '')} p{c.get('page_number', 0)}: {c['chunk_text'][:80]}..."
+                f"  [{c.get('heading', '')}] {c.get('zotero_key', '')}: {c.get('text', '')[:80]}..."
             )

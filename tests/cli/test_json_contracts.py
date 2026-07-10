@@ -112,3 +112,94 @@ class TestContextJson:
         """context without key/--domain/--all should exit 1."""
         result = cli_invoker(["context"])
         assert result.returncode != 0
+
+
+class TestSearchJson:
+    """Contract: 'paperforge search --json' returns PFResult with data.matches."""
+
+    ENVELOPE_KEYS = {"ok", "command", "version", "data", "error"}
+
+    def test_search_no_memory_db_returns_error(self, cli_invoker):
+        """search on a vault without memory DB returns ok:false with error."""
+        result = cli_invoker(["search", "test", "--json"])
+        parsed = assert_valid_json(result.stdout)
+        assert_json_shape(parsed, self.ENVELOPE_KEYS)
+        assert parsed["ok"] is False
+        assert "code" in parsed["error"], "error.code is missing"
+        assert "message" in parsed["error"], "error.message is missing"
+        assert result.returncode != 0
+
+    def test_search_matches_key_present(self, cli_invoker):
+        """search --json output has top-level PFResult envelope and data.matches key when successful."""
+        result = cli_invoker(["search", "test", "--json"])
+        parsed = assert_valid_json(result.stdout)
+        assert_json_shape(parsed, self.ENVELOPE_KEYS)
+        if parsed["ok"]:
+            data = parsed["data"]
+            assert "matches" in data, "data.matches key is missing"
+            assert isinstance(data["matches"], list), "data.matches should be a list"
+            assert "count" in data, "data.count is missing"
+            # Verify unified field names on first match if any
+            if data["matches"]:
+                m = data["matches"][0]
+                for field in ("zotero_key", "title", "first_author", "year", "journal", "domain", "abstract", "score", "text", "heading", "source"):
+                    assert field in m, f"match field '{field}' is missing"
+
+    def test_search_matches_field_types(self, cli_invoker):
+        """search match fields have correct types when results exist."""
+        result = cli_invoker(["search", "test", "--json", "--limit", "5"])
+        parsed = assert_valid_json(result.stdout)
+        if parsed["ok"] and parsed["data"]["matches"]:
+            m = parsed["data"]["matches"][0]
+            assert isinstance(m["zotero_key"], str), "zotero_key should be str"
+            assert isinstance(m["title"], str), "title should be str"
+            assert isinstance(m["score"], (int, float)), "score should be numeric"
+
+
+class TestRetrieveJson:
+    """Contract: 'paperforge retrieve --json' returns PFResult with data.matches."""
+
+    ENVELOPE_KEYS = {"ok", "command", "version", "data", "error"}
+
+    def test_retrieve_no_memory_db_returns_error(self, cli_invoker):
+        """retrieve on a vault without memory DB returns ok:false with error."""
+        result = cli_invoker(["retrieve", "test", "--json"])
+        parsed = assert_valid_json(result.stdout)
+        assert_json_shape(parsed, self.ENVELOPE_KEYS)
+        assert parsed["ok"] is False
+        assert "code" in parsed["error"], "error.code is missing"
+        assert "message" in parsed["error"], "error.message is missing"
+        assert result.returncode != 0
+
+    def test_retrieve_matches_key_present(self, cli_invoker):
+        """retrieve --json output has data.matches key when successful."""
+        result = cli_invoker(["retrieve", "test", "--json"])
+        parsed = assert_valid_json(result.stdout)
+        assert_json_shape(parsed, self.ENVELOPE_KEYS)
+        if parsed["ok"]:
+            data = parsed["data"]
+            assert "matches" in data, "data.matches key is missing"
+            assert isinstance(data["matches"], list), "data.matches should be a list"
+            if data["matches"]:
+                m = data["matches"][0]
+                for field in ("zotero_key", "title", "first_author", "year", "journal", "domain", "abstract", "score", "text", "heading", "source"):
+                    assert field in m, f"match field '{field}' is missing"
+
+    def test_retrieve_deep_flag_accepted(self, cli_invoker):
+        """retrieve --deep --json is accepted (may return empty results on minimal vault)."""
+        result = cli_invoker(["retrieve", "test", "--deep", "--json"])
+        parsed = assert_valid_json(result.stdout)
+        assert_json_shape(parsed, self.ENVELOPE_KEYS)
+        # --deep may succeed (ok:true) or fail (ok:false) depending on vault state — just validate shape
+        if parsed["ok"]:
+            assert "matches" in parsed["data"], "data.matches key is missing"
+
+    def test_retrieve_matches_field_types(self, cli_invoker):
+        """retrieve match fields have correct types when results exist."""
+        result = cli_invoker(["retrieve", "test", "--json", "--limit", "5"])
+        parsed = assert_valid_json(result.stdout)
+        if parsed["ok"] and parsed["data"]["matches"]:
+            m = parsed["data"]["matches"][0]
+            assert isinstance(m["zotero_key"], str), "zotero_key should be str"
+            assert isinstance(m["score"], (int, float)), "score should be numeric"
+            assert isinstance(m["text"], str), "text should be str"
