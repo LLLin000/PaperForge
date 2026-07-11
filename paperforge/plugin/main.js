@@ -4589,6 +4589,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._connectorBoundScroll = null;
         this._connectorBoundResize = null;
         this._canvasLoadSeq = 0;
+        this._pendingCanvasState = null;
     }
 
     // ── ANN12-02: Runtime source loading ──
@@ -4761,6 +4762,11 @@ class PaperForgeReadingCanvasView extends ItemView {
      * @param {object} entry - Paper entry object with key, title, etc.
      */
     setPaperContext(paperKey, entry) {
+        if (!this.contentEl) {
+            this._pendingCanvasState = { paperKey: paperKey, entry: entry };
+            return;
+        }
+        this._pendingCanvasState = null;
         this._paperKey = paperKey;
         this._paperEntry = entry;
 
@@ -4784,6 +4790,10 @@ class PaperForgeReadingCanvasView extends ItemView {
         var paperKey = state && state.paperKey;
         var entry = state && state.entry;
         if (paperKey) {
+            if (!this.contentEl) {
+                this._pendingCanvasState = { paperKey: paperKey, entry: entry || { key: paperKey } };
+                return;
+            }
             this.setPaperContext(paperKey, entry || { key: paperKey });
         }
     }
@@ -4802,12 +4812,35 @@ class PaperForgeReadingCanvasView extends ItemView {
     _renderCanvas(canvas) {
         canvas = canvas || require('./src/canvas');
         const contentEl = this.contentEl;
-        contentEl.empty();
-        contentEl.addClass('paperforge-reading-canvas-view');
+        if (!contentEl) return;
+        this._emptyContentEl(contentEl);
+        this._addContentClass(contentEl, 'paperforge-reading-canvas-view');
 
         const vm = this._buildViewModel();
         canvas.renderCanvasView(contentEl, vm);
         this._vm = vm;
+    }
+
+    _emptyContentEl(contentEl) {
+        if (!contentEl) return;
+        if (typeof contentEl.empty === 'function') {
+            contentEl.empty();
+            return;
+        }
+        while (contentEl.firstChild) {
+            contentEl.removeChild(contentEl.firstChild);
+        }
+    }
+
+    _addContentClass(contentEl, className) {
+        if (!contentEl) return;
+        if (typeof contentEl.addClass === 'function') {
+            contentEl.addClass(className);
+            return;
+        }
+        if (contentEl.classList) {
+            contentEl.classList.add(className);
+        }
     }
 
     /**
@@ -4837,6 +4870,12 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     async onOpen() {
+        if (this._pendingCanvasState && this.contentEl) {
+            var pending = this._pendingCanvasState;
+            this._pendingCanvasState = null;
+            this.setPaperContext(pending.paperKey, pending.entry || { key: pending.paperKey });
+            return;
+        }
         if (!this._canvasContext && this.contentEl) {
             const canvas = require('./src/canvas');
             this._canvasContext = canvas.buildMissingCanvasContext('No paper context has been attached yet.');
@@ -4856,6 +4895,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._canvasContext = null;
         this._vm = null;
         this._navigationState = null;
+        this._pendingCanvasState = null;
         // ANN14-03: Clear connector field refs (DOM already cleared by _cleanupNavigation)
         this._connectorLayerEl = null;
         this._connectorFrameHandle = null;
@@ -5310,8 +5350,9 @@ class PaperForgeReadingCanvasView extends ItemView {
     async _renderLoadedCanvas(sourceInputs, annotationState) {
         var canvas = require('./src/canvas');
         var contentEl = this.contentEl;
-        contentEl.empty();
-        contentEl.addClass('paperforge-reading-canvas-view');
+        if (!contentEl) return;
+        this._emptyContentEl(contentEl);
+        this._addContentClass(contentEl, 'paperforge-reading-canvas-view');
         var entry = this._paperEntry;
         if (!entry) return;
         var sourceModel = canvas.buildCanvasSourceModel(entry, sourceInputs || {});

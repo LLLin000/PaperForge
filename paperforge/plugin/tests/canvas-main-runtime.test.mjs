@@ -386,6 +386,30 @@ describe('Task 4 — Static open method', () => {
 
         expect(view.setPaperContext).toHaveBeenCalledWith('KEY_SETSTATE', entry);
     });
+
+    it('setState defers paper context until the view content element exists', async () => {
+        const containerEl = document.createElement('div');
+        const view = new PaperForgeReadingCanvasView({ containerEl });
+        view.contentEl = null;
+        view.setPaperContext = vi.fn();
+        const entry = { key: 'KEY_DEFERRED', title: 'Deferred' };
+
+        await view.setState({ paperKey: 'KEY_DEFERRED', entry }, {});
+
+        expect(view.setPaperContext).not.toHaveBeenCalled();
+        expect(view._pendingCanvasState).toEqual({ paperKey: 'KEY_DEFERRED', entry });
+
+        const contentEl = document.createElement('div');
+        addCreateEl(contentEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        containerEl.appendChild(contentEl);
+        view.contentEl = contentEl;
+
+        await view.onOpen();
+
+        expect(view.setPaperContext).toHaveBeenCalledWith('KEY_DEFERRED', entry);
+        expect(view._pendingCanvasState).toBeNull();
+    });
 });
 
 // ── ANN11 Runtime regression gate ──
