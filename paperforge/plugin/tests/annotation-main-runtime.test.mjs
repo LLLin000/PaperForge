@@ -302,6 +302,15 @@ describe('Task 1 — Test hook exists', () => {
 
         expect(view.plugin).toBe(plugin);
     });
+
+    it('status view exposes the Python command helper used by annotation import', () => {
+        const app = makeStubApp();
+        const leaf = { app, containerEl: createObsidianEl('div') };
+
+        const view = new PaperForgeStatusView(leaf);
+
+        expect(typeof view._callPython).toBe('function');
+    });
 });
 
 // ── Task 1: DOM insertion point ──

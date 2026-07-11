@@ -4432,6 +4432,28 @@ class PaperForgeStatusView extends ItemView {
     }
 
     /* ── Mode-Aware Header (D-07) ── */
+    _callPython(command, opts) {
+        const vp = this.app.vault.adapter.basePath;
+        const plugin = this.plugin || (this.app && this.app.plugins && this.app.plugins.plugins
+            ? this.app.plugins.plugins.paperforge
+            : null);
+        const py = memoryState.getCachedPython(vp, plugin && plugin.settings);
+        const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, ...command];
+        if (opts && opts.stream) {
+            const { spawn } = require('node:child_process');
+            const child = spawn(py.path, args, { cwd: vp, env: opts.env || process.env, windowsHide: true });
+            if (opts.onData) child.stdout.on('data', opts.onData);
+            if (opts.onStderr) child.stderr.on('data', opts.onStderr);
+            if (opts.onError) child.on('error', opts.onError);
+            child.on('close', opts.onClose);
+            return child;
+        }
+        const { execFile } = require('node:child_process');
+        execFile(py.path, args, { cwd: vp, timeout: opts && opts.timeout || 60000 },
+            (err, stdout, stderr) => { if (opts && opts.onClose) opts.onClose(err ? 1 : 0, stdout, stderr); });
+        return null;
+    }
+
     _renderModeHeader(mode) {
         this._modeContextEl.empty();
 
