@@ -80,6 +80,15 @@ class TestInsertNew:
         assert rows[0][2] == "zotero"
         assert rows[0][3] == "highlight"
 
+    def test_import_creates_annotations_db_parent_directory(self, zotero_full_path: Path, tmp_path: Path):
+        """First import should create the PaperForge indexes directory."""
+        ann_db = tmp_path / "System" / "PaperForge" / "indexes" / "annotations.db"
+
+        result = _do_import(zotero_full_path, ann_db)
+
+        assert result.total == 2
+        assert ann_db.exists()
+
     def test_imported_rows_have_expected_fields(self, zotero_full_path: Path, ann_db_path: Path):
         """Imported rows should have key fields populated correctly."""
         result = _do_import(zotero_full_path, ann_db_path)

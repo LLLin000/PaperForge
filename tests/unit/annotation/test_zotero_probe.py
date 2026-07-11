@@ -315,6 +315,66 @@ def test_probe_discovers_expected_tables(zotero_fixture_path: Path):
             )
 
 
+def test_probe_accepts_real_zotero_annotation_table_without_date_modified():
+    """Real Zotero stores annotation modified time on items, not itemAnnotations."""
+    tmp = tempfile.NamedTemporaryFile(suffix=".sqlite", delete=False)
+    tmp.close()
+    db_path = Path(tmp.name)
+    conn = sqlite3.connect(str(db_path))
+    try:
+        conn.executescript(
+            """
+            CREATE TABLE items (
+                itemID INTEGER PRIMARY KEY,
+                itemTypeID INTEGER,
+                libraryID INTEGER,
+                key TEXT,
+                dateModified TEXT
+            );
+            CREATE TABLE itemAttachments (
+                itemID INTEGER PRIMARY KEY,
+                parentItemID INTEGER
+            );
+            CREATE TABLE itemAnnotations (
+                itemID INTEGER PRIMARY KEY,
+                parentItemID INTEGER,
+                type INTEGER,
+                authorName TEXT,
+                text TEXT,
+                comment TEXT,
+                color TEXT,
+                pageLabel TEXT,
+                sortIndex TEXT,
+                position TEXT,
+                isExternal INTEGER
+            );
+            CREATE TABLE tags (
+                tagID INTEGER PRIMARY KEY,
+                name TEXT
+            );
+            CREATE TABLE itemTags (
+                itemID INTEGER,
+                tagID INTEGER
+            );
+            """
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    try:
+        with zotero_snapshot(db_path) as snap:
+            conn2 = open_zotero_readonly(snap)
+            schema = probe_zotero_annotation_schema(conn2)
+            conn2.close()
+
+        assert "dateModified" in schema["items"]
+        assert "dateModified" not in schema["itemAnnotations"]
+    finally:
+        if db_path.exists():
+            db_path.unlink()
+
+
 # ---------------------------------------------------------------------------
 # 7. Error hierarchy inheritance
 # ---------------------------------------------------------------------------

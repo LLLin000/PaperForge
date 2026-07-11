@@ -310,12 +310,12 @@ def test_headless_setup_claude_skill_directory(tmp_path: Path, monkeypatch: pyte
     )
 
     assert rv == 0, f"claude install failed with code {rv}"
-    skill_dir = tmp_path / ".claude" / "skills" / "literature-qa"
-    assert skill_dir.exists(), f"literature-qa skill dir not created: {skill_dir}"
+    skill_dir = tmp_path / ".claude" / "skills" / "paperforge"
+    assert skill_dir.exists(), f"paperforge skill dir not created: {skill_dir}"
     assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
     assert (skill_dir / "references" / "chart-reading" / "INDEX.md").exists(), "chart INDEX.md not created"
-    assert (skill_dir / "references" / "deep-subagent.md").exists(), "deep-subagent.md not created"
-    assert (skill_dir / "references" / "paper-qa.md").exists(), "paper-qa.md not created"
+    assert (skill_dir / "workflows" / "deep-reading.md").exists(), "deep-reading workflow not created"
+    assert (skill_dir / "workflows" / "paper-qa.md").exists(), "paper-qa workflow not created"
 
 
 def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -342,8 +342,8 @@ def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytes
     )
 
     assert rv == 0, f"opencode install failed with code {rv}"
-    skill_dir = tmp_path / ".opencode" / "skills" / "literature-qa"
-    assert skill_dir.exists(), f"literature-qa skill dir not created: {skill_dir}"
+    skill_dir = tmp_path / ".opencode" / "skills" / "paperforge"
+    assert skill_dir.exists(), f"paperforge skill dir not created: {skill_dir}"
     assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
 
 
@@ -371,8 +371,8 @@ def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytes
     )
 
     assert rv == 0, f"codex install failed with code {rv}"
-    skill_dir = tmp_path / ".codex" / "skills" / "literature-qa"
-    assert skill_dir.exists(), f"literature-qa skill dir not created: {skill_dir}"
+    skill_dir = tmp_path / ".codex" / "skills" / "paperforge"
+    assert skill_dir.exists(), f"paperforge skill dir not created: {skill_dir}"
     assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
 
 
@@ -402,9 +402,9 @@ def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.Mon
     assert rv == 0, f"cline install failed with code {rv}"
     clinerules = tmp_path / ".clinerules"
     assert clinerules.exists(), f".clinerules dir not created: {clinerules}"
-    skill_dir = clinerules / "literature-qa"
-    assert skill_dir.exists(), f"literature-qa subdir not created under .clinerules"
-    assert (skill_dir / "references" / "deep-subagent.md").exists(), "deep-subagent.md not created"
+    skill_dir = clinerules / "paperforge"
+    assert skill_dir.exists(), f"paperforge subdir not created under .clinerules"
+    assert (skill_dir / "workflows" / "deep-reading.md").exists(), "deep-reading workflow not created"
 
 
 def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -457,4 +457,6 @@ def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: py
     assert "PADDLEOCR_API_TOKEN=keep-me" in env_text
     assert "PADDLEOCR_API_TOKEN=new-token" not in env_text
     assert plugin_main.read_text(encoding="utf-8") == "custom plugin\n"
+    assert (tmp_path / ".obsidian" / "plugins" / "paperforge" / "src" / "canvas" / "index.js").exists()
+    assert (tmp_path / ".obsidian" / "plugins" / "paperforge" / "src" / "canvas" / "navigation.js").exists()
     assert existing_note.read_text(encoding="utf-8") == "keep note\n"

@@ -690,6 +690,7 @@ def headless_setup(
     plugin_src = repo_root / "paperforge/plugin"
     plugin_dst = vault / ".obsidian" / "plugins" / "paperforge"
     PLUGIN_FILES = {"main.js", "styles.css", "manifest.json", "versions.json", "i18n.js"}
+    PLUGIN_RUNTIME_DIRS = ("src/canvas",)
     if plugin_src.exists() and plugin_src.is_dir():
         created = 0
         skipped = 0
@@ -702,6 +703,14 @@ def headless_setup(
                 created += 1
             else:
                 skipped += 1
+        for rel_dir in PLUGIN_RUNTIME_DIRS:
+            src_dir = plugin_src / rel_dir
+            if not src_dir.exists():
+                skipped += 1
+                continue
+            made, kept = _copy_tree_incremental(src_dir, plugin_dst / rel_dir)
+            created += made
+            skipped += kept
         print(f"    [OK] Obsidian plugin (created {created}, preserved {skipped})")
     else:
         print(f"    [WARN] Plugin source not found: {plugin_src}")

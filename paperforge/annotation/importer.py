@@ -111,7 +111,7 @@ def _enrich_annotation(
 
     # Resolve the annotation's own key from items table
     item_row = zotero_conn.execute(
-        "SELECT key FROM items WHERE itemID = ?", (ann_item_id,)
+        "SELECT key, dateModified FROM items WHERE itemID = ?", (ann_item_id,)
     ).fetchone()
     annotation_key = _str(item_row["key"] if item_row else "")
 
@@ -130,6 +130,8 @@ def _enrich_annotation(
     enriched["attachment_key"] = attachment_item_key
     enriched["parent_key"] = parent_item_key
     enriched["tags"] = tags
+    if not enriched.get("dateModified"):
+        enriched["dateModified"] = _str(item_row["dateModified"] if item_row else "")
     return enriched
 
 
@@ -310,6 +312,7 @@ def import_zotero_annotations_for_paper(
     """
     result = ImportResult()
 
+    annotations_db_path.parent.mkdir(parents=True, exist_ok=True)
     db_conn = sqlite3.connect(str(annotations_db_path))
     db_conn.row_factory = sqlite3.Row
     try:

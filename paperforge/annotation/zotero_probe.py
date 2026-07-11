@@ -49,7 +49,6 @@ REQUIRED_ZOTERO_TABLES: dict[str, set[str]] = {
         "pageLabel",
         "sortIndex",
         "position",
-        "dateModified",
     },
     "tags": {
         "tagID",

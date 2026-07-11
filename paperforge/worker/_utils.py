@@ -270,6 +270,8 @@ def install_obsidian_plugin(vault: Path) -> bool:
     Source priority: vault copy (git/zip) -> Python package (pip).
     Lives in _utils.py so it can be reloaded after update.
     """
+    plugin_files = {"main.js", "styles.css", "manifest.json", "versions.json", "i18n.js"}
+    plugin_runtime_dirs = ("src/canvas",)
     try:
         plugin_dst = vault / ".obsidian" / "plugins" / "paperforge"
         plugin_src = vault / "paperforge" / "plugin"
@@ -282,9 +284,22 @@ def install_obsidian_plugin(vault: Path) -> bool:
             return False
         plugin_dst.mkdir(parents=True, exist_ok=True)
         count = 0
-        for f in plugin_src.glob("*"):
+        for name in plugin_files:
+            f = plugin_src / name
             if f.is_file():
                 shutil.copy2(f, plugin_dst / f.name)
+                count += 1
+        for rel_dir in plugin_runtime_dirs:
+            src_dir = plugin_src / rel_dir
+            if not src_dir.is_dir():
+                continue
+            for src in src_dir.rglob("*"):
+                if src.is_dir():
+                    continue
+                rel = src.relative_to(src_dir)
+                dst = plugin_dst / rel_dir / rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
                 count += 1
         if count:
             logger.info("Obsidian plugin installed: %d files -> %s", count, plugin_dst)
