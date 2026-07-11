@@ -4760,6 +4760,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         }
         this._boundHandleCanvasClick = null;
         this._boundHandleCanvasKeydown = null;
+        this._clearCanvasPopover();
 
         // ── ANN14-03: Cleanup connector runtime (hover, frame, listeners, DOM) ──
         if (this._connectorFrameHandle) {
@@ -4990,8 +4991,15 @@ class PaperForgeReadingCanvasView extends ItemView {
             if (!this._vm || !this._vm.cards) return;
             var card = this._vm.cards.find(function (c) { return c.id === cardId; });
             if (!card) return;
-            var nextState = nav.reduceCardSelection(this._navigationState || nav.createInitialNavState(), card);
+            var navCard = Object.assign({ cardId: card.id }, card);
+            var nextState = nav.reduceCardSelection(this._navigationState || nav.createInitialNavState(), navCard);
             this._applyCardNavigationState(nextState);
+            var anchorFocus = this.contentEl.querySelector(
+                '[data-anchor-id="' + this._escapeSelectorValue(cardId) + '"][data-anchor-status="exact"]'
+            );
+            if (anchorFocus && typeof anchorFocus.scrollIntoView === 'function') {
+                anchorFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
 
@@ -5005,14 +5013,23 @@ class PaperForgeReadingCanvasView extends ItemView {
         var anchorEl = evt.target.closest('[data-anchor-id]');
         if (anchorEl) {
             var anchorId = anchorEl.getAttribute('data-anchor-id');
-            if (!this._vm || !this._vm.cards) return;
-            var sourceCard = this._vm.cards.find(function (c) { return c.id === anchorId; });
-            if (!sourceCard) return;
-            var next = nav.reduceSourceSelection(this._navigationState || nav.createInitialNavState(), sourceCard);
+            if (!this._vm) return;
+            var sourceCard = (this._vm.cards || []).find(function (c) { return c.id === anchorId; });
+            if (!sourceCard) {
+                var highlight = (this._vm.highlights || []).find(function (c) { return c.id === anchorId; });
+                if (highlight) {
+                    this._showCanvasHighlightPopover(highlight);
+                }
+                return;
+            }
+            var sourceNavCard = Object.assign({ cardId: sourceCard.id }, sourceCard);
+            var next = nav.reduceSourceSelection(this._navigationState || nav.createInitialNavState(), sourceNavCard);
             this._applyCardNavigationState(next);
             if (next.selectedCardId) {
                 var focusEl = this.contentEl.querySelector('[data-card-id="' + this._escapeSelectorValue(next.selectedCardId) + '"]');
-                if (focusEl) focusEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                if (focusEl && typeof focusEl.scrollIntoView === 'function') {
+                    focusEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
             }
             return;
         }
@@ -5023,8 +5040,28 @@ class PaperForgeReadingCanvasView extends ItemView {
             var nav = require('./src/canvas/navigation');
             var nextState = nav.reduceLifecycleAction(this._navigationState || nav.createInitialNavState(), nav.NAVIGATION_ACTIONS.ESCAPE);
             this._applyCardNavigationState(nextState);
+            this._clearCanvasPopover();
             evt.preventDefault();
         }
+    }
+
+    _clearCanvasPopover() {
+        if (!this.contentEl) return;
+        var popovers = this.contentEl.querySelectorAll('.paperforge-canvas-highlight-popover');
+        for (var i = 0; i < popovers.length; i++) {
+            if (popovers[i].parentNode) popovers[i].parentNode.removeChild(popovers[i]);
+        }
+    }
+
+    _showCanvasHighlightPopover(card) {
+        var canvas = require('./src/canvas');
+        this._clearCanvasPopover();
+        canvas.renderHighlightPopover(this.contentEl, {
+            id: card && card.id,
+            selectedText: card && card.selectedText,
+            comment: card && card.comment,
+            pageLabel: card && card.pageLabel,
+        });
     }
 
     _handleFallbackClick(page) {
@@ -5058,7 +5095,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         }
         if (nextState.sourceFocusTargetId && nextState.navSource === 'card') {
             var targetEl = this.contentEl.querySelector('[data-card-id="' + this._escapeSelectorValue(nextState.sourceFocusTargetId) + '"]');
-            if (targetEl) {
+            if (targetEl && typeof targetEl.scrollIntoView === 'function') {
                 targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }

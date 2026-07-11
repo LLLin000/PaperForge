@@ -1010,6 +1010,127 @@ describe('ANN13-04 Task 1 — Loaded canvas rendering', () => {
         const found = contentEl.querySelector('[data-card-id="' + view._escapeSelectorValue(rawId) + '"]');
         expect(found).toBe(card);
     });
+
+    it('clicking a side card scrolls its rendered highlight into view', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_NAV_CARD';
+        view._paperEntry = { key: 'PAPER_NAV_CARD', title: 'Nav', fulltext_path: 'fulltext.md' };
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: { path: 'fulltext.md', exists: true, readable: true, text: 'Important anchor text appears here.', error: null },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            {
+                state: 'ready',
+                paperKey: 'PAPER_NAV_CARD',
+                annotations: [{
+                    display: { selectedText: 'Important anchor text', comment: 'Side note', pageLabel: '1', type: 'highlight' },
+                    provenance: { source: 'zotero', sourceAnnotationKey: 'ann-nav-card' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                }],
+            }
+        );
+
+        const card = contentEl.querySelector('[data-card-id]');
+        const mark = contentEl.querySelector('mark[data-anchor-id]');
+        mark.scrollIntoView = vi.fn();
+
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(mark.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+        expect(card.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('clicking a rendered highlight scrolls the side card into view', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_NAV_MARK';
+        view._paperEntry = { key: 'PAPER_NAV_MARK', title: 'Nav', fulltext_path: 'fulltext.md' };
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: { path: 'fulltext.md', exists: true, readable: true, text: 'Important anchor text appears here.', error: null },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            {
+                state: 'ready',
+                paperKey: 'PAPER_NAV_MARK',
+                annotations: [{
+                    display: { selectedText: 'Important anchor text', comment: 'Side note', pageLabel: '1', type: 'highlight' },
+                    provenance: { source: 'zotero', sourceAnnotationKey: 'ann-nav-mark' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                }],
+            }
+        );
+
+        const card = contentEl.querySelector('[data-card-id]');
+        const mark = contentEl.querySelector('mark[data-anchor-id]');
+        card.scrollIntoView = vi.fn();
+
+        mark.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(card.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'nearest' });
+        expect(card.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('clicking an inline-only highlight opens a read-only popover', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_INLINE';
+        view._paperEntry = { key: 'PAPER_INLINE', title: 'Inline', fulltext_path: 'fulltext.md' };
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: { path: 'fulltext.md', exists: true, readable: true, text: 'Inline highlight text appears here.', error: null },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            {
+                state: 'ready',
+                paperKey: 'PAPER_INLINE',
+                annotations: [{
+                    display: { selectedText: 'Inline highlight text', comment: '', pageLabel: '1', type: 'highlight' },
+                    provenance: { source: 'zotero', sourceAnnotationKey: 'ann-inline' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                }],
+            }
+        );
+
+        expect(contentEl.querySelector('[data-card-id]')).toBeFalsy();
+        const mark = contentEl.querySelector('mark[data-anchor-id]');
+        mark.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        const popover = contentEl.querySelector('.paperforge-canvas-highlight-popover');
+        expect(popover).toBeTruthy();
+        expect(popover.textContent).toContain('Inline highlight text');
+    });
+
+    it('Escape clears highlight popovers', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_ESC';
+        view._paperEntry = { key: 'PAPER_ESC', title: 'Esc', fulltext_path: 'fulltext.md' };
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: { path: 'fulltext.md', exists: true, readable: true, text: 'Inline highlight text appears here.', error: null },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            {
+                state: 'ready',
+                paperKey: 'PAPER_ESC',
+                annotations: [{
+                    display: { selectedText: 'Inline highlight text', comment: '', pageLabel: '1', type: 'highlight' },
+                    provenance: { source: 'zotero', sourceAnnotationKey: 'ann-esc' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                }],
+            }
+        );
+
+        contentEl.querySelector('mark[data-anchor-id]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        expect(contentEl.querySelector('.paperforge-canvas-highlight-popover')).toBeTruthy();
+
+        contentEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+        expect(contentEl.querySelector('.paperforge-canvas-highlight-popover')).toBeFalsy();
+    });
 });
 
 // ── ANN13-04 Task 2/3: Event handlers and lifecycle ──
