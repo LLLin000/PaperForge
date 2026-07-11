@@ -389,6 +389,26 @@ describe('Task 1 — DOM insertion point', () => {
         expect(view.loadAnnotationsForCurrentPaper).toHaveBeenCalledWith('import');
     });
 
+    it('paper-scoped import restores the button and reports synchronous command failures', () => {
+        const app = makeStubApp();
+        app.plugins.plugins.paperforge.settings.zotero_data_dir = 'C:\\Users\\tan\\Zotero';
+        vi.spyOn(fs, 'existsSync').mockImplementation((p) => {
+            const s = String(p);
+            return s.endsWith('zotero.sqlite') || s.endsWith('storage');
+        });
+        const view = makeRuntimeView({ app, paperKey: 'PAPER_A' });
+        const button = document.createElement('button');
+        view._callPython = vi.fn(() => {
+            throw new Error('spawn failed');
+        });
+
+        view._importAnnotationsForPaper('PAPER_A', button);
+
+        expect(button.disabled).toBe(false);
+        expect(button.hasAttribute('aria-busy')).toBe(false);
+        expect(view._showMessage).toHaveBeenCalledWith(expect.stringContaining('spawn failed'), 'error');
+    });
+
     it('collapses stale runtime argparse usage into an actionable annotation import message', () => {
         const msg = formatAnnotationImportFailure({
             exitCode: 2,

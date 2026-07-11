@@ -3243,6 +3243,19 @@ class PaperForgeStatusView extends ItemView {
     }
 
     _importAnnotationsForPaper(paperKey, buttonEl) {
+        var finishImportUi = function () {
+            if (buttonEl) {
+                buttonEl.disabled = false;
+                buttonEl.removeAttribute('aria-busy');
+            }
+        };
+        var failImportUi = function (message) {
+            finishImportUi();
+            var msg = message || 'Unknown annotation import error.';
+            this._showMessage('[!!] Annotation import failed: ' + msg, 'error');
+            new Notice('[!!] Annotation import failed: ' + msg, 10000);
+        }.bind(this);
+
         if (!paperKey) {
             new Notice('[!!] No paper key for annotation import.', 5000);
             return;
@@ -3261,39 +3274,56 @@ class PaperForgeStatusView extends ItemView {
             buttonEl.setAttribute('aria-busy', 'true');
         }
         this._showMessage('Importing annotations from Zotero...', 'running');
+        var settled = false;
+        var watchdog = setTimeout(function () {
+            if (settled) return;
+            settled = true;
+            failImportUi('Timed out while importing annotations. Check Python runtime and Zotero database access.');
+        }, 65000);
 
-        this._callPython(['annotation', 'import', '--paper', paperKey, '--zotero-db', db.path, '--apply', '--json'], {
-            timeout: 60000,
-            onClose: function (code, stdout, stderr) {
-                if (buttonEl) {
-                    buttonEl.disabled = false;
-                    buttonEl.removeAttribute('aria-busy');
-                }
+        try {
+            this._callPython(['annotation', 'import', '--paper', paperKey, '--zotero-db', db.path, '--apply', '--json'], {
+                timeout: 60000,
+                onClose: function (code, stdout, stderr) {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(watchdog);
+                    finishImportUi();
 
-                var parsed = null;
-                try { parsed = stdout ? JSON.parse(stdout) : null; } catch (_) { parsed = null; }
-                if (code !== 0 || !parsed || parsed.ok === false) {
-                    var message = parsed && parsed.error && parsed.error.message
-                        ? parsed.error.message
-                        : formatAnnotationImportFailure({ exitCode: code, stdout: stdout, stderr: stderr });
-                    this._showMessage('[!!] Annotation import failed: ' + message, 'error');
-                    new Notice('[!!] Annotation import failed: ' + message, 10000);
-                    return;
-                }
+                    var parsed = null;
+                    try { parsed = stdout ? JSON.parse(stdout) : null; } catch (_) { parsed = null; }
+                    if (code !== 0 || !parsed || parsed.ok === false) {
+                        var message = parsed && parsed.error && parsed.error.message
+                            ? parsed.error.message
+                            : formatAnnotationImportFailure({ exitCode: code, stdout: stdout, stderr: stderr });
+                        failImportUi(message);
+                        return;
+                    }
 
-                var data = parsed.data || {};
-                var imported = data.imported != null ? data.imported : (data.inserted || 0) + (data.updated || 0);
-                var summary = 'Imported annotations for ' + paperKey + (imported ? ': ' + imported : '') + '.';
-                this._showMessage('[OK] ' + summary, 'ok');
-                new Notice('[OK] ' + summary, 5000);
-                this.loadAnnotationsForCurrentPaper('import').then(function (newState) {
-                    if (!newState) return;
-                    this._annotationState = mergeAnnotationRefreshResult(this._lastRenderableAnnotationState, newState);
-                    this._rerenderAnnotationSection();
-                    this._refreshAnnotationOverlay('import');
-                }.bind(this));
-            }.bind(this),
-        });
+                    var data = parsed.data || {};
+                    var counts = data.counts || {};
+                    var imported = data.imported != null
+                        ? data.imported
+                        : (counts.total != null ? counts.total : (data.inserted || 0) + (data.updated || 0));
+                    var summary = 'Imported annotations for ' + paperKey + (imported ? ': ' + imported : '') + '.';
+                    this._showMessage('[OK] ' + summary, 'ok');
+                    new Notice('[OK] ' + summary, 5000);
+                    this.loadAnnotationsForCurrentPaper('import').then(function (newState) {
+                        if (!newState) return;
+                        this._annotationState = mergeAnnotationRefreshResult(this._lastRenderableAnnotationState, newState);
+                        this._rerenderAnnotationSection();
+                        this._refreshAnnotationOverlay('import');
+                    }.bind(this)).catch(function (err) {
+                        failImportUi((err && err.message) || 'Import succeeded, but refresh failed.');
+                    });
+                }.bind(this),
+            });
+        } catch (err) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(watchdog);
+            failImportUi((err && err.message) || String(err));
+        }
     }
 
     /**
@@ -5325,6 +5355,8 @@ class PaperForgeReadingCanvasView extends ItemView {
             const view = await PaperForgeReadingCanvasView._waitForLeafView(leaves[0]);
             if (view && view.setPaperContext) {
                 view.setPaperContext(paperKey, entry);
+            } else {
+                new Notice('[!!] Reading Canvas view did not become ready. Reload PaperForge and try again.', 8000);
             }
             plugin.app.workspace.revealLeaf(leaves[0]);
             return;
@@ -5338,17 +5370,19 @@ class PaperForgeReadingCanvasView extends ItemView {
             const view = await PaperForgeReadingCanvasView._waitForLeafView(leaf);
             if (view && view.setPaperContext) {
                 view.setPaperContext(paperKey, entry);
+            } else {
+                new Notice('[!!] Reading Canvas view did not become ready. Reload PaperForge and try again.', 8000);
             }
             plugin.app.workspace.revealLeaf(leaf);
         }
     }
 
     static async _waitForLeafView(leaf) {
-        for (var i = 0; i < 10; i++) {
+        for (var i = 0; i < 40; i++) {
             if (leaf && leaf.view && typeof leaf.view.setPaperContext === 'function') {
                 return leaf.view;
             }
-            await new Promise(function (resolve) { setTimeout(resolve, 0); });
+            await new Promise(function (resolve) { setTimeout(resolve, 50); });
         }
         return leaf && leaf.view ? leaf.view : null;
     }
