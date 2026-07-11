@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRequire } from 'node:module';
 import Module from 'node:module';
+import fs from 'node:fs';
 
 const require = createRequire(import.meta.url);
 
@@ -24,6 +25,7 @@ const {
 let originalLoad;
 let PaperForgeStatusView;
 let resolveAnnotationPdfTarget;
+let formatAnnotationImportFailure;
 
 /**
  * Global capture for Notice calls during tests.
@@ -65,6 +67,7 @@ function installObsidianStub() {
     const pluginModule = require('../main.js');
     PaperForgeStatusView = pluginModule.__test.PaperForgeStatusView;
     resolveAnnotationPdfTarget = pluginModule.__test.resolveAnnotationPdfTarget;
+    formatAnnotationImportFailure = pluginModule.__test.formatAnnotationImportFailure;
 }
 
 function uninstallObsidianStub() {
@@ -302,6 +305,90 @@ describe('Task 1 — DOM insertion point', () => {
 
         const annotationSection = paperView.querySelector('.paperforge-annotations-section');
         expect(annotationSection).toBeTruthy();
+    });
+
+    it('renders Import Annotations button in the paper action strip', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        view._renderPaperMode();
+
+        const buttons = Array.from(view._contentEl.querySelectorAll('button'));
+        const importBtn = buttons.find((btn) => btn.textContent.includes('Import Annotations'));
+
+        expect(importBtn).toBeTruthy();
+    });
+
+    it('clicking Import Annotations delegates to paper-scoped import handler', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+        view._importAnnotationsForPaper = vi.fn();
+        view._renderPaperMode();
+
+        const buttons = Array.from(view._contentEl.querySelectorAll('button'));
+        const importBtn = buttons.find((btn) => btn.textContent.includes('Import Annotations'));
+        importBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(view._importAnnotationsForPaper).toHaveBeenCalledWith('PAPER_A', importBtn);
+    });
+
+    it('explains what Zotero Data Dir means when annotation import is not configured', () => {
+        const view = makeRuntimeView({ paperKey: 'PAPER_A' });
+
+        const result = view._resolveZoteroDbPathForAnnotations();
+
+        expect(result.ok).toBe(false);
+        expect(result.message).toContain('Zotero Data Dir');
+        expect(result.message).toContain('zotero.sqlite');
+        expect(result.message).toContain('storage/');
+    });
+
+    it('resolves Zotero Data Dir to zotero.sqlite for annotation import', () => {
+        const app = makeStubApp();
+        app.plugins.plugins.paperforge.settings.zotero_data_dir = 'C:\\Users\\tan\\Zotero';
+        vi.spyOn(fs, 'existsSync').mockImplementation((p) => {
+            const s = String(p);
+            return s.endsWith('zotero.sqlite') || s.endsWith('storage');
+        });
+        const view = makeRuntimeView({ app, paperKey: 'PAPER_A' });
+
+        const result = view._resolveZoteroDbPathForAnnotations();
+
+        expect(result.ok).toBe(true);
+        expect(result.path).toBe('C:\\Users\\tan\\Zotero\\zotero.sqlite');
+    });
+
+    it('paper-scoped import invokes annotation import with zotero-db and apply json flags', () => {
+        const app = makeStubApp();
+        app.plugins.plugins.paperforge.settings.zotero_data_dir = 'C:\\Users\\tan\\Zotero';
+        vi.spyOn(fs, 'existsSync').mockImplementation((p) => {
+            const s = String(p);
+            return s.endsWith('zotero.sqlite') || s.endsWith('storage');
+        });
+        const view = makeRuntimeView({ app, paperKey: 'PAPER_A' });
+        const button = document.createElement('button');
+        view._callPython = vi.fn((command, opts) => {
+            opts.onClose(0, JSON.stringify({ ok: true, data: { inserted: 2, updated: 1 } }), '');
+        });
+
+        view._importAnnotationsForPaper('PAPER_A', button);
+
+        expect(view._callPython).toHaveBeenCalledWith(
+            ['annotation', 'import', '--paper', 'PAPER_A', '--zotero-db', 'C:\\Users\\tan\\Zotero\\zotero.sqlite', '--apply', '--json'],
+            expect.objectContaining({ timeout: 60000 })
+        );
+        expect(button.disabled).toBe(false);
+        expect(view.loadAnnotationsForCurrentPaper).toHaveBeenCalledWith('import');
+    });
+
+    it('collapses stale runtime argparse usage into an actionable annotation import message', () => {
+        const msg = formatAnnotationImportFailure({
+            exitCode: 2,
+            stdout: '',
+            stderr: "paperforge: error: argument command: invalid choice: 'annotation' (choose from paths, status, sync)",
+        });
+
+        expect(msg).toContain('Python runtime');
+        expect(msg).toContain('annotation commands');
+        expect(msg).toContain('Sync Runtime');
+        expect(msg).not.toContain('choose from paths');
     });
 
     it('places annotation section after .paperforge-paper-overview and before .paperforge-next-step-card or .paperforge-complete-row', () => {

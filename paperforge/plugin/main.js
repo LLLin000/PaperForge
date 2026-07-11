@@ -418,6 +418,22 @@ function buildAnnotationExportArgs(paperKey, extraArgs) {
     return base;
 }
 
+function formatAnnotationImportFailure(result) {
+    const r = result || {};
+    const combined = [r.stdout || '', r.stderr || ''].join('\n');
+    if (/invalid choice:\s*'annotation'/.test(combined) || /choose from paths,\s*status,\s*sync/.test(combined)) {
+        return 'Python runtime does not expose PaperForge annotation commands yet. Open Settings -> PaperForge -> Sync Runtime, then retry annotation import.';
+    }
+    if (/no such table:\s*itemAnnotations/i.test(combined)) {
+        return 'Zotero annotation table is not available. Confirm this is the Zotero data directory containing zotero.sqlite and storage/.';
+    }
+    if (/missing required columns/i.test(combined) || /dateModified/i.test(combined)) {
+        return 'Zotero annotation schema is different from expected. Close Zotero, confirm the data directory, then retry.';
+    }
+    const trimmed = combined.trim();
+    return trimmed ? trimmed.split(/\r?\n/).slice(-4).join('\n') : 'Annotation import failed. Check Zotero Data Dir and PaperForge runtime.';
+}
+
 async function loadAnnotationsForPaper(options) {
     const {
         paperKey,
@@ -2828,6 +2844,11 @@ class PaperForgeStatusView extends ItemView {
         }
         // ── Reading Canvas button (Phase ANN10) ──
         {
+            const importBtn = stripRight.createEl('button', { cls: 'paperforge-contextual-btn' });
+            importBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u21E3' });
+            importBtn.createEl('span', { text: 'Import Annotations' });
+            importBtn.addEventListener('click', () => this._importAnnotationsForPaper(key, importBtn));
+
             const canvasBtn = stripRight.createEl('button', { cls: 'paperforge-contextual-btn' });
             canvasBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDDD2' });
             canvasBtn.createEl('span', { text: 'Open Reading Canvas' });
@@ -3183,6 +3204,93 @@ class PaperForgeStatusView extends ItemView {
                 this._rerenderAnnotationSection();
             }
         }.bind(this));
+    }
+
+    _resolveZoteroDbPathForAnnotations() {
+        var plugin = this.app && this.app.plugins && this.app.plugins.plugins && this.app.plugins.plugins.paperforge;
+        var settings = (this.plugin && this.plugin.settings) || (plugin && plugin.settings) || {};
+        var dataDir = settings.zotero_data_dir ? String(settings.zotero_data_dir).trim() : '';
+        if (!dataDir) {
+            return {
+                ok: false,
+                path: null,
+                message: 'Set Zotero Data Dir in PaperForge settings. Use the Zotero data folder that contains zotero.sqlite and storage/, for example C:\\Users\\tan\\Zotero.',
+            };
+        }
+
+        var dbPath = /zotero\.sqlite$/i.test(dataDir) ? dataDir : path.join(dataDir, 'zotero.sqlite');
+        if (!fs.existsSync(dbPath)) {
+            return {
+                ok: false,
+                path: dbPath,
+                message: 'Zotero Data Dir does not contain zotero.sqlite: ' + dbPath,
+            };
+        }
+
+        var storageDir = path.join(path.dirname(dbPath), 'storage');
+        if (!fs.existsSync(storageDir)) {
+            return {
+                ok: false,
+                path: dbPath,
+                message: 'Zotero Data Dir must contain both zotero.sqlite and storage/: ' + path.dirname(dbPath),
+            };
+        }
+
+        return { ok: true, path: dbPath, message: '' };
+    }
+
+    _importAnnotationsForPaper(paperKey, buttonEl) {
+        if (!paperKey) {
+            new Notice('[!!] No paper key for annotation import.', 5000);
+            return;
+        }
+
+        var db = this._resolveZoteroDbPathForAnnotations();
+        if (!db.ok) {
+            var msg = db.message || 'Zotero Data Dir is not configured.';
+            this._showMessage('[!!] ' + msg, 'error');
+            new Notice('[!!] ' + msg, 8000);
+            return;
+        }
+
+        if (buttonEl) {
+            buttonEl.disabled = true;
+            buttonEl.setAttribute('aria-busy', 'true');
+        }
+        this._showMessage('Importing annotations from Zotero...', 'running');
+
+        this._callPython(['annotation', 'import', '--paper', paperKey, '--zotero-db', db.path, '--apply', '--json'], {
+            timeout: 60000,
+            onClose: function (code, stdout, stderr) {
+                if (buttonEl) {
+                    buttonEl.disabled = false;
+                    buttonEl.removeAttribute('aria-busy');
+                }
+
+                var parsed = null;
+                try { parsed = stdout ? JSON.parse(stdout) : null; } catch (_) { parsed = null; }
+                if (code !== 0 || !parsed || parsed.ok === false) {
+                    var message = parsed && parsed.error && parsed.error.message
+                        ? parsed.error.message
+                        : formatAnnotationImportFailure({ exitCode: code, stdout: stdout, stderr: stderr });
+                    this._showMessage('[!!] Annotation import failed: ' + message, 'error');
+                    new Notice('[!!] Annotation import failed: ' + message, 10000);
+                    return;
+                }
+
+                var data = parsed.data || {};
+                var imported = data.imported != null ? data.imported : (data.inserted || 0) + (data.updated || 0);
+                var summary = 'Imported annotations for ' + paperKey + (imported ? ': ' + imported : '') + '.';
+                this._showMessage('[OK] ' + summary, 'ok');
+                new Notice('[OK] ' + summary, 5000);
+                this.loadAnnotationsForCurrentPaper('import').then(function (newState) {
+                    if (!newState) return;
+                    this._annotationState = mergeAnnotationRefreshResult(this._lastRenderableAnnotationState, newState);
+                    this._rerenderAnnotationSection();
+                    this._refreshAnnotationOverlay('import');
+                }.bind(this));
+            }.bind(this),
+        });
     }
 
     /**
@@ -5405,6 +5513,18 @@ class PaperForgeSettingTab extends PluginSettingTab {
         });
 
         /* ── Runtime Health Section ── */
+        new Setting(containerEl)
+            .setName(t('field_zotero_data') || 'Zotero Data Dir')
+            .setDesc('Zotero data folder containing zotero.sqlite and storage/. Example: C:\\Users\\tan\\Zotero')
+            .addText(text => {
+                text.setPlaceholder('C:\\Users\\tan\\Zotero')
+                    .setValue(this.plugin.settings.zotero_data_dir || '')
+                    .onChange(value => {
+                        this.plugin.settings.zotero_data_dir = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+
         containerEl.createEl('h3', { text: t('runtime_health') });
         containerEl.createEl('p', { text: t('runtime_health_desc'), cls: 'paperforge-settings-desc' });
 
@@ -7708,6 +7828,7 @@ if (typeof module !== 'undefined' && module.exports) {
         extractVaultPdfPath,
         buildPaperPdfCandidates,
         resolveAnnotationPdfTarget,
+        formatAnnotationImportFailure,
         // OVLY: Overlay helpers (Phase 8, Plan 03)
         DEFAULT_OVERLAY_HIGHLIGHT_COLOR,
         createDefaultAnnotationOverlayState,
