@@ -4777,6 +4777,24 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._loadAndRenderCanvas(canvas);
     }
 
+    async setState(state, result) {
+        if (super.setState) {
+            await super.setState(state, result);
+        }
+        var paperKey = state && state.paperKey;
+        var entry = state && state.entry;
+        if (paperKey) {
+            this.setPaperContext(paperKey, entry || { key: paperKey });
+        }
+    }
+
+    getState() {
+        return {
+            paperKey: this._paperKey,
+            entry: this._paperEntry,
+        };
+    }
+
     /**
      * Render the canvas shell based on current context.
      * @param {object} [canvas] - The canvas module (injected for testability).
@@ -5372,28 +5390,37 @@ class PaperForgeReadingCanvasView extends ItemView {
      * @param {object} entry - Paper entry object.
      */
     static async open(plugin, paperKey, entry) {
+        const viewState = {
+            type: VIEW_TYPE_PAPERFORGE_READING_CANVAS,
+            active: true,
+            state: { paperKey: paperKey, entry: entry },
+        };
         const leaves = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE_READING_CANVAS);
         if (leaves.length > 0) {
+            if (leaves[0].setViewState) {
+                await leaves[0].setViewState(viewState);
+            }
             const view = await PaperForgeReadingCanvasView._waitForLeafView(leaves[0]);
-            if (view && view.setPaperContext) {
+            if (view && view.setPaperContext && view._paperKey !== paperKey) {
                 view.setPaperContext(paperKey, entry);
             } else {
-                new Notice('[!!] Reading Canvas view did not become ready. Reload PaperForge and try again.', 8000);
+                if (!view || !view.setPaperContext) {
+                    new Notice('[!!] Reading Canvas view did not become ready. Reload PaperForge and try again.', 8000);
+                }
             }
             plugin.app.workspace.revealLeaf(leaves[0]);
             return;
         }
         const leaf = plugin.app.workspace.getRightLeaf(false);
         if (leaf) {
-            await leaf.setViewState({
-                type: VIEW_TYPE_PAPERFORGE_READING_CANVAS,
-                active: true,
-            });
+            await leaf.setViewState(viewState);
             const view = await PaperForgeReadingCanvasView._waitForLeafView(leaf);
-            if (view && view.setPaperContext) {
+            if (view && view.setPaperContext && view._paperKey !== paperKey) {
                 view.setPaperContext(paperKey, entry);
             } else {
-                new Notice('[!!] Reading Canvas view did not become ready. Reload PaperForge and try again.', 8000);
+                if (!view || !view.setPaperContext) {
+                    new Notice('[!!] Reading Canvas view did not become ready. Reload PaperForge and try again.', 8000);
+                }
             }
             plugin.app.workspace.revealLeaf(leaf);
         }

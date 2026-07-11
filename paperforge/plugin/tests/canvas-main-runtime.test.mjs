@@ -347,6 +347,45 @@ describe('Task 4 — Static open method', () => {
         expect(mockLeaf.view.setPaperContext).toHaveBeenCalledWith('KEY_DELAY', { key: 'KEY_DELAY', title: 'Delayed' });
         expect(mockPlugin.app.workspace.revealLeaf).toHaveBeenCalledWith(mockLeaf);
     });
+
+    it('static open passes paper context through Obsidian view state', async () => {
+        const mockLeaf = {
+            view: { setPaperContext: vi.fn() },
+            setViewState: vi.fn(() => Promise.resolve()),
+        };
+        const entry = { key: 'KEY_STATE', title: 'Stateful' };
+        const mockPlugin = {
+            app: {
+                workspace: {
+                    getLeavesOfType: vi.fn(() => []),
+                    getRightLeaf: vi.fn(() => mockLeaf),
+                    revealLeaf: vi.fn(),
+                },
+            },
+        };
+
+        await PaperForgeReadingCanvasView.open(mockPlugin, 'KEY_STATE', entry);
+
+        expect(mockLeaf.setViewState).toHaveBeenCalledWith({
+            type: 'paperforge-reading-canvas',
+            active: true,
+            state: { paperKey: 'KEY_STATE', entry },
+        });
+    });
+
+    it('setState attaches paper context without external leaf polling', async () => {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        containerEl.appendChild(contentEl);
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl });
+        view.contentEl = contentEl;
+        view.setPaperContext = vi.fn();
+        const entry = { key: 'KEY_SETSTATE', title: 'SetState' };
+
+        await view.setState({ paperKey: 'KEY_SETSTATE', entry }, {});
+
+        expect(view.setPaperContext).toHaveBeenCalledWith('KEY_SETSTATE', entry);
+    });
 });
 
 // ── ANN11 Runtime regression gate ──
