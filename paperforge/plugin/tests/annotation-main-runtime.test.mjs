@@ -291,6 +291,17 @@ describe('Task 1 — Test hook exists', () => {
         expect(typeof PaperForgeStatusView).toBe('function');
         expect(PaperForgeStatusView.name).toBe('PaperForgeStatusView');
     });
+
+    it('constructor captures the plugin instance used by command helpers', () => {
+        const app = makeStubApp();
+        const plugin = { settings: { zotero_data_dir: 'C:\\Users\\tan\\Zotero' } };
+        app.plugins.plugins.paperforge = plugin;
+        const leaf = { app, containerEl: createObsidianEl('div') };
+
+        const view = new PaperForgeStatusView(leaf);
+
+        expect(view.plugin).toBe(plugin);
+    });
 });
 
 // ── Task 1: DOM insertion point ──

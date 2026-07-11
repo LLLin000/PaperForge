@@ -1844,6 +1844,9 @@ function resolveAnnotationPdfTarget(row, entry) {
 class PaperForgeStatusView extends ItemView {
     constructor(leaf) {
         super(leaf);
+        this.plugin = this.app && this.app.plugins && this.app.plugins.plugins
+            ? this.app.plugins.plugins.paperforge
+            : null;
         this._currentMode = null;       // 'global' | 'paper' | 'collection'
         this._currentDomain = null;     // domain name when in collection mode (D-15)
         this._currentPaperKey = null;   // zotero_key when in per-paper mode (D-03)
@@ -5681,7 +5684,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
     _callPython(command, opts) {
         const vp = this.app.vault.adapter.basePath;
-        const py = memoryState.getCachedPython(vp, this.plugin.settings);
+        const plugin = this.plugin || (this.app && this.app.plugins && this.app.plugins.plugins
+            ? this.app.plugins.plugins.paperforge
+            : null);
+        const py = memoryState.getCachedPython(vp, plugin && plugin.settings);
         const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, ...command];
         if (opts && opts.stream) {
             const { spawn } = require('node:child_process');
