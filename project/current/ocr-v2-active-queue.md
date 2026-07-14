@@ -1,5 +1,5 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; OCR maintenance streaming is implemented, the control-center UX is charted, and the current setup/readiness/recovery contract audit is resolved.
+> Status: OCR-v2 is stable; OCR maintenance streaming is implemented, the control-center UX is charted, and the audit plus both reference-product research gates are resolved.
 > Last updated: 2026-07-14
 
 ## Current checkpoint
@@ -10,6 +10,8 @@
 - The maintenance tab now exposes all papers plus the canonical `_needs_derived_rebuild()` recommendation set, selected batch actions, an above-table progress state, and full refresh on completion.
 - Source Corpus data remains authoritative and was not modified during verification. Only the deployed plugin bundle and disposable maintenance cache were refreshed.
 - [Current-contract audit](https://github.com/LLLin000/PaperForge/issues/66#issuecomment-4968837257) identified the migration boundary: preserve durable OCR/SQLite truth and recovery actions; replace global setup state, duplicate runtime/config resolution, and freshness-free snapshots.
+- [Obsidian-native research](https://github.com/LLLin000/PaperForge/issues/67#issuecomment-4970653461) preserves the six-module IA, progressive setup, capability-gated commands, and minimal transient status chrome.
+- [Desktop runtime/recovery research](https://github.com/LLLin000/PaperForge/issues/68#issuecomment-4970660288) establishes module-scoped repair, compatibility-gated updates, local redacted diagnostics, and user-reviewed issue drafts.
 
 ## Verification status
 
@@ -21,8 +23,8 @@
 
 ## Frontier
 
-- [ ] Define the shared module capability-state and action vocabulary in [#69](https://github.com/LLLin000/PaperForge/issues/69), now unblocked by the audit.
-- [ ] Complete [Obsidian-native patterns](https://github.com/LLLin000/PaperForge/issues/67) and [desktop installation/health/recovery patterns](https://github.com/LLLin000/PaperForge/issues/68); keep the managed-runtime decision blocked until #68 closes.
+- [ ] Define the shared module capability-state and action vocabulary in [#69](https://github.com/LLLin000/PaperForge/issues/69).
+- [ ] Choose the managed-runtime ownership, installation, update, rollback, and health contracts in [#70](https://github.com/LLLin000/PaperForge/issues/70); its audit and research blockers are closed.
 - [ ] Keep routine OCR quality outside maintenance; successful updates leave the queue, while unacceptable results use a user-reviewed GitHub Issue draft.
 - [ ] Close or follow up [Unified rebuild UX](https://github.com/LLLin000/PaperForge/issues/63) after the OCR slice lands.
 
