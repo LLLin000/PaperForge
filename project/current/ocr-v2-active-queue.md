@@ -1,6 +1,6 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; OCR maintenance streaming with canonical per-row actions is implemented; the capability vocabulary and managed-runtime architecture are chosen.
-> Last updated: 2026-07-14
+> Status: OCR-v2 is stable; OCR maintenance streaming with canonical per-row actions is implemented; the capability vocabulary, managed-runtime architecture, control-center prototype (#71), and maintenance inbox prototype (#72) are all resolved.
+> Last updated: 2026-07-15
 
 ## Current checkpoint
 
@@ -18,6 +18,9 @@
 - **[#69](https://github.com/LLLin000/PaperForge/issues/69) resolved** at `issuecomment-4971161072`: orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
 - **[#70](https://github.com/LLLin000/PaperForge/issues/70) resolved** at `issuecomment-4971239398`: plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
 
+- **[#71](https://github.com/LLLin000/PaperForge/issues/71) resolved**: six-module control-center HTML prototype with 5 scenarios, plain-button switcher, primary attention zone, responsive layout (768px breakpoint), and capability-gated actions. Independent Critical/Important PASS review. Design decisions recorded in `docs/prototypes/2026-07-14-six-module-control-center.{html,md}`.
+- **[#72](https://github.com/LLLin000/PaperForge/issues/72) resolved**: actionable-only maintenance inbox prototype with single-action rows, inline issue-draft review, local redacted export, and confirmation-first report flow. Independent Critical/Important PASS review. Design decisions recorded in `docs/prototypes/2026-07-14-maintenance-issue-reporting.{html,md}`.
+
 ## Verification status
 
 - Focused Python OCR paths: **99 passed, 1 Windows SIGINT test skipped, 1 unrelated empty-result regression deselected**.
@@ -25,13 +28,17 @@
 - Maintenance regression tests: **19/19 passed** (canonical action routing, confirmation gate, cache manifest preservation).
 - Live Obsidian verification: PaperForge 1.5.15 loaded without captured errors; maintenance rendered **734 All** rows and **700 Recommended** rows from the canonical backend flag.
 - Live progress-state harness showed the floating progress bar, current key, Stop control, and disabled row actions.
+- Prototype #71 (control center): **Critical PASS (5/5), Important PASS (11/11)** — independent reviewer dimensions confirmed.
+- Prototype #72 (maintenance inbox): **Critical PASS (4/4), Important PASS (6/6)** — independent reviewer dimensions confirmed.
+- Both prototypes browser-verified at 768px viewport with scenario-switching, action-button interactions, expand/collapse diagnostics, and issue-draft flow.
+- No production plugin code was modified during prototype work.
 - The repository-wide Python suite remains blocked during collection by the pre-existing `test_pr9a_resume_rebuild.py` import of removed `_assert_collections_healthy`.
 
 ## Frontier
 
-- [ ] Prototype the six-module control center ([#71](https://github.com/LLLin000/PaperForge/issues/71)) — design information hierarchy and interaction model for 安装 / 文献库 / OCR / 记忆 / 维护 / 帮助.
-- [ ] Design actionable-only maintenance inbox with user-reviewed GitHub Issue draft reporting ([#72](https://github.com/LLLin000/PaperForge/issues/72)).
-- [ ] Integrate the accepted model ([#73](https://github.com/LLLin000/PaperForge/issues/73)).
+- [x] Prototype the six-module control center ([#71](https://github.com/LLLin000/PaperForge/issues/71)) — design information hierarchy and interaction model for 安装 / 文献库 / OCR / 记忆 / 维护 / 帮助.
+- [x] Design actionable-only maintenance inbox with user-reviewed GitHub Issue draft reporting ([#72](https://github.com/LLLin000/PaperForge/issues/72)).
+- [ ] Integrate the accepted prototype model into a production control-center plugin ([#73](https://github.com/LLLin000/PaperForge/issues/73)).
 - [ ] Keep routine OCR quality outside maintenance; successful updates leave the queue, while unacceptable results use a user-reviewed GitHub Issue draft.
 
 ## Deferred

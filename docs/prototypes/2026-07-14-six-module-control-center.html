@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PaperForge 控制中心 · 原型</title>
+<style>
+/* ===== Tokens (Vercel-inspired grayscale) ===== */
+:root {
+  --ink: #171717;
+  --body: #4d4d4d;
+  --mute: #888888;
+  --hairline: #ebebeb;
+  --hairline-strong: #a1a1a1;
+  --canvas: #ffffff;
+  --canvas-soft: #fafafa;
+  --canvas-soft-2: #f5f5f5;
+  --link: #0070f3;
+  --success: #0070f3;
+  --error: #ee0000;
+  --error-soft: #f7d4d6;
+  --warning: #f5a623;
+  --warning-soft: #ffefcf;
+  --warning-deep: #ab570a;
+  --gray-ok: #22a67e;
+  --gray-ok-soft: #e0f5ed;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 100px;
+
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --focus-ring: 0 0 0 2px var(--link);
+}
+
+/* ===== Reset ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font);
+  color: var(--body);
+  background: var(--canvas-soft);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ===== Focus ===== */
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline-offset: 2px;
+}
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ===== Layout ===== */
+.app {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px 48px;
+}
+
+/* ===== Header ===== */
+.header {
+  padding: 40px 0 8px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 32px;
+}
+.header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+.header p {
+  font-size: 14px;
+  color: var(--mute);
+}
+
+/* ===== Scenario Switcher ===== */
+.scenarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding-top: 20px;
+}
+.scenario-btn {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline);
+  background: var(--canvas);
+  color: var(--body);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: -0.1px;
+}
+.scenario-btn:hover {
+  border-color: var(--hairline-strong);
+  color: var(--ink);
+  background: var(--canvas-soft);
+}
+.scenario-btn.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--canvas);
+}
+
+/* ===== Primary Attention Zone ===== */
+.primary-zone {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
+}
+.primary-zone.error-primary {
+  border-left: 3px solid var(--error);
+}
+.primary-zone.warning-primary {
+  border-left: 3px solid var(--warning);
+}
+.primary-zone.ok-primary {
+  border-left: 3px solid var(--gray-ok);
+}
+.primary-zone.unknown-primary {
+  border-left: 3px solid var(--hairline-strong);
+}
+.primary-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 8px;
+}
+.primary-headline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.primary-headline h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.4px;
+  flex: 1;
+}
+.primary-action-btn {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--ink);
+  color: var(--canvas);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+.primary-action-btn:hover { opacity: 0.85; }
+.primary-action-btn:active { opacity: 0.7; }
+.primary-description {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--body);
+  line-height: 1.5;
+}
+
+/* ===== Module Grid ===== */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .module-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .module-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== Module Card ===== */
+.module-card {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.module-card:hover {
+  box-shadow: var(--shadow-md);
+}
+.module-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ===== State Badge ===== */
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  line-height: 1.4;
+}
+.state-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.state-badge.ok { background: var(--gray-ok-soft); color: #1a7a5c; }
+.state-badge.ok .dot { background: var(--gray-ok); }
+.state-badge.warning { background: var(--warning-soft); color: var(--warning-deep); }
+.state-badge.warning .dot { background: var(--warning); }
+.state-badge.error { background: var(--error-soft); color: var(--error); }
+.state-badge.error .dot { background: var(--error); }
+.state-badge.unknown { background: var(--canvas-soft-2); color: var(--mute); }
+.state-badge.unknown .dot { background: var(--hairline-strong); }
+
+.module-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex: 1;
+}
+
+.module-reason {
+  font-size: 13px;
+  color: var(--mute);
+  line-height: 1.4;
+}
+.module-reason strong {
+  color: var(--body);
+  font-weight: 500;
+}
+
+/* ===== Progress ===== */
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--body);
+}
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--hairline);
+  border-top-color: var(--link);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--canvas-soft-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--link);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* ===== Action Button ===== */
+.module-action-btn {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline);
+  background: var(--canvas);
+  color: var(--ink);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all 0.12s ease;
+  margin-top: 4px;
+}
+.module-action-btn:hover {
+  background: var(--canvas-soft-2);
+  border-color: var(--hairline-strong);
+}
+.module-action-btn.primary-action {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--canvas);
+}
+.module-action-btn.primary-action:hover {
+  opacity: 0.85;
+}
+
+/* ===== Advanced Diagnostics ===== */
+.advanced-toggle {
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--link);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  align-self: flex-start;
+  text-decoration: underline 1px dotted transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+.advanced-toggle:hover {
+  text-decoration-color: var(--link);
+}
+.advanced-details {
+  display: none;
+  font-size: 12px;
+  color: var(--mute);
+  padding: 10px 12px;
+  background: var(--canvas-soft);
+  border-radius: var(--radius-sm);
+  line-height: 1.6;
+  font-family: var(--font-mono);
+}
+.advanced-details.open {
+  display: block;
+}
+.advanced-details dt {
+  color: var(--body);
+  font-weight: 500;
+}
+.advanced-details dd {
+  margin-left: 0;
+  margin-bottom: 4px;
+}
+
+/* ===== Snackbar ===== */
+.snackbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--ink);
+  color: var(--canvas);
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+}
+.snackbar.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>PaperForge 控制中心</h1>
+    <p>安装 · 文献库 · OCR · 记忆 · 维护 · 帮助</p>
+  </header>
+
+  <!-- Scenario Switcher -->
+  <nav class="scenarios" aria-label="场景切换">
+    <button class="scenario-btn" data-scenario="first-run" aria-current="true">首次运行</button>
+    <button class="scenario-btn" data-scenario="partial">部分就绪</button>
+    <button class="scenario-btn" data-scenario="active-ocr">OCR 进行中</button>
+    <button class="scenario-btn" data-scenario="stale">快照过期</button>
+    <button class="scenario-btn" data-scenario="all-ready">一切正常</button>
+  </nav>
+
+  <!-- Primary Attention Zone -->
+  <div class="primary-zone" id="primaryZone" role="alert" aria-live="polite">
+    <div class="primary-label">需要注意</div>
+    <div class="primary-headline">
+      <h2 id="primaryTitle">PaperForge 尚未安装</h2>
+      <button class="primary-action-btn" id="primaryBtn">开始安装</button>
+    </div>
+    <p class="primary-description" id="primaryDesc">完成安装后即可管理文献、运行 OCR 和构建记忆库。</p>
+  </div>
+
+  <!-- Module Grid -->
+  <div class="module-grid" id="moduleGrid" role="list">
+    <!-- Each card generated by JS -->
+  </div>
+
+</div>
+
+<!-- Snackbar -->
+<div class="snackbar" id="snackbar" role="status" aria-live="polite"></div>
+
+<script>
+// ===== Module Definitions =====
+const MODULES = [
+  { id: 'installation', label: '安装', icon: '⚙' },
+  { id: 'library',      label: '文献库', icon: '▤' },
+  { id: 'ocr',          label: 'OCR',    icon: '◐' },
+  { id: 'memory',       label: '记忆',   icon: '◇' },
+  { id: 'maintenance',  label: '维护',   icon: '△' },
+  { id: 'help',         label: '帮助',   icon: '?' },
+];
+
+// ===== Scenario Data =====
+const SCENARIOS = {
+  'first-run': {
+    primary: {
+      severity: 'warning',
+      title: 'PaperForge 尚未安装',
+      action: { label: '开始安装', verb: 'setup' },
+      desc: '完成安装后即可管理文献、运行 OCR 和构建记忆库。'
+    },
+    modules: {
+      installation: {
+        state: 'missing_input', severity: 'warning',
+        reason: '需要配置',
+        detail: '安装路径、Python 运行环境和 API 密钥均未设置。',
+        action: { label: '开始安装', verb: 'setup', primary: true },
+        diag: { '状态': '未安装', '配置文件': '不存在', '运行环境': '未检测' }
+      },
+      library: {
+        state: 'missing_input', severity: 'warning',
+        reason: 'Zotero 导出路径未设置',
+        detail: '需要指定 Zotero 的 Better BibTeX 导出文件路径才能同步文献。',
+        action: { label: '配置路径', verb: 'set_config', primary: false },
+        diag: { '同步状态': '未同步', '文献数量': '--', '导出文件': '未指定' }
+      },
+      ocr: {
+        state: 'missing_input', severity: 'warning',
+        reason: 'API 密钥未配置',
+        detail: 'OCR 需要有效的 PaddleOCR API 密钥才能处理论文图片。',
+        action: { label: '配置密钥', verb: 'set_config', primary: false },
+        diag: { 'API 状态': '未配置', '可用额度': '--', '模型版本': '--' }
+      },
+      memory: {
+        state: 'missing_input', severity: 'warning',
+        reason: '记忆库尚未创建',
+        detail: '需要先完成安装并同步文献后才能创建文献记忆库。',
+        action: { label: '配置记忆库', verb: 'set_config', primary: false },
+        diag: { '数据库状态': '未创建', '索引状态': '--', '检索就绪': '--' }
+      },
+      maintenance: {
+        state: 'needs_action', severity: 'warning',
+        reason: '4 个模块需要配置',
+        detail: '安装、文献库、OCR、记忆四个模块均处于未就绪状态。可点击各模块的按钮单独处理。',
+        action: null,
+        diag: { '待处理项目': '4', '影响模块': '安装 / 文献库 / OCR / 记忆' }
+      },
+      help: {
+        state: 'ready', severity: 'ok',
+        reason: '随时可用',
+        detail: '帮助文档已就绪，可以通过命令面板或右键菜单访问。',
+        action: null,
+        diag: { '文档版本': '2026-07', '文档数量': '12 篇', '最后更新': '2026-07-14' }
+      }
+    }
+  },
+
+  'partial': {
+    primary: {
+      severity: 'warning',
+      title: 'OCR 处理结果已过期，记忆库索引需要更新',
+      action: { label: '重建衍生文件', verb: 'rebuild_derived' },
+      desc: '12 篇论文的 OCR 衍生文件已过期。同时记忆库索引需要更新（5 篇待索引）。点击"重建衍生文件"优先处理过期项。'
+    },
+    modules: {
+      installation: {
+        state: 'ready', severity: 'ok',
+        reason: '运行正常',
+        detail: 'PaperForge 已安装，Python 运行环境版本 3.11，配置文件完整。',
+        action: null,
+        diag: { '版本': '1.3.0', '运行环境': 'Python 3.11.4 (venv)', '安装方式': 'pip' }
+      },
+      library: {
+        state: 'ready', severity: 'ok',
+        reason: '已同步',
+        detail: '文献库已于 2 分钟前自动同步，共 247 篇论文，无新增。',
+        action: null,
+        diag: { '文献总数': '247', '同步时间': '2 分钟前', 'Zotero 连接': '正常' }
+      },
+      ocr: {
+        state: 'needs_action', severity: 'warning',
+        reason: '12 篇论文的衍生文件已过期',
+        detail: 'OCR 版本更新后，这些论文的解析结果需要重新生成，不会覆盖原始识别结果。',
+        action: { label: '重建衍生文件', verb: 'rebuild_derived', primary: true },
+        diag: { '待处理': '12 篇', '原始识别': '已完成', '衍生版本': '过期 (v2→v3)' }
+      },
+      memory: {
+        state: 'needs_action', severity: 'warning',
+        reason: '索引需要更新',
+        detail: '有 5 篇新论文已同步，全文索引和向量索引需要重建才能搜索到这些文献。',
+        action: { label: '重建索引', verb: 'rebuild_index', primary: true },
+        diag: { '待索引': '5 篇', '当前索引': '242 篇', '向量维度': '768' }
+      },
+      maintenance: {
+        state: 'needs_action', severity: 'warning',
+        reason: '2 个模块需要注意',
+        detail: 'OCR 衍生文件过期，记忆库索引需要更新。可点击各模块的按钮单独处理。',
+        action: null,
+        items: ['OCR: 12 篇衍生文件过期', '记忆: 5 篇待索引'],
+        diag: { '待处理': '2 项', '影响模块': 'OCR / 记忆' }
+      },
+      help: {
+        state: 'ready', severity: 'ok',
+        reason: '随时可用',
+        detail: '帮助文档已就绪，可以通过命令面板或右键菜单访问。',
+        action: null,
+        diag: { '文档版本': '2026-07', '文档数量': '12 篇', '最后更新': '2026-07-14' }
+      }
+    }
+  },
+
+  'active-ocr': {
+    primary: {
+      severity: 'warning',
+      title: 'OCR 正在处理 3/12 篇论文',
+      action: { label: '查看进度', verb: 'investigate' },
+      desc: 'OCR 批处理正在进行中。已处理 3 篇，预计剩余 4 分钟。同时记忆库索引需要更新。'
+    },
+    modules: {
+      installation: {
+        state: 'ready', severity: 'ok',
+        reason: '运行正常',
+        detail: 'PaperForge 已安装，运行环境版本 1.3.0。',
+        action: null,
+        diag: { '版本': '1.3.0', '运行环境': 'Python 3.11.4', '安装方式': 'pip' }
+      },
+      library: {
+        state: 'ready', severity: 'ok',
+        reason: '已同步',
+        detail: '文献库同步正常。',
+        action: null,
+        diag: { '文献总数': '247', '同步时间': '10 分钟前', 'Zotero 连接': '正常' }
+      },
+      ocr: {
+        state: 'needs_action', severity: 'warning',
+        reason: 'OCR 批处理进行中',
+        activity: { label: '处理中', progress: { current: 3, total: 12 } },
+        detail: '正在处理第 3 篇论文的 OCR 识别，预计剩余 4 分钟。',
+        action: { label: '查看详情', verb: 'investigate', primary: false },
+        diag: { '进度': '3/12', '已处理': '3 篇', '队列中': '9 篇', '模型': 'PaddleOCR v4' }
+      },
+      memory: {
+        state: 'needs_action', severity: 'warning',
+        reason: '索引需要更新',
+        detail: 'OCR 完成后需要更新全文索引和向量索引。',
+        action: { label: '稍后重建', verb: 'rebuild_index', primary: false },
+        diag: { '待索引': '5 篇', '当前索引': '242 篇' }
+      },
+      maintenance: {
+        state: 'needs_action', severity: 'warning',
+        reason: 'OCR 进行中，记忆库待索引',
+        detail: 'OCR 批处理运行中（3/12）。记忆库索引需要更新。各模块均可独立操作。',
+        action: null,
+        items: ['OCR: 批处理进行中', '记忆: 5 篇待索引'],
+        diag: { '待处理': '2 项', '影响模块': 'OCR / 记忆' }
+      },
+      help: {
+        state: 'ready', severity: 'ok',
+        reason: '随时可用',
+        detail: '帮助文档已就绪。',
+        action: null,
+        diag: { '文档版本': '2026-07', '文档数量': '12 篇' }
+      }
+    }
+  },
+
+  'stale': {
+    primary: {
+      severity: 'warning',
+      label: '缓存过期',
+      title: '部分模块状态已过期',
+      action: { label: '刷新过期模块', verb: 'probe' },
+      desc: 'OCR、文献库、记忆库的缓存快照已超过有效期。安装状态和帮助文档仍为最新（有效期 3600 秒）。点击"刷新过期模块"重新检测。'
+    },
+    modules: {
+      installation: {
+        state: 'ready', severity: 'ok',
+        reason: '运行正常（缓存有效）',
+        detail: '安装配置缓存 3600 秒有效，上次检测 6 分钟前，仍在有效期内。',
+        action: null,
+        diag: { '版本': '1.3.0', '运行环境': 'Python 3.11.4', '有效期': '3600 秒', '下次过期': '54 分钟后' }
+      },
+      library: {
+        state: 'unknown', severity: 'unknown',
+        reason: '状态未知（缓存已过期）',
+        detail: '文献库缓存有效期 300 秒，上次检测 6 分钟前（已过期）。需要重新检测。',
+        action: { label: '检测', verb: 'probe', primary: false },
+        diag: { '状态': '未知', '上次检测': '6 分钟前', '有效期': '300 秒', '已超时': '3 分钟' }
+      },
+      ocr: {
+        state: 'unknown', severity: 'unknown',
+        reason: '状态未知（缓存已过期）',
+        detail: 'OCR 缓存有效期 60 秒，上次检测 6 分钟前（已过期）。需要重新检测。',
+        action: { label: '检测', verb: 'probe', primary: false },
+        diag: { '状态': '未知', '上次检测': '6 分钟前', '有效期': '60 秒', '已超时': '5 分钟' }
+      },
+      memory: {
+        state: 'unknown', severity: 'unknown',
+        reason: '状态未知（缓存已过期）',
+        detail: '记忆库缓存有效期 300 秒，上次检测 6 分钟前（已过期）。需要重新检测。',
+        action: { label: '检测', verb: 'probe', primary: false },
+        diag: { '状态': '未知', '上次检测': '6 分钟前', '有效期': '300 秒', '已超时': '3 分钟' }
+      },
+      maintenance: {
+        state: 'unknown', severity: 'unknown',
+        reason: '状态未知（依赖模块已过期）',
+        detail: '维护视图依赖的底层模块缓存已过期，无法投影有效状态。需要重新检测。',
+        action: { label: '检测', verb: 'probe', primary: false },
+        diag: { '状态': '未知', '依赖模块': 'OCR / 文献库 / 记忆', '缓存': '已过期' }
+      },
+      help: {
+        state: 'ready', severity: 'ok',
+        reason: '随时可用（缓存有效）',
+        detail: '帮助文档缓存 3600 秒有效，上次检测 6 分钟前，仍在有效期内。',
+        action: null,
+        diag: { '文档版本': '2026-07', '有效期': '3600 秒', '下次过期': '54 分钟后' }
+      }
+    }
+  },
+
+  'all-ready': {
+    primary: {
+      severity: 'ok',
+      title: '一切正常',
+      action: { label: '刷新状态', verb: 'probe' },
+      desc: '所有模块均已就绪。PaperForge 正常运行，文献库已同步，OCR 已就绪，记忆库已索引。'
+    },
+    modules: {
+      installation: {
+        state: 'ready', severity: 'ok',
+        reason: '运行正常',
+        detail: 'PaperForge 已安装并运行正常。',
+        action: null,
+        diag: { '版本': '1.3.0', '运行环境': 'Python 3.11.4', '安装方式': 'pip' }
+      },
+      library: {
+        state: 'ready', severity: 'ok',
+        reason: '已同步',
+        detail: '文献库同步正常，共 247 篇论文。',
+        action: null,
+        diag: { '文献总数': '247', '同步时间': '刚刚', 'Zotero 连接': '正常' }
+      },
+      ocr: {
+        state: 'ready', severity: 'ok',
+        reason: '已就绪',
+        detail: 'OCR 服务正常运行，API 密钥有效。',
+        action: null,
+        diag: { 'API 状态': '有效', '可用额度': '充足', '模型版本': 'PaddleOCR v4' }
+      },
+      memory: {
+        state: 'ready', severity: 'ok',
+        reason: '已索引',
+        detail: '全文索引和向量索引均已就绪。',
+        action: null,
+        diag: { '已索引': '247 篇', '全文索引': '已构建', '向量索引': '已构建' }
+      },
+      maintenance: {
+        state: 'ready', severity: 'ok',
+        reason: '无待处理事项',
+        detail: '所有模块运行正常，无需处理。',
+        action: null,
+        items: [],
+        diag: { '待处理': '0 项', '最后检查': '刚刚' }
+      },
+      help: {
+        state: 'ready', severity: 'ok',
+        reason: '随时可用',
+        detail: '帮助文档已就绪。',
+        action: null,
+        diag: { '文档版本': '2026-07', '文档数量': '12 篇' }
+      }
+    }
+  }
+};
+
+// ===== Render =====
+let currentScenario = 'first-run';
+
+function showSnackbar(text) {
+  const el = document.getElementById('snackbar');
+  el.textContent = text;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function renderScenario(scenarioId) {
+  currentScenario = scenarioId;
+  const data = SCENARIOS[scenarioId];
+  const grid = document.getElementById('moduleGrid');
+  const zone = document.getElementById('primaryZone');
+
+  // Update active button
+  document.querySelectorAll('.scenario-btn').forEach(btn => {
+    const isActive = btn.dataset.scenario === scenarioId;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-current', isActive ? 'true' : 'false');
+  });
+
+  // Primary zone
+  const prim = data.primary;
+  zone.className = 'primary-zone';
+  if (prim.severity === 'error') zone.classList.add('error-primary');
+  else if (prim.severity === 'warning') zone.classList.add('warning-primary');
+  else if (prim.severity === 'ok') zone.classList.add('ok-primary');
+  else if (prim.severity === 'unknown') zone.classList.add('unknown-primary');
+
+  const primaryLabelEl = zone.querySelector('.primary-label');
+  if (prim.severity === 'ok') primaryLabelEl.textContent = '总览';
+  else if (prim.severity === 'unknown') primaryLabelEl.textContent = '状态未知';
+  else if (prim.label) primaryLabelEl.textContent = prim.label;
+  else primaryLabelEl.textContent = '需要注意';
+
+  document.getElementById('primaryTitle').textContent = prim.title;
+  document.getElementById('primaryDesc').textContent = prim.desc;
+  const primaryBtn = document.getElementById('primaryBtn');
+  primaryBtn.textContent = prim.action.label;
+  primaryBtn.dataset.verb = prim.action.verb;
+  primaryBtn.style.display = '';
+
+  // Module cards
+  grid.innerHTML = '';
+  MODULES.forEach(mod => {
+    const info = data.modules[mod.id];
+    if (!info) return;
+
+    const card = document.createElement('div');
+    card.className = 'module-card';
+    card.setAttribute('role', 'listitem');
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'module-card-header';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'module-name';
+    nameEl.textContent = mod.label;
+
+    // Severity badge
+    const badge = document.createElement('span');
+    badge.className = `state-badge ${severityClass(info.severity)}`;
+    badge.innerHTML = `<span class="dot"></span>${stateLabel(info.state)}`;
+    if (info.state === 'ready') badge.title = '正常工作';
+    else if (info.state === 'unknown') badge.title = '缓存已过期，无法确定实际状态';
+    else if (info.state === 'needs_action') badge.title = '需要操作';
+    else if (info.state === 'missing_input') badge.title = '缺少配置';
+    else badge.title = info.reason;
+
+    header.appendChild(nameEl);
+    header.appendChild(badge);
+    card.appendChild(header);
+
+    // Reason
+    const reasonEl = document.createElement('p');
+    reasonEl.className = 'module-reason';
+    reasonEl.textContent = info.reason;
+    card.appendChild(reasonEl);
+
+    // Activity (if running)
+    if (info.activity) {
+      const act = document.createElement('div');
+      act.className = 'activity-row';
+      act.setAttribute('aria-label', info.activity.label);
+
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      spinner.setAttribute('aria-hidden', 'true');
+      act.appendChild(spinner);
+
+      const label = document.createElement('span');
+      label.textContent = info.activity.label;
+      act.appendChild(label);
+
+      if (info.activity.progress) {
+        const bar = document.createElement('div');
+        bar.className = 'progress-bar';
+        bar.setAttribute('role', 'progressbar');
+        bar.setAttribute('aria-valuenow', info.activity.progress.current);
+        bar.setAttribute('aria-valuemin', '0');
+        bar.setAttribute('aria-valuemax', info.activity.progress.total);
+
+        const fill = document.createElement('div');
+        fill.className = 'progress-fill';
+        const pct = info.activity.progress.current / info.activity.progress.total * 100;
+        fill.style.width = pct + '%';
+        bar.appendChild(fill);
+        act.appendChild(bar);
+
+        const count = document.createElement('span');
+        count.textContent = `${info.activity.progress.current}/${info.activity.progress.total}`;
+        act.appendChild(count);
+      }
+
+      card.appendChild(act);
+    }
+
+    // Detail text
+    if (info.detail) {
+      const detailEl = document.createElement('p');
+      detailEl.className = 'module-reason';
+      detailEl.style.color = 'var(--body)';
+      detailEl.textContent = info.detail;
+      card.appendChild(detailEl);
+    }
+
+    // Maintenance items list
+    if (info.items && info.items.length > 0) {
+      const itemsList = document.createElement('ul');
+      itemsList.style.cssText = 'font-size:13px;color:var(--body);list-style:none;padding:0;margin:2px 0 0;';
+      info.items.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = '· ' + item;
+        itemsList.appendChild(li);
+      });
+      card.appendChild(itemsList);
+    }
+
+    // Action button
+    if (info.action) {
+      const btn = document.createElement('button');
+      btn.className = 'module-action-btn' + (info.action.primary ? ' primary-action' : '');
+      btn.textContent = info.action.label;
+      btn.dataset.verb = info.action.verb;
+      btn.dataset.module = mod.id;
+      btn.addEventListener('click', () => handleAction(info.action.verb, mod.label));
+      card.appendChild(btn);
+    }
+
+    // Advanced diagnostics toggle
+    if (info.diag) {
+      const toggle = document.createElement('button');
+      toggle.className = 'advanced-toggle';
+      toggle.textContent = '诊断信息';
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.addEventListener('click', () => {
+        const panel = card.querySelector('.advanced-details');
+        const expanded = panel.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', expanded);
+        toggle.textContent = expanded ? '收起诊断信息' : '诊断信息';
+      });
+      card.appendChild(toggle);
+
+      const diagPanel = document.createElement('dl');
+      diagPanel.className = 'advanced-details';
+      Object.entries(info.diag).forEach(([key, val]) => {
+        const dt = document.createElement('dt');
+        dt.textContent = key;
+        const dd = document.createElement('dd');
+        dd.textContent = val;
+        diagPanel.appendChild(dt);
+        diagPanel.appendChild(dd);
+      });
+      card.appendChild(diagPanel);
+    }
+
+    grid.appendChild(card);
+  });
+
+  // Focus management: focus the primary action button on scenario change
+  primaryBtn.focus();
+}
+
+function severityClass(sev) {
+  if (sev === 'ok') return 'ok';
+  if (sev === 'warning') return 'warning';
+  if (sev === 'error') return 'error';
+  return 'unknown';
+}
+
+function stateLabel(state) {
+  const labels = {
+    'ready': '就绪',
+    'unknown': '未知',
+    'unavailable': '不可用',
+    'missing_input': '待配置',
+    'needs_action': '需处理',
+    'limited': '受限'
+  };
+  return labels[state] || state;
+}
+
+function handleAction(verb, moduleLabel) {
+  const messages = {
+    'setup': '正在启动安装流程...',
+    'set_config': '正在打开配置界面...',
+    'sync': '正在同步文献库...',
+    'rebuild_derived': '正在重建衍生文件...',
+    'rebuild_index': '正在重建索引...',
+    'redo': '需要确认：此操作将删除现有结果',
+    'restore_backup': '需要确认：将从备份恢复数据库',
+    'run': '正在处理...',
+    'migrate': '正在执行数据库迁移...',
+    'update': '正在检查更新...',
+    'investigate': '正在收集诊断信息...',
+    'probe': '正在检测状态...'
+  };
+  const msg = messages[verb] || `正在执行: ${verb}`;
+  showSnackbar(`${moduleLabel}: ${msg}`);
+}
+
+// ===== Event Wiring =====
+document.addEventListener('DOMContentLoaded', () => {
+  // Scenario buttons
+  document.querySelectorAll('.scenario-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      renderScenario(e.currentTarget.dataset.scenario);
+    });
+    btn.addEventListener('keydown', (e) => {
+      const btns = Array.from(document.querySelectorAll('.scenario-btn'));
+      const idx = btns.indexOf(e.currentTarget);
+      let nextIdx = -1;
+      if (e.key === 'ArrowRight') nextIdx = (idx + 1) % btns.length;
+      else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + btns.length) % btns.length;
+      if (nextIdx >= 0) {
+        e.preventDefault();
+        btns[nextIdx].click();
+        btns[nextIdx].focus();
+      }
+    });
+  });
+
+  // Primary action
+  document.getElementById('primaryBtn').addEventListener('click', () => {
+    const data = SCENARIOS[currentScenario];
+    if (data) handleAction(data.primary.action.verb, 'PaperForge');
+  });
+
+  // Initial render
+  renderScenario('first-run');
+});
+</script>
+</body>
+</html>
