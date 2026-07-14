@@ -38,7 +38,7 @@ class ConfigWriter:
         }
     """
 
-    PATH_KEYS = ["system_dir", "resources_dir", "literature_dir", "base_dir"]
+    PATH_KEYS = ["system_dir", "resources_dir", "literature_dir", "control_dir", "base_dir", "skill_dir", "command_dir"]
 
     def __init__(self, vault: Path):
         self.vault = vault

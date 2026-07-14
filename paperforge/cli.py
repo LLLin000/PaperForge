@@ -731,64 +731,58 @@ def main(argv: list[str] | None = None) -> int:
         return run_update(vault)
 
     if args.command == "setup":
+        # Shared config builder
+        _cfg = {
+            "system_dir": getattr(args, "system_dir", None) or "System",
+            "resources_dir": getattr(args, "resources_dir", None) or "Resources",
+            "literature_dir": getattr(args, "literature_dir", None) or "Literature",
+            "base_dir": getattr(args, "base_dir", None) or "Bases",
+            "control_dir": getattr(args, "control_dir", None) or "LiteratureControl",
+            "skill_dir": getattr(args, "skill_dir", None) or ".opencode/skills",
+            "command_dir": getattr(args, "command_dir", None) or ".opencode/command",
+        }
+        _zotero = getattr(args, "zotero_data", None)
+        _agent = getattr(args, "agent", "opencode")
+
         if getattr(args, "modular", False):
             from paperforge.setup.plan import SetupPlan
 
-            config = {
-                "system_dir": getattr(args, "system_dir", None) or "System",
-                "resources_dir": getattr(args, "resources_dir", None) or "Resources",
-                "literature_dir": getattr(args, "literature_dir", None) or "Literature",
-                "base_dir": getattr(args, "base_dir", None) or "Bases",
-            }
             plan = SetupPlan(
                 vault=vault,
-                config=config,
-                agent_type=getattr(args, "agent", "opencode"),
+                config=_cfg,
+                zotero_path=_zotero,
+                agent_type=_agent,
             )
             return plan.execute(json_output=getattr(args, "json_output", False))
         elif getattr(args, "headless", False):
-            import warnings
-
-            warnings.warn(
-                "paperforge setup --headless is deprecated; "
-                "use 'paperforge setup --modular' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
+            print("DEPRECATED: paperforge setup --headless; use --modular instead.", file=sys.stderr)
             from paperforge.setup_wizard import headless_setup
 
-            return headless_setup(
+            ret = headless_setup(
                 vault=vault,
-                agent_key=args.agent,
+                agent_key=_agent,
                 paddleocr_key=getattr(args, "paddleocr_key", None),
                 paddleocr_url=getattr(args, "paddleocr_url", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"),
-                system_dir=getattr(args, "system_dir", None) or "System",
-                resources_dir=getattr(args, "resources_dir", None) or "Resources",
-                base_dir=getattr(args, "base_dir", None) or "Bases",
-                zotero_data=getattr(args, "zotero_data", None),
+                system_dir=_cfg["system_dir"],
+                resources_dir=_cfg["resources_dir"],
+                base_dir=_cfg["base_dir"],
+                zotero_data=_zotero,
                 skip_checks=getattr(args, "skip_checks", False),
             )
-        else:
-            import warnings
+            # Canonicalize: ensure canonical v2 vault_config via ConfigWriter
+            from paperforge.setup.config_writer import ConfigWriter
 
-            warnings.warn(
-                "bare 'paperforge setup' is deprecated; "
-                "use 'paperforge setup --modular' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
+            ConfigWriter(vault).write(_cfg)
+            return ret
+        else:
+            print("DEPRECATED: bare 'paperforge setup'; use 'paperforge setup --modular' instead.", file=sys.stderr)
             from paperforge.setup.plan import SetupPlan
 
-            config = {
-                "system_dir": getattr(args, "system_dir", None) or "System",
-                "resources_dir": getattr(args, "resources_dir", None) or "Resources",
-                "literature_dir": getattr(args, "literature_dir", None) or "Literature",
-                "base_dir": getattr(args, "base_dir", None) or "Bases",
-            }
             plan = SetupPlan(
                 vault=vault,
-                config=config,
-                agent_type=getattr(args, "agent", "opencode"),
+                config=_cfg,
+                zotero_path=_zotero,
+                agent_type=_agent,
             )
             return plan.execute(json_output=getattr(args, "json_output", False))
 
