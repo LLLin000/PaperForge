@@ -65,6 +65,21 @@ The user-facing capability for finding either a known paper or knowledge inside 
 ### Retrieval Artifact
 Regenerable data derived from the Source Corpus for search: FTS indexes, embeddings, vector tables, and their companion metadata. Retrieval Artifacts may be discarded and rebuilt; they are not preservation targets or sources of truth.
 
+### Capability State
+The current usability of one PaperForge module. Installation, Library, OCR, Memory, Maintenance, and Help each report their own state; there is no global “setup complete” state.
+
+### Activity State
+Work currently being performed by a module, such as installing, rebuilding, or stopping. Activity is independent of capability: a module may keep a warning while repair is running.
+
+### Attention State
+Whether a module currently needs a user decision or action. Normal capability stays quiet; warnings expose one concrete primary action.
+
+### Maintenance Inbox
+A derived view of actionable stale, failed, or corrupt work reported by the other modules. It is not an independent source of truth, and successful work leaves the inbox.
+
+### Managed Runtime
+The verified, versioned PaperForge execution environment selected by the plugin. Installation, health checks, upgrades, and rollback operate on one runtime identity; commands fail closed when that identity is unknown or stale.
+
 ## Architecture layers
 
 ```

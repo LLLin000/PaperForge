@@ -1,5 +1,5 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; OCR maintenance streaming with canonical per-row actions is implemented; the capability vocabulary, managed-runtime architecture, control-center prototype (#71), and maintenance inbox prototype (#72) are all resolved.
+> Status: OCR-v2 is stable; the control-center contract and PRD are resolved; #75 canonical setup/config migration is complete and #76 is the next unblocked production slice.
 > Last updated: 2026-07-15
 
 ## Current checkpoint
@@ -20,6 +20,9 @@
 
 - **[#71](https://github.com/LLLin000/PaperForge/issues/71) resolved**: six-module control-center HTML prototype with 5 scenarios, plain-button switcher, primary attention zone, responsive layout (768px breakpoint), and capability-gated actions. Independent Critical/Important PASS review. Design decisions recorded in `docs/prototypes/2026-07-14-six-module-control-center.{html,md}`.
 - **[#72](https://github.com/LLLin000/PaperForge/issues/72) resolved**: actionable-only maintenance inbox prototype with single-action rows, inline issue-draft review, local redacted export, and confirmation-first report flow. Independent Critical/Important PASS review. Design decisions recorded in `docs/prototypes/2026-07-14-maintenance-issue-reporting.{html,md}`.
+- **[#73](https://github.com/LLLin000/PaperForge/issues/73) resolved**: locked migration, security, platform, accessibility, and release-gate acceptance contract after five-domain audit and independent review.
+- **[#74](https://github.com/LLLin000/PaperForge/issues/74) published**: split into eight agent-ready issues (#75–#82) with native dependencies.
+- **[#75](https://github.com/LLLin000/PaperForge/issues/75) implemented and reviewed**: bare/headless/modular setup share `SetupPlan`; schema-v2 `vault_config` wins; v1 path keys are warned read fallback; all configured directories are forwarded; required failures return non-zero.
 
 ## Verification status
 
@@ -31,18 +34,21 @@
 - Prototype #71 (control center): **Critical PASS (5/5), Important PASS (11/11)** — independent reviewer dimensions confirmed.
 - Prototype #72 (maintenance inbox): **Critical PASS (4/4), Important PASS (6/6)** — independent reviewer dimensions confirmed.
 - Both prototypes browser-verified at 768px viewport with scenario-switching, action-button interactions, expand/collapse diagnostics, and issue-draft flow.
+- Issue #75 verification: **61/61 focused tests passed**; independent review returned **Spec PASS / Quality APPROVED**.
 - No production plugin code was modified during prototype work.
 - The repository-wide Python suite remains blocked during collection by the pre-existing `test_pr9a_resume_rebuild.py` import of removed `_assert_collections_healthy`.
 
 ## Frontier
 
-- [x] Prototype the six-module control center ([#71](https://github.com/LLLin000/PaperForge/issues/71)) — design information hierarchy and interaction model for 安装 / 文献库 / OCR / 记忆 / 维护 / 帮助.
-- [x] Design actionable-only maintenance inbox with user-reviewed GitHub Issue draft reporting ([#72](https://github.com/LLLin000/PaperForge/issues/72)).
-- [ ] Integrate the accepted prototype model into a production control-center plugin ([#73](https://github.com/LLLin000/PaperForge/issues/73)).
-- [ ] Keep routine OCR quality outside maintenance; successful updates leave the queue, while unacceptable results use a user-reviewed GitHub Issue draft.
+- [x] Prototype the six-module control center ([#71](https://github.com/LLLin000/PaperForge/issues/71)).
+- [x] Design the actionable-only maintenance inbox ([#72](https://github.com/LLLin000/PaperForge/issues/72)).
+- [x] Lock migration/acceptance contract (#73), publish PRD #74, and create dependency-linked issues #75–#82.
+- [x] Canonicalize setup and configuration migration ([#75](https://github.com/LLLin000/PaperForge/issues/75)).
+- [ ] Start [#76](https://github.com/LLLin000/PaperForge/issues/76) in a fresh Matt `/implement` session: Installation/Help capability envelope through the existing settings surface.
 
 ## Deferred
 
 - Vector rebuild UX (PRD Slice 1): deferred.
 - Memory/global maintenance cleanup (PRD Slice 3): deferred.
 - OCR ETA and real-time per-row mutation: out of scope for the completed OCR slice.
+- Release N+1/N+2 owner cutover and shim deletion remain blocked by their native issue dependencies (#81/#82).

@@ -1,13 +1,13 @@
 > **Branch:** `feat/ocr-rebuild-ux` | **Last Updated:** 2026-07-15
-> **Active work:** [Wayfinder: Make the PaperForge control center self-explanatory](https://github.com/LLLin000/PaperForge/issues/65). The capability vocabulary (#69), managed-runtime architecture (#70), six-module control-center prototype (#71), and actionable maintenance design (#72) are resolved; integrating the accepted model (#73) is the frontier.
+> **Active work:** [Control-center PRD #74](https://github.com/LLLin000/PaperForge/issues/74) is split into eight dependency-linked implementation issues (#75–#82). The first slice, canonical setup/config migration (#75), is implemented and reviewed; Installation capability integration (#76) is the next unblocked issue.
 >
 > ---
 >
-> **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo now streams progress, supports cooperative stop between papers, and refreshes canonical maintenance state. The control-plane audit found four critical contract gaps; the orthogonal capability/activity/attention model and managed-runtime immutable-slot architecture are chosen across #69 and #70. OCR maintenance now uses a canonical per-row action model with confirmation gates.
+> **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo streams progress and refreshes canonical maintenance state. The control-plane capability vocabulary, managed-runtime architecture, prototypes, migration contract, and PRD are resolved. The first production slice now routes bare, headless, and modular setup through one `SetupPlan`, writes schema-v2 `vault_config`, reads legacy path keys only as warned fallback, forwards all configured paths, and returns non-zero on required-step failure.
 >
-> #71 and #72 prototypes are complete: the six-module control-center HTML prototype covers 5 scenarios × 6 modules with independent capability probes, a primary attention zone, responsive single-column layout at 768px, and a plain-button scenario switcher. The maintenance inbox prototype demonstrates actionable-only filtering, single-action rows, inline issue-draft review with local redacted export, and a confirmation-first report flow. Both prototypes were independently reviewed (Critical/Important PASS) and browser-verified at 768px; design decisions documented in `docs/prototypes/`. No production plugin code was changed.
+> #71/#72 prototypes and #73 migration contract are complete. PRD #74 defines the six-module production program and #75–#82 form its native dependency graph. Issue #75 passed focused verification and independent spec/quality review.
 >
-> Next: integrate the accepted model into a production control-center plugin [#73](https://github.com/LLLin000/PaperForge/issues/73).
+> Next: start [#76](https://github.com/LLLin000/PaperForge/issues/76) in a fresh Matt `/implement` session; do not continue in this context.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -58,6 +58,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Plugin tests + TypeScript + production build | **93 passed; typecheck/build clean** ✅ |
 | Live Literature-hub maintenance UI | **734 All / 700 Recommended; no captured errors** ✅ |
 | Maintenance regression action model | **19/19 passed** ✅ (per-row canonical action routing, redo confirmation gate, cache manifest preservation) |
+| Canonical setup/config migration (#75) | **61 passed, 0 failed** ✅ (fresh/v1/v2 config, CLI routing, path forwarding, failure exit, idempotent rerun) |
 
 </br>
 </br>
@@ -81,6 +82,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | **@ deep search** | ✅ deep CLI invocation and result-envelope consumption restored |
 | **Vector build control** | ✅ canonical SQLite lifecycle and health state restored |
 | **Control-plane contracts** | ✅ Orthogonal capability/activity/attention model and managed-runtime immutable-slot architecture chosen; documented in `docs/research/2026-07-14-capability-state-action-contract.md` and `docs/research/2026-07-14-managed-runtime-architecture.md` |
+| **Setup/config migration** | ✅ Bare, headless, and modular setup share `SetupPlan`; schema-v2 `vault_config` is authoritative with warned v1 read fallback |
 
 ### 2.3 Fix Status
 
@@ -116,6 +118,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 31 | — | Enable OCR_PIPELINE_V3 by default | Toggle | Full vault corpus diff (555 papers): 547/555 no diff, 5/555 v3 improvements. Set OCR_PIPELINE_V3=0 for legacy | `914acd6` |
 | 32 | — | OCR rebuild progress + maintenance selection contract | Feature | Added flushed, prefix-separated rebuild/redo streams; full keyed redo; cooperative stop; canonical `needs_derived_rebuild`; All/Recommended filters; selected batch progress UI | `d7b0a527`, `3a516add`, `e556c8ba` |
 | 33 | — | OCR maintenance canonical per-row action model | Fix | Added `maintenanceActionForRow()` for `display_action`→verb routing, `maintenanceActionRequiresConfirmation()` redo confirmation gate, batch-action filtering by canonical verb, and cache-manifest preservation. Batch actions now follow the canonical backend action instead of raw `can_rebuild`/`can_redo` booleans; destructive redo requires user confirmation; cache refresh preserves the backend manifest. | `d7b0a527` |
+| 34 | — | Setup/config paths had conflicting precedence, duplicate engines, dropped user paths, and false-success exits | Migration/prefactor | Unified CLI dispatch on `SetupPlan`; v2-only writes with v1 read fallback; complete path forwarding; visible deprecation; non-zero required-step failures | `af849699`, `7b747423`, `906b3caf` |
 
 
 ## 3. Remaining Issues — Release-Readiness Layers
@@ -153,12 +156,12 @@ The OCR maintenance slice has a canonical All/Recommended state model, selected 
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. 🔴 **[Control-center Wayfinder](https://github.com/LLLin000/PaperForge/issues/65)** — map charted, audit and research gates resolved, capability model and runtime architecture chosen. Prototypes completed (#71/#72); integration (#73) is the active frontier.
+1. 🔴 **[Control-center PRD #74](https://github.com/LLLin000/PaperForge/issues/74)** — published and split into eight native dependency-linked issues (#75–#82). #75 is complete; #76 is the next unblocked production tracer.
 2. ✅ **[Capability-state vocabulary](https://github.com/LLLin000/PaperForge/issues/69)** — resolved at `issuecomment-4971161072`. Orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
 3. ✅ **[Managed runtime](https://github.com/LLLin000/PaperForge/issues/70)** — resolved at `issuecomment-4971239398`. Plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
 4. ✅ **[Control-center prototype](https://github.com/LLLin000/PaperForge/issues/71)** — resolved with independent Critical/Important PASS review and browser verification at 768px. Six-module control-center HTML prototype covers 5 scenarios with plain-button switcher, primary attention zone, responsive layout, and capability-gated actions. Design decisions recorded in `docs/prototypes/2026-07-14-six-module-control-center.html/.md`. No production implementation before #73.
 5. ✅ **[Maintenance prototype](https://github.com/LLLin000/PaperForge/issues/72)** — resolved with independent Critical/Important PASS review and browser verification at 768px. Actionable-only inbox with single-action rows, inline issue-draft review, local redacted export, and confirmation-first report flow. Design decisions recorded in `docs/prototypes/2026-07-14-maintenance-issue-reporting.html/.md`.
-6. 🔴 **Control-center integration** — [#73](https://github.com/LLLin000/PaperForge/issues/73) — integrate the accepted prototype model into a production control-center plugin. Build one or more Obsidian plugin settings tabs using the capability-state-action model, managed-runtime contracts, and actionable-only maintenance pattern from #71/#72.
+6. ✅ **[Migration and acceptance contract #73](https://github.com/LLLin000/PaperForge/issues/73)** — closed after five-domain code audit, user grilling, and independent acceptance reviews. The implementation frontier moved to PRD #74 and child issues #75–#82.
 7. 🟡 **Downstream tooling** — section-aware chunking and separate figure/table handling.
 8. ⏳ **Compatibility naming cleanup** — deferred post-release.
 ### 4.1 Immediate Next Steps
@@ -176,7 +179,9 @@ Remaining legacy OCR issues (carried forward):
 - [x] Add canonical per-row action routing and redo confirmation gates
 - [x] Prototype six-module control center ([#71](https://github.com/LLLin000/PaperForge/issues/71))
 - [x] Design actionable-only maintenance inbox ([#72](https://github.com/LLLin000/PaperForge/issues/72))
-- [ ] Integrate accepted prototype model ([#73](https://github.com/LLLin000/PaperForge/issues/73))
+- [x] Publish PRD #74 and eight agent-ready issues (#75–#82) with native dependencies
+- [x] Canonicalize setup/config migration ([#75](https://github.com/LLLin000/PaperForge/issues/75)) — 61 focused tests; spec PASS; quality APPROVED
+- [ ] Implement Installation/Help capability tracer in a fresh session ([#76](https://github.com/LLLin000/PaperForge/issues/76))
 ---
 
 ## 5. Key File Map
@@ -330,6 +335,7 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-15 | Maintenance inbox is actionable-only; normal and quality-ok items are absent | Routine quality scores create permanent, non-actionable noise. Maintenance shows only stale/failed/corrupt work with a concrete action; unacceptable OCR is reported through a user-reviewed GitHub Issue draft. |
 | 2026-07-15 | Issue-draft flow is confirmation-first, inline redacted, never auto-submitted | User reviews a prefilled GitHub draft panel inline, edits freely, then clicks "Open GitHub" to create. No token storage, no automatic submission. Docker-style opaque upload rejected. |
 | 2026-07-15 | Prototype reviews use independent Critical/Important pass/fail gates | Both #71 and #72 prototypes were reviewed by independent reviewer subagents on two dimensions: Critical items (correctness/safety) and Important items (readability/maintainability). All items passed before acceptance. |
+| 2026-07-15 | Canonical setup is one `SetupPlan`; configuration writes converge to schema v2 | Duplicate headless/modular/bare engines dropped path inputs and disagreed on success. One engine plus `vault_config`-first reads makes migration observable, idempotent, and reversible through the warned v1 read fallback. |
 
 ---
 
@@ -431,6 +437,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-14 | Control-center current-contract audit | Inventoried setup, configuration, runtime, readiness, persistence, cache, failure, and recovery contracts across plugin and Python. Closed #66 with a ranked contradiction matrix and preserve/migrate/remove plan; unblocked #69 while #70 remains blocked on desktop/runtime evidence. | [Contract audit](https://github.com/LLLin000/PaperForge/issues/66#issuecomment-4968837257) |
 | 2026-07-14 | Obsidian and desktop recovery research | Closed #67 and #68 with primary-source pattern reports. Preserved the six-module IA, independent capability probes, Obsidian-managed plugin updates, module-scoped recovery, local diagnostics, and user-reviewed issue drafts; unblocked #70. | [#67](https://github.com/LLLin000/PaperForge/issues/67#issuecomment-4970653461), [#68](https://github.com/LLLin000/PaperForge/issues/68#issuecomment-4970660288) |
 | 2026-07-15 | Six-module control-center + maintenance inbox prototypes completed | Closed #71 (six-module HTML prototype, 5 scenarios, plain-button switcher, responsive 768px) with independent Critical/Important PASS review and browser verification. Closed #72 (actionable-only inbox, inline issue-draft review, confirmation-first report) with same review gate. Both prototype pairs passed all review dimensions. No production code changed. | `docs/prototypes/2026-07-14-six-module-control-center.{html,md}`, `docs/prototypes/2026-07-14-maintenance-issue-reporting.{html,md}` |
+| 2026-07-15 | Control-center PRD split + first production slice | Published PRD #74 and eight native dependency-linked issues (#75–#82). Implemented #75: one SetupPlan for all setup entry points, schema-v2 `vault_config`, warned v1 read fallback, complete path forwarding, visible deprecation, and non-zero required-step failures. Verification: 61/61 focused tests; independent Spec PASS / Quality APPROVED. | [PRD #74](https://github.com/LLLin000/PaperForge/issues/74), [Issue #75](https://github.com/LLLin000/PaperForge/issues/75) |
 
 ## 9. Historical Detail Archive
 
