@@ -2,6 +2,8 @@
 
 import argparse
 import json
+import signal
+from collections.abc import Callable
 import logging
 from pathlib import Path
 
@@ -225,19 +227,77 @@ def _get_run_ocr():
     return run_ocr
 
 
+def _make_cooperative_stop() -> tuple[Callable[[], bool], Callable[[], None]]:
+    """Install cooperative stop mechanisms: SIGINT handler + stdin reader.
+
+    SIGINT (POSIX/terminal): sets flag.
+    Stdin line "PAPERFORGE_STOP": daemon reader thread sets flag
+      (reliable on Windows where SIGINT can't be caught in subprocesses).
+
+    Returns (is_stopped, restore):
+        is_stopped(): returns True if stop was requested
+        restore(): restores original SIGINT handler
+    """
+    import threading as _threading
+
+    _flag: list[bool] = [False]
+    _reader_active: list[bool] = [True]
+
+    # ── SIGINT handler (POSIX/terminal) ──
+    def _handler(_signum: int, _frame: object) -> None:
+        _flag[0] = True
+
+    _old = signal.signal(signal.SIGINT, _handler)
+
+    # ── Stdin reader daemon thread (Windows-reliable) ──
+    def _stdin_reader() -> None:
+        import sys as _sys
+        try:
+            while _reader_active[0]:
+                line = _sys.stdin.readline()
+                if not line:  # EOF (pipe closed)
+                    break
+                if line.strip() == "PAPERFORGE_STOP":
+                    _flag[0] = True
+                    break
+        except (OSError, ValueError, AttributeError, RuntimeError):
+            pass  # stdin unavailable in testing/headless
+
+    _reader_thread = _threading.Thread(target=_stdin_reader, daemon=True)
+    _reader_thread.start()
+
+    def _restore() -> None:
+        _reader_active[0] = False
+        signal.signal(signal.SIGINT, _old)
+
+    return (lambda: _flag[0], _restore)
+
+
+
 def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = False,
                    verbose: bool = False, no_progress: bool = False) -> int:
     """Re-run OCR for papers.
-    If keys provided, only redo those papers.
-    If no keys, scan for ocr_redo: true papers (old behavior).
-    """
-    from paperforge.worker.ocr import ocr_redo_papers
 
-    if keys:
-        # Keyed redo: process specific papers
-        from paperforge.worker.ocr import ensure_ocr_meta, write_json
+    If keys provided, delegate to redo_papers_for_keys which handles the
+    full artifact-delete + OCR run + post-check cycle per paper, supporting
+    per-paper progress tokens and cooperative stop.
+
+    If no keys, scan for ocr_redo: true papers (legacy behavior).
+
+    Progress tokens (multi-key non-dry-run only):
+      OCR_REDO_START:{total}
+      OCR_REDO_PROGRESS:{current}:{total}:{key}
+      OCR_REDO_DONE
+
+    Cooperative stop: SIGINT sets flag checked between papers.
+    """
+    from paperforge.worker.ocr import ocr_redo_papers, redo_papers_for_keys
+
+    if not keys:
+        return ocr_redo_papers(vault, dry_run=dry_run, verbose=verbose, no_progress=no_progress)
+
+    if not dry_run:
         from paperforge.worker._utils import pipeline_paths
-        from pathlib import Path
 
         paths = pipeline_paths(vault)
         ocr_root = paths.get("ocr")
@@ -245,34 +305,65 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
             print("No OCR root directory.")
             return 1
 
-        for key in keys:
-            meta_path = ocr_root / key / "meta.json"
-            if not meta_path.exists():
-                print(f"{key}: no meta.json, skipping")
-                continue
-            meta = __import__("json").loads(meta_path.read_text(encoding="utf-8"))
-            current = str(meta.get("ocr_status", "") or "").strip().lower()
-            if current == "nopdf":
-                print(f"{key}: nopdf — cannot redo (missing PDF)")
-                continue
-            # Reset meta to pending
-            meta["ocr_status"] = "pending"
-            meta["ocr_job_id"] = ""
-            meta["ocr_started_at"] = ""
-            meta["ocr_finished_at"] = ""
-            meta["error"] = ""
-            meta["retry_count"] = 0
-            if dry_run:
-                print(f"{key}: would reset to pending (dry-run)")
-            else:
-                write_json(meta_path, meta)
-                print(f"{key}: reset to pending")
+    total = len(keys)
+    batch = total > 1 and not dry_run
 
-        if not dry_run:
-            print(f"Triggering OCR run for {len(keys)} paper(s)...")
+    if batch:
+        print(f"OCR_REDO_START:{total}", flush=True)
+        _is_stopped, _restore_signal = _make_cooperative_stop()
+    else:
+        _is_stopped = lambda: False
+        _restore_signal = lambda: None
+
+    if dry_run:
+        print(f"Would redo {total} paper(s):")
+        for k in keys:
+            print(f"  - {k}: would delete artifacts and re-run OCR")
+        print("Dry-run: no changes made. Run without --dry-run to execute.")
+        if batch:
+            print(f"OCR_REDO_DONE", flush=True)
         return 0
 
-    return ocr_redo_papers(vault, dry_run=dry_run, verbose=verbose, no_progress=no_progress)
+    # Track current for progress token
+    _current = [0]
+
+    def _progress_callback(key: str) -> None:
+        _current[0] += 1
+        print(f"OCR_REDO_PROGRESS:{_current[0]}:{total}:{key}", flush=True)
+
+    def _stop_check() -> bool:
+        return _is_stopped()
+
+    try:
+        result = redo_papers_for_keys(
+            vault, keys,
+            verbose=verbose,
+            progress_callback=_progress_callback if batch else None,
+            stop_check=_stop_check if batch else None,
+        )
+
+        success_keys = result.get("success_keys", [])
+        failed_keys = result.get("failed_keys", [])
+        worker_exit_code = result.get("exit_code", 0)
+        if success_keys:
+            print(f"Redo OCR done={len(success_keys)}: {', '.join(success_keys)}", flush=True)
+        if failed_keys:
+            print(f"Redo OCR pending/failed={len(failed_keys)}: {', '.join(failed_keys)}", flush=True)
+
+        if batch and _is_stopped():
+            print(f"Batch stopped (SIGINT) after {_current[0]} paper(s).")
+
+        if batch:
+            print(f"OCR_REDO_DONE", flush=True)
+    finally:
+        _restore_signal()
+
+    if batch and _is_stopped():
+        return 130
+    return worker_exit_code
+
+
+
 
 
 def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | None = None,
@@ -438,7 +529,13 @@ def _run_ocr_rebuild(
     resume: bool = False,
     parallel_workers: int = 4,
 ) -> int:
-    """Rebuild OCR-derived artifacts from existing raw blocks."""
+    """Rebuild OCR-derived artifacts from existing raw blocks.
+
+    Progress tokens (multi-key non-dry-run only):
+      OCR_REBUILD_START:{total}
+      OCR_REBUILD_PROGRESS:{current}:{total}:{key}
+      OCR_REBUILD_DONE
+    """
     from paperforge.worker.ocr_maintenance import collect_maintenance_rows
     from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
 
@@ -452,22 +549,52 @@ def _run_ocr_rebuild(
     if resume:
         print("Note: OCR rebuild resume is now version/artifact based; .done markers are ignored.")
 
+    total = len(selected)
+    batch = total > 1 and not dry_run
+
     if dry_run:
-        print(f"Would rebuild {len(selected)} paper(s):")
+        print(f"Would rebuild {total} paper(s):")
         for k in selected:
             reason = reasons.get(k, "manual_override")
             print(f"  - {k}: {reason}")
         return 0
 
     from paperforge.worker._progress import progress_bar
-    result = run_derived_rebuild_for_keys(
-        vault, selected,
-        progress_bar=progress_bar,
-        parallel=parallel_workers,
-    )
-    count = result.get("rebuild_count", 0)
-    print(f"Done. Rebuilt {count} paper(s).")
-    return 0
+
+    if batch:
+        print(f"OCR_REBUILD_START:{total}", flush=True)
+        _count = 0
+        def _on_progress(key: str) -> None:
+            nonlocal _count
+            _count += 1
+            print(f"OCR_REBUILD_PROGRESS:{_count}:{total}:{key}", flush=True)
+        # Force sequential for cooperative stop; parallel pool can't stop mid-batch
+        parallel_workers = 0
+        _is_stopped, _restore_signal = _make_cooperative_stop()
+        def _stop_check() -> bool:
+            return _is_stopped()
+    else:
+        _on_progress = None  # type: ignore[assignment]
+        _is_stopped = lambda: False
+        _restore_signal = lambda: None
+        _stop_check = None
+
+    try:
+        result = run_derived_rebuild_for_keys(
+            vault, selected,
+            progress_bar=progress_bar,
+            parallel=parallel_workers,
+            on_progress=_on_progress,
+            stop_check=_stop_check,
+        )
+        count = result.get("rebuild_count", 0)
+        print(f"Done. Rebuilt {count} paper(s).")
+        if batch:
+            print(f"OCR_REBUILD_DONE", flush=True)
+    finally:
+        _restore_signal()
+    return 0 if not _is_stopped() else 130
+
 
 
 def run(args: argparse.Namespace) -> int:

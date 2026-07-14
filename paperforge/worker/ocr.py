@@ -2102,6 +2102,150 @@ def _rewrite_note_fields(text: str, **fields: object) -> str:
     return updated
 
 
+def _find_notes_by_key(lit_root: Path | None) -> dict[str, Path]:
+    """Scan literature directory and build {zotero_key: note_path} map."""
+    notes: dict[str, Path] = {}
+    if not lit_root or not lit_root.exists():
+        return notes
+    for note_file in sorted(lit_root.rglob("*.md")):
+        if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+            continue
+        try:
+            text = note_file.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        key_match = re.search(r"^zotero_key:\s*(.+)$", text, re.MULTILINE)
+        if not key_match:
+            continue
+        zkey = key_match.group(1).strip().strip('"').strip("'")
+        if not zkey or not re.match(r"^[A-Za-z0-9]{8}$", zkey):
+            continue
+        existing = notes.get(zkey)
+        if existing is None or note_file.name == f"{zkey}.md":
+            notes[zkey] = note_file
+    return notes
+
+
+def redo_papers_for_keys(
+    vault: Path,
+    keys: list[str],
+    *,
+    verbose: bool = False,
+    progress_callback: Callable[[str], None] | None = None,
+    stop_check: Callable[[], bool] | None = None,
+) -> dict:
+    """Redo specific papers: full artifact delete + OCR run + post-check.
+
+    Processes papers sequentially so per-paper progress and cooperative
+    stop are natural. Each paper goes through:
+      1. Delete derived artifacts and workspace fulltexts
+      2. Rewrite note as pending
+      3. Run OCR for this single paper
+      4. Check result, update note, refresh index
+
+    Args:
+        vault: Vault root.
+        keys: Zotero citation keys to redo.
+        verbose: Log additional details.
+        progress_callback: Called with key after each paper's cycle completes.
+        stop_check: Called before each paper; return True to stop.
+
+    Returns:
+        dict with success_keys, failed_keys, exit_code.
+    """
+    from paperforge.worker._utils import pipeline_paths
+
+    paths = pipeline_paths(vault)
+    ocr_root = paths.get("ocr")
+    lit_root = paths.get("literature")
+
+    notes_by_key = _find_notes_by_key(lit_root)
+
+    success_keys: list[str] = []
+    failed_keys: list[str] = []
+    _ocr_exit_code = 0
+
+    for key in keys:
+        if stop_check is not None and stop_check():
+            break
+
+        note_file = notes_by_key.get(key)
+        if note_file is None:
+            logger.warning("Redo: note not found for %s, counting as failed", key)
+            failed_keys.append(key)
+            _ocr_exit_code = 1
+            if progress_callback is not None:
+                progress_callback(key)
+            continue
+
+        try:
+            original_text = note_file.read_text(encoding="utf-8")
+        except Exception:
+            logger.warning("Redo: cannot read note for %s, counting as failed", key)
+            failed_keys.append(key)
+            if progress_callback is not None:
+                progress_callback(key)
+            _ocr_exit_code = 1
+            continue
+
+        # ── Guard: nopdf papers must not be touched ──
+        meta_path = ocr_root / key / "meta.json" if ocr_root else None
+        _existing_meta = read_json(meta_path) if meta_path and meta_path.exists() else {}
+        if str(_existing_meta.get("ocr_status", "") or "").strip().lower() == "nopdf":
+            logger.warning("Redo: %s is nopdf — cannot redo (missing PDF), skipping", key)
+            failed_keys.append(key)
+            _ocr_exit_code = 1
+            if progress_callback is not None:
+                progress_callback(key)
+            continue
+
+        # ── Phase 1: delete artifacts ──
+        for wf in _workspace_fulltext_candidates(lit_root, key):
+            wf.unlink(missing_ok=True)
+        ocr_dir = ocr_root / key if ocr_root else None
+        if ocr_dir and ocr_dir.exists():
+            shutil.rmtree(ocr_dir)
+
+        # ── Phase 2: rewrite note as pending ──
+        text = _rewrite_note_fields(
+            original_text,
+            do_ocr=True, ocr_status="pending", fulltext_md_path="", ocr_redo=True,
+        )
+        note_file.write_text(text, encoding="utf-8")
+
+        # ── Phase 3: run OCR for this paper ──
+        _paper_exit = run_ocr(vault, verbose=verbose, no_progress=True, selected_keys={key})
+        if _paper_exit != 0:
+            _ocr_exit_code = _paper_exit
+
+        # ── Phase 4: post-OCR check ──
+        meta_path = ocr_root / key / "meta.json" if ocr_root else None
+        meta = read_json(meta_path) if meta_path and meta_path.exists() else {}
+        status, _error = validate_ocr_meta(paths, meta) if meta else ("pending", "")
+
+        current_text = note_file.read_text(encoding="utf-8")
+        current_text = _rewrite_note_fields(current_text, ocr_status=status)
+        if status == "done":
+            current_text = _rewrite_note_fields(current_text, ocr_redo=False)
+            success_keys.append(key)
+        else:
+            current_text = _rewrite_note_fields(current_text, ocr_redo=True)
+            failed_keys.append(key)
+            _ocr_exit_code = _ocr_exit_code or 1
+        note_file.write_text(current_text, encoding="utf-8")
+        refresh_index_entry(vault, key)
+
+        if progress_callback is not None:
+            progress_callback(key)
+
+    return {
+        "success_keys": success_keys,
+        "failed_keys": failed_keys,
+        "exit_code": _ocr_exit_code,
+    }
+
+
+
 def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False, no_progress: bool = False) -> int:
     """Scan for papers with ocr_redo: true, reset and immediately rerun OCR.
 
@@ -2205,6 +2349,7 @@ def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False, n
     if failed_keys:
         print(f"Redo OCR pending/failed={len(failed_keys)}: {', '.join(failed_keys)}", flush=True)
     return exit_code
+
 
 
 def run_ocr(

@@ -631,54 +631,79 @@ class TestOcrListKeys:
 class TestOcrRedoKeyed:
     """_run_ocr_redo with keys parameter."""
 
-    def test_redo_single_key(self, tmp_path) -> None:
+    def test_redo_single_key(self, tmp_path, monkeypatch) -> None:
+        """Single key redo delegates to worker with full cycle."""
         from paperforge.commands.ocr import _run_ocr_redo
-
-        ocr_root = _ocr_path(tmp_path)
-        (ocr_root / "KEY1").mkdir(parents=True)
-        meta = {"zotero_key": "KEY1", "ocr_status": "done", "ocr_job_id": "job-123"}
-        (ocr_root / "KEY1" / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
-
-        result = _run_ocr_redo(tmp_path, keys=["KEY1"])
-        assert result == 0
-        reloaded = json.loads(
-            (ocr_root / "KEY1" / "meta.json").read_text(encoding="utf-8")
+        from tests.cli.test_ocr_progress_contracts import (
+            _make_minimal_vault,
+            _add_literature_note,
+            _mock_run_ocr,
         )
-        assert reloaded["ocr_status"] == "pending"
-        assert reloaded["ocr_job_id"] == ""
+        _mock_run_ocr(monkeypatch)
+        monkeypatch.setattr("paperforge.worker.ocr.validate_ocr_meta",
+            lambda _p, _m: ("done", ""))
 
-    def test_redo_multiple_keys(self, tmp_path) -> None:
-        from paperforge.commands.ocr import _run_ocr_redo
+        vault = _make_minimal_vault(tmp_path)
+        _add_literature_note(vault, "KEY00001")
 
-        ocr_root = _ocr_path(tmp_path)
-        for key in ["KEY1", "KEY2"]:
-            (ocr_root / key).mkdir(parents=True)
-            meta = {"zotero_key": key, "ocr_status": "done", "ocr_job_id": f"job-{key}"}
-            (ocr_root / key / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
-
-        result = _run_ocr_redo(tmp_path, keys=["KEY1", "KEY2"])
+        result = _run_ocr_redo(vault, keys=["KEY00001"])
         assert result == 0
-        for key in ["KEY1", "KEY2"]:
-            reloaded = json.loads(
-                (ocr_root / key / "meta.json").read_text(encoding="utf-8")
-            )
-            assert reloaded["ocr_status"] == "pending"
-            assert reloaded["ocr_job_id"] == ""
+        # Worker should have created meta.json with done status
+        meta_path = vault / "System/PaperForge/ocr" / "KEY00001" / "meta.json"
+        assert meta_path.exists(), "Meta should exist after redo cycle"
+        import json
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        assert meta.get("ocr_status") == "done"
 
-    def test_redo_dry_run(self, tmp_path) -> None:
+    def test_redo_multiple_keys(self, tmp_path, monkeypatch) -> None:
+        """Multiple keys redo delegates to worker for each key."""
         from paperforge.commands.ocr import _run_ocr_redo
+        from tests.cli.test_ocr_progress_contracts import (
+            _make_minimal_vault,
+            _add_literature_note,
+            _mock_run_ocr,
+        )
+        _mock_run_ocr(monkeypatch)
+        monkeypatch.setattr("paperforge.worker.ocr.validate_ocr_meta",
+            lambda _p, _m: ("done", ""))
 
-        ocr_root = _ocr_path(tmp_path)
-        (ocr_root / "KEY1").mkdir(parents=True)
-        meta = {"zotero_key": "KEY1", "ocr_status": "done", "ocr_job_id": "job-123"}
-        meta_path = ocr_root / "KEY1" / "meta.json"
-        meta_path.write_text(json.dumps(meta), encoding="utf-8")
+        vault = _make_minimal_vault(tmp_path)
+        for k in ("KEY00001", "KEY00002"):
+            _add_literature_note(vault, k)
 
-        _run_ocr_redo(tmp_path, keys=["KEY1"], dry_run=True)
+        result = _run_ocr_redo(vault, keys=["KEY00001", "KEY00002"])
+        assert result == 0
+        # Both papers should have meta.json
+        for k in ("KEY00001", "KEY00002"):
+            meta_path = vault / "System/PaperForge/ocr" / k / "meta.json"
+            assert meta_path.exists(), f"Meta for {k} should exist"
+    def test_redo_dry_run(self, tmp_path, monkeypatch) -> None:
+        """Dry-run redo prints without modifying artifacts."""
+        from paperforge.commands.ocr import _run_ocr_redo
+        from tests.cli.test_ocr_progress_contracts import (
+            _make_minimal_vault,
+            _add_literature_note,
+        )
 
-        reloaded = json.loads(meta_path.read_text(encoding="utf-8"))
-        assert reloaded["ocr_status"] == "done"
-        assert reloaded["ocr_job_id"] == "job-123"
+        vault = _make_minimal_vault(tmp_path)
+        _add_literature_note(vault, "KEY00001")
+
+        import io as _io
+        import sys as _sys
+        captured = _io.StringIO()
+        old = _sys.stdout
+        _sys.stdout = captured
+        try:
+            result = _run_ocr_redo(vault, keys=["KEY00001"], dry_run=True)
+        finally:
+            _sys.stdout = old
+        output = captured.getvalue()
+        assert result == 0
+        assert "Would redo" in output
+        assert "dry-run" in output.lower()
+        # Dry-run must not create OCR directory
+        ocr_dir = vault / "System/PaperForge/ocr" / "KEY00001"
+        assert not ocr_dir.exists(), "Dry-run should not create OCR artifacts"
 
     def test_redo_no_keys_falls_back(self, monkeypatch) -> None:
         from paperforge.commands.ocr import _run_ocr_redo
@@ -701,33 +726,43 @@ class TestOcrRedoKeyed:
         assert call_kwargs.get("dry_run") is False
         assert call_kwargs.get("verbose") is True
 
-    def test_redo_skips_nopdf(self, tmp_path) -> None:
+    def test_redo_skips_nopdf(self, tmp_path, monkeypatch) -> None:
+        """nopdf papers are guarded and reported as failed, not reset."""
         from paperforge.commands.ocr import _run_ocr_redo
+        from tests.cli.test_ocr_progress_contracts import (
+            _make_minimal_vault,
+            _add_literature_note,
+            _mock_run_ocr,
+        )
+        _mock_run_ocr(monkeypatch)
+        monkeypatch.setattr("paperforge.worker.ocr.validate_ocr_meta",
+            lambda _p, _m: ("done", ""))
 
-        ocr_root = _ocr_path(tmp_path)
-
-        (ocr_root / "NOPDF").mkdir(parents=True)
-        (ocr_root / "NOPDF" / "meta.json").write_text(
-            json.dumps({"zotero_key": "NOPDF", "ocr_status": "nopdf"}),
+        vault = _make_minimal_vault(tmp_path)
+        # Paper with nopdf status
+        _add_literature_note(vault, "NOPDF001")
+        nopdf_meta = vault / "System/PaperForge/ocr" / "NOPDF001" / "meta.json"
+        nopdf_meta.parent.mkdir(parents=True, exist_ok=True)
+        nopdf_meta.write_text(
+            json.dumps({"zotero_key": "NOPDF001", "ocr_status": "nopdf"}),
             encoding="utf-8",
         )
-        (ocr_root / "KEY1").mkdir(parents=True)
-        (ocr_root / "KEY1" / "meta.json").write_text(
-            json.dumps({"zotero_key": "KEY1", "ocr_status": "done", "ocr_job_id": "job-123"}),
-            encoding="utf-8",
-        )
+        # Normal redoable paper
+        _add_literature_note(vault, "KEY00001")
 
-        _run_ocr_redo(tmp_path, keys=["NOPDF", "KEY1"])
+        result = _run_ocr_redo(vault, keys=["NOPDF001", "KEY00001"])
+        # Should be non-zero (nopdf counts as failed)
+        assert result != 0
 
-        nopdf_meta = json.loads(
-            (ocr_root / "NOPDF" / "meta.json").read_text(encoding="utf-8")
-        )
-        assert nopdf_meta["ocr_status"] == "nopdf"
+        # nopdf paper must be untouched
+        assert nopdf_meta.exists()
+        import json as _json
+        nopdf_reloaded = _json.loads(nopdf_meta.read_text(encoding="utf-8"))
+        assert nopdf_reloaded["ocr_status"] == "nopdf"
 
-        key1_meta = json.loads(
-            (ocr_root / "KEY1" / "meta.json").read_text(encoding="utf-8")
-        )
-        assert key1_meta["ocr_status"] == "pending"
+        # Regular paper should have been processed
+        key1_meta = vault / "System/PaperForge/ocr" / "KEY00001" / "meta.json"
+        assert key1_meta.exists()
 
 
 class TestRunOcrListDispatch:

@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 from pathlib import Path
+from collections.abc import Callable
 
 from paperforge.core.io import read_json, write_json
 
@@ -587,7 +588,10 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
 
     _phase5_finalize(resolved, structured, rendered, span_meta_patch, health_overall=health_overall)
     return {"key": key, "status": "ok"}
-def _run_parallel_rebuild(vault: Path, keys: list[str], workers: int) -> list[dict]:
+def _run_parallel_rebuild(
+    vault: Path, keys: list[str], workers: int,
+    on_progress: Callable[[str], None] | None = None,
+) -> list[dict]:
     """Run rebuild in parallel using a process pool."""
     from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -601,7 +605,10 @@ def _run_parallel_rebuild(vault: Path, keys: list[str], workers: int) -> list[di
                 results.append(result)
             except Exception as e:
                 results.append({"key": key, "status": "failed", "error": str(e)})
+            if on_progress is not None:
+                on_progress(key)
     return results
+
 
 
 def run_derived_rebuild_for_keys(
@@ -610,6 +617,8 @@ def run_derived_rebuild_for_keys(
     progress_bar=None,
     checkpoint_dir: Path | None = None,
     parallel: int = 4,
+    on_progress: Callable[[str], None] | None = None,
+    stop_check: Callable[[], bool] | None = None,
 ) -> dict:
     """Run derived-layer rebuild for the given paper keys without raw OCR rerun.
 
@@ -625,6 +634,9 @@ def run_derived_rebuild_for_keys(
         progress_bar: Optional progress bar wrapper (tqdm-style).
         checkpoint_dir: Deprecated, kept for backward compatibility.
         parallel: Number of parallel workers (0 = serial). Default 4.
+        on_progress: Optional callback called with key after each paper completes.
+        stop_check: Optional callable returning True if stop was requested.
+            Checked before starting the next paper (serial path only).
     """
     if not keys:
         return {"rebuild_count": 0}
@@ -632,16 +644,23 @@ def run_derived_rebuild_for_keys(
     workers = int(parallel) if parallel else 0
 
     if workers > 0 and len(keys) > 1:
-        results = _run_parallel_rebuild(vault, keys, workers)
+        # Parallel path: does not support stop_check — all futures submitted at once.
+        results = _run_parallel_rebuild(vault, keys, workers, on_progress=on_progress)
         return {"rebuild_count": sum(1 for r in results if r.get("status") == "ok")}
 
     rebuilt_count = 0
     keys_iter = progress_bar(keys, desc="OCR rebuild") if progress_bar else keys
     for key in keys_iter:
+        if stop_check is not None and stop_check():
+            break
         result = _rebuild_one_paper(vault, key)
         if result.get("status") == "ok":
             rebuilt_count += 1
+        if on_progress is not None:
+            on_progress(key)
     return {"rebuild_count": rebuilt_count}
+
+
 
 
 def _enrich_meta_from_paper_note(vault: Path, key: str, meta_path: Path) -> None:

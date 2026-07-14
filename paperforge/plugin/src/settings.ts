@@ -40,6 +40,8 @@ import {
   writeMaintenanceCache,
   refreshMaintenanceData,
 } from "./services/ocr-maintenance-ui";
+import { processProgressChunk } from "./services/progress-parser";
+
 
 // ── Interface ──
 
@@ -56,6 +58,11 @@ interface ISettingPlugin {
   _embedProcess?: unknown;
   _embedProgress?: { current: number; total: number; key: string };
   _embedStderr?: string;
+  _embedBuffer?: string;
+  _ocrProcess?: unknown;
+  _ocrProgress?: { current: number; total: number; key: string };
+  _ocrBuffer?: string;
+  _ocrWasStopped?: boolean;
   _embedPollInterval?: ReturnType<typeof setInterval> | null;
   _embedPolling?: boolean;
 }
@@ -1260,16 +1267,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 : Buffer.isBuffer(data)
                   ? data.toString("utf-8")
                   : String(data);
-            const lines = text.split("\n");
-            for (const line of lines) {
-              if (line.startsWith("EMBED_START:")) {
-                this.plugin._embedProgress!.total =
-                  parseInt(line.split(":")[1]) || 0;
-              } else if (line.startsWith("EMBED_PROGRESS:")) {
-                const parts = line.split(":");
-                this.plugin._embedProgress!.current = parseInt(parts[1]) || 0;
-                this.plugin._embedProgress!.key = parts[3] || "";
-              } else if (line.startsWith("EMBED_DONE")) {
+            // Use shared parser — inline buffer reset on each build
+            const { events, buffer } = processProgressChunk(
+              text,
+              this.plugin._embedBuffer ?? "",
+            );
+            this.plugin._embedBuffer = buffer;
+            for (const ev of events) {
+              if (ev.event === "START") {
+                this.plugin._embedProgress!.total = ev.total || 0;
+              } else if (ev.event === "PROGRESS") {
+                this.plugin._embedProgress!.current = ev.current || 0;
+                this.plugin._embedProgress!.key = ev.key || "";
+              } else if (ev.event === "DONE") {
                 this.plugin._embedProcess = null;
                 this.plugin._embedProgress!.current =
                   this.plugin._embedProgress!.total;
@@ -1956,23 +1966,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: t("tab_maintenance") || "维护",
     });
 
-    const vaultPath = (this.app.vault.adapter as any).basePath as string;
+    // vault path — DataAdapter.basePath is undocumented but stable
+    const adapter = this.app.vault
+      .adapter as unknown as { basePath?: string };
+    const vaultPath = adapter.basePath ?? "";
     const statusEl = containerEl.createEl("div");
 
-    // ── Helpers ──
-    const buildActionArgs = (keys: string[], action: string) => {
-      if (action === "retry_ocr" || action === "upgrade_legacy")
-        return {
-          cmd: ["-m", "paperforge", "ocr", "redo", ...keys],
-          timeout: 300000,
-        };
-      if (action === "rebuild_result")
-        return {
-          cmd: ["-m", "paperforge", "ocr", "rebuild", ...keys],
-          timeout: 120000,
-        };
-      return null;
-    };
+    // Filter state
+    const filterState = { active: "all" as "all" | "recommended" };
 
     // ── Phase 1: Read cache ──
     let cache: MaintenanceCache | null = null;
@@ -1983,7 +1984,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ── Phase 2: Try manifest refresh ──
     const py = resolvePythonExecutable(
       vaultPath,
-      this.plugin.settings as any,
+      // PaperForgeSettings — no cast needed, ISettingPlugin has it
+      this.plugin.settings,
       fs,
       execFileSync
     );
@@ -1995,223 +1997,475 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return;
     }
 
-    // Shared table rendering function
-    const renderTable = (papers: MaintenanceDisplayRow[]) => {
-      statusEl.empty();
+      const isBatchRunning = () => !!this.plugin._ocrProcess;
 
-      const visible = papers.filter((p) => p.visible_in_maintenance);
+      const renderTable = (papers: MaintenanceDisplayRow[]) => {
+        statusEl.empty();
+        const allVisible = papers.filter((p) => p.visible_in_maintenance);
+
+        // Filter tabs — render before empty check so user can always switch back
+        const filterRow = statusEl.createEl("div", {
+          cls: "pf-maint-filters",
+        });
+
+        const allTab = filterRow.createEl("button", {
+          cls:
+            "pf-maint-filter" +
+            (filterState.active === "all" ? " active" : ""),
+          text: t("maintenance_filter_all") || "All",
+        });
+        allTab.addEventListener("click", () => {
+          filterState.active = "all";
+          renderTable(papers);
+        });
+
+        const recTab = filterRow.createEl("button", {
+          cls:
+            "pf-maint-filter" +
+            (filterState.active === "recommended" ? " active" : ""),
+          text: t("maintenance_filter_recommended") || "Recommended",
+        });
+        recTab.addEventListener("click", () => {
+          filterState.active = "recommended";
+          renderTable(papers);
+        });
+
+        // Recommended = items with rebuild display_group or rebuild_result display_action
+        const visible =
+          filterState.active === "recommended"
+            ? allVisible.filter(
+                (p) =>
+                  p.display_group === "rebuild" ||
+                  p.display_action === "rebuild_result",
+              )
+          : allVisible;
+
+      // If the active filter yields nothing, show a message and skip the table/progress
       if (visible.length === 0) {
         statusEl.createEl("p", {
-          text: t("maintenance_all_good") || "✅ 全部正常",
+          text: "当前筛选条件下无数据",
+          cls: "setting-item-description",
         });
-        return;
-      }
+      } else {
+        const pyPath = py.path;
+        const pyExtra = (py.extraArgs || []) as string[];
 
-      const pyPath = py.path;
-      const pyExtra = (py.extraArgs || []) as string[];
 
-      // Group by display_group
-      const groups: {
-        key: string;
-        title: string;
-        items: MaintenanceDisplayRow[];
-      }[] = [
-        {
-          key: "retry",
-          title: t("maintenance_group_retry") || "需要重试",
-          items: [],
-        },
-        {
-          key: "rebuild",
-          title: t("maintenance_group_rebuild") || "可重建结果",
-          items: [],
-        },
-        {
-          key: "legacy_optional",
-          title: t("maintenance_group_legacy") || "可升级旧结果（可选）",
-          items: [],
-        },
-      ];
-      for (const p of visible) {
-        const g = groups.find((g) => g.key === p.display_group);
-        if (g) g.items.push(p);
-      }
+      // ── Progress bar (if batch running) — mutable DOM refs, no full re-render ──
+      const progressContainer = statusEl.createEl("div", {
+        cls: "pf-maint-progress",
+      });
+      progressContainer.style.display = "none";
 
-      for (const group of groups) {
-        if (group.items.length === 0) continue;
+      const track = progressContainer.createEl("div", {
+        cls: "paperforge-progress-track",
+      });
+      track.style.cssText = "flex:1;";
+      const doneSeg = track.createEl("div", {
+        cls: "paperforge-progress-seg done",
+      });
+      const pendingSeg = track.createEl("div", {
+        cls: "paperforge-progress-seg pending",
+      });
+      const label = progressContainer.createEl("span", {
+        cls: "pf-maint-progress-text",
+      });
+      const keyLabel = progressContainer.createEl("span", {
+        cls: "pf-maint-progress-key",
+      });
 
-        const isLegacy = group.key === "legacy_optional";
-        const section = isLegacy
-          ? statusEl.createEl("details")
-          : statusEl.createEl("div");
+      // Stop button — cooperative: stdin control line, fallback to SIGINT
+      const stopBtn = progressContainer.createEl("button", {
+        text: t("maintenance_stop") || "Stop",
+      });
+      stopBtn.className = "mod-warning";
+      stopBtn.addEventListener("click", () => {
+        const child = this.plugin._ocrProcess as unknown as {
+          stdin?: { write: (_: string) => boolean };
+          kill?: (_: string) => void;
+        };
+        if (child) {
+          // Prefer stdin control line (cooperative — backend finishes current paper)
+          if (child.stdin && typeof child.stdin.write === "function") {
+            child.stdin.write("PAPERFORGE_STOP\n");
+          } else if (typeof child.kill === "function") {
+            child.kill("SIGINT");
+          }
+        }
+        // Flag, don't null — onClose handles cleanup
+        this.plugin._ocrWasStopped = true;
+        stopBtn.disabled = true;
+        stopBtn.textContent = (t("maintenance_stop") || "Stop") + "…";
+      });
 
-        if (isLegacy) {
-          const summary = (section as HTMLDetailsElement).createEl("summary");
-          summary.createEl("strong", {
-            text: group.title + " (" + group.items.length + ")",
-          });
+      // In-place DOM update — called from runBatch start + onData events
+      const updateProgress = () => {
+        const prog = this.plugin._ocrProgress;
+        if (!prog || prog.total === 0 || !this.plugin._ocrProcess) {
+          progressContainer.style.display = "none";
+          return;
+        }
+        progressContainer.style.display = "flex";
+
+        const pct =
+          prog.total > 0
+            ? ((prog.current / prog.total) * 100).toFixed(1)
+            : "0";
+
+        doneSeg.style.width = `${pct}%`;
+        doneSeg.style.minWidth = prog.current > 0 ? "2px" : "0";
+
+        if (prog.current < prog.total) {
+          pendingSeg.style.display = "";
+          pendingSeg.style.flex = "1";
         } else {
-          section.createEl("h3", {
-            text: group.title + " (" + group.items.length + ")",
-          });
+          pendingSeg.style.display = "none";
         }
 
-        // Selection state per row
-        const selState = new Map<string, boolean>();
-        for (const p of group.items) selState.set(p.key, false);
+        label.textContent = (
+          t("maintenance_progress_label") ||
+          "{current}/{total} papers"
+        )
+          .replace("{current}", String(prog.current))
+          .replace("{total}", String(prog.total));
 
-        // Toolbar
-        const toolbar = section.createEl("div", { cls: "pf-maint-toolbar" });
-        const selAllBtn = toolbar.createEl("button", { text: "全选" });
-        const deselAllBtn = toolbar.createEl("button", { text: "取消全选" });
-        const execBtn = toolbar.createEl("button", {
-          text: "▶ 执行已选",
-          cls: "mod-cta",
+        keyLabel.textContent = prog.key ? ` (${prog.key})` : "";
+      };
+
+      updateProgress();
+
+      // Selection state
+      const selState = new Map<string, boolean>();
+      for (const p of visible) selState.set(p.key, false);
+
+      // ── Table ──
+      const wrapper = statusEl.createEl("div", {
+        cls: "pf-maint-table-wrap",
+      });
+      const table = wrapper.createEl("table", { cls: "pf-maint-table" });
+      const thead = table.createEl("thead");
+      const tbody = table.createEl("tbody");
+      const headerRow = thead.insertRow();
+      ["", "Paper", "Status Reason", "Actions"].forEach((h) => {
+        const th = document.createElement("th");
+        th.textContent = h;
+        headerRow.appendChild(th);
+      });
+
+      const isBusy = isBatchRunning();
+
+      for (const p of visible) {
+        const tr = tbody.insertRow();
+
+        // Checkbox
+        const selTd = tr.insertCell();
+        selTd.style.cssText =
+          "padding:3px 4px;text-align:center;width:24px;";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.className = "pf-maint-sel";
+        cb.checked = selState.get(p.key) || false;
+        cb.addEventListener("change", () => {
+          selState.set(p.key, cb.checked);
+          updateBatchLabel();
         });
-        const execLabel = toolbar.createEl("span", {
-          cls: "pf-maint-exec-label",
+        selTd.appendChild(cb);
+
+        // Paper info (title + key)
+        const infoTd = tr.insertCell();
+        infoTd.style.cssText = "padding:3px 4px;";
+        const infoDiv = infoTd.createEl("div", {
+          cls: "pf-maint-paper-info",
+        });
+        infoDiv.createEl("div", {
+          cls: "pf-maint-paper-title",
+          text: p.title || p.key,
+        });
+        infoDiv.createEl("div", {
+          cls: "pf-maint-paper-key",
+          text: p.key,
         });
 
-        const updateExecLabel = () => {
-          const n = group.items.filter((p) => selState.get(p.key)).length;
-          execLabel.setText("已选 " + n + " 篇");
-        };
-        updateExecLabel();
+        // Status reason
+        const reasonTd = tr.insertCell();
+        reasonTd.style.cssText = "padding:3px 4px;";
+        reasonTd.createEl("div", {
+          cls: "pf-maint-reason",
+          text: p.display_reason || "",
+        });
 
-        selAllBtn.addEventListener("click", () => {
-          for (const p of group.items) selState.set(p.key, true);
-          updateExecLabel();
-          // Update checkboxes
-          const cbs = section.querySelectorAll(
-            "input[type=checkbox].pf-maint-sel"
-          );
-          cbs.forEach((cb) => {
-            (cb as HTMLInputElement).checked = true;
+        // Action buttons — [Rebuild] [Redo]
+        const actionTd = tr.insertCell();
+        actionTd.style.cssText =
+          "padding:3px 4px;white-space:nowrap;";
+        const actionDiv = actionTd.createEl("div", {
+          cls: "pf-maint-actions",
+        });
+
+        if (p.can_rebuild) {
+          const rebuildBtn = actionDiv.createEl("button", {
+            cls: "pf-maint-action-btn rebuild",
+            text: t("maintenance_btn_rebuild") || "Rebuild",
           });
-        });
-        deselAllBtn.addEventListener("click", () => {
-          for (const p of group.items) selState.set(p.key, false);
-          updateExecLabel();
-          const cbs = section.querySelectorAll(
-            "input[type=checkbox].pf-maint-sel"
-          );
-          cbs.forEach((cb) => {
-            (cb as HTMLInputElement).checked = false;
-          });
-        });
-
-        execBtn.addEventListener("click", () => {
-          const selected = group.items.filter((p) => selState.get(p.key));
-          if (selected.length === 0) {
-            new Notice("请先选择要处理的论文。");
-            return;
-          }
-          for (const p of selected) {
-            const args = buildActionArgs([p.key], p.display_action);
-            if (!args) continue;
+          if (isBusy) rebuildBtn.disabled = true;
+          rebuildBtn.addEventListener("click", () => {
+            const args = [
+              ...pyExtra,
+              "-m",
+              "paperforge",
+              "ocr",
+              "rebuild",
+              p.key,
+            ];
             execFile(
               pyPath,
-              [...pyExtra, ...args.cmd],
-              { cwd: vaultPath, timeout: args.timeout, windowsHide: true },
+              args,
+              {
+                cwd: vaultPath,
+                timeout: 120000,
+                windowsHide: true,
+              },
               () => {
-                new Notice(p.display_label + " — " + p.key);
+                new Notice(
+                  (t("maintenance_btn_rebuild") || "Rebuild") +
+                    " — " +
+                    p.key
+                );
               }
             );
-          }
-        });
-
-        // Table
-        const wrapper = section.createEl("div", { cls: "pf-maint-table-wrap" });
-        const table = wrapper.createEl("table", { cls: "pf-maint-table" });
-        const thead = table.createEl("thead");
-        const tbody = table.createEl("tbody");
-        const headerRow = thead.insertRow();
-        ["", "Key", "Title", "建议操作", "原因", "操作"].forEach((h) => {
-          const th = document.createElement("th");
-          th.textContent = h;
-          headerRow.appendChild(th);
-        });
-
-        const btnText = (action: string) => {
-          if (action === "retry_ocr")
-            return t("maintenance_btn_retry") || "重试";
-          if (action === "rebuild_result")
-            return t("maintenance_btn_rebuild") || "重建";
-          if (action === "upgrade_legacy")
-            return t("maintenance_btn_upgrade") || "升级";
-          return "";
-        };
-
-        for (const p of group.items) {
-          const tr = tbody.insertRow();
-
-          // Checkbox
-          const selTd = tr.insertCell();
-          selTd.style.cssText = "padding:3px 4px;text-align:center;";
-          const cb = document.createElement("input");
-          cb.type = "checkbox";
-          cb.className = "pf-maint-sel";
-          cb.checked = selState.get(p.key) || false;
-          cb.addEventListener("change", () => {
-            selState.set(p.key, cb.checked);
-            updateExecLabel();
           });
-          selTd.appendChild(cb);
+        }
 
-          // Key
-          const keyTd = tr.insertCell();
-          keyTd.style.cssText =
-            "padding:3px 4px;white-space:nowrap;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;";
-          keyTd.textContent = p.key;
-
-          // Title
-          const titleTd = tr.insertCell();
-          titleTd.style.cssText =
-            "padding:3px 4px;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;";
-          titleTd.textContent = p.title || p.key;
-
-          // Display label (建议操作)
-          const labelTd = tr.insertCell();
-          labelTd.style.cssText = "padding:3px 4px;white-space:nowrap;";
-          labelTd.textContent = p.display_label;
-
-          // Reason
-          const reasonTd = tr.insertCell();
-          reasonTd.style.cssText =
-            "padding:3px 4px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--text-muted);";
-          reasonTd.textContent = p.display_reason || "";
-
-          // Action button
-          const actionTd = tr.insertCell();
-          actionTd.style.cssText =
-            "padding:3px 4px;text-align:center;white-space:nowrap;";
-          const actionBtn = document.createElement("button");
-          actionBtn.textContent = btnText(p.display_action);
-          if (actionBtn.textContent) {
-            actionBtn.addEventListener("click", () => {
-              const args = buildActionArgs([p.key], p.display_action);
-              if (!args) return;
-              execFile(
-                pyPath,
-                [...pyExtra, ...args.cmd],
-                { cwd: vaultPath, timeout: args.timeout, windowsHide: true },
-                () => {
-                  new Notice(p.display_label + " — " + p.key);
-                }
-              );
-            });
-            actionTd.appendChild(actionBtn);
-          }
+        if (p.can_redo) {
+          const redoBtn = actionDiv.createEl("button", {
+            cls: "pf-maint-action-btn redo",
+            text: t("ocr_maint_redo_btn") || "Redo",
+          });
+          if (isBusy) redoBtn.disabled = true;
+          redoBtn.addEventListener("click", () => {
+            const args = [
+              ...pyExtra,
+              "-m",
+              "paperforge",
+              "ocr",
+              "redo",
+              p.key,
+            ];
+            execFile(
+              pyPath,
+              args,
+              {
+                cwd: vaultPath,
+                timeout: 300000,
+                windowsHide: true,
+              },
+              () => {
+                new Notice(
+                  (t("ocr_maint_redo_btn") || "Redo OCR") +
+                    " — " +
+                    p.key
+                );
+              }
+            );
+          });
         }
       }
+
+      // ── Batch action bar ──
+      const batchBar = statusEl.createEl("div", {
+        cls: "pf-maint-batch-bar",
+      });
+      const batchLabel = batchBar.createEl("span", {
+        cls: "pf-maint-batch-label",
+        text: "0 selected",
+      });
+
+      const updateBatchLabel = () => {
+        const n = visible.filter((p) => selState.get(p.key)).length;
+        batchLabel.textContent = n + " selected";
+      };
+
+      const rebuildBatchBtn = batchBar.createEl("button", {
+        cls: "mod-cta",
+        text:
+          t("maintenance_batch_rebuild") || "▶ Rebuild selected",
+      });
+      rebuildBatchBtn.disabled = isBusy;
+
+      const redoBatchBtn = batchBar.createEl("button", {
+        cls: "mod-cta",
+        text:
+          t("maintenance_batch_redo") || "▶ Full OCR redo selected",
+      });
+      redoBatchBtn.disabled = isBusy;
+
+      const runBatch = (action: "rebuild" | "redo") => {
+        const selected = visible.filter((p) =>
+          selState.get(p.key)
+        );
+        if (selected.length === 0) {
+          new Notice("Please select papers first.");
+          return;
+        }
+        const keys = selected.map((p) => p.key);
+        this.plugin._ocrProgress = {
+          current: 0,
+          total: keys.length,
+          key: "",
+        };
+        this.plugin._ocrBuffer = "";
+        this.plugin._ocrWasStopped = false;
+
+        const prefix =
+          action === "rebuild" ? "OCR_REBUILD" : "OCR_REDO";
+
+        // Disable batch + per-row action buttons during the batch
+        rebuildBatchBtn.disabled = true;
+        redoBatchBtn.disabled = true;
+        Array.from(
+          wrapper.querySelectorAll<HTMLButtonElement>(".pf-maint-action-btn"),
+        ).forEach((btn) => {
+          btn.disabled = true;
+        });
+        // Also disable checkboxes to prevent selection changes during batch
+        Array.from(
+          wrapper.querySelectorAll<HTMLInputElement>(".pf-maint-sel"),
+        ).forEach((cb) => {
+          cb.disabled = true;
+        });
+        // Disable filter tabs to prevent filter switch mid-batch
+        allTab.disabled = true;
+        recTab.disabled = true;
+        stopBtn.disabled = false;
+        stopBtn.textContent = t("maintenance_stop") || "Stop";
+
+        const child = this._callPython(
+          ["ocr", action, ...keys],
+          {
+            stream: true,
+            onData: (data: unknown) => {
+              const text =
+                typeof data === "string"
+                  ? data
+                  : Buffer.isBuffer(data)
+                    ? data.toString("utf-8")
+                    : String(data);
+              // Shared parser with chunk buffer
+              const { events, buffer } = processProgressChunk(
+                text,
+                this.plugin._ocrBuffer ?? "",
+              );
+              this.plugin._ocrBuffer = buffer;
+              for (const ev of events) {
+                if (ev.event === "START") {
+                  if (this.plugin._ocrProgress) {
+                    this.plugin._ocrProgress.total =
+                      ev.total || keys.length;
+                  }
+                } else if (ev.event === "PROGRESS") {
+                  this.plugin._ocrProgress = {
+                    current: ev.current || 0,
+                    total: ev.total || keys.length,
+                    key: ev.key || "",
+                  };
+                }
+                // DONE handled in onClose
+              }
+              // In-place DOM update — no full re-render
+              updateProgress();
+            },
+            onError: (err: Error) => {
+              this.plugin._ocrProcess = null;
+              new Notice(
+                "Batch error: " + (err.message || err),
+              );
+              renderTable(papers);
+            },
+            onClose: (code: number | null) => {
+              // code 130 = SIGINT caught cooperatively by the backend
+              if (this.plugin._ocrWasStopped || code === 130) {
+                this.plugin._ocrWasStopped = false;
+                // Leave progress as-is; no finalize
+                this.plugin._ocrProcess = null;
+                updateProgress();
+                new Notice("OCR batch stopped by user.");
+              } else if (code === 0) {
+                // Finalize progress to show completion even if no tokens came through
+                if (this.plugin._ocrProgress) {
+                  this.plugin._ocrProgress.current =
+                    this.plugin._ocrProgress.total;
+                }
+                this.plugin._ocrProcess = null;
+                updateProgress();
+                new Notice(
+                  (
+                    t("maintenance_batch_complete") ||
+                    "Batch operation complete — {n} papers processed."
+                  ).replace("{n}", String(keys.length)),
+                );
+              } else {
+                this.plugin._ocrProcess = null;
+                updateProgress();
+                new Notice(
+                  "Batch operation finished with exit code " +
+                    code +
+                    ".",
+                  8000,
+                );
+              }
+              // Full refresh
+              refreshMaintenanceData(
+                vaultPath,
+                pyPath,
+                pyExtra,
+                cache,
+              )
+                .then((result) => {
+                  if (result.changed || !cache) {
+                    cache = {
+                      manifest: {},
+                      papers: Object.fromEntries(
+                        result.data.map(
+                          (p: MaintenanceDisplayRow) => [p.key, p],
+                        ),
+                      ),
+                      cached_at: new Date().toISOString(),
+                    };
+                    writeMaintenanceCache(vaultPath, cache);
+                  }
+                  renderTable(result.data);
+                })
+                .catch(() => {
+                  renderTable(allVisible);
+                });
+            },
+          },
+        );
+        this.plugin._ocrProcess = child;
+        updateProgress();
+      };
+
+      rebuildBatchBtn.addEventListener("click", () =>
+        runBatch("rebuild")
+      );
+      redoBatchBtn.addEventListener("click", () =>
+        runBatch("redo")
+      );
+
+      updateBatchLabel();
+      }  // end else (visible non-empty)
     };
 
     // ── Phase 1: Show cache immediately ──
     if (cache) {
-      const papers = Object.values(cache.papers) as MaintenanceDisplayRow[];
+      const papers = Object.values(
+        cache.papers
+      ) as MaintenanceDisplayRow[];
       renderTable(papers);
     } else {
-      statusEl.createEl("p", { text: "正在加载 OCR 维护数据…" });
+      statusEl.createEl("p", {
+        text: "正在加载 OCR 维护数据…",
+      });
     }
 
     // ── Phase 2: Background refresh ──
@@ -2226,14 +2480,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           renderTable(result.data);
           writeMaintenanceCache(vaultPath, {
             manifest: {},
-            papers: Object.fromEntries(result.data.map((p) => [p.key, p])),
+            papers: Object.fromEntries(
+              result.data.map(
+                (p: MaintenanceDisplayRow) => [p.key, p]
+              )
+            ),
             cached_at: new Date().toISOString(),
           });
         } else if (!cache) {
           renderTable(result.data);
           writeMaintenanceCache(vaultPath, {
             manifest: {},
-            papers: Object.fromEntries(result.data.map((p) => [p.key, p])),
+            papers: Object.fromEntries(
+              result.data.map(
+                (p: MaintenanceDisplayRow) => [p.key, p]
+              )
+            ),
             cached_at: new Date().toISOString(),
           });
         }
@@ -2242,55 +2504,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (!cache) {
           statusEl.empty();
           statusEl.createEl("p", {
-            text: "无法加载 OCR 数据。请确保已安装 paperforge 并运行过 OCR。",
+            text:
+              "无法加载 OCR 数据。请确保已安装 paperforge 并运行过 OCR。",
             cls: "setting-item-description",
           });
         }
       });
-
-    // ── Global operations ──
-    containerEl.createEl("hr");
-    containerEl.createEl("h3", { text: "全局操作" });
-    const globalActions = containerEl.createEl("div", {
-      cls: "pf-maint-global",
-    });
-
-    const rebuildIndexBtn = globalActions.createEl("button", {
-      text: "重建搜索索引",
-    });
-    rebuildIndexBtn.addEventListener("click", () => {
-      new Notice("正在重建搜索索引…");
-      execFile(
-        py.path,
-        [
-          ...(py.extraArgs || []),
-          "-m",
-          "paperforge",
-          "embed",
-          "build",
-          "--force",
-        ],
-        { cwd: vaultPath, timeout: 300000, windowsHide: true },
-        () => {
-          new Notice("搜索索引重建完成。");
-        }
-      );
-    });
-
-    const rebuildMemBtn = globalActions.createEl("button", {
-      text: "重建记忆库",
-    });
-    rebuildMemBtn.addEventListener("click", () => {
-      new Notice("正在重建记忆库…");
-      execFile(
-        py.path,
-        [...(py.extraArgs || []), "-m", "paperforge", "repair", "--fix"],
-        { cwd: vaultPath, timeout: 120000, windowsHide: true },
-        () => {
-          new Notice("记忆库重建完成。");
-        }
-      );
-    });
   }
 
   _renderReleaseNotesTab(containerEl: HTMLElement) {
