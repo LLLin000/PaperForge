@@ -2001,7 +2001,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
       const renderTable = (papers: MaintenanceDisplayRow[]) => {
         statusEl.empty();
-        const allVisible = papers.filter((p) => p.visible_in_maintenance);
+        const allVisible = papers;
 
         // Filter tabs — render before empty check so user can always switch back
         const filterRow = statusEl.createEl("div", {
@@ -2030,14 +2030,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           renderTable(papers);
         });
 
-        // Recommended = items with rebuild display_group or rebuild_result display_action
+        // Recommended = papers whose derived results need rebuilding (excludes retry/failed)
         const visible =
           filterState.active === "recommended"
-            ? allVisible.filter(
-                (p) =>
-                  p.display_group === "rebuild" ||
-                  p.display_action === "rebuild_result",
-              )
+            ? allVisible.filter((p) => p.needs_derived_rebuild === true)
           : allVisible;
 
       // If the active filter yields nothing, show a message and skip the table/progress
@@ -2300,11 +2296,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       redoBatchBtn.disabled = isBusy;
 
       const runBatch = (action: "rebuild" | "redo") => {
-        const selected = visible.filter((p) =>
-          selState.get(p.key)
+        // Filter selected by eligibility for the chosen action
+        const selected = visible.filter(
+          (p) =>
+            selState.get(p.key) &&
+            (action === "rebuild" ? p.can_rebuild : p.can_redo),
         );
         if (selected.length === 0) {
-          new Notice("Please select papers first.");
+          const label =
+            action === "rebuild"
+              ? t("maintenance_btn_rebuild") || "Rebuild"
+              : t("ocr_maint_redo_btn") || "Redo";
+          new Notice(
+            "Selected papers are not eligible for " +
+              label +
+              ". Uncheck ineligible rows and try again.",
+            6000,
+          );
           return;
         }
         const keys = selected.map((p) => p.key);

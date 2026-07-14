@@ -296,14 +296,6 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
     if not keys:
         return ocr_redo_papers(vault, dry_run=dry_run, verbose=verbose, no_progress=no_progress)
 
-    if not dry_run:
-        from paperforge.worker._utils import pipeline_paths
-
-        paths = pipeline_paths(vault)
-        ocr_root = paths.get("ocr")
-        if not ocr_root or not ocr_root.exists():
-            print("No OCR root directory.")
-            return 1
 
     total = len(keys)
     batch = total > 1 and not dry_run
@@ -388,14 +380,19 @@ def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | Non
         rows = [r for r in rows if r.key in keys_set]
 
     if json_output:
-        payload = _json.dumps([r.to_dict() for r in rows], ensure_ascii=False, default=str)
+        dicts = []
+        for r in rows:
+            d = r.to_dict()
+            need, _reason = _needs_derived_rebuild(vault, r.key)
+            d["needs_derived_rebuild"] = need
+            dicts.append(d)
+        payload = _json.dumps(dicts, ensure_ascii=False, default=str)
         if output_file:
             Path(output_file).write_text(payload, encoding="utf-8")
             print(f"Wrote {len(rows)} rows to {output_file}")
         else:
             print(payload)
         return 0
-
     # Terminal table output (unchanged)
     if not rows:
         print("No OCR papers found.")
@@ -403,6 +400,7 @@ def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | Non
     header = f"{'Key':12s} {'Title':42s} {'Status':8s} {'Health':6s} {'Hash':12s} {'Ver':4s} {'Time':11s} {'Pg':>3s} {'Blk':>4s} {'Act'}"
     print(header)
     print("-" * len(header))
+
     for r in rows:
         act = r.recommended_action or "-"
         h = (r.structured_content_hash[:12] if r.structured_content_hash else "-")

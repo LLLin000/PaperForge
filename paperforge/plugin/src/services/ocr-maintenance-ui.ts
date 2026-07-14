@@ -30,6 +30,7 @@ export interface MaintenanceDisplayRow {
   visible_in_maintenance: boolean;
   can_redo: boolean;
   can_rebuild: boolean;
+  needs_derived_rebuild: boolean;
   fulltext_drift_state?: "MATCHED" | "DRIFTED" | "UNKNOWN";
   fulltext_drift_reason?: string;
 }
@@ -189,18 +190,20 @@ export async function refreshMaintenanceData(
       cacheKeys.length === manifestKeys.length &&
       cacheKeys.every((k) => currentCache.manifest[k] === manifest[k]);
     if (same) {
-      const data = Object.values(currentCache.papers).filter(
-        (p) => p.visible_in_maintenance
+      // Schema check: cache is valid only when every row has the canonical field
+      const schemaFresh = Object.values(currentCache.papers).every(
+        (p) => typeof p.needs_derived_rebuild === "boolean",
       );
-      return { data, changed: false };
+      if (schemaFresh) {
+        const data = Object.values(currentCache.papers);
+        return { data, changed: false };
+      }
     }
   }
 
-  const changedKeys = Object.keys(manifest).filter(
-    (key) =>
-      !currentCache?.manifest[key] ||
-      currentCache.manifest[key] !== manifest[key]
-  );
+  // Schema stale or manifest changed — refetch every manifest key so the
+  // rewritten cache carries canonical fields for all papers
+  const changedKeys = Object.keys(manifest);
 
   const dataOut = await execFilePromise(
     pythonExe,
@@ -234,9 +237,6 @@ export async function refreshMaintenanceData(
     cache.papers[p.key] = p;
   }
   writeMaintenanceCache(vaultPath, cache);
-
-  const data = Object.values(cache.papers).filter(
-    (p) => p.visible_in_maintenance
-  );
+  const data = Object.values(cache.papers);
   return { data, changed: true };
 }

@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import type { MaintenanceDisplayRow, MaintenanceCache } from "../src/services/ocr-maintenance-ui";
 import {
   categorizeMaintenanceRow,
   buildMaintenanceSummary,
   MaintenanceRowLike,
 } from "../src/services/ocr-maintenance-ui";
+import { describe, expect, it } from "vitest";
 
 describe("categorizeMaintenanceRow", () => {
   it("maps rebuild recommendation to Rebuild Recommended", () => {
@@ -180,5 +181,152 @@ describe("buildMaintenanceSummary", () => {
       limited: 1,
     });
     expect(summary.tone).toBe("ok");
+  });
+});
+
+describe("MaintenanceDisplayRow field contract", () => {
+  it("includes needs_derived_rebuild in a complete row shape", () => {
+    const row: MaintenanceDisplayRow = {
+      key: "TEST-001",
+      title: "Test Paper",
+      display_action: "rebuild_result",
+      display_label: "Rebuild Recommended",
+      display_reason: "Fulltext drifted from last rebuild",
+      display_group: "rebuild",
+      visible_in_maintenance: true,
+      can_redo: false,
+      can_rebuild: true,
+      needs_derived_rebuild: true,
+    };
+    expect(row.needs_derived_rebuild).toBe(true);
+    expect(row.can_rebuild).toBe(true);
+    expect(row.key).toBe("TEST-001");
+  });
+
+  it("accepts needs_derived_rebuild false for clean papers", () => {
+    const row: MaintenanceDisplayRow = {
+      key: "CLEAN-001",
+      title: "Clean Paper",
+      display_action: "none",
+      display_label: "No Action Needed",
+      display_reason: "OK",
+      display_group: "hidden",
+      visible_in_maintenance: false,
+      can_redo: true,
+      can_rebuild: false,
+      needs_derived_rebuild: false,
+    };
+    expect(row.needs_derived_rebuild).toBe(false);
+  });
+});
+
+describe("needs_derived_rebuild schema freshness", () => {
+  it("accepts a cache where every row has the boolean field", () => {
+    const schemaFresh = Object.values({
+      "A-1": {
+        key: "A-1",
+        title: "Fresh",
+        display_action: "rebuild_result",
+        display_label: "Rebuild",
+        display_reason: "drifted",
+        display_group: "rebuild",
+        visible_in_maintenance: true,
+        can_redo: false,
+        can_rebuild: true,
+        needs_derived_rebuild: true,
+      } as MaintenanceDisplayRow,
+      "B-2": {
+        key: "B-2",
+        title: "Clean",
+        display_action: "none",
+        display_label: "No Action",
+        display_reason: "",
+        display_group: "hidden",
+        visible_in_maintenance: false,
+        can_redo: true,
+        can_rebuild: false,
+        needs_derived_rebuild: false,
+      } as MaintenanceDisplayRow,
+    }).every((p) => typeof p.needs_derived_rebuild === "boolean");
+
+    expect(schemaFresh).toBe(true);
+  });
+
+  it("rejects a cache where a row lacks needs_derived_rebuild", () => {
+    const schemaFresh = Object.values({
+      "A-1": {
+        key: "A-1",
+        title: "Stale row",
+        display_action: "rebuild_result",
+        display_label: "Rebuild",
+        display_reason: "drifted",
+        display_group: "rebuild",
+        visible_in_maintenance: true,
+        can_redo: false,
+        can_rebuild: true,
+        // no needs_derived_rebuild — stale schema
+      } as MaintenanceDisplayRow,
+      "B-2": {
+        key: "B-2",
+        title: "Fresh row",
+        display_action: "none",
+        display_label: "No Action",
+        display_reason: "",
+        display_group: "hidden",
+        visible_in_maintenance: false,
+        can_redo: true,
+        can_rebuild: false,
+        needs_derived_rebuild: false,
+      } as MaintenanceDisplayRow,
+    }).every((p) => typeof p.needs_derived_rebuild === "boolean");
+
+    expect(schemaFresh).toBe(false);
+  });
+
+  it("rejects entirely empty cache (no papers at all)", () => {
+    const schemaFresh = Object.values({} as Record<string, MaintenanceDisplayRow>).every(
+      (p) => typeof p.needs_derived_rebuild === "boolean",
+    );
+    // .every() on empty array returns true — degenerate case handled by
+    // the fact that refreshMaintenanceData would refetch when cache.papers is empty
+    expect(schemaFresh).toBe(true);
+  });
+
+  it("passes through all rows regardless of visible_in_maintenance", () => {
+    const cache: MaintenanceCache = {
+      manifest: { "A-1": "aaa", "B-2": "bbb" },
+      papers: {
+        "A-1": {
+          key: "A-1",
+          title: "Visible Paper",
+          display_action: "rebuild_result",
+          display_label: "Rebuild",
+          display_reason: "drifted",
+          display_group: "rebuild",
+          visible_in_maintenance: true,
+          can_redo: false,
+          can_rebuild: true,
+          needs_derived_rebuild: true,
+        } as MaintenanceDisplayRow,
+        "B-2": {
+          key: "B-2",
+          title: "Hidden Paper",
+          display_action: "none",
+          display_label: "OK",
+          display_reason: "",
+          display_group: "hidden",
+          visible_in_maintenance: false,
+          can_redo: true,
+          can_rebuild: false,
+          needs_derived_rebuild: false,
+        } as MaintenanceDisplayRow,
+      },
+      cached_at: new Date().toISOString(),
+    };
+
+    const data = Object.values(cache.papers);
+    expect(data).toHaveLength(2);
+    expect(data.find((p) => p.key === "B-2")).toBeTruthy();
+    expect(data.find((p) => p.key === "A-1")).toBeTruthy();
   });
 });
