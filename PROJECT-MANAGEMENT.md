@@ -112,8 +112,8 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 29 | M84CTEM9 | Figure inner_text not merged into figure render | Fix | figure_inner_text blocks were correctly recognized but crop bbox excluded variable labels; render_figure_object_markdown emits only image+legend. Fix: expand crop bbox to include owned figure_inner_text blocks | `c42da20` |
 | 30 | — | tag_figure_contained_text binds owner_id on contained blocks | Fix | Contained text path stamped role but not _object_owner_id; needed for crop bbox expansion to find the block-to-figure link | `34827f2` |
 | 31 | — | Enable OCR_PIPELINE_V3 by default | Toggle | Full vault corpus diff (555 papers): 547/555 no diff, 5/555 v3 improvements. Set OCR_PIPELINE_V3=0 for legacy | `914acd6` |
-| 32 | — | OCR rebuild progress + maintenance selection contract | Feature | Added flushed, prefix-separated rebuild/redo streams; full keyed redo; cooperative stop; canonical `needs_derived_rebuild`; All/Recommended filters; selected batch progress UI | `cfdaf284`, `3a516add`, `e556c8ba` |
-| 33 | — | OCR maintenance canonical per-row action model | Fix | Added `maintenanceActionForRow()` for `display_action`→verb routing, `maintenanceActionRequiresConfirmation()` redo confirmation gate, batch-action filtering by canonical verb, and cache-manifest preservation. Batch actions now follow the canonical backend action instead of raw `can_rebuild`/`can_redo` booleans; destructive redo requires user confirmation; cache refresh preserves the backend manifest. | `cfdaf284` |
+| 32 | — | OCR rebuild progress + maintenance selection contract | Feature | Added flushed, prefix-separated rebuild/redo streams; full keyed redo; cooperative stop; canonical `needs_derived_rebuild`; All/Recommended filters; selected batch progress UI | `d7b0a527`, `3a516add`, `e556c8ba` |
+| 33 | — | OCR maintenance canonical per-row action model | Fix | Added `maintenanceActionForRow()` for `display_action`→verb routing, `maintenanceActionRequiresConfirmation()` redo confirmation gate, batch-action filtering by canonical verb, and cache-manifest preservation. Batch actions now follow the canonical backend action instead of raw `can_rebuild`/`can_redo` booleans; destructive redo requires user confirmation; cache refresh preserves the backend manifest. | `d7b0a527` |
 
 
 ## 3. Remaining Issues — Release-Readiness Layers
@@ -132,7 +132,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 **Non-bugs confirmed:** 170 `reference_span_error` findings = FALSE POSITIVE (high-risk noise). Single-column same-page boundaries = FALSE POSITIVE.
 
 ### Layer 2: OCR Quality Report + Readiness Policy
-**DONE** at commit `cfdaf284`. Three modules delivered:
+**DONE** at commit `d7b0a527`. Three modules delivered:
 - `paperforge/worker/ocr_quality.py` — `build_quality_indicators()` (5 normalsers) + `evaluate_readiness()` (policy evaluator)
 - `paperforge/policies/ocr_readiness_v1.yaml` — default policy (weights, hard-red, use-case gates)
 - `paperforge/worker/ocr_quality_feedback.py` — human feedback sidecar (per-mark hash, stale detection)
@@ -302,7 +302,7 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-05 | Human feedback is a sidecar file, never part of pipeline output | `ocr_quality_feedback.json` is read/written independently; bound to `result_hash` for integrity. |
 | 2026-07-05 | Field resolution precedence: direct inventory > health aggregates | `figure_inventory` fields preferred over `health.matched_figure_count_v2` etc. `health.figure_asset_count` is NOT a figure-evidence signal (it's a match count). |
 | 2026-07-05 | `user_readiness` must state `"basis": "policy_estimate"` | Pipeline produces signals, not ground truth. Gaps are real, but code doesn't know if a gap is actual missing text or a proper skip. |
-| 2026-07-05 | `recommended_use` output shape: `status`/`gates`/`reasons` | Contract fixed at `cfdaf284` from the initial `recommended`/`gate_results` shape. |
+| 2026-07-05 | `recommended_use` output shape: `status`/`gates`/`reasons` | Contract fixed at `d7b0a527` from the initial `recommended`/`gate_results` shape. |
 | 2026-07-05 | Feedback hashes per-mark, not just root | `append_mark()` injects `result_hash` and `fulltext_hash` into each mark; stale detection compares latest mark's hash with current run. |
 | 2026-07-08 | Hash-based OCR staleness detection (two-tier mtime+xxhash) | Version constants require manual bumps; content hash of blocks.structured.jsonl is faster and self-consistent. |
 | 2026-07-08 | OpenAI SDK over raw requests for embedding provider | openai SDK has built-in retry, timeout, and error classification; removes hand-rolled HTTP code. Requests fallback available via provider_type config. |
