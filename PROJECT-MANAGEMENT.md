@@ -1,11 +1,11 @@
 > **Branch:** `feat/ocr-rebuild-ux` | **Last Updated:** 2026-07-14
-> **Active work:** [Wayfinder: Make the PaperForge control center self-explanatory](https://github.com/LLLin000/PaperForge/issues/65) is charted. Three independent research tickets form the live frontier.
+> **Active work:** [Wayfinder: Make the PaperForge control center self-explanatory](https://github.com/LLLin000/PaperForge/issues/65) is charted. The current-contract audit is resolved; capability vocabulary and the two reference-product research tickets form the live frontier.
 >
 > ---
 >
-> **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo now streams progress, supports cooperative stop between papers, and refreshes the canonical maintenance state. The plugin exposes All and Recommended views; Recommended is driven by the backend `_needs_derived_rebuild()` contract instead of UI heuristics. Live Obsidian verification showed 734 total papers, 700 canonical rebuild recommendations, and no captured plugin errors.
+> **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo now streams progress, supports cooperative stop between papers, and refreshes canonical maintenance state. The control-plane audit found four critical contract gaps: headless setup can skip runtime installation yet return success, Python and TypeScript disagree on legacy path precedence, global `setup_complete` can mask unavailable modules, and stale runtime snapshots can render as ready.
 >
-> Next: resolve [Audit the current setup, readiness, and recovery contracts](https://github.com/LLLin000/PaperForge/issues/66), [Study Obsidian-native setup and settings patterns](https://github.com/LLLin000/PaperForge/issues/67), or [Study desktop installation, health, and recovery patterns](https://github.com/LLLin000/PaperForge/issues/68); do not start production implementation until the map reaches its destination.
+> Next: define the capability envelope in [#69](https://github.com/LLLin000/PaperForge/issues/69) while completing [Obsidian-native setup/settings research](https://github.com/LLLin000/PaperForge/issues/67) and [desktop installation/health/recovery research](https://github.com/LLLin000/PaperForge/issues/68); do not choose the managed-runtime architecture or start production implementation until its blockers close.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -76,6 +76,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | **M metadata search** | ✅ sql.js and Python CLI paths restored |
 | **@ deep search** | ✅ deep CLI invocation and result-envelope consumption restored |
 | **Vector build control** | ✅ canonical SQLite lifecycle and health state restored |
+| **Control-plane contracts** | 🟡 Current-state audit complete; capability vocabulary and managed-runtime decisions pending |
 
 ### 2.3 Fix Status
 
@@ -138,7 +139,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) completed and the resulting retrieval fixes are merged to `master`. The live Literature-hub vault has a healthy 2560-dimensional vec0 index; M and @ search paths are operational.
 
 ### Layer 3: Plugin UI
-OCR maintenance now has a canonical All/Recommended state model, selected batch actions, streaming progress, and cooperative stop. The broader settings experience remains fragmented: onboarding, installation, memory configuration, operation selection, recovery guidance, and permanently non-actionable quality limits need one product-level redesign rather than more local controls.
+The OCR maintenance slice now has a canonical All/Recommended state model, selected batch actions, streaming progress, and cooperative stop. The broader control plane remains fragmented across three setup paths, conflicting Python/TypeScript config precedence, duplicate Python resolvers, a global `setup_complete` flag, and runtime snapshots without freshness gates. The evidence and migration boundary are recorded in `docs/research/2026-07-14-control-center-contract-audit.md`.
 
 ### Layer 4: Downstream Tools
 `chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
@@ -146,10 +147,10 @@ OCR maintenance now has a canonical All/Recommended state model, selected batch 
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. 🔴 **[Control-center Wayfinder](https://github.com/LLLin000/PaperForge/issues/65)** — map charted with eight child decisions and native blocking edges.
-2. 🟡 **Current-contract audit** — inventory setup, readiness, recovery, cache, and migration contracts.
-3. 🟡 **Reference-product research** — parallel Obsidian-native and mature desktop evidence.
-4. ⏳ **State model, runtime architecture, and prototypes** — blocked on the three frontier research tickets.
+1. 🔴 **[Control-center Wayfinder](https://github.com/LLLin000/PaperForge/issues/65)** — map charted; current-contract audit resolved.
+2. 🔴 **[Capability-state vocabulary](https://github.com/LLLin000/PaperForge/issues/69)** — unblocked by the audit; define the shared module-state/action envelope.
+3. 🟡 **Reference-product research** — complete [Obsidian-native](https://github.com/LLLin000/PaperForge/issues/67) and [desktop runtime/recovery](https://github.com/LLLin000/PaperForge/issues/68) evidence.
+4. ⏳ **Managed runtime and prototypes** — runtime choice remains blocked on #68; prototypes remain blocked on state/runtime decisions.
 5. 🟡 **Downstream tooling** — section-aware chunking and separate figure/table handling.
 6. ⏳ **Compatibility naming cleanup** — deferred post-release.
 ### 4.1 Immediate Next Steps
@@ -160,6 +161,7 @@ Remaining legacy OCR issues (carried forward):
 - [x] Live Literature-hub plugin verification
 - [x] Grill and domain-model the control-center destination
 - [x] Create the Wayfinder map, eight child tickets, and native dependency graph
+- [x] Audit current setup, readiness, recovery, cache, and migration contracts ([#66](https://github.com/LLLin000/PaperForge/issues/66))
 - [ ] Close or follow up [OCR rebuild: streaming progress + maintenance UI redesign](https://github.com/LLLin000/PaperForge/issues/64)
 - [ ] Reconcile the remaining slices of [Unified rebuild UX](https://github.com/LLLin000/PaperForge/issues/63)
 - [ ] #21 Display hash staleness in status output
@@ -305,6 +307,8 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-14 | Cooperative stop is transported over stdin | Windows `SIGINT` can terminate the current paper; a `PAPERFORGE_STOP` control line preserves the finish-current-then-stop contract across platforms. |
 | 2026-07-14 | Broader settings work starts with Wayfinding, not another local redesign | Persistent rebuild rows, onboarding, installation, memory configuration, and recovery are one product-state problem; adding controls before defining that model increases ambiguity. |
 | 2026-07-14 | Successful updates leave maintenance; quality anomalies are opt-in reports | Routine quality scores create permanent, non-actionable noise. Maintenance shows only stale/failed/corrupt work with a concrete action; unacceptable OCR is reported through a user-reviewed GitHub Issue draft. |
+| 2026-07-14 | Control-plane facts come from independent backend capability probes | A global setup boolean and frontend inference cannot represent partial readiness or stale state; every module needs a reason code, one primary action, and revision/freshness evidence. |
+| 2026-07-14 | Preserve durable domain truth; migrate JSON runtime snapshots to versioned caches | SQLite build state and per-paper OCR metadata already support recovery, while independently written JSON snapshots have no coherency or staleness protocol. |
 
 ---
 
@@ -402,6 +406,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-10 | Retrieval architecture Wayfinder inventory | Charted the end-to-end recovery map and resolved the live-architecture ticket. Confirmed four P0 contract breaks: invalid sql.js metadata SQL, missing `--deep`, ignored `data.chunks`, and build write-then-delete. Published the evidence audit; no production fix applied. | [Architecture audit](https://gist.github.com/LLLin000/aaf5505a991e85ad9bb4cafa922f48bf) |
 | 2026-07-14 | OCR rebuild streaming + maintenance UX | Added flushed rebuild/redo progress contracts, full keyed redo, cross-platform cooperative stop, canonical All/Recommended filters, selected batch actions, and cache migration. Verification: 99 focused Python tests, 93 plugin tests, typecheck/build, and live 734/700-row Obsidian state with no captured errors. | §2-4 |
 | 2026-07-14 | Control-center Wayfinder charted | Defined the six-module destination (安装 / 文献库 / OCR / 记忆 / 维护 / 帮助), module-independent readiness, actionable-only maintenance, opt-in OCR issue drafts, and a three-ticket research frontier. | [Wayfinder map](https://github.com/LLLin000/PaperForge/issues/65) |
+| 2026-07-14 | Control-center current-contract audit | Inventoried setup, configuration, runtime, readiness, persistence, cache, failure, and recovery contracts across plugin and Python. Closed #66 with a ranked contradiction matrix and preserve/migrate/remove plan; unblocked #69 while #70 remains blocked on desktop/runtime evidence. | [Contract audit](https://github.com/LLLin000/PaperForge/issues/66#issuecomment-4968837257) |
 
 ## 9. Historical Detail Archive
 

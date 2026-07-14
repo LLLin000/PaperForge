@@ -1,5 +1,5 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; OCR maintenance streaming is implemented, and the broader control-center UX is charted in [Wayfinder: Make the PaperForge control center self-explanatory](https://github.com/LLLin000/PaperForge/issues/65).
+> Status: OCR-v2 is stable; OCR maintenance streaming is implemented, the control-center UX is charted, and the current setup/readiness/recovery contract audit is resolved.
 > Last updated: 2026-07-14
 
 ## Current checkpoint
@@ -9,6 +9,7 @@
 - Multi-key `ocr rebuild` and full `ocr redo` emit separate, flushed progress streams and accept a cross-platform cooperative stop request between papers.
 - The maintenance tab now exposes all papers plus the canonical `_needs_derived_rebuild()` recommendation set, selected batch actions, an above-table progress state, and full refresh on completion.
 - Source Corpus data remains authoritative and was not modified during verification. Only the deployed plugin bundle and disposable maintenance cache were refreshed.
+- [Current-contract audit](https://github.com/LLLin000/PaperForge/issues/66#issuecomment-4968837257) identified the migration boundary: preserve durable OCR/SQLite truth and recovery actions; replace global setup state, duplicate runtime/config resolution, and freshness-free snapshots.
 
 ## Verification status
 
@@ -20,7 +21,8 @@
 
 ## Frontier
 
-- [ ] Resolve one frontier ticket from the control-center Wayfinder: [current-contract audit](https://github.com/LLLin000/PaperForge/issues/66), [Obsidian-native patterns](https://github.com/LLLin000/PaperForge/issues/67), or [desktop installation/health/recovery patterns](https://github.com/LLLin000/PaperForge/issues/68).
+- [ ] Define the shared module capability-state and action vocabulary in [#69](https://github.com/LLLin000/PaperForge/issues/69), now unblocked by the audit.
+- [ ] Complete [Obsidian-native patterns](https://github.com/LLLin000/PaperForge/issues/67) and [desktop installation/health/recovery patterns](https://github.com/LLLin000/PaperForge/issues/68); keep the managed-runtime decision blocked until #68 closes.
 - [ ] Keep routine OCR quality outside maintenance; successful updates leave the queue, while unacceptable results use a user-reviewed GitHub Issue draft.
 - [ ] Close or follow up [Unified rebuild UX](https://github.com/LLLin000/PaperForge/issues/63) after the OCR slice lands.
 
