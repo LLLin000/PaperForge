@@ -500,6 +500,76 @@ class TestCooperativeStop:
         restore()
 
 
+    def test_redo_stop_flag_but_all_complete_returns_normal(self, capsys, monkeypatch, tmp_path):
+        """Stop flag set after all papers done: normal exit, no 'stopped' message."""
+        _mock_run_ocr(monkeypatch)
+        _mock_validate_ocr_meta(monkeypatch)
+        vault = _make_minimal_vault(tmp_path)
+        _add_literature_note(vault, "KEY00001")
+        _add_literature_note(vault, "KEY00002")
+
+        # Mock _make_cooperative_stop; _StopChecker always returns False
+        # (so all papers process), but _is_stopped returns True after processing
+        # to simulate late SIGINT after all progress reached total
+        class _LateStop:
+            """Return True only after being checked at least 3 times (past all papers)."""
+            def __init__(self):
+                self.count = 0
+            def __call__(self):
+                self.count += 1
+                return self.count >= 10  # always False during processing
+
+        checker = _LateStop()
+        def _fake_make():
+            return (checker, lambda: None)
+
+        monkeypatch.setattr(
+            "paperforge.commands.ocr._make_cooperative_stop",
+            _fake_make,
+        )
+
+        from paperforge.commands.ocr import _run_ocr_redo
+        rc = _run_ocr_redo(vault, keys=["KEY00001", "KEY00002"])
+
+        assert rc == 0, f"Expected 0 (all done), got {rc}"
+        captured = capsys.readouterr().out
+        assert "Batch stopped" not in captured
+        assert "OCR_REDO_DONE" in captured
+
+    def test_rebuild_stop_flag_but_all_complete_returns_normal(self, capsys, monkeypatch, tmp_path):
+        """Rebuild stop flag after all done: normal exit, no 'stopped'."""
+        vault = _make_minimal_vault(tmp_path)
+        keys = ["KEY00001", "KEY00002"]
+
+        from tests.cli.test_ocr_progress_contracts import TestOcrRebuildProgressTokens
+        helper = TestOcrRebuildProgressTokens()
+        helper._setup_mock_selection_and_worker(vault, keys, monkeypatch)
+
+        # Late stop as above
+        class _LateStop:
+            def __init__(self):
+                self.count = 0
+            def __call__(self):
+                self.count += 1
+                return self.count >= 10
+
+        checker = _LateStop()
+        def _fake_make():
+            return (checker, lambda: None)
+
+        monkeypatch.setattr(
+            "paperforge.commands.ocr._make_cooperative_stop",
+            _fake_make,
+        )
+
+        from paperforge.commands.ocr import _run_ocr_rebuild
+        rc = _run_ocr_rebuild(vault, keys=keys)
+
+        assert rc == 0, f"Expected 0 (all done), got {rc}"
+        captured = capsys.readouterr().out
+        assert "OCR_REBUILD_DONE" in captured
+        assert "Batch stopped" not in captured
+
 class TestOcrListNeedsRebuild:
     """OCR list --json includes needs_derived_rebuild."""
 

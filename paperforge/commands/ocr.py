@@ -342,7 +342,8 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
         if failed_keys:
             print(f"Redo OCR pending/failed={len(failed_keys)}: {', '.join(failed_keys)}", flush=True)
 
-        if batch and _is_stopped():
+        _real_stop = batch and _is_stopped() and _current[0] < total
+        if _real_stop:
             print(f"Batch stopped (SIGINT) after {_current[0]} paper(s).")
 
         if batch:
@@ -350,7 +351,7 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
     finally:
         _restore_signal()
 
-    if batch and _is_stopped():
+    if batch and _is_stopped() and _current[0] < total:
         return 130
     return worker_exit_code
 
@@ -591,7 +592,9 @@ def _run_ocr_rebuild(
             print(f"OCR_REBUILD_DONE", flush=True)
     finally:
         _restore_signal()
-    return 0 if not _is_stopped() else 130
+
+    _real_stop = batch and _is_stopped() and _count < total
+    return 130 if _real_stop else 0
 
 
 
