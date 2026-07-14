@@ -1,11 +1,11 @@
-> **Branch:** `master` | **Last Updated:** 2026-07-10
-> **Active work:** Retrieval Experience recovery Wayfinder active. The live-architecture inventory is complete; non-destructive failure capture and source-to-vault deployment parity are the current frontier.
+> **Branch:** `feat/ocr-rebuild-ux` | **Last Updated:** 2026-07-14
+> **Active work:** OCR rebuild streaming and maintenance selection are complete and reviewed. The next product frontier is a Wayfinder for settings, onboarding, recovery, and permanently non-actionable quality states.
 >
 > ---
 >
-> **Current state:** OCR-v2 status is unchanged. Retrieval is **not production-ready** despite the sqlite-vec/search implementation issues being closed: the architecture audit confirmed broken M-search SQL, an unreachable `@` hybrid path, an incompatible retrieve result envelope, write-then-delete vector replacement, legacy Chroma resume/force gates, and SQLite/JSON build-state split-brain. No production fix or test-suite claim was made in this investigation session.
+> **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo now streams progress, supports cooperative stop between papers, and refreshes the canonical maintenance state. The plugin exposes All and Recommended views; Recommended is driven by the backend `_needs_derived_rebuild()` contract instead of UI heuristics. Live Obsidian verification showed 734 total papers, 700 canonical rebuild recommendations, and no captured plugin errors.
 >
-> Next: resolve [Capture a non-destructive retrieval failure matrix](https://github.com/LLLin000/PaperForge/issues/49) and [Audit source-to-vault deployment parity](https://github.com/LLLin000/PaperForge/issues/47), then unblock [Choose the canonical retrieval architecture and ownership boundary](https://github.com/LLLin000/PaperForge/issues/46).
+> Next: chart a settings-and-recovery UX Wayfinder before adding more controls. Its destination must cover onboarding, operation selection, non-actionable OCR quality limits, recovery guidance, and reference-product research.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -52,6 +52,9 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Full vault corpus diff: legacy vs v3 (555 papers) | **547/555 no diff, 5/555 v3 improvement** ✅ |
 | 86-paper pre-merge corpus diff | **86/86 no diff** ✅ |
 | 6 fixture-backed v3 parity gates | **6/6 pass** ✅ |
+| Focused OCR rebuild/redo/maintenance paths | **99 passed, 1 Windows signal test skipped, 1 unrelated empty-result regression deselected** ✅ |
+| Plugin tests + TypeScript + production build | **93 passed; typecheck/build clean** ✅ |
+| Live Literature-hub maintenance UI | **734 All / 700 Recommended; no captured errors** ✅ |
 </br>
 </br>
 | Component | Status |
@@ -69,10 +72,10 @@ raw observations → structural signatures → stable anchors/families → zone 
 | **Quality indicators** (Layer 2) | ✅ `paperforge/worker/ocr_quality.py` — `build_quality_indicators()` with 5 normalizers |
 | **Readiness policy** (Layer 2) | ✅ `evaluate_readiness()` + YAML policy evaluator with deep-merge, hard-red, use-case gates |
 | **Feedback sidecar** (Layer 2) | ✅ `paperforge/worker/ocr_quality_feedback.py` — per-mark hash, stale detection, no UI |
-| **Retrieval architecture** | 🔴 Wayfinder recovery active; [live architecture audit](https://gist.github.com/LLLin000/aaf5505a991e85ad9bb4cafa922f48bf) completed |
-| **M metadata search** | 🔴 sql.js selects nonexistent `paper_fts.year`; CLI fallback is the only viable arm |
-| **@ deep search** | 🔴 plugin omits `--deep` and discards CLI `data.chunks` |
-| **Vector build control** | 🔴 new vec0 rows are deleted after write; resume/force still gate on legacy Chroma path; UI reads stale JSON build state |
+| **Retrieval architecture** | ✅ Retrieval recovery merged and deployed; vec0 index healthy at 2560 dimensions |
+| **M metadata search** | ✅ sql.js and Python CLI paths restored |
+| **@ deep search** | ✅ deep CLI invocation and result-envelope consumption restored |
+| **Vector build control** | ✅ canonical SQLite lifecycle and health state restored |
 
 ### 2.3 Fix Status
 
@@ -106,6 +109,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 29 | M84CTEM9 | Figure inner_text not merged into figure render | Fix | figure_inner_text blocks were correctly recognized but crop bbox excluded variable labels; render_figure_object_markdown emits only image+legend. Fix: expand crop bbox to include owned figure_inner_text blocks | `c42da20` |
 | 30 | — | tag_figure_contained_text binds owner_id on contained blocks | Fix | Contained text path stamped role but not _object_owner_id; needed for crop bbox expansion to find the block-to-figure link | `34827f2` |
 | 31 | — | Enable OCR_PIPELINE_V3 by default | Toggle | Full vault corpus diff (555 papers): 547/555 no diff, 5/555 v3 improvements. Set OCR_PIPELINE_V3=0 for legacy | `914acd6` |
+| 32 | — | OCR rebuild progress + maintenance selection contract | Feature | Added flushed, prefix-separated rebuild/redo streams; full keyed redo; cooperative stop; canonical `needs_derived_rebuild`; All/Recommended filters; selected batch progress UI | `349d4f6d`, `3a516add`, `e556c8ba` |
 
 ## 3. Remaining Issues — Release-Readiness Layers
 
@@ -131,10 +135,10 @@ raw observations → structural signatures → stable anchors/families → zone 
 
 ### Retrieval Experience Recovery
 
-[Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) is the active recovery map. [Inventory the live retrieval architecture and contract drift](https://github.com/LLLin000/PaperForge/issues/53) established that current failures are cross-contract defects, not one vector-backend bug. The next frontier is runtime failure evidence plus deployed-artifact parity; implementation remains intentionally paused until the canonical backend, build lifecycle, query/result contract, repair policy, UI states, and acceptance gate are decided.
+[Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) completed and the resulting retrieval fixes are merged to `master`. The live Literature-hub vault has a healthy 2560-dimensional vec0 index; M and @ search paths are operational.
 
 ### Layer 3: Plugin UI
-`PaperForgeStatusView` dashboard is 2300+ lines in one file. Status display, OCR maintenance UI, and user-facing health presentation not yet polished.
+OCR maintenance now has a canonical All/Recommended state model, selected batch actions, streaming progress, and cooperative stop. The broader settings experience remains fragmented: onboarding, installation, memory configuration, operation selection, recovery guidance, and permanently non-actionable quality limits need one product-level redesign rather than more local controls.
 
 ### Layer 4: Downstream Tools
 `chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
@@ -142,31 +146,22 @@ raw observations → structural signatures → stable anchors/families → zone 
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. 🔴 **Retrieval recovery Wayfinder** — architecture inventory resolved; implementation paused until decisions are complete.
-2. 🟡 **Runtime evidence frontier** — non-destructive Literature-hub/test-vault failure matrix.
-3. 🟡 **Deployment parity frontier** — Python/plugin/source/deployed artifact audit.
-4. ⏳ **Canonical retrieval architecture** — blocked by the three evidence tickets.
-5. 🟡 **Plugin UI polish** — retrieval UI behavior will follow the lifecycle/query contracts.
-6. 🟡 **Downstream tooling** — section-aware chunking, figure/table separate handling.
-7. ⏳ **Compatibility naming cleanup** — deferred post-release.
+1. 🔴 **Settings-and-recovery UX Wayfinder** — chart the product destination before further frontend implementation.
+2. 🟡 **Permanent OCR quality limits** — define a terminal/non-actionable state so repeated rebuilds do not masquerade as fixable work.
+3. 🟡 **Onboarding and configuration model** — make installation, OCR, embedding, and memory setup progressive and explainable.
+4. 🟡 **Reference-product research** — compare mature Obsidian plugins and adjacent desktop tools for setup, health, and recovery patterns.
+5. 🟡 **Downstream tooling** — section-aware chunking and separate figure/table handling.
+6. ⏳ **Compatibility naming cleanup** — deferred post-release.
 ### 4.1 Immediate Next Steps
 
-- [x] [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45)
-- [x] [Inventory the live retrieval architecture and contract drift](https://github.com/LLLin000/PaperForge/issues/53)
-- [ ] [Capture a non-destructive retrieval failure matrix](https://github.com/LLLin000/PaperForge/issues/49)
-- [ ] [Audit source-to-vault deployment parity](https://github.com/LLLin000/PaperForge/issues/47)
-- [ ] [Choose the canonical retrieval architecture and ownership boundary](https://github.com/LLLin000/PaperForge/issues/46)
-- [x] #20 Hash-based OCR change detection
-- [x] #31 OpenAI SDK embedding provider
-- [x] #33 E2E test fixtures (3 synthetic PDFs)
-- [x] #26 sqlite-vec schema (v6: vec0 + meta + build_state)
-- [x] #27 sqlite-vec write/delete (builder + _chroma)
-- [x] #28 sqlite-vec merge_retrieve (search)
-- [x] #29 build_state migration to SQLite
-- [x] #30 E2E embed+retrieve tests
-- [x] #32 E2E OCR pipeline tests
-- [ ] Push master to origin
-- [ ] CI validation
+- [x] OCR rebuild streaming protocol
+- [x] Canonical All/Recommended maintenance filters
+- [x] Selected batch rebuild/redo with cooperative stop
+- [x] Live Literature-hub plugin verification
+- [ ] Grill and domain-model the destination of the settings-and-recovery UX Wayfinder
+- [ ] Create the Wayfinder map and its first frontier tickets
+- [ ] Close or follow up [OCR rebuild: streaming progress + maintenance UI redesign](https://github.com/LLLin000/PaperForge/issues/64)
+- [ ] Reconcile the remaining slices of [Unified rebuild UX](https://github.com/LLLin000/PaperForge/issues/63)
 - [ ] #21 Display hash staleness in status output
 - [ ] #22 Remove legacy version constants
 ---
@@ -306,6 +301,9 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-09 | Schema v6: hash/policy columns in vec companion meta tables | Resume hash checks need body_units_hash, object_units_hash, retrieval_policy_version persisted alongside vectors. |
 | 2026-07-10 | Retrieval scope is the entire user experience, not only vec0 | M metadata search, `@` retrieval, build lifecycle, status, deployment, and persistence share contracts; auditing only the vector table would miss the observed failures. |
 | 2026-07-10 | Source Corpus is preserved; Retrieval Artifacts are disposable | Paper/OCR/structured/user-authored content is authoritative, while FTS indexes, embeddings, vector tables, and companion metadata may be cleared and rebuilt instead of migrated. |
+| 2026-07-14 | OCR Recommended is a backend contract, not a plugin heuristic | Rebuild eligibility includes version/hash/artifact drift that the UI cannot reproduce safely; `needs_derived_rebuild` is emitted once by the canonical selector. |
+| 2026-07-14 | Cooperative stop is transported over stdin | Windows `SIGINT` can terminate the current paper; a `PAPERFORGE_STOP` control line preserves the finish-current-then-stop contract across platforms. |
+| 2026-07-14 | Broader settings work starts with Wayfinding, not another local redesign | Persistent rebuild rows, onboarding, installation, memory configuration, and recovery are one product-state problem; adding controls before defining that model increases ambiguity. |
 
 ---
 
@@ -401,6 +399,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-03 | Figure pipeline vnext cutover completed | Implemented all remaining vnext passes (composite parent, group/classic sequential, unresolved consolidation, accounting), expanded compare harness, curated 5-paper cutover corpus covering all 9 spec categories, generated diff review (improvement=2 / equivalent=2 / parity=1 / regression=0), updated legacy figure tests for vnext contract, and switched `build_figure_inventory(...)` wrapper to vnext on branch `feat/figure-pipeline-vnext`. Verification: 346 tests passed. | §9.22 |
 | 2026-07-03 | OCR pairing framework merge-unblock pass | Cleared the remaining merge blockers on `feat/ocr-pairing-framework`: moved figure-only rotation enrichment out of generic state, upgraded table cutover validation to semantic parity across 6 runnable real-paper fixtures including `37LK5T97`, and cleaned touched-file lint/format issues. Verification: 357 targeted tests passed; merge-ready. | §9.23 |
 | 2026-07-10 | Retrieval architecture Wayfinder inventory | Charted the end-to-end recovery map and resolved the live-architecture ticket. Confirmed four P0 contract breaks: invalid sql.js metadata SQL, missing `--deep`, ignored `data.chunks`, and build write-then-delete. Published the evidence audit; no production fix applied. | [Architecture audit](https://gist.github.com/LLLin000/aaf5505a991e85ad9bb4cafa922f48bf) |
+| 2026-07-14 | OCR rebuild streaming + maintenance UX | Added flushed rebuild/redo progress contracts, full keyed redo, cross-platform cooperative stop, canonical All/Recommended filters, selected batch actions, and cache migration. Verification: 99 focused Python tests, 93 plugin tests, typecheck/build, and live 734/700-row Obsidian state with no captured errors. | §2-4 |
 
 ## 9. Historical Detail Archive
 

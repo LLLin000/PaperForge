@@ -1,43 +1,31 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 remains stable; Retrieval Experience recovery is now the active blocking workstream.
-> Last updated: 2026-07-10
+> Status: OCR-v2 is stable; OCR maintenance streaming and the selected-results UI are implemented on `feat/ocr-rebuild-ux`.
+> Last updated: 2026-07-14
 
 ## Current checkpoint
 
-- [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) is the canonical recovery map.
-- [Inventory the live retrieval architecture and contract drift](https://github.com/LLLin000/PaperForge/issues/53) is resolved with a reviewed [architecture audit](https://gist.github.com/LLLin000/aaf5505a991e85ad9bb4cafa922f48bf).
-- Source Corpus data remains authoritative and must be preserved. FTS indexes, embeddings, vec0 tables, and companion metadata are disposable Retrieval Artifacts.
-- No retrieval implementation fix or production build-success claim was made at this checkpoint.
-
-## Confirmed blocking findings
-
-1. sql.js metadata search cannot prepare its query because `paper_fts.year` does not exist.
-2. The plugin `@` path invokes `retrieve` without `--deep`.
-3. Retrieve emits `data.chunks`; the plugin accepts only `data.matches` or `data.results`.
-4. Embed build writes new vec0 rows and then deletes every row for that paper.
-5. Resume and force still use the legacy Chroma vectors directory as their active-store gate/cleanup target.
-6. SQLite `build_state` is live truth, but the plugin renders a nested copy from `vector-runtime-state.json`.
-7. The repository and Literature-hub plugin bundles have different checksums; the exact deployed delta is not yet resolved.
-
-## Frontier
-
-- [ ] [Capture a non-destructive retrieval failure matrix](https://github.com/LLLin000/PaperForge/issues/49)
-- [ ] [Audit source-to-vault deployment parity](https://github.com/LLLin000/PaperForge/issues/47)
-
-These tickets are independent and may run in parallel. They must not mutate Source Corpus data or apply production fixes.
-
-## Blocked after the frontier
-
-- [ ] [Choose the canonical retrieval architecture and ownership boundary](https://github.com/LLLin000/PaperForge/issues/46)
-- [ ] [Specify the retrieval build lifecycle and crash recovery semantics](https://github.com/LLLin000/PaperForge/issues/52)
-- [ ] [Specify metadata and deep-search contracts](https://github.com/LLLin000/PaperForge/issues/54)
-- [ ] [Define safe repair, rebuild, and model-change policy](https://github.com/LLLin000/PaperForge/issues/51)
-- [ ] [Prototype retrieval panel states and recovery flows](https://github.com/LLLin000/PaperForge/issues/48)
-- [ ] [Define the retrieval acceptance matrix and release gate](https://github.com/LLLin000/PaperForge/issues/50)
+- Retrieval recovery is merged to `master`; the real Literature-hub vault has a healthy 2560-dimensional vec0 index and working M / @ search paths.
+- [OCR rebuild: streaming progress + maintenance UI redesign](https://github.com/LLLin000/PaperForge/issues/64) is implemented and reviewed.
+- Multi-key `ocr rebuild` and full `ocr redo` emit separate, flushed progress streams and accept a cross-platform cooperative stop request between papers.
+- The maintenance tab now exposes all papers plus the canonical `_needs_derived_rebuild()` recommendation set, selected batch actions, an above-table progress state, and full refresh on completion.
+- Source Corpus data remains authoritative and was not modified during verification. Only the deployed plugin bundle and disposable maintenance cache were refreshed.
 
 ## Verification status
 
-- Read-only Literature-hub DB probe confirmed that `paper_fts` has no `year` column and the sql.js query fails with `OperationalError: no such column: year`.
-- Refreshed code-graph traces confirmed that `get_vector_backend()` is tests-only while production retrieval accesses vec0 directly.
-- Evidence review confirmed the execution maps and P0 contract failures; build-control-only and explicit-CLI-deep findings were downgraded below P0.
-- No test suite was run because this checkpoint is an architecture investigation, not an implementation completion claim.
+- Focused Python OCR paths: **97 passed, 1 Windows SIGINT test skipped, 1 unrelated empty-result regression deselected**.
+- Plugin: **93 passed**; TypeScript check and production build passed.
+- Live Obsidian verification: PaperForge 1.5.15 loaded without captured errors; maintenance rendered **734 All** rows and **700 Recommended** rows from the canonical backend flag.
+- Live progress-state harness showed the floating progress bar, current key, Stop control, and disabled row actions.
+- The repository-wide Python suite remains blocked during collection by the pre-existing `test_pr9a_resume_rebuild.py` import of removed `_assert_collections_healthy`.
+
+## Frontier
+
+- [ ] Chart a settings-and-recovery UX Wayfinder: define the destination, state model, onboarding boundary, and reference-product research needed for a larger frontend refactor.
+- [ ] Decide how permanently non-actionable OCR quality limits leave the rebuild recommendation set and how the UI explains the next user action.
+- [ ] Close or follow up [Unified rebuild UX](https://github.com/LLLin000/PaperForge/issues/63) after the OCR slice lands.
+
+## Deferred
+
+- Vector rebuild UX (PRD Slice 1): deferred.
+- Memory/global maintenance cleanup (PRD Slice 3): deferred.
+- OCR ETA and real-time per-row mutation: out of scope for the completed OCR slice.
