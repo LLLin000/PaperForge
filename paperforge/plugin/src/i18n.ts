@@ -259,6 +259,8 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_maint_all_papers: "All Papers",
     ocr_maint_rebuild_btn: "Rebuild results",
     ocr_maint_redo_btn: "Rerun OCR",
+    ocr_maint_redo_confirm:
+      "Rerun OCR for {n} paper(s)? Existing derived OCR artifacts will be replaced.",
     maintenance_group_retry: "Needs Retry",
     maintenance_group_rebuild: "Can Rebuild",
     maintenance_group_legacy: "Upgrade Available (Optional)",
@@ -567,6 +569,8 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_maint_all_papers: "全部论文",
     ocr_maint_rebuild_btn: "重建结果",
     ocr_maint_redo_btn: "重新 OCR",
+    ocr_maint_redo_confirm:
+      "确认重新 OCR {n} 篇论文？现有的派生 OCR 结果将被替换。",
     maintenance_group_retry: "需要重试",
     maintenance_group_rebuild: "可重建结果",
     maintenance_group_legacy: "可升级旧结果（可选）",

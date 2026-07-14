@@ -34,10 +34,11 @@ import {
 import {
   categorizeMaintenanceRow,
   buildMaintenanceSummary,
+  maintenanceActionForRow,
+  maintenanceActionRequiresConfirmation,
   MaintenanceDisplayRow,
   MaintenanceCache,
   readMaintenanceCache,
-  writeMaintenanceCache,
   refreshMaintenanceData,
 } from "./services/ocr-maintenance-ui";
 import { processProgressChunk } from "./services/progress-parser";
@@ -2198,24 +2199,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "pf-maint-actions",
         });
 
-        if (p.can_rebuild) {
+        const primaryAction = maintenanceActionForRow(p);
+        if (primaryAction === "rebuild") {
           const rebuildBtn = actionDiv.createEl("button", {
             cls: "pf-maint-action-btn rebuild",
             text: t("maintenance_btn_rebuild") || "Rebuild",
           });
           if (isBusy) rebuildBtn.disabled = true;
           rebuildBtn.addEventListener("click", () => {
-            const args = [
-              ...pyExtra,
-              "-m",
-              "paperforge",
-              "ocr",
-              "rebuild",
-              p.key,
-            ];
             execFile(
               pyPath,
-              args,
+              [...pyExtra, "-m", "paperforge", "ocr", "rebuild", p.key],
               {
                 cwd: vaultPath,
                 timeout: 120000,
@@ -2230,26 +2224,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               }
             );
           });
-        }
-
-        if (p.can_redo) {
+        } else if (primaryAction === "redo") {
           const redoBtn = actionDiv.createEl("button", {
             cls: "pf-maint-action-btn redo",
             text: t("ocr_maint_redo_btn") || "Redo",
           });
           if (isBusy) redoBtn.disabled = true;
           redoBtn.addEventListener("click", () => {
-            const args = [
-              ...pyExtra,
-              "-m",
-              "paperforge",
-              "ocr",
-              "redo",
-              p.key,
-            ];
+            if (
+              maintenanceActionRequiresConfirmation("redo") &&
+              !confirm(
+                (t("ocr_maint_redo_confirm") ||
+                  "Rerun OCR for {n} paper(s)? Existing derived OCR artifacts will be replaced.").replace(
+                  "{n}",
+                  "1"
+                )
+              )
+            ) {
+              return;
+            }
             execFile(
               pyPath,
-              args,
+              [...pyExtra, "-m", "paperforge", "ocr", "redo", p.key],
               {
                 cwd: vaultPath,
                 timeout: 300000,
@@ -2257,9 +2253,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               },
               () => {
                 new Notice(
-                  (t("ocr_maint_redo_btn") || "Redo OCR") +
-                    " — " +
-                    p.key
+                  (t("ocr_maint_redo_btn") || "Redo OCR") + " — " + p.key
                 );
               }
             );
@@ -2296,11 +2290,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       redoBatchBtn.disabled = isBusy;
 
       const runBatch = (action: "rebuild" | "redo") => {
-        // Filter selected by eligibility for the chosen action
+        // Filter selected by eligibility for the chosen action (matches per-row canonical action)
         const selected = visible.filter(
           (p) =>
             selState.get(p.key) &&
-            (action === "rebuild" ? p.can_rebuild : p.can_redo),
+            maintenanceActionForRow(p) === action,
         );
         if (selected.length === 0) {
           const label =
@@ -2313,6 +2307,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               ". Uncheck ineligible rows and try again.",
             6000,
           );
+          return;
+        }
+        if (
+          maintenanceActionRequiresConfirmation(action) &&
+          !confirm(
+            (t("ocr_maint_redo_confirm") ||
+              "Rerun OCR for {n} paper(s)? Existing derived OCR artifacts will be replaced.").replace(
+              "{n}",
+              String(selected.length)
+            )
+          )
+        ) {
           return;
         }
         const keys = selected.map((p) => p.key);
@@ -2429,18 +2435,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 cache,
               )
                 .then((result) => {
-                  if (result.changed || !cache) {
-                    cache = {
-                      manifest: {},
-                      papers: Object.fromEntries(
-                        result.data.map(
-                          (p: MaintenanceDisplayRow) => [p.key, p],
-                        ),
-                      ),
-                      cached_at: new Date().toISOString(),
-                    };
-                    writeMaintenanceCache(vaultPath, cache);
-                  }
+                  cache = readMaintenanceCache(vaultPath);
                   renderTable(result.data);
                 })
                 .catch(() => {
@@ -2484,28 +2479,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cache || null
     )
       .then((result) => {
-        if (result.changed) {
+        cache = readMaintenanceCache(vaultPath);
+        if (result.changed || !cache) {
           renderTable(result.data);
-          writeMaintenanceCache(vaultPath, {
-            manifest: {},
-            papers: Object.fromEntries(
-              result.data.map(
-                (p: MaintenanceDisplayRow) => [p.key, p]
-              )
-            ),
-            cached_at: new Date().toISOString(),
-          });
-        } else if (!cache) {
-          renderTable(result.data);
-          writeMaintenanceCache(vaultPath, {
-            manifest: {},
-            papers: Object.fromEntries(
-              result.data.map(
-                (p: MaintenanceDisplayRow) => [p.key, p]
-              )
-            ),
-            cached_at: new Date().toISOString(),
-          });
         }
       })
       .catch(() => {

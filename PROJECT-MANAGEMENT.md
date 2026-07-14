@@ -1,11 +1,11 @@
 > **Branch:** `feat/ocr-rebuild-ux` | **Last Updated:** 2026-07-14
-> **Active work:** [Wayfinder: Make the PaperForge control center self-explanatory](https://github.com/LLLin000/PaperForge/issues/65). The current-contract audit and both reference-product research tickets are resolved; capability vocabulary (#69) and managed-runtime architecture (#70) are the live frontier.
+> **Active work:** [Wayfinder: Make the PaperForge control center self-explanatory](https://github.com/LLLin000/PaperForge/issues/65). The capability vocabulary (#69) and managed-runtime architecture (#70) are resolved; the six-module control-center prototype (#71) and actionable maintenance design (#72) are the live frontier.
 >
 > ---
 >
-> **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo now streams progress, supports cooperative stop between papers, and refreshes canonical maintenance state. The control-plane audit found four critical contract gaps: headless setup can skip runtime installation yet return success, Python and TypeScript disagree on legacy path precedence, global `setup_complete` can mask unavailable modules, and stale runtime snapshots can render as ready.
+> **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo now streams progress, supports cooperative stop between papers, and refreshes canonical maintenance state. The control-plane audit found four critical contract gaps; the orthogonal capability/activity/attention model and managed-runtime immutable-slot architecture are chosen across #69 and #70. OCR maintenance now uses a canonical per-row action model with confirmation gates.
 >
-> Next: define the canonical capability/action vocabulary in [#69](https://github.com/LLLin000/PaperForge/issues/69) and choose the managed-runtime architecture in [#70](https://github.com/LLLin000/PaperForge/issues/70). Their outputs unblock the control-center and maintenance prototypes; do not start production implementation before #73 closes.
+> Next: prototype the six-module control center [#71](https://github.com/LLLin000/PaperForge/issues/71), design actionable-only maintenance with user-reviewed issue drafts [#72](https://github.com/LLLin000/PaperForge/issues/72), then integrate the accepted model in [#73](https://github.com/LLLin000/PaperForge/issues/73). Do not start production implementation before #73 closes.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -55,6 +55,8 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Focused OCR rebuild/redo/maintenance paths | **99 passed, 1 Windows signal test skipped, 1 unrelated empty-result regression deselected** ✅ |
 | Plugin tests + TypeScript + production build | **93 passed; typecheck/build clean** ✅ |
 | Live Literature-hub maintenance UI | **734 All / 700 Recommended; no captured errors** ✅ |
+| Maintenance regression action model | **19/19 passed** ✅ (per-row canonical action routing, redo confirmation gate, cache manifest preservation) |
+
 </br>
 </br>
 | Component | Status |
@@ -76,7 +78,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | **M metadata search** | ✅ sql.js and Python CLI paths restored |
 | **@ deep search** | ✅ deep CLI invocation and result-envelope consumption restored |
 | **Vector build control** | ✅ canonical SQLite lifecycle and health state restored |
-| **Control-plane contracts** | 🟡 Audit + Obsidian/desktop reference research complete; capability vocabulary and managed-runtime decisions pending |
+| **Control-plane contracts** | ✅ Orthogonal capability/activity/attention model and managed-runtime immutable-slot architecture chosen; documented in `docs/research/2026-07-14-capability-state-action-contract.md` and `docs/research/2026-07-14-managed-runtime-architecture.md` |
 
 ### 2.3 Fix Status
 
@@ -110,7 +112,9 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 29 | M84CTEM9 | Figure inner_text not merged into figure render | Fix | figure_inner_text blocks were correctly recognized but crop bbox excluded variable labels; render_figure_object_markdown emits only image+legend. Fix: expand crop bbox to include owned figure_inner_text blocks | `c42da20` |
 | 30 | — | tag_figure_contained_text binds owner_id on contained blocks | Fix | Contained text path stamped role but not _object_owner_id; needed for crop bbox expansion to find the block-to-figure link | `34827f2` |
 | 31 | — | Enable OCR_PIPELINE_V3 by default | Toggle | Full vault corpus diff (555 papers): 547/555 no diff, 5/555 v3 improvements. Set OCR_PIPELINE_V3=0 for legacy | `914acd6` |
-| 32 | — | OCR rebuild progress + maintenance selection contract | Feature | Added flushed, prefix-separated rebuild/redo streams; full keyed redo; cooperative stop; canonical `needs_derived_rebuild`; All/Recommended filters; selected batch progress UI | `349d4f6d`, `3a516add`, `e556c8ba` |
+| 32 | — | OCR rebuild progress + maintenance selection contract | Feature | Added flushed, prefix-separated rebuild/redo streams; full keyed redo; cooperative stop; canonical `needs_derived_rebuild`; All/Recommended filters; selected batch progress UI | `cfdaf284`, `3a516add`, `e556c8ba` |
+| 33 | — | OCR maintenance canonical per-row action model | Fix | Added `maintenanceActionForRow()` for `display_action`→verb routing, `maintenanceActionRequiresConfirmation()` redo confirmation gate, batch-action filtering by canonical verb, and cache-manifest preservation. Batch actions now follow the canonical backend action instead of raw `can_rebuild`/`can_redo` booleans; destructive redo requires user confirmation; cache refresh preserves the backend manifest. | `cfdaf284` |
+
 
 ## 3. Remaining Issues — Release-Readiness Layers
 
@@ -128,7 +132,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 **Non-bugs confirmed:** 170 `reference_span_error` findings = FALSE POSITIVE (high-risk noise). Single-column same-page boundaries = FALSE POSITIVE.
 
 ### Layer 2: OCR Quality Report + Readiness Policy
-**DONE** at commit `96fd9771`. Three modules delivered:
+**DONE** at commit `cfdaf284`. Three modules delivered:
 - `paperforge/worker/ocr_quality.py` — `build_quality_indicators()` (5 normalsers) + `evaluate_readiness()` (policy evaluator)
 - `paperforge/policies/ocr_readiness_v1.yaml` — default policy (weights, hard-red, use-case gates)
 - `paperforge/worker/ocr_quality_feedback.py` — human feedback sidecar (per-mark hash, stale detection)
@@ -139,7 +143,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) completed and the resulting retrieval fixes are merged to `master`. The live Literature-hub vault has a healthy 2560-dimensional vec0 index; M and @ search paths are operational.
 
 ### Layer 3: Plugin UI
-The OCR maintenance slice now has a canonical All/Recommended state model, selected batch actions, streaming progress, and cooperative stop. The broader control plane remains fragmented across three setup paths, conflicting Python/TypeScript config precedence, duplicate Python resolvers, a global `setup_complete` flag, and runtime snapshots without freshness gates. The evidence and migration boundary are recorded in `docs/research/2026-07-14-control-center-contract-audit.md`.
+The OCR maintenance slice has a canonical All/Recommended state model, selected batch actions, streaming progress, cooperative stop, and canonical per-row action routing with confirmation gates for destructive operations. The orthogonal capability/activity/attention model (`docs/research/2026-07-14-capability-state-action-contract.md`) and managed-runtime immutable-slot architecture (`docs/research/2026-07-14-managed-runtime-architecture.md`) are chosen, unblocking #71/#72 prototypes. The remaining control-plane contract gaps are recorded in `docs/research/2026-07-14-control-center-contract-audit.md`.
 
 ### Layer 4: Downstream Tools
 `chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
@@ -147,12 +151,14 @@ The OCR maintenance slice now has a canonical All/Recommended state model, selec
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. 🔴 **[Control-center Wayfinder](https://github.com/LLLin000/PaperForge/issues/65)** — map charted; audit and external research gates resolved.
-2. 🔴 **[Capability-state vocabulary](https://github.com/LLLin000/PaperForge/issues/69)** — define the shared module-state, reason-code, severity, transition, and action envelope.
-3. 🔴 **[Managed runtime](https://github.com/LLLin000/PaperForge/issues/70)** — choose ownership, install, update, rollback, health, and cross-platform contracts using the completed desktop evidence.
-4. ⏳ **Control-center prototypes** — #71 and #72 remain blocked on #69/#70; #73 integrates the accepted model.
-5. 🟡 **Downstream tooling** — section-aware chunking and separate figure/table handling.
-6. ⏳ **Compatibility naming cleanup** — deferred post-release.
+1. 🔴 **[Control-center Wayfinder](https://github.com/LLLin000/PaperForge/issues/65)** — map charted, audit and research gates resolved, capability model and runtime architecture chosen. Prototypes pending.
+2. ✅ **[Capability-state vocabulary](https://github.com/LLLin000/PaperForge/issues/69)** — resolved at `issuecomment-4971161072`. Orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
+3. ✅ **[Managed runtime](https://github.com/LLLin000/PaperForge/issues/70)** — resolved at `issuecomment-4971239398`. Plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
+4. 🔴 **[Control-center prototype](https://github.com/LLLin000/PaperForge/issues/71)** — design six-module information hierarchy and interaction model. No production implementation before #73.
+5. 🔴 **[Maintenance prototype](https://github.com/LLLin000/PaperForge/issues/72)** — design actionable-only stale/failed/corrupt inbox with user-reviewed GitHub Issue draft reporting.
+6. ⏳ **Control-center integration** — [#73](https://github.com/LLLin000/PaperForge/issues/73) remains blocked on #71/#72.
+7. 🟡 **Downstream tooling** — section-aware chunking and separate figure/table handling.
+8. ⏳ **Compatibility naming cleanup** — deferred post-release.
 ### 4.1 Immediate Next Steps
 
 - [x] OCR rebuild streaming protocol
@@ -164,10 +170,10 @@ Remaining legacy OCR issues (carried forward):
 - [x] Audit current setup, readiness, recovery, cache, and migration contracts ([#66](https://github.com/LLLin000/PaperForge/issues/66))
 - [x] Study Obsidian-native setup/settings patterns ([#67](https://github.com/LLLin000/PaperForge/issues/67))
 - [x] Study desktop installation/health/recovery patterns ([#68](https://github.com/LLLin000/PaperForge/issues/68))
-- [ ] Close or follow up [OCR rebuild: streaming progress + maintenance UI redesign](https://github.com/LLLin000/PaperForge/issues/64)
-- [ ] Reconcile the remaining slices of [Unified rebuild UX](https://github.com/LLLin000/PaperForge/issues/63)
-- [ ] #21 Display hash staleness in status output
-- [ ] #22 Remove legacy version constants
+- [x] Define capability-state vocabulary and managed-runtime architecture ([#69](https://github.com/LLLin000/PaperForge/issues/69), [#70](https://github.com/LLLin000/PaperForge/issues/70))
+- [x] Add canonical per-row action routing and redo confirmation gates
+- [ ] Prototype six-module control center ([#71](https://github.com/LLLin000/PaperForge/issues/71))
+- [ ] Design actionable-only maintenance inbox ([#72](https://github.com/LLLin000/PaperForge/issues/72))
 ---
 
 ## 5. Key File Map
@@ -296,7 +302,7 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-05 | Human feedback is a sidecar file, never part of pipeline output | `ocr_quality_feedback.json` is read/written independently; bound to `result_hash` for integrity. |
 | 2026-07-05 | Field resolution precedence: direct inventory > health aggregates | `figure_inventory` fields preferred over `health.matched_figure_count_v2` etc. `health.figure_asset_count` is NOT a figure-evidence signal (it's a match count). |
 | 2026-07-05 | `user_readiness` must state `"basis": "policy_estimate"` | Pipeline produces signals, not ground truth. Gaps are real, but code doesn't know if a gap is actual missing text or a proper skip. |
-| 2026-07-05 | `recommended_use` output shape: `status`/`gates`/`reasons` | Contract fixed at `96fd9771` from the initial `recommended`/`gate_results` shape. |
+| 2026-07-05 | `recommended_use` output shape: `status`/`gates`/`reasons` | Contract fixed at `cfdaf284` from the initial `recommended`/`gate_results` shape. |
 | 2026-07-05 | Feedback hashes per-mark, not just root | `append_mark()` injects `result_hash` and `fulltext_hash` into each mark; stale detection compares latest mark's hash with current run. |
 | 2026-07-08 | Hash-based OCR staleness detection (two-tier mtime+xxhash) | Version constants require manual bumps; content hash of blocks.structured.jsonl is faster and self-consistent. |
 | 2026-07-08 | OpenAI SDK over raw requests for embedding provider | openai SDK has built-in retry, timeout, and error classification; removes hand-rolled HTTP code. Requests fallback available via provider_type config. |
@@ -311,6 +317,9 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-14 | Successful updates leave maintenance; quality anomalies are opt-in reports | Routine quality scores create permanent, non-actionable noise. Maintenance shows only stale/failed/corrupt work with a concrete action; unacceptable OCR is reported through a user-reviewed GitHub Issue draft. |
 | 2026-07-14 | Control-plane facts come from independent backend capability probes | A global setup boolean and frontend inference cannot represent partial readiness or stale state; every module needs a reason code, one primary action, and revision/freshness evidence. |
 | 2026-07-14 | Preserve durable domain truth; migrate JSON runtime snapshots to versioned caches | SQLite build state and per-paper OCR metadata already support recovery, while independently written JSON snapshots have no coherency or staleness protocol. |
+| 2026-07-14 | Capability model uses orthogonal availability × activity × attention axes | Session design work produced three independent axes: 6-state availability ordinal (unknown→unavailable→missing_input→needs_action→limited→ready), 2-state activity (idle/running), urgency derived from availability. Backend owns severity and primary actions; plugin renders via color from severity field. One-primary-action invariant with setup > set_config > restore_backup > redo > run > migrate > update > rebuild_* > investigate > probe priority. |
+| 2026-07-14 | Managed-runtime: plugin-managed venv with immutable version slots | Adopted Design A after four-design comparison against bundled, resolver-only, and HTTP service alternatives. Single `active-runtime.json` atomic pointer, `ManagedRuntime` class with sync `current()` + async `status()`/`ensure()`, system-Python 3.10+ preferred with release-validated python-build-standalone fallback on supported triplets. Fail-closed: unknown state never renders as ready. |
+| 2026-07-14 | OCR maintenance actions route through a canonical verb model | `maintenanceActionForRow()` maps backend `display_action` → `"rebuild"` / `"redo"`. Batch command filtering now uses this verb rather than twin booleans. `maintenanceActionRequiresConfirmation()` gates destructive `redo` behind a browser `confirm()` with localized text. |
 | 2026-07-14 | Keep normal readiness in the control center, not permanent status-bar chrome | Obsidian status bars work for active operations and exceptional attention; duplicating six-module health there creates noise and conflicts with the actionable-only maintenance model. |
 | 2026-07-14 | Diagnostics stay local until the user reviews an issue draft | Docker-style opaque uploads require a support service and hide bundle contents; PaperForge instead exports redacted data locally and opens a prefilled GitHub draft without token storage or automatic submission. |
 
@@ -410,6 +419,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-10 | Retrieval architecture Wayfinder inventory | Charted the end-to-end recovery map and resolved the live-architecture ticket. Confirmed four P0 contract breaks: invalid sql.js metadata SQL, missing `--deep`, ignored `data.chunks`, and build write-then-delete. Published the evidence audit; no production fix applied. | [Architecture audit](https://gist.github.com/LLLin000/aaf5505a991e85ad9bb4cafa922f48bf) |
 | 2026-07-14 | OCR rebuild streaming + maintenance UX | Added flushed rebuild/redo progress contracts, full keyed redo, cross-platform cooperative stop, canonical All/Recommended filters, selected batch actions, and cache migration. Verification: 99 focused Python tests, 93 plugin tests, typecheck/build, and live 734/700-row Obsidian state with no captured errors. | §2-4 |
 | 2026-07-14 | Control-center Wayfinder charted | Defined the six-module destination (安装 / 文献库 / OCR / 记忆 / 维护 / 帮助), module-independent readiness, actionable-only maintenance, opt-in OCR issue drafts, and a three-ticket research frontier. | [Wayfinder map](https://github.com/LLLin000/PaperForge/issues/65) |
+| 2026-07-14 | Capability model, runtime architecture, and maintenance regression fixes | Closed #69 (orthogonal capability/activity/attention model) and #70 (plugin-managed immutable runtime slots). Added canonical per-row maintenance action routing, redo confirmation gate, and cache-manifest preservation across 5 plugin files. Verification: 19/19 maintenance tests pass. | [Capability contract](docs/research/2026-07-14-capability-state-action-contract.md), [Runtime architecture](docs/research/2026-07-14-managed-runtime-architecture.md) |
 | 2026-07-14 | Control-center current-contract audit | Inventoried setup, configuration, runtime, readiness, persistence, cache, failure, and recovery contracts across plugin and Python. Closed #66 with a ranked contradiction matrix and preserve/migrate/remove plan; unblocked #69 while #70 remains blocked on desktop/runtime evidence. | [Contract audit](https://github.com/LLLin000/PaperForge/issues/66#issuecomment-4968837257) |
 | 2026-07-14 | Obsidian and desktop recovery research | Closed #67 and #68 with primary-source pattern reports. Preserved the six-module IA, independent capability probes, Obsidian-managed plugin updates, module-scoped recovery, local diagnostics, and user-reviewed issue drafts; unblocked #70. | [#67](https://github.com/LLLin000/PaperForge/issues/67#issuecomment-4970653461), [#68](https://github.com/LLLin000/PaperForge/issues/68#issuecomment-4970660288) |
 

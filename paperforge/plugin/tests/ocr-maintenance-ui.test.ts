@@ -1,7 +1,10 @@
 import type { MaintenanceDisplayRow, MaintenanceCache } from "../src/services/ocr-maintenance-ui";
 import {
-  categorizeMaintenanceRow,
+  buildMaintenanceCache,
   buildMaintenanceSummary,
+  categorizeMaintenanceRow,
+  maintenanceActionForRow,
+  maintenanceActionRequiresConfirmation,
   MaintenanceRowLike,
 } from "../src/services/ocr-maintenance-ui";
 import { describe, expect, it } from "vitest";
@@ -328,5 +331,58 @@ describe("needs_derived_rebuild schema freshness", () => {
     expect(data).toHaveLength(2);
     expect(data.find((p) => p.key === "B-2")).toBeTruthy();
     expect(data.find((p) => p.key === "A-1")).toBeTruthy();
+  });
+});
+
+describe("canonical maintenance actions", () => {
+  const row = (displayAction: MaintenanceDisplayRow["display_action"]) =>
+    ({
+      key: "P1",
+      title: "Paper",
+      display_action: displayAction,
+      display_label: "",
+      display_reason: "",
+      display_group: "hidden",
+      visible_in_maintenance: true,
+      can_redo: true,
+      can_rebuild: true,
+      needs_derived_rebuild: true,
+    }) as MaintenanceDisplayRow;
+
+  it("renders only rebuild for a rebuild-first row", () => {
+    expect(maintenanceActionForRow(row("rebuild_result"))).toBe("rebuild");
+  });
+
+  it("renders redo only for retry and legacy-upgrade rows", () => {
+    expect(maintenanceActionForRow(row("retry_ocr"))).toBe("redo");
+    expect(maintenanceActionForRow(row("upgrade_legacy"))).toBe("redo");
+    expect(maintenanceActionForRow(row("none"))).toBeNull();
+  });
+
+  it("requires confirmation before redo but not derived rebuild", () => {
+    expect(maintenanceActionRequiresConfirmation("redo")).toBe(true);
+    expect(maintenanceActionRequiresConfirmation("rebuild")).toBe(false);
+  });
+});
+
+describe("maintenance cache construction", () => {
+  it("preserves the backend manifest in the rewritten cache", () => {
+    const paper = {
+      key: "P1",
+      title: "Paper",
+      display_action: "none",
+      display_label: "Done",
+      display_reason: "",
+      display_group: "hidden",
+      visible_in_maintenance: false,
+      can_redo: true,
+      can_rebuild: false,
+      needs_derived_rebuild: false,
+    } as MaintenanceDisplayRow;
+
+    const cache = buildMaintenanceCache({ P1: "hash-1" }, [paper], null);
+
+    expect(cache.manifest).toEqual({ P1: "hash-1" });
+    expect(cache.papers.P1).toBe(paper);
   });
 });

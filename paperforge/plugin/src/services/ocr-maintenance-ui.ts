@@ -41,6 +41,48 @@ export interface MaintenanceCache {
   cached_at: string;
 }
 
+export function maintenanceActionForRow(
+  row: MaintenanceDisplayRow
+): MaintenanceAction {
+  if (row.display_action === "rebuild_result") return "rebuild";
+  if (
+    row.display_action === "retry_ocr" ||
+    row.display_action === "upgrade_legacy"
+  ) {
+    return "redo";
+  }
+  return null;
+}
+
+export function maintenanceActionRequiresConfirmation(
+  action: MaintenanceAction
+): boolean {
+  return action === "redo";
+}
+
+export function buildMaintenanceCache(
+  manifest: Record<string, string>,
+  updatedPapers: MaintenanceDisplayRow[],
+  currentCache: MaintenanceCache | null
+): MaintenanceCache {
+  const cache: MaintenanceCache = {
+    manifest,
+    papers: {},
+    cached_at: new Date().toISOString(),
+  };
+  if (currentCache?.papers) {
+    for (const key of Object.keys(manifest)) {
+      if (currentCache.papers[key]) {
+        cache.papers[key] = currentCache.papers[key];
+      }
+    }
+  }
+  for (const paper of updatedPapers) {
+    cache.papers[paper.key] = paper;
+  }
+  return cache;
+}
+
 export type MaintenanceRowLike = {
   key: string;
   title: string;
@@ -221,21 +263,7 @@ export async function refreshMaintenanceData(
   );
   const updatedPapers: MaintenanceDisplayRow[] = JSON.parse(dataOut);
 
-  const cache: MaintenanceCache = {
-    manifest,
-    papers: {},
-    cached_at: new Date().toISOString(),
-  };
-  if (currentCache?.papers) {
-    for (const key of Object.keys(manifest)) {
-      if (currentCache.papers[key]) {
-        cache.papers[key] = currentCache.papers[key];
-      }
-    }
-  }
-  for (const p of updatedPapers) {
-    cache.papers[p.key] = p;
-  }
+  const cache = buildMaintenanceCache(manifest, updatedPapers, currentCache);
   writeMaintenanceCache(vaultPath, cache);
   const data = Object.values(cache.papers);
   return { data, changed: true };
