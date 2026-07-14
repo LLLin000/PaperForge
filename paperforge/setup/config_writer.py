@@ -89,12 +89,8 @@ class ConfigWriter:
                     ):
                         output[k] = v
 
-            # Ensure schema_version
-            output["schema_version"] = (
-                existing.get("schema_version", "2")
-                if isinstance(existing, dict)
-                else "2"
-            )
+            # Always write schema_version as 2 (never preserve v1)
+            output["schema_version"] = "2"
 
             # Build vault_config: start from existing, overlay new
             vault_config: dict = {}

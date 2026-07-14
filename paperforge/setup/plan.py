@@ -27,6 +27,7 @@ class SetupPlan:
         zotero_path: str | None = None,
         agent_type: str = "opencode",
         version: str | None = None,
+        skip_checks: bool = False,
         progress_callback: ProgressCallback | None = None,
     ):
         self.vault = vault
@@ -35,6 +36,7 @@ class SetupPlan:
         self.zotero_path = zotero_path
         self.agent_type = agent_type
         self.version = version
+        self.skip_checks = skip_checks
         self.progress_callback = progress_callback
 
     def _log(self, message: str) -> None:
@@ -50,10 +52,11 @@ class SetupPlan:
         """
         results: list[SetupStepResult] = []
 
-        # Step 1: Checker
-        self._log("Checking preconditions...")
-        checker = SetupChecker(self.vault)
-        results.append(checker.run())
+        # Step 1: Checker (skip if flag set)
+        if not self.skip_checks:
+            self._log("Checking preconditions...")
+            checker = SetupChecker(self.vault)
+            results.append(checker.run())
 
         # Step 2: Config writer
         self._log("Writing config...")

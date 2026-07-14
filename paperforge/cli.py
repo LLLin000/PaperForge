@@ -743,48 +743,23 @@ def main(argv: list[str] | None = None) -> int:
         }
         _zotero = getattr(args, "zotero_data", None)
         _agent = getattr(args, "agent", "opencode")
+        _skip = getattr(args, "skip_checks", False)
 
-        if getattr(args, "modular", False):
-            from paperforge.setup.plan import SetupPlan
-
-            plan = SetupPlan(
-                vault=vault,
-                config=_cfg,
-                zotero_path=_zotero,
-                agent_type=_agent,
-            )
-            return plan.execute(json_output=getattr(args, "json_output", False))
-        elif getattr(args, "headless", False):
+        if getattr(args, "headless", False):
             print("DEPRECATED: paperforge setup --headless; use --modular instead.", file=sys.stderr)
-            from paperforge.setup_wizard import headless_setup
-
-            ret = headless_setup(
-                vault=vault,
-                agent_key=_agent,
-                paddleocr_key=getattr(args, "paddleocr_key", None),
-                paddleocr_url=getattr(args, "paddleocr_url", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"),
-                system_dir=_cfg["system_dir"],
-                resources_dir=_cfg["resources_dir"],
-                base_dir=_cfg["base_dir"],
-                zotero_data=_zotero,
-                skip_checks=getattr(args, "skip_checks", False),
-            )
-            # Canonicalize: ensure canonical v2 vault_config via ConfigWriter
-            from paperforge.setup.config_writer import ConfigWriter
-
-            ConfigWriter(vault).write(_cfg)
-            return ret
-        else:
+        elif not getattr(args, "modular", False):
             print("DEPRECATED: bare 'paperforge setup'; use 'paperforge setup --modular' instead.", file=sys.stderr)
-            from paperforge.setup.plan import SetupPlan
 
-            plan = SetupPlan(
-                vault=vault,
-                config=_cfg,
-                zotero_path=_zotero,
-                agent_type=_agent,
-            )
-            return plan.execute(json_output=getattr(args, "json_output", False))
+        from paperforge.setup.plan import SetupPlan
+
+        plan = SetupPlan(
+            vault=vault,
+            config=_cfg,
+            zotero_path=_zotero,
+            agent_type=_agent,
+            skip_checks=_skip,
+        )
+        return plan.execute(json_output=getattr(args, "json_output", False))
 
     print(f"Error: unknown command {args.command}", file=sys.stderr)
     return 1

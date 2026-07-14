@@ -626,3 +626,127 @@ class TestZoteroPathForwarding:
             zotero_val = data.get("zotero_data_dir") or data.get("vault_config", {}).get("zotero_data_dir", "")
             if zotero_val:
                 assert "Zotero" in str(zotero_val), f"Expected Zotero path, got {zotero_val}"
+
+
+# ===================================================================
+# ConfigWriter always writes schema_version 2 (never preserves v1)
+# ===================================================================
+
+
+class TestConfigWriterSchemaVersion:
+    """ConfigWriter always writes schema_version=2 regardless of input."""
+
+    def test_v1_paperforge_json_rerun_writes_schema_version_2(self, tmp_path: Path) -> None:
+        """Rerunning ConfigWriter on a v1 file writes schema_version 2."""
+        from paperforge.setup.config_writer import ConfigWriter
+
+        # Create a v1-style file with no schema_version
+        (tmp_path / "paperforge.json").write_text(
+            json.dumps({"system_dir": "OldSys", "resources_dir": "OldRes"}),
+            encoding="utf-8",
+        )
+
+        writer = ConfigWriter(tmp_path)
+        result = writer.write({"system_dir": "Sys", "resources_dir": "Res", "literature_dir": "Lit"})
+        assert result.ok, f"Write failed: {result.error}"
+
+        data = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
+        assert data.get("schema_version") == "2", \
+            f"Expected schema_version=2, got {data.get('schema_version')!r}"
+
+    def test_v1_rerun_does_not_preserve_old_schema_version(self, tmp_path: Path) -> None:
+        """ConfigWriter does NOT preserve a v1 schema_version value."""
+        from paperforge.setup.config_writer import ConfigWriter
+
+        # v1 file with schema_version=1
+        (tmp_path / "paperforge.json").write_text(
+            json.dumps({"schema_version": "1", "system_dir": "OldSys"}),
+            encoding="utf-8",
+        )
+
+        writer = ConfigWriter(tmp_path)
+        result = writer.write({"system_dir": "Sys", "resources_dir": "Res", "literature_dir": "Lit"})
+        assert result.ok
+
+        data = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
+        assert data.get("schema_version") == "2", \
+            f"Expected schema_version=2 after migration, got {data.get('schema_version')!r}"
+
+
+# ===================================================================
+# --headless via SetupPlan (not headless_setup)
+# ===================================================================
+
+
+class TestCliHeadlessViaSetupPlan:
+    """--headless must use SetupPlan (same engine as --modular)."""
+
+    def test_headless_can_be_routed_through_cli(self, tmp_path: Path) -> None:
+        """CLI --headless flag is accepted and produces vault_config."""
+        from paperforge.cli import main
+
+        argv = ["--vault", str(tmp_path), "setup", "--headless"]
+        code = main(argv)
+        # May return non-zero (env missing) — that's fine
+        # What matters: paperforge.json was created with v2 format
+        pf = tmp_path / "paperforge.json"
+        if pf.exists():
+            data = json.loads(pf.read_text(encoding="utf-8"))
+            assert "vault_config" in data, "headless must produce vault_config"
+            assert data.get("schema_version") == "2"
+
+    def test_headless_literature_dir_reaches_vault_config(self, tmp_path: Path) -> None:
+        """--literature-dir argument reaches vault_config through SetupPlan."""
+        from paperforge.cli import main
+
+        argv = ["--vault", str(tmp_path), "setup", "--headless",
+                "--literature-dir", "MyLit", "--skip-checks"]
+        code = main(argv)
+
+        pf = tmp_path / "paperforge.json"
+        assert pf.exists(), "paperforge.json should exist after headless setup"
+        data = json.loads(pf.read_text(encoding="utf-8"))
+        vc = data.get("vault_config", {})
+        assert vc.get("literature_dir") == "MyLit", \
+            f"Expected literature_dir=MyLit, got {vc.get('literature_dir')!r}"
+
+    def test_headless_zotero_path_reaches_plan(self, tmp_path: Path) -> None:
+        """--zotero-data argument reaches SetupPlan via CLI headless."""
+        from paperforge.cli import main
+
+        vault = tmp_path / "zotero_headless_cli"
+        vault.mkdir()
+        from unittest.mock import patch
+
+        # Monkey-patch SetupPlan to capture zotero_path
+        original_execute = None
+        captured = {}
+
+        import paperforge.setup.plan as plan_mod
+        original = plan_mod.SetupPlan.__init__
+
+        def patched_init(self, *a, **kw):
+            captured["zotero_path"] = kw.get("zotero_path")
+            return original(self, *a, **kw)
+
+        with patch.object(plan_mod.SetupPlan, "__init__", patched_init):
+            argv = ["--vault", str(vault), "setup", "--headless",
+                    "--zotero-data", r"C:\Zotero\Data", "--skip-checks"]
+            main(argv)
+
+        assert captured.get("zotero_path") == r"C:\Zotero\Data", \
+            f"Expected zotero_path=C:\\Zotero\\Data, got {captured.get('zotero_path')!r}"
+
+    def test_headless_skip_checks_accepted(self, tmp_path: Path) -> None:
+        """--skip-checks is accepted with --headless."""
+        from paperforge.cli import main
+
+        vault = tmp_path / "skip_headless"
+        vault.mkdir()
+
+        argv = ["--vault", str(vault), "setup", "--headless", "--skip-checks"]
+        code = main(argv)
+        # Should not crash — returns exit code
+        assert isinstance(code, int)
+        pf = vault / "paperforge.json"
+        assert pf.exists(), "paperforge.json must exist after headless --skip-checks"
