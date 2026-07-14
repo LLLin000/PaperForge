@@ -747,6 +747,14 @@ def main(argv: list[str] | None = None) -> int:
             )
             return plan.execute(json_output=getattr(args, "json_output", False))
         elif getattr(args, "headless", False):
+            import warnings
+
+            warnings.warn(
+                "paperforge setup --headless is deprecated; "
+                "use 'paperforge setup --modular' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             from paperforge.setup_wizard import headless_setup
 
             return headless_setup(
@@ -761,9 +769,28 @@ def main(argv: list[str] | None = None) -> int:
                 skip_checks=getattr(args, "skip_checks", False),
             )
         else:
-            from paperforge.setup_wizard import main as run_setup
+            import warnings
 
-            return run_setup(sys.argv[2:])
+            warnings.warn(
+                "bare 'paperforge setup' is deprecated; "
+                "use 'paperforge setup --modular' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            from paperforge.setup.plan import SetupPlan
+
+            config = {
+                "system_dir": getattr(args, "system_dir", None) or "System",
+                "resources_dir": getattr(args, "resources_dir", None) or "Resources",
+                "literature_dir": getattr(args, "literature_dir", None) or "Literature",
+                "base_dir": getattr(args, "base_dir", None) or "Bases",
+            }
+            plan = SetupPlan(
+                vault=vault,
+                config=config,
+                agent_type=getattr(args, "agent", "opencode"),
+            )
+            return plan.execute(json_output=getattr(args, "json_output", False))
 
     print(f"Error: unknown command {args.command}", file=sys.stderr)
     return 1

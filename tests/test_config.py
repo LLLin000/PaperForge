@@ -51,7 +51,7 @@ def vault_with_nested_config(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def vault_with_top_level_config(tmp_path: Path) -> Path:
-    """A vault with legacy top-level keys that should override nested for backward compat."""
+    """A vault with legacy top-level keys (v1 fallback, vault_config wins)."""
     vault = tmp_path / "vault_legacy"
     vault.mkdir()
     pf = vault / "paperforge.json"
@@ -62,7 +62,7 @@ def vault_with_top_level_config(tmp_path: Path) -> Path:
                     "system_dir": "NestedSystem",
                     "resources_dir": "NestedResources",
                 },
-                # Legacy top-level keys — these take precedence per CONF-04
+                # Legacy top-level keys (v1 fallback — vault_config wins)
                 "system_dir": "LegacySystem",
                 "resources_dir": "LegacyResources",
                 "literature_dir": "LegacyLiterature",
@@ -250,7 +250,9 @@ def test_nested_vault_config_is_honored(tmp_path: Path):
 
 
 def test_top_level_keys_override_nested_for_backward_compat(tmp_path: Path):
-    """Top-level paperforge.json keys override nested vault_config (CONF-04 backward compat)."""
+    """vault_config block wins over legacy top-level keys (v2 precedence)."""
+    import warnings
+
     from paperforge.config import load_vault_config
 
     vault = tmp_path / "vault_legacy"
@@ -265,8 +267,22 @@ def test_top_level_keys_override_nested_for_backward_compat(tmp_path: Path):
         encoding="utf-8",
     )
 
-    cfg = load_vault_config(vault)
-    assert cfg["system_dir"] == "LegacySystem", f"Expected 'LegacySystem' from top-level key, got '{cfg['system_dir']}'"
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        cfg = load_vault_config(vault)
+
+    # vault_config wins over legacy top-level
+    assert cfg["system_dir"] == "NestedSystem", (
+        f"Expected 'NestedSystem' from vault_config, got '{cfg['system_dir']}'"
+    )
+    # Should emit a warning about legacy keys
+    legacy_warnings = [
+        x for x in w
+        if issubclass(x.category, UserWarning) and "legacy" in str(x.message).lower()
+    ]
+    assert len(legacy_warnings) >= 1, (
+        f"Expected legacy warning, got: {[str(x.message) for x in w]}"
+    )
 
 
 def test_defaults_used_when_no_json(tmp_path: Path):

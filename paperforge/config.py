@@ -4,7 +4,7 @@ Configuration precedence (D-Configuration Hierarchy):
   1. Explicit overrides (function parameter)
   2. Process environment variables (PAPERFORGE_*)
   3. paperforge.json nested vault_config block
-  4. paperforge.json top-level keys (legacy backward-compat)
+  4. paperforge.json top-level keys *(read-only fallback with warning)*
   5. Built-in defaults
 
 All path construction uses pathlib.Path. No OCR secrets are loaded here.
@@ -173,10 +173,17 @@ def load_vault_config(
 
     Merges configuration sources in locked precedence order:
       1. Built-in defaults
-      2. paperforge.json nested ``vault_config`` block
-      3. paperforge.json top-level keys (legacy backward-compat)
+      2. ``paperforge.json`` nested ``vault_config`` block
+      3. ``paperforge.json`` top-level legacy keys *(read-only fallback)*
       4. Process environment variables
       5. Explicit ``overrides`` dict
+
+    .. note::
+       Legacy top-level path keys (v1 format) are treated as a **read-only
+       fallback**: they only fill in keys that are missing from the
+       ``vault_config`` block, and a ``UserWarning`` is emitted whenever they
+       are actually used.  This is the reverse of the v1 behaviour where
+       top-level keys could override the nested block.
 
     Note:
         ``schema_version`` is not a path config key and is excluded from the
@@ -195,6 +202,8 @@ def load_vault_config(
         literature_dir, control_dir, base_dir, skill_dir, command_dir.
         When trace_sources=True: tuple of (config_dict, source_trace).
     """
+    import warnings
+
     env = env if env is not None else os.environ
 
     trace: dict[str, str] = {}  # key -> source name
@@ -206,21 +215,40 @@ def load_vault_config(
     # Read paperforge.json
     pf_data = read_paperforge_json(vault)
 
-    # 2. Merge nested vault_config block
+    # Detect v1-only or mixed-format data
+    has_legacy_top_level = bool(
+        pf_data
+        and any(k in pf_data for k in CONFIG_PATH_KEYS)
+    )
+
+    # 2. Merge nested vault_config block (wins over legacy top-level)
     nested = pf_data.get("vault_config", {})
+    vault_config_keys: set[str] = set()
     if isinstance(nested, dict):
         for key in CONFIG_KEYS:
             if key in nested and nested[key]:
                 config[key] = nested[key]
+                vault_config_keys.add(key)
                 if trace_sources:
                     trace[key] = "vault_config"
 
-    # 3. Merge top-level legacy keys (override nested for backward compat)
+    # 3. Merge top-level legacy keys — read-only fallback, with warning
+    used_legacy = False
     for key in CONFIG_KEYS:
-        if key in pf_data and pf_data[key]:
+        # Only fill keys NOT already set — top-level is a fallback only
+        if key not in vault_config_keys and key in pf_data and pf_data[key]:
             config[key] = pf_data[key]
+            used_legacy = True
             if trace_sources:
                 trace[key] = "top_level"
+
+    if has_legacy_top_level:
+        warnings.warn(
+            "paperforge.json uses legacy top-level path keys. "
+            "Run 'paperforge setup' to migrate to v2 vault_config format.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     # 4. Merge environment variables
     for config_key, env_var in ENV_KEYS.items():
