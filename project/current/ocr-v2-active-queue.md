@@ -1,5 +1,5 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; OCR maintenance streaming and the selected-results UI are implemented on `feat/ocr-rebuild-ux`.
+> Status: OCR-v2 is stable; OCR maintenance streaming is implemented, and the broader control-center UX is charted in [Wayfinder: Make the PaperForge control center self-explanatory](https://github.com/LLLin000/PaperForge/issues/65).
 > Last updated: 2026-07-14
 
 ## Current checkpoint
@@ -12,7 +12,7 @@
 
 ## Verification status
 
-- Focused Python OCR paths: **97 passed, 1 Windows SIGINT test skipped, 1 unrelated empty-result regression deselected**.
+- Focused Python OCR paths: **99 passed, 1 Windows SIGINT test skipped, 1 unrelated empty-result regression deselected**.
 - Plugin: **93 passed**; TypeScript check and production build passed.
 - Live Obsidian verification: PaperForge 1.5.15 loaded without captured errors; maintenance rendered **734 All** rows and **700 Recommended** rows from the canonical backend flag.
 - Live progress-state harness showed the floating progress bar, current key, Stop control, and disabled row actions.
@@ -20,8 +20,8 @@
 
 ## Frontier
 
-- [ ] Chart a settings-and-recovery UX Wayfinder: define the destination, state model, onboarding boundary, and reference-product research needed for a larger frontend refactor.
-- [ ] Decide how permanently non-actionable OCR quality limits leave the rebuild recommendation set and how the UI explains the next user action.
+- [ ] Resolve one frontier ticket from the control-center Wayfinder: [current-contract audit](https://github.com/LLLin000/PaperForge/issues/66), [Obsidian-native patterns](https://github.com/LLLin000/PaperForge/issues/67), or [desktop installation/health/recovery patterns](https://github.com/LLLin000/PaperForge/issues/68).
+- [ ] Keep routine OCR quality outside maintenance; successful updates leave the queue, while unacceptable results use a user-reviewed GitHub Issue draft.
 - [ ] Close or follow up [Unified rebuild UX](https://github.com/LLLin000/PaperForge/issues/63) after the OCR slice lands.
 
 ## Deferred

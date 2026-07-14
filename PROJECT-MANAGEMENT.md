@@ -1,11 +1,11 @@
 > **Branch:** `feat/ocr-rebuild-ux` | **Last Updated:** 2026-07-14
-> **Active work:** OCR rebuild streaming and maintenance selection are complete and reviewed. The next product frontier is a Wayfinder for settings, onboarding, recovery, and permanently non-actionable quality states.
+> **Active work:** [Wayfinder: Make the PaperForge control center self-explanatory](https://github.com/LLLin000/PaperForge/issues/65) is charted. Three independent research tickets form the live frontier.
 >
 > ---
 >
 > **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo now streams progress, supports cooperative stop between papers, and refreshes the canonical maintenance state. The plugin exposes All and Recommended views; Recommended is driven by the backend `_needs_derived_rebuild()` contract instead of UI heuristics. Live Obsidian verification showed 734 total papers, 700 canonical rebuild recommendations, and no captured plugin errors.
 >
-> Next: chart a settings-and-recovery UX Wayfinder before adding more controls. Its destination must cover onboarding, operation selection, non-actionable OCR quality limits, recovery guidance, and reference-product research.
+> Next: resolve [Audit the current setup, readiness, and recovery contracts](https://github.com/LLLin000/PaperForge/issues/66), [Study Obsidian-native setup and settings patterns](https://github.com/LLLin000/PaperForge/issues/67), or [Study desktop installation, health, and recovery patterns](https://github.com/LLLin000/PaperForge/issues/68); do not start production implementation until the map reaches its destination.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -146,10 +146,10 @@ OCR maintenance now has a canonical All/Recommended state model, selected batch 
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. 🔴 **Settings-and-recovery UX Wayfinder** — chart the product destination before further frontend implementation.
-2. 🟡 **Permanent OCR quality limits** — define a terminal/non-actionable state so repeated rebuilds do not masquerade as fixable work.
-3. 🟡 **Onboarding and configuration model** — make installation, OCR, embedding, and memory setup progressive and explainable.
-4. 🟡 **Reference-product research** — compare mature Obsidian plugins and adjacent desktop tools for setup, health, and recovery patterns.
+1. 🔴 **[Control-center Wayfinder](https://github.com/LLLin000/PaperForge/issues/65)** — map charted with eight child decisions and native blocking edges.
+2. 🟡 **Current-contract audit** — inventory setup, readiness, recovery, cache, and migration contracts.
+3. 🟡 **Reference-product research** — parallel Obsidian-native and mature desktop evidence.
+4. ⏳ **State model, runtime architecture, and prototypes** — blocked on the three frontier research tickets.
 5. 🟡 **Downstream tooling** — section-aware chunking and separate figure/table handling.
 6. ⏳ **Compatibility naming cleanup** — deferred post-release.
 ### 4.1 Immediate Next Steps
@@ -158,8 +158,8 @@ Remaining legacy OCR issues (carried forward):
 - [x] Canonical All/Recommended maintenance filters
 - [x] Selected batch rebuild/redo with cooperative stop
 - [x] Live Literature-hub plugin verification
-- [ ] Grill and domain-model the destination of the settings-and-recovery UX Wayfinder
-- [ ] Create the Wayfinder map and its first frontier tickets
+- [x] Grill and domain-model the control-center destination
+- [x] Create the Wayfinder map, eight child tickets, and native dependency graph
 - [ ] Close or follow up [OCR rebuild: streaming progress + maintenance UI redesign](https://github.com/LLLin000/PaperForge/issues/64)
 - [ ] Reconcile the remaining slices of [Unified rebuild UX](https://github.com/LLLin000/PaperForge/issues/63)
 - [ ] #21 Display hash staleness in status output
@@ -304,6 +304,7 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-14 | OCR Recommended is a backend contract, not a plugin heuristic | Rebuild eligibility includes version/hash/artifact drift that the UI cannot reproduce safely; `needs_derived_rebuild` is emitted once by the canonical selector. |
 | 2026-07-14 | Cooperative stop is transported over stdin | Windows `SIGINT` can terminate the current paper; a `PAPERFORGE_STOP` control line preserves the finish-current-then-stop contract across platforms. |
 | 2026-07-14 | Broader settings work starts with Wayfinding, not another local redesign | Persistent rebuild rows, onboarding, installation, memory configuration, and recovery are one product-state problem; adding controls before defining that model increases ambiguity. |
+| 2026-07-14 | Successful updates leave maintenance; quality anomalies are opt-in reports | Routine quality scores create permanent, non-actionable noise. Maintenance shows only stale/failed/corrupt work with a concrete action; unacceptable OCR is reported through a user-reviewed GitHub Issue draft. |
 
 ---
 
@@ -400,6 +401,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-03 | OCR pairing framework merge-unblock pass | Cleared the remaining merge blockers on `feat/ocr-pairing-framework`: moved figure-only rotation enrichment out of generic state, upgraded table cutover validation to semantic parity across 6 runnable real-paper fixtures including `37LK5T97`, and cleaned touched-file lint/format issues. Verification: 357 targeted tests passed; merge-ready. | §9.23 |
 | 2026-07-10 | Retrieval architecture Wayfinder inventory | Charted the end-to-end recovery map and resolved the live-architecture ticket. Confirmed four P0 contract breaks: invalid sql.js metadata SQL, missing `--deep`, ignored `data.chunks`, and build write-then-delete. Published the evidence audit; no production fix applied. | [Architecture audit](https://gist.github.com/LLLin000/aaf5505a991e85ad9bb4cafa922f48bf) |
 | 2026-07-14 | OCR rebuild streaming + maintenance UX | Added flushed rebuild/redo progress contracts, full keyed redo, cross-platform cooperative stop, canonical All/Recommended filters, selected batch actions, and cache migration. Verification: 99 focused Python tests, 93 plugin tests, typecheck/build, and live 734/700-row Obsidian state with no captured errors. | §2-4 |
+| 2026-07-14 | Control-center Wayfinder charted | Defined the six-module destination (安装 / 文献库 / OCR / 记忆 / 维护 / 帮助), module-independent readiness, actionable-only maintenance, opt-in OCR issue drafts, and a three-ticket research frontier. | [Wayfinder map](https://github.com/LLLin000/PaperForge/issues/65) |
 
 ## 9. Historical Detail Archive
 
