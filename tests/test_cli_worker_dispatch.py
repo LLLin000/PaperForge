@@ -68,6 +68,22 @@ def mock_vault(tmp_path):
 # ----------------------------------------------------------------------
 # Worker dispatch tests
 # ----------------------------------------------------------------------
+def test_version_exits_before_importing_worker_functions():
+    """main(['--version']) must stay lightweight and not import worker modules."""
+    import importlib
+
+    import paperforge.cli as cli
+
+    importlib.reload(cli)
+
+    with patch.object(cli, "_import_worker_functions") as import_workers:
+        with pytest.raises(SystemExit) as exc:
+            cli.main(["--version"])
+
+    assert exc.value.code == 0
+    import_workers.assert_not_called()
+
+
 def test_status_dispatch(clean_captured, mock_vault):
     """main(['--vault', vault, 'status']) calls run_status."""
     import importlib

@@ -402,6 +402,16 @@ function makeAnnotationState(stateName, opts) {
     };
 }
 
+function firstNonBlankPaperKey() {
+    for (let i = 0; i < arguments.length; i++) {
+        const value = arguments[i];
+        if (value == null) continue;
+        if (typeof value === 'string' && value.trim() === '') continue;
+        return String(value);
+    }
+    return null;
+}
+
 function buildAnnotationStatusArgs(extraArgs) {
     const base = ['-m', 'paperforge', 'annotation', 'status', '--json'];
     if (Array.isArray(extraArgs) && extraArgs.length > 0) {
@@ -4681,7 +4691,7 @@ class PaperForgeReadingCanvasView extends ItemView {
      * @returns {Promise<{ fulltext: { path, exists, readable, text, error }, note: { path, exists, readable, text, error } }>}
      */
     async _loadCanvasSourceInputs(entry) {
-        var entryKey = (entry && entry.key) || null;
+        var entryKey = firstNonBlankPaperKey(entry && entry.key, entry && entry.zotero_key);
 
         // ── Stale-load guard: skip I/O when same paperKey ──
         if (entryKey && this._sourceInputsPaperKey === entryKey && this._sourceInputsCache) {
@@ -7562,8 +7572,11 @@ function openReadingCanvasForActivePaper(plugin) {
 
     if (leaves.length > 0) {
         const statusView = leaves[0].view;
-        if (statusView && statusView._currentPaperEntry && statusView._currentPaperEntry.key) {
-            paperKey = statusView._currentPaperEntry.key;
+        if (statusView && statusView._currentPaperEntry) {
+            paperKey = firstNonBlankPaperKey(
+                statusView._currentPaperEntry.key,
+                statusView._currentPaperEntry.zotero_key
+            );
             entry = statusView._currentPaperEntry;
         }
     }

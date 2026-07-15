@@ -71,7 +71,7 @@ const _PAGE_MARKER_RE = /<!--\s*page\s+(\d+)\s*-->/gi;
  *            diagnostics: object|null, reason: string|null }}
  */
 function buildCanvasSourceModel(entry, sourceInputs, options) {
-    const entryKey = (entry && entry.key) || null;
+    const entryKey = firstNonBlank(entry && entry.key, entry && entry.zotero_key);
 
     // Extract paths from entry
     const ftPath = (entry && entry.fulltext_path) || null;
@@ -169,6 +169,16 @@ function buildCanvasSourceModel(entry, sourceInputs, options) {
         paperKey: entryKey,
         reason: combinedReason,
     };
+}
+
+function firstNonBlank() {
+    for (let i = 0; i < arguments.length; i++) {
+        const value = arguments[i];
+        if (value == null) continue;
+        if (typeof value === 'string' && value.trim() === '') continue;
+        return String(value);
+    }
+    return null;
 }
 
 /**

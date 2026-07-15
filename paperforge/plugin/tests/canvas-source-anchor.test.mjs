@@ -58,6 +58,17 @@ describe('surface.js — source priority (D-01, D-02, D-03, D-16, D-17, D-18)', 
 
     // ── D-02: fulltext unavailable, note_path usable → ready, sourceKind=note ──
 
+    it('D-01: PaperForge index entries with zotero_key keep paper identity in the source model', () => {
+        const entry = { zotero_key: 'A7N8GAHS', fulltext_path: 'ft.md', note_path: 'nt.md' };
+        const sourceInputs = {
+            fulltext: { path: 'ft.md', text: 'Fulltext body.', exists: true, readable: true },
+            note: { path: 'nt.md', text: null, exists: false, readable: false },
+        };
+        const model = buildCanvasSourceModel(entry, sourceInputs);
+        expect(model.status).toBe(SOURCE_STATES.READY);
+        expect(model.paperKey).toBe('A7N8GAHS');
+    });
+
     it('D-02: fulltext unavailable but note readable produces ready model with sourceKind=note', () => {
         const entry = { key: 'PAPER_B', fulltext_path: 'ft.md', note_path: 'nt.md' };
         const sourceInputs = {

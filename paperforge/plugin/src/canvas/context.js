@@ -10,11 +10,13 @@
 /**
  * Build a canvas context from a valid paper entry.
  *
- * The entry's `key` property is treated as the authoritative paper identity.
+ * The entry's `key` property is preferred as the paper identity. PaperForge's
+ * canonical index stores the Zotero item id in `zotero_key`, so that field is
+ * accepted as the real-world fallback.
  * Returns an explicit `{ ok, paperKey, entry, reason }` result so callers
  * always have a stable shape to inspect, never a thrown exception.
  *
- * @param {object|null|undefined} entry - Paper entry with a `key` property.
+ * @param {object|null|undefined} entry - Paper entry with `key` or `zotero_key`.
  * @returns {{ ok: boolean, paperKey: string|null, entry: object|null, reason: string|null }}
  */
 function buildCanvasContextFromEntry(entry) {
@@ -29,7 +31,7 @@ function buildCanvasContextFromEntry(entry) {
     }
 
     // ── Guard: missing key ──
-    const rawKey = entry.key;
+    const rawKey = firstNonBlank(entry.key, entry.zotero_key);
     if (rawKey == null || (typeof rawKey === 'string' && rawKey.trim() === '')) {
         return {
             ok: false,
@@ -47,6 +49,16 @@ function buildCanvasContextFromEntry(entry) {
         entry: entry,
         reason: null,
     };
+}
+
+function firstNonBlank() {
+    for (let i = 0; i < arguments.length; i++) {
+        const value = arguments[i];
+        if (value == null) continue;
+        if (typeof value === 'string' && value.trim() === '') continue;
+        return value;
+    }
+    return null;
 }
 
 /**

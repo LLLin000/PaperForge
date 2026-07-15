@@ -133,6 +133,30 @@ describe('buildCanvasContextFromEntry', () => {
         expect(result.reason).toContain('no key');
     });
 
+    it('accepts PaperForge index entries that identify papers with zotero_key', () => {
+        const entry = {
+            zotero_key: 'A7N8GAHS',
+            title: 'TROP2 targeting reveals therapy-driven cell state dynamics in colorectal cancer',
+            fulltext_path: '4.Paper/Literature/肿瘤可塑性/A7N8GAHS/fulltext.md',
+        };
+
+        const result = buildCanvasContextFromEntry(entry);
+
+        expect(result.ok).toBe(true);
+        expect(result.paperKey).toBe('A7N8GAHS');
+        expect(result.entry).toBe(entry);
+        expect(result.reason).toBeNull();
+    });
+
+    it('falls back to zotero_key when entry.key is blank', () => {
+        const entry = makeEntry({ key: '', zotero_key: 'ZOTERO_KEY' });
+
+        const result = buildCanvasContextFromEntry(entry);
+
+        expect(result.ok).toBe(true);
+        expect(result.paperKey).toBe('ZOTERO_KEY');
+    });
+
     it('returns friendly reason messages without raw error signatures', () => {
         const nullResult = buildCanvasContextFromEntry(null);
         const noKeyResult = buildCanvasContextFromEntry({ title: 'x' });

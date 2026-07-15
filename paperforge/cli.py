@@ -477,7 +477,6 @@ def main(argv: list[str] | None = None) -> int:
         argv = sys.argv[1:]
 
     _resolve_pipeline()
-    _import_worker_functions()
 
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -632,6 +631,7 @@ def main(argv: list[str] | None = None) -> int:
         return run(args)
 
     if args.command == "base-refresh":
+        _import_worker_functions()
         force = getattr(args, "force", False)
         paths = args.paths
         logger = __import__("logging").getLogger("paperforge")

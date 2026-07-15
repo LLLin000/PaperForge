@@ -175,6 +175,37 @@ describe('Task 1 — View type constant and class export', () => {
         expect(typeof openReadingCanvasForActivePaper).toBe('function');
     });
 
+    it('open helper uses zotero_key from the PaperForge status view entry', () => {
+        const entry = {
+            zotero_key: 'A7N8GAHS',
+            title: 'TROP2 targeting reveals therapy-driven cell state dynamics in colorectal cancer',
+            fulltext_path: 'paper/fulltext.md',
+        };
+        const originalOpen = PaperForgeReadingCanvasView.open;
+        PaperForgeReadingCanvasView.open = vi.fn();
+        const plugin = {
+            app: {
+                workspace: {
+                    getLeavesOfType: vi.fn((type) => {
+                        if (type === 'paperforge-status') {
+                            return [{ view: { _currentPaperEntry: entry } }];
+                        }
+                        return [];
+                    }),
+                    getActiveFile: vi.fn(() => null),
+                },
+                metadataCache: { getFileCache: vi.fn() },
+            },
+        };
+
+        try {
+            openReadingCanvasForActivePaper(plugin);
+            expect(PaperForgeReadingCanvasView.open).toHaveBeenCalledWith(plugin, 'A7N8GAHS', entry);
+        } finally {
+            PaperForgeReadingCanvasView.open = originalOpen;
+        }
+    });
+
     it('getDisplayText returns canvas label', () => {
         const view = new PaperForgeReadingCanvasView({ containerEl: document.createElement('div') });
         const text = view.getDisplayText();
