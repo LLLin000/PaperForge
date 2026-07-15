@@ -1,5 +1,5 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; the control-center contract and PRD are resolved; #75 canonical setup/config migration is complete and #76 is the next unblocked production slice.
+> Status: OCR-v2 is stable; #75 canonical setup/config migration and #76 Installation/Help capability tracer are implemented; #77 Managed Runtime lifecycle is the next unblocked control-center slice.
 > Last updated: 2026-07-15
 
 ## Current checkpoint
@@ -23,6 +23,8 @@
 - **[#73](https://github.com/LLLin000/PaperForge/issues/73) resolved**: locked migration, security, platform, accessibility, and release-gate acceptance contract after five-domain audit and independent review.
 - **[#74](https://github.com/LLLin000/PaperForge/issues/74) published**: split into eight agent-ready issues (#75–#82) with native dependencies.
 - **[#75](https://github.com/LLLin000/PaperForge/issues/75) implemented and reviewed**: bare/headless/modular setup share `SetupPlan`; schema-v2 `vault_config` wins; v1 path keys are warned read fallback; all configured directories are forwarded; required failures return non-zero.
+- **[#76](https://github.com/LLLin000/PaperForge/issues/76) implemented**: schema-v1 Installation/Help probes flow through the six-module Overview; persisted malformed/stale envelopes fail closed; backend set_config/update actions route to setup; unimplemented modules remain explicit placeholders.
+- **Wayfinder navigation refinement approved**: preserve Overview and stage `概览 / 模块详情 / 维护 / 帮助` across #77/#78/#80. Installation owns Agent platform/Skills under Agent 集成; no empty placeholder detail pages.
 
 ## Verification status
 
@@ -35,6 +37,7 @@
 - Prototype #72 (maintenance inbox): **Critical PASS (4/4), Important PASS (6/6)** — independent reviewer dimensions confirmed.
 - Both prototypes browser-verified at 768px viewport with scenario-switching, action-button interactions, expand/collapse diagnostics, and issue-draft flow.
 - Issue #75 verification: **61/61 focused tests passed**; independent review returned **Spec PASS / Quality APPROVED**.
+- Issue #76 verification: **21/21 backend probe tests and 169/169 plugin tests passed**; TypeScript check and production build passed; live Obsidian stale-cache/action-label smoke test and independent review passed.
 - No production plugin code was modified during prototype work.
 - The repository-wide Python suite remains blocked during collection by the pre-existing `test_pr9a_resume_rebuild.py` import of removed `_assert_collections_healthy`.
 
@@ -44,7 +47,8 @@
 - [x] Design the actionable-only maintenance inbox ([#72](https://github.com/LLLin000/PaperForge/issues/72)).
 - [x] Lock migration/acceptance contract (#73), publish PRD #74, and create dependency-linked issues #75–#82.
 - [x] Canonicalize setup and configuration migration ([#75](https://github.com/LLLin000/PaperForge/issues/75)).
-- [ ] Start [#76](https://github.com/LLLin000/PaperForge/issues/76) in a fresh Matt `/implement` session: Installation/Help capability envelope through the existing settings surface.
+- [x] Implement [#76](https://github.com/LLLin000/PaperForge/issues/76): Installation/Help capability envelope through the existing settings surface.
+- [ ] Start [#77](https://github.com/LLLin000/PaperForge/issues/77) in a fresh Matt `/implement` session: Managed Runtime lifecycle plus the approved Installation-detail navigation shell.
 
 ## Deferred
 

@@ -4,7 +4,7 @@ import * as path from "path";
 import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
 import { t, setLanguage } from "./i18n";
-import { PaperForgeSettings } from "./constants";
+import { PaperForgeSettings, ProbeEnvelope, CapabilityModule, CAPABILITY_MODULES, createUnknownEnvelope, createStaleEnvelope, createInvalidEnvelope, isValidEnvelope, isEnvelopeStale, isReadyEnvelope, probeAction, validatePersistedEnvelopes, classifyCapabilityAction } from "./constants";
 import releaseNotesData from "./release-notes.json";
 import {
   resolvePythonExecutable,
@@ -90,6 +90,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     total: 0,
     key: "",
   };
+  /** Cached capability probe envelopes, keyed by module name. */
+  private _capabilityState: Record<string, ProbeEnvelope> | null = null;
+  /** Tracks which modules are currently being probed. */
+  private _probing: Set<string> = new Set();
+  /** Modules that have already been auto-probed (prevents endless re-probe). */
+  private _attemptedProbes: Set<string> = new Set();
 
   constructor(app: App, plugin: ISettingPlugin) {
     super(app, plugin as any);
@@ -105,6 +111,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     this._refreshPfConfig();
+    this._initCapabilityState();
+    this._applyStaleTolerance();
 
     // Inject tab CSS once
     if (!document.getElementById("paperforge-tab-styles")) {
@@ -181,7 +189,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._renderReleaseNotesTab(tabContents["release-notes"]);
     }
   }
-
   _renderSetupTab(containerEl: HTMLElement) {
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
     if (!this.plugin.settings.vault_path) {
@@ -189,259 +196,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._debouncedSave();
     }
 
-    /* Validate setup_complete against paperforge.json */
-    if (this.plugin.settings.setup_complete) {
-      if (!fs.existsSync(path.join(vaultPath, "paperforge.json"))) {
-        this.plugin.settings.setup_complete = false;
-        this._debouncedSave();
-      }
-    }
-
-    /* Header */
+    /* Header — brief, not authoritative status (that's the control center) */
     containerEl.createEl("h2", { text: t("header_title") || "PaperForge" });
     containerEl.createEl("p", {
       text: t("desc"),
       cls: "paperforge-settings-desc",
     });
 
-    /* Setup Status */
-    const statusRow = containerEl.createEl("div", {
-      cls: "paperforge-setup-bar",
-    });
-    const statusLabel = statusRow.createEl("span", {
-      cls: "paperforge-setup-label",
-    });
-    if (this.plugin.settings.setup_complete) {
-      statusLabel.setText(t("setup_done"));
-      statusLabel.addClass("paperforge-setup-done");
-    } else {
-      statusLabel.setText(t("setup_pending"));
-      statusLabel.addClass("paperforge-setup-pending");
-    }
+    // ── Control Center (Issue #76) ──
+    this._renderControlCenter(containerEl);
 
-    /* Python Interpreter Section */
-    const vaultPathForPython = (this.app.vault.adapter as any)
-      .basePath as string;
-    const pyResult = resolvePythonExecutable(
-      vaultPathForPython,
-      this.plugin.settings,
-      undefined,
-      undefined
-    );
-    const pyPath = pyResult.path;
-    const pySource = this.plugin.settings._python_path_stale
-      ? "stale"
-      : pyResult.source;
-
-    const pyInterpSetting = new Setting(containerEl)
-      .setName(t("field_python_interp"))
-      .setDesc(this._getPythonDesc(pyPath, pySource));
-    this._pythonInterpDescEl = pyInterpSetting.descEl;
-
-    const customSetting = new Setting(containerEl)
-      .setName(t("field_python_custom"))
-      .setDesc("");
-    this._customPathDescEl = customSetting.descEl;
-
-    customSetting.addText((text) => {
-      text
-        .setPlaceholder("e.g. C:\\Python310\\python.exe")
-        .setValue(this.plugin.settings.python_path || "")
-        .onChange((value) => {
-          this.plugin.settings.python_path = value;
-          this.plugin.saveSettings();
-
-          if (value && value.trim()) {
-            const exists = fs.existsSync(value.trim());
-            this.plugin.settings._python_path_stale = !exists;
-          } else {
-            this.plugin.settings._python_path_stale = false;
-          }
-
-          const pyResult2 = resolvePythonExecutable(
-            (this.app.vault.adapter as any).basePath as string,
-            this.plugin.settings,
-            undefined,
-            undefined
-          );
-          const pySource2 = this.plugin.settings._python_path_stale
-            ? "stale"
-            : pyResult2.source;
-          if (this._pythonInterpDescEl) {
-            this._pythonInterpDescEl.textContent = this._getPythonDesc(
-              pyResult2.path,
-              pySource2
-            );
-          }
-        });
-    });
-
-    customSetting.addButton((btn) => {
-      btn
-        .setButtonText(t("btn_validate"))
-        .onClick(() => this._validatePythonOverride());
-    });
-
-    /* Runtime Health Section */
-    containerEl.createEl("h3", { text: t("runtime_health") });
-    containerEl.createEl("p", {
-      text: t("runtime_health_desc"),
-      cls: "paperforge-settings-desc",
-    });
-
-    const versionRow = new Setting(containerEl)
-      .setName("PaperForge")
-      .setDesc(t("runtime_health_checking"));
-
-    const badgeEl = versionRow.descEl.createEl("span", {
-      cls: "paperforge-runtime-badge",
-    });
-    let syncBtn: any = null;
-
-    versionRow.addButton((btn) => {
-      syncBtn = btn;
-      btn
-        .setButtonText(t("runtime_health_sync"))
-        .setDisabled(true)
-        .onClick(() => this._syncRuntime(btn));
-    });
-
-    {
-      const vp = (this.app.vault.adapter as any).basePath as string;
-      const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(
-        vp,
-        this.plugin.settings,
-        undefined,
-        undefined
-      );
-      const pluginVer = this.plugin.manifest.version || "?";
-
-      execFile(
-        pythonExe,
-        [
-          ...extraArgs,
-          "-c",
-          "import paperforge; print(paperforge.__version__)",
-        ],
-        { cwd: vp, timeout: 10000 },
-        (err, stdout) => {
-          const setupDone = this.plugin.settings.setup_complete;
-          const pyVer = !err && stdout ? stdout.trim() : null;
-          const descText = pyVer
-            ? `${t("runtime_health_plugin_ver").replace("{0}", pluginVer)} \u2192 ${t("runtime_health_package_ver").replace("{0}", pyVer)}`
-            : setupDone
-              ? `Plugin v${pluginVer} \u2192 Python package not installed. Click "Sync Runtime" to install.`
-              : `Plugin v${pluginVer} \u2192 Not configured. Please open the setup wizard first.`;
-          versionRow.setDesc(descText);
-          if (pyVer === pluginVer) {
-            badgeEl.setText(t("runtime_health_match"));
-            badgeEl.className = "paperforge-runtime-badge match";
-            if (syncBtn) syncBtn.setDisabled(true);
-          } else if (pyVer) {
-            badgeEl.setText(t("runtime_health_mismatch"));
-            badgeEl.className = "paperforge-runtime-badge mismatch";
-            if (syncBtn) syncBtn.setDisabled(false);
-          } else {
-            badgeEl.setText(setupDone ? "Not installed" : "Setup needed");
-            badgeEl.className = "paperforge-runtime-badge missing";
-            if (syncBtn) syncBtn.setDisabled(false);
-          }
+    // Auto-probe never-probed/migrated modules once per session
+    for (const mod of CAPABILITY_MODULES) {
+      const env = this._capabilityState?.[mod];
+      if (env && env.capability_state === "unknown" && env.updated_at === new Date(0).toISOString() && !this._attemptedProbes.has(mod)) {
+        this._attemptedProbes.add(mod);
+        if (mod === "installation" || mod === "help") {
+          this._probeModule(mod);
         }
-      );
-    }
-
-    /* Preparation Guide */
-    containerEl.createEl("h3", { text: t("section_prep") });
-    containerEl.createEl("p", {
-      text: t("section_prep_desc"),
-      cls: "paperforge-settings-desc",
-    });
-    const prep = containerEl.createEl("div", { cls: "paperforge-guide" });
-    const prepData = [
-      ["prep_python", "prep_python_desc"],
-      ["prep_zotero", "prep_zotero_desc"],
-      ["prep_bbt", "prep_bbt_desc"],
-      ["prep_key", "prep_key_desc"],
-    ];
-    for (const [kTitle, kDesc] of prepData) {
-      const row = prep.createEl("div", { cls: "paperforge-guide-item" });
-      row.createEl("strong", { text: t(kTitle) });
-      row.createEl("span", { text: " \u2014 " + t(kDesc) });
-    }
-
-    /* Pre-check status area */
-    this._checkEl = containerEl.createEl("div", { cls: "paperforge-message" });
-
-    /* Install / Reconfigure Button */
-    const needSetup = !this.plugin.settings.setup_complete;
-    new Setting(containerEl)
-      .setName(t(needSetup ? "btn_install" : "btn_reconfig"))
-      .setDesc(t(needSetup ? "btn_install_desc" : "btn_reconfig_desc"))
-      .addButton((btn) => {
-        btn
-          .setButtonText(t(needSetup ? "btn_install" : "btn_reconfig"))
-          .setCta()
-          .onClick(() => {
-            if (!needSetup) {
-              new PaperForgeSetupModal(this.app, this.plugin).open();
-            } else {
-              this._preCheck(() => {
-                new PaperForgeSetupModal(this.app, this.plugin).open();
-              });
-            }
-          });
-      });
-
-    /* Operation Guide */
-    containerEl.createEl("h3", { text: t("section_guide") });
-    const guide = containerEl.createEl("div", { cls: "paperforge-guide" });
-    const guideData = [
-      ["guide_open", "guide_open_desc"],
-      ["guide_sync", "guide_sync_desc"],
-      ["guide_ocr", "guide_ocr_desc"],
-    ];
-    for (const [kTitle, kDesc] of guideData) {
-      const row = guide.createEl("div", { cls: "paperforge-guide-item" });
-      row.createEl("strong", { text: t(kTitle) });
-      row.createEl("span", { text: " \u2014 " + t(kDesc) });
-    }
-
-    /* Config Summary */
-    if (this.plugin.settings.setup_complete) {
-      containerEl.createEl("h3", { text: t("section_config") });
-      const summary = containerEl.createEl("div", {
-        cls: "paperforge-summary",
-      });
-      const s = this.plugin.settings;
-      const pf = this._pfConfig;
-      const items = [
-        { label: t("dir_vault"), val: vaultPath },
-        { label: t("dir_resources"), val: `${vaultPath}/${pf?.resources_dir}` },
-        {
-          label: "  " + t("dir_notes"),
-          val: `${vaultPath}/${pf?.resources_dir}/${pf?.literature_dir}`,
-        },
-        { label: t("dir_base"), val: `${vaultPath}/${pf?.base_dir}` },
-        { label: t("dir_system"), val: `${vaultPath}/${pf?.system_dir}` },
-        {
-          label: "API Key",
-          val: s.paddleocr_api_key ? t("api_key_set") : t("api_key_missing"),
-        },
-        {
-          label: t("field_zotero_data"),
-          val: s.zotero_data_dir || t("not_set"),
-        },
-      ];
-      for (const item of items) {
-        const row = summary.createEl("div", { cls: "paperforge-summary-row" });
-        row.createEl("span", {
-          cls: "paperforge-summary-label",
-          text: item.label,
-        });
-        row.createEl("span", {
-          cls: "paperforge-summary-value",
-          text: item.val,
-        });
       }
     }
   }
@@ -2592,5 +2364,329 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       href: "https://github.com/LLLin000/PaperForge/blob/master/docs/user-manual.md",
     });
     manualLink.setAttr("target", "_blank");
+  }
+
+  // ── Capability state management (Issue #76) ──
+
+  /**
+   * Ensure capabilityState exists for all six modules.
+   * Always materializes unknown envelopes when stored map is absent/partial,
+   * regardless of setup_complete, so first-run immediately probes Installation+Help.
+   */
+  _initCapabilityState(): void {
+    const stored = this.plugin.settings.capabilityState;
+    this._capabilityState = validatePersistedEnvelopes(
+      (stored ?? {}) as Record<string, unknown>,
+      CAPABILITY_MODULES as unknown as string[]
+    );
+    this._persistCapabilityState();
+  }
+
+  /** Persist capability state to plugin settings. */
+  _persistCapabilityState(): void {
+    if (!this._capabilityState) return;
+    this.plugin.settings.capabilityState = this._capabilityState;
+    this.plugin.saveSettings();
+  }
+
+  /** Call `paperforge probe <module> --json` and store the validated envelope unchanged. */
+  _probeModule(mod: CapabilityModule): void {
+    if (this._probing.has(mod)) return;
+    this._probing.add(mod);
+
+    // Show probing state immediately
+    const current = this._capabilityState?.[mod];
+    const probing: ProbeEnvelope = {
+      schema_version: 1,
+      module: mod,
+      capability_state: current?.capability_state ?? "unknown",
+      activity_state: "running",
+      activity_label: "Probing...",
+      activity_progress: null,
+      severity: "unknown",
+      reason: { code: `${mod}.probing`, text: `Checking ${mod} status...` },
+      action: { primary: probeAction(mod) },
+      notices: current?.notices ?? [],
+      updated_at: new Date().toISOString(),
+      ttl_seconds: current?.ttl_seconds ?? 0,
+    };
+    this._updateCapabilityEnvelope(mod, probing);
+
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    const py = getCachedPython(vp, this.plugin.settings);
+    if (!py.path) {
+      this._probing.delete(mod);
+      this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
+      return;
+    }
+
+    const args = [
+      ...py.extraArgs,
+      "-m",
+      "paperforge",
+      "--vault",
+      vp,
+      "probe",
+      mod,
+      "--json",
+    ];
+
+    execFile(
+      py.path,
+      args,
+      { cwd: vp, timeout: 15000 },
+      (err: Error | null, stdout: string, stderr: string) => {
+        this._probing.delete(mod);
+        if (err) {
+          console.warn(`[PaperForge] Probe ${mod} failed:`, err.message);
+          this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
+          return;
+        }
+        try {
+          const parsed: unknown = JSON.parse(stdout);
+          // Backend JSON passed through unchanged after strict validation
+          if (isValidEnvelope(parsed, mod)) {
+            this._updateCapabilityEnvelope(mod, parsed as ProbeEnvelope);
+          } else {
+            console.warn(`[PaperForge] Probe ${mod}: invalid envelope schema`, stdout?.slice(0, 200));
+            this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
+          }
+        } catch {
+          console.warn(`[PaperForge] Probe ${mod}: unparseable JSON`, stdout?.slice(0, 200));
+          this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
+        }
+      }
+    );
+  }
+
+  /** Update a single module envelope and refresh the display. */
+  _updateCapabilityEnvelope(mod: string, envelope: ProbeEnvelope): void {
+    if (!this._capabilityState) this._capabilityState = {};
+    const prev = this._capabilityState[envelope.module];
+    this._capabilityState[envelope.module] = envelope;
+    this._persistCapabilityState();
+    // Show notice when probe completes (transition from running to idle)
+    if (prev?.activity_state === "running" && envelope.activity_state !== "running") {
+      new Notice(t("cc_notice_refreshed"), 3000);
+    }
+    // Re-render the current tab to reflect changes
+    this.display();
+  }
+
+  /** Derive badge i18n key from envelope severity + module. */
+  private _ccBadgeKey(env: ProbeEnvelope, mod: CapabilityModule): string {
+    if (env.severity === "ok") return "cc_badge_ok";
+    if (env.severity === "error" && mod === "installation") return "cc_badge_setup";
+    if (env.severity === "warning" || env.severity === "error") return "cc_badge_attention";
+    return "cc_badge_pending";
+  }
+
+  /** CSS severity class from backend severity string. Unknown maps to neutral. */
+  _sevClass(severity: string): string {
+    if (severity === "error") return "error";
+    if (severity === "warning") return "warn";
+    if (severity === "unknown") return "unknown";
+    return "ok";
+  }
+
+
+  /** Reason code → localized string via i18n key, or null if unmapped.
+   *  Tries full dotted code normalized to underscores first (e.g. "installation.ready" → "cc_reason_installation_ready"),
+   *  then falls back to bare code (e.g. "ready" → "cc_reason_ready"). */
+  private _localizeReason(code: string, module: string): string | null {
+    // Try full dotted code: "installation.ready" → "cc_reason_installation_ready"
+    const fullKey = "cc_reason_" + code.replace(/\./g, "_");
+    const fullTranslated = t(fullKey);
+    if (fullTranslated !== fullKey) {
+      return fullTranslated.replace("{module}", module);
+    }
+    // Fallback to bare code: "installation.ready" → "ready" → "cc_reason_ready"
+    const bare = code.replace(/^[a-z]+\./, "");
+    const bareKey = "cc_reason_" + bare;
+    const bareTranslated = t(bareKey);
+    if (bareTranslated === bareKey) return null;
+    return bareTranslated.replace("{module}", module);
+  }
+
+  /** Modules with real Python probe support. */
+  private static _REAL_PROBE = new Set(["installation", "help"]);
+
+  _renderCard(container: HTMLElement, mod: CapabilityModule, envelope: ProbeEnvelope): void {
+    const env = envelope;
+    const sevClass = this._sevClass(env.severity);
+    const isReal = PaperForgeSettingTab._REAL_PROBE.has(mod);
+    const card = container.createEl("div", {
+      cls: "pf-cc-card",
+      attr: { role: "listitem", tabindex: "0", "aria-label": `${t("cc_module_" + mod)} — ${t(this._ccBadgeKey(env, mod))}` },
+    });
+
+    // Header: name + badge
+    const header = card.createEl("div", { cls: "pf-cc-card-header" });
+    header.createEl("div", { cls: "pf-cc-card-name", text: t("cc_module_" + mod) });
+    header.createEl("div", {
+      cls: `pf-cc-card-badge pf-cc-card-badge--${sevClass}`,
+      text: t(this._ccBadgeKey(env, mod)),
+    });
+
+    // Reason text — localized via code map, fallback to backend text
+    // Placeholder modules (library, ocr, memory, maintenance) show "pending integration"
+    let reasonText: string;
+    if (!isReal) {
+      reasonText = t("cc_reason_placeholder").replace("{module}", t("cc_module_" + mod));
+    } else {
+      const l10nReason = this._localizeReason(env.reason.code, mod);
+      reasonText = l10nReason ?? env.reason.text;
+    }
+    card.createEl("div", { cls: "pf-cc-card-reason", text: reasonText });
+
+    // Activity label + progress bar (DOM style.width, never inline attribute)
+    if (env.activity_state === "running" && env.activity_label) {
+      const activityRow = card.createEl("div", { cls: "pf-cc-card-activity", attr: { "aria-live": "polite" } });
+      activityRow.createEl("span", { text: env.activity_label });
+      if (env.activity_progress && env.activity_progress.total > 0) {
+        const pct = Math.round((env.activity_progress.current / env.activity_progress.total) * 100);
+        const bar = activityRow.createEl("div", { cls: "pf-cc-card-progress", attr: { role: "progressbar", "aria-valuenow": String(env.activity_progress.current), "aria-valuemin": "0", "aria-valuemax": String(env.activity_progress.total) } });
+        const fill = bar.createEl("div", { cls: "pf-cc-card-progress-fill" });
+        fill.style.width = pct + "%";
+      }
+    }
+
+    // Footer: action button + diagnostics
+    const footer = card.createEl("div", { cls: "pf-cc-card-footer" });
+
+    // Action button — only for real modules (installation/help); placeholders show no action
+    if (isReal && env.action.primary && !isReadyEnvelope(env)) {
+      const action = classifyCapabilityAction(env);
+      const isCta = action.kind === "setup";
+      const btnCls = isCta ? "pf-cc-card-action pf-cc-card-action--primary" : "pf-cc-card-action";
+      const btn = footer.createEl("button", {
+        cls: btnCls,
+        text: action.label,
+        attr: { "aria-label": action.label },
+      });
+      btn.addEventListener("click", () => {
+        if (action.kind === "setup") {
+          new PaperForgeSetupModal(this.app, this.plugin, () => {
+            this._probeModule("installation");
+            this._probeModule("help");
+          }).open();
+        } else {
+          this._probeModule(mod);
+        }
+      });
+    }
+
+    // Diagnostics — native <details><summary> with localized field labels and values
+    const details = card.createEl("details", { cls: "pf-cc-card-diagnostic" });
+    details.createEl("summary", { text: t("cc_diagnostic_toggle") });
+    const body = details.createEl("div", { cls: "pf-cc-card-diagnostic-body" });
+
+    // Localized values
+    const stateLabel = t("cc_state_" + env.capability_state) || env.capability_state;
+    const sevLabel = t("cc_severity_" + env.severity) || env.severity;
+    const activityLabel = t("cc_activity_" + env.activity_state) || env.activity_state;
+
+    // Format updated_at with locale
+    let dateLabel: string;
+    try {
+      dateLabel = new Date(env.updated_at).toLocaleString();
+    } catch {
+      dateLabel = env.updated_at;
+    }
+
+    body.createEl("div", { text: `${t("cc_diag_module")}: ${env.module}` });
+    body.createEl("div", { text: `${t("cc_diag_state")}: ${stateLabel}` });
+    body.createEl("div", { text: `${t("cc_diag_severity")}: ${sevLabel}` });
+    body.createEl("div", { text: `${t("cc_diag_activity")}: ${activityLabel}` });
+    // Reason: localized text (or placeholder message) plus technical code in <code>
+    const reasonRow = body.createEl("div");
+    reasonRow.appendText(t("cc_diag_reason") + ": " + reasonText + " ");
+    const codeEl = reasonRow.createEl("code", { text: env.reason.code });
+    body.createEl("div", { text: `${t("cc_diag_ttl")}: ${String(env.ttl_seconds)}s` });
+    body.createEl("div", { text: `${t("cc_diag_updated")}: ${dateLabel}` });
+  }
+
+  /** Render Vercel-inspired control center: summary card + six-card responsive grid. */
+  _renderControlCenter(containerEl: HTMLElement): void {
+    const cc = containerEl.createEl("div", { cls: "pf-control-center" });
+
+    // Compute summary counts from envelopes
+    const modules = CAPABILITY_MODULES;
+    const envelopes: Record<string, ProbeEnvelope> = this._capabilityState ?? {};
+    let realReady = 0;
+    let realAttention = 0;
+    let placeholderCount = 0;
+
+    for (const mod of modules) {
+      const env = envelopes[mod] ?? createUnknownEnvelope(mod);
+      if (env.severity === "ok" && env.capability_state === "ready" && env.action.primary === null) {
+        // Backend-confirmed ready, no pending action
+        realReady++;
+      } else if (PaperForgeSettingTab._REAL_PROBE.has(mod)) {
+        // Real module that has been probed but isn't ready
+        if (env.severity === "error" || env.severity === "warning" || env.severity === "unknown") {
+          realAttention++;
+        }
+      } else {
+        // Placeholder module (library, ocr, memory, maintenance) — not yet connected
+        placeholderCount++;
+      }
+    }
+
+    // ── Summary Card ──
+    const summaryEl = cc.createEl("div", { cls: "pf-cc-summary" });
+    summaryEl.createEl("div", { cls: "pf-cc-summary-eyebrow", text: t("cc_title") });
+
+    // Decisive title based on state
+    let summaryTitle: string;
+    let summaryBodyText: string;
+    if (realAttention > 0) {
+      summaryTitle = t("cc_summary_attention");
+      summaryBodyText = t("cc_summary_attention_body");
+    } else if (realReady === modules.length) {
+      summaryTitle = t("cc_summary_ok");
+      summaryBodyText = t("cc_summary_ok_body");
+    } else if (realReady > 0 && placeholderCount > 0 && realAttention === 0) {
+      summaryTitle = t("cc_summary_core_ok").replace("{n}", String(placeholderCount));
+      summaryBodyText = t("cc_summary_core_ok_body");
+    } else {
+      summaryTitle = t("cc_summary_core_ok").replace("{n}", String(modules.length - realReady));
+      summaryBodyText = t("cc_desc");
+    }
+    summaryEl.createEl("div", { cls: "pf-cc-summary-title", text: summaryTitle });
+    summaryEl.createEl("div", { cls: "pf-cc-summary-body", text: summaryBodyText });
+
+    // Summary counts row
+    const countsEl = summaryEl.createEl("div", { cls: "pf-cc-summary-counts" });
+    countsEl.createEl("div", {
+      cls: "pf-cc-summary-count",
+      text: t("cc_n_ready").replace("{n}", String(realReady)),
+    });
+    if (placeholderCount > 0) {
+      countsEl.createEl("div", {
+        cls: "pf-cc-summary-count",
+        text: t("cc_n_pending").replace("{n}", String(placeholderCount)),
+      });
+    }
+
+    // ── Module Grid ──
+    const grid = cc.createEl("div", { cls: "pf-cc-grid", attr: { role: "list", "aria-label": t("cc_zone_modules") } });
+    for (const mod of modules) {
+      const env = envelopes[mod] ?? createUnknownEnvelope(mod);
+      this._renderCard(grid, mod, env);
+    }
+  }
+  /** Apply stale-tolerance: if an envelope is stale, replace with unknown+probe. */
+  _applyStaleTolerance(): void {
+    if (!this._capabilityState) return;
+    let changed = false;
+    for (const mod of CAPABILITY_MODULES) {
+      const env = this._capabilityState[mod];
+      if (env && isEnvelopeStale(env)) {
+        this._capabilityState[mod] = createStaleEnvelope(mod);
+        changed = true;
+      }
+    }
+    if (changed) this._persistCapabilityState();
   }
 }

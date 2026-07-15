@@ -4412,3 +4412,270 @@
   max-height: 60px;
   overflow-y: auto;
 }
+
+/* ==========================================================================
+   SECTION 14 — Control Center (Issue #76) — Capability state cards
+   Vercel-inspired status dashboard. Self-contained under .pf-control-center.
+   CSS tokens bridge Obsidian variables; no dependency on .paperforge-status-panel.
+   ========================================================================== */
+
+.pf-control-center {
+  container-type: inline-size;
+  container-name: pfcc;
+}
+
+/* ── Summary Card ── */
+.pf-control-center .pf-cc-summary {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pf-control-center .pf-cc-summary-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+}
+
+.pf-control-center .pf-cc-summary-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.pf-control-center .pf-cc-summary-body {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.pf-control-center .pf-cc-summary-counts {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.pf-control-center .pf-cc-summary-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.pf-control-center .pf-cc-summary-count strong {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* ── Module Grid ── */
+.pf-control-center .pf-cc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@container pfcc (max-width: 620px) {
+  .pf-control-center .pf-cc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Module Card ── */
+.pf-control-center .pf-cc-card {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  transition: border-color 0.15s;
+}
+.pf-control-center .pf-cc-card:hover {
+  border-color: var(--background-modifier-border-hover);
+}
+.pf-control-center .pf-cc-card:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.pf-control-center .pf-cc-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-control-center .pf-cc-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-control-center .pf-cc-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pf-control-center .pf-cc-card-badge--ok {
+  background: color-mix(in srgb, var(--text-success) 10%, transparent);
+  color: var(--text-success);
+}
+
+.pf-control-center .pf-cc-card-badge--warn {
+  background: color-mix(in srgb, var(--text-warning) 10%, transparent);
+  color: var(--text-warning);
+}
+
+.pf-control-center .pf-cc-card-badge--error {
+  background: color-mix(in srgb, var(--text-error) 10%, transparent);
+  color: var(--text-error);
+}
+
+.pf-control-center .pf-cc-card-badge--unknown {
+  background: var(--background-secondary);
+  color: var(--text-muted);
+}
+
+.pf-control-center .pf-cc-card-reason {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 0;
+  margin: 0;
+}
+
+/* ── Activity / Progress ── */
+.pf-control-center .pf-cc-card-activity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.pf-control-center .pf-cc-card-progress {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.pf-control-center .pf-cc-card-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--interactive-accent);
+  transition: width 0.3s;
+}
+
+/* ── Card Footer ── */
+.pf-control-center .pf-cc-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.pf-control-center .pf-cc-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--interactive-normal);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  border-radius: var(--button-radius, 4px);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.pf-control-center .pf-cc-card-action:hover {
+  background: var(--interactive-hover);
+  border-color: var(--background-modifier-border-hover);
+}
+
+.pf-control-center .pf-cc-card-action--primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+}
+
+.pf-control-center .pf-cc-card-action--primary:hover {
+  opacity: 0.85;
+}
+
+.pf-control-center .pf-cc-card-diagnostic {
+  font-size: 11px;
+  color: var(--text-faint);
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.3;
+  margin-left: auto;
+}
+.pf-control-center .pf-cc-card-diagnostic > summary {
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.3;
+  display: inline;
+}
+.pf-control-center .pf-cc-card-diagnostic > summary:hover {
+  color: var(--text-muted);
+}
+
+.pf-control-center .pf-cc-card-diagnostic:hover {
+  color: var(--text-muted);
+}
+
+.pf-control-center .pf-cc-card-diagnostic-body {
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.4;
+  padding: 4px 0 0 0;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .pf-control-center .pf-cc-card-progress-fill {
+    transition: none;
+  }
+  .pf-control-center .pf-cc-card {
+    transition: none;
+  }
+}

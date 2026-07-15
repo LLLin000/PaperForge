@@ -479,6 +479,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_scoped_fetch.add_argument("--json", action="store_true", help="Output JSON")
     p_scoped_fetch.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
 
+    # probe
+    p_probe = sub.add_parser("probe", help="Probe a module's capability state")
+    p_probe.add_argument(
+        "probe_module",
+        choices=["installation", "help"],
+        help="Module to probe (installation or help)",
+    )
+    p_probe.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as schema-v1 capability envelope JSON",
+    )
+
     return parser
 
 
@@ -529,6 +542,7 @@ def main(argv: list[str] | None = None) -> int:
         "project-log", "search", "agent-context", "runtime-health", "doctor",
         "update", "setup", "selection-sync", "index-refresh", "base-refresh",
         "paper-lookup", "content-discovery", "paper-navigation", "scoped-fetch",
+        "probe",
     }
     if args.command in lightweight_commands:
         _resolve_pipeline()
@@ -760,6 +774,11 @@ def main(argv: list[str] | None = None) -> int:
             skip_checks=_skip,
         )
         return plan.execute(json_output=getattr(args, "json_output", False))
+
+    if args.command == "probe":
+        from paperforge.commands.probe import run as run_probe
+
+        return run_probe(args)
 
     print(f"Error: unknown command {args.command}", file=sys.stderr)
     return 1

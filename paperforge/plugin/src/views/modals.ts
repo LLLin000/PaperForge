@@ -212,11 +212,13 @@ export class PaperForgeSetupModal extends Modal {
   private _apiKeyValidated!: boolean;
   private _apiKeyStatus!: HTMLElement;
   private _showSkipConfirm: boolean = false;
+  private _onComplete: (() => void) | undefined;
 
-  constructor(app: App, plugin: IPluginRef) {
+  constructor(app: App, plugin: IPluginRef, onComplete?: () => void) {
     super(app);
     this.plugin = plugin;
     this._step = 1;
+    this._onComplete = onComplete;
   }
 
   onOpen() {
@@ -704,6 +706,7 @@ export class PaperForgeSetupModal extends Modal {
       this._log(t('install_complete'));
       s.setup_complete = true;
       await this.plugin.saveSettings();
+      if (this._onComplete) this._onComplete();
       setTimeout(() => { this._step = 5; this._render(); }, 800);
     } catch (err) {
       console.error('PaperForge setup failed:', (err as Error).message);
