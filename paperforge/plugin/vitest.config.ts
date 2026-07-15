@@ -6,4 +6,9 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     globals: true,
   },
+  resolve: {
+    alias: {
+      obsidian: 'obsidian-test-mocks/obsidian',
+    },
+  },
 });
