@@ -4679,3 +4679,201 @@
     transition: none;
   }
 }
+
+/* ==========================================================================
+   SECTION 15 — Installation Navigation (Issue #77)
+   Navigation button on card headers, module detail selector, back button
+   ========================================================================== */
+
+/* ── Card header with navigation entry ── */
+.pf-control-center .pf-cc-card-name-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pf-open-module-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-normal);
+  cursor: pointer;
+  text-align: left;
+  line-height: inherit;
+}
+.pf-open-module-btn:hover {
+  color: var(--interactive-accent);
+}
+.pf-open-module-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── Module Detail Selector ── */
+.pf-module-detail-selector {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.pf-module-detail-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--background-modifier-border);
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: var(--radius-s);
+}
+.pf-module-detail-btn:hover:not(:disabled) {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.pf-module-detail-btn--active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+.pf-module-detail-btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Back Button ── */
+.pf-back-btn {
+  background: none;
+  border: none;
+  padding: 6px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.pf-back-btn:hover {
+  color: var(--interactive-accent);
+}
+.pf-back-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── Installation Detail ── */
+.pf-installation-detail-heading {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.pf-runtime-status-card {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.pf-runtime-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.pf-runtime-status-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.pf-runtime-status-state {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.pf-runtime-status-state--ok {
+  background: color-mix(in srgb, var(--text-success) 10%, transparent);
+  color: var(--text-success);
+}
+.pf-runtime-status-state--warn {
+  background: color-mix(in srgb, var(--text-warning) 10%, transparent);
+  color: var(--text-warning);
+}
+.pf-runtime-status-state--error {
+  background: color-mix(in srgb, var(--text-error) 10%, transparent);
+  color: var(--text-error);
+}
+.pf-runtime-status-state--unknown {
+  background: var(--background-secondary);
+  color: var(--text-muted);
+}
+
+.pf-runtime-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.pf-runtime-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  border-radius: var(--button-radius, 4px);
+  font-size: 12px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.pf-runtime-action-btn:hover:not(:disabled) {
+  background: var(--interactive-hover);
+}
+.pf-runtime-action-btn--primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+}
+.pf-runtime-action-btn--primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.pf-runtime-action-btn--warning {
+  background: color-mix(in srgb, var(--text-error) 10%, transparent);
+  color: var(--text-error);
+  border-color: transparent;
+}
+.pf-runtime-error {
+  font-size: 12px;
+  color: var(--text-error);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+.pf-runtime-warning {
+  font-size: 12px;
+  color: var(--text-warning);
+  margin-top: 6px;
+  line-height: 1.4;
+  padding: 4px 8px;
+  background: color-mix(in srgb, var(--text-warning) 8%, transparent);
+  border-radius: 4px;
+}
+.pf-runtime-warning-action {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  padding-left: 8px;
+}
+.pf-runtime-error-action {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  font-style: italic;
+}

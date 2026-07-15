@@ -4,7 +4,7 @@ import * as path from "path";
 import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
 import { t, setLanguage } from "./i18n";
-import { PaperForgeSettings, ProbeEnvelope, CapabilityModule, CAPABILITY_MODULES, createUnknownEnvelope, createStaleEnvelope, createInvalidEnvelope, isValidEnvelope, isEnvelopeStale, isReadyEnvelope, probeAction, validatePersistedEnvelopes, classifyCapabilityAction } from "./constants";
+import { PaperForgeSettings, ProbeEnvelope, CapabilityModule, CAPABILITY_MODULES, createUnknownEnvelope, createStaleEnvelope, createInvalidEnvelope, isValidEnvelope, isEnvelopeStale, isReadyEnvelope, probeAction, setupAction, validatePersistedEnvelopes, classifyCapabilityAction } from "./constants";
 import releaseNotesData from "./release-notes.json";
 import {
   resolvePythonExecutable,
@@ -25,7 +25,7 @@ import {
   getVectorStatusText,
   getCachedPython,
 } from "./services/memory-state";
-import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
+
 import {
   PaperForgeOcrPrivacyModal,
   PaperForgeSetupModal,
@@ -41,6 +41,14 @@ import {
   readMaintenanceCache,
   refreshMaintenanceData,
 } from "./services/ocr-maintenance-ui";
+import {
+  ManagedRuntime,
+  runtimeActionsForHealth,
+  resolveRuntimeCommand,
+  type RuntimeHealth,
+  type RuntimeUiAction,
+} from "./services/managed-runtime";
+import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
 import { processProgressChunk } from "./services/progress-parser";
 
 
@@ -83,7 +91,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _pythonInterpDescEl: HTMLElement | null = null;
   private _customPathDescEl: HTMLElement | null = null;
   private _checkEl: HTMLDivElement | null = null;
-  activeTab = "setup";
+  activeTab = "overview";
   private _buildState: string = "idle";
   private _buildProgress: { current: number; total: number; key: string } = {
     current: 0,
@@ -96,6 +104,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _probing: Set<string> = new Set();
   /** Modules that have already been auto-probed (prevents endless re-probe). */
   private _attemptedProbes: Set<string> = new Set();
+  /** Currently active sub-view within the Setup tab. */
+  _setupView: "overview" | "module-detail" = "overview";
+  /** Currently selected module in the detail view. */
+  _selectedDetailModule: string = "";
+  /** Focus target id after re-render. */
+  _focusTargetId: string | null = null;
+  /** AbortController for in-flight runtime ensure/install. */
+  private _runtimeAbortController: AbortController | null = null;
+  /** Cached ManagedRuntime singleton (rebuilt per display() on path change). */
+  private _managedRuntime: ManagedRuntime | null = null;
+  /** True while a runtime operation is in flight. */
+  private _runtimeBusy: boolean = false;
 
   constructor(app: App, plugin: ISettingPlugin) {
     super(app, plugin as any);
@@ -149,10 +169,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // --- Tab bar ---
     const tabBar = containerEl.createDiv({ cls: "paperforge-settings-tabs" });
     const tabs = [
-      { id: "setup", label: t("tab_setup") || "\u5B89\u88C5" },
-      { id: "features", label: t("tab_features") || "\u529F\u80FD" },
-      { id: "maintenance", label: t("tab_maintenance") || "\u7EF4\u62A4" },
-      { id: "release-notes", label: "\u66F4\u65B0\u4E0E\u624B\u518C" },
+      { id: "overview", label: t("tab_overview") || "Overview" },
+      { id: "module-detail", label: t("tab_modules") || "Module Detail" },
+      { id: "maintenance", label: t("tab_maintenance") || "Maintenance" },
+      { id: "help", label: t("tab_help") || "Help" },
     ];
     const tabContents: Record<string, HTMLDivElement> = {};
 
@@ -179,24 +199,37 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
 
     // --- Render active tab ---
-    if (this.activeTab === "setup") {
-      this._renderSetupTab(tabContents.setup);
-    } else if (this.activeTab === "features") {
-      this._renderFeaturesTab(tabContents.features);
+    if (this.activeTab === "overview") {
+      this._renderOverviewTab(tabContents.overview);
+    } else if (this.activeTab === "module-detail") {
+      this._renderModuleDetailTab(tabContents["module-detail"]);
     } else if (this.activeTab === "maintenance") {
       this._renderMaintenanceTab(tabContents.maintenance);
-    } else {
-      this._renderReleaseNotesTab(tabContents["release-notes"]);
+    } else if (this.activeTab === "help") {
+      this._renderHelpTab(tabContents.help);
     }
+ 
+     // Focus restoration after render (Issue #77)
+     // Do NOT consume _focusTargetId while Help tab is active —
+     // focus targets for Overview must survive until Overview renders again.
+     if (this._focusTargetId && this.activeTab !== "help") {
+       const target = containerEl.querySelector<HTMLElement>(this._focusTargetId);
+       if (target) {
+         try { target.focus(); } catch {}
+         this._focusTargetId = null;
+       }
+     }
   }
-  _renderSetupTab(containerEl: HTMLElement) {
-    const vaultPath = (this.app.vault.adapter as any).basePath as string;
+  /** Render the Overview tab (header + control center + advanced settings). */
+  _renderOverviewTab(containerEl: HTMLElement) {
+    const vaultPath = this._getVaultBasePath();
     if (!this.plugin.settings.vault_path) {
       this.plugin.settings.vault_path = vaultPath;
       this._debouncedSave();
     }
 
-    /* Header — brief, not authoritative status (that's the control center) */
+    // ── Overview ──
+    /* Header */
     containerEl.createEl("h2", { text: t("header_title") || "PaperForge" });
     containerEl.createEl("p", {
       text: t("desc"),
@@ -205,6 +238,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // ── Control Center (Issue #76) ──
     this._renderControlCenter(containerEl);
+
+    // ── Advanced: Memory + Vector (preserved from old Features tab) ──
+    this._renderAdvancedSection(containerEl);
 
     // Auto-probe never-probed/migrated modules once per session
     for (const mod of CAPABILITY_MODULES) {
@@ -216,7 +252,690 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         }
       }
     }
+
   }
+
+  /** Render the Advanced collapsible section with Memory + Vector (from old Features tab). */
+  _renderAdvancedSection(containerEl: HTMLElement): void {
+    if (this._advCollapsed === undefined) this._advCollapsed = true;
+    const advHeader = containerEl.createEl("div", {
+      cls: "paperforge-collapsible-header",
+    });
+    const advArrow = advHeader.createEl("span", {
+      text: "\u25B6",
+      cls: "paperforge-collapsible-arrow",
+    });
+    advArrow.style.transform = this._advCollapsed
+      ? "rotate(0deg)"
+      : "rotate(90deg)";
+    const advTitle = advHeader.createEl("span", {
+      cls: "paperforge-collapsible-title",
+      text: "Advanced",
+    });
+    const advSub = advHeader.createEl("span", {
+      cls: "paperforge-collapsible-sub",
+      text: "Memory + Vector DB + Embedding",
+    });
+
+    const advContent = containerEl.createEl("div", {
+      cls: "paperforge-collapsible-content",
+    });
+    advContent.style.display = this._advCollapsed ? "none" : "";
+
+    advHeader.addEventListener("click", () => {
+      this._advCollapsed = !this._advCollapsed;
+      advContent.style.display = this._advCollapsed ? "none" : "";
+      advArrow.style.transform = this._advCollapsed
+        ? "rotate(0deg)"
+        : "rotate(90deg)";
+    });
+
+    // Memory Layer section
+    advContent.createEl("h4", { text: "Memory Layer" });
+    const memoryDescEl = advContent.createEl("div", {
+      cls: "paperforge-desc-box",
+    });
+    memoryDescEl.setText(t("feat_memory_desc"));
+
+    const statusRow = advContent.createEl("div", {
+      cls: "paperforge-memory-status",
+    });
+
+    const vp = (this.app.vault.adapter as unknown as Record<string, unknown>).basePath as string;
+
+    if (this.plugin._lastSyncTime && !this._lastSyncTime) {
+      this._lastSyncTime = this.plugin._lastSyncTime;
+    }
+
+    if (this._memoryStatusText === null) {
+      this._memoryStatusText = getMemoryStatusText(vp);
+    }
+    this._renderMemoryStatusText(
+      statusRow,
+      this._memoryStatusText,
+      this._lastSyncTime
+    );
+
+    this._renderVectorSection(advContent);
+  }
+
+  /** Safe vault base path extraction. */
+  private _getVaultBasePath(): string {
+    const adapter: unknown = this.app.vault.adapter;
+    if (adapter && typeof adapter === "object" && "basePath" in adapter) {
+      const bp: unknown = (adapter as Record<string, unknown>).basePath;
+      return typeof bp === "string" ? bp : "";
+    }
+    return "";
+  }
+
+  /** Ensure ManagedRuntime singleton is initialized for the current machine. */
+  private _ensureManagedRuntime(): ManagedRuntime {
+    if (this._managedRuntime) return this._managedRuntime;
+    this._managedRuntime = new ManagedRuntime({
+      version: this.plugin.manifest.version,
+    });
+    return this._managedRuntime;
+  }
+
+  /**
+   * Resolve python command via managed runtime first, falling back to
+   * legacy getCachedPython adapter. Returns null when neither available.
+   * Issues Release-N warning on legacy fallback.
+   */
+  private _resolveRuntimeCommand(vp: string): { path: string; args: string[] } | null {
+    const run = resolveRuntimeCommand(this._ensureManagedRuntime().current());
+    if (run) {
+      return { path: run.command, args: [...run.args] };
+    }
+    // Release N: legacy fallback
+    console.warn(
+      "[PaperForge] Release N: Managed runtime not ready (cold/stale), falling back to legacy resolver"
+    );
+    const py = getCachedPython(vp, this.plugin.settings);
+    if (!py.path) return null;
+    return { path: py.path, args: py.extraArgs };
+  }
+
+  /** Render the Installation detail view (Issue #77). */
+  _renderInstallationDetail(containerEl: HTMLElement): void {
+    // ── Back button ──
+    const backBtn = containerEl.createEl("button", {
+      cls: "pf-back-btn",
+      text: t("btn_back_to_overview"),
+    });
+    backBtn.addEventListener("click", () => {
+      this.activeTab = "overview";
+      this._selectedDetailModule = "";
+      this._focusTargetId = "button.pf-open-module-btn[data-module=installation]";
+      this.display();
+    });
+
+    // ── Heading ──
+    const heading = containerEl.createEl("h2", {
+      cls: "pf-installation-detail-heading",
+      text: t("installation_detail_heading") || "Installation Details",
+      attr: { id: "pf-installation-detail-heading", tabindex: "-1" },
+    });
+
+    // ── Module detail selector (only Installation until #78) ──
+    const detailModules: { id: string; labelKey: string; disabled: boolean }[] = [
+      { id: "installation", labelKey: "md_select_installation", disabled: false },
+    ];
+    const selector = containerEl.createEl("div", { cls: "pf-module-detail-selector" });
+    for (const dm of detailModules) {
+      const btn = selector.createEl("button", {
+        cls: "pf-module-detail-btn"
+          + (dm.id === "installation" ? " pf-module-detail-btn--active" : "")
+          + (dm.disabled ? " pf-module-detail-btn--disabled" : ""),
+        text: t(dm.labelKey),
+      });
+      if (dm.disabled) btn.disabled = true;
+    }
+
+    // ── Backend envelope display (same envelope as overview card) ──
+    const envelopes: Record<string, ProbeEnvelope> = this._capabilityState ?? {};
+    const mod: CapabilityModule = "installation";
+    const env: ProbeEnvelope = envelopes[mod] ?? createUnknownEnvelope(mod);
+    const sevClass: string = this._sevClass(env.severity);
+    const isReady: boolean = isReadyEnvelope(env);
+
+    // Minimal envelope summary row
+    const summaryRow = containerEl.createEl("div", { cls: "pf-cc-card", attr: { style: "margin-bottom: 12px;" } });
+    const summaryHeader = summaryRow.createEl("div", { cls: "pf-cc-card-header" });
+    summaryHeader.createEl("span", { cls: "pf-cc-card-name", text: t("cc_module_installation") });
+    summaryHeader.createEl("span", {
+      cls: `pf-cc-card-badge pf-cc-card-badge--${sevClass}`,
+      text: t(this._ccBadgeKey(env, mod)),
+    });
+    const l10nReason = this._localizeReason(env.reason.code, "installation");
+    summaryRow.createEl("div", { cls: "pf-cc-card-reason", text: l10nReason ?? env.reason.text });
+
+    // Action button (same logic as overview card — setup opens wizard, else probe)
+    if (env.action.primary && !isReady) {
+      const action = classifyCapabilityAction(env);
+      const isCta = action.kind === "setup";
+      const btnCls = isCta ? "pf-cc-card-action pf-cc-card-action--primary" : "pf-cc-card-action";
+      const actionBtn = summaryRow.createEl("button", {
+        cls: btnCls,
+        text: action.label,
+      });
+      actionBtn.addEventListener("click", () => {
+        if (action.kind === "setup") {
+          new PaperForgeSetupModal(this.app, this.plugin, () => {
+            this._probeModule("installation");
+            this._probeModule("help");
+          }).open();
+        } else {
+          this._probeModule(mod);
+        }
+      });
+    }
+
+    // ── ManagedRuntime section ──
+    containerEl.createEl("h3", { text: t("managed_runtime_status") });
+    const healthCard = containerEl.createEl("div", { cls: "pf-runtime-status-card" });
+
+    // Helper to render runtime actions as buttons
+    const renderRuntimeActions = (actions: readonly RuntimeUiAction[], health: RuntimeHealth, busy: boolean) => {
+      const actionRow = healthCard.createEl("div", { cls: "pf-runtime-actions" });
+      for (const act of actions) {
+        const btn = actionRow.createEl("button", {
+          cls: "pf-runtime-action-btn",
+          text: act.label,
+        });
+        // Never disable the Stop button — must be reachable when busy
+        if (busy && act.verb !== "stop") btn.disabled = true;
+        btn.addEventListener("click", async () => {
+          // Stop verb: abort the in-flight operation immediately
+          if (act.verb === "stop") {
+            const controller = this._runtimeAbortController;
+            // Guard: already aborted or already cleaned up → no-op
+            if (!controller || controller.signal.aborted) return;
+            controller.abort();
+            new Notice(t("managed_runtime_action_cancelled"));
+            // Do NOT null _runtimeAbortController here — leave it for the
+            // original handler's finally block so the AbortSignal is still
+            // accessible and unwinding completes normally.
+            this.display();
+            this._probeModule("installation");
+            this._probeModule("help");
+            return;
+          }
+
+          const rt = this._ensureManagedRuntime();
+          const ac = new AbortController();
+          this._runtimeAbortController = ac;
+          this._runtimeBusy = true;
+          new Notice(t("managed_runtime_running"));
+
+          try {
+            if (act.verb === "install" || act.verb === "repair" || act.verb === "update") {
+              await rt.ensure({ signal: ac.signal, force: act.verb === "update" || act.verb === "repair" });
+            } else if (act.verb === "rollback") {
+              await rt.ensure({ signal: ac.signal, version: health.previousVersion ?? undefined });
+            } else {
+              // retry/status → just re-probe
+              await rt.status();
+            }
+            if (!ac.signal.aborted) new Notice(t("managed_runtime_action_complete"));
+          } catch (err: unknown) {
+            // Cooperative Stop: AbortError means the operation was cancelled — skip "failed" notice
+            if ((err as Error)?.name !== "AbortError") {
+              const msg: string = err instanceof Error ? err.message : String(err);
+              new Notice(t("managed_runtime_action_failed").replace("{error}", msg), 8000);
+            }
+          } finally {
+            this._runtimeAbortController = null;
+            this._runtimeBusy = false;
+            // Re-probe and re-render
+            this._probeModule("installation");
+            this._probeModule("help");
+            this.display();
+          }
+        });
+      }
+    };
+
+    // Sync display with runtime health
+    const renderRuntimeHealth = () => {
+      healthCard.empty();
+      const rt: ManagedRuntime = this._ensureManagedRuntime();
+      const health: RuntimeHealth = rt.current();
+
+      // Header row
+      const headerRow = healthCard.createEl("div", { cls: "pf-runtime-status-header" });
+      headerRow.createEl("div", { cls: "pf-runtime-status-label", text: t("managed_runtime_status") });
+
+      let stateClass: string;
+      let stateLabel: string;
+      switch (health.state) {
+        case "ready":
+          stateClass = "ok";
+          stateLabel = t("managed_runtime_ok_state");
+          break;
+        case "not_installed":
+          stateClass = "warn";
+          stateLabel = t("managed_runtime_not_installed");
+          break;
+        case "needs_repair":
+          stateClass = "warn";
+          stateLabel = t("managed_runtime_needs_repair");
+          break;
+        case "unavailable":
+          stateClass = "error";
+          stateLabel = t("managed_runtime_unavailable");
+          break;
+        default:
+          stateClass = "unknown";
+          stateLabel = t("managed_runtime_unknown_state");
+      }
+      headerRow.createEl("span", {
+        cls: `pf-runtime-status-state pf-runtime-status-state--${stateClass}`,
+        text: stateLabel,
+      });
+
+      // Version info
+      if (health.version) {
+        healthCard.createEl("div", { cls: "pf-meta", text: `Python ${health.version}` });
+      }
+      if (health.pythonPath) {
+        healthCard.createEl("div", { cls: "pf-meta", text: health.pythonPath, attr: { style: "word-break: break-all;" } });
+      }
+      if (health.lastVerifiedAt) {
+        healthCard.createEl("div", {
+          cls: "pf-meta",
+          text: t("managed_runtime_last_verified").replace("{time}", new Date(health.lastVerifiedAt).toLocaleString()),
+        });
+      }
+
+      // Error info
+      if (health.error) {
+        healthCard.createEl("div", { cls: "pf-runtime-error", text: `${health.error.code}: ${health.error.message}` });
+      }
+
+      // Warnings (e.g. Python 3.10 Release-N deprecation)
+      if (health.warnings && health.warnings.length > 0) {
+        for (const w of health.warnings) {
+          const warnEl = healthCard.createEl("div", { cls: "pf-runtime-warning", text: `\u26A0 ${w.message}` });
+          if (w.platformAction) {
+            warnEl.createEl("div", { cls: "pf-runtime-warning-action", text: w.platformAction });
+          }
+        }
+      }
+
+      // Error platformAction guidance (e.g. unsupported platform manual setup)
+      if (health.error?.platformAction) {
+        healthCard.createEl("div", { cls: "pf-runtime-error-action", text: health.error.platformAction });
+      }
+
+      // Derived canonical actions
+      const actions: readonly RuntimeUiAction[] = runtimeActionsForHealth(health, this.plugin.manifest.version, this._runtimeBusy);
+      renderRuntimeActions(actions, health, this._runtimeBusy);
+    };
+
+    renderRuntimeHealth();
+
+    // On first visit, status() refreshes health from disk and re-renders
+    // canonical actions (Install/Update) without requiring manual Retry.
+    // Guard: mock status() may return undefined in test environments.
+    const statusPromise = this._ensureManagedRuntime().status();
+    if (statusPromise) {
+      statusPromise.then(() => {
+        if (!containerEl.isConnected) return; // guard detached DOM
+        renderRuntimeHealth();
+      }).catch(() => { /* best-effort; sync render already shown */ });
+    }
+
+    // ── Current Configuration section (Python, path, Zotero controls) ──
+    containerEl.createEl("h3", { text: t("section_config") || "Current Configuration" });
+
+    // Copy of setup/runtime/path controls from original setup tab
+    const vaultPath: string = this._getVaultBasePath();
+    const pyResult: { path: string; source: string } = resolvePythonExecutable(
+      vaultPath,
+      this.plugin.settings,
+      undefined,
+      undefined
+    ) as unknown as { path: string; source: string };
+    const pyPathDesc: string = this._getPythonDesc(pyResult.path, pyResult.source);
+
+    new Setting(containerEl)
+      .setName(t("field_python_interp") || "Python Interpreter")
+      .setDesc(pyPathDesc)
+      .addExtraButton((btn) => {
+        btn
+          .setIcon("reset")
+          .setTooltip("Re-detect")
+          .onClick(() => {
+            this._pythonInterpDescEl = null;
+            this._managedRuntime = null;
+            this.display();
+          });
+      })
+      .addButton((button) => {
+        button.setButtonText(t("runtime_health_sync") || "Sync Runtime").onClick(() => {
+          this._syncRuntime(button);
+        });
+      });
+
+    // Custom Python path (override)
+    const customPathDescEl: HTMLDivElement = containerEl.createEl("div", {
+      cls: "setting-item-description",
+    });
+    this._customPathDescEl = customPathDescEl;
+
+    new Setting(containerEl)
+      .setName(t("field_python_custom") || "Custom Python Path")
+      .setDesc(t("optional_later"))
+      .addText((text) => {
+        text
+          .setPlaceholder("e.g. C:\\Python311\\python.exe")
+          .setValue(this.plugin.settings.python_path || "")
+          .onChange((value) => {
+            this.plugin.settings.python_path = value.trim();
+            this._debouncedSave();
+            this._managedRuntime = null;
+          });
+      })
+      .addButton((button) => {
+        button.setButtonText(t("feat_verify") || "Validate").onClick(() => {
+          this._validatePythonOverride();
+        });
+      });
+
+    // Zotero data dir
+    new Setting(containerEl)
+      .setName(t("field_zotero_data") || "Zotero Data Dir")
+      .setDesc(t("field_zotero_placeholder"))
+      .addText((text) => {
+        text
+          .setPlaceholder("C:\\Users\\...\\Zotero")
+          .setValue(this.plugin.settings.zotero_data_dir || "")
+          .onChange((value) => {
+            this.plugin.settings.zotero_data_dir = value.trim();
+            this._debouncedSave();
+          });
+      });
+
+    // ── Agent Integration section ──
+    containerEl.createEl("h3", { text: t("agent_integration_section") || "Agent Integration" });
+    // ── Agent Platform + Skills list (Issue #77) ──
+     this._renderSkillsList(containerEl);
+
+    // Focus heading on render
+    try {
+      heading.focus();
+    } catch {
+      // ignore focus failure
+    }
+  }
+ 
+   /** Render Agent Platform selector and skills list (Issue #77). */
+   private _renderSkillsList(containerEl: HTMLElement): void {
+     const agentPlatforms: Record<string, string> = {
+       opencode: "OpenCode",
+       claude: "Claude Code",
+       codex: "Codex",
+       cursor: "Cursor",
+       windsurf: "Windsurf",
+       github_copilot: "GitHub Copilot",
+       gemini: "Gemini CLI",
+     };
+     const agentDirs: Record<string, string> = {
+       opencode: ".opencode/skills",
+       claude: ".claude/skills",
+       codex: ".codex/skills",
+       cursor: ".cursor/skills",
+       windsurf: ".windsurf/skills",
+       github_copilot: ".github/skills",
+       gemini: ".gemini/skills",
+     };
+     const vaultPath = this._getVaultBasePath();
+     const selectedPlatform: string = this.plugin.settings.agent_platform || "opencode";
+ 
+     new Setting(containerEl)
+       .setName(t("label_agent") || "Agent Platform")
+       .setDesc(t("feat_agent_platform_desc"))
+       .addDropdown((dropdown) => {
+         Object.entries(agentPlatforms).forEach(([key, label]) =>
+           dropdown.addOption(key, label)
+         );
+         dropdown.setValue(selectedPlatform).onChange((value) => {
+           this.plugin.settings.agent_platform = value;
+           this.plugin.saveSettings();
+           this.display();
+         });
+       })
+       .addExtraButton((btn) => {
+         btn
+           .setIcon("folder")
+           .setTooltip("Open skills folder")
+           .onClick(() => {
+             const dir: string = agentDirs[selectedPlatform] || ".opencode/skills";
+             const fullPath: string = path.join(vaultPath, dir);
+             if (fs.existsSync(fullPath)) {
+               exec(`start "" "${fullPath}"`);
+             } else {
+               new Notice(`Skills folder not found: ${dir}`);
+             }
+           });
+       });
+ 
+     // Skills section
+     containerEl.createEl("h3", { text: "Skills" });
+     const skillsDescEl = containerEl.createEl("div", { cls: "paperforge-desc-box" });
+     skillsDescEl.setText(t("feat_skills_desc"));
+     skillsDescEl.createEl("br");
+     skillsDescEl.createEl("span", { text: t("feat_skills_system") });
+ 
+     // Show skills for selected platform
+     const skillDir = path.join(vaultPath, agentDirs[selectedPlatform]);
+     interface SkillEntry {
+       name: string;
+       desc: string;
+       source: string;
+       disabled: boolean;
+       version: string;
+       path: string;
+       content: string;
+       dirName: string;
+     }
+     const systemSkills: SkillEntry[] = [];
+     const userSkills: SkillEntry[] = [];
+ 
+     if (fs.existsSync(skillDir)) {
+       fs.readdirSync(skillDir, { withFileTypes: true }).forEach((entry) => {
+         if (!entry.isDirectory()) return;
+         const skillFile = path.join(skillDir, entry.name, "SKILL.md");
+         if (!fs.existsSync(skillFile)) return;
+         const content = fs.readFileSync(skillFile, "utf-8");
+         const nameMatch = content.match(/^name:\s*(.+)$/m);
+         const lines = content.split("\n");
+         const descIdx = lines.findIndex((l) => /^description:/.test(l));
+         let desc = "";
+         if (descIdx >= 0) {
+           const first = lines[descIdx].match(/^description:\s*(.+)$/);
+           if (first && first[1] && first[1] !== ">" && first[1] !== "|-" && first[1] !== "|") {
+             desc = first[1].trim();
+           } else {
+             for (let i = descIdx + 1; i < lines.length; i++) {
+               if (/^\s{2,}/.test(lines[i]) || lines[i].trim() === "") {
+                 desc += lines[i].trim() + " ";
+               } else break;
+             }
+             desc = desc.trim();
+           }
+         }
+         const sourceMatch = content.match(/^source:\s*(.+)$/m);
+         const disableMatch = content.match(/^disable-model-invocation:\s*(.+)$/m);
+         const versionMatch = content.match(/^version:\s*(.+)$/m);
+         const skill: SkillEntry = {
+           name: nameMatch ? nameMatch[1].trim() : entry.name,
+           desc,
+           source: sourceMatch ? sourceMatch[1].trim() : "user",
+           disabled: !!disableMatch && disableMatch[1].trim() === "true",
+           version: versionMatch ? versionMatch[1].trim() : "",
+           path: skillFile,
+           content,
+           dirName: entry.name,
+         };
+         if (skill.source === "paperforge") {
+           systemSkills.push(skill);
+         } else {
+           userSkills.push(skill);
+         }
+       });
+     }
+ 
+     const skillsBox = containerEl.createEl("div", { cls: "paperforge-skills-box" });
+ 
+     const renderCollapsibleSkills = (label: string, skills: SkillEntry[], isSystem: boolean): void => {
+       if (skills.length === 0) return;
+       const group = skillsBox.createEl("div", { cls: "paperforge-skills-group" });
+       const header = group.createEl("div", { cls: "paperforge-skills-collapse-header" });
+       const content = group.createEl("div", { cls: "paperforge-skills-collapse-content" });
+       const arrow = header.createEl("span", { text: "\u25BC", cls: "paperforge-skills-arrow" });
+       header.createEl("h4", { text: `${label} (${skills.length})`, cls: "paperforge-skills-subheader" });
+       skills.forEach((s: SkillEntry) => {
+         const nameText = s.name + (s.version ? " v" + s.version : "");
+         const sourceLabel = isSystem ? " [system]" : " [user]";
+         const descText = s.desc || "";
+         const setting = new Setting(content).setName(nameText + sourceLabel).setDesc(descText);
+         setting.settingEl.style.opacity = s.disabled ? "0.4" : "1";
+         setting.addToggle((toggle) => {
+           toggle.setValue(!s.disabled).onChange((value) => {
+             const newDisabled = !value;
+             const disableMatch = s.content.match(/^disable-model-invocation:\s*(.+)$/m);
+             const newContent = disableMatch
+               ? s.content.replace(/^disable-model-invocation:\s*.+$/m, `disable-model-invocation: ${newDisabled}`)
+               : s.content.replace(/^(---\r?\n)/, `$1disable-model-invocation: ${newDisabled}\n`);
+             fs.writeFileSync(s.path, newContent, "utf-8");
+             s.disabled = newDisabled;
+             s.content = newContent;
+             setting.settingEl.style.opacity = s.disabled ? "0.4" : "1";
+           });
+         });
+       });
+       const stateKey = isSystem ? "system" : "user";
+       const collapsed = this._skillsCollapsed[stateKey] || false;
+       if (collapsed) { content.style.display = "none"; arrow.style.transform = "rotate(-90deg)"; }
+       header.addEventListener("click", () => {
+         const nowCollapsed = content.style.display !== "none";
+         if (nowCollapsed) { content.style.display = "none"; arrow.style.transform = "rotate(-90deg)"; }
+         else { content.style.display = ""; arrow.style.transform = "rotate(0deg)"; }
+         this._skillsCollapsed[stateKey] = content.style.display === "none";
+       });
+     };
+ 
+     renderCollapsibleSkills("System Skills", systemSkills, true);
+     renderCollapsibleSkills("User Skills", userSkills, false);
+ 
+     if (systemSkills.length === 0 && userSkills.length === 0) {
+       skillsBox.createEl("p", {
+         text: `No skills found in ${agentDirs[selectedPlatform]}. Run setup to deploy skills.`,
+         cls: "setting-item-description",
+       });
+     }
+   }
+
+  /** Render the Module Detail tab (top-level destination). */
+  _renderModuleDetailTab(containerEl: HTMLElement): void {
+    // Default to Installation if no module selected
+    if (!this._selectedDetailModule) {
+      this._selectedDetailModule = "installation";
+    }
+    if (this._selectedDetailModule === "installation") {
+      this._renderInstallationDetail(containerEl);
+    } else {
+      // Fallback to installation
+      this._selectedDetailModule = "installation";
+      this._renderInstallationDetail(containerEl);
+    }
+  }
+
+  /** Render the Help tab (top-level destination with docs + release notes). */
+  _renderHelpTab(containerEl: HTMLElement): void {
+    const envelopes: Record<string, ProbeEnvelope> = this._capabilityState ?? {};
+    const mod: CapabilityModule = "help";
+    const env: ProbeEnvelope = envelopes[mod] ?? createUnknownEnvelope(mod);
+    const sevClass: string = this._sevClass(env.severity);
+    const isReal: boolean = PaperForgeSettingTab._REAL_PROBE.has(mod);
+
+    // Heading
+    containerEl.createEl("h2", { text: t("cc_module_help") || "Help & Docs" });
+
+    // Envelope summary card
+    const summaryRow = containerEl.createEl("div", { cls: "pf-cc-card", attr: { style: "margin-bottom: 12px;" } });
+    const summaryHeader = summaryRow.createEl("div", { cls: "pf-cc-card-header" });
+    summaryHeader.createEl("span", { cls: "pf-cc-card-name", text: t("cc_module_help") });
+    summaryHeader.createEl("span", {
+      cls: `pf-cc-card-badge pf-cc-card-badge--${sevClass}`,
+      text: t(this._ccBadgeKey(env, mod)),
+    });
+
+    // Reason text — localized via code map, fallback to backend text
+    let reasonText: string;
+    if (!isReal) {
+      reasonText = t("cc_reason_placeholder").replace("{module}", t("cc_module_" + mod));
+    } else {
+      const l10nReason = this._localizeReason(env.reason.code, mod);
+      reasonText = l10nReason ?? env.reason.text;
+    }
+    summaryRow.createEl("div", { cls: "pf-cc-card-reason", text: reasonText });
+
+    // Action button (same logic as overview card — setup opens wizard, else probe)
+    if (env.action.primary && !isReadyEnvelope(env)) {
+      const action = classifyCapabilityAction(env);
+      const isCta = action.kind === "setup";
+      const btnCls = isCta ? "pf-cc-card-action pf-cc-card-action--primary" : "pf-cc-card-action";
+      const actionBtn = summaryRow.createEl("button", {
+        cls: btnCls,
+        text: action.label,
+        attr: { "aria-label": action.label },
+      });
+      actionBtn.addEventListener("click", () => {
+        if (action.kind === "setup") {
+          new PaperForgeSetupModal(this.app, this.plugin, () => {
+            this._probeModule("installation");
+            this._probeModule("help");
+          }).open();
+        } else {
+          this._probeModule(mod);
+        }
+      });
+    }
+
+    // Diagnostics — native <details><summary> with localized field labels and values
+    const details = summaryRow.createEl("details", { cls: "pf-cc-card-diagnostic" });
+    details.createEl("summary", { text: t("cc_diagnostic_toggle") });
+    const body = details.createEl("div", { cls: "pf-cc-card-diagnostic-body" });
+
+    const stateLabel = t("cc_state_" + env.capability_state) || env.capability_state;
+    const sevLabel = t("cc_severity_" + env.severity) || env.severity;
+    const activityLabel = t("cc_activity_" + env.activity_state) || env.activity_state;
+
+    let dateLabel: string;
+    try {
+      dateLabel = new Date(env.updated_at).toLocaleString();
+    } catch {
+      dateLabel = env.updated_at;
+    }
+
+    body.createEl("div", { text: `${t("cc_diag_module")}: ${env.module}` });
+    body.createEl("div", { text: `${t("cc_diag_state")}: ${stateLabel}` });
+    body.createEl("div", { text: `${t("cc_diag_severity")}: ${sevLabel}` });
+    body.createEl("div", { text: `${t("cc_diag_activity")}: ${activityLabel}` });
+    const reasonRow = body.createEl("div");
+    reasonRow.appendText(t("cc_diag_reason") + ": " + reasonText + " ");
+    const codeEl = reasonRow.createEl("code", { text: env.reason.code });
+    body.createEl("div", { text: `${t("cc_diag_ttl")}: ${String(env.ttl_seconds)}s` });
+    body.createEl("div", { text: `${t("cc_diag_updated")}: ${dateLabel}` });
+
+    // Release notes from old release-notes tab
+    this._renderReleaseNotesTab(containerEl);
+  }
+
 
   _execMemoryStatus(
     pythonPath: string,
@@ -280,9 +999,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   _callPython(command: string[], opts?: any) {
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const py = getCachedPython(vp, this.plugin.settings);
+    const resolved = this._resolveRuntimeCommand(vp);
+    if (!resolved) {
+      if (opts && opts.onClose) opts.onClose(1, "", "No python runtime available");
+      return null;
+    }
     const args = [
-      ...py.extraArgs,
+      ...resolved.args,
       "-m",
       "paperforge",
       "--vault",
@@ -290,7 +1013,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       ...command,
     ];
     if (opts && opts.stream) {
-      const child = spawn(py.path, args, {
+      const child = spawn(resolved.path, args, {
         cwd: vp,
         env: opts.env || process.env,
         windowsHide: true,
@@ -302,7 +1025,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return child;
     }
     execFile(
-      py.path,
+      resolved.path,
       args,
       { cwd: vp, timeout: (opts && opts.timeout) || 60000 },
       (err, stdout, stderr) => {
@@ -311,7 +1034,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
     return null;
   }
-
   _renderMemoryStatusText(
     el: HTMLElement,
     text: string,
@@ -450,286 +1172,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
   }
 
-  _renderFeaturesTab(containerEl: HTMLElement) {
-    // --- Section: Skills ---
-    containerEl.createEl("h3", { text: "Skills" });
-    const skillsDescEl = containerEl.createEl("div", {
-      cls: "paperforge-desc-box",
-    });
-    skillsDescEl.setText(t("feat_skills_desc"));
-    skillsDescEl.createEl("br");
-    skillsDescEl.createEl("span", { text: t("feat_skills_system") });
-
-    // Agent platform selector
-    const agentPlatforms: Record<string, string> = {
-      opencode: "OpenCode",
-      claude: "Claude Code",
-      codex: "Codex",
-      cursor: "Cursor",
-      windsurf: "Windsurf",
-      github_copilot: "GitHub Copilot",
-      gemini: "Gemini CLI",
-    };
-    const agentDirs: Record<string, string> = {
-      opencode: ".opencode/skills",
-      claude: ".claude/skills",
-      codex: ".codex/skills",
-      cursor: ".cursor/skills",
-      windsurf: ".windsurf/skills",
-      github_copilot: ".github/skills",
-      gemini: ".gemini/skills",
-    };
-
-    const vaultPath = (this.app.vault.adapter as any).basePath as string;
-
-    let selectedPlatform =
-      this.plugin.settings.selected_skill_platform || "opencode";
-
-    new Setting(containerEl)
-      .setName(t("feat_agent_platform"))
-      .setDesc(t("feat_agent_platform_desc"))
-      .addDropdown((dropdown) => {
-        Object.entries(agentPlatforms).forEach(([key, label]) =>
-          dropdown.addOption(key, label)
-        );
-        dropdown.setValue(selectedPlatform).onChange((value) => {
-          this.plugin.settings.selected_skill_platform = value;
-          this.plugin.saveSettings();
-          this.display();
-        });
-      })
-      .addExtraButton((btn) => {
-        btn
-          .setIcon("folder")
-          .setTooltip("Open skills folder")
-          .onClick(() => {
-            const dir = agentDirs[selectedPlatform] || ".opencode/skills";
-            const fullPath = path.join(vaultPath, dir);
-            if (fs.existsSync(fullPath)) {
-              exec(`start "" "${fullPath}"`);
-            } else {
-              new Notice(`Skills folder not found: ${dir}`);
-            }
-          });
-      });
-
-    // Show skills for selected platform
-    const skillDir = path.join(vaultPath, agentDirs[selectedPlatform]);
-    const systemSkills: any[] = [];
-    const userSkills: any[] = [];
-
-    if (fs.existsSync(skillDir)) {
-      fs.readdirSync(skillDir, { withFileTypes: true }).forEach((entry) => {
-        if (!entry.isDirectory()) return;
-        const skillFile = path.join(skillDir, entry.name, "SKILL.md");
-        if (!fs.existsSync(skillFile)) return;
-        const content = fs.readFileSync(skillFile, "utf-8");
-        const nameMatch = content.match(/^name:\s*(.+)$/m);
-        const lines = content.split("\n");
-        const descIdx = lines.findIndex((l) => /^description:/.test(l));
-        let desc = "";
-        if (descIdx >= 0) {
-          const first = lines[descIdx].match(/^description:\s*(.+)$/);
-          if (
-            first &&
-            first[1] &&
-            first[1] !== ">" &&
-            first[1] !== "|-" &&
-            first[1] !== "|"
-          ) {
-            desc = first[1].trim();
-          } else {
-            for (let i = descIdx + 1; i < lines.length; i++) {
-              if (/^\s{2,}/.test(lines[i]) || lines[i].trim() === "") {
-                desc += lines[i].trim() + " ";
-              } else break;
-            }
-            desc = desc.trim();
-          }
-        }
-        const sourceMatch = content.match(/^source:\s*(.+)$/m);
-        const disableMatch = content.match(
-          /^disable-model-invocation:\s*(.+)$/m
-        );
-        const versionMatch = content.match(/^version:\s*(.+)$/m);
-
-        const skill = {
-          name: nameMatch ? nameMatch[1].trim() : entry.name,
-          desc: desc,
-          source: sourceMatch ? sourceMatch[1].trim() : "user",
-          disabled: disableMatch && disableMatch[1].trim() === "true",
-          version: versionMatch ? versionMatch[1].trim() : "",
-          path: skillFile,
-          content: content,
-          dirName: entry.name,
-        };
-
-        if (skill.source === "paperforge") {
-          systemSkills.push(skill);
-        } else {
-          userSkills.push(skill);
-        }
-      });
-    }
-
-    const skillsBox = containerEl.createEl("div", {
-      cls: "paperforge-skills-box",
-    });
-
-    const renderCollapsibleSkills = (
-      label: string,
-      skills: any[],
-      isSystem: boolean
-    ) => {
-      if (skills.length === 0) return;
-
-      const group = skillsBox.createEl("div", {
-        cls: "paperforge-skills-group",
-      });
-      const header = group.createEl("div", {
-        cls: "paperforge-skills-collapse-header",
-      });
-      const content = group.createEl("div", {
-        cls: "paperforge-skills-collapse-content",
-      });
-      const arrow = header.createEl("span", {
-        text: "\u25BC",
-        cls: "paperforge-skills-arrow",
-      });
-      header.createEl("h4", {
-        text: `${label} (${skills.length})`,
-        cls: "paperforge-skills-subheader",
-      });
-
-      skills.forEach((s) => {
-        const nameText = s.name + (s.version ? " v" + s.version : "");
-        const sourceLabel = isSystem ? " [system]" : " [user]";
-        const descText = s.desc || "";
-
-        const setting = new Setting(content)
-          .setName(nameText + sourceLabel)
-          .setDesc(descText);
-        setting.settingEl.style.opacity = s.disabled ? "0.4" : "1";
-
-        setting.addToggle((toggle) => {
-          toggle.setValue(!s.disabled).onChange((value) => {
-            const newDisabled = !value;
-            const disableMatch = s.content.match(
-              /^disable-model-invocation:\s*(.+)$/m
-            );
-            const newContent = disableMatch
-              ? s.content.replace(
-                  /^disable-model-invocation:\s*.+$/m,
-                  `disable-model-invocation: ${newDisabled}`
-                )
-              : s.content.replace(
-                  /^(---\r?\n)/,
-                  `$1disable-model-invocation: ${newDisabled}\n`
-                );
-            fs.writeFileSync(s.path, newContent, "utf-8");
-            s.disabled = newDisabled;
-            s.content = newContent;
-            setting.settingEl.style.opacity = s.disabled ? "0.4" : "1";
-          });
-        });
-      });
-
-      const stateKey = isSystem ? "system" : "user";
-      const collapsed = this._skillsCollapsed[stateKey] || false;
-      if (collapsed) {
-        content.style.display = "none";
-        arrow.style.transform = "rotate(-90deg)";
-      }
-
-      header.addEventListener("click", () => {
-        const nowCollapsed = content.style.display !== "none";
-        if (nowCollapsed) {
-          content.style.display = "none";
-          arrow.style.transform = "rotate(-90deg)";
-        } else {
-          content.style.display = "";
-          arrow.style.transform = "rotate(0deg)";
-        }
-        this._skillsCollapsed[stateKey] = content.style.display === "none";
-      });
-    };
-
-    // System skills
-    renderCollapsibleSkills("System Skills", systemSkills, true);
-
-    // User skills
-    renderCollapsibleSkills("User Skills", userSkills, false);
-
-    if (systemSkills.length === 0 && userSkills.length === 0) {
-      skillsBox.createEl("p", {
-        text: `No skills found in ${agentDirs[selectedPlatform]}. Run setup to deploy skills.`,
-        cls: "setting-item-description",
-      });
-    }
-
-    // --- Section: Advanced ---
-    if (this._advCollapsed === undefined) this._advCollapsed = true;
-    const advHeader = containerEl.createEl("div", {
-      cls: "paperforge-collapsible-header",
-    });
-    const advArrow = advHeader.createEl("span", {
-      text: "\u25B6",
-      cls: "paperforge-collapsible-arrow",
-    });
-    advArrow.style.transform = this._advCollapsed
-      ? "rotate(0deg)"
-      : "rotate(90deg)";
-    const advTitle = advHeader.createEl("span", {
-      cls: "paperforge-collapsible-title",
-      text: "Advanced",
-    });
-    const advSub = advHeader.createEl("span", {
-      cls: "paperforge-collapsible-sub",
-      text: "Memory + Vector DB + Embedding",
-    });
-
-    const advContent = containerEl.createEl("div", {
-      cls: "paperforge-collapsible-content",
-    });
-    advContent.style.display = this._advCollapsed ? "none" : "";
-
-    advHeader.addEventListener("click", () => {
-      this._advCollapsed = !this._advCollapsed;
-      advContent.style.display = this._advCollapsed ? "none" : "";
-      advArrow.style.transform = this._advCollapsed
-        ? "rotate(0deg)"
-        : "rotate(90deg)";
-    });
-
-    // Memory Layer section
-    advContent.createEl("h4", { text: "Memory Layer" });
-
-    const memoryDescEl = advContent.createEl("div", {
-      cls: "paperforge-desc-box",
-    });
-    memoryDescEl.setText(t("feat_memory_desc"));
-
-    const statusRow = advContent.createEl("div", {
-      cls: "paperforge-memory-status",
-    });
-
-    const vp = (this.app.vault.adapter as any).basePath as string;
-
-    if (this.plugin._lastSyncTime && !this._lastSyncTime) {
-      this._lastSyncTime = this.plugin._lastSyncTime;
-    }
-
-    if (this._memoryStatusText === null) {
-      this._memoryStatusText = getMemoryStatusText(vp);
-    }
-    this._renderMemoryStatusText(
-      statusRow,
-      this._memoryStatusText,
-      this._lastSyncTime
-    );
-
-    this._renderVectorSection(advContent);
-  }
 
   _renderVectorSection(containerEl: HTMLElement) {
     // --- Vector Database ---
@@ -2413,15 +2855,38 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._updateCapabilityEnvelope(mod, probing);
 
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const py = getCachedPython(vp, this.plugin.settings);
-    if (!py.path) {
+    const resolved = this._resolveRuntimeCommand(vp);
+    if (!resolved) {
       this._probing.delete(mod);
-      this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
+      // Contract Gap 2: first-run machines with no Python at all must
+      // show a concrete Setup CTA, not a generic "Check" button.
+      if (mod === "installation") {
+        const setupEnvelope: ProbeEnvelope = {
+          schema_version: 1,
+          module: "installation",
+          capability_state: "unknown",
+          activity_state: "idle",
+          activity_label: null,
+          activity_progress: null,
+          severity: "error",
+          reason: {
+            code: "installation.no_python",
+            text: "No Python found. Run the Setup Wizard to install the managed runtime.",
+          },
+          action: { primary: setupAction() },
+          notices: [],
+          updated_at: new Date().toISOString(),
+          ttl_seconds: 60,
+        };
+        this._updateCapabilityEnvelope(mod, setupEnvelope);
+      } else {
+        this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
+      }
       return;
     }
 
     const args = [
-      ...py.extraArgs,
+      ...resolved.args,
       "-m",
       "paperforge",
       "--vault",
@@ -2432,7 +2897,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     ];
 
     execFile(
-      py.path,
+      resolved.path,
       args,
       { cwd: vp, timeout: 15000 },
       (err: Error | null, stdout: string, stderr: string) => {
@@ -2510,19 +2975,46 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Modules with real Python probe support. */
   private static _REAL_PROBE = new Set(["installation", "help"]);
+  /** Modules that have a navigation entry in the overview card grid. */
+  private static _NAVIGABLE = new Set(["installation", "maintenance", "help"]);
 
   _renderCard(container: HTMLElement, mod: CapabilityModule, envelope: ProbeEnvelope): void {
     const env = envelope;
     const sevClass = this._sevClass(env.severity);
     const isReal = PaperForgeSettingTab._REAL_PROBE.has(mod);
+    const isNavigable = PaperForgeSettingTab._NAVIGABLE.has(mod);
     const card = container.createEl("div", {
       cls: "pf-cc-card",
-      attr: { role: "listitem", tabindex: "0", "aria-label": `${t("cc_module_" + mod)} — ${t(this._ccBadgeKey(env, mod))}` },
+      attr: { role: "listitem", tabindex: "0", "data-module": mod, "aria-label": `${t("cc_module_" + mod)} — ${t(this._ccBadgeKey(env, mod))}` },
     });
 
-    // Header: name + badge
+    // Header: name area with optional navigation entry
     const header = card.createEl("div", { cls: "pf-cc-card-header" });
-    header.createEl("div", { cls: "pf-cc-card-name", text: t("cc_module_" + mod) });
+    const nameArea = header.createEl("div", { cls: "pf-cc-card-name-area" });
+    if (isNavigable) {
+      // Navigation entry — Enter/Space or click opens module detail
+      const openLabel = mod === "installation"
+        ? t("module_detail_open_installation")
+        : mod === "help"
+          ? t("module_detail_open_help")
+          : mod === "maintenance"
+            ? t("module_detail_open_maintenance")
+            : t("md_select_installation");
+      const navBtn = nameArea.createEl("button", {
+        cls: "pf-open-module-btn",
+        text: t("cc_module_" + mod),
+        attr: { "data-module": mod, "aria-label": openLabel },
+      });
+      navBtn.addEventListener("click", () => this._handleCardNavigation(mod));
+      navBtn.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this._handleCardNavigation(mod);
+        }
+      });
+    } else {
+      nameArea.createEl("div", { cls: "pf-cc-card-name", text: t("cc_module_" + mod) });
+    }
     header.createEl("div", {
       cls: `pf-cc-card-badge pf-cc-card-badge--${sevClass}`,
       text: t(this._ccBadgeKey(env, mod)),
@@ -2604,6 +3096,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const codeEl = reasonRow.createEl("code", { text: env.reason.code });
     body.createEl("div", { text: `${t("cc_diag_ttl")}: ${String(env.ttl_seconds)}s` });
     body.createEl("div", { text: `${t("cc_diag_updated")}: ${dateLabel}` });
+  }
+
+  /** Navigate from overview card to module detail or another tab. */
+  _handleCardNavigation(mod: string): void {
+    if (mod === "installation") {
+      this.activeTab = "module-detail";
+      this._selectedDetailModule = "installation";
+      this._focusTargetId = "#pf-installation-detail-heading";
+    } else if (mod === "help") {
+      this.activeTab = "help";
+      this._selectedDetailModule = "";
+      this._focusTargetId = "button.pf-open-module-btn[data-module=help]";
+    } else if (mod === "maintenance") {
+      this.activeTab = "maintenance";
+      this._selectedDetailModule = "";
+      this._focusTargetId = null;
+    }
+    this.display();
   }
 
   /** Render Vercel-inspired control center: summary card + six-card responsive grid. */

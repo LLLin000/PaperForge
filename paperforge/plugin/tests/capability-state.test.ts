@@ -662,3 +662,333 @@ describe("validatePersistedEnvelopes", () => {
     expect(result["installation"].reason?.code).toBe("installation.stale");
   });
 });
+
+// Register obsidian-test-mocks globals (createDiv, etc.) before any tests
+import "obsidian-test-mocks/jest-setup";
+
+// ── 10. Production-seam runtime dispatch (Issue #77) ──
+
+import { PaperForgeSettingTab } from "../src/settings";
+import { resolveRuntimeCommand } from "../src/services/managed-runtime";
+import { getCachedPython } from "../src/services/memory-state";
+
+const { mockExecFile, mockSpawn } = vi.hoisted(() => ({
+  mockExecFile: vi.fn(),
+  mockSpawn: vi.fn(() => ({
+    stdout: { on: vi.fn() },
+    stderr: { on: vi.fn() },
+    on: vi.fn(),
+  })),
+}));
+
+const { mockResolveRuntimeCommand, mockGetCachedPython } = vi.hoisted(() => ({
+  mockResolveRuntimeCommand: vi.fn(),
+  mockGetCachedPython: vi.fn(),
+}));
+
+vi.mock("child_process", () => ({
+  default: {
+    execFile: mockExecFile,
+    execFileSync: () => "Python 3.11.0",
+    spawn: mockSpawn,
+    exec: vi.fn(),
+  },
+  execFile: mockExecFile,
+  execFileSync: () => "Python 3.11.0",
+  spawn: mockSpawn,
+  exec: vi.fn(),
+}));
+
+vi.mock("../src/services/managed-runtime", async (importOriginal) => ({
+  ...(await importOriginal()),
+  resolveRuntimeCommand: mockResolveRuntimeCommand,
+}));
+
+vi.mock("../src/services/memory-state", async (importOriginal) => ({
+  ...(await importOriginal()),
+  getCachedPython: mockGetCachedPython,
+}));
+
+describe("production-seam runtime dispatch", () => {
+  let app: Record<string, unknown>;
+  let plugin: Record<string, unknown>;
+  let tab: PaperForgeSettingTab;
+  let warnMessages: string[];
+
+  beforeAll(() => {
+    // Polyfill Obsidian HTMLElement prototype methods that JSDOM lacks
+    const win = globalThis.document?.defaultView;
+    const proto = win?.HTMLElement?.prototype;
+    if (!proto) return;
+
+    const polyfill = <T>(key: string, fn: T) => {
+      if (!(key in proto)) proto[key] = fn;
+    };
+
+    polyfill("empty", function (this: HTMLElement) {
+      this.innerHTML = "";
+    });
+    polyfill("appendText", function (this: HTMLElement, text: string) {
+      this.appendChild(this.ownerDocument.createTextNode(text));
+    });
+    polyfill("createDiv", function (this: HTMLElement, opts?: Record<string, unknown>): HTMLElement {
+      const el = document.createElement("div");
+      if (opts?.cls) el.className = String(opts.cls);
+      if (opts?.text) el.textContent = String(opts.text);
+      if (opts?.attr) {
+        const attrs = opts.attr as Record<string, string>;
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      }
+      this.appendChild(el);
+      return el;
+    });
+    polyfill("createEl", function (this: HTMLElement, tag: string, opts?: Record<string, unknown>): HTMLElement {
+      const el = document.createElement(tag);
+      if (opts?.cls) el.className = String(opts.cls);
+      if (opts?.text) el.textContent = String(opts.text);
+      if (opts?.attr) {
+        const attrs = opts.attr as Record<string, string>;
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      }
+      this.appendChild(el);
+      return el;
+    });
+    polyfill("setAttr", function (this: HTMLElement, attr: string, value: string): HTMLElement {
+      this.setAttribute(attr, value);
+      return this;
+    });
+    polyfill("setText", function (this: HTMLElement, text: string): void {
+      this.textContent = text;
+    });
+  });
+
+  function setManagedHealth(health: Record<string, unknown>): void {
+    (tab as any)._managedRuntime = {
+      current: () => health,
+    };
+  }
+
+  beforeEach(() => {
+    warnMessages = [];
+    vi.spyOn(console, "warn").mockImplementation((...args: unknown[]) => {
+      warnMessages.push(args.join(" "));
+    });
+    mockExecFile.mockClear();
+    mockSpawn.mockClear();
+    mockResolveRuntimeCommand.mockClear();
+    mockGetCachedPython.mockClear();
+
+    app = { vault: { adapter: { basePath: "/test/vault" } } };
+    plugin = {
+      settings: { capabilityState: {} },
+      manifest: { version: "2.1.0" },
+      saveSettings: vi.fn(),
+      readPaperforgeJson: () => ({}),
+      savePaperforgeJson: vi.fn(),
+      loadSettings: vi.fn(),
+    };
+    tab = new PaperForgeSettingTab(app as any, plugin as any);
+
+    // Pre-seed tab._capabilityState to prevent display() from auto-probing
+    // all modules (which causes recursive execFile calls)
+    tab._capabilityState = {};
+    for (const mod of CAPABILITY_MODULES) {
+      tab._capabilityState[mod] = {
+        schema_version: 1,
+        module: mod,
+        capability_state: "ready",
+        activity_state: "idle",
+        activity_label: null,
+        activity_progress: null,
+        severity: "ok",
+        reason: { code: `${mod}.ready`, text: `${mod} is ready` },
+        action: { primary: null },
+        notices: [],
+        updated_at: new Date().toISOString(),
+        ttl_seconds: 3600,
+      };
+    }
+    (plugin.settings as Record<string, unknown>).capabilityState = { ...tab._capabilityState };
+  });
+
+  it("uses managed python path in _probeModule when runtime is ready", () => {
+    setManagedHealth({
+      state: "ready",
+      pythonPath: "/managed/python",
+      version: "1.0.0",
+      source: "venv",
+      error: null,
+      lastVerifiedAt: "2026-01-01T00:00:00.000Z",
+      stale: false,
+    });
+    mockResolveRuntimeCommand.mockReturnValue({
+      command: "/managed/python",
+      args: [],
+    });
+    mockGetCachedPython.mockReturnValue({
+      path: "",
+      source: "manual" as const,
+      extraArgs: [],
+    });
+
+    tab._probeModule("installation");
+
+    expect(mockExecFile).toHaveBeenCalledTimes(1);
+    const execPath: string = mockExecFile.mock.calls[0][0];
+    expect(execPath).toBe("/managed/python");
+    const execArgs: string[] = mockExecFile.mock.calls[0][1];
+    expect(execArgs).not.toContain("-3");
+    expect(execArgs).toContain("-m");
+    expect(execArgs).toContain("paperforge");
+    expect(execArgs).toContain("probe");
+    expect(execArgs).toContain("installation");
+    expect(execArgs).toContain("--json");
+    expect(mockExecFile.mock.calls[0][3]).toBeInstanceOf(Function);
+  });
+
+  it("uses managed python path in _callPython when runtime is ready", () => {
+    setManagedHealth({
+      state: "ready",
+      pythonPath: "/managed/python",
+      version: "1.0.0",
+      source: "venv",
+      error: null,
+      lastVerifiedAt: "2026-01-01T00:00:00.000Z",
+      stale: false,
+    });
+    mockResolveRuntimeCommand.mockReturnValue({
+      command: "/managed/python",
+      args: [],
+    });
+    mockGetCachedPython.mockReturnValue({
+      path: "",
+      source: "manual" as const,
+      extraArgs: [],
+    });
+
+    tab._callPython(["sync"], {
+      timeout: 5000,
+      onClose: vi.fn(),
+    });
+
+    expect(mockExecFile).toHaveBeenCalledTimes(1);
+    const execPath: string = mockExecFile.mock.calls[0][0];
+    expect(execPath).toBe("/managed/python");
+    const execArgs: string[] = mockExecFile.mock.calls[0][1];
+    expect(execArgs).not.toContain("-3");
+    expect(execArgs).toContain("-m");
+    expect(execArgs).toContain("paperforge");
+    expect(execArgs).toContain("sync");
+    const execOpts: Record<string, unknown> = mockExecFile.mock.calls[0][2];
+    expect(execOpts.timeout).toBe(5000);
+    expect(mockExecFile.mock.calls[0][3]).toBeInstanceOf(Function);
+  });
+
+  it("falls back to legacy resolver with Release-N warning when managed is cold/stale", () => {
+    setManagedHealth({
+      state: "unknown",
+      pythonPath: null,
+      version: null,
+      source: "none",
+      error: null,
+      lastVerifiedAt: null,
+      stale: true,
+    });
+    mockResolveRuntimeCommand.mockReturnValue(null);
+    mockGetCachedPython.mockReturnValue({
+      path: "/legacy/python",
+      source: "auto-detected" as const,
+      extraArgs: ["-3"],
+    });
+
+    tab._probeModule("installation");
+
+    expect(warnMessages.some((w) => w.includes("Release N"))).toBe(true);
+    expect(mockExecFile).toHaveBeenCalledTimes(1);
+    const execPath: string = mockExecFile.mock.calls[0][0];
+    expect(execPath).toBe("/legacy/python");
+    const execArgs: string[] = mockExecFile.mock.calls[0][1];
+    expect(execArgs).toContain("-3");
+    expect(execArgs).toContain("-m");
+    expect(execArgs).toContain("paperforge");
+  });
+
+  it("RED Gap 2 follow-up: null resolver produces persistent setup envelope (installation.no_python + setup verb)", () => {
+    (tab as any)._managedRuntime = null;
+    mockResolveRuntimeCommand.mockReturnValue(null);
+    mockGetCachedPython.mockReturnValue({
+      path: "",
+      source: "manual" as const,
+      extraArgs: [],
+    });
+
+    tab._probeModule("installation");
+
+    expect(mockExecFile).not.toHaveBeenCalled();
+    const env = tab._capabilityState?.["installation"];
+    expect(env?.reason?.code).toBe("installation.no_python");
+    expect(env?.action?.primary?.verb).toBe("setup");
+  });
+
+  it("propagates execFile timeout and stream behavior through managed path", () => {
+    setManagedHealth({
+      state: "ready",
+      pythonPath: "/managed/python",
+      version: "1.0.0",
+      source: "venv",
+      error: null,
+      lastVerifiedAt: "2026-01-01T00:00:00.000Z",
+      stale: false,
+    });
+    mockResolveRuntimeCommand.mockReturnValue({
+      command: "/managed/python",
+      args: [],
+    });
+    mockGetCachedPython.mockReturnValue({
+      path: "",
+      source: "manual" as const,
+      extraArgs: [],
+    });
+
+    // Stream path — spawn called
+    tab._callPython(["embed", "build"], {
+      stream: true,
+      onData: vi.fn(),
+      onClose: vi.fn(),
+    });
+    expect(mockSpawn).toHaveBeenCalledTimes(1);
+    const spawnPath: string = mockSpawn.mock.calls[0][0];
+    expect(spawnPath).toBe("/managed/python");
+    const spawnArgs: string[] = mockSpawn.mock.calls[0][1];
+    expect(spawnArgs).not.toContain("-3");
+    expect(spawnArgs).toContain("embed");
+    expect(spawnArgs).toContain("build");
+
+    // Non-stream path with timeout
+    tab._callPython(["retrieval", "status", "--json"], {
+      timeout: 8000,
+      onClose: vi.fn(),
+    });
+    expect(mockExecFile).toHaveBeenCalledTimes(1);
+    const execPath: string = mockExecFile.mock.calls[0][0];
+    expect(execPath).toBe("/managed/python");
+    const execOpts: Record<string, unknown> = mockExecFile.mock.calls[0][2];
+    expect(execOpts.timeout).toBe(8000);
+  });
+
+  it("reproduces managed-install->legacy-invalid regression: managed absent and legacy empty path", () => {
+    (tab as any)._managedRuntime = null;
+    mockResolveRuntimeCommand.mockReturnValue(null);
+    mockGetCachedPython.mockReturnValue({
+      path: "",
+      source: "manual" as const,
+      extraArgs: [],
+    });
+
+    tab._probeModule("help");
+
+    expect(mockExecFile).not.toHaveBeenCalled();
+    expect(warnMessages.some((w) => w.includes("Release N"))).toBe(true);
+    expect(tab._capabilityState?.["help"]?.reason?.code).toBe("help.stale");
+  });
+});
