@@ -4780,6 +4780,45 @@ class PaperForgeReadingCanvasView extends ItemView {
         }
     }
 
+    _loadPluginModule(relativeModulePath) {
+        var failures = [];
+        function tryLoad(modulePath) {
+            try {
+                return require(modulePath);
+            } catch (err) {
+                failures.push((err && err.message) || String(err));
+                return null;
+            }
+        }
+
+        var normalized = String(relativeModulePath || '').replace(/\\/g, '/').replace(/^\.?\//, '');
+        var loaded = tryLoad('./' + normalized);
+        if (loaded) return loaded;
+
+        if (typeof __dirname === 'string' && __dirname) {
+            loaded = tryLoad(path.join(__dirname, normalized));
+            if (loaded) return loaded;
+        }
+
+        var vaultPath = this.app && this.app.vault && this.app.vault.adapter
+            ? this.app.vault.adapter.basePath
+            : null;
+        if (vaultPath) {
+            loaded = tryLoad(path.join(vaultPath, '.obsidian', 'plugins', 'paperforge', normalized));
+            if (loaded) return loaded;
+        }
+
+        throw new Error(failures[0] || ('Cannot load plugin module: ' + normalized));
+    }
+
+    _loadCanvasModule() {
+        return this._loadPluginModule('src/canvas');
+    }
+
+    _loadCanvasNavigationModule() {
+        return this._loadPluginModule('src/canvas/navigation');
+    }
+
     /**
      * Set the paper context for this canvas session.
      *
@@ -4800,7 +4839,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             this._paperKey = paperKey;
             this._paperEntry = entry;
 
-            const canvas = require('./src/canvas');
+            const canvas = this._loadCanvasModule();
             const canvasCtx = canvas.buildCanvasContextFromEntry(entry);
             this._canvasContext = canvasCtx;
 
@@ -4845,7 +4884,7 @@ class PaperForgeReadingCanvasView extends ItemView {
      * @param {object} [canvas] - The canvas module (injected for testability).
      */
     _renderCanvas(canvas) {
-        canvas = canvas || require('./src/canvas');
+        canvas = canvas || this._loadCanvasModule();
         const contentEl = this.contentEl;
         if (!contentEl) return;
         this._emptyContentEl(contentEl);
@@ -4912,7 +4951,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             return;
         }
         if (!this._canvasContext && this.contentEl) {
-            const canvas = require('./src/canvas');
+            const canvas = this._loadCanvasModule();
             this._canvasContext = canvas.buildMissingCanvasContext('No paper context has been attached yet.');
             this._renderCanvas(canvas);
         }
@@ -4937,7 +4976,7 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     async _loadAndRenderCanvas(canvas) {
-        canvas = canvas || require('./src/canvas');
+        canvas = canvas || this._loadCanvasModule();
         if (!this._canvasContext || !this._canvasContext.ok || !this._sessionController) {
             return;
         }
@@ -5174,7 +5213,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         if (!this._connectorLayerEl) {
             return;
         }
-        var canvas = require('./src/canvas');
+        var canvas = this._loadCanvasModule();
 
         // ── Compute connector candidate ──
         var cards = (this._vm && this._vm.cards) || [];
@@ -5191,7 +5230,7 @@ class PaperForgeReadingCanvasView extends ItemView {
 
         // ── Hidden candidate → clear layer ──
         if (candidate.state !== canvas.CONNECTOR_STATES.VISIBLE) {
-            var canvas2 = require('./src/canvas');
+            var canvas2 = this._loadCanvasModule();
             canvas2.updateCanvasConnectorLayer(this._connectorLayerEl, null);
             return;
         }
@@ -5199,7 +5238,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         // ── Measure PaperForge-owned DOM endpoints ──
         var contentEl = this.contentEl;
         if (!contentEl) {
-            var canvas3 = require('./src/canvas');
+            var canvas3 = this._loadCanvasModule();
             canvas3.updateCanvasConnectorLayer(this._connectorLayerEl, null);
             return;
         }
@@ -5209,7 +5248,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         // Card endpoint: query by data-card-id
         var cardEl = contentEl.querySelector('[data-card-id="' + this._escapeSelectorValue(candidate.cardId) + '"]');
         if (!cardEl) {
-            var canvas4 = require('./src/canvas');
+            var canvas4 = this._loadCanvasModule();
             canvas4.updateCanvasConnectorLayer(this._connectorLayerEl, null);
             return;
         }
@@ -5220,7 +5259,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             '[data-anchor-id="' + this._escapeSelectorValue(candidate.anchorId) + '"][data-anchor-status="exact"]'
         );
         if (!anchorEl) {
-            var canvas5 = require('./src/canvas');
+            var canvas5 = this._loadCanvasModule();
             canvas5.updateCanvasConnectorLayer(this._connectorLayerEl, null);
             return;
         }
@@ -5243,8 +5282,8 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     _handleCanvasClick(evt) {
-        var canvas = require('./src/canvas');
-        var nav = require('./src/canvas/navigation');
+        var canvas = this._loadCanvasModule();
+        var nav = this._loadCanvasNavigationModule();
 
         var cardEl = evt.target.closest('[data-card-id]');
         if (cardEl) {
@@ -5298,7 +5337,7 @@ class PaperForgeReadingCanvasView extends ItemView {
 
     _handleCanvasKeydown(evt) {
         if (evt.key === 'Escape') {
-            var nav = require('./src/canvas/navigation');
+            var nav = this._loadCanvasNavigationModule();
             var nextState = nav.reduceLifecycleAction(this._navigationState || nav.createInitialNavState(), nav.NAVIGATION_ACTIONS.ESCAPE);
             this._applyCardNavigationState(nextState);
             this._clearCanvasPopover();
@@ -5315,7 +5354,7 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     _showCanvasHighlightPopover(card) {
-        var canvas = require('./src/canvas');
+        var canvas = this._loadCanvasModule();
         this._clearCanvasPopover();
         canvas.renderHighlightPopover(this.contentEl, {
             id: card && card.id,
@@ -5388,7 +5427,7 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     async _renderLoadedCanvas(sourceInputs, annotationState) {
-        var canvas = require('./src/canvas');
+        var canvas = this._loadCanvasModule();
         var contentEl = this.contentEl;
         if (!contentEl) return;
         this._emptyContentEl(contentEl);

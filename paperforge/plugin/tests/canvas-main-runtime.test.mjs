@@ -257,11 +257,34 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(view._canvasContext.ok).toBe(false);
     });
 
+    it('setPaperContext falls back to absolute canvas module path when Obsidian cannot resolve relative require', () => {
+        const view = makeCanvasView();
+        const previousLoad = Module._load;
+        Module._load = function failRelativeCanvasModule(request, parent, isMain) {
+            if (request === './src/canvas') {
+                throw new Error('relative canvas module unavailable');
+            }
+            return previousLoad.call(this, request, parent, isMain);
+        };
+
+        try {
+            view.setPaperContext('KEY_ABS_CANVAS', { key: 'KEY_ABS_CANVAS', title: 'Absolute canvas' });
+        } finally {
+            Module._load = previousLoad;
+        }
+
+        expect(view._paperKey).toBe('KEY_ABS_CANVAS');
+        expect(view._canvasContext).toBeTruthy();
+        expect(view._canvasContext.ok).toBe(true);
+        expect(view.contentEl.textContent).not.toContain('relative canvas module unavailable');
+        expect(view.contentEl.querySelector('[data-canvas-state="init-error"]')).toBeFalsy();
+    });
+
     it('setPaperContext shows native failure instead of blank content when canvas module initialization throws', () => {
         const view = makeCanvasView();
         const previousLoad = Module._load;
         Module._load = function failCanvasModule(request, parent, isMain) {
-            if (request === './src/canvas') {
+            if (request === './src/canvas' || String(request).replace(/\\/g, '/').endsWith('/src/canvas')) {
                 throw new Error('canvas module unavailable');
             }
             return previousLoad.call(this, request, parent, isMain);
