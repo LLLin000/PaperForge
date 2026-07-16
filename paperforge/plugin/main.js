@@ -9169,7 +9169,75 @@ class PaperForgeReadingCanvasView extends ItemView {
                 return { ok: true, mark: mark };
             }
         }
+        var editorJump = this._jumpToMarkdownEditorBuffer(selectedText);
+        if (editorJump && editorJump.ok) {
+            return editorJump;
+        }
         return { ok: false, reason: 'text-not-found' };
+    }
+
+    _getMarkdownCandidateLeaves() {
+        var leaves = [];
+        var seen = [];
+        function addLeaf(leaf) {
+            if (!leaf || seen.indexOf(leaf) !== -1) return;
+            seen.push(leaf);
+            leaves.push(leaf);
+        }
+        var workspace = this.app && this.app.workspace;
+        if (workspace && workspace.activeLeaf) addLeaf(workspace.activeLeaf);
+        if (workspace && typeof workspace.getLeavesOfType === 'function') {
+            var markdownLeaves = workspace.getLeavesOfType('markdown') || [];
+            for (var i = 0; i < markdownLeaves.length; i++) addLeaf(markdownLeaves[i]);
+        }
+        return leaves;
+    }
+
+    _jumpToMarkdownEditorBuffer(selectedText) {
+        var needleInfo = this._normalizeTextWithMap(selectedText);
+        var needle = needleInfo.text;
+        if (!needle) return { ok: false, reason: 'missing-selected-text' };
+        var leaves = this._getMarkdownCandidateLeaves();
+        for (var i = 0; i < leaves.length; i++) {
+            var leaf = leaves[i];
+            var view = leaf && leaf.view;
+            if (!view || !view.editor) continue;
+            if (this.contentEl && view.containerEl && view.containerEl.contains && view.containerEl.contains(this.contentEl)) {
+                continue;
+            }
+            var editor = view.editor;
+            if (typeof editor.getValue !== 'function') continue;
+            var value = editor.getValue();
+            var hay = this._normalizeTextWithMap(value);
+            var idx = hay.text.indexOf(needle);
+            if (idx === -1) continue;
+            var endIdx = idx + needle.length - 1;
+            var startMap = hay.map[idx];
+            var endMap = hay.map[endIdx];
+            if (!startMap || !endMap) continue;
+            if (this.app && this.app.workspace && typeof this.app.workspace.revealLeaf === 'function') {
+                this.app.workspace.revealLeaf(leaf);
+            }
+            var from = typeof editor.offsetToPos === 'function'
+                ? editor.offsetToPos(startMap.start)
+                : { line: 0, ch: startMap.start };
+            var to = typeof editor.offsetToPos === 'function'
+                ? editor.offsetToPos(endMap.end)
+                : { line: 0, ch: endMap.end };
+            if (typeof editor.setSelection === 'function') {
+                editor.setSelection(from, to);
+            } else if (typeof editor.setCursor === 'function') {
+                editor.setCursor(from);
+            }
+            if (typeof editor.scrollIntoView === 'function') {
+                editor.scrollIntoView({ from: from, to: to }, true);
+            }
+            if (typeof editor.focus === 'function') {
+                editor.focus();
+            }
+            return { ok: true, editor: editor, from: from, to: to };
+        }
+        return { ok: false, reason: 'editor-text-not-found' };
     }
 
     _getActiveFulltextRoots() {

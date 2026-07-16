@@ -411,6 +411,61 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
     });
 
+    it('clicking an annotation card falls back to the markdown editor buffer when rendered DOM is missing the text', () => {
+        const view = makeCanvasView();
+        const canvasContainer = document.createElement('div');
+        canvasContainer.appendChild(view.contentEl);
+        const fulltextContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        preview.textContent = 'Only the current viewport is rendered here.';
+        fulltextContainer.appendChild(preview);
+        document.body.appendChild(canvasContainer);
+        document.body.appendChild(fulltextContainer);
+        const editor = {
+            getValue: vi.fn(() => 'Earlier content.\nThe editor buffer contains the virtualized annotation target.\nLater content.'),
+            offsetToPos: vi.fn((offset) => {
+                const text = editor.getValue().slice(0, offset);
+                const lines = text.split('\n');
+                return { line: lines.length - 1, ch: lines[lines.length - 1].length };
+            }),
+            setSelection: vi.fn(),
+            setCursor: vi.fn(),
+            scrollIntoView: vi.fn(),
+            focus: vi.fn(),
+        };
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: canvasContainer } },
+                getLeavesOfType: vi.fn((type) => {
+                    if (type === 'markdown') return [{ view: { containerEl: fulltextContainer, editor } }];
+                    return [];
+                }),
+                revealLeaf: vi.fn(),
+            },
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_EDITOR', { key: 'PAPER_EDITOR' }, {
+            state: 'ready',
+            paperKey: 'PAPER_EDITOR',
+            annotations: [{
+                display: { selectedText: 'virtualized annotation target', type: 'highlight', color: '#ffd54f' },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-editor-1' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        view.contentEl.querySelector('.paperforge-annotation-panel-card')
+            .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(preview.querySelector('mark.paperforge-active-annotation-match')).toBeFalsy();
+        expect(editor.setSelection).toHaveBeenCalled();
+        expect(editor.scrollIntoView).toHaveBeenCalled();
+        expect(editor.focus).toHaveBeenCalled();
+        expect(view.app.workspace.revealLeaf).toHaveBeenCalled();
+    });
+
     it('renders missing-paper state when setPaperContext gets null entry', () => {
         const view = makeCanvasView();
 
