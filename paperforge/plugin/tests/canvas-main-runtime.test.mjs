@@ -283,6 +283,50 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(view.contentEl.textContent).toContain('Only this annotation should load');
     });
 
+    it('clicking an annotation panel card highlights the matching text in the active fulltext DOM', () => {
+        const view = makeCanvasView();
+        const activeContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        const paragraph = document.createElement('p');
+        paragraph.textContent = 'The active fulltext already contains the important annotation sentence in Obsidian.';
+        preview.appendChild(paragraph);
+        activeContainer.appendChild(preview);
+        document.body.appendChild(activeContainer);
+        const scrollIntoView = vi.fn();
+        Element.prototype.scrollIntoView = scrollIntoView;
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: activeContainer } },
+            },
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_DOM', { key: 'PAPER_DOM' }, {
+            state: 'ready',
+            paperKey: 'PAPER_DOM',
+            annotations: [{
+                display: {
+                    selectedText: 'important annotation sentence',
+                    comment: 'Click should jump to this selected text',
+                    type: 'highlight',
+                    color: '#ffd54f',
+                },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-dom-1' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        const mark = preview.querySelector('mark.paperforge-active-annotation-match');
+        expect(mark).toBeTruthy();
+        expect(mark.textContent).toBe('important annotation sentence');
+        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+        expect(view.contentEl.querySelector('[data-anchor-status="unresolved"]')).toBeFalsy();
+    });
+
     it('renders missing-paper state when setPaperContext gets null entry', () => {
         const view = makeCanvasView();
 

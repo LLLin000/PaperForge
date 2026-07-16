@@ -9072,6 +9072,13 @@ class PaperForgeReadingCanvasView extends ItemView {
                 var cardEl = document.createElement('div');
                 cardEl.className = 'paperforge-canvas-card paperforge-annotation-panel-card';
                 cardEl.setAttribute('data-annotation-id', getAnnotationIdentity(row) || ('annotation-' + i));
+                cardEl.setAttribute('role', 'button');
+                cardEl.setAttribute('tabindex', '0');
+                cardEl.setAttribute('title', 'Jump to annotation in the active fulltext page');
+                if (display.color) {
+                    cardEl.style.borderLeft = '4px solid ' + display.color;
+                }
+                this._bindAnnotationPanelCard(cardEl, row);
 
                 var metaEl = document.createElement('div');
                 metaEl.className = 'paperforge-annotation-panel-meta';
@@ -9089,6 +9096,9 @@ class PaperForgeReadingCanvasView extends ItemView {
                 var quoteEl = document.createElement('div');
                 quoteEl.className = 'paperforge-annotation-panel-quote';
                 quoteEl.textContent = display.selectedText || '(No selected text)';
+                if (display.color) {
+                    quoteEl.style.backgroundColor = this._annotationTint(display.color);
+                }
                 cardEl.appendChild(metaEl);
                 cardEl.appendChild(quoteEl);
                 if (display.comment) {
@@ -9103,6 +9113,146 @@ class PaperForgeReadingCanvasView extends ItemView {
         }
 
         contentEl.appendChild(panelEl);
+    }
+
+    _bindAnnotationPanelCard(cardEl, row) {
+        var self = this;
+        function activate(evt) {
+            if (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+            }
+            var result = self._jumpToActiveFulltextAnnotation(row);
+            if (result && result.ok) {
+                cardEl.setAttribute('aria-selected', 'true');
+                cardEl.removeAttribute('data-anchor-status');
+            } else {
+                cardEl.setAttribute('data-anchor-status', 'unresolved');
+                cardEl.setAttribute('aria-selected', 'false');
+            }
+        }
+        cardEl.addEventListener('click', activate);
+        cardEl.addEventListener('keydown', function (evt) {
+            if (evt.key === 'Enter' || evt.key === ' ') activate(evt);
+        });
+    }
+
+    _annotationTint(color) {
+        if (!color || typeof color !== 'string') return 'rgba(255, 213, 79, 0.18)';
+        if (/^#([0-9a-f]{6})$/i.test(color)) {
+            var r = parseInt(color.slice(1, 3), 16);
+            var g = parseInt(color.slice(3, 5), 16);
+            var b = parseInt(color.slice(5, 7), 16);
+            return 'rgba(' + r + ', ' + g + ', ' + b + ', 0.18)';
+        }
+        return color;
+    }
+
+    _jumpToActiveFulltextAnnotation(row) {
+        var display = (row && row.display) || {};
+        var selectedText = display.selectedText ? String(display.selectedText) : '';
+        if (!selectedText.trim()) {
+            return { ok: false, reason: 'missing-selected-text' };
+        }
+        var root = this._getActiveFulltextRoot();
+        if (!root) {
+            return { ok: false, reason: 'missing-active-fulltext-root' };
+        }
+        this._clearActiveFulltextAnnotationMarks(root);
+        var mark = this._highlightFirstTextMatchInRoot(root, selectedText, display.color);
+        if (!mark) {
+            return { ok: false, reason: 'text-not-found' };
+        }
+        if (typeof mark.scrollIntoView === 'function') {
+            mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return { ok: true, mark: mark };
+    }
+
+    _getActiveFulltextRoot() {
+        var activeView = this.app && this.app.workspace && this.app.workspace.activeLeaf
+            ? this.app.workspace.activeLeaf.view
+            : null;
+        var root = activeView && activeView.containerEl;
+        if (!root || (this.contentEl && root.contains && root.contains(this.contentEl))) {
+            root = document.body;
+        }
+        if (!root) return null;
+        return root.querySelector('.markdown-preview-view, .markdown-reading-view, .cm-content, .markdown-source-view, .workspace-leaf-content')
+            || root;
+    }
+
+    _clearActiveFulltextAnnotationMarks(root) {
+        var marks = root.querySelectorAll ? root.querySelectorAll('mark.paperforge-active-annotation-match') : [];
+        for (var i = 0; i < marks.length; i++) {
+            var mark = marks[i];
+            var parent = mark.parentNode;
+            if (!parent) continue;
+            while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+            parent.removeChild(mark);
+            if (parent.normalize) parent.normalize();
+        }
+    }
+
+    _normalizeTextWithMap(text) {
+        var raw = String(text || '');
+        var normalized = '';
+        var map = [];
+        var pendingSpaceStart = null;
+        for (var i = 0; i < raw.length; i++) {
+            var ch = raw.charAt(i);
+            if (/\s/.test(ch)) {
+                if (normalized.length > 0 && pendingSpaceStart === null) {
+                    pendingSpaceStart = i;
+                }
+                continue;
+            }
+            if (pendingSpaceStart !== null) {
+                normalized += ' ';
+                map.push({ start: pendingSpaceStart, end: pendingSpaceStart + 1 });
+                pendingSpaceStart = null;
+            }
+            normalized += ch.toLowerCase();
+            map.push({ start: i, end: i + 1 });
+        }
+        return { text: normalized.trim(), map: map };
+    }
+
+    _highlightFirstTextMatchInRoot(root, selectedText, color) {
+        var doc = root.ownerDocument || document;
+        var walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+            acceptNode: function (node) {
+                if (!node || !node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+                var parent = node.parentElement;
+                if (!parent) return NodeFilter.FILTER_REJECT;
+                if (parent.closest && parent.closest('script, style, mark, .paperforge-reading-canvas-view')) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+            },
+        });
+        var needle = this._normalizeTextWithMap(selectedText).text;
+        if (!needle) return null;
+        var node;
+        while ((node = walker.nextNode())) {
+            var hay = this._normalizeTextWithMap(node.nodeValue);
+            var idx = hay.text.indexOf(needle);
+            if (idx === -1) continue;
+            var endIdx = idx + needle.length - 1;
+            var startMap = hay.map[idx];
+            var endMap = hay.map[endIdx];
+            if (!startMap || !endMap || endMap.end <= startMap.start) continue;
+            var range = doc.createRange();
+            range.setStart(node, startMap.start);
+            range.setEnd(node, endMap.end);
+            var mark = doc.createElement('mark');
+            mark.className = 'paperforge-active-annotation-match';
+            mark.style.backgroundColor = this._annotationTint(color || '#ffd54f');
+            mark.style.boxShadow = '0 0 0 2px rgba(35, 131, 226, 0.35)';
+            range.surroundContents(mark);
+            return mark;
+        }
+        return null;
     }
 
     _loadPluginModule(relativeModulePath) {
