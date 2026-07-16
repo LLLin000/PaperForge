@@ -327,6 +327,90 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(view.contentEl.querySelector('[data-anchor-status="unresolved"]')).toBeFalsy();
     });
 
+    it('clicking an annotation card finds fulltext in another markdown leaf when the canvas leaf is active', () => {
+        const view = makeCanvasView();
+        const canvasContainer = document.createElement('div');
+        canvasContainer.appendChild(view.contentEl);
+        const fulltextContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        preview.textContent = 'A visible fulltext pane contains a cross leaf annotation target.';
+        fulltextContainer.appendChild(preview);
+        document.body.appendChild(canvasContainer);
+        document.body.appendChild(fulltextContainer);
+        const scrollIntoView = vi.fn();
+        Element.prototype.scrollIntoView = scrollIntoView;
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: canvasContainer } },
+                getLeavesOfType: vi.fn((type) => {
+                    if (type === 'markdown') return [{ view: { containerEl: fulltextContainer } }];
+                    return [];
+                }),
+            },
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_CROSS', { key: 'PAPER_CROSS' }, {
+            state: 'ready',
+            paperKey: 'PAPER_CROSS',
+            annotations: [{
+                display: { selectedText: 'cross leaf annotation target', type: 'highlight', color: '#ffd54f' },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-cross-1' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        view.contentEl.querySelector('.paperforge-annotation-panel-card')
+            .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        const mark = preview.querySelector('mark.paperforge-active-annotation-match');
+        expect(mark).toBeTruthy();
+        expect(mark.textContent).toBe('cross leaf annotation target');
+        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    });
+
+    it('clicking an annotation card highlights text split across Obsidian text nodes', () => {
+        const view = makeCanvasView();
+        const activeContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        preview.appendChild(document.createTextNode('The annotation '));
+        const em = document.createElement('em');
+        em.textContent = 'target';
+        preview.appendChild(em);
+        preview.appendChild(document.createTextNode(' is split across inline nodes.'));
+        activeContainer.appendChild(preview);
+        document.body.appendChild(activeContainer);
+        const scrollIntoView = vi.fn();
+        Element.prototype.scrollIntoView = scrollIntoView;
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: activeContainer } },
+            },
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_SPLIT', { key: 'PAPER_SPLIT' }, {
+            state: 'ready',
+            paperKey: 'PAPER_SPLIT',
+            annotations: [{
+                display: { selectedText: 'annotation target is split', type: 'highlight', color: '#ffd54f' },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-split-1' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        view.contentEl.querySelector('.paperforge-annotation-panel-card')
+            .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        const mark = preview.querySelector('mark.paperforge-active-annotation-match');
+        expect(mark).toBeTruthy();
+        expect(mark.textContent).toContain('annotation');
+        expect(mark.textContent).toContain('target');
+        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    });
+
     it('renders missing-paper state when setPaperContext gets null entry', () => {
         const view = makeCanvasView();
 

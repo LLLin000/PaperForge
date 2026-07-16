@@ -9154,32 +9154,58 @@ class PaperForgeReadingCanvasView extends ItemView {
         if (!selectedText.trim()) {
             return { ok: false, reason: 'missing-selected-text' };
         }
-        var root = this._getActiveFulltextRoot();
-        if (!root) {
+        var roots = this._getActiveFulltextRoots();
+        if (!roots.length) {
             return { ok: false, reason: 'missing-active-fulltext-root' };
         }
-        this._clearActiveFulltextAnnotationMarks(root);
-        var mark = this._highlightFirstTextMatchInRoot(root, selectedText, display.color);
-        if (!mark) {
-            return { ok: false, reason: 'text-not-found' };
+        for (var i = 0; i < roots.length; i++) {
+            var root = roots[i];
+            this._clearActiveFulltextAnnotationMarks(root);
+            var mark = this._highlightFirstTextMatchInRoot(root, selectedText, display.color);
+            if (mark) {
+                if (typeof mark.scrollIntoView === 'function') {
+                    mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return { ok: true, mark: mark };
+            }
         }
-        if (typeof mark.scrollIntoView === 'function') {
-            mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return { ok: true, mark: mark };
+        return { ok: false, reason: 'text-not-found' };
     }
 
-    _getActiveFulltextRoot() {
+    _getActiveFulltextRoots() {
+        var roots = [];
+        var seen = [];
+        var self = this;
+        function addRoot(container) {
+            if (!container || seen.indexOf(container) !== -1) return;
+            if (self.contentEl && container.contains && container.contains(self.contentEl)) return;
+            var root = container.querySelector
+                ? (container.querySelector('.markdown-preview-view, .markdown-reading-view, .cm-content, .markdown-source-view, .workspace-leaf-content') || container)
+                : container;
+            if (!root || seen.indexOf(root) !== -1) return;
+            if (self.contentEl && root.contains && root.contains(self.contentEl)) return;
+            seen.push(root);
+            roots.push(root);
+        }
+
         var activeView = this.app && this.app.workspace && this.app.workspace.activeLeaf
             ? this.app.workspace.activeLeaf.view
             : null;
-        var root = activeView && activeView.containerEl;
-        if (!root || (this.contentEl && root.contains && root.contains(this.contentEl))) {
-            root = document.body;
+        addRoot(activeView && activeView.containerEl);
+
+        var workspace = this.app && this.app.workspace;
+        if (workspace && typeof workspace.getLeavesOfType === 'function') {
+            var markdownLeaves = workspace.getLeavesOfType('markdown') || [];
+            for (var i = 0; i < markdownLeaves.length; i++) {
+                addRoot(markdownLeaves[i] && markdownLeaves[i].view && markdownLeaves[i].view.containerEl);
+            }
         }
-        if (!root) return null;
-        return root.querySelector('.markdown-preview-view, .markdown-reading-view, .cm-content, .markdown-source-view, .workspace-leaf-content')
-            || root;
+
+        if (document && document.querySelectorAll) {
+            var domRoots = document.querySelectorAll('.markdown-preview-view, .markdown-reading-view, .cm-content');
+            for (var j = 0; j < domRoots.length; j++) addRoot(domRoots[j]);
+        }
+        return roots;
     }
 
     _clearActiveFulltextAnnotationMarks(root) {
@@ -9218,7 +9244,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         return { text: normalized.trim(), map: map };
     }
 
-    _highlightFirstTextMatchInRoot(root, selectedText, color) {
+    _collectSearchableTextIndex(root) {
         var doc = root.ownerDocument || document;
         var walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
             acceptNode: function (node) {
@@ -9231,28 +9257,54 @@ class PaperForgeReadingCanvasView extends ItemView {
                 return NodeFilter.FILTER_ACCEPT;
             },
         });
-        var needle = this._normalizeTextWithMap(selectedText).text;
-        if (!needle) return null;
+        var normalized = '';
+        var map = [];
+        var pendingSpace = null;
         var node;
         while ((node = walker.nextNode())) {
-            var hay = this._normalizeTextWithMap(node.nodeValue);
-            var idx = hay.text.indexOf(needle);
-            if (idx === -1) continue;
-            var endIdx = idx + needle.length - 1;
-            var startMap = hay.map[idx];
-            var endMap = hay.map[endIdx];
-            if (!startMap || !endMap || endMap.end <= startMap.start) continue;
-            var range = doc.createRange();
-            range.setStart(node, startMap.start);
-            range.setEnd(node, endMap.end);
-            var mark = doc.createElement('mark');
-            mark.className = 'paperforge-active-annotation-match';
-            mark.style.backgroundColor = this._annotationTint(color || '#ffd54f');
-            mark.style.boxShadow = '0 0 0 2px rgba(35, 131, 226, 0.35)';
-            range.surroundContents(mark);
-            return mark;
+            var raw = node.nodeValue || '';
+            for (var i = 0; i < raw.length; i++) {
+                var ch = raw.charAt(i);
+                if (/\s/.test(ch)) {
+                    if (normalized.length > 0 && pendingSpace === null) {
+                        pendingSpace = { node: node, start: i, end: i + 1 };
+                    }
+                    continue;
+                }
+                if (pendingSpace !== null) {
+                    normalized += ' ';
+                    map.push(pendingSpace);
+                    pendingSpace = null;
+                }
+                normalized += ch.toLowerCase();
+                map.push({ node: node, start: i, end: i + 1 });
+            }
         }
-        return null;
+        return { text: normalized.trim(), map: map };
+    }
+
+    _highlightFirstTextMatchInRoot(root, selectedText, color) {
+        var doc = root.ownerDocument || document;
+        var needle = this._normalizeTextWithMap(selectedText).text;
+        if (!needle) return null;
+        var hay = this._collectSearchableTextIndex(root);
+        var idx = hay.text.indexOf(needle);
+        if (idx === -1) return null;
+        var endIdx = idx + needle.length - 1;
+        var startMap = hay.map[idx];
+        var endMap = hay.map[endIdx];
+        if (!startMap || !endMap) return null;
+        var range = doc.createRange();
+        range.setStart(startMap.node, startMap.start);
+        range.setEnd(endMap.node, endMap.end);
+        var mark = doc.createElement('mark');
+        mark.className = 'paperforge-active-annotation-match';
+        mark.style.backgroundColor = this._annotationTint(color || '#ffd54f');
+        mark.style.boxShadow = '0 0 0 2px rgba(35, 131, 226, 0.35)';
+        var fragment = range.extractContents();
+        mark.appendChild(fragment);
+        range.insertNode(mark);
+        return mark;
     }
 
     _loadPluginModule(relativeModulePath) {
