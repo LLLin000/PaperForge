@@ -5452,7 +5452,7 @@ class PaperForgeReadingCanvasView extends ItemView {
                 await leaves[0].setViewState(viewState);
             }
             const view = await PaperForgeReadingCanvasView._waitForLeafView(leaves[0]);
-            if (view && view.setPaperContext && view._paperKey !== paperKey) {
+            if (view && view.setPaperContext) {
                 view.setPaperContext(paperKey, entry);
             } else {
                 if (!view || !view.setPaperContext) {
@@ -5466,7 +5466,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         if (leaf) {
             await leaf.setViewState(viewState);
             const view = await PaperForgeReadingCanvasView._waitForLeafView(leaf);
-            if (view && view.setPaperContext && view._paperKey !== paperKey) {
+            if (view && view.setPaperContext) {
                 view.setPaperContext(paperKey, entry);
             } else {
                 if (!view || !view.setPaperContext) {

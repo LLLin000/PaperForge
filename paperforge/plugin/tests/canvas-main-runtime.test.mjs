@@ -336,6 +336,30 @@ describe('Task 4 — Static open method', () => {
         expect(mockPlugin.app.workspace.revealLeaf).toHaveBeenCalledWith(mockLeaf);
     });
 
+    it('static open rehydrates an existing leaf even when it already has the same paperKey', async () => {
+        const entry = { key: 'KEY_STALE', title: 'Stale blank leaf' };
+        const mockLeaf = {
+            view: {
+                _paperKey: 'KEY_STALE',
+                setPaperContext: vi.fn(),
+            },
+            setViewState: vi.fn(() => Promise.resolve()),
+        };
+        const mockPlugin = {
+            app: {
+                workspace: {
+                    getLeavesOfType: vi.fn(() => [mockLeaf]),
+                    revealLeaf: vi.fn(),
+                },
+            },
+        };
+
+        await PaperForgeReadingCanvasView.open(mockPlugin, 'KEY_STALE', entry);
+
+        expect(mockLeaf.view.setPaperContext).toHaveBeenCalledWith('KEY_STALE', entry);
+        expect(mockPlugin.app.workspace.revealLeaf).toHaveBeenCalledWith(mockLeaf);
+    });
+
     it('static open creates new leaf when none exists (fail-safe: right leaf may be null)', async () => {
         const mockPlugin = {
             app: {
