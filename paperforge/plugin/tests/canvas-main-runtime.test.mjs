@@ -242,10 +242,20 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
 
         view.setPaperContext('PAPER_X', { key: 'PAPER_X', title: 'Paper X' });
 
-        // Should have rendered content into contentEl
         expect(view._paperKey).toBe('PAPER_X');
-        expect(view._canvasContext).toBeTruthy();
-        expect(view._canvasContext.ok).toBe(true);
+        expect(view.contentEl.textContent).toContain('Reading Canvas');
+        expect(view.contentEl.textContent).toContain('PAPER_X');
+        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+    });
+
+    it('setPaperContext does not auto-load annotations or fulltext during open', () => {
+        const view = makeCanvasView();
+        view._loadAndRenderCanvas = vi.fn();
+
+        view.setPaperContext('PAPER_LIGHT_OPEN', { key: 'PAPER_LIGHT_OPEN', title: 'Light Open' });
+
+        expect(view._loadAndRenderCanvas).not.toHaveBeenCalled();
+        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
     });
 
     it('renders missing-paper state when setPaperContext gets null entry', () => {
@@ -253,8 +263,8 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
 
         view.setPaperContext(null, null);
 
-        expect(view._canvasContext).toBeTruthy();
-        expect(view._canvasContext.ok).toBe(false);
+        expect(view._canvasContext).toBeNull();
+        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
     });
 
     it('setPaperContext falls back to absolute canvas module path when Obsidian cannot resolve relative require', () => {
@@ -274,13 +284,13 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         }
 
         expect(view._paperKey).toBe('KEY_ABS_CANVAS');
-        expect(view._canvasContext).toBeTruthy();
-        expect(view._canvasContext.ok).toBe(true);
+        expect(view._canvasContext).toBeNull();
         expect(view.contentEl.textContent).not.toContain('relative canvas module unavailable');
         expect(view.contentEl.querySelector('[data-canvas-state="init-error"]')).toBeFalsy();
+        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
     });
 
-    it('setPaperContext shows native failure instead of blank content when canvas module initialization throws', () => {
+    it('setPaperContext does not touch canvas module during safe startup', () => {
         const view = makeCanvasView();
         view._loadCanvasModule = function failCanvasModule() {
             throw new Error('canvas module unavailable');
@@ -288,21 +298,20 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
 
         view.setPaperContext('KEY_FAIL_INIT', { key: 'KEY_FAIL_INIT', title: 'Fail init' });
 
-        expect(view.contentEl.textContent).toContain('Failed to load Reading Canvas');
-        expect(view.contentEl.textContent).toContain('canvas module unavailable');
-        expect(view.contentEl.querySelector('.paperforge-canvas-failure')).toBeTruthy();
-        expect(view.contentEl.querySelector('[data-canvas-state="init-error"]')).toBeTruthy();
-        expect(noticeCalls[0].msg).toContain('canvas module unavailable');
+        expect(view.contentEl.textContent).toContain('Reading Canvas');
+        expect(view.contentEl.textContent).toContain('KEY_FAIL_INIT');
+        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(noticeCalls).toHaveLength(0);
     });
 
-    it('onOpen renders a visible fallback instead of leaving a blank pane before context arrives', async () => {
+    it('onOpen renders native startup instead of leaving a blank pane before context arrives', async () => {
         const view = makeCanvasView();
 
         await view.onOpen();
 
-        expect(view._canvasContext).toBeTruthy();
-        expect(view._canvasContext.ok).toBe(false);
-        expect(view.contentEl.textContent).toContain('No paper context has been attached yet');
+        expect(view._canvasContext).toBeNull();
+        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(view.contentEl.textContent).toContain('Reading Canvas');
     });
 });
 
@@ -441,7 +450,7 @@ describe('Task 4 — Static open method', () => {
         expect(mockPlugin.app.workspace.revealLeaf).toHaveBeenCalledWith(mockLeaf);
     });
 
-    it('static open passes paper context through Obsidian view state', async () => {
+    it('static open keeps Obsidian view state minimal and attaches entry directly', async () => {
         const mockLeaf = {
             view: { setPaperContext: vi.fn() },
             setViewState: vi.fn(() => Promise.resolve()),
@@ -462,8 +471,9 @@ describe('Task 4 — Static open method', () => {
         expect(mockLeaf.setViewState).toHaveBeenCalledWith({
             type: 'paperforge-reading-canvas',
             active: true,
-            state: { paperKey: 'KEY_STATE', entry },
+            state: { paperKey: 'KEY_STATE' },
         });
+        expect(mockLeaf.view.setPaperContext).toHaveBeenCalledWith('KEY_STATE', entry);
     });
 
     it('setState attaches paper context without external leaf polling', async () => {
@@ -502,6 +512,25 @@ describe('Task 4 — Static open method', () => {
 
         expect(view.setPaperContext).toHaveBeenCalledWith('KEY_DEFERRED', entry);
         expect(view._pendingCanvasState).toBeNull();
+    });
+
+    it('onOpen renders native startup without loading the canvas bundle when context is absent', async () => {
+        const containerEl = document.createElement('div');
+        const contentEl = document.createElement('div');
+        addCreateEl(contentEl);
+        contentEl.addClass = function (cls) { this.classList.add(cls); };
+        containerEl.appendChild(contentEl);
+        const view = new PaperForgeReadingCanvasView({ containerEl, contentEl });
+        view.contentEl = contentEl;
+        view._loadCanvasModule = vi.fn(() => {
+            throw new Error('canvas bundle should not load on open');
+        });
+
+        await view.onOpen();
+
+        expect(view._loadCanvasModule).not.toHaveBeenCalled();
+        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(view.contentEl.textContent).toContain('Reading Canvas');
     });
 });
 

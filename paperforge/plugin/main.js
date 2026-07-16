@@ -9033,6 +9033,29 @@ class PaperForgeReadingCanvasView extends ItemView {
         }
     }
 
+    _renderNativeCanvasStartup(paperKey, entry) {
+        var contentEl = this.contentEl;
+        if (!contentEl) return;
+        this._emptyContentEl(contentEl);
+        this._addContentClass(contentEl, 'paperforge-reading-canvas-view');
+        var startupEl = document.createElement('div');
+        startupEl.className = 'paperforge-canvas-startup';
+        startupEl.setAttribute('data-canvas-state', 'startup');
+        var titleEl = document.createElement('div');
+        titleEl.className = 'paperforge-canvas-identity';
+        titleEl.textContent = 'Reading Canvas';
+        var keyEl = document.createElement('span');
+        keyEl.className = 'paperforge-canvas-identity-key';
+        keyEl.textContent = paperKey || (entry && (entry.key || entry.zotero_key)) || '';
+        titleEl.appendChild(keyEl);
+        var messageEl = document.createElement('div');
+        messageEl.className = 'paperforge-canvas-message';
+        messageEl.textContent = 'Canvas opened in safe mode. Heavy annotation and fulltext loading is paused.';
+        startupEl.appendChild(titleEl);
+        startupEl.appendChild(messageEl);
+        contentEl.appendChild(startupEl);
+    }
+
     _loadPluginModule(relativeModulePath) {
         var normalized = String(relativeModulePath || '').replace(/\\/g, '/').replace(/^\.?\//, '');
         if (normalized === 'src/canvas' || normalized.indexOf('src/canvas/') === 0) {
@@ -9096,17 +9119,9 @@ class PaperForgeReadingCanvasView extends ItemView {
             this._paperKey = paperKey;
             this._paperEntry = entry;
 
-            const canvas = this._loadCanvasModule();
-            const canvasCtx = canvas.buildCanvasContextFromEntry(entry);
-            this._canvasContext = canvasCtx;
-
-            this._sessionController = canvas.createCanvasSessionController({
-                paperKey: canvasCtx.ok ? canvasCtx.paperKey : null,
-                annotationLoader: canvas.createCanvasAnnotationLoader({ loadAnnotationsForPaper }),
-            });
-
-            this._renderCanvas(canvas);
-            this._loadAndRenderCanvas(canvas);
+            this._canvasContext = null;
+            this._sessionController = null;
+            this._renderNativeCanvasStartup(paperKey, entry);
         } catch (err) {
             var msg = 'Failed to load Reading Canvas: ' + ((err && err.message) || 'Canvas initialization failed.');
             this._renderNativeCanvasFailure(msg, 'init-error');
@@ -9132,7 +9147,6 @@ class PaperForgeReadingCanvasView extends ItemView {
     getState() {
         return {
             paperKey: this._paperKey,
-            entry: this._paperEntry,
         };
     }
 
@@ -9208,9 +9222,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             return;
         }
         if (!this._canvasContext && this.contentEl) {
-            const canvas = this._loadCanvasModule();
-            this._canvasContext = canvas.buildMissingCanvasContext('No paper context has been attached yet.');
-            this._renderCanvas(canvas);
+            this._renderNativeCanvasStartup(this._paperKey, this._paperEntry);
         }
     }
 
@@ -9789,7 +9801,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         const viewState = {
             type: VIEW_TYPE_PAPERFORGE_READING_CANVAS,
             active: true,
-            state: { paperKey: paperKey, entry: entry },
+            state: { paperKey: paperKey },
         };
         const leaves = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE_READING_CANVAS);
         if (leaves.length > 0) {
