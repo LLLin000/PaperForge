@@ -1079,6 +1079,37 @@ describe('ANN13-04 Task 1 — Loaded canvas rendering', () => {
         expect(articleHost.textContent).toContain('原文中的重要句子在这里');
     });
 
+    it('_renderLoadedCanvas uses lightweight source rendering for large fulltext to avoid freezing Obsidian', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_LARGE_MD';
+        view._paperEntry = {
+            key: 'PAPER_LARGE_MD',
+            title: 'Large Markdown paper',
+            fulltext_path: 'large-fulltext.md',
+        };
+        const largeText = Array.from({ length: 80 }, (_, i) => {
+            return `<!-- page ${i + 1} -->\n` + 'Important large source sentence. '.repeat(35) + '\n![[image-' + i + '.jpg]]';
+        }).join('\n\n');
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: {
+                    path: 'large-fulltext.md',
+                    exists: true,
+                    readable: true,
+                    text: largeText,
+                    error: null,
+                },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            { state: 'empty', paperKey: 'PAPER_LARGE_MD', annotations: [] }
+        );
+
+        expect(markdownRenderCalls).toHaveLength(0);
+        expect(contentEl.querySelector('.paperforge-canvas-source-surface')).toBeTruthy();
+        expect(contentEl.textContent).toContain('Important large source sentence');
+    });
+
     it('_renderLoadedCanvas highlights rendered markdown text, not raw markdown offsets', async () => {
         const { view, contentEl } = makeCanvasView();
         view._paperKey = 'PAPER_MARK';

@@ -9683,6 +9683,13 @@ class PaperForgeReadingCanvasView extends ItemView {
         });
     }
 
+    _shouldUseLightweightSourceRendering(markdownText) {
+        var text = markdownText ? String(markdownText) : '';
+        if (text.length > 40000) return true;
+        var embedMatches = text.match(/!\[\[/g);
+        return !!(embedMatches && embedMatches.length > 12);
+    }
+
     async _renderLoadedCanvas(sourceInputs, annotationState) {
         var canvas = this._loadCanvasModule();
         var contentEl = this.contentEl;
@@ -9717,34 +9724,40 @@ class PaperForgeReadingCanvasView extends ItemView {
             var sourcePath = sourceModel && sourceModel.sourceKind === canvas.SOURCE_KINDS.NOTE
                 ? sourceModel.notePath
                 : sourceModel.fulltextPath;
-            var renderResult = await canvas.renderMarkdownSurface({
-                host: shellRefs.articleHost,
-                markdown: markdownText,
-                sourcePath: sourcePath || '',
-                renderMarkdown: function (markdown, article, pathValue) {
-                    return MarkdownRenderer.render(this.app, markdown, article, pathValue || '', this);
-                }.bind(this),
-            });
-            if (!renderResult || renderResult.state !== 'ready') {
-                var err = renderResult && renderResult.error;
-                canvas.renderCanvasFailure(contentEl, {
-                    state: 'render-error',
-                    message: (err && err.message) || 'Could not render Reading Canvas.',
+            if (this._shouldUseLightweightSourceRendering(markdownText)) {
+                canvas.renderCanvasSourceSurface(shellRefs.articleHost, sourceBlocks, (vm.cards || []).map(function (c) { return c.anchor; }), {
+                    sourceKind: sourceModel.sourceKind,
                 });
-                this._vm = vm;
-                return;
-            }
-            var domAnchors = this._resolveRenderedHighlightAnchors(canvas, renderResult.article, vm);
-            var highlightResult = canvas.applyDomHighlights(renderResult.article, domAnchors);
-            if (highlightResult && Array.isArray(highlightResult.unresolved) && highlightResult.unresolved.length > 0) {
-                vm.unresolved = (vm.unresolved || []).concat(highlightResult.unresolved.map(function (id) {
-                    return {
-                        id: id,
-                        selectedText: id,
-                        comment: 'Could not place this annotation in the rendered text.',
-                    };
-                }));
-                vm.unresolvedCount = vm.unresolved.length;
+            } else {
+                var renderResult = await canvas.renderMarkdownSurface({
+                    host: shellRefs.articleHost,
+                    markdown: markdownText,
+                    sourcePath: sourcePath || '',
+                    renderMarkdown: function (markdown, article, pathValue) {
+                        return MarkdownRenderer.render(this.app, markdown, article, pathValue || '', this);
+                    }.bind(this),
+                });
+                if (!renderResult || renderResult.state !== 'ready') {
+                    var err = renderResult && renderResult.error;
+                    canvas.renderCanvasFailure(contentEl, {
+                        state: 'render-error',
+                        message: (err && err.message) || 'Could not render Reading Canvas.',
+                    });
+                    this._vm = vm;
+                    return;
+                }
+                var domAnchors = this._resolveRenderedHighlightAnchors(canvas, renderResult.article, vm);
+                var highlightResult = canvas.applyDomHighlights(renderResult.article, domAnchors);
+                if (highlightResult && Array.isArray(highlightResult.unresolved) && highlightResult.unresolved.length > 0) {
+                    vm.unresolved = (vm.unresolved || []).concat(highlightResult.unresolved.map(function (id) {
+                        return {
+                            id: id,
+                            selectedText: id,
+                            comment: 'Could not place this annotation in the rendered text.',
+                        };
+                    }));
+                    vm.unresolvedCount = vm.unresolved.length;
+                }
             }
         }
         if (vm.lanes) {
