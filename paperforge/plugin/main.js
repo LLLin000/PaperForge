@@ -4912,22 +4912,27 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     async _loadAndRenderCanvas(canvas) {
+        canvas = canvas || require('./src/canvas');
         if (!this._canvasContext || !this._canvasContext.ok || !this._sessionController) {
             return;
         }
         if (!this.app || !this.app.vault || !this.app.vault.adapter) {
+            canvas.renderCanvasFailure(this.contentEl, {
+                state: 'runtime-error',
+                message: 'Failed to load Reading Canvas: Obsidian vault adapter is not available.',
+            });
             return;
         }
 
         var capturedSeq = ++this._canvasLoadSeq;
         var capturedKey = this._paperKey;
-        var vp = this.app.vault.adapter.basePath;
-        var plugin = this.app.plugins && this.app.plugins.plugins
-            ? this.app.plugins.plugins.paperforge
-            : null;
-        var pyResult = resolvePythonExecutable(vp, plugin && plugin.settings);
 
         try {
+            var vp = this.app.vault.adapter.basePath;
+            var plugin = this.app.plugins && this.app.plugins.plugins
+                ? this.app.plugins.plugins.paperforge
+                : null;
+            var pyResult = resolvePythonExecutable(vp, plugin && plugin.settings);
             var loaded = await Promise.all([
                 this._sessionController.loadAnnotations({
                     pythonExe: pyResult.path,
@@ -4956,7 +4961,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             }
             canvas.renderCanvasFailure(this.contentEl, {
                 state: 'cli-error',
-                message: (err && err.message) || 'Failed to load Reading Canvas.',
+                message: 'Failed to load Reading Canvas: ' + ((err && err.message) || 'Unknown runtime error.'),
             });
         }
     }
@@ -5364,7 +5369,13 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._emptyContentEl(contentEl);
         this._addContentClass(contentEl, 'paperforge-reading-canvas-view');
         var entry = this._paperEntry;
-        if (!entry) return;
+        if (!entry) {
+            canvas.renderCanvasFailure(contentEl, {
+                state: 'missing-paper',
+                message: 'Failed to load Reading Canvas: paper metadata is missing.',
+            });
+            return;
+        }
         var sourceModel = canvas.buildCanvasSourceModel(entry, sourceInputs || {});
         var sourceBlocks = sourceModel && sourceModel.text
             ? canvas.buildSourceBlocks(sourceModel.text, sourceModel.sourceKind)

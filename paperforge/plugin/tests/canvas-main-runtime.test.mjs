@@ -1106,6 +1106,50 @@ describe('ANN13-04 Task 1 — Loaded canvas rendering', () => {
         expect(contentEl.querySelector('[data-canvas-action="retry"]')).toBeTruthy();
     });
 
+    it('_loadAndRenderCanvas shows visible failure when runtime setup fails before loading', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_RUNTIME_FAIL';
+        view._paperEntry = { key: 'PAPER_RUNTIME_FAIL', title: 'Runtime fail', fulltext_path: 'fulltext.md' };
+        view._canvasContext = { ok: true, paperKey: 'PAPER_RUNTIME_FAIL' };
+        view._sessionController = {
+            loadAnnotations: vi.fn(),
+        };
+        view.app = {
+            vault: {
+                adapter: {},
+            },
+            plugins: {
+                plugins: {
+                    paperforge: { settings: {} },
+                },
+            },
+        };
+
+        await view._loadAndRenderCanvas();
+
+        expect(contentEl.textContent).toContain('Failed to load Reading Canvas');
+        expect(contentEl.querySelector('.paperforge-canvas-failure')).toBeTruthy();
+        expect(contentEl.querySelector('[data-canvas-action="retry"]')).toBeTruthy();
+        expect(view._sessionController.loadAnnotations).not.toHaveBeenCalled();
+    });
+
+    it('_renderLoadedCanvas shows visible failure instead of blank content when paper entry is missing', async () => {
+        const { view, contentEl } = makeCanvasView();
+        view._paperKey = 'PAPER_NO_ENTRY';
+        view._paperEntry = null;
+
+        await view._renderLoadedCanvas(
+            {
+                fulltext: { path: 'fulltext.md', exists: true, readable: true, text: 'Body', error: null },
+                note: { path: null, exists: false, readable: false, text: null, error: null },
+            },
+            { state: 'ready', paperKey: 'PAPER_NO_ENTRY', annotations: [] }
+        );
+
+        expect(contentEl.textContent).toContain('Failed to load Reading Canvas');
+        expect(contentEl.querySelector('.paperforge-canvas-failure')).toBeTruthy();
+    });
+
     it('_renderLoadedCanvas sets _vm and _navigationState', () => {
         const { view } = makeCanvasView();
         view._paperKey = 'KEY_STATE';
