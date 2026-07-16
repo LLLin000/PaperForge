@@ -9122,14 +9122,23 @@ class PaperForgeReadingCanvasView extends ItemView {
                 evt.preventDefault();
                 evt.stopPropagation();
             }
+            cardEl.setAttribute('aria-selected', 'true');
+            cardEl.setAttribute('data-jump-state', 'pending');
             var result = self._jumpToActiveFulltextAnnotation(row);
             if (result && result.ok) {
-                cardEl.setAttribute('aria-selected', 'true');
+                cardEl.setAttribute('data-jump-state', 'resolved');
                 cardEl.removeAttribute('data-anchor-status');
+                cardEl.removeAttribute('data-jump-reason');
             } else {
                 cardEl.setAttribute('data-anchor-status', 'unresolved');
-                cardEl.setAttribute('aria-selected', 'false');
+                cardEl.setAttribute('data-jump-state', 'unresolved');
+                cardEl.setAttribute('data-jump-reason', (result && result.reason) || 'not-found');
             }
+            if (cardEl._paperforgeJumpTimer) clearTimeout(cardEl._paperforgeJumpTimer);
+            cardEl._paperforgeJumpTimer = setTimeout(function () {
+                cardEl.setAttribute('aria-selected', 'false');
+                cardEl.removeAttribute('data-jump-state');
+            }, 700);
         }
         cardEl.addEventListener('click', activate);
         cardEl.addEventListener('keydown', function (evt) {
@@ -9194,9 +9203,9 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     _jumpToMarkdownEditorBuffer(selectedText) {
-        var needleInfo = this._normalizeTextWithMap(selectedText);
-        var needle = needleInfo.text;
-        if (!needle) return { ok: false, reason: 'missing-selected-text' };
+        var needleInfo = this._normalizeTextWithMap(selectedText, false);
+        var looseNeedleInfo = this._normalizeTextWithMap(selectedText, true);
+        if (!needleInfo.text && !looseNeedleInfo.text) return { ok: false, reason: 'missing-selected-text' };
         var leaves = this._getMarkdownCandidateLeaves();
         for (var i = 0; i < leaves.length; i++) {
             var leaf = leaves[i];
@@ -9208,9 +9217,15 @@ class PaperForgeReadingCanvasView extends ItemView {
             var editor = view.editor;
             if (typeof editor.getValue !== 'function') continue;
             var value = editor.getValue();
-            var hay = this._normalizeTextWithMap(value);
-            var idx = hay.text.indexOf(needle);
-            if (idx === -1) continue;
+            var hay = this._normalizeTextWithMap(value, false);
+            var needle = needleInfo.text;
+            var idx = needle ? hay.text.indexOf(needle) : -1;
+            if (idx === -1) {
+                hay = this._normalizeTextWithMap(value, true);
+                needle = looseNeedleInfo.text;
+                idx = needle ? hay.text.indexOf(needle) : -1;
+            }
+            if (idx === -1 || !needle) continue;
             var endIdx = idx + needle.length - 1;
             var startMap = hay.map[idx];
             var endMap = hay.map[endIdx];
@@ -9288,14 +9303,20 @@ class PaperForgeReadingCanvasView extends ItemView {
         }
     }
 
-    _normalizeTextWithMap(text) {
+    _isLooseSearchChar(ch) {
+        if (!ch) return false;
+        if (/[A-Za-z0-9]/.test(ch)) return true;
+        return ch.charCodeAt(0) > 127 && !/[\s，。、“”‘’（）《》：；？！—–\-·,.;:!?()[\]{}"'`]/.test(ch);
+    }
+
+    _normalizeTextWithMap(text, loose) {
         var raw = String(text || '');
         var normalized = '';
         var map = [];
         var pendingSpaceStart = null;
         for (var i = 0; i < raw.length; i++) {
             var ch = raw.charAt(i);
-            if (/\s/.test(ch)) {
+            if (/\s/.test(ch) || (loose && !this._isLooseSearchChar(ch))) {
                 if (normalized.length > 0 && pendingSpaceStart === null) {
                     pendingSpaceStart = i;
                 }
@@ -9312,8 +9333,9 @@ class PaperForgeReadingCanvasView extends ItemView {
         return { text: normalized.trim(), map: map };
     }
 
-    _collectSearchableTextIndex(root) {
+    _collectSearchableTextIndex(root, loose) {
         var doc = root.ownerDocument || document;
+        var self = this;
         var walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
             acceptNode: function (node) {
                 if (!node || !node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
@@ -9333,7 +9355,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             var raw = node.nodeValue || '';
             for (var i = 0; i < raw.length; i++) {
                 var ch = raw.charAt(i);
-                if (/\s/.test(ch)) {
+                if (/\s/.test(ch) || (loose && !self._isLooseSearchChar(ch))) {
                     if (normalized.length > 0 && pendingSpace === null) {
                         pendingSpace = { node: node, start: i, end: i + 1 };
                     }
@@ -9353,10 +9375,14 @@ class PaperForgeReadingCanvasView extends ItemView {
 
     _highlightFirstTextMatchInRoot(root, selectedText, color) {
         var doc = root.ownerDocument || document;
-        var needle = this._normalizeTextWithMap(selectedText).text;
-        if (!needle) return null;
-        var hay = this._collectSearchableTextIndex(root);
-        var idx = hay.text.indexOf(needle);
+        var needle = this._normalizeTextWithMap(selectedText, false).text;
+        var hay = this._collectSearchableTextIndex(root, false);
+        var idx = needle ? hay.text.indexOf(needle) : -1;
+        if (idx === -1) {
+            needle = this._normalizeTextWithMap(selectedText, true).text;
+            hay = this._collectSearchableTextIndex(root, true);
+            idx = needle ? hay.text.indexOf(needle) : -1;
+        }
         if (idx === -1) return null;
         var endIdx = idx + needle.length - 1;
         var startMap = hay.map[idx];

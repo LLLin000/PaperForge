@@ -327,6 +327,72 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(view.contentEl.querySelector('[data-anchor-status="unresolved"]')).toBeFalsy();
     });
 
+    it('clicking an annotation card rebounds after successful jump feedback', () => {
+        vi.useFakeTimers();
+        const view = makeCanvasView();
+        const activeContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        preview.textContent = 'The text contains a rebound target.';
+        activeContainer.appendChild(preview);
+        document.body.appendChild(activeContainer);
+        Element.prototype.scrollIntoView = vi.fn();
+        view.app = { workspace: { activeLeaf: { view: { containerEl: activeContainer } } } };
+
+        view._renderNativeAnnotationPanel('PAPER_REBOUND', { key: 'PAPER_REBOUND' }, {
+            state: 'ready',
+            paperKey: 'PAPER_REBOUND',
+            annotations: [{
+                display: { selectedText: 'rebound target', type: 'highlight', color: '#ffd54f' },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-rebound-1' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(card.getAttribute('aria-selected')).toBe('true');
+        expect(card.getAttribute('data-jump-state')).toBe('resolved');
+        vi.advanceTimersByTime(701);
+        expect(card.getAttribute('aria-selected')).toBe('false');
+        expect(card.hasAttribute('data-jump-state')).toBe(false);
+        vi.useRealTimers();
+    });
+
+    it('clicking an annotation card uses loose matching when punctuation differs from fulltext', () => {
+        const view = makeCanvasView();
+        const activeContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        preview.textContent = 'OCR text has target sentence with punctuation differences in the page.';
+        activeContainer.appendChild(preview);
+        document.body.appendChild(activeContainer);
+        const scrollIntoView = vi.fn();
+        Element.prototype.scrollIntoView = scrollIntoView;
+        view.app = { workspace: { activeLeaf: { view: { containerEl: activeContainer } } } };
+
+        view._renderNativeAnnotationPanel('PAPER_LOOSE', { key: 'PAPER_LOOSE' }, {
+            state: 'ready',
+            paperKey: 'PAPER_LOOSE',
+            annotations: [{
+                display: { selectedText: 'target sentence, with punctuation differences', type: 'highlight', color: '#ffd54f' },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-loose-1' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        view.contentEl.querySelector('.paperforge-annotation-panel-card')
+            .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        const mark = preview.querySelector('mark.paperforge-active-annotation-match');
+        expect(mark).toBeTruthy();
+        expect(mark.textContent).toContain('target sentence with punctuation differences');
+        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    });
+
     it('clicking an annotation card finds fulltext in another markdown leaf when the canvas leaf is active', () => {
         const view = makeCanvasView();
         const canvasContainer = document.createElement('div');
