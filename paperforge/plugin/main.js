@@ -4761,6 +4761,25 @@ class PaperForgeReadingCanvasView extends ItemView {
         return PF_ICON_ID;
     }
 
+    _renderNativeCanvasFailure(message, state) {
+        var contentEl = this.contentEl;
+        if (!contentEl) return;
+        try {
+            this._emptyContentEl(contentEl);
+            this._addContentClass(contentEl, 'paperforge-reading-canvas-view');
+            var failureEl = document.createElement('div');
+            failureEl.className = 'paperforge-canvas-failure';
+            failureEl.setAttribute('data-canvas-state', state || 'error');
+            failureEl.setAttribute('role', 'alert');
+            failureEl.textContent = message || 'Failed to load Reading Canvas.';
+            contentEl.appendChild(failureEl);
+        } catch (_) {
+            try {
+                contentEl.textContent = message || 'Failed to load Reading Canvas.';
+            } catch (_) {}
+        }
+    }
+
     /**
      * Set the paper context for this canvas session.
      *
@@ -4772,25 +4791,31 @@ class PaperForgeReadingCanvasView extends ItemView {
      * @param {object} entry - Paper entry object with key, title, etc.
      */
     setPaperContext(paperKey, entry) {
-        if (!this.contentEl) {
-            this._pendingCanvasState = { paperKey: paperKey, entry: entry };
-            return;
+        try {
+            if (!this.contentEl) {
+                this._pendingCanvasState = { paperKey: paperKey, entry: entry };
+                return;
+            }
+            this._pendingCanvasState = null;
+            this._paperKey = paperKey;
+            this._paperEntry = entry;
+
+            const canvas = require('./src/canvas');
+            const canvasCtx = canvas.buildCanvasContextFromEntry(entry);
+            this._canvasContext = canvasCtx;
+
+            this._sessionController = canvas.createCanvasSessionController({
+                paperKey: canvasCtx.ok ? canvasCtx.paperKey : null,
+                annotationLoader: canvas.createCanvasAnnotationLoader({ loadAnnotationsForPaper }),
+            });
+
+            this._renderCanvas(canvas);
+            this._loadAndRenderCanvas(canvas);
+        } catch (err) {
+            var msg = 'Failed to load Reading Canvas: ' + ((err && err.message) || 'Canvas initialization failed.');
+            this._renderNativeCanvasFailure(msg, 'init-error');
+            new Notice('[!!] ' + msg, 8000);
         }
-        this._pendingCanvasState = null;
-        this._paperKey = paperKey;
-        this._paperEntry = entry;
-
-        const canvas = require('./src/canvas');
-        const canvasCtx = canvas.buildCanvasContextFromEntry(entry);
-        this._canvasContext = canvasCtx;
-
-        this._sessionController = canvas.createCanvasSessionController({
-            paperKey: canvasCtx.ok ? canvasCtx.paperKey : null,
-            annotationLoader: canvas.createCanvasAnnotationLoader({ loadAnnotationsForPaper }),
-        });
-
-        this._renderCanvas(canvas);
-        this._loadAndRenderCanvas(canvas);
     }
 
     async setState(state, result) {
