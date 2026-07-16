@@ -245,17 +245,42 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(view._paperKey).toBe('PAPER_X');
         expect(view.contentEl.textContent).toContain('Reading Canvas');
         expect(view.contentEl.textContent).toContain('PAPER_X');
-        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(view.contentEl.querySelector('[data-canvas-state="annotation-panel"]')).toBeTruthy();
     });
 
-    it('setPaperContext does not auto-load annotations or fulltext during open', () => {
+    it('setPaperContext auto-loads annotations without reading fulltext during open', async () => {
         const view = makeCanvasView();
+        view.app = {
+            vault: { adapter: { basePath: 'C:/vault' } },
+            plugins: { plugins: { paperforge: { settings: { python_bin: 'python' } } } },
+        };
+        view._loadCanvasSourceInputs = vi.fn();
         view._loadAndRenderCanvas = vi.fn();
+        view._annotationLoader = vi.fn(async () => ({
+            state: 'ready',
+            paperKey: 'PAPER_LIGHT_OPEN',
+            annotations: [{
+                display: {
+                    selectedText: 'Only this annotation should load',
+                    comment: 'No fulltext read needed',
+                    type: 'highlight',
+                    color: '#ffd54f',
+                },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-only-1' },
+            }],
+            message: '1 annotation(s) loaded.',
+        }));
 
         view.setPaperContext('PAPER_LIGHT_OPEN', { key: 'PAPER_LIGHT_OPEN', title: 'Light Open' });
+        await Promise.resolve();
+        await Promise.resolve();
 
+        expect(view._annotationLoader).toHaveBeenCalledWith(expect.objectContaining({ paperKey: 'PAPER_LIGHT_OPEN' }));
+        expect(view._loadCanvasSourceInputs).not.toHaveBeenCalled();
         expect(view._loadAndRenderCanvas).not.toHaveBeenCalled();
-        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(view.contentEl.querySelector('[data-canvas-state="annotation-panel"]')).toBeTruthy();
+        expect(view.contentEl.textContent).toContain('Only this annotation should load');
     });
 
     it('renders missing-paper state when setPaperContext gets null entry', () => {
@@ -264,7 +289,7 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         view.setPaperContext(null, null);
 
         expect(view._canvasContext).toBeNull();
-        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(view.contentEl.querySelector('[data-canvas-state="annotation-panel"]')).toBeTruthy();
     });
 
     it('setPaperContext falls back to absolute canvas module path when Obsidian cannot resolve relative require', () => {
@@ -287,10 +312,10 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(view._canvasContext).toBeNull();
         expect(view.contentEl.textContent).not.toContain('relative canvas module unavailable');
         expect(view.contentEl.querySelector('[data-canvas-state="init-error"]')).toBeFalsy();
-        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(view.contentEl.querySelector('[data-canvas-state="annotation-panel"]')).toBeTruthy();
     });
 
-    it('setPaperContext does not touch canvas module during safe startup', () => {
+    it('setPaperContext does not touch canvas module while opening the annotation panel', () => {
         const view = makeCanvasView();
         view._loadCanvasModule = function failCanvasModule() {
             throw new Error('canvas module unavailable');
@@ -300,17 +325,17 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
 
         expect(view.contentEl.textContent).toContain('Reading Canvas');
         expect(view.contentEl.textContent).toContain('KEY_FAIL_INIT');
-        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(view.contentEl.querySelector('[data-canvas-state="annotation-panel"]')).toBeTruthy();
         expect(noticeCalls).toHaveLength(0);
     });
 
-    it('onOpen renders native startup instead of leaving a blank pane before context arrives', async () => {
+    it('onOpen renders native annotation panel instead of leaving a blank pane before context arrives', async () => {
         const view = makeCanvasView();
 
         await view.onOpen();
 
         expect(view._canvasContext).toBeNull();
-        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(view.contentEl.querySelector('[data-canvas-state="annotation-panel"]')).toBeTruthy();
         expect(view.contentEl.textContent).toContain('Reading Canvas');
     });
 });
@@ -514,7 +539,7 @@ describe('Task 4 — Static open method', () => {
         expect(view._pendingCanvasState).toBeNull();
     });
 
-    it('onOpen renders native startup without loading the canvas bundle when context is absent', async () => {
+    it('onOpen renders native annotation panel without loading the canvas bundle when context is absent', async () => {
         const containerEl = document.createElement('div');
         const contentEl = document.createElement('div');
         addCreateEl(contentEl);
@@ -529,7 +554,7 @@ describe('Task 4 — Static open method', () => {
         await view.onOpen();
 
         expect(view._loadCanvasModule).not.toHaveBeenCalled();
-        expect(view.contentEl.querySelector('[data-canvas-state="startup"]')).toBeTruthy();
+        expect(view.contentEl.querySelector('[data-canvas-state="annotation-panel"]')).toBeTruthy();
         expect(view.contentEl.textContent).toContain('Reading Canvas');
     });
 });

@@ -8852,6 +8852,8 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._connectorBoundScroll = null;
         this._connectorBoundResize = null;
         this._canvasLoadSeq = 0;
+        this._annotationLoadSeq = 0;
+        this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.IDLE);
         this._pendingCanvasState = null;
     }
 
@@ -9033,14 +9035,19 @@ class PaperForgeReadingCanvasView extends ItemView {
         }
     }
 
-    _renderNativeCanvasStartup(paperKey, entry) {
+    _renderNativeAnnotationPanel(paperKey, entry, annotationState) {
         var contentEl = this.contentEl;
         if (!contentEl) return;
         this._emptyContentEl(contentEl);
         this._addContentClass(contentEl, 'paperforge-reading-canvas-view');
-        var startupEl = document.createElement('div');
-        startupEl.className = 'paperforge-canvas-startup';
-        startupEl.setAttribute('data-canvas-state', 'startup');
+        var state = annotationState || makeAnnotationState(ANNOTATION_LOAD_STATES.LOADING, {
+            paperKey: paperKey,
+            message: 'Loading annotations...',
+        });
+        var panelEl = document.createElement('div');
+        panelEl.className = 'paperforge-canvas-startup paperforge-annotation-panel';
+        panelEl.setAttribute('data-canvas-state', 'annotation-panel');
+        panelEl.setAttribute('data-annotation-state', state.state || 'loading');
         var titleEl = document.createElement('div');
         titleEl.className = 'paperforge-canvas-identity';
         titleEl.textContent = 'Reading Canvas';
@@ -9050,10 +9057,52 @@ class PaperForgeReadingCanvasView extends ItemView {
         titleEl.appendChild(keyEl);
         var messageEl = document.createElement('div');
         messageEl.className = 'paperforge-canvas-message';
-        messageEl.textContent = 'Canvas opened in safe mode. Heavy annotation and fulltext loading is paused.';
-        startupEl.appendChild(titleEl);
-        startupEl.appendChild(messageEl);
-        contentEl.appendChild(startupEl);
+        messageEl.textContent = state.message || 'Loading annotations...';
+        panelEl.appendChild(titleEl);
+        panelEl.appendChild(messageEl);
+
+        var rows = Array.isArray(state.annotations) ? sortAnnotationsForReadingOrder(state.annotations) : [];
+        if (rows.length > 0) {
+            var listEl = document.createElement('div');
+            listEl.className = 'paperforge-annotation-panel-list';
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i] || {};
+                var display = row.display || {};
+                var loc = row.pdfLocation || {};
+                var cardEl = document.createElement('div');
+                cardEl.className = 'paperforge-canvas-card paperforge-annotation-panel-card';
+                cardEl.setAttribute('data-annotation-id', getAnnotationIdentity(row) || ('annotation-' + i));
+
+                var metaEl = document.createElement('div');
+                metaEl.className = 'paperforge-annotation-panel-meta';
+                var colorEl = document.createElement('span');
+                colorEl.className = 'paperforge-annotation-panel-swatch';
+                if (display.color) colorEl.style.backgroundColor = display.color;
+                metaEl.appendChild(colorEl);
+                var labelEl = document.createElement('span');
+                labelEl.textContent = [
+                    display.type || 'annotation',
+                    loc.pageLabel ? ('p. ' + loc.pageLabel) : ''
+                ].filter(Boolean).join(' · ');
+                metaEl.appendChild(labelEl);
+
+                var quoteEl = document.createElement('div');
+                quoteEl.className = 'paperforge-annotation-panel-quote';
+                quoteEl.textContent = display.selectedText || '(No selected text)';
+                cardEl.appendChild(metaEl);
+                cardEl.appendChild(quoteEl);
+                if (display.comment) {
+                    var commentEl = document.createElement('div');
+                    commentEl.className = 'paperforge-annotation-panel-comment';
+                    commentEl.textContent = display.comment;
+                    cardEl.appendChild(commentEl);
+                }
+                listEl.appendChild(cardEl);
+            }
+            panelEl.appendChild(listEl);
+        }
+
+        contentEl.appendChild(panelEl);
     }
 
     _loadPluginModule(relativeModulePath) {
@@ -9121,7 +9170,12 @@ class PaperForgeReadingCanvasView extends ItemView {
 
             this._canvasContext = null;
             this._sessionController = null;
-            this._renderNativeCanvasStartup(paperKey, entry);
+            this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.LOADING, {
+                paperKey: paperKey,
+                message: 'Loading annotations...',
+            });
+            this._renderNativeAnnotationPanel(paperKey, entry, this._annotationState);
+            this._loadAndRenderAnnotationPanel();
         } catch (err) {
             var msg = 'Failed to load Reading Canvas: ' + ((err && err.message) || 'Canvas initialization failed.');
             this._renderNativeCanvasFailure(msg, 'init-error');
@@ -9222,13 +9276,14 @@ class PaperForgeReadingCanvasView extends ItemView {
             return;
         }
         if (!this._canvasContext && this.contentEl) {
-            this._renderNativeCanvasStartup(this._paperKey, this._paperEntry);
+            this._renderNativeAnnotationPanel(this._paperKey, this._paperEntry, this._annotationState);
         }
     }
 
     async onClose() {
         this._cleanupNavigation();
         this._canvasLoadSeq++;
+        this._annotationLoadSeq++;
         if (this._sessionController) {
             this._sessionController.teardown();
             this._sessionController = null;
@@ -9239,9 +9294,69 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._vm = null;
         this._navigationState = null;
         this._pendingCanvasState = null;
+        this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.IDLE);
         // ANN14-03: Clear connector field refs (DOM already cleared by _cleanupNavigation)
         this._connectorLayerEl = null;
         this._connectorFrameHandle = null;
+    }
+
+    async _loadAndRenderAnnotationPanel() {
+        if (!this._paperKey) {
+            this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.MISSING_PAPER, {
+                paperKey: null,
+                message: 'No paper is currently active. Open a recognized paper to view its annotations.',
+            });
+            this._renderNativeAnnotationPanel(this._paperKey, this._paperEntry, this._annotationState);
+            return this._annotationState;
+        }
+        if (!this.app || !this.app.vault || !this.app.vault.adapter) {
+            this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.CLI_ERROR, {
+                paperKey: this._paperKey,
+                message: 'Could not load annotations: Obsidian vault adapter is not available.',
+                errorCode: 'MISSING_VAULT_ADAPTER',
+            });
+            this._renderNativeAnnotationPanel(this._paperKey, this._paperEntry, this._annotationState);
+            return this._annotationState;
+        }
+
+        var capturedSeq = ++this._annotationLoadSeq;
+        var capturedKey = this._paperKey;
+        try {
+            var vp = this.app.vault.adapter.basePath;
+            var plugin = this.app.plugins && this.app.plugins.plugins
+                ? this.app.plugins.plugins.paperforge
+                : null;
+            var pyResult = resolvePythonExecutable(vp, plugin && plugin.settings);
+            var annotationLoader = this._annotationLoader || loadAnnotationsForPaper;
+            var result = await annotationLoader({
+                paperKey: capturedKey,
+                pythonExe: pyResult.path,
+                pythonExtraArgs: pyResult.extraArgs || [],
+                cwd: vp,
+                timeout: 30000,
+            });
+            if (capturedSeq !== this._annotationLoadSeq || capturedKey !== this._paperKey) {
+                return this._annotationState;
+            }
+            this._annotationState = result || makeAnnotationState(ANNOTATION_LOAD_STATES.EMPTY, {
+                paperKey: capturedKey,
+                message: 'No annotations found.',
+            });
+            this._renderNativeAnnotationPanel(capturedKey, this._paperEntry, this._annotationState);
+            return this._annotationState;
+        } catch (err) {
+            if (capturedSeq !== this._annotationLoadSeq || capturedKey !== this._paperKey) {
+                return this._annotationState;
+            }
+            this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.CLI_ERROR, {
+                paperKey: capturedKey,
+                message: 'Could not load annotations for this paper.',
+                errorCode: 'ANNOTATION_PANEL_LOAD_ERROR',
+                raw: { error: (err && err.message) || String(err) },
+            });
+            this._renderNativeAnnotationPanel(capturedKey, this._paperEntry, this._annotationState);
+            return this._annotationState;
+        }
     }
 
     async _loadAndRenderCanvas(canvas) {
