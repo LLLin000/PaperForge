@@ -3,6 +3,4259 @@ const { exec, execFile, spawn, execFileSync } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+
+// Inline Reading Canvas modules. Obsidian runtime cannot reliably require local plugin files.
+const paperForgeCanvasInlineModules = (() => {
+    const factories = {
+        "src/canvas/anchors": function(require, module, exports) {
+            /**
+             * Pure conservative anchor resolver for PaperForge-owned source text
+             * (Phase ANN12, Plan 01).
+             *
+             * Pure CommonJS helpers for resolving card annotations to exact,
+             * page-level, or unresolved anchor statuses based on normalized
+             * source text matching.  No fs, no Obsidian, no native PDF DOM,
+             * no innerHTML, no subprocess.
+             *
+             * Anchor statuses per D-06 through D-10:
+             *   exact      — Normalized selected text has exactly one owned-source match.
+             *   page-level — Page metadata available without unique text grounding.
+             *   unresolved — No source content or page metadata available.
+             *
+             * @module canvas/anchors
+             */
+            
+            // ── Anchor constants ──
+            
+            /**
+             * Anchor precision statuses.
+             *
+             * @enum {string}
+             * @readonly
+             */
+            const ANCHOR_STATUSES = Object.freeze({
+                EXACT: 'exact',
+                PAGE_LEVEL: 'page-level',
+                UNRESOLVED: 'unresolved',
+            });
+            
+            /**
+             * Minimum character length for selected text to qualify for exact anchoring.
+             * Text below this threshold always downgrades to page-level or unresolved.
+             *
+             * @type {number}
+             */
+            const MIN_EXACT_TEXT_CHARS = 3;
+            
+            // ── Internal normalization helper ──
+            
+            /**
+             * Simple whitespace-collapse normalization for anchor matching.
+             *
+             * Mirrors the normalization in surface.js but implemented inline so this
+             * module has no dependency on surface.js.
+             *
+             * @param {string} value - Text to normalize.
+             * @returns {{ normalized: string, offsetMap: Array<{rawStart: number, rawEnd: number, normStart: number, normEnd: number}> }}
+             * @private
+             */
+            function _normalizeText(value) {
+                if (typeof value !== 'string' || value.length === 0) {
+                    return { normalized: '', offsetMap: [] };
+                }
+            
+                var normalized = '';
+                var offsetMap = [];
+                var i = 0;
+                var len = value.length;
+                var normPos = 0;
+            
+                // Skip leading whitespace
+                while (i < len && _isWs(value[i])) { i++; }
+            
+                while (i < len) {
+                    var start = i;
+                    while (i < len && !_isWs(value[i])) { i++; }
+            
+                    if (i > start) {
+                        var segment = value.substring(start, i);
+                        if (normalized.length > 0) {
+                            offsetMap.push({
+                                rawStart: start - 1,
+                                rawEnd: start,
+                                normStart: normPos,
+                                normEnd: normPos + 1,
+                            });
+                            normalized += ' ';
+                            normPos += 1;
+                        }
+                        offsetMap.push({
+                            rawStart: start,
+                            rawEnd: i,
+                            normStart: normPos,
+                            normEnd: normPos + segment.length,
+                        });
+                        normalized += segment;
+                        normPos += segment.length;
+                    }
+            
+                    while (i < len && _isWs(value[i])) { i++; }
+                }
+            
+                return { normalized: normalized, offsetMap: offsetMap };
+            }
+            
+            /**
+             * @param {string} ch - Single character.
+             * @returns {boolean}
+             * @private
+             */
+            function _isWs(ch) {
+                return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r';
+            }
+            
+            /**
+             * Map a normalized-text position to raw source offset using the offset map.
+             *
+             * @param {Array<{rawStart: number, rawEnd: number, normStart: number, normEnd: number}>} offsetMap
+             * @param {number} normPos - Position in normalized text.
+             * @returns {number|null} Raw position, or null if out of range.
+             * @private
+             */
+            function _mapNormToRaw(offsetMap, normPos) {
+                if (!Array.isArray(offsetMap)) return null;
+                for (var j = 0; j < offsetMap.length; j++) {
+                    var entry = offsetMap[j];
+                    if (normPos >= entry.normStart && normPos <= entry.normEnd) {
+                        // Interpolate within the segment
+                        var offset = normPos - entry.normStart;
+                        return entry.rawStart + offset;
+                    }
+                }
+                return null;
+            }
+            
+            /**
+             * Map a normalized-text range to raw source offsets using the offset map.
+             *
+             * @param {Array<object>} offsetMap
+             * @param {number} normStart - Start position in normalized text.
+             * @param {number} normEnd - End position in normalized text.
+             * @returns {{ rawStart: number|null, rawEnd: number|null }}
+             * @private
+             */
+            function _mapNormRangeToRaw(offsetMap, normStart, normEnd) {
+                var rawStart = _mapNormToRaw(offsetMap, normStart);
+                var rawEnd = _mapNormToRaw(offsetMap, normEnd);
+            
+                // If rawEnd is at a segment boundary, use the rawEnd of the segment containing normEnd-1
+                if (rawEnd == null && normEnd > normStart) {
+                    rawEnd = _mapNormToRaw(offsetMap, normEnd - 1);
+                    if (rawEnd != null) {
+                        // Add 1 since rawEnd is exclusive
+                        rawEnd = rawEnd + 1;
+                    }
+                }
+            
+                // Fallback: if normEnd equals total normalized length, use last segment's rawEnd
+                if (rawEnd == null && offsetMap.length > 0) {
+                    var last = offsetMap[offsetMap.length - 1];
+                    rawEnd = last.rawEnd;
+                }
+            
+                return { rawStart: rawStart, rawEnd: rawEnd };
+            }
+            
+            // ── Normalized match finder ──
+            
+            /**
+             * Find all normalized matches of `selectedText` in `sourceText`.
+             *
+             * Normalizes both texts (whitespace collapse) and locates all occurrences
+             * of the normalized selected text in the normalized source text.  Each
+             * result maps back to raw source offsets.
+             *
+             * Returns an empty array when either input is empty, null, or too short.
+             *
+             * @param {string} sourceText - Raw source text to search in.
+             * @param {string} selectedText - Raw selected text to find.
+             * @returns {Array<{ normStart: number, normEnd: number, rawStart: number|null, rawEnd: number|null }>}
+             */
+            function findNormalizedSourceMatches(sourceText, selectedText) {
+                if (!sourceText || !selectedText || typeof sourceText !== 'string' || typeof selectedText !== 'string') {
+                    return [];
+                }
+            
+                if (sourceText.length === 0 || selectedText.length === 0) {
+                    return [];
+                }
+            
+                var srcNorm = _normalizeText(sourceText);
+                var selNorm = _normalizeText(selectedText);
+            
+                var srcText = srcNorm.normalized;
+                var selText = selNorm.normalized;
+            
+                if (srcText.length === 0 || selText.length === 0) {
+                    return [];
+                }
+            
+                var matches = [];
+                var searchFrom = 0;
+            
+                while (searchFrom <= srcText.length - selText.length) {
+                    var pos = srcText.indexOf(selText, searchFrom);
+                    if (pos === -1) break;
+            
+                    var normStart = pos;
+                    var normEnd = pos + selText.length;
+            
+                    var raw = _mapNormRangeToRaw(srcNorm.offsetMap, normStart, normEnd);
+            
+                    matches.push({
+                        normStart: normStart,
+                        normEnd: normEnd,
+                        rawStart: raw.rawStart,
+                        rawEnd: raw.rawEnd,
+                    });
+            
+                    searchFrom = pos + 1;
+                }
+            
+                return matches;
+            }
+            
+            /**
+             * OCR-tolerant normalization with a character-level raw offset map.
+             *
+             * @param {string} value
+             * @returns {{ normalized: string, offsetMap: Array<{rawStart: number, rawEnd: number, normStart: number, normEnd: number}> }}
+             */
+            function _nfkcUnits(value) {
+                var previousNormalized = '';
+                var previousUnits = [];
+                var rawEnd = 0;
+            
+                while (rawEnd < value.length) {
+                    var rawStart = rawEnd;
+                    var codePoint = value.codePointAt(rawEnd);
+                    rawEnd += String.fromCodePoint(codePoint).length;
+            
+                    var currentNormalized = value.slice(0, rawEnd).normalize('NFKC');
+                    var commonLength = 0;
+                    while (
+                        commonLength < previousNormalized.length &&
+                        commonLength < currentNormalized.length &&
+                        previousNormalized[commonLength] === currentNormalized[commonLength]
+                    ) {
+                        commonLength += 1;
+                    }
+            
+                    var changedRawStart = rawStart;
+                    if (commonLength < previousUnits.length) {
+                        changedRawStart = previousUnits[commonLength].rawStart;
+                    }
+            
+                    var currentUnits = previousUnits.slice(0, commonLength);
+                    for (var i = commonLength; i < currentNormalized.length; i++) {
+                        currentUnits.push({
+                            text: currentNormalized[i],
+                            rawStart: changedRawStart,
+                            rawEnd: rawEnd,
+                        });
+                    }
+                    previousNormalized = currentNormalized;
+                    previousUnits = currentUnits;
+                }
+            
+                return previousUnits;
+            }
+            
+            function _isOcrPunctuation(value) {
+                return /[.,;:!?'"()[\]{}\u2013\u2014，。；：！？、（）【】《》]/u.test(value);
+            }
+            
+            function normalizeForAnchor(value, options) {
+                if (typeof value !== 'string' || value.length === 0) {
+                    return { normalized: '', offsetMap: [] };
+                }
+            
+                var units = [];
+                var nfkcUnits = _nfkcUnits(value);
+                for (var unitIndex = 0; unitIndex < nfkcUnits.length; unitIndex++) {
+                    var nfkcUnit = nfkcUnits[unitIndex];
+                    var nextRaw = value[nfkcUnit.rawEnd];
+            
+                    if (/[-\u00ad\u2010\u2011]/.test(nfkcUnit.text) && (nextRaw === '\n' || nextRaw === '\r')) {
+                        var breakEnd = nfkcUnit.rawEnd + 1;
+                        if (nextRaw === '\r' && value[breakEnd] === '\n') breakEnd += 1;
+                        if (options && options.lineEndHyphenAsSpace) {
+                            units.push({ text: ' ', rawStart: nfkcUnit.rawStart, rawEnd: breakEnd });
+                        }
+                        while (unitIndex + 1 < nfkcUnits.length && nfkcUnits[unitIndex + 1].rawEnd <= breakEnd) {
+                            unitIndex += 1;
+                        }
+                        continue;
+                    }
+            
+                    var normalizedChar = nfkcUnit.text
+                        .replace(/[\u2018\u2019\u201b\u2032]/g, "'")
+                        .replace(/[\u201c\u201d\u201f\u2033]/g, '"');
+            
+                    for (var j = 0; j < normalizedChar.length; j++) {
+                        var out = normalizedChar[j];
+                        if (/\s/u.test(out) || _isOcrPunctuation(out)) out = ' ';
+                        units.push({ text: out, rawStart: nfkcUnit.rawStart, rawEnd: nfkcUnit.rawEnd });
+                    }
+                }
+            
+                var normalized = '';
+                var offsetMap = [];
+                var pendingSpace = null;
+                for (var k = 0; k < units.length; k++) {
+                    var unit = units[k];
+                    if (unit.text === ' ') {
+                        if (normalized.length > 0) {
+                            if (pendingSpace) {
+                                pendingSpace.rawEnd = unit.rawEnd;
+                            } else {
+                                pendingSpace = { rawStart: unit.rawStart, rawEnd: unit.rawEnd };
+                            }
+                        }
+                        continue;
+                    }
+                    if (pendingSpace) {
+                        offsetMap.push({
+                            rawStart: pendingSpace.rawStart,
+                            rawEnd: pendingSpace.rawEnd,
+                            normStart: normalized.length,
+                            normEnd: normalized.length + 1,
+                        });
+                        normalized += ' ';
+                        pendingSpace = null;
+                    }
+                    offsetMap.push({
+                        rawStart: unit.rawStart,
+                        rawEnd: unit.rawEnd,
+                        normStart: normalized.length,
+                        normEnd: normalized.length + 1,
+                    });
+                    normalized += unit.text;
+                }
+            
+                return { normalized: normalized, offsetMap: offsetMap };
+            }
+            
+            function _findOcrNormalizedMatches(sourceText, selectedText) {
+                var selected = normalizeForAnchor(selectedText);
+                if (!selected.normalized) return [];
+                var selectedHasTrailingPunctuation =
+                    selected.offsetMap[selected.offsetMap.length - 1].rawEnd < selectedText.length &&
+                    _isOcrPunctuation(selectedText.trimEnd().slice(-1));
+            
+                var matches = [];
+                var sourceVariants = [
+                    normalizeForAnchor(sourceText),
+                    normalizeForAnchor(sourceText, { lineEndHyphenAsSpace: true }),
+                ];
+                var seenRawSpans = Object.create(null);
+            
+                for (var variantIndex = 0; variantIndex < sourceVariants.length; variantIndex++) {
+                    var source = sourceVariants[variantIndex];
+                    var searchFrom = 0;
+                    while (searchFrom <= source.normalized.length - selected.normalized.length) {
+                        var pos = source.normalized.indexOf(selected.normalized, searchFrom);
+                        if (pos === -1) break;
+                        var end = pos + selected.normalized.length;
+                        var rawStart = source.offsetMap[pos].rawStart;
+                        var rawEnd = source.offsetMap[end - 1].rawEnd;
+                        if (selectedHasTrailingPunctuation) {
+                            while (rawEnd < sourceText.length && _isOcrPunctuation(sourceText[rawEnd])) {
+                                rawEnd += 1;
+                            }
+                        }
+                        var spanKey = rawStart + ':' + rawEnd;
+                        if (!seenRawSpans[spanKey]) {
+                            seenRawSpans[spanKey] = true;
+                            matches.push({
+                                normStart: pos,
+                                normEnd: end,
+                                rawStart: rawStart,
+                                rawEnd: rawEnd,
+                            });
+                        }
+                        searchFrom = pos + 1;
+                    }
+                }
+                return matches;
+            }
+            
+            // ── Anchor resolution ──
+            
+            /**
+             * Resolve anchor status for a single annotation card against a source model.
+             *
+             * Decision order per D-06 through D-14:
+             *   1. Source unavailable → UNRESOLVED
+             *   2. Paper identity mismatch → PAGE_LEVEL (with mismatch reason)
+             *   3. Selected text empty/missing → PAGE_LEVEL (if page exists) else UNRESOLVED
+             *   4. Selected text too short (< MIN_EXACT_TEXT_CHARS) → PAGE_LEVEL (if page exists)
+             *   5. Find normalized matches in source text
+             *   6. Zero matches → PAGE_LEVEL (if page exists) else UNRESOLVED
+             *   7. Exactly one match → EXACT
+             *   8. Multiple matches → PAGE_LEVEL (ambiguous)
+             *
+             * @param {object} card - Annotation card ({ cardId, selectedText, pageIndex, pageLabel?, paperKey? }).
+             * @param {object} sourceModel - Source model from buildCanvasSourceModel().
+             * @param {object} [options] - Optional flags (reserved for future use).
+             * @returns {{ anchorId: string, cardId: string, status: string, sourceKind: string|null,
+             *            reason: string|null, matchCount: number, pageIndex: number|null,
+             *            sourceSpan: object|null, diagnostics: object }}
+             */
+            function _resolveCanvasAnchorLegacy(card, sourceModel, options) {
+                var cardId = (card && card.cardId) || '';
+                var selectedText = (card && card.selectedText) || '';
+                var pageIndex = (card && card.pageIndex) != null ? card.pageIndex : null;
+                var cardPaperKey = (card && card.paperKey) || null;
+            
+                var anchorId = 'anchor-' + (cardId || 'unknown');
+            
+                // ── Guard: missing card ──
+                if (!card || !cardId) {
+                    return {
+                        anchorId: anchorId,
+                        cardId: cardId || '',
+                        status: ANCHOR_STATUSES.UNRESOLVED,
+                        sourceKind: null,
+                        reason: 'Card has no identity.',
+                        matchCount: 0,
+                        pageIndex: pageIndex,
+                        sourceSpan: null,
+                        diagnostics: { cardMissing: true },
+                    };
+                }
+            
+                // ── Step 1: Source unavailable → UNRESOLVED ──
+                var sourceStatus = (sourceModel && sourceModel.status) || 'source-unavailable';
+                var sourceKind = (sourceModel && sourceModel.sourceKind) || null;
+                var sourceText = (sourceModel && sourceModel.text) || null;
+                var modelPaperKey = (sourceModel && sourceModel.diagnostics && sourceModel.diagnostics.fulltext) ? null : null;
+            
+                if (sourceStatus === 'source-unavailable' || sourceKind == null) {
+                    var reason = (sourceModel && sourceModel.reason) || 'Source content is not available.';
+                    return {
+                        anchorId: anchorId,
+                        cardId: cardId,
+                        status: ANCHOR_STATUSES.UNRESOLVED,
+                        sourceKind: sourceKind,
+                        reason: reason,
+                        matchCount: 0,
+                        pageIndex: pageIndex,
+                        sourceSpan: null,
+                        diagnostics: {
+                            sourceUnavailable: true,
+                            sourceReason: reason,
+                        },
+                    };
+                }
+            
+                // ── Step 2: Paper identity mismatch? ──
+                // Source model carries the entry paper key from surface.js.
+                var sourcePaperKey = (sourceModel && sourceModel.paperKey) || null;
+            
+                if (cardPaperKey && sourcePaperKey && cardPaperKey !== sourcePaperKey) {
+                    return {
+                        anchorId: anchorId,
+                        cardId: cardId,
+                        status: ANCHOR_STATUSES.PAGE_LEVEL,
+                        sourceKind: sourceKind,
+                        reason: 'Source text belongs to a different paper. (source-identity-mismatch)',
+                        matchCount: 0,
+                        pageIndex: pageIndex,
+                        sourceSpan: null,
+                        diagnostics: {
+                            cardPaperKey: cardPaperKey,
+                            sourcePaperKey: sourcePaperKey,
+                            identityMismatch: true,
+                        },
+                    };
+                }
+            
+                // ── Step 3: Empty/selected text ──
+                var hasPageMetadata = pageIndex != null && pageIndex >= 0;
+            
+                if (!selectedText || selectedText.trim().length === 0) {
+                    if (hasPageMetadata) {
+                        return {
+                            anchorId: anchorId,
+                            cardId: cardId,
+                            status: ANCHOR_STATUSES.PAGE_LEVEL,
+                            sourceKind: sourceKind,
+                            reason: 'No selected text. Using page-level anchor.',
+                            matchCount: 0,
+                            pageIndex: pageIndex,
+                            sourceSpan: null,
+                            diagnostics: { emptySelectedText: true },
+                        };
+                    }
+                    return {
+                        anchorId: anchorId,
+                        cardId: cardId,
+                        status: ANCHOR_STATUSES.UNRESOLVED,
+                        sourceKind: sourceKind,
+                        reason: 'No selected text and no page metadata.',
+                        matchCount: 0,
+                        pageIndex: pageIndex,
+                        sourceSpan: null,
+                        diagnostics: { emptySelectedText: true, noPageMetadata: true },
+                    };
+                }
+            
+                // ── Step 4: Text too short? ──
+                // Use trimmed length for MIN_EXACT_TEXT_CHARS threshold check
+                var trimLen = selectedText.trim().length;
+            
+                if (trimLen < MIN_EXACT_TEXT_CHARS) {
+                    return {
+                        anchorId: anchorId,
+                        cardId: cardId,
+                        status: ANCHOR_STATUSES.PAGE_LEVEL,
+                        sourceKind: sourceKind,
+                        reason: 'Selected text is too short for exact anchoring. (' + trimLen + ' chars)',
+                        matchCount: 0,
+                        pageIndex: pageIndex,
+                        sourceSpan: null,
+                        diagnostics: { textTooShort: true, textLength: trimLen, minChars: MIN_EXACT_TEXT_CHARS },
+                    };
+                }
+            
+                // ── Step 5: Find normalized matches ──
+                // If there's no source text, downgrade
+                if (!sourceText || sourceText.length === 0) {
+                    if (hasPageMetadata) {
+                        return {
+                            anchorId: anchorId,
+                            cardId: cardId,
+                            status: ANCHOR_STATUSES.PAGE_LEVEL,
+                            sourceKind: sourceKind,
+                            reason: 'Source text is empty. Using page-level anchor.',
+                            matchCount: 0,
+                            pageIndex: pageIndex,
+                            sourceSpan: null,
+                            diagnostics: { emptySourceText: true },
+                        };
+                    }
+                    return {
+                        anchorId: anchorId,
+                        cardId: cardId,
+                        status: ANCHOR_STATUSES.UNRESOLVED,
+                        sourceKind: sourceKind,
+                        reason: 'Source text is empty.',
+                        matchCount: 0,
+                        pageIndex: pageIndex,
+                        sourceSpan: null,
+                        diagnostics: { emptySourceText: true },
+                    };
+                }
+            
+                var matches = findNormalizedSourceMatches(sourceText, selectedText);
+                var matchCount = matches.length;
+            
+                // ── Step 6: Zero matches ──
+                if (matchCount === 0) {
+                    if (hasPageMetadata) {
+                        return {
+                            anchorId: anchorId,
+                            cardId: cardId,
+                            status: ANCHOR_STATUSES.PAGE_LEVEL,
+                            sourceKind: sourceKind,
+                            reason: 'Selected text not found in source. Using page-level anchor.',
+                            matchCount: 0,
+                            pageIndex: pageIndex,
+                            sourceSpan: null,
+                            diagnostics: { textNotFoundInSource: true },
+                        };
+                    }
+                    return {
+                        anchorId: anchorId,
+                        cardId: cardId,
+                        status: ANCHOR_STATUSES.UNRESOLVED,
+                        sourceKind: sourceKind,
+                        reason: 'Selected text not found in source.',
+                        matchCount: 0,
+                        pageIndex: pageIndex,
+                        sourceSpan: null,
+                        diagnostics: { textNotFoundInSource: true },
+                    };
+                }
+            
+                // ── Step 7: Exactly one match → EXACT ──
+                if (matchCount === 1) {
+                    var match = matches[0];
+                    return {
+                        anchorId: anchorId,
+                        cardId: cardId,
+                        status: ANCHOR_STATUSES.EXACT,
+                        sourceKind: sourceKind,
+                        reason: null,
+                        matchCount: 1,
+                        pageIndex: pageIndex,
+                        sourceSpan: {
+                            rawStart: match.rawStart,
+                            rawEnd: match.rawEnd,
+                            normStart: match.normStart,
+                            normEnd: match.normEnd,
+                        },
+                        diagnostics: {
+                            exactMatch: true,
+                            normalizedMatch: selectedText,
+                        },
+                    };
+                }
+            
+                // ── Step 8: Multiple matches → PAGE_LEVEL (ambiguous) ──
+                return {
+                    anchorId: anchorId,
+                    cardId: cardId,
+                    status: ANCHOR_STATUSES.PAGE_LEVEL,
+                    sourceKind: sourceKind,
+                    reason: 'Selected text appears ' + matchCount + ' times in source (ambiguous).',
+                    matchCount: matchCount,
+                    pageIndex: pageIndex,
+                    sourceSpan: null,
+                    diagnostics: { ambiguousMatch: true, matchCount: matchCount },
+                };
+            }
+            
+            function _withMatchingMetadata(anchor, strategy, confidence, candidateCount, match) {
+                var result = Object.assign({}, anchor, {
+                    strategy: strategy,
+                    confidence: confidence,
+                    candidateCount: candidateCount,
+                    rawStart: match ? match.rawStart : null,
+                    rawEnd: match ? match.rawEnd : null,
+                });
+                result.matchCount = candidateCount;
+                return result;
+            }
+            
+            /**
+             * Resolve an anchor in conservative literal, OCR-normalized, then page-context stages.
+             */
+            function resolveCanvasAnchor(card, sourceModel, options) {
+                var legacy = _resolveCanvasAnchorLegacy(card, sourceModel, options);
+                var selectedText = card && typeof card.selectedText === 'string' ? card.selectedText : '';
+                var sourceText = sourceModel && typeof sourceModel.text === 'string' ? sourceModel.text : '';
+                var canMatch = card && card.cardId && selectedText.trim().length >= MIN_EXACT_TEXT_CHARS &&
+                    sourceText.length > 0 && !legacy.diagnostics.identityMismatch;
+            
+                if (!canMatch) {
+                    var fallbackStrategy = legacy.status === ANCHOR_STATUSES.PAGE_LEVEL ? 'page-context' : 'none';
+                    return _withMatchingMetadata(
+                        legacy,
+                        fallbackStrategy,
+                        legacy.status === ANCHOR_STATUSES.PAGE_LEVEL ? 0.5 : 0,
+                        legacy.matchCount || 0,
+                        null
+                    );
+                }
+            
+                var literalMatches = findNormalizedSourceMatches(sourceText, selectedText);
+                if (literalMatches.length === 1) {
+                    var literal = literalMatches[0];
+                    return _withMatchingMetadata(_resolveCanvasAnchorLegacy(card, sourceModel, options), 'literal', 1, 1, literal);
+                }
+                if (literalMatches.length > 1) {
+                    return _withMatchingMetadata(Object.assign({}, legacy, {
+                        status: ANCHOR_STATUSES.UNRESOLVED,
+                        reason: 'Selected text has ambiguous literal matches in source.',
+                        sourceSpan: null,
+                        diagnostics: { ambiguousMatch: true, matchCount: literalMatches.length },
+                    }), 'none', 0, literalMatches.length, null);
+                }
+            
+                var ocrMatches = _findOcrNormalizedMatches(sourceText, selectedText);
+                if (ocrMatches.length === 1) {
+                    var ocr = ocrMatches[0];
+                    return _withMatchingMetadata(Object.assign({}, legacy, {
+                        status: ANCHOR_STATUSES.EXACT,
+                        reason: null,
+                        sourceSpan: {
+                            rawStart: ocr.rawStart,
+                            rawEnd: ocr.rawEnd,
+                            normStart: ocr.normStart,
+                            normEnd: ocr.normEnd,
+                        },
+                        diagnostics: { exactMatch: true, ocrNormalizedMatch: true },
+                    }), 'ocr-normalized', 0.95, 1, ocr);
+                }
+                if (ocrMatches.length > 1) {
+                    return _withMatchingMetadata(Object.assign({}, legacy, {
+                        status: ANCHOR_STATUSES.UNRESOLVED,
+                        reason: 'Selected text has ambiguous OCR-normalized matches in source.',
+                        sourceSpan: null,
+                        diagnostics: { ambiguousMatch: true, matchCount: ocrMatches.length },
+                    }), 'none', 0, ocrMatches.length, null);
+                }
+            
+                var strategy = legacy.status === ANCHOR_STATUSES.PAGE_LEVEL ? 'page-context' : 'none';
+                return _withMatchingMetadata(
+                    legacy,
+                    strategy,
+                    legacy.status === ANCHOR_STATUSES.PAGE_LEVEL ? 0.5 : 0,
+                    0,
+                    null
+                );
+            }
+            
+            /**
+             * Resolve anchors for multiple cards in batch.
+             *
+             * @param {Array<object>} cards - Array of card objects.
+             * @param {object} sourceModel - Source model from buildCanvasSourceModel().
+             * @param {object} [options] - Optional flags (reserved).
+             * @returns {Array<object>} Array of anchor results.
+             */
+            function resolveCanvasAnchors(cards, sourceModel, options) {
+                if (!Array.isArray(cards)) return [];
+                return cards.map(function (card) {
+                    return resolveCanvasAnchor(card, sourceModel, options);
+                });
+            }
+            
+            module.exports = {
+                ANCHOR_STATUSES: ANCHOR_STATUSES,
+                MIN_EXACT_TEXT_CHARS: MIN_EXACT_TEXT_CHARS,
+                resolveCanvasAnchor: resolveCanvasAnchor,
+                resolveCanvasAnchors: resolveCanvasAnchors,
+                findNormalizedSourceMatches: findNormalizedSourceMatches,
+                normalizeForAnchor: normalizeForAnchor,
+            };
+            
+        },
+        "src/canvas/annotations": function(require, module, exports) {
+            /**
+             * Canvas annotation loading wrapper.
+             *
+             * A thin injected wrapper around existing v0.2 annotation contracts
+             * (`loadAnnotationsForPaper()` and `makeAnnotationState()` from
+             * `src/testable.js`).  The wrapper accepts a `paperKey`, injected
+             * loader, and optional load options, and returns existing annotation
+             * load states without constructing new CLI commands, database reads,
+             * or Zotero API calls.
+             *
+             * @module canvas/annotations
+             */
+            
+            const ANNOTATION_LOAD_STATES = Object.freeze({
+                IDLE: 'idle',
+                LOADING: 'loading',
+                READY: 'ready',
+                EMPTY: 'empty',
+                MISSING_PAPER: 'missing-paper',
+                MISSING_DB: 'missing-db',
+                CLI_ERROR: 'cli-error',
+                INVALID_JSON: 'invalid-json',
+            });
+            
+            /**
+             * Create a default annotation state (used when no loader is available).
+             *
+             * @param {string|null} [paperKey=null]
+             * @param {string} [message='']
+             * @returns {{ state: string, paperKey: string|null, annotations: Array, message: string, errorCode: null, raw: null }}
+             */
+            function makeDefaultState(paperKey, message) {
+                return {
+                    state: ANNOTATION_LOAD_STATES.IDLE,
+                    paperKey: paperKey != null ? paperKey : null,
+                    annotations: [],
+                    message: message || '',
+                    errorCode: null,
+                    raw: null,
+                };
+            }
+            
+            /**
+             * Create a canvas annotation loader.
+             *
+             * The returned object exposes a single `loadForPaper(paperKey, loadOptions)`
+             * method that delegates entirely to the injected v0.2 `loadAnnotationsForPaper`
+             * or `loader` function.  No CLI arguments, database paths, or Zotero
+             * identities are constructed in this module.
+             *
+             * @param {object} deps
+             * @param {Function} [deps.loadAnnotationsForPaper] - The v0.2 loader function
+             *   matching `loadAnnotationsForPaper(options)` signature.  If omitted, all
+             *   load calls return a CLI-error state indicating the loader is unavailable.
+             * @param {Function} [deps.loader] - Alternative name accepted for convenience.
+             *   When both are present, `loadAnnotationsForPaper` takes precedence.
+             * @returns {{ loadForPaper: Function, getLoadStates: Function }}
+             */
+            function createCanvasAnnotationLoader(deps) {
+                const effectiveLoader = (deps && (deps.loadAnnotationsForPaper || deps.loader)) || null;
+            
+                /**
+                 * Load annotations for a specific paper key.
+                 *
+                 * Accepts a paperKey and optional load options that are forwarded
+                 * directly to the v0.2 loader.  Never constructs CLI commands or
+                 * database paths here.
+                 *
+                 * @param {string|null} paperKey - The paper identity to load annotations for.
+                 * @param {object} [loadOptions] - Options forwarded to the v0.2 loader
+                 *   (e.g. `{ pythonExe, cwd, timeout, runSubprocessFn, env }`).
+                 * @returns {Promise<{ state: string, paperKey: string|null, annotations: Array, message: string, errorCode, raw }>}
+                 */
+                async function loadForPaper(paperKey, loadOptions) {
+                    // ── Guard: loader not available ──
+                    if (typeof effectiveLoader !== 'function') {
+                        return makeDefaultState(
+                            paperKey != null ? paperKey : null,
+                            'Annotation loader is not available.'
+                        );
+                    }
+            
+                    // ── Guard: missing paper key ──
+                    if (paperKey == null || (typeof paperKey === 'string' && paperKey.trim() === '')) {
+                        return {
+                            state: ANNOTATION_LOAD_STATES.MISSING_PAPER,
+                            paperKey: null,
+                            annotations: [],
+                            message: 'No paper key provided. Open a recognized paper to view its annotations.',
+                            errorCode: null,
+                            raw: null,
+                        };
+                    }
+            
+                    // Delegate to the injected v0.2 loader with the explicit paperKey.
+                    // The loader is responsible for constructing CLI args, managing
+                    // subprocess calls, and returning the correct load state.
+                    return effectiveLoader({
+                        paperKey: paperKey,
+                        ...(loadOptions || {}),
+                    });
+                }
+            
+                /**
+                 * Return the set of known annotation load state names.
+                 *
+                 * @returns {Readonly<Record<string, string>>}
+                 */
+                function getLoadStates() {
+                    return ANNOTATION_LOAD_STATES;
+                }
+            
+                return {
+                    loadForPaper,
+                    getLoadStates,
+                };
+            }
+            
+            module.exports = {
+                createCanvasAnnotationLoader,
+                ANNOTATION_LOAD_STATES,
+            };
+            
+        },
+        "src/canvas/connectors": function(require, module, exports) {
+            /**
+             * Pure connector eligibility and geometry helpers for focused
+             * card-anchor pairs (Phase ANN14, Plan 01).
+             *
+             * Decides whether a focused connector may exist and converts
+             * measured PaperForge-owned endpoint rectangles into connector
+             * geometry.  No DOM rendering, CSS, runtime listeners, or
+             * Obsidian integration.
+             *
+             * All output is serializable plain objects — no DOM refs,
+             * timers, Obsidian objects, or persisted layout fields.
+             *
+             * @module canvas/connectors
+             */
+            
+            // ── Connector state constants ──
+            
+            /**
+             * Visible vs hidden connector states.
+             *
+             * @enum {string}
+             * @readonly
+             */
+            const CONNECTOR_STATES = Object.freeze({
+                VISIBLE: 'visible',
+                HIDDEN: 'hidden',
+            });
+            
+            /**
+             * Hidden reason constants explaining why a connector is hidden.
+             *
+             * @enum {string}
+             * @readonly
+             */
+            const HIDDEN_REASONS = Object.freeze({
+                /** Card has page-level anchor only — not exact enough for a connector line. */
+                PAGE_LEVEL: 'page-level',
+                /** Anchor status could not be resolved — no connector. */
+                UNRESOLVED: 'unresolved',
+                /** Source content is unavailable — cannot anchor. */
+                SOURCE_UNAVAILABLE: 'source-unavailable',
+                /** Card type or source kind does not support connectors. */
+                UNSUPPORTED: 'unsupported',
+                /** Navigation state references a card that no longer exists in the card list. */
+                MISSING_CARD: 'missing-card',
+                /** Navigation state references an anchor that no longer exists. */
+                MISSING_ANCHOR: 'missing-anchor',
+                /** The card's anchor's DOMRect is no longer available. */
+                MISSING_DOM: 'missing-dom',
+                /** Selected card ID and selected anchor ID resolve to different cards. */
+                MISMATCHED_IDS: 'mismatched-ids',
+                /** No focused card or anchor selected/hovered. */
+                NO_FOCUS: 'no-focus',
+                /** Connector candidate state is stale (e.g. paper changed without clearing). */
+                STALE: 'stale',
+                /** Navigation state is missing required fields. */
+                MISSING_NAV_STATE: 'missing-nav-state',
+                /** Card list/map is missing or empty. */
+                MISSING_CARD_LIST: 'missing-card-list',
+                /** Geometry specific: one or both endpoint rectangles are missing. */
+                MISSING_RECT: 'missing-rect',
+                /** Geometry specific: rectangle has zero or negative dimensions. */
+                ZERO_SIZE: 'zero-size',
+                /** Geometry specific: rectangle contains non-finite coordinates. */
+                NON_FINITE: 'non-finite',
+                /** Geometry specific: endpoint rectangle is outside or clipped by visible canvas bounds. */
+                OUTSIDE_CANVAS: 'outside-canvas',
+                /** Geometry specific: canvas has unreadable narrow dimensions. */
+                NARROW_CANVAS: 'narrow-canvas',
+                /** Connector candidate is in hidden state — geometry not applicable. */
+                HIDDEN_CANDIDATE: 'hidden-candidate',
+            });
+            
+            // ─── Connector candidate shape ──
+            
+            /**
+             * Create a visible connector candidate.
+             *
+             * @param {string} cardId
+             * @param {string} anchorId
+             * @param {object} card
+             * @param {object} anchor
+             * @returns {object} ConnectorCandidate
+             * @private
+             */
+            function _visibleCandidate(cardId, anchorId, card, anchor) {
+                return {
+                    state: CONNECTOR_STATES.VISIBLE,
+                    cardId: cardId,
+                    anchorId: anchorId,
+                    reason: null,
+                    card: card,
+                    anchor: anchor,
+                };
+            }
+            
+            /**
+             * Create a hidden connector candidate with a reason.
+             *
+             * @param {string} reason - One of HIDDEN_REASONS.
+             * @param {string} [cardId]
+             * @param {string} [anchorId]
+             * @returns {object} ConnectorCandidate
+             * @private
+             */
+            function _hiddenCandidate(reason, cardId, anchorId) {
+                var result = {
+                    state: CONNECTOR_STATES.HIDDEN,
+                    cardId: cardId || null,
+                    anchorId: anchorId || null,
+                    reason: reason,
+                    card: null,
+                    anchor: null,
+                };
+                return result;
+            }
+            
+            // ─── Eligibility helper ──
+            
+            /**
+             * Determine whether a focused connector candidate exists for the
+             * current navigation and/or hover state.
+             *
+             * Input fields:
+             *   - navState          ({ selectedCardId, selectedAnchorId, ... })
+             *   - hoverState        ({ hoveredCardId, hoveredAnchorId, ... }) or null
+             *   - cards             (Array) current card list
+             *   - paperKey          (string|null) current paper key
+             *
+             * Decision order (D-01/D-02/D-03/D-04/D-19/D-20):
+             *   1. Prefer selected state over hover when both are present.
+             *   2. Require both card ID and anchor ID to exist and resolve
+             *      to the same current card.
+             *   3. Require `card.anchor.status === 'exact'`.
+             *   4. Page-level, unresolved, source-unavailable, unsupported,
+             *      stale, missing, and mismatched pairs return hidden states.
+             *
+             * The helper does NOT import or call `resolveCanvasAnchor`, read
+             * native PDF viewer selectors, or infer precision from source text.
+             *
+             * @param {object} input
+             * @param {object} [input.navState] - Current navigation state from ANN13.
+             * @param {object} [input.hoverState] - Optional hover state.
+             * @param {Array<object>} [input.cards] - Current card list.
+             * @param {string} [input.paperKey] - Current paper identity key.
+             * @returns {object} ConnectorCandidate — { state, cardId, anchorId, reason, card, anchor }
+             */
+            function computeFocusedConnectorCandidate(input) {
+                // ── Guard: missing or empty input ──
+                if (!input) {
+                    return _hiddenCandidate(HIDDEN_REASONS.MISSING_NAV_STATE);
+                }
+            
+                var navState = input.navState;
+                var hoverState = input.hoverState || null;
+                var cards = input.cards;
+                var paperKey = input.paperKey || null;
+            
+                // ── Guard: missing navigation state ──
+                if (!navState) {
+                    return _hiddenCandidate(HIDDEN_REASONS.MISSING_NAV_STATE);
+                }
+            
+                // ── Guard: missing or empty card list ──
+                if (!Array.isArray(cards) || cards.length === 0) {
+                    return _hiddenCandidate(HIDDEN_REASONS.MISSING_CARD_LIST);
+                }
+            
+                // ── Determine candidate IDs: prefer selected over hover ──
+                var cardId = navState.selectedCardId || null;
+                var anchorId = navState.selectedAnchorId || null;
+            
+                // If no selected state, fall back to hover
+                if (!cardId && !anchorId && hoverState) {
+                    cardId = hoverState.hoveredCardId || null;
+                    anchorId = hoverState.hoveredAnchorId || null;
+                }
+            
+                // ── Guard: no focus at all ──
+                if (!cardId && !anchorId) {
+                    return _hiddenCandidate(HIDDEN_REASONS.NO_FOCUS);
+                }
+            
+                // ── Resolve card from list by cardId ──
+                var card = null;
+                if (cardId) {
+                    for (var i = 0; i < cards.length; i++) {
+                        if (cards[i].cardId === cardId) {
+                            card = cards[i];
+                            break;
+                        }
+                    }
+                }
+            
+                // ── Guard: card not found ──
+                if (!card) {
+                    return _hiddenCandidate(HIDDEN_REASONS.MISSING_CARD, cardId, anchorId);
+                }
+            
+                // ── Guard: mismatched IDs (card and anchor point to different cards) ──
+                if (anchorId && anchorId !== cardId) {
+                    return _hiddenCandidate(HIDDEN_REASONS.MISMATCHED_IDS, cardId, anchorId);
+                }
+            
+                // ── Guard: anchor not found on card ──
+                var anchor = card.anchor || null;
+                if (!anchor) {
+                    return _hiddenCandidate(HIDDEN_REASONS.MISSING_ANCHOR, cardId, anchorId);
+                }
+            
+                // ── Guard: paper key mismatch (stale) ──
+                if (paperKey && card.paperKey && paperKey !== card.paperKey) {
+                    return _hiddenCandidate(HIDDEN_REASONS.STALE, cardId, anchorId);
+                }
+            
+                // ── Guard: source unavailable ──
+                if (anchor.status === 'source-unavailable') {
+                    return _hiddenCandidate(HIDDEN_REASONS.SOURCE_UNAVAILABLE, cardId, anchorId);
+                }
+            
+                // ── Guard: unsupported status ──
+                if (anchor.status !== 'exact' && anchor.status !== 'page-level' && anchor.status !== 'unresolved') {
+                    return _hiddenCandidate(HIDDEN_REASONS.UNSUPPORTED, cardId, anchorId);
+                }
+            
+                // ── Guard: page-level anchors get hidden (D-01) ──
+                if (anchor.status === 'page-level') {
+                    return _hiddenCandidate(HIDDEN_REASONS.PAGE_LEVEL, cardId, anchorId);
+                }
+            
+                // ── Guard: unresolved anchors get hidden (D-02) ──
+                if (anchor.status === 'unresolved') {
+                    return _hiddenCandidate(HIDDEN_REASONS.UNRESOLVED, cardId, anchorId);
+                }
+            
+                // ── Exact match → visible candidate (D-03) ──
+                if (anchor.status === 'exact') {
+                    return _visibleCandidate(cardId, anchorId, card, anchor);
+                }
+            
+                // ── Fallback: hidden (shouldn't reach here) ──
+                return _hiddenCandidate(HIDDEN_REASONS.UNSUPPORTED, cardId, anchorId);
+            }
+            
+            // ─── Geometry helper ──
+            
+            /**
+             * Minimum visible canvas width or height below which the canvas
+             * is considered too narrow for connector rendering.
+             *
+             * @type {number}
+             */
+            const MIN_CANVAS_DIMENSION = 50;
+            
+            /**
+             * Measure connector endpoints in the Reading Canvas coordinate
+             * frame from DOMRect-like endpoint rectangles.
+             *
+             * Input fields:
+             *   - candidate        ({ state, card, ... }) — result of
+             *                       computeFocusedConnectorCandidate()
+             *   - canvasRect       ({ x, y, width, height }) — visible canvas bounds
+             *   - cardRect         ({ x, y, width, height }) — card endpoint rect
+             *   - anchorRect       ({ x, y, width, height }) — anchor endpoint rect
+             *
+             * Returns a connector geometry object with the following shape
+             * when geometry is valid:
+             *   {
+             *     state: 'visible',
+             *     cardEndpoint: { x, y },
+             *     anchorEndpoint: { x, y },
+             *     cardRect,       // original rect (frozen)
+             *     anchorRect,     // original rect (frozen)
+             *   }
+             *
+             * Returns hidden for zero-size, non-finite, outside-canvas,
+             * clipped, narrow-canvas, and hidden-candidate inputs per
+             * D-05/D-07/D-08/D-14/D-15/D-17.
+             *
+             * @param {object} input
+             * @param {object} input.candidate - ConnectorCandidate from computeFocusedConnectorCandidate.
+             * @param {object} input.canvasRect - Visible canvas bounds.
+             * @param {object} input.cardRect - Card endpoint DOMRect-like.
+             * @param {object} input.anchorRect - Anchor endpoint DOMRect-like.
+             * @returns {object} ConnectorGeometry — { state, cardEndpoint, anchorEndpoint, ... }
+             */
+            function measureConnectorGeometry(input) {
+                // ── Guard: missing input ──
+                if (!input) {
+                    return _hiddenGeometry(HIDDEN_REASONS.MISSING_RECT);
+                }
+            
+                var candidate = input.candidate;
+                var canvasRect = input.canvasRect;
+                var cardRect = input.cardRect;
+                var anchorRect = input.anchorRect;
+            
+                // ── Guard: hidden candidate → no geometry ──
+                if (!candidate || candidate.state !== CONNECTOR_STATES.VISIBLE) {
+                    return _hiddenGeometry(
+                        (candidate && candidate.reason) || HIDDEN_REASONS.HIDDEN_CANDIDATE,
+                        candidate
+                    );
+                }
+            
+                // ── Guard: missing rectangles ──
+                if (!canvasRect || !cardRect || !anchorRect) {
+                    return _hiddenGeometry(HIDDEN_REASONS.MISSING_RECT, candidate);
+                }
+            
+                // ── Collect rect values ──
+                var cw = canvasRect.width;
+                var ch = canvasRect.height;
+                var cx = canvasRect.x;
+                var cy = canvasRect.y;
+            
+                var cardX = cardRect.x;
+                var cardY = cardRect.y;
+                var cardW = cardRect.width;
+                var cardH = cardRect.height;
+            
+                var anchorX = anchorRect.x;
+                var anchorY = anchorRect.y;
+                var anchorW = anchorRect.width;
+                var anchorH = anchorRect.height;
+            
+                // ── Guard: narrow canvas (unreadable dimensions) ──
+                if (
+                    cw == null || ch == null ||
+                    cw < MIN_CANVAS_DIMENSION || ch < MIN_CANVAS_DIMENSION
+                ) {
+                    return _hiddenGeometry(HIDDEN_REASONS.NARROW_CANVAS, candidate);
+                }
+            
+                // ── Guard: zero or negative dimensions ──
+                if (cardW <= 0 || cardH <= 0 || anchorW <= 0 || anchorH <= 0) {
+                    return _hiddenGeometry(HIDDEN_REASONS.ZERO_SIZE, candidate);
+                }
+            
+                // ── Guard: non-finite values ──
+                if (
+                    !_isFiniteCoord(cardX) || !_isFiniteCoord(cardY) ||
+                    !_isFiniteCoord(cardW) || !_isFiniteCoord(cardH) ||
+                    !_isFiniteCoord(anchorX) || !_isFiniteCoord(anchorY) ||
+                    !_isFiniteCoord(anchorW) || !_isFiniteCoord(anchorH) ||
+                    !_isFiniteCoord(cx) || !_isFiniteCoord(cy) ||
+                    !_isFiniteCoord(cw) || !_isFiniteCoord(ch)
+                ) {
+                    return _hiddenGeometry(HIDDEN_REASONS.NON_FINITE, candidate);
+                }
+            
+                // ── Guard: endpoint outside or clipped by visible canvas ──
+                // The visible canvas region is [cx, cy] to [cx + cw, cy + ch].
+                // An endpoint is considered outside if it lies completely
+                // outside the visible bounds on any axis, or clipped if the
+                // intersection is too small to be meaningful.
+                var canvasRight = cx + cw;
+                var canvasBottom = cy + ch;
+            
+                var cardRight = cardX + cardW;
+                var cardBottom = cardY + cardH;
+                var anchorRight = anchorX + anchorW;
+                var anchorBottom = anchorY + anchorH;
+            
+                // Card endpoint checks
+                if (
+                    cardRight <= cx || cardX >= canvasRight ||
+                    cardBottom <= cy || cardY >= canvasBottom
+                ) {
+                    return _hiddenGeometry(HIDDEN_REASONS.OUTSIDE_CANVAS, candidate);
+                }
+            
+                // Anchor endpoint checks
+                if (
+                    anchorRight <= cx || anchorX >= canvasRight ||
+                    anchorBottom <= cy || anchorY >= canvasBottom
+                ) {
+                    return _hiddenGeometry(HIDDEN_REASONS.OUTSIDE_CANVAS, candidate);
+                }
+            
+                // ── Compute connector endpoints (center of each rect edge) ──
+                // For both card and anchor, find the closest facing edge and
+                // use its midpoint as the connector endpoint.
+                var cardEndpoint = _computeClosestEdge(
+                    cardX, cardY, cardW, cardH,
+                    anchorX, anchorY, anchorW, anchorH
+                );
+            
+                var anchorEndpoint = _computeClosestEdge(
+                    anchorX, anchorY, anchorW, anchorH,
+                    cardX, cardY, cardW, cardH
+                );
+            
+                return {
+                    state: CONNECTOR_STATES.VISIBLE,
+                    cardEndpoint: { x: cardEndpoint.x, y: cardEndpoint.y },
+                    anchorEndpoint: { x: anchorEndpoint.x, y: anchorEndpoint.y },
+                    cardRect: _freezeRect(cardRect),
+                    anchorRect: _freezeRect(anchorRect),
+                };
+            }
+            
+            /**
+             * Create a hidden geometry result.
+             *
+             * @param {string} reason
+             * @param {object} [candidate]
+             * @returns {object}
+             * @private
+             */
+            function _hiddenGeometry(reason, candidate) {
+                return {
+                    state: CONNECTOR_STATES.HIDDEN,
+                    reason: reason,
+                    cardEndpoint: null,
+                    anchorEndpoint: null,
+                    cardRect: (candidate && candidate.card) ? { cardId: candidate.cardId } : null,
+                    anchorRect: null,
+                };
+            }
+            
+            /**
+             * Test whether a coordinate value is a finite number.
+             *
+             * @param {*} value
+             * @returns {boolean}
+             * @private
+             */
+            function _isFiniteCoord(value) {
+                return typeof value === 'number' && isFinite(value);
+            }
+            
+            /**
+             * Compute the midpoint of the closest-facing edge of a source
+             * rectangle toward a target rectangle.
+             *
+             * Returns { x, y } for the midpoint of the edge that faces the
+             * target.  For horizontal separation (rects side by side), returns
+             * the midpoint of the left/right edge.  For vertical separation,
+             * returns the midpoint of the top/bottom edge.  When overlapping
+             * on both axes, prefers horizontal.
+             *
+             * @param {number} sx  - Source x
+             * @param {number} sy  - Source y
+             * @param {number} sw  - Source width
+             * @param {number} sh  - Source height
+             * @param {number} tx  - Target x
+             * @param {number} ty  - Target y
+             * @param {number} tw  - Target width
+             * @param {number} th  - Target height
+             * @returns {{ x: number, y: number }}
+             * @private
+             */
+            function _computeClosestEdge(sx, sy, sw, sh, tx, ty, tw, th) {
+                var sCenterX = sx + sw / 2;
+                var sCenterY = sy + sh / 2;
+                var tCenterX = tx + tw / 2;
+                var tCenterY = ty + th / 2;
+            
+                var dx = tCenterX - sCenterX;
+                var dy = tCenterY - sCenterY;
+            
+                // Determine the dominant axis: use the axis with greater
+                // separation.  If rectangles overlap on one axis, the other
+                // axis determines the facing edge.
+                var absDx = dx >= 0 ? dx : -dx;
+                var absDy = dy >= 0 ? dy : -dy;
+            
+                // Check overlap on each axis
+                var overlapX = (sx < tx + tw) && (sx + sw > tx);
+                var overlapY = (sy < ty + th) && (sy + sh > ty);
+            
+                if (overlapX && overlapY) {
+                    // Complete overlap: use vertical if dy is larger
+                    if (absDx >= absDy) {
+                        // Horizontal edge (top or bottom)
+                        return dy >= 0
+                            ? { x: sCenterX, y: sy + sh }
+                            : { x: sCenterX, y: sy };
+                    }
+                    // Vertical edge (left or right)
+                    return dx >= 0
+                        ? { x: sx + sw, y: sCenterY }
+                        : { x: sx, y: sCenterY };
+                }
+            
+                if (overlapX) {
+                    // Overlapping on horizontal axis → use top or bottom edge
+                    return dy >= 0
+                        ? { x: sCenterX, y: sy + sh }
+                        : { x: sCenterX, y: sy };
+                }
+            
+                if (overlapY) {
+                    // Overlapping on vertical axis → use left or right edge
+                    return dx >= 0
+                        ? { x: sx + sw, y: sCenterY }
+                        : { x: sx, y: sCenterY };
+                }
+            
+                // No overlap on either axis: use the primary facing direction
+                if (absDx >= absDy) {
+                    return dx >= 0
+                        ? { x: sx + sw, y: sCenterY }
+                        : { x: sx, y: sCenterY };
+                }
+            
+                return dy >= 0
+                    ? { x: sCenterX, y: sy + sh }
+                    : { x: sCenterX, y: sy };
+            }
+            
+            /**
+             * Return a frozen subset of a DOMRect-like object (no prototype).
+             *
+             * @param {object} rect
+             * @returns {object}
+             * @private
+             */
+            function _freezeRect(rect) {
+                if (!rect) return null;
+                return Object.freeze({
+                    x: rect.x,
+                    y: rect.y,
+                    width: rect.width,
+                    height: rect.height,
+                });
+            }
+            
+            // ── Exports ──
+            
+            module.exports = {
+                CONNECTOR_STATES: CONNECTOR_STATES,
+                HIDDEN_REASONS: HIDDEN_REASONS,
+                MIN_CANVAS_DIMENSION: MIN_CANVAS_DIMENSION,
+                computeFocusedConnectorCandidate: computeFocusedConnectorCandidate,
+                measureConnectorGeometry: measureConnectorGeometry,
+            };
+            
+        },
+        "src/canvas/context": function(require, module, exports) {
+            /**
+             * Canvas context resolution helpers.
+             *
+             * Pure functions for building canvas contexts from paper entries.
+             * No Obsidian, subprocess, database, or Zotero dependencies.
+             *
+             * @module canvas/context
+             */
+            
+            /**
+             * Build a canvas context from a valid paper entry.
+             *
+             * The entry's `key` property is preferred as the paper identity. PaperForge's
+             * canonical index stores the Zotero item id in `zotero_key`, so that field is
+             * accepted as the real-world fallback.
+             * Returns an explicit `{ ok, paperKey, entry, reason }` result so callers
+             * always have a stable shape to inspect, never a thrown exception.
+             *
+             * @param {object|null|undefined} entry - Paper entry with `key` or `zotero_key`.
+             * @returns {{ ok: boolean, paperKey: string|null, entry: object|null, reason: string|null }}
+             */
+            function buildCanvasContextFromEntry(entry) {
+                // ── Guard: missing entry ──
+                if (entry == null || typeof entry !== 'object') {
+                    return {
+                        ok: false,
+                        paperKey: null,
+                        entry: null,
+                        reason: 'No paper entry provided.',
+                    };
+                }
+            
+                // ── Guard: missing key ──
+                const rawKey = firstNonBlank(entry.key, entry.zotero_key);
+                if (rawKey == null || (typeof rawKey === 'string' && rawKey.trim() === '')) {
+                    return {
+                        ok: false,
+                        paperKey: null,
+                        entry: null,
+                        reason: 'Paper entry has no key.',
+                    };
+                }
+            
+                const paperKey = String(rawKey);
+            
+                return {
+                    ok: true,
+                    paperKey: paperKey,
+                    entry: entry,
+                    reason: null,
+                };
+            }
+            
+            function firstNonBlank() {
+                for (let i = 0; i < arguments.length; i++) {
+                    const value = arguments[i];
+                    if (value == null) continue;
+                    if (typeof value === 'string' && value.trim() === '') continue;
+                    return value;
+                }
+                return null;
+            }
+            
+            /**
+             * Build a missing canvas context with a descriptive reason.
+             *
+             * Useful when no paper is active, the index is unavailable, or context
+             * prerequisites are not met.  Always returns a fail-closed result.
+             *
+             * @param {string} [reason='Paper context is not available.'] - Human-readable reason.
+             * @returns {{ ok: false, paperKey: null, entry: null, reason: string }}
+             */
+            function buildMissingCanvasContext(reason) {
+                return {
+                    ok: false,
+                    paperKey: null,
+                    entry: null,
+                    reason: typeof reason === 'string' && reason.trim().length > 0
+                        ? reason
+                        : 'Paper context is not available.',
+                };
+            }
+            
+            module.exports = {
+                buildCanvasContextFromEntry,
+                buildMissingCanvasContext,
+            };
+            
+        },
+        "src/canvas/controller": function(require, module, exports) {
+            /**
+             * Canvas session lifecycle controller.
+             *
+             * Owns a fixed paper identity for one canvas session, coordinates
+             * initial annotation loading and refresh through the annotation wrapper,
+             * discards stale async results with a monotonic load sequence, and
+             * exposes teardown.  Never reads a live global `_currentPaperKey` —
+             * the paper identity is captured at construction time.
+             *
+             * @module canvas/controller
+             */
+            
+            /**
+             * Create a canvas session controller.
+             *
+             * @param {object} deps
+             * @param {string} [deps.paperKey] - The fixed paper identity for this
+             *   canvas session.  Stored at construction and never re-read from
+             *   external state.
+             * @param {object} [deps.annotationLoader] - An annotation loader object
+             *   with a `loadForPaper(paperKey, loadOptions)` method (e.g. the
+             *   object returned by `createCanvasAnnotationLoader()`).
+             * @returns {CanvasSessionController}
+             */
+            function createCanvasSessionController(deps) {
+                const { annotationLoader } = deps || {};
+                const _paperKey = (deps && deps.paperKey != null) ? String(deps.paperKey) : null;
+                let _loadSeq = 0;
+                let _state = null;
+                let _disposed = false;
+            
+                /**
+                 * Return the fixed paper key for this canvas session.
+                 *
+                 * @returns {string|null}
+                 */
+                function getPaperKey() {
+                    return _paperKey;
+                }
+            
+                /**
+                 * Return the current annotation state (or null if nothing loaded yet).
+                 *
+                 * @returns {object|null}
+                 */
+                function getState() {
+                    return _state;
+                }
+            
+                /**
+                 * Load annotations through the injected annotation loader.
+                 *
+                 * Captures the current paper key and a monotonic load sequence
+                 * before the async call.  When the promise resolves, the result
+                 * is discarded if:
+                 *   - The controller has been disposed.
+                 *   - Another load was started (sequence mismatch).
+                 *   - The paper key changed (defensive — the key is fixed, but
+                 *     this guard prevents stale dispatches from edge cases).
+                 *
+                 * @param {object} [loadOptions] - Options forwarded to the annotation
+                 *   loader's `loadForPaper()` method.
+                 * @returns {Promise<object|null>} The loaded annotation state, or null
+                 *   if the result was discarded as stale or no paper key is set.
+                 */
+                async function loadAnnotations(loadOptions) {
+                    if (_disposed) return null;
+                    if (!_paperKey) return null;
+            
+                    const capturedKey = _paperKey;
+                    const capturedSeq = ++_loadSeq;
+            
+                    const result = await annotationLoader.loadForPaper(capturedKey, loadOptions);
+            
+                    // ── Stale guard ──
+                    if (_disposed || capturedSeq !== _loadSeq || _paperKey !== capturedKey) {
+                        return null;
+                    }
+            
+                    _state = result;
+                    return result;
+                }
+            
+                /**
+                 * Tear down the canvas session.
+                 *
+                 * Disposes the controller, clears stored state, and increments the
+                 * load sequence so any in-flight async results are discarded.
+                 * After teardown, `loadAnnotations()` returns null.
+                 */
+                function teardown() {
+                    _disposed = true;
+                    _loadSeq = -1;
+                    _state = null;
+                }
+            
+                return {
+                    getPaperKey,
+                    getState,
+                    loadAnnotations,
+                    teardown,
+                };
+            }
+            
+            /**
+             * @typedef {object} CanvasSessionController
+             * @property {() => string|null} getPaperKey
+             * @property {() => object|null} getState
+             * @property {(loadOptions?: object) => Promise<object|null>} loadAnnotations
+             * @property {() => void} teardown
+             */
+            
+            module.exports = {
+                createCanvasSessionController,
+            };
+            
+        },
+        "src/canvas/dom-anchors": function(require, module, exports) {
+            /**
+             * Build rendered article text offsets over every text node.
+             *
+             * Offsets match the complete rendered article textContent, not the source
+             * Markdown. Text inside mark, script, or style elements remains in the index
+             * with blocked=true so later node offsets are not compressed.
+             *
+             * @param {Node} root
+             * @returns {Array<{node: Text, start: number, end: number, blocked: boolean}>}
+             */
+            function buildTextNodeIndex(root) {
+                if (!root || !root.ownerDocument) return [];
+            
+                var nodeFilter = root.ownerDocument.defaultView
+                    && root.ownerDocument.defaultView.NodeFilter;
+                var showText = nodeFilter ? nodeFilter.SHOW_TEXT : 4;
+                var walker = root.ownerDocument.createTreeWalker(root, showText);
+                var index = [];
+                var offset = 0;
+                var node;
+            
+                while ((node = walker.nextNode())) {
+                    var end = offset + node.nodeValue.length;
+                    var parent = node.parentElement;
+                    index.push({
+                        node: node,
+                        start: offset,
+                        end: end,
+                        blocked: Boolean(parent && parent.closest('script, style, mark')),
+                    });
+                    offset = end;
+                }
+            
+                return index;
+            }
+            
+            function getAnchorId(anchor) {
+                if (!anchor) return '';
+                var id = anchor.id != null
+                    ? anchor.id
+                    : (anchor.anchorId != null ? anchor.anchorId : anchor.cardId);
+                return id == null ? '' : String(id);
+            }
+            
+            function getAnchorRange(anchor) {
+                return {
+                    start: anchor && anchor.renderedStart,
+                    end: anchor && anchor.renderedEnd,
+                };
+            }
+            
+            function rangesOverlap(left, right) {
+                return left.start < right.end && right.start < left.end;
+            }
+            
+            function wrapTextSegment(entry, start, end, anchor) {
+                var node = entry.node;
+                var localStart = start - entry.start;
+                var localEnd = end - entry.start;
+            
+                if (localEnd < node.nodeValue.length) {
+                    node.splitText(localEnd);
+                }
+                var selected = localStart > 0 ? node.splitText(localStart) : node;
+                var mark = selected.ownerDocument.createElement('mark');
+                mark.className = 'paperforge-canvas-highlight';
+                mark.setAttribute('data-anchor-id', anchor.id);
+                mark.setAttribute('data-anchor-status', 'exact');
+                mark.setAttribute('tabindex', '0');
+                if (anchor.color) {
+                    mark.style.setProperty('--paperforge-highlight-color', anchor.color);
+                }
+                selected.parentNode.replaceChild(mark, selected);
+                mark.appendChild(selected);
+            }
+            
+            /**
+             * Apply exact annotation ranges to an already-rendered Markdown article.
+             *
+             * Anchors must provide renderedStart/renderedEnd offsets measured against the
+             * complete rendered article textContent indexed by buildTextNodeIndex().
+             * Source Markdown rawStart/rawEnd coordinates are intentionally not accepted.
+             * Ranges intersecting blocked mark, script, or style text are unresolved.
+             *
+             * @param {Node} article
+             * @param {Array<object>} anchors
+             * @returns {{applied: string[], unresolved: string[]}}
+             */
+            function applyDomHighlights(article, anchors) {
+                var index = buildTextNodeIndex(article);
+                var textLength = index.length ? index[index.length - 1].end : 0;
+                var accepted = [];
+                var applied = [];
+                var unresolved = [];
+                var seenIds = new Set();
+            
+                (Array.isArray(anchors) ? anchors : []).forEach(function (anchor) {
+                    var id = getAnchorId(anchor);
+                    var range = getAnchorRange(anchor);
+                    var candidate = {
+                        id: id,
+                        start: range.start,
+                        end: range.end,
+                        color: anchor && (anchor.color || anchor.highlightColor),
+                    };
+                    var valid = id
+                        && Number.isInteger(candidate.start)
+                        && Number.isInteger(candidate.end)
+                        && candidate.start >= 0
+                        && candidate.end > candidate.start
+                        && candidate.end <= textLength;
+                    var duplicate = id && seenIds.has(id);
+                    var overlaps = valid && accepted.some(function (existing) {
+                        return rangesOverlap(candidate, existing);
+                    });
+                    var intersectsBlocked = valid && index.some(function (entry) {
+                        return entry.blocked && rangesOverlap(candidate, entry);
+                    });
+            
+                    if (id) seenIds.add(id);
+                    if (!valid || duplicate || overlaps || intersectsBlocked) {
+                        unresolved.push(id);
+                        return;
+                    }
+                    accepted.push(candidate);
+                    applied.push(id);
+                });
+            
+                accepted.slice().sort(function (left, right) {
+                    return right.start - left.start || right.end - left.end;
+                }).forEach(function (anchor) {
+                    for (var i = index.length - 1; i >= 0; i -= 1) {
+                        var entry = index[i];
+                        var start = Math.max(anchor.start, entry.start);
+                        var end = Math.min(anchor.end, entry.end);
+                        if (!entry.blocked && start < end) {
+                            wrapTextSegment(entry, start, end, anchor);
+                        }
+                    }
+                });
+            
+                return { applied: applied, unresolved: unresolved };
+            }
+            
+            module.exports = {
+                applyDomHighlights,
+                buildTextNodeIndex,
+            };
+            
+        },
+        "src/canvas/index": function(require, module, exports) {
+            /**
+             * PaperForge Reading Canvas — CommonJS module entry point.
+             *
+             * Exports Phase ANN10 contracts:
+             *   - context helpers (buildCanvasContextFromEntry, buildMissingCanvasContext)
+             *   - annotation loader wrapper (createCanvasAnnotationLoader, ANNOTATION_LOAD_STATES)
+             *   - canvas session controller (createCanvasSessionController)
+             *   - shell DOM rendering (renderCanvasView, renderCanvas*)
+             *
+             * @module canvas/index
+             */
+            
+            const {
+                buildCanvasContextFromEntry,
+                buildMissingCanvasContext,
+            } = require('./context');
+            
+            const {
+                createCanvasAnnotationLoader,
+                ANNOTATION_LOAD_STATES,
+            } = require('./annotations');
+            
+            const {
+                createCanvasSessionController,
+            } = require('./controller');
+            
+            const {
+                renderMarkdownSurface,
+            } = require('./markdown-surface');
+            
+            const {
+                applyDomHighlights,
+                buildTextNodeIndex,
+            } = require('./dom-anchors');
+            
+            const {
+                renderReadingCanvasShell,
+                renderCanvasFailure,
+                renderHighlightPopover,
+                renderUnresolvedDrawer,
+                renderCanvasView,
+                renderCanvasIdentity,
+                renderCanvasIdle,
+                renderCanvasLoading,
+                renderCanvasEmpty,
+                renderCanvasMissingPaper,
+                renderCanvasMissingDb,
+                renderCanvasCliError,
+                renderCanvasInvalidJson,
+                renderCanvasMissingSource,
+                renderCanvasUnsupported,
+                renderCanvasStaleBanner,
+                renderCanvasCard,
+                renderCanvasCardLanes,
+                renderCanvasRefreshing,
+                renderFallbackButton,
+                renderCanvasSourceSurface,
+                renderSourceBlock,
+                renderExactAnchorText,
+                renderPageLevelAnchorMarker,
+                renderUnresolvedAnchorStatus,
+                renderCanvasConnectorLayer,
+                updateCanvasConnectorLayer,
+            } = require('./render');
+            
+            const {
+                buildCanvasCard,
+                buildCanvasCardViewModel,
+                normalizeCanvasCardPreview,
+            } = require('./view-model');
+            
+            const {
+                compareCanvasCardsByReadingOrder,
+                sortCanvasCardsForReadingOrder,
+                assignCanvasCardsToLanes,
+                getCardIdentity,
+            } = require('./layout');
+            
+            // ── Source surface (ANN12) ──
+            const {
+                SOURCE_KINDS,
+                SOURCE_STATES,
+                buildCanvasSourceModel,
+                buildSourceBlocks,
+                normalizeSourceTextForAnchors,
+            } = require('./surface');
+            
+            // ── Anchor resolver (ANN12) ──
+            const {
+                ANCHOR_STATUSES,
+                MIN_EXACT_TEXT_CHARS,
+                resolveCanvasAnchor,
+                resolveCanvasAnchors,
+                findNormalizedSourceMatches,
+            } = require('./anchors');
+            
+            // ── Navigation reducers (ANN13) ──
+            const {
+                NAVIGATION_ACTIONS,
+                SELECTION_STATUSES: NAV_SELECTION_STATUSES,
+                createInitialNavState,
+                reduceCardSelection,
+                reduceSourceSelection,
+                reduceLifecycleAction,
+                computeFallbackEligibility,
+            } = require('./navigation');
+            
+            // ── Connector eligibility and geometry (ANN14) ──
+            const {
+                CONNECTOR_STATES,
+                HIDDEN_REASONS,
+                MIN_CANVAS_DIMENSION,
+                computeFocusedConnectorCandidate,
+                measureConnectorGeometry,
+            } = require('./connectors');
+            
+            module.exports = {
+                // ── Context helpers ──
+                buildCanvasContextFromEntry,
+                buildMissingCanvasContext,
+            
+                // ── Annotation loading ──
+                createCanvasAnnotationLoader,
+                ANNOTATION_LOAD_STATES,
+            
+                // ── Canvas session controller ──
+                createCanvasSessionController,
+            
+                // ── Markdown reading surface ──
+                renderMarkdownSurface,
+                applyDomHighlights,
+                buildTextNodeIndex,
+            
+                // ── Canvas DOM rendering ──
+                renderReadingCanvasShell,
+                renderCanvasFailure,
+                renderHighlightPopover,
+                renderUnresolvedDrawer,
+                renderCanvasView,
+                renderCanvasConnectorLayer,
+                updateCanvasConnectorLayer,
+                renderCanvasIdentity,
+                renderCanvasIdle,
+                renderCanvasLoading,
+                renderCanvasEmpty,
+                renderCanvasMissingPaper,
+                renderCanvasMissingDb,
+                renderCanvasCliError,
+                renderCanvasInvalidJson,
+                renderCanvasMissingSource,
+                renderCanvasUnsupported,
+                renderCanvasStaleBanner,
+                renderCanvasCard,
+                renderCanvasCardLanes,
+                renderCanvasRefreshing,
+                // ── Fallback button rendering (ANN13-03) ──
+                renderFallbackButton,
+                // ── Source surface and anchor rendering (ANN12-02) ──
+                renderCanvasSourceSurface,
+                renderSourceBlock,
+                renderExactAnchorText,
+                renderPageLevelAnchorMarker,
+                renderUnresolvedAnchorStatus,
+            
+                // ── Card view-models (ANN11) ──
+                buildCanvasCard,
+                buildCanvasCardViewModel,
+                normalizeCanvasCardPreview,
+            
+                // ── Layout helpers (ANN11) ──
+                compareCanvasCardsByReadingOrder,
+                sortCanvasCardsForReadingOrder,
+                assignCanvasCardsToLanes,
+                getCardIdentity,
+            
+                // ── Source surface (ANN12) ──
+                SOURCE_KINDS,
+                SOURCE_STATES,
+                buildCanvasSourceModel,
+                buildSourceBlocks,
+                normalizeSourceTextForAnchors,
+            
+                // ── Anchor resolver (ANN12) ──
+                ANCHOR_STATUSES,
+                MIN_EXACT_TEXT_CHARS,
+                resolveCanvasAnchor,
+                resolveCanvasAnchors,
+                findNormalizedSourceMatches,
+            
+                // ── Navigation reducers (ANN13) ──
+                NAVIGATION_ACTIONS,
+                NAV_SELECTION_STATUSES,
+                createInitialNavState,
+                reduceCardSelection,
+                reduceSourceSelection,
+                reduceLifecycleAction,
+                computeFallbackEligibility,
+            
+                // ── Connector eligibility and geometry (ANN14) ──
+                CONNECTOR_STATES,
+                HIDDEN_REASONS,
+                MIN_CANVAS_DIMENSION,
+                computeFocusedConnectorCandidate,
+                measureConnectorGeometry,
+            };
+            
+        },
+        "src/canvas/layout": function(require, module, exports) {
+            /**
+             * Deterministic reading-order side-lane layout (Phase ANN11, Plan 01).
+             *
+             * Pure CommonJS helpers for sorting annotation cards/rows by reading
+             * order and assigning them to left/right lanes by alternation.
+             *
+             * The sort algorithm matches `sortAnnotationsForReadingOrder()` from
+             * `src/testable.js` — page index first, then sort index, then stable
+             * annotation identity — but is implemented independently here because
+             * `src/testable.js` imports Node runtime helpers unrelated to canvas
+             * rendering.
+             *
+             * No random, draggable, persisted, localStorage, settings, or Obsidian
+             * `.canvas` layout data is created or used.
+             *
+             * @module canvas/layout
+             */
+            
+            // ── Identity helpers ──
+            
+            /**
+             * Compute a stable identity for a normalized annotation row or card.
+             *
+             * Mirrors `getAnnotationIdentity()` from `src/testable.js` without
+             * importing that module.
+             *
+             * @param {object|null} item - Normalized row or card-like object.
+             * @returns {string} Stable identity string.
+             */
+            function _getIdentity(item) {
+                if (!item) return '';
+                // Accept both normalized row shape ({ display, provenance, pdfLocation })
+                // and card shape ({ id, ... }).
+                if (item.id) return String(item.id);
+            
+                const p = (item.provenance || {});
+                const loc = (item.pdfLocation || {});
+                const d = (item.display || {});
+            
+                if (p.sourceAnnotationKey) return String(p.sourceAnnotationKey);
+                if (loc.rowId) return String(loc.rowId);
+                if (p.source) return p.source + '|' + (p.sourceAttachmentKey || '') + '|' + (d.page != null ? d.page : '') + '|' + (loc.sortIndex != null ? loc.sortIndex : 0);
+                return 'row|' + (d.page != null ? d.page : '') + '|' + (loc.sortIndex != null ? loc.sortIndex : 0);
+            }
+            
+            // ── Reading-order sort ──
+            
+            /**
+             * Extract the page index from a card or normalized row.
+             *
+             * @param {object} item - Card or normalized row.
+             * @returns {number} Page index, or MAX_SAFE_INTEGER if missing.
+             * @private
+             */
+            function _getPageIndex(item) {
+                if (item == null) return Number.MAX_SAFE_INTEGER;
+            
+                // Check card shape first (cards have pageIndex directly)
+                if (item.pageIndex != null) return item.pageIndex;
+            
+                // Check normalized row pdfLocation
+                const loc = item.pdfLocation || {};
+                return loc.pageIndex != null ? loc.pageIndex : Number.MAX_SAFE_INTEGER;
+            }
+            
+            /**
+             * Extract the sort index from a card or normalized row.
+             *
+             * @param {object} item - Card or normalized row.
+             * @returns {number} Sort index, or MAX_SAFE_INTEGER if missing.
+             * @private
+             */
+            function _getSortIndex(item) {
+                if (item == null) return Number.MAX_SAFE_INTEGER;
+            
+                // Card shape
+                if (item.sortIndex != null) return item.sortIndex;
+            
+                // Normalized row shape
+                const loc = item.pdfLocation || {};
+                return loc.sortIndex != null ? loc.sortIndex : Number.MAX_SAFE_INTEGER;
+            }
+            
+            /**
+             * Compare two cards or normalized rows by reading order.
+             *
+             * Precedence:
+             *   1. Page index ascending (missing sorts last).
+             *   2. sortIndex ascending within the same page.
+             *   3. Stable identity tiebreaker for deterministic ordering.
+             *
+             * @param {object} a - First card or row.
+             * @param {object} b - Second card or row.
+             * @returns {number} Negative if a < b, positive if a > b, 0 if equal.
+             */
+            function compareCanvasCardsByReadingOrder(a, b) {
+                // Page index
+                const pageA = _getPageIndex(a);
+                const pageB = _getPageIndex(b);
+                if (pageA !== pageB) return pageA - pageB;
+            
+                // Sort index within page
+                const sortA = _getSortIndex(a);
+                const sortB = _getSortIndex(b);
+                if (sortA !== sortB) return sortA - sortB;
+            
+                // Stable identity tiebreaker
+                const idA = _getIdentity(a);
+                const idB = _getIdentity(b);
+                if (idA < idB) return -1;
+                if (idA > idB) return 1;
+                return 0;
+            }
+            
+            /**
+             * Sort cards or normalized rows by reading order.
+             *
+             * Does NOT mutate the input array.
+             * Uses `compareCanvasCardsByReadingOrder` for ordering.
+             *
+             * @param {Array<object>} items - Cards or normalized rows.
+             * @returns {Array<object>} New sorted array.
+             */
+            function sortCanvasCardsForReadingOrder(items) {
+                if (!Array.isArray(items)) return [];
+                const copy = items.slice();
+                copy.sort(compareCanvasCardsByReadingOrder);
+                return copy;
+            }
+            
+            // ── Lane assignment ──
+            
+            /**
+             * Assign sorted cards to left/right lanes by alternation.
+             *
+             * Cards at even sorted indices go to the left lane, odd indices to
+             * the right lane. Each assigned card gets a `lane` ('left' or 'right')
+             * and `laneIndex` (position within its lane) property via a shallow
+             * copy so the input objects are not mutated.
+             *
+             * @param {Array<object>} cards - Card objects in desired order.
+             * @returns {{ left: Array<object>, right: Array<object> }}
+             */
+            function assignCanvasCardsToLanes(cards) {
+                const lanes = { left: [], right: [] };
+                if (!Array.isArray(cards)) return lanes;
+            
+                cards.forEach(function (card, index) {
+                    const lane = index % 2 === 0 ? 'left' : 'right';
+                    const laneIndex = Math.floor(index / 2);
+                    // Create a shallow copy so we don't mutate inputs
+                    const assigned = Object.assign({}, card, { lane: lane, laneIndex: laneIndex });
+                    lanes[lane].push(assigned);
+                });
+            
+                return lanes;
+            }
+            
+            /**
+             * Get a stable identity for a card or normalized row.
+             *
+             * Mirrors `getAnnotationIdentity()` from `src/testable.js`.
+             *
+             * @param {object|null} item - Card or normalized row.
+             * @returns {string}
+             */
+            function getCardIdentity(item) {
+                return _getIdentity(item);
+            }
+            
+            module.exports = {
+                compareCanvasCardsByReadingOrder,
+                sortCanvasCardsForReadingOrder,
+                assignCanvasCardsToLanes,
+                getCardIdentity,
+            };
+            
+        },
+        "src/canvas/markdown-surface": function(require, module, exports) {
+            'use strict';
+            
+            function clearHost(host) {
+                if (typeof host.empty === 'function') {
+                    host.empty();
+                    return;
+                }
+                host.replaceChildren();
+            }
+            
+            function formatErrorMessage(error) {
+                if (
+                    error &&
+                    typeof error.message === 'string' &&
+                    error.message.trim()
+                ) {
+                    return error.message;
+                }
+                if (typeof error === 'string' && error.trim()) {
+                    return error;
+                }
+                return 'Unknown error';
+            }
+            
+            async function renderMarkdownSurface({
+                host,
+                markdown,
+                sourcePath,
+                renderMarkdown,
+            }) {
+                clearHost(host);
+            
+                const article = host.ownerDocument.createElement('article');
+                article.className = 'paperforge-canvas-article markdown-rendered';
+                host.appendChild(article);
+            
+                try {
+                    await renderMarkdown(markdown, article, sourcePath);
+                    return { state: 'ready', article };
+                } catch (error) {
+                    article.dataset.canvasState = 'render-error';
+                    article.textContent =
+                        `Could not render ${sourcePath}: ${formatErrorMessage(error)}`;
+                    return { state: 'render-error', article, error };
+                }
+            }
+            
+            module.exports = {
+                renderMarkdownSurface,
+            };
+            
+        },
+        "src/canvas/navigation": function(require, module, exports) {
+            var NAVIGATION_ACTIONS = {
+                SELECT_CARD: 'select-card',
+                SELECT_SOURCE: 'select-source',
+                SELECT_PAGE_GROUP: 'select-page-group',
+                CLEAR_ALL: 'clear-all',
+                CLEAR_GROUP: 'clear-group',
+                SET_STATUS: 'set-status',
+                CLEAR_STATUS: 'clear-status',
+                ESCAPE: 'escape',
+                REFRESH_PRESERVE: 'refresh-preserve',
+                TEARDOWN: 'teardown',
+                PAPER_CHANGE: 'paper-change',
+            };
+            
+            var SELECTION_STATUSES = {
+                SELECTED: 'selected',
+                AVAILABLE: 'available',
+                UNAVAILABLE: 'unavailable',
+                PARTIAL: 'partial',
+            };
+            
+            function createInitialNavState() {
+                return {
+                    selectedCardId: null,
+                    selectedAnchorId: null,
+                    selectedGroupId: null,
+                    sourceFocusTargetId: null,
+                    statusMessage: null,
+                    navSource: null,
+                };
+            }
+            
+            function _cloneState(state) {
+                return {
+                    selectedCardId: state.selectedCardId,
+                    selectedAnchorId: state.selectedAnchorId,
+                    selectedGroupId: state.selectedGroupId,
+                    sourceFocusTargetId: state.sourceFocusTargetId,
+                    statusMessage: state.statusMessage,
+                    navSource: state.navSource,
+                };
+            }
+            
+            function reduceCardSelection(state, card, anchors, options) {
+                var next = _cloneState(state);
+                var opts = options || {};
+                if (!card) {
+                    return next;
+                }
+                next.selectedCardId = card.cardId || null;
+                next.navSource = 'card';
+                if (opts.skipScroll) {
+                    next.sourceFocusTargetId = null;
+                } else if (card.anchor && card.anchor.status === 'exact') {
+                    next.sourceFocusTargetId = card.cardId || null;
+                } else if (card.anchor && card.anchor.status === 'page-level') {
+                    next.sourceFocusTargetId = card.cardId || null;
+                } else if (card.anchor && card.anchor.status === 'unresolved') {
+                    next.sourceFocusTargetId = null;
+                } else {
+                    next.sourceFocusTargetId = null;
+                    next.statusMessage = 'Unable to locate source anchor for this card.';
+                }
+                return next;
+            }
+            
+            function reduceSourceSelection(state, card, options) {
+                var next = _cloneState(state);
+                var opts = options || {};
+                if (opts.unavailable) {
+                    next.selectedCardId = null;
+                    next.selectedAnchorId = null;
+                    next.selectedGroupId = null;
+                    next.sourceFocusTargetId = null;
+                    next.statusMessage = 'Selected card is no longer available.';
+                    return next;
+                }
+                if (opts && opts.group) {
+                    next.selectedGroupId = opts.group.groupId || null;
+                    next.selectedCardId = null;
+                    next.navSource = 'source';
+                    return next;
+                }
+                if (!card) {
+                    return next;
+                }
+                next.selectedAnchorId = card.cardId || null;
+                next.selectedCardId = card.cardId || null;
+                next.navSource = 'source';
+                return next;
+            }
+            
+            function reduceLifecycleAction(state, action, options) {
+                var opts = options || {};
+                if (action === NAVIGATION_ACTIONS.PAPER_CHANGE || action === NAVIGATION_ACTIONS.TEARDOWN) {
+                    return createInitialNavState();
+                }
+                if (action === NAVIGATION_ACTIONS.ESCAPE) {
+                    return createInitialNavState();
+                }
+                if (action === NAVIGATION_ACTIONS.REFRESH_PRESERVE) {
+                    var next = _cloneState(state);
+                    next.sourceFocusTargetId = null;
+                    next.statusMessage = null;
+                    next.navSource = null;
+                    return next;
+                }
+                if (action === NAVIGATION_ACTIONS.CLEAR_ALL && opts.stale) {
+                    var next = _cloneState(state);
+                    next.selectedCardId = null;
+                    next.selectedAnchorId = null;
+                    next.selectedGroupId = null;
+                    next.sourceFocusTargetId = null;
+                    next.navSource = null;
+                    next.statusMessage = 'Previous selection is no longer available.';
+                    return next;
+                }
+                return _cloneState(state);
+            }
+            
+            function computeFallbackEligibility(card, paperKey, resolvedTarget) {
+                if (!card) {
+                    return { eligible: false, reason: 'No card provided.', page: null };
+                }
+                if (card.pageIndex == null) {
+                    return { eligible: false, reason: 'Annotation has no page number.', page: null };
+                }
+                if (!resolvedTarget || !resolvedTarget.ok) {
+                    return { eligible: false, reason: (resolvedTarget && resolvedTarget.reason) || 'No valid PDF target available.', page: null };
+                }
+                if (paperKey && card.paperKey && paperKey !== card.paperKey) {
+                    return { eligible: false, reason: 'Paper identity mismatch.', page: null };
+                }
+                return { eligible: true, reason: null, page: resolvedTarget.page || card.pageIndex };
+            }
+            
+            module.exports = {
+                NAVIGATION_ACTIONS: NAVIGATION_ACTIONS,
+                SELECTION_STATUSES: SELECTION_STATUSES,
+                createInitialNavState: createInitialNavState,
+                reduceCardSelection: reduceCardSelection,
+                reduceSourceSelection: reduceSourceSelection,
+                reduceLifecycleAction: reduceLifecycleAction,
+                computeFallbackEligibility: computeFallbackEligibility,
+            };
+            
+        },
+        "src/canvas/render": function(require, module, exports) {
+            /**
+             * Canvas shell DOM rendering helpers for Phase ANN10 and ANN11.
+             *
+             * Renders read-only shell states: shell container, paper identity, loading,
+             * empty, missing-paper, missing-db, CLI-error/invalid-json, missing-source,
+             * unsupported, stale banner, and card lane containers.
+             *
+             * All user-facing text is inserted via `textContent` / Obsidian `setText()`
+             * — never `innerHTML` for annotation content.  No edit, delete, create,
+             * save, import, apply, write-back, database, evidence, or concept-card
+             * controls appear in any state.
+             *
+             * Card lane rendering (ANN11-02) produces left/right annotation card lanes
+             * from the view-model's lane output.  Cards are read-only with no expandable
+             * details, drawers, popovers, editable forms, anchors, connectors, or
+             * draggable handles.
+             *
+             * @module canvas/render
+             */
+            
+            // ── Safe element creation helper ──
+            
+            /**
+             * Create a DOM element with optional class and text.
+             *
+             * Uses `document.createElement` for cross-environment compatibility
+             * (works in jsdom and Obsidian).  Text is set via `textContent`.
+             *
+             * @param {string} tag - HTML tag name.
+             * @param {object} [opts]
+             * @param {string|string[]} [opts.cls] - Class name or array of class names.
+             * @param {string} [opts.text] - Text content (set via textContent).
+             * @returns {HTMLElement}
+             */
+            function createEl(tag, opts) {
+                const el = document.createElement(tag);
+                if (opts) {
+                    if (opts.cls) {
+                        el.className = Array.isArray(opts.cls) ? opts.cls.join(' ') : opts.cls;
+                    }
+                    if (opts.text != null) {
+                        el.textContent = opts.text;
+                    }
+                }
+                return el;
+            }
+            
+            /**
+             * Empty all children from a DOM element.
+             *
+             * @param {HTMLElement} el
+             */
+            function emptyEl(el) {
+                while (el && el.firstChild) {
+                    el.removeChild(el.firstChild);
+                }
+            }
+            
+            function createCanvasAction(action, label, icon) {
+                var button = createEl('button', { cls: 'paperforge-canvas-tool-button' });
+                button.type = 'button';
+                button.setAttribute('data-canvas-action', action);
+                button.setAttribute('aria-label', label);
+                button.setAttribute('title', label);
+                var iconEl = createEl('span', { cls: 'paperforge-canvas-tool-icon', text: icon });
+                iconEl.setAttribute('aria-hidden', 'true');
+                button.appendChild(iconEl);
+                return button;
+            }
+            
+            function renderReadingCanvasShell(root, options) {
+                var opts = options || {};
+                emptyEl(root);
+                var shell = createEl('div', { cls: 'paperforge-canvas-reading-shell' });
+                shell.setAttribute('data-canvas-role', 'shell');
+                var toolbar = createEl('div', { cls: 'paperforge-canvas-toolbar' });
+                toolbar.setAttribute('data-canvas-role', 'toolbar');
+                toolbar.appendChild(createCanvasAction('refresh', 'Refresh annotations', '\u21bb'));
+                var countValue = String(Number.isFinite(opts.unresolvedCount) ? opts.unresolvedCount : 0);
+                var count = createCanvasAction('unresolved-count', countValue + ' unresolved annotations', '\u25cf');
+                count.classList.add('paperforge-canvas-unresolved-count');
+                count.setAttribute('data-canvas-role', 'unresolved-count');
+                count.appendChild(createEl('span', { cls: 'paperforge-canvas-unresolved-value', text: countValue }));
+                toolbar.appendChild(count);
+                toolbar.appendChild(createCanvasAction('open-pdf', 'Open PDF', '\u2197'));
+                toolbar.appendChild(createCanvasAction('toggle-annotations', 'Toggle annotations', '\u25d0'));
+                var layout = createEl('div', { cls: 'paperforge-canvas-reading-layout' });
+                var leftRail = createEl('aside', { cls: 'paperforge-canvas-reading-rail paperforge-canvas-reading-rail--left' });
+                leftRail.setAttribute('data-canvas-role', 'left-rail');
+                var articleHost = createEl('main', { cls: 'paperforge-canvas-article-host' });
+                articleHost.setAttribute('data-canvas-role', 'article-host');
+                var rightRail = createEl('aside', { cls: 'paperforge-canvas-reading-rail paperforge-canvas-reading-rail--right' });
+                rightRail.setAttribute('data-canvas-role', 'right-rail');
+                layout.appendChild(leftRail);
+                layout.appendChild(articleHost);
+                layout.appendChild(rightRail);
+                var drawer = createEl('div', { cls: 'paperforge-canvas-unresolved-drawer' });
+                drawer.setAttribute('data-canvas-role', 'drawer');
+                shell.appendChild(toolbar);
+                shell.appendChild(layout);
+                shell.appendChild(drawer);
+                root.appendChild(shell);
+                return { shell, toolbar, leftRail, articleHost, rightRail, drawer };
+            }
+            
+            function renderCanvasFailure(root, failure) {
+                var data = failure || {};
+                emptyEl(root);
+                var failureEl = createEl('div', {
+                    cls: 'paperforge-canvas-failure',
+                    text: data.message || 'Reading Canvas could not be loaded.',
+                });
+                failureEl.setAttribute('data-canvas-state', data.state || 'error');
+                failureEl.setAttribute('role', 'alert');
+                failureEl.appendChild(createCanvasAction('retry', 'Retry', '\u21bb'));
+                root.appendChild(failureEl);
+                return failureEl;
+            }
+            
+            function appendAnnotationText(parent, cls, value) {
+                if (value == null || value === '') return;
+                parent.appendChild(createEl('div', { cls, text: String(value) }));
+            }
+            
+            function renderHighlightPopover(root, annotation) {
+                var item = annotation || {};
+                var popover = createEl('div', { cls: 'paperforge-canvas-highlight-popover' });
+                popover.setAttribute('data-annotation-id', item.id || '');
+                popover.setAttribute('role', 'dialog');
+                appendAnnotationText(popover, 'paperforge-canvas-highlight-quote', item.selectedText);
+                appendAnnotationText(popover, 'paperforge-canvas-highlight-comment', item.comment);
+                appendAnnotationText(popover, 'paperforge-canvas-highlight-page', item.pageLabel);
+                root.appendChild(popover);
+                return popover;
+            }
+            
+            function renderUnresolvedDrawer(root, annotations) {
+                var drawer = root.matches && root.matches('[data-canvas-role="drawer"]')
+                    ? root
+                    : root.querySelector && root.querySelector('[data-canvas-role="drawer"]');
+                if (!drawer) {
+                    drawer = createEl('div', { cls: 'paperforge-canvas-unresolved-drawer' });
+                    drawer.setAttribute('data-canvas-role', 'drawer');
+                    root.appendChild(drawer);
+                }
+                emptyEl(drawer);
+                (annotations || []).forEach(function (annotation) {
+                    var item = createEl('div', { cls: 'paperforge-canvas-unresolved-item' });
+                    item.setAttribute('data-annotation-id', annotation.id || '');
+                    appendAnnotationText(item, 'paperforge-canvas-unresolved-quote', annotation.selectedText);
+                    appendAnnotationText(item, 'paperforge-canvas-unresolved-comment', annotation.comment);
+                    drawer.appendChild(item);
+                });
+                return drawer;
+            }
+            
+            // ── View-model shape ──
+            //
+            // The view-model passed to `renderCanvasView()` should have:
+            //   { state: string, paperKey: string|null, message: string,
+            //     annotations: Array, stale: boolean, errorCode: string|null }
+            //
+            // Minimal states: idle | loading | ready | empty | missing-paper |
+            //   missing-db | cli-error | invalid-json
+            
+            // ── i18n helper (ANN11 card labels) ──
+            //
+            // Provides zh/en text keys scoped to ANN11 card labels, placeholders,
+            // provenance, read-only badges, and state copy.  No unrelated ANN10
+            // shell text is duplicated here.
+            
+            const _I18N = {
+                en: {
+                    'card.selected_text': 'Selected Text',
+                    'card.comment': 'Comment',
+                    'card.page': 'Page',
+                    'card.type': 'Type',
+                    'card.source': 'Source',
+                    'card.read_only': 'Read-only',
+                    'card.read_only_label': 'Read-only',
+                    'card.no_comment': '',
+                    'card.no_selected_text': '',
+                    'card.attachment': 'Attachment',
+                    'card.annotation': 'Annotation',
+                    'state.refreshing': 'Refreshing annotations…',
+                    'state.stale': 'Showing previously loaded (stale) data.',
+                },
+                zh: {
+                    'card.selected_text': '选中文本',
+                    'card.comment': '备注',
+                    'card.page': '页码',
+                    'card.type': '类型',
+                    'card.source': '来源',
+                    'card.read_only': '只读',
+                    'card.read_only_label': '只读',
+                    'card.no_comment': '',
+                    'card.no_selected_text': '',
+                    'card.attachment': '附件',
+                    'card.annotation': '批注',
+                    'state.refreshing': '正在刷新批注…',
+                    'state.stale': '显示之前加载的（过期）数据。',
+                },
+            };
+            
+            // ── State renderers ──
+            
+            /**
+             * Render the paper identity header.
+             *
+             * @param {HTMLElement} contentEl - Parent element.
+             * @param {string} paperKey - The paper identity label.
+             */
+            function renderCanvasIdentity(contentEl, paperKey) {
+                const header = createEl('div', { cls: 'paperforge-canvas-identity' });
+                header.createEl = header.createEl || function (tag, opts) {
+                    const child = document.createElement(tag);
+                    if (opts) {
+                        if (opts.cls) child.className = Array.isArray(opts.cls) ? opts.cls.join(' ') : opts.cls;
+                        if (opts.text != null) child.textContent = opts.text;
+                        if (opts.title) child.setAttribute('title', opts.title);
+                    }
+                    this.appendChild(child);
+                    return child;
+                };
+                header.setText = header.setText || function (text) { this.textContent = text; };
+                header.empty = header.empty || function () {
+                    while (this.firstChild) this.removeChild(this.firstChild);
+                };
+            
+                const label = header.createEl('span', { cls: 'paperforge-canvas-identity-label', text: 'Reading Canvas' });
+                const keyEl = header.createEl('span', { cls: 'paperforge-canvas-identity-key', text: paperKey });
+            
+                contentEl.appendChild(header);
+                return header;
+            }
+            
+            /**
+             * Render the initial (idle) shell state.
+             *
+             * Shows a minimal placeholder indicating the canvas is ready but no
+             * data has been loaded yet.
+             *
+             * @param {HTMLElement} contentEl
+             */
+            function renderCanvasIdle(contentEl) {
+                const shell = createEl('div', { cls: 'paperforge-canvas-shell' });
+                const placeholder = createEl('div', { cls: 'paperforge-canvas-placeholder', text: 'Reading Canvas' });
+                shell.appendChild(placeholder);
+                contentEl.appendChild(shell);
+            }
+            
+            /**
+             * Render the loading state.
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model (uses vm.message).
+             */
+            function renderCanvasLoading(contentEl, vm) {
+                const stateEl = createEl('div', { cls: 'paperforge-canvas-loading' });
+                const msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'Loading annotations...' });
+                stateEl.appendChild(msg);
+                contentEl.appendChild(stateEl);
+            }
+            
+            /**
+             * Render the empty state (no annotations found).
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model.
+             */
+            function renderCanvasEmpty(contentEl, vm) {
+                const emptyEl = createEl('div', { cls: 'paperforge-canvas-empty' });
+                const msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'This paper has no annotations yet.' });
+                emptyEl.appendChild(msg);
+                contentEl.appendChild(emptyEl);
+            }
+            
+            /**
+             * Render the missing-paper state (no paper key available).
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model.
+             */
+            function renderCanvasMissingPaper(contentEl, vm) {
+                const errorEl = createEl('div', { cls: 'paperforge-canvas-error paperforge-canvas-missing-paper' });
+                const msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'No paper is currently active. Open a recognized paper to view its annotations.' });
+                errorEl.appendChild(msg);
+                contentEl.appendChild(errorEl);
+            }
+            
+            /**
+             * Render the missing-db state (annotations database not available).
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model.
+             */
+            function renderCanvasMissingDb(contentEl, vm) {
+                const errorEl = createEl('div', { cls: 'paperforge-canvas-error paperforge-canvas-missing-db' });
+                const msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'Annotation database is not available. Sync your library first.' });
+                errorEl.appendChild(msg);
+                contentEl.appendChild(errorEl);
+            }
+            
+            /**
+             * Render a CLI error state.
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model.
+             */
+            function renderCanvasCliError(contentEl, vm) {
+                const errorEl = createEl('div', { cls: 'paperforge-canvas-error paperforge-canvas-cli-error' });
+                const msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'Failed to load annotations. Retry or check PaperForge status.' });
+                errorEl.appendChild(msg);
+                contentEl.appendChild(errorEl);
+            }
+            
+            /**
+             * Render an invalid-json state.
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model.
+             */
+            function renderCanvasInvalidJson(contentEl, vm) {
+                const errorEl = createEl('div', { cls: 'paperforge-canvas-error paperforge-canvas-invalid-json' });
+                const msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'Could not read annotation data for this paper.' });
+                errorEl.appendChild(msg);
+                contentEl.appendChild(errorEl);
+            }
+            
+            /**
+             * Render the missing-source state (no fulltext or note path available).
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model.
+             */
+            function renderCanvasMissingSource(contentEl, vm) {
+                const stateEl = createEl('div', { cls: 'paperforge-canvas-missing-source' });
+                const msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'Reading source content is not available for this paper.' });
+                stateEl.appendChild(msg);
+                contentEl.appendChild(stateEl);
+            }
+            
+            /**
+             * Render the unsupported state (canvas cannot be shown for this paper).
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model.
+             */
+            function renderCanvasUnsupported(contentEl, vm) {
+                const stateEl = createEl('div', { cls: 'paperforge-canvas-unsupported' });
+                const msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'This paper type is not supported by the Reading Canvas.' });
+                stateEl.appendChild(msg);
+                contentEl.appendChild(stateEl);
+            }
+            
+            /**
+             * Render a stale data banner.
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model.
+             */
+            function renderCanvasStaleBanner(contentEl, vm) {
+                const banner = createEl('div', { cls: 'paperforge-canvas-stale-banner' });
+                const msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'Showing previously loaded data. Refresh failed.' });
+                banner.appendChild(msg);
+                contentEl.appendChild(banner);
+            }
+            
+            // ── Card lane rendering (ANN11-02) ──
+            
+            /**
+             * Render a single read-only annotation card DOM element.
+             *
+             * Produces namespaced elements for selected-text preview, comment preview,
+             * page, type/color, source/provenance, and read-only status per D-01, D-02,
+             * D-19, and D-20.  All annotation-derived text uses textContent — no
+             * innerHTML.  No expandable details, drawers, popovers, editable forms,
+             * or controls per D-03, D-21, D-22.
+             *
+             * @param {object} card - Card object from buildCanvasCard().
+             * @returns {HTMLElement} The card DOM element.
+             */
+            function renderCanvasCard(card) {
+                var cardEl = createEl('div', { cls: 'paperforge-canvas-card' });
+                cardEl.setAttribute('data-card-id', card.id || '');
+                cardEl.setAttribute('data-page-index', card.pageIndex != null ? String(card.pageIndex) : '');
+                cardEl.setAttribute('data-anchor-status', (card.anchor && card.anchor.status) || '');
+                cardEl.setAttribute('aria-selected', 'false');
+                cardEl.tabIndex = 0;
+            
+                // ── Selected text preview ──
+                var selTextCls = 'paperforge-canvas-card-selected-text paperforge-canvas-card-selected-text-preview';
+                if (card.selectedText === '') selTextCls += ' paperforge-canvas-card-selected-text--empty';
+                if (card.selectedTextPreview && card.selectedTextPreview.isLong) selTextCls += ' paperforge-canvas-card-selected-text--long';
+                var selTextEl = createEl('div', { cls: selTextCls, text: card.selectedText || '' });
+                cardEl.appendChild(selTextEl);
+            
+                // ── Comment preview ──
+                var commentCls = 'paperforge-canvas-card-comment paperforge-canvas-card-comment-preview';
+                if (card.comment === '') commentCls += ' paperforge-canvas-card-comment--empty';
+                if (card.commentPreview && card.commentPreview.isLong) commentCls += ' paperforge-canvas-card-comment--long';
+                var commentEl = createEl('div', { cls: commentCls, text: card.comment || '' });
+                cardEl.appendChild(commentEl);
+            
+                // ── Page label ──
+                var pageEl = createEl('div', { cls: 'paperforge-canvas-card-page', text: card.pageLabel || '' });
+                cardEl.appendChild(pageEl);
+            
+                // ── Type / color indicator ──
+                var typeEl = createEl('div', { cls: 'paperforge-canvas-card-type', text: card.type || 'annotation' });
+                if (card.color) {
+                    typeEl.style.borderLeftColor = card.color;
+                }
+                cardEl.appendChild(typeEl);
+            
+                // ── Source / provenance ──
+                var sourceParts = [];
+                if (card.source) sourceParts.push(card.source);
+                if (card.sourceAttachmentKey) sourceParts.push(card.sourceAttachmentKey);
+                if (card.sourceAnnotationKey) sourceParts.push(card.sourceAnnotationKey);
+                var sourceEl = createEl('div', { cls: 'paperforge-canvas-card-source', text: sourceParts.join(' · ') || '' });
+                cardEl.appendChild(sourceEl);
+            
+                // ── Read-only badge ──
+                var badgeCls = 'paperforge-canvas-card-readonly';
+                badgeCls += card.readOnly ? ' paperforge-canvas-card-readonly--true' : ' paperforge-canvas-card-readonly--false';
+                var badgeEl = createEl('span', { cls: badgeCls, text: card.readOnlyLabel || '' });
+                cardEl.appendChild(badgeEl);
+            
+                return cardEl;
+            }
+            
+            /**
+             * Render left and right card lane containers from a lanes object.
+             *
+             * Lane containers are named from ANN11-01's deterministic lane assignment
+             * (D-07, D-08).  Lane order and lane/laneIndex are preserved — no
+             * re-sorting, drag, or persistence.
+             *
+             * @param {HTMLElement} contentEl - Parent element.
+             * @param {object} lanes - Lane object { left: Array, right: Array }.
+             */
+            function renderCanvasCardLanes(contentEl, lanes) {
+                if (!lanes) return;
+            
+                var lanesContainer = createEl('div', { cls: 'paperforge-canvas-lanes' });
+            
+                // Left lane
+                var leftLaneEl = createEl('div', { cls: 'paperforge-canvas-lane-left' });
+                leftLaneEl.setAttribute('data-lane-index', '0');
+                (lanes.left || []).forEach(function (card) {
+                    leftLaneEl.appendChild(renderCanvasCard(card));
+                });
+                lanesContainer.appendChild(leftLaneEl);
+            
+                // Right lane
+                var rightLaneEl = createEl('div', { cls: 'paperforge-canvas-lane-right' });
+                rightLaneEl.setAttribute('data-lane-index', '1');
+                (lanes.right || []).forEach(function (card) {
+                    rightLaneEl.appendChild(renderCanvasCard(card));
+                });
+                lanesContainer.appendChild(rightLaneEl);
+            
+                contentEl.appendChild(lanesContainer);
+            }
+            
+            /**
+             * Render the refreshing state with preserved cards.
+             *
+             * Shows a "refreshing" message while existing cards remain visible.
+             *
+             * @param {HTMLElement} contentEl
+             * @param {object} vm - View-model.
+             */
+            function renderCanvasRefreshing(contentEl, vm) {
+                var stateEl = createEl('div', { cls: 'paperforge-canvas-refreshing' });
+                var msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: vm.message || 'Refreshing annotations…' });
+                stateEl.appendChild(msg);
+                contentEl.appendChild(stateEl);
+            
+                // Preserve existing cards
+                if (vm.lanes) {
+                    renderCanvasCardLanes(contentEl, vm.lanes);
+                }
+            }
+            
+            // ── Main render dispatch ──
+            
+            // ── ANN12 i18n source/anchor keys ──
+            
+            _I18N.en['source.surface_label'] = 'Source';
+            _I18N.en['source.fulltext'] = 'Fulltext';
+            _I18N.en['source.note'] = 'Note';
+            _I18N.en['source.unavailable'] = 'Source content is not available for this paper.';
+            _I18N.en['source.unavailable_reason'] = 'No source content available.';
+            _I18N.en['anchor.exact'] = 'Exact match';
+            _I18N.en['anchor.page_level'] = 'Page-level';
+            _I18N.en['anchor.unresolved'] = 'Unresolved';
+            _I18N.en['anchor.page_marker'] = 'Page';
+            _I18N.en['anchor.downgrade_short'] = 'Selected text is too short for exact anchoring.';
+            _I18N.en['anchor.downgrade_ambiguous'] = 'Multiple matches found in source (ambiguous).';
+            _I18N.en['fallback.open_pdf_page'] = 'Open PDF page';
+            _I18N.en['fallback.unable_to_locate'] = 'Unable to locate anchor in source.';
+            _I18N.en['fallback.card_unavailable'] = 'Card is no longer available.';
+            _I18N.en['fallback.previous_unavailable'] = 'Previous selection is no longer available.';
+            _I18N.en['anchor.downgrade_not_found'] = 'Text not found in source.';
+            
+            _I18N.zh['source.surface_label'] = '原文来源';
+            _I18N.zh['source.fulltext'] = '全文';
+            _I18N.zh['source.note'] = '笔记';
+            _I18N.zh['source.unavailable'] = '本文无法获取原文内容。';
+            _I18N.zh['source.unavailable_reason'] = '无法获取原文内容。';
+            _I18N.zh['anchor.exact'] = '精确匹配';
+            _I18N.zh['anchor.page_level'] = '页面级别';
+            _I18N.zh['anchor.unresolved'] = '无法定位';
+            _I18N.zh['anchor.page_marker'] = '页';
+            _I18N.zh['anchor.downgrade_short'] = '选中文本过短，无法精确锚定。';
+            _I18N.zh['anchor.downgrade_ambiguous'] = '在原文中找到多处匹配（不精确）。';
+            _I18N.zh['anchor.downgrade_not_found'] = '在原文中未找到匹配文本。';
+            _I18N.zh['fallback.open_pdf_page'] = '打开 PDF 页面';
+            _I18N.zh['fallback.unable_to_locate'] = '无法在原文中定位锚点。';
+            _I18N.zh['fallback.card_unavailable'] = '该批注卡已不可用。';
+            _I18N.zh['fallback.previous_unavailable'] = '之前的选中内容已不可用。';
+            
+            // ── ANN12-02 source surface rendering helpers ──
+            
+            /**
+             * Look up an i18n string from the embedded render dictionary.
+             *
+             * @param {string} key - Dot-separated i18n key.
+             * @returns {string}
+             * @private
+             */
+            function _t(key) {
+                var lang = typeof navigator !== 'undefined' && navigator.language && navigator.language.startsWith('zh') ? 'zh' : 'en';
+                var dict = _I18N[lang] || _I18N.en;
+                return dict[key] !== undefined ? dict[key] : key;
+            }
+            
+            /**
+             * Render an exact anchor as a restrained inline highlight span.
+             *
+             * Exact anchors split source text around the match and wrap only the matched
+             * span in a namespaced highlight element.  All text content uses textContent,
+             * never innerHTML.  The optional color sets an inline background hint.
+             *
+             * @param {HTMLElement} containerEl - Parent element for the anchor fragment.
+             * @param {string} beforeText - Text before the exact match span.
+             * @param {string} anchorText - The exact matched text (highlighted).
+             * @param {string} afterText - Text after the exact match span.
+             * @param {string|null} [color] - Optional annotation color (CSS color string).
+             */
+            function renderExactAnchorText(containerEl, beforeText, anchorText, afterText, color, anchor) {
+                if (beforeText) {
+                    containerEl.appendChild(document.createTextNode(beforeText));
+                }
+                var highlight = document.createElement('span');
+                highlight.className = 'paperforge-canvas-anchor paperforge-canvas-anchor--exact';
+                highlight.setAttribute('data-anchor-id', (anchor && anchor.cardId) || '');
+                highlight.setAttribute('data-anchor-status', 'exact');
+                highlight.setAttribute('data-page-index', (anchor && anchor.pageIndex != null) ? String(anchor.pageIndex) : '');
+                highlight.tabIndex = 0;
+                if (color) {
+                    highlight.style.backgroundColor = color;
+                }
+                highlight.textContent = anchorText || '';
+                containerEl.appendChild(highlight);
+                // After text as text node
+                if (afterText) {
+                    containerEl.appendChild(document.createTextNode(afterText));
+                }
+            }
+            
+            /**
+             * Render a page-level anchor marker.
+             *
+             * Page-level anchors show a block/page marker with status text and reason.
+             * They do NOT render inline highlights or source span wrappers.
+             *
+             * @param {HTMLElement} containerEl - Parent element.
+             * @param {object} anchor - Anchor result ({ status, pageIndex, reason, ... }).
+             */
+            function renderPageLevelAnchorMarker(containerEl, anchor) {
+                var marker = createEl('div', { cls: 'paperforge-canvas-anchor paperforge-canvas-anchor--page-level' });
+                marker.setAttribute('data-anchor-id', (anchor && anchor.cardId) || '');
+                marker.setAttribute('data-anchor-status', 'page-level');
+                marker.setAttribute('data-page-index', (anchor && anchor.pageIndex != null) ? String(anchor.pageIndex) : '');
+                marker.tabIndex = 0;
+                var pageInfo = anchor.pageIndex != null
+                    ? _t('anchor.page_marker') + ' ' + (anchor.pageLabel || anchor.pageIndex)
+                    : _t('anchor.page_marker');
+                marker.appendChild(document.createTextNode(pageInfo));
+                if (anchor.reason) {
+                    var reasonEl = createEl('span', { cls: 'paperforge-canvas-anchor-reason', text: ' — ' + anchor.reason });
+                    marker.appendChild(reasonEl);
+                }
+                containerEl.appendChild(marker);
+            }
+            
+            /**
+             * Render an unresolved anchor status explanation.
+             *
+             * Unresolved anchors render explanation/status text only.  No source marker,
+             * no highlight, no span wrapper.
+             *
+             * @param {HTMLElement} containerEl - Parent element.
+             * @param {object} anchor - Anchor result ({ status, reason, ... }).
+             */
+            function renderUnresolvedAnchorStatus(containerEl, anchor) {
+                var statusEl = createEl('div', { cls: 'paperforge-canvas-anchor paperforge-canvas-anchor--unresolved' });
+                statusEl.setAttribute('data-anchor-id', (anchor && anchor.cardId) || '');
+                statusEl.setAttribute('data-anchor-status', 'unresolved');
+                var reason = anchor.reason || _t('source.unavailable_reason');
+                statusEl.textContent = _t('anchor.unresolved') + ': ' + reason;
+                containerEl.appendChild(statusEl);
+            }
+            
+            /**
+             * Render a single source block with anchor overlays.
+             *
+             * The block text and any matching anchors are rendered as a single DOM
+             * fragment.  Exact anchors produce inline highlights within the block text.
+             * Page-level anchors add markers after the block.  Unresolved anchors add
+             * explanation text.
+             *
+             * @param {HTMLElement} containerEl - Parent element.
+             * @param {object} block - Source block ({ id, pageIndex, text, sourceKind }).
+             * @param {Array} blockAnchors - Anchors whose page matches this block.
+             * @param {object} [options] - Options.
+             * @param {Function} [options.getAnchorColor] - Optional callback(cardId) -> color|null.
+             */
+            function renderSourceBlock(containerEl, block, blockAnchors, options) {
+                var blockEl = createEl('div', { cls: 'paperforge-canvas-source-block' });
+                blockEl.setAttribute('data-block-id', block.id || '');
+            
+                // Render block text with exact anchor highlights
+                var exactAnchors = Array.isArray(blockAnchors)
+                    ? blockAnchors.filter(function (a) { return a && a.status === 'exact'; })
+                    : [];
+                var pageLevelAnchors = Array.isArray(blockAnchors)
+                    ? blockAnchors.filter(function (a) { return a && a.status === 'page-level'; })
+                    : [];
+                var unresolvedAnchors = Array.isArray(blockAnchors)
+                    ? blockAnchors.filter(function (a) { return a && a.status === 'unresolved'; })
+                    : [];
+            
+                if (exactAnchors.length === 0) {
+                    // No exact anchors — render block text as a single text node
+                    blockEl.textContent = block.text || '';
+                } else {
+                    // Render source text with exact anchor highlights
+                    // For simplicity with the current data model, render text with highlights
+                    // by inserting highlighted spans at each exact anchor position.
+                    var blockText = block.text || '';
+            
+                    // Sort exact anchors by sourceSpan.rawStart
+                    var sorted = exactAnchors.slice().sort(function (a, b) {
+                        var aStart = (a.sourceSpan && a.sourceSpan.rawStart != null) ? a.sourceSpan.rawStart : -1;
+                        var bStart = (b.sourceSpan && b.sourceSpan.rawStart != null) ? b.sourceSpan.rawStart : -1;
+                        return aStart - bStart;
+                    });
+            
+                    // If the sourceSpan offsets map to this block's text range, split.
+                    // For block-relative rendering, we assume sourceSpan raw offsets
+                    // correspond to the block's trimmed text when the anchor was resolved
+                    // against this block's segment.
+                    var pos = 0;
+                    var getColor = (options && options.getAnchorColor) || function () { return null; };
+                    for (var ai = 0; ai < sorted.length; ai++) {
+                        var anchor = sorted[ai];
+                        var span = anchor.sourceSpan;
+                        var rawStart = (span && span.rawStart != null) ? span.rawStart : -1;
+                        var rawEnd = (span && span.rawEnd != null) ? span.rawEnd : -1;
+            
+                        if (rawStart < 0 || rawEnd < 0 || rawStart >= blockText.length) {
+                            // Span out of range for this block — render as plain text
+                            continue;
+                        }
+                        if (rawEnd > blockText.length) rawEnd = blockText.length;
+            
+                        // Text before this anchor
+                        if (rawStart > pos) {
+                            blockEl.appendChild(document.createTextNode(blockText.substring(pos, rawStart)));
+                        }
+                        // Highlighted anchor text
+                        var anchorText = blockText.substring(rawStart, rawEnd);
+                        var color = getColor(anchor.cardId);
+                        var highlight = document.createElement('span');
+                        highlight.className = 'paperforge-canvas-anchor paperforge-canvas-anchor--exact';
+                        highlight.setAttribute('data-anchor-id', anchor.cardId || '');
+                        highlight.setAttribute('data-anchor-status', 'exact');
+                        highlight.setAttribute('data-page-index', (anchor.pageIndex != null) ? String(anchor.pageIndex) : '');
+                        highlight.tabIndex = 0;
+                        if (color) highlight.style.backgroundColor = color;
+                        highlight.textContent = anchorText;
+                        blockEl.appendChild(highlight);
+                        pos = rawEnd;
+                    }
+                    // Text after last anchor
+                    if (pos < blockText.length) {
+                        blockEl.appendChild(document.createTextNode(blockText.substring(pos)));
+                    }
+                }
+            
+                // Render page-level anchor markers
+                for (var pi = 0; pi < pageLevelAnchors.length; pi++) {
+                    renderPageLevelAnchorMarker(blockEl, pageLevelAnchors[pi]);
+                }
+            
+                // Render unresolved anchor status
+                for (var ui = 0; ui < unresolvedAnchors.length; ui++) {
+                    renderUnresolvedAnchorStatus(blockEl, unresolvedAnchors[ui]);
+                }
+            
+                containerEl.appendChild(blockEl);
+            }
+            
+            /**
+             * Render the central PaperForge-owned source surface.
+             *
+             * Renders a source surface container with source kind header and blocks.
+             * When source is unavailable, shows the unavailable state instead.
+             *
+             * @param {HTMLElement} contentEl - Parent element.
+             * @param {Array} sourceBlocks - Source blocks from buildSourceBlocks().
+             * @param {Array} cardAnchors - Card anchor objects from vm.cards[].anchor.
+             * @param {object} [options] - Options.
+             * @param {boolean} [options.unavailable] - Show source-unavailable state.
+             * @param {string} [options.reason] - Reason for unavailability.
+             * @param {string} [options.sourceKind] - 'fulltext' or 'note'.
+             * @param {Function} [options.getAnchorColor] - Optional callback(cardId) -> color|null.
+             */
+            function renderCanvasSourceSurface(contentEl, sourceBlocks, cardAnchors, options) {
+                var opts = options || {};
+            
+                // ── Source surface container ──
+                var surfaceEl = createEl('div', { cls: 'paperforge-canvas-source-surface' });
+            
+                // ── Source-unavailable state ──
+                if (opts.unavailable) {
+                    var unavailableEl = createEl('div', { cls: 'paperforge-canvas-source-unavailable' });
+                    var msg = createEl('span', { cls: 'paperforge-canvas-status-text', text: opts.reason || _t('source.unavailable') });
+                    unavailableEl.appendChild(msg);
+                    surfaceEl.appendChild(unavailableEl);
+                    contentEl.appendChild(surfaceEl);
+                    return;
+                }
+            
+                // Source kind header
+                var headerEl = createEl('div', { cls: 'paperforge-canvas-source-header' });
+                var kindLabel = opts.sourceKind === 'note' ? _t('source.note') : _t('source.fulltext');
+                headerEl.textContent = _t('source.surface_label') + ': ' + kindLabel;
+                surfaceEl.appendChild(headerEl);
+            
+                // Group card anchors by pageIndex
+                var anchorsByPage = {};
+                if (Array.isArray(cardAnchors)) {
+                    for (var ai = 0; ai < cardAnchors.length; ai++) {
+                        var a = cardAnchors[ai];
+                        if (!a) continue;
+                        // Use pageIndex from anchor or fallback to 0
+                        var pageKey = a.pageIndex != null ? String(a.pageIndex) : '0';
+                        if (!anchorsByPage[pageKey]) anchorsByPage[pageKey] = [];
+                        anchorsByPage[pageKey].push(a);
+                    }
+                }
+            
+                // Render each source block with its matching anchors
+                var blocks = Array.isArray(sourceBlocks) ? sourceBlocks : [];
+                for (var bi = 0; bi < blocks.length; bi++) {
+                    var block = blocks[bi];
+                    var pageKey = block.pageIndex != null ? String(block.pageIndex) : '0';
+                    var blockAnchors = anchorsByPage[pageKey] || [];
+                    renderSourceBlock(surfaceEl, block, blockAnchors, opts);
+                }
+            
+                contentEl.appendChild(surfaceEl);
+            }
+            
+            /**
+             *
+             * Clears the content element, then renders the appropriate state UI.
+             * All user-facing text uses textContent — no innerHTML for annotation data.
+             *
+             * @param {HTMLElement} contentEl - The DOM element to render into.
+             * @param {object} vm - View-model with at minimum `{ state }`.
+             * @param {string} vm.state - One of: 'idle', 'loading', 'relaxed', 'ready',
+             *   'refreshing', 'stale', 'empty', 'missing-paper', 'missing-db',
+             *   'cli-error', 'invalid-json', 'missing-source', 'unsupported'.
+             * @param {string|null} [vm.paperKey]
+             * @param {string} [vm.message]
+             * @param {boolean} [vm.stale]
+             * @param {boolean} [vm.refreshing]
+             * @param {Array} [vm.cards]
+             * @param {object} [vm.lanes] - { left: Array, right: Array }
+             */
+            function renderCanvasView(contentEl, vm) {
+                if (!contentEl) return;
+            
+                // Clear previous content
+                emptyEl(contentEl);
+            
+                var v = vm || {};
+                var state = v.state || 'idle';
+            
+                // ── Render paper identity header when we have a paperKey ──
+                if (v.paperKey) {
+                    renderCanvasIdentity(contentEl, v.paperKey);
+                }
+            
+                // ── Render state-specific content ──
+                switch (state) {
+                    case 'loading':
+                        renderCanvasLoading(contentEl, v);
+                        break;
+                    case 'ready':
+                        // ANN11-02: render card lanes when available, else show empty
+                        if (v.lanes) {
+                            renderCanvasCardLanes(contentEl, v.lanes);
+                        } else {
+                            renderCanvasEmpty(contentEl, { ...v, message: v.message || 'Annotations loaded. Card layout is available in a future phase.' });
+                        }
+                        break;
+                    case 'refreshing':
+                        renderCanvasRefreshing(contentEl, v);
+                        break;
+                    case 'stale':
+                        // Show cards + stale banner
+                        if (v.lanes) {
+                            renderCanvasCardLanes(contentEl, v.lanes);
+                        }
+                        renderCanvasStaleBanner(contentEl, v);
+                        break;
+                    case 'empty':
+                        renderCanvasEmpty(contentEl, v);
+                        break;
+                    case 'missing-paper':
+                        renderCanvasMissingPaper(contentEl, v);
+                        break;
+                    case 'missing-db':
+                        renderCanvasMissingDb(contentEl, v);
+                        break;
+                    case 'cli-error':
+                        renderCanvasCliError(contentEl, v);
+                        break;
+                    case 'invalid-json':
+                        renderCanvasInvalidJson(contentEl, v);
+                        break;
+                    case 'missing-source':
+                        renderCanvasMissingSource(contentEl, v);
+                        break;
+                    case 'unsupported':
+                        renderCanvasUnsupported(contentEl, v);
+                        break;
+                    default:
+                        renderCanvasIdle(contentEl);
+                        break;
+                }
+            
+                // ── Stale overlay banner for states without their own stale handling ──
+                if (v.stale && state !== 'stale') {
+                    renderCanvasStaleBanner(contentEl, v);
+                }
+            }
+            
+            function renderFallbackButton(containerEl, fallbackInfo) {
+                if (!fallbackInfo || !fallbackInfo.eligible) return;
+                var btn = document.createElement('button');
+                btn.className = 'paperforge-canvas-fallback-button';
+                btn.textContent = _t('fallback.open_pdf_page');
+                btn.setAttribute('aria-label', _t('fallback.open_pdf_page') + ' — ' + (_t('anchor.page_marker') + ' ' + (fallbackInfo.page || '')));
+                btn.setAttribute('data-fallback-page', fallbackInfo.page != null ? String(fallbackInfo.page) : '');
+                containerEl.appendChild(btn);
+            }
+            
+            // ── ANN14-02: Connector state constants (from connectors module) ──
+            
+            const {
+                CONNECTOR_STATES,
+            } = require('./connectors');
+            
+            // ── ANN14-02: Connector SVG layer rendering helpers ──
+            
+            /**
+             * The base CSS class for the connector SVG layer element.
+             * @type {string}
+             */
+            var CANVAS_CONNECTOR_LAYER_CLS = 'paperforge-canvas-connector-layer';
+            
+            /**
+             * The base CSS class for a connector path/line element.
+             * @type {string}
+             */
+            var CANVAS_CONNECTOR_CLS = 'paperforge-canvas-connector';
+            
+            /**
+             * CSS modifier class for a selected connector.
+             * @type {string}
+             */
+            var CANVAS_CONNECTOR_SELECTED = 'paperforge-canvas-connector--selected';
+            
+            /**
+             * CSS modifier class for a hovered connector.
+             * @type {string}
+             */
+            var CANVAS_CONNECTOR_HOVERED = 'paperforge-canvas-connector--hovered';
+            
+            /**
+             * Create an empty namespaced connector SVG layer element.
+             *
+             * Creates exactly one <svg> under .paperforge-reading-canvas-view using the
+             * namespaced class paperforge-canvas-connector-layer.  The layer is hidden
+             * from the accessibility tree (aria-hidden, role=presentation) and contains
+             * no paths by default.
+             *
+             * Must only be called by runtime after loaded canvas rendering.  Does NOT
+             * appear in idle, missing-paper, missing-db, missing-source, unsupported,
+             * or card-only shell states unless explicitly called (D-13/D-17/D-20).
+             *
+             * @param {HTMLElement} containerEl - Parent element (typically .paperforge-reading-canvas-view).
+             * @returns {SVGSVGElement} The created SVG layer element.
+             */
+            function renderCanvasConnectorLayer(containerEl) {
+                var ns = 'http://www.w3.org/2000/svg';
+                var svg = document.createElementNS(ns, 'svg');
+                svg.setAttribute('class', CANVAS_CONNECTOR_LAYER_CLS);
+                svg.setAttribute('aria-hidden', 'true');
+                svg.setAttribute('role', 'presentation');
+                containerEl.appendChild(svg);
+                return svg;
+            }
+            
+            /**
+             * Update a connector SVG layer with at most one connector path.
+             *
+             * Clears the layer and renders a single <line> element when the connector
+             * state is visible.  Applies the --selected (default) or --hovered modifier
+             * class based on the `modifier` parameter.
+             *
+             * For hidden states — page-level, unresolved, stale, missing-dom,
+             * hidden-candidate, and any other hidden reason — the layer is left empty
+             * (no path elements) per D-01/D-02/D-03/D-13/D-17.
+             *
+             * @param {SVGSVGElement} layerEl - The SVG layer from renderCanvasConnectorLayer.
+             * @param {object} connectorState - Connector geometry from measureConnectorGeometry().
+             * @param {string} [modifier] - 'selected' or 'hovered' (defaults to 'selected').
+             */
+            function updateCanvasConnectorLayer(layerEl, connectorState, modifier) {
+                // Clear existing connector elements
+                while (layerEl.firstChild) {
+                    layerEl.removeChild(layerEl.firstChild);
+                }
+            
+                // Only render for visible connector state; hidden states leave the
+                // layer empty (no path elements)
+                if (!connectorState || connectorState.state !== CONNECTOR_STATES.VISIBLE) {
+                    return;
+                }
+            
+                var cardEp = connectorState.cardEndpoint;
+                var anchorEp = connectorState.anchorEndpoint;
+            
+                // Guard: missing endpoints (shouldn't happen for visible state, but
+                // protect against malformed input)
+                if (!cardEp || !anchorEp) return;
+            
+                var ns = 'http://www.w3.org/2000/svg';
+                var line = document.createElementNS(ns, 'line');
+            
+                // Build class: base + modifier
+                var cls = CANVAS_CONNECTOR_CLS;
+                cls += (modifier === 'hovered')
+                    ? ' ' + CANVAS_CONNECTOR_HOVERED
+                    : ' ' + CANVAS_CONNECTOR_SELECTED;
+                line.setAttribute('class', cls);
+            
+                // Endpoint coordinates
+                line.setAttribute('x1', String(cardEp.x));
+                line.setAttribute('y1', String(cardEp.y));
+                line.setAttribute('x2', String(anchorEp.x));
+                line.setAttribute('y2', String(anchorEp.y));
+            
+                // Accessible presentation (hidden from AT — visual decoration only)
+                line.setAttribute('aria-hidden', 'true');
+            
+                layerEl.appendChild(line);
+            }
+            
+            module.exports = {
+                renderReadingCanvasShell,
+                renderCanvasFailure,
+                renderHighlightPopover,
+                renderUnresolvedDrawer,
+                renderCanvasView,
+                renderCanvasIdentity,
+                renderCanvasIdle,
+                renderCanvasLoading,
+                renderCanvasEmpty,
+                renderCanvasMissingPaper,
+                renderCanvasMissingDb,
+                renderCanvasCliError,
+                renderCanvasInvalidJson,
+                renderCanvasMissingSource,
+                renderCanvasUnsupported,
+                renderCanvasStaleBanner,
+                renderCanvasCard,
+                renderCanvasCardLanes,
+                renderCanvasRefreshing,
+                // ── ANN13-03 navigation and fallback rendering ──
+                renderFallbackButton,
+                // ── ANN12-02 source surface and anchor rendering ──
+                renderCanvasSourceSurface,
+                renderSourceBlock,
+                renderExactAnchorText,
+                renderPageLevelAnchorMarker,
+                renderUnresolvedAnchorStatus,
+            
+                // ── ANN14-02 connector layer rendering ──
+                renderCanvasConnectorLayer,
+                updateCanvasConnectorLayer,
+            };
+            
+        },
+        "src/canvas/surface": function(require, module, exports) {
+            /**
+             * Pure source surface selection, text normalization, and block shaping
+             * (Phase ANN12, Plan 01).
+             *
+             * Pure CommonJS helpers for selecting PaperForge-owned reading source
+             * content and preparing it for anchor resolution.  No fs, no Obsidian,
+             * no native PDF DOM selectors/classes, no innerHTML, no subprocess.
+             *
+             * Source priority per D-01, D-02, D-03:
+             *   1. Usable fulltext from `entry.fulltext_path`.
+             *   2. Usable note body from `entry.note_path`.
+             *   3. Explicit source-unavailable model with clear diagnostics.
+             *
+             * @module canvas/surface
+             */
+            
+            // ── Source constants ──
+            
+            /**
+             * Kinds of PaperForge-owned source content.
+             *
+             * @enum {string}
+             * @readonly
+             */
+            const SOURCE_KINDS = Object.freeze({
+                FULLTEXT: 'fulltext',
+                NOTE: 'note',
+            });
+            
+            /**
+             * Source model states.
+             *
+             * @enum {string}
+             * @readonly
+             */
+            const SOURCE_STATES = Object.freeze({
+                READY: 'ready',
+                UNAVAILABLE: 'source-unavailable',
+            });
+            
+            // ── Page marker regex ──
+            
+            /**
+             * Matches OCR page markers like `<!-- page 1 -->`.
+             * @private
+             */
+            const _PAGE_MARKER_RE = /<!--\s*page\s+(\d+)\s*-->/gi;
+            
+            // ── Source model builder ──
+            
+            /**
+             * Build a pure source model from the entry and already-read source inputs.
+             *
+             * Source priority per D-01, D-02, D-03:
+             *   1. If `sourceInputs.fulltext` has readable text, use it (sourceKind=fulltext).
+             *   2. Else if `sourceInputs.note` has readable text, use it (sourceKind=note)
+             *      and record a fulltext miss in diagnostics.
+             *   3. Otherwise return a source-unavailable model with a clear reason.
+             *
+             * Per D-17, the reason distinguishes missing-path vs missing/unreadable file
+             * conditions when the caller supplies that information.
+             *
+             * The `sourceInputs` shape for both `fulltext` and `note`:
+             *   { path: string|null, text: string|null, exists: boolean, readable: boolean, error?: string }
+             *
+             * @param {object} entry - Paper entry ({ key, fulltext_path?, note_path? }).
+             * @param {object} sourceInputs - Runtime inputs ({ fulltext, note }).
+             * @param {object} [options] - Optional flags (reserved for future use).
+             * @returns {{ status: string, sourceKind: string|null, text: string|null,
+             *            fulltextPath: string|null, notePath: string|null,
+             *            diagnostics: object|null, reason: string|null }}
+             */
+            function buildCanvasSourceModel(entry, sourceInputs, options) {
+                const entryKey = firstNonBlank(entry && entry.key, entry && entry.zotero_key);
+            
+                // Extract paths from entry
+                const ftPath = (entry && entry.fulltext_path) || null;
+                const ntPath = (entry && entry.note_path) || null;
+            
+                // Extract runtime inputs
+                const ftInput = (sourceInputs && sourceInputs.fulltext) || {};
+                const ntInput = (sourceInputs && sourceInputs.note) || {};
+            
+                const ftText = ftInput.text || null;
+                const ftReadable = Boolean(ftInput.readable) && ftText != null;
+                const ntText = ntInput.text || null;
+                const ntReadable = Boolean(ntInput.readable) && ntText != null;
+            
+                // Diagnostics object accumulates miss/reason info
+                var diagnostics = {
+                    fulltext: {
+                        path: ftPath,
+                        exists: Boolean(ftInput.exists),
+                        readable: ftReadable,
+                        reason: null,
+                        miss: false,
+                    },
+                    note: {
+                        path: ntPath,
+                        exists: Boolean(ntInput.exists),
+                        readable: ntReadable,
+                        reason: null,
+                        miss: false,
+                    },
+                };
+            
+                // ── Priority 1: usable fulltext ──
+                if (ftReadable) {
+                    diagnostics.fulltext.reason = null;
+                    return {
+                        status: SOURCE_STATES.READY,
+                        sourceKind: SOURCE_KINDS.FULLTEXT,
+                        text: ftText,
+                        fulltextPath: ftPath,
+                        notePath: ntPath,
+                        diagnostics: diagnostics,
+                        paperKey: entryKey,
+                        reason: null,
+                    };
+                }
+            
+                // ── Priority 2: usable note (fulltext unavailable) ──
+                if (ntReadable) {
+                    // Compute fulltext miss reason
+                    var ftReason = _computeSourceUnavailableReason(ftPath, ftInput, 'fulltext');
+                    diagnostics.fulltext.reason = ftReason;
+                    diagnostics.fulltext.miss = true;
+            
+                    return {
+                        status: SOURCE_STATES.READY,
+                        sourceKind: SOURCE_KINDS.NOTE,
+                        text: ntText,
+                        fulltextPath: ftPath,
+                        notePath: ntPath,
+                        diagnostics: diagnostics,
+                        paperKey: entryKey,
+                        reason: null,
+                    };
+                }
+            
+                // ── Priority 3: source unavailable ──
+                var ftReason2 = _computeSourceUnavailableReason(ftPath, ftInput, 'fulltext');
+                var ntReason2 = _computeSourceUnavailableReason(ntPath, ntInput, 'note');
+            
+                diagnostics.fulltext.reason = ftReason2;
+                diagnostics.fulltext.miss = true;
+                diagnostics.note.reason = ntReason2;
+                diagnostics.note.miss = true;
+            
+                // Build combined reason
+                var combinedReason = '';
+                if (ftReason2 && ntReason2) {
+                    combinedReason = ftReason2 + '; ' + ntReason2;
+                } else if (ftReason2) {
+                    combinedReason = ftReason2;
+                } else if (ntReason2) {
+                    combinedReason = ntReason2;
+                } else {
+                    combinedReason = 'No source content is available for this paper.';
+                }
+            
+                return {
+                    status: SOURCE_STATES.UNAVAILABLE,
+                    sourceKind: null,
+                    text: null,
+                    fulltextPath: ftPath,
+                    notePath: ntPath,
+                    diagnostics: diagnostics,
+                    paperKey: entryKey,
+                    reason: combinedReason,
+                };
+            }
+            
+            function firstNonBlank() {
+                for (let i = 0; i < arguments.length; i++) {
+                    const value = arguments[i];
+                    if (value == null) continue;
+                    if (typeof value === 'string' && value.trim() === '') continue;
+                    return String(value);
+                }
+                return null;
+            }
+            
+            /**
+             * Compute a human-readable reason for why a source input is unavailable.
+             * Distinguishes missing-path vs missing-file vs unreadable-file per D-17.
+             *
+             * Checks entry path first, then falls back to input path so callers can
+             * supply path info via either channel.
+             *
+             * @param {string|null} path - Source path from entry.
+             * @param {object} input - Source input ({ path, text, exists, readable, error }).
+             * @param {'fulltext'|'note'} kind - Source kind label.
+             * @returns {string|null} Reason string, or null if source is available.
+             * @private
+             */
+            function _computeSourceUnavailableReason(path, input, kind) {
+                var label = kind === 'fulltext' ? 'Fulltext' : 'Note';
+                var kindPrefix = kind === 'fulltext' ? 'fulltext' : 'note';
+            
+                // Use entry path first, then fall back to input path
+                var effectivePath = path;
+                if (effectivePath == null && input && input.path) {
+                    effectivePath = input.path;
+                }
+            
+                // Path missing from both entry and input
+                if (effectivePath == null) {
+                    return label + ' path is missing from the paper entry. (' + kindPrefix + '-path-missing)';
+                }
+            
+                var exists = Boolean(input && input.exists);
+                var readable = Boolean(input && input.readable);
+                var error = (input && input.error) || null;
+            
+                if (!exists) {
+                    return label + ' file does not exist at: ' + effectivePath + ' (' + kindPrefix + '-file-missing)';
+                }
+            
+                if (error) {
+                    return label + ' file is not readable: ' + error;
+                }
+            
+                // File exists but no text content
+                if (!readable) {
+                    return label + ' file has no readable content. (' + kindPrefix + '-file-missing)';
+                }
+            
+                return null;
+            }
+            
+            // ── Source block shaping ──
+            
+            /**
+             * Build page-shaped source blocks from OCR page-marker text.
+             *
+             * Splits the source text on `<!-- page N -->` markers (matching OCR
+             * fulltext.md format).  Each block carries stable id, pageIndex,
+             * trimmed text, and sourceKind.
+             *
+             * When the text has no page markers, returns a single block with
+             * pageIndex 0 containing all text.
+             *
+             * @param {string} sourceText - OCR fulltext or note text.
+             * @param {string} sourceKind - One of SOURCE_KINDS values.
+             * @returns {Array<{ id: string, pageIndex: number, text: string, sourceKind: string }>}
+             */
+            function buildSourceBlocks(sourceText, sourceKind) {
+                if (!sourceText || typeof sourceText !== 'string' || sourceText.trim() === '') {
+                    return [];
+                }
+            
+                // Split on page markers, capturing page numbers
+                var parts = [];
+                var lastIndex = 0;
+                var match;
+                var pageCounter = 0;
+            
+                // Reset regex state
+                _PAGE_MARKER_RE.lastIndex = 0;
+            
+                while ((match = _PAGE_MARKER_RE.exec(sourceText)) !== null) {
+                    var markerStart = match.index;
+                    var markerEnd = match.index + match[0].length;
+            
+                    // Text before this marker (if any)
+                    if (markerStart > lastIndex) {
+                        var beforeText = sourceText.substring(lastIndex, markerStart).trim();
+                        if (beforeText) {
+                            parts.push({
+                                text: beforeText,
+                                pageIndex: pageCounter,
+                                markerPage: null, // Not associated with this marker yet
+                            });
+                        }
+                    }
+            
+                    // Text after the marker (will be associated with this page)
+                    var pageNum = parseInt(match[1], 10);
+            
+                    // Find the next marker or end of string
+                    var nextMarker = _PAGE_MARKER_RE.exec(sourceText);
+                    var segmentEnd;
+                    if (nextMarker) {
+                        segmentEnd = nextMarker.index;
+                        // Reset so the loop picks up nextMarker on next iteration
+                        _PAGE_MARKER_RE.lastIndex = nextMarker.index;
+                    } else {
+                        segmentEnd = sourceText.length;
+                    }
+            
+                    var segmentText = sourceText.substring(markerEnd, segmentEnd).trim();
+                    if (segmentText) {
+                        parts.push({
+                            text: segmentText,
+                            pageIndex: pageNum,
+                            markerPage: pageNum,
+                        });
+                    } else {
+                        // No actual content after marker; still push an entry so
+                        // the page index is represented
+                        parts.push({
+                            text: '',
+                            pageIndex: pageNum,
+                            markerPage: pageNum,
+                        });
+                    }
+            
+                    lastIndex = segmentEnd;
+            
+                    if (nextMarker) {
+                        // We already consumed nextMarker; continue from its position
+                        continue;
+                    }
+                    break;
+                }
+            
+                // If no markers were found, return single block with all text
+                if (parts.length === 0) {
+                    var trimmed = sourceText.trim();
+                    if (trimmed) {
+                        return [{
+                            id: 'block-0',
+                            pageIndex: 0,
+                            text: trimmed,
+                            sourceKind: sourceKind,
+                        }];
+                    }
+                    return [];
+                }
+            
+                // Handle any trailing text after the last marker
+                if (lastIndex < sourceText.length) {
+                    var trailing = sourceText.substring(lastIndex).trim();
+                    if (trailing) {
+                        parts.push({
+                            text: trailing,
+                            pageIndex: parts.length > 0 ? parts[parts.length - 1].pageIndex + 1 : 0,
+                            markerPage: null,
+                        });
+                    }
+                }
+            
+                // Convert parts to final shape with ids
+                var blocks = [];
+                for (var i = 0; i < parts.length; i++) {
+                    var p = parts[i];
+                    if (p.text || p.markerPage != null) {
+                        blocks.push({
+                            id: 'block-' + i,
+                            pageIndex: p.pageIndex,
+                            text: p.text,
+                            sourceKind: sourceKind,
+                        });
+                    }
+                }
+            
+                return blocks;
+            }
+            
+            /**
+             * Offset map entry representing a raw→normalized mapping.
+             *
+             * @typedef {Object} OffsetEntry
+             * @property {number} rawStart - Start index in raw text.
+             * @property {number} rawEnd - End index (exclusive) in raw text.
+             * @property {number} normStart - Start index in normalized text.
+             * @property {number} normEnd - End index (exclusive) in normalized text.
+             */
+            
+            /**
+             * Normalize source text for anchor matching.
+             *
+             * Collapses whitespace runs into single spaces, trims leading/trailing
+             * whitespace, and preserves a raw-offset mapping so callers can locate
+             * matched substrings back in the original source text.
+             *
+             * Does NOT change letter case, remove punctuation, or perform any
+             * lossy transformation beyond whitespace normalization.
+             *
+             * @param {string} value - Raw source text to normalize.
+             * @returns {{ normalized: string, offsetMap: Array<OffsetEntry> }}
+             */
+            function normalizeSourceTextForAnchors(value) {
+                if (typeof value !== 'string' || value.length === 0) {
+                    return { normalized: '', offsetMap: [] };
+                }
+            
+                var normalized = '';
+                var offsetMap = [];
+                var i = 0;
+                var len = value.length;
+            
+                // Track normalized position as we build
+                var normPos = 0;
+            
+                // Skip leading whitespace
+                while (i < len && _isWhitespace(value[i])) {
+                    i++;
+                }
+            
+                while (i < len) {
+                    var start = i;
+            
+                    // Collect a non-whitespace segment
+                    while (i < len && !_isWhitespace(value[i])) {
+                        i++;
+                    }
+            
+                    if (i > start) {
+                        var segment = value.substring(start, i);
+                        if (normalized.length > 0) {
+                            // Add a space before this segment (whitespace collapse)
+                            offsetMap.push({
+                                rawStart: start - 1, // approximate; see below
+                                rawEnd: start,
+                                normStart: normPos,
+                                normEnd: normPos + 1,
+                            });
+                            normalized += ' ';
+                            normPos += 1;
+                        }
+            
+                        offsetMap.push({
+                            rawStart: start,
+                            rawEnd: i,
+                            normStart: normPos,
+                            normEnd: normPos + segment.length,
+                        });
+                        normalized += segment;
+                        normPos += segment.length;
+                    }
+            
+                    // Skip whitespace to next word
+                    var wsStart = i;
+                    while (i < len && _isWhitespace(value[i])) {
+                        i++;
+                    }
+                    // Note: we don't record individual whitespace spans, only the
+                    // collapsed space between word segments.
+                }
+            
+                return { normalized: normalized, offsetMap: offsetMap };
+            }
+            
+            /**
+             * Check if a character is whitespace (space, tab, newline, carriage return).
+             *
+             * @param {string} ch - Single character.
+             * @returns {boolean}
+             * @private
+             */
+            function _isWhitespace(ch) {
+                return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r';
+            }
+            
+            module.exports = {
+                SOURCE_KINDS: SOURCE_KINDS,
+                SOURCE_STATES: SOURCE_STATES,
+                buildCanvasSourceModel: buildCanvasSourceModel,
+                buildSourceBlocks: buildSourceBlocks,
+                normalizeSourceTextForAnchors: normalizeSourceTextForAnchors,
+            };
+            
+        },
+        "src/canvas/view-model": function(require, module, exports) {
+            /**
+             * Canvas card view-model helpers (Phase ANN11, Plan 01; expanded ANN12).
+             *
+             * Pure CommonJS helpers for building read-only annotation card models
+             * and explicit canvas/card state projections from the existing v0.2
+             * normalized annotation state.
+             *
+             * ANN12 extension: cards receive computed source anchors from an optional
+             * `sourceModel` parameter, resolving to exact/page-level/unresolved.
+             *
+             * No Obsidian, subprocess, database, or Zotero dependencies.
+             * No mutation controls, no action descriptors, no navigation/connector code.
+             *
+             * @module canvas/view-model
+             */
+            
+            const {
+                sortCanvasCardsForReadingOrder,
+                assignCanvasCardsToLanes,
+                getCardIdentity,
+            } = require('./layout');
+            
+            const {
+                resolveCanvasAnchor,
+            } = require('./anchors');
+            
+            // ── Preview metadata ──
+            
+            /**
+             * Maximum preview length for selected-text fields (two lines approx).
+             * @private
+             */
+            const _SELECTED_TEXT_LIMIT = 140;
+            
+            /**
+             * Maximum preview length for comment fields (one line approx).
+             * @private
+             */
+            const _COMMENT_LIMIT = 70;
+            
+            /**
+             * Return whether an annotation payload contains content for a side card.
+             *
+             * Anchor resolution is intentionally irrelevant here: card eligibility is
+             * determined only by authored annotation content.
+             *
+             * @param {object} annotation - Normalized annotation row or raw payload.
+             * @returns {boolean}
+             */
+            function annotationNeedsSideCard(annotation) {
+                const payload = annotation || {};
+                const display = payload.display || {};
+                const pdfLocation = payload.pdfLocation || {};
+                const raw = payload.raw || {};
+                const values = [
+                    display.comment, display.note, display.imagePath, display.imageData,
+                    payload.comment, payload.note, payload.imagePath, payload.imageData,
+                    raw.comment, raw.note, raw.imagePath, raw.imageData,
+                    raw.image_path, raw.image_data,
+                ];
+            
+                function hasContent(value) {
+                    if (value == null) return false;
+                    if (typeof value === 'string') return value.trim().length > 0;
+                    if (Array.isArray(value)) return value.some(hasContent);
+                    if (typeof value === 'object') {
+                        return Object.keys(value).some(function (key) {
+                            return hasContent(value[key]);
+                        });
+                    }
+                    return true;
+                }
+            
+                if (values.some(hasContent)) return true;
+            
+                const type = display.type || payload.type || raw.type;
+                const pageIndex = pdfLocation.pageIndex != null ? pdfLocation.pageIndex : raw.page_index;
+                const positionValue = pdfLocation.positionJson != null
+                    ? pdfLocation.positionJson
+                    : raw.position_json;
+                if (type !== 'image' || pageIndex == null || positionValue == null) return false;
+            
+                try {
+                    const position = typeof positionValue === 'string'
+                        ? JSON.parse(positionValue)
+                        : positionValue;
+                    return Boolean(position && Array.isArray(position.rects) && position.rects.length > 0);
+                } catch (_error) {
+                    return false;
+                }
+            }
+            
+            /**
+             * Normalize a text value into a card preview metadata object.
+             *
+             * Returns safe preview metadata without DOM measurement:
+             *   { text, kind, truncated, expandable, isLong }
+             *
+             * "selected-text" values get a ~140-char limit.
+             * "comment" values get a ~70-char limit.
+             *
+             * @param {string|null|undefined} value - The content to preview.
+             * @param {"selected-text"|"comment"} kind - The kind of content.
+             * @returns {{ text: string, kind: string, truncated: boolean, expandable: boolean, isLong: boolean }}
+             */
+            function normalizeCanvasCardPreview(value, kind) {
+                const safeText = (value != null ? String(value) : '');
+                const limit = kind === 'selected-text' ? _SELECTED_TEXT_LIMIT : _COMMENT_LIMIT;
+            
+                const isLong = safeText.length > limit;
+                const truncated = safeText.length > limit;
+            
+                if (safeText.length <= limit) {
+                    return { text: safeText, kind: kind, truncated: false, expandable: false, isLong: false };
+                }
+            
+                const truncatedText = safeText.substring(0, limit) + '…';
+                return { text: truncatedText, kind: kind, truncated: true, expandable: true, isLong: true };
+            }
+            
+            // ── Card builder ──
+            
+            /**
+             * Build a read-only annotation card from a normalized annotation row.
+             *
+             * Consumes an existing normalized row from the v0.2 annotation state.
+             * Does NOT construct CLI args, import fs/child_process, read SQLite/Zotero,
+             * or mutate row inputs.
+             *
+             * Per D-01, the card carries selected text, comment, page, color/type,
+             * source/provenance, attachment identity, annotation identity, and
+             * read-only status.
+             *
+             * Per D-03 and D-21, the card exposes no expandable details, drawers,
+             * popovers, editable forms, local mutation state, or action controls.
+             *
+             * ANN12 extension: when `sourceModel` is provided, the card receives a
+             * computed anchor via `resolveCanvasAnchor`.  Without sourceModel,
+             * the anchor is a safe fallback (unresolved with explanation).
+             *
+             * @param {object} row - A normalized annotation row ({ display, provenance, pdfLocation }).
+             * @param {object} [sourceModel] - Optional source model from buildCanvasSourceModel().
+             * @returns {object} Read-only card object.
+             */
+            function buildCanvasCard(row, sourceModel) {
+                const display = (row && row.display) || {};
+                const provenance = (row && row.provenance) || {};
+                const pdfLoc = (row && row.pdfLocation) || {};
+            
+                const selectedText = display.selectedText != null ? String(display.selectedText) : '';
+                const comment = display.comment != null ? String(display.comment) : '';
+            
+                const id = getCardIdentity(row);
+                const readOnly = !(provenance.isReadonly === false);
+            
+                // ── Compute anchor from sourceModel if provided ──
+                var anchor;
+                if (sourceModel) {
+                    var anchorCard = {
+                        cardId: id,
+                        selectedText: selectedText,
+                        pageIndex: pdfLoc.pageIndex != null ? pdfLoc.pageIndex : null,
+                        pageLabel: pdfLoc.pageLabel || display.pageLabel || '',
+                    };
+                    anchor = resolveCanvasAnchor(anchorCard, sourceModel);
+                } else {
+                    anchor = { status: 'unresolved', reason: 'No source model provided for anchor resolution.' };
+                }
+            
+                return {
+                    // ── Identity ──
+                    id: id,
+            
+                    // ── Display fields ──
+                    selectedText: selectedText,
+                    comment: comment,
+                    note: display.note,
+                    imagePath: display.imagePath,
+                    imageData: display.imageData,
+                    pageLabel: pdfLoc.pageLabel || display.pageLabel || '',
+                    pageIndex: pdfLoc.pageIndex != null ? pdfLoc.pageIndex : null,
+                    positionJson: pdfLoc.positionJson != null ? pdfLoc.positionJson : null,
+                    type: display.type || 'annotation',
+                    color: display.color != null ? display.color : null,
+            
+                    // ── Source / provenance ──
+                    source: provenance.source || 'unknown',
+                    sourceAttachmentKey: provenance.sourceAttachmentKey || '',
+                    sourceAnnotationKey: provenance.sourceAnnotationKey || '',
+            
+                    // ── Read-only metadata ──
+                    readOnly: readOnly,
+                    readOnlyLabel: readOnly ? 'Read-only' : '',
+            
+                    // ── Preview metadata ──
+                    selectedTextPreview: normalizeCanvasCardPreview(selectedText, 'selected-text'),
+                    commentPreview: normalizeCanvasCardPreview(comment, 'comment'),
+            
+                    // ── Anchor (ANN12) ──
+                    anchor: anchor,
+                };
+            }
+            
+            // ── Canvas view-model builder ──
+            
+            /**
+             * Build a complete canvas view-model from the annotation state.
+             *
+             * Maps annotation load states (loaded, empty, missing-paper, missing-db,
+             * cli-error, invalid-json, missing-source, unsupported, idle) plus
+             * refreshing and stale variants into explicit canvas view-model states.
+             *
+             * Each state has a distinct `state` name so renderers can present
+             * appropriate UI without re-interpreting the underlying load state.
+             *
+             * The `options` parameter supports:
+             *   - `refreshing` (boolean): When true, the view-model is marked as
+             *     'refreshing' while preserving existing cards for display.
+             *   - `stale` (boolean): When true, the view-model is marked as 'stale'
+             *     while preserving existing cards with per-card stale flags.
+             *   - `sourceModel` (object): Optional source model from
+             *     buildCanvasSourceModel(). When provided, each card receives a
+             *     computed anchor (exact/page-level/unresolved) via the anchor
+             *     resolver.
+             *
+             * @param {object|null|undefined} annotationState - The annotation load state
+             *   ({ state, paperKey, annotations, message, errorCode, raw, stale }).
+             * @param {object} [options] - Optional display flags.
+             * @param {boolean} [options.refreshing] - Mark as refreshing state.
+             * @param {boolean} [options.stale] - Mark as stale state.
+             * @param {object} [options.sourceModel] - Source model for anchor resolution.
+             * @returns {{ state: string, paperKey: string|null, cards: Array, lanes: ({ left: Array, right: Array })|undefined, message: string, refreshing: boolean, stale: boolean }}
+             */
+            function buildCanvasCardViewModel(annotationState, options) {
+                const aState = annotationState || { state: 'idle', annotations: [] };
+                const opts = options || {};
+                const rawState = aState.state || 'idle';
+                const rows = Array.isArray(aState.annotations) ? aState.annotations : [];
+                const paperKey = aState.paperKey != null ? aState.paperKey : null;
+                const hasStale = Boolean(aState.stale) || Boolean(opts.stale);
+                const hasRefreshing = Boolean(opts.refreshing);
+            
+                // ── Build cards if we have annotation rows ──
+                var sourceModel = opts.sourceModel || null;
+            
+                function buildAnnotationProjections() {
+                    if (rows.length === 0) return [];
+                    const sorted = sortCanvasCardsForReadingOrder(rows);
+                    return sorted.map(function (row) {
+                        const card = buildCanvasCard(row, sourceModel);
+                        if (hasStale) card.stale = true;
+                        return { row: row, card: card };
+                    });
+                }
+            
+                function completeViewModel(viewModel) {
+                    if (!Object.prototype.hasOwnProperty.call(viewModel, 'sourceModel')) {
+                        viewModel.sourceModel = sourceModel;
+                    }
+                    if (!Array.isArray(viewModel.highlights)) viewModel.highlights = [];
+                    if (!Array.isArray(viewModel.unresolved)) viewModel.unresolved = [];
+                    if (viewModel.unresolvedCount == null) {
+                        viewModel.unresolvedCount = viewModel.unresolved.length;
+                    }
+                    return viewModel;
+                }
+            
+                // ── States with no cards ──
+                if (rawState === 'idle') {
+                    return completeViewModel({ state: 'idle', paperKey: paperKey, cards: [], message: aState.message || '', refreshing: false, stale: false });
+                }
+            
+                if (rawState === 'loading') {
+                    return completeViewModel({ state: 'loading', paperKey: paperKey, cards: [], message: aState.message || 'Loading annotations…', refreshing: false, stale: false });
+                }
+            
+                if (rawState === 'empty') {
+                    return completeViewModel({ state: 'empty', paperKey: paperKey, cards: [], message: aState.message || 'This paper has no annotations yet.', refreshing: false, stale: hasStale });
+                }
+            
+                if (rawState === 'missing-paper') {
+                    return completeViewModel({ state: 'missing-paper', paperKey: null, cards: [], message: aState.message || 'No paper is currently active.', refreshing: false, stale: false });
+                }
+            
+                if (rawState === 'missing-db') {
+                    return completeViewModel({ state: 'missing-db', paperKey: paperKey, cards: [], message: aState.message || 'Annotation database is not available.', refreshing: false, stale: false });
+                }
+            
+                if (rawState === 'cli-error') {
+                    return completeViewModel({ state: 'cli-error', paperKey: paperKey, cards: [], message: aState.message || 'Failed to load annotations.', refreshing: false, stale: false });
+                }
+            
+                if (rawState === 'invalid-json') {
+                    return completeViewModel({ state: 'invalid-json', paperKey: paperKey, cards: [], message: aState.message || 'Could not read annotation data.', refreshing: false, stale: false });
+                }
+            
+                if (rawState === 'missing-source') {
+                    return completeViewModel({ state: 'missing-source', paperKey: paperKey, cards: [], message: aState.message || 'Reading source is not available for this paper.', refreshing: false, stale: false });
+                }
+            
+                if (rawState === 'unsupported') {
+                    return completeViewModel({ state: 'unsupported', paperKey: paperKey, cards: [], message: aState.message || 'This paper type is not supported.', refreshing: false, stale: false });
+                }
+            
+                // ── States with cards (ready, refreshing, stale) ──
+                if (rawState === 'ready') {
+                    const projections = buildAnnotationProjections();
+                    const resolvedProjections = projections
+                        .filter(function (item) {
+                            return item.card.anchor.status === 'exact' || item.card.anchor.status === 'resolved';
+                        });
+                    const highlights = resolvedProjections.map(function (item) { return item.card; });
+                    const unresolved = projections
+                        .filter(function (item) {
+                            return item.card.anchor.status !== 'exact' && item.card.anchor.status !== 'resolved';
+                        })
+                        .map(function (item) {
+                            return Object.assign({}, item.row, item.card, {
+                                annotation: item.row,
+                                card: item.card,
+                                anchor: item.card.anchor,
+                            });
+                        });
+                    const cardProjections = sourceModel ? resolvedProjections : projections;
+                    const cards = cardProjections
+                        .filter(function (item) { return annotationNeedsSideCard(item.row); })
+                        .map(function (item) { return item.card; });
+                    const lanes = cards.length > 0 ? assignCanvasCardsToLanes(cards) : undefined;
+                    const projectionFields = {
+                        sourceModel: sourceModel,
+                        highlights: highlights,
+                        unresolved: unresolved,
+                        unresolvedCount: unresolved.length,
+                    };
+            
+                    if (hasRefreshing) {
+                        return completeViewModel({
+                            state: 'refreshing',
+                            paperKey: paperKey,
+                            cards: cards,
+                            lanes: lanes,
+                            message: aState.message || 'Refreshing annotations…',
+                            refreshing: true,
+                            stale: false,
+                            ...projectionFields,
+                        });
+                    }
+            
+                    if (hasStale) {
+                        return completeViewModel({
+                            state: 'stale',
+                            paperKey: paperKey,
+                            cards: cards,
+                            lanes: lanes,
+                            message: (aState.message || '') + ' — Showing previously loaded (stale) data.',
+                            refreshing: false,
+                            stale: true,
+                            ...projectionFields,
+                        });
+                    }
+            
+                    return completeViewModel({
+                        state: 'ready',
+                        paperKey: paperKey,
+                        cards: cards,
+                        lanes: lanes,
+                        message: aState.message || (cards.length + ' annotation(s) loaded.'),
+                        refreshing: false,
+                        stale: false,
+                        ...projectionFields,
+                    });
+                }
+            
+                // ── Unknown state → fallback to idle ──
+                return completeViewModel({ state: 'idle', paperKey: paperKey, cards: [], message: '', refreshing: false, stale: false });
+            }
+            
+            module.exports = {
+                annotationNeedsSideCard,
+                buildCanvasCard,
+                buildCanvasCardViewModel,
+                normalizeCanvasCardPreview,
+            };
+            
+        },
+    };
+    factories['src/canvas'] = factories['src/canvas/index'];
+    const cache = {};
+    function normalizeModuleId(fromId, request) {
+        if (!request) return request;
+        if (request === 'src/canvas') return request;
+        if (request === 'src/canvas/navigation') return request;
+        if (!request.startsWith('.')) return request;
+        const fromParts = fromId.split('/');
+        fromParts.pop();
+        for (const part of request.split('/')) {
+            if (!part || part === '.') continue;
+            if (part === '..') fromParts.pop();
+            else fromParts.push(part);
+        }
+        return fromParts.join('/');
+    }
+    function loadModule(id) {
+        const normalized = id === 'src/canvas' ? 'src/canvas/index' : String(id).replace(/\\/g, '/').replace(/\.js$/, '');
+        if (cache[normalized]) return cache[normalized].exports;
+        const factory = factories[normalized];
+        if (!factory) throw new Error('Inline canvas module not found: ' + normalized);
+        const module = { exports: {} };
+        cache[normalized] = module;
+        function localRequire(request) {
+            const next = normalizeModuleId(normalized, request);
+            if (factories[next] || next === 'src/canvas') return loadModule(next);
+            return require(request);
+        }
+        factory(localRequire, module, module.exports);
+        return module.exports;
+    }
+    return { loadModule };
+})();
 // ── Inline memory-state module (Obsidian plugins cannot require() local files) ──
 
 const memoryState = (() => {
@@ -4781,6 +9034,11 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     _loadPluginModule(relativeModulePath) {
+        var normalized = String(relativeModulePath || '').replace(/\\/g, '/').replace(/^\.?\//, '');
+        if (normalized === 'src/canvas' || normalized.indexOf('src/canvas/') === 0) {
+            return paperForgeCanvasInlineModules.loadModule(normalized);
+        }
+
         var failures = [];
         function tryLoad(modulePath) {
             try {
@@ -4791,7 +9049,6 @@ class PaperForgeReadingCanvasView extends ItemView {
             }
         }
 
-        var normalized = String(relativeModulePath || '').replace(/\\/g, '/').replace(/^\.?\//, '');
         var loaded = tryLoad('./' + normalized);
         if (loaded) return loaded;
 

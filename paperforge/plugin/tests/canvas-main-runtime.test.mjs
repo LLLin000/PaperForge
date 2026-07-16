@@ -282,19 +282,11 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
 
     it('setPaperContext shows native failure instead of blank content when canvas module initialization throws', () => {
         const view = makeCanvasView();
-        const previousLoad = Module._load;
-        Module._load = function failCanvasModule(request, parent, isMain) {
-            if (request === './src/canvas' || String(request).replace(/\\/g, '/').endsWith('/src/canvas')) {
-                throw new Error('canvas module unavailable');
-            }
-            return previousLoad.call(this, request, parent, isMain);
+        view._loadCanvasModule = function failCanvasModule() {
+            throw new Error('canvas module unavailable');
         };
 
-        try {
-            view.setPaperContext('KEY_FAIL_INIT', { key: 'KEY_FAIL_INIT', title: 'Fail init' });
-        } finally {
-            Module._load = previousLoad;
-        }
+        view.setPaperContext('KEY_FAIL_INIT', { key: 'KEY_FAIL_INIT', title: 'Fail init' });
 
         expect(view.contentEl.textContent).toContain('Failed to load Reading Canvas');
         expect(view.contentEl.textContent).toContain('canvas module unavailable');
