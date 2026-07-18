@@ -187,7 +187,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const keyNames = warnings.map((k: string) =>
         k === "paddleocr_api_key" ? "OCR (PaddleOCR)" : "Memory (Vector DB)"
       ).join(", ");
-      banner.createEl("strong", { text: "\u26A0 Credential Migration Notice" });
+      banner.createEl("strong", { text: "Credential Migration Notice" });
       banner.createEl("p", {
         text: `One or more credentials could not be automatically migrated (${keyNames}). Your existing keys are preserved in plaintext and remain functional. To complete the migration, re-enter the affected keys in the Settings fields below.`,
       });
