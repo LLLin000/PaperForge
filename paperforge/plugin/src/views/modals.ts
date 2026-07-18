@@ -450,13 +450,16 @@ export class PaperForgeSetupModal extends Modal {
       cls: 'paperforge-modal-input',
       attr: { type: 'password', placeholder: 'API Key' }
     });
-    apiInput.value = s.paddleocr_api_key || '';
+    // Issue #79: never display or persist raw key; check configured flag (SecretStorage is async)
+    const _hasOcrKey = this.plugin.settings._paddleocr_configured || false;
+    apiInput.placeholder = _hasOcrKey ? "•••••••• (stored securely)" : "API Key";
+    apiInput.value = "";
     this._apiKeyValidated = false;
     this._apiKeyStatus = apiRow.createEl('span', { cls: 'paperforge-apikey-status', text: '' });
     const validateBtn = apiRow.createEl('button', { cls: 'paperforge-step-btn', text: '\u9A8C\u8BC1' });
     validateBtn.addEventListener('click', () => this._validateApiKey(apiInput.value, validateBtn));
     apiInput.addEventListener('input', () => {
-      s.paddleocr_api_key = apiInput.value;
+      // Issue #79: never persist raw key to settings; SecretStorage on validation success only
       this._apiKeyValidated = false;
       this._apiKeyStatus.textContent = '';
       this._apiKeyStatus.className = 'paperforge-apikey-status';
@@ -504,16 +507,30 @@ export class PaperForgeSetupModal extends Modal {
       },
       timeout: 10000,
     } as https.RequestOptions;
-    const req = https.request(options, (res) => {
+    const req = https.request(options, async (res) => {
       btn.disabled = false;
       btn.textContent = '\u9A8C\u8BC1';
       let body = '';
       res.on('data', (chunk) => body += chunk);
-      res.on('end', () => {
+      res.on('end', async () => {
         try {
           const json = JSON.parse(body);
           if (res.statusCode === 400 && json.code === 10001) {
             // 400 code=10001 = auth passed, file missing (expected)
+            // Issue #79: store validated key in SecretStorage, never in plaintext settings
+            const ss = (this.app as any).secretStorage;
+            try {
+              await ss?.setSecret?.("paddleocr-api-key", key);
+              const readback = await ss?.getSecret?.("paddleocr-api-key");
+              if (readback === key) {
+                const s2 = this.plugin.settings;
+                s2._paddleocr_configured = true;
+                s2.paddleocr_api_key = "";
+                this.plugin.saveSettings();
+              }
+            } catch {
+              // SecretStorage write failed; key not stored, validation not persisted
+            }
             this._apiKeyStatus.textContent = '\u2713 \u5BC6\u94A5\u6709\u6548';
             this._apiKeyStatus.className = 'paperforge-apikey-status ok';
             this._apiKeyValidated = true;
@@ -670,7 +687,8 @@ export class PaperForgeSetupModal extends Modal {
       '--agent', s.agent_platform || 'opencode',
     ];
     if (s.zotero_data_dir && s.zotero_data_dir.trim()) setupArgs.push('--zotero-data', s.zotero_data_dir.trim());
-    if (s.paddleocr_api_key && s.paddleocr_api_key.trim()) setupArgs.push('--paddleocr-key', s.paddleocr_api_key.trim());
+    // Issue #79: setup/install is forbidden from receiving secrets;
+    // headless CLI uses its own .env / env contract independently.
 
     try {
       let hasPaperforge = true;
@@ -773,7 +791,9 @@ export class PaperForgeSetupModal extends Modal {
     if (!s.resources_dir || !s.resources_dir.trim()) errors.push(t('validate_resources'));
     if (!s.literature_dir || !s.literature_dir.trim()) errors.push(t('validate_notes'));
     if (!s.base_dir || !s.base_dir.trim()) errors.push(t('validate_base'));
-    if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) this._log('  ! ' + t('validate_key') + ' ' + t('optional_later'));
+    // Issue #79: check configured flag; settings never hold raw key
+    const _hasStoredOcrKey = this.plugin.settings._paddleocr_configured || false
+    if (!_hasStoredOcrKey) this._log('  ! ' + t('validate_key') + ' ' + t('optional_later'));
     if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) this._log('  ! ' + t('validate_zotero') + ' ' + t('optional_later'));
     return errors;
   }
@@ -830,7 +850,8 @@ export class PaperForgeSetupModal extends Modal {
       { label: t('dir_notes'), val: `${vault}/${s.resources_dir}/${s.literature_dir}` },
       { label: t('dir_base'), val: `${vault}/${s.base_dir}` },
       { label: t('dir_system'), val: `${vault}/${s.system_dir}` },
-      { label: 'API Key', val: s.paddleocr_api_key ? t('api_key_set') : t('api_key_missing') },
+      // Issue #79: check configured flag; settings never hold raw key
+      { label: 'API Key', val: (this.plugin.settings._paddleocr_configured) ? t('api_key_set') : t('api_key_missing') },
       { label: t('field_zotero_data'), val: s.zotero_data_dir || t('not_set') },
     ];
     for (const item of items) {

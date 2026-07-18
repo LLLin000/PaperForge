@@ -40,7 +40,9 @@ import {
   classifyError,
   checkRuntimeVersion,
   paperforgeEnrichedEnv,
+  buildTargetedEnv,
 } from "../services/python-bridge";
+import type { PluginForSecrets } from "../services/secret-storage";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
@@ -1094,7 +1096,9 @@ export class PaperForgeStatusView extends ItemView {
       exportOk ? "healthy" : "missing",
       exportDetail
     );
-    let tokenOk = !!plugin?.settings?.paddleocr_api_key;
+    // Issue #79: check configured flag; getSecret is async so use boolean status
+    const pfPlugin = (this.app as any).plugins?.plugins?.["paperforge"];
+    let tokenOk = !!(pfPlugin?.settings?._paddleocr_configured);
     if (!tokenOk) {
       try {
         const sysDir = plugin?.settings?.system_dir || "System";
@@ -2816,6 +2820,11 @@ export class PaperForgeStatusView extends ItemView {
         undefined
       );
     const deepFlag = mode === "retrieve" ? ["--deep"] : [];
+    // Issue #79: resolve memory credentials immediately before search/retrieve spawn
+    const searchEnv = await buildTargetedEnv(
+      { app: this.app } as unknown as PluginForSecrets,
+      "memory",
+    );
     const child = spawn(
       pythonExe,
       [
@@ -2829,7 +2838,7 @@ export class PaperForgeStatusView extends ItemView {
         ...deepFlag,
         "--json",
       ],
-      { cwd: vaultPath, timeout: 30000 }
+      { cwd: vaultPath, timeout: 30000, env: searchEnv }
     );
 
     const chunks: string[] = [];
@@ -3103,7 +3112,7 @@ export class PaperForgeStatusView extends ItemView {
     });
   }
   /* ── Run Action ── */
-  _runAction(a: any, card: HTMLElement) {
+  async _runAction(a: any, card: HTMLElement) {
     if (a.disabled) {
       new Notice(
         `[i] ${a.disabledMsg || "This action is not yet available."}`,
@@ -3172,10 +3181,15 @@ export class PaperForgeStatusView extends ItemView {
         undefined,
         undefined
       );
+    // Issue #79: resolve credentials for allowlisted command types immediately before launch
+    const actionEnv = await buildTargetedEnv(
+      { app: this.app } as unknown as PluginForSecrets,
+      a.cmd,
+    );
     const child = spawn(
       pythonExe,
       [...pyExtra, "-m", "paperforge", a.cmd, ...extraArgs],
-      { cwd: vp, timeout: cmdTimeout }
+      { cwd: vp, timeout: cmdTimeout, env: actionEnv }
     );
     const log: string[] = [];
     const startTime = Date.now();

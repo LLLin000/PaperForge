@@ -3,6 +3,7 @@ import * as path from "path";
 import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
 import type { PaperForgeSettings } from "../constants";
+import { stripCredentialEnv, resolveCredentialEnv, type PluginForSecrets } from "./secret-storage";
 
 // ── Types ──
 
@@ -485,7 +486,23 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
   }
   const cur = env.PATH || "";
   env.PATH = [...extras, cur].filter(Boolean).join(path.delimiter);
-  return env;
+  return stripCredentialEnv(env) as Record<string, string | undefined>;
+}
+
+/**
+ * Resolve credentials for a targeted OCR/Memory command and merge with
+ * the strip-credential base environment. Non-allowlisted command types
+ * return the base env unchanged.
+ * Issue #79: secret resolution happens immediately before launch only.
+ */
+export async function buildTargetedEnv(
+  plugin: PluginForSecrets,
+  commandType: string,
+): Promise<Record<string, string | undefined>> {
+  const creds = await resolveCredentialEnv(plugin, commandType);
+  const base = paperforgeEnrichedEnv();
+  if (Object.keys(creds).length === 0) return base;
+  return Object.assign({}, base, creds);
 }
 
 export function shellQuoteForExec(cmd: string): string {

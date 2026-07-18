@@ -90,6 +90,10 @@ export interface PaperForgeSettings {
   last_seen_version: string;
   capabilityState: Record<string, ProbeEnvelope>;
   _python_path_stale?: boolean;
+  _migrated_keys?: string[];
+  _migration_warnings?: string[];
+  _paddleocr_configured?: boolean;
+  _vector_db_configured?: boolean;
   [key: string]: unknown;
 }
 
@@ -118,6 +122,10 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   base_dir: "",
   capabilityState: {},
   last_seen_version: "",
+  _migrated_keys: [],
+  _migration_warnings: [],
+  _paddleocr_configured: false,
+  _vector_db_configured: false,
 };
 
 // ── Workflow state helpers ──

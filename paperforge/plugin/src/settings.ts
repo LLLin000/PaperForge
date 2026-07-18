@@ -10,6 +10,7 @@ import {
   resolvePythonExecutable,
   buildRuntimeInstallCommand,
   paperforgeEnrichedEnv,
+  buildTargetedEnv,
   scanBbtUnderProfiles,
   scanBbtDirectChildren,
   runSubprocess,
@@ -49,8 +50,19 @@ import {
   type RuntimeUiAction,
 } from "./services/managed-runtime";
 import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
+import { resolveCredentialEnv, stripCredentialEnv, type PluginForSecrets } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
 
+
+
+// ── SecretStorage credential adapter (Issue #79) ──
+
+function asPluginForSecrets(app: any): import("./services/secret-storage").PluginForSecrets {
+  return {
+    app: { secretStorage: (app as any).secretStorage },
+    saveData: async () => {},
+  };
+}
 
 // ── Interface ──
 
@@ -160,12 +172,30 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 .paperforge-release-recommended { background: rgba(var(--color-orange-rgb, 255,166,0), 0.08); border-radius: 4px; padding: 6px 8px; }
                 .paperforge-manual-links { margin-top: 8px; }
                 .paperforge-manual-links a { color: var(--text-accent); }
-                .paperforge-modal-subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 12px; }
                 .paperforge-modal-item { font-size: 13px; margin-left: 8px; color: var(--text-muted); }
+                .paperforge-migration-warning { border: 1px solid var(--text-warning); border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; background: rgba(var(--color-yellow-rgb, 255, 208, 0), 0.08); color: var(--text-warning); font-size: 13px; }
+                .paperforge-migration-warning strong { color: var(--text-warning); }
+                .paperforge-migration-warning code { background: var(--background-modifier-border); padding: 1px 4px; border-radius: 3px; }
             `;
       document.head.appendChild(style);
     }
 
+    // Issue #79: render persisted migration warnings (visible after restart)
+    const warnings = this.plugin.settings._migration_warnings;
+    if (Array.isArray(warnings) && warnings.length > 0) {
+      const banner = containerEl.createDiv({ cls: "paperforge-migration-warning" });
+      const keyNames = warnings.map((k: string) =>
+        k === "paddleocr_api_key" ? "OCR (PaddleOCR)" : "Memory (Vector DB)"
+      ).join(", ");
+      banner.createEl("strong", { text: "\u26A0 Credential Migration Notice" });
+      banner.createEl("p", {
+        text: `One or more credentials could not be automatically migrated (${keyNames}). Your existing keys are preserved in plaintext and remain functional. To complete the migration, re-enter the affected keys in the Settings fields below.`,
+      });
+      banner.createEl("p", {
+        text: "After re-entering, save settings. The plugin will retry migration on next restart.",
+        cls: "paperforge-manual-links",
+      });
+    }
     // --- Tab bar ---
     const tabBar = containerEl.createDiv({ cls: "paperforge-settings-tabs" });
     const tabs = [
@@ -942,9 +972,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     vp: string,
     callback: (text: string) => void
   ) {
+    const _menv = paperforgeEnrichedEnv();
     exec(
       `"${pythonPath}" -m paperforge --vault "${vp}" memory status --json`,
-      { encoding: "utf-8", timeout: 15000 },
+      { encoding: "utf-8", timeout: 15000, env: _menv },
       (err, stdout) => {
         if (err) {
           callback("Status unavailable");
@@ -973,9 +1004,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     vp: string,
     callback: (text: string) => void
   ) {
+    const _eenv = paperforgeEnrichedEnv();
     exec(
       `"${pythonPath}" -m paperforge --vault "${vp}" embed status --json`,
-      { encoding: "utf-8", timeout: 15000 },
+      { encoding: "utf-8", timeout: 15000, env: _eenv },
       (err, stdout) => {
         if (err) {
           callback("Status unavailable");
@@ -1012,10 +1044,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       vp,
       ...command,
     ];
-    if (opts && opts.stream) {
+    // Env: caller-supplied takes precedence; credentialType triggers on-demand secret resolution
+    const hasCredentialType = opts?.credentialType && !opts?.env;
+
+    const spawnChild = (env: Record<string, string | undefined>) => {
       const child = spawn(resolved.path, args, {
         cwd: vp,
-        env: opts.env || process.env,
+        env,
         windowsHide: true,
       });
       if (opts.onData) child.stdout.on("data", opts.onData);
@@ -1023,15 +1058,33 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (opts.onError) child.on("error", opts.onError);
       child.on("close", opts.onClose);
       return child;
+    };
+
+    const execChild = (env: Record<string, string | undefined>) => {
+      execFile(
+        resolved.path,
+        args,
+        { cwd: vp, timeout: (opts && opts.timeout) || 60000, env },
+        (err, stdout, stderr) => {
+          if (opts && opts.onClose) opts.onClose(err ? 1 : 0, stdout, stderr);
+        }
+      );
+    };
+
+    if (hasCredentialType) {
+      // Async: resolve SecretStorage credentials before launch
+      buildTargetedEnv(asPluginForSecrets((this as any).app), opts.credentialType).then((env) => {
+        if (opts && opts.stream) { spawnChild(env); } else { execChild(env); }
+      });
+      return null;
     }
-    execFile(
-      resolved.path,
-      args,
-      { cwd: vp, timeout: (opts && opts.timeout) || 60000 },
-      (err, stdout, stderr) => {
-        if (opts && opts.onClose) opts.onClose(err ? 1 : 0, stdout, stderr);
-      }
-    );
+
+    // Sync: no credential resolution needed — launch immediately
+    const env = opts?.env || paperforgeEnrichedEnv();
+    if (opts && opts.stream) {
+      return spawnChild(env);
+    }
+    execChild(env);
     return null;
   }
   _renderMemoryStatusText(
@@ -1257,16 +1310,42 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _renderApiConfig(containerEl: HTMLElement) {
+    const configured = this.plugin.settings._vector_db_configured || false;
+    // Issue #79: settings persist only boolean status; raw value goes to SecretStorage.
+    // The placeholder reflects stored/not-configured state without repopulating the input.
+    const keyPlaceholder = configured ? "••••••••" : "sk-...";
+
+    let storeTimer: ReturnType<typeof setTimeout> | null = null;
+
     new Setting(containerEl)
       .setName(t("feat_openai_key"))
       .setDesc(t("feat_openai_key_desc"))
       .addText((text) => {
+        text.inputEl.type = "password";
         text
-          .setPlaceholder("sk-...")
-          .setValue(this.plugin.settings.vector_db_api_key || "")
+          .setPlaceholder(keyPlaceholder)
+          .setValue("")
           .onChange((value) => {
-            this.plugin.settings.vector_db_api_key = value;
-            this.plugin.saveSettings();
+            if (!value) return;
+            // ponytail: debounce per-keystroke SecretStorage writes
+            if (storeTimer) clearTimeout(storeTimer);
+            storeTimer = setTimeout(async () => {
+              const ss = (this.app as any).secretStorage;
+              if (!ss?.setSecret) return;
+              try {
+                await ss.setSecret("vector-db-api-key", value);
+                const readback = await ss.getSecret("vector-db-api-key");
+                if (readback === value) {
+                  this.plugin.settings._vector_db_configured = true;
+                  this.plugin.settings.vector_db_api_key = "";
+                  await this.plugin.saveSettings();
+                  text.setValue("");
+                }
+              } catch {
+                // SecretStorage write failed; leave input as-is for retry
+              }
+              storeTimer = null;
+            }, 600);
           });
       });
     new Setting(containerEl)
@@ -1440,7 +1519,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const buildMessage =
         typeof buildState.message === "string" ? buildState.message : "";
 
-      const startBuild = (flag: string) => {
+      const startBuild = async (flag: string) => {
         // ── Destructive warnings ──
         if (flag === "--resume" && hasChunks && !isCorrupted) {
           const msg = t("retrieval_rebuild_warning").replace(
@@ -1462,13 +1541,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           new Notice(t("retrieval_no_python"));
           return;
         }
-        const env = Object.assign({}, process.env, {
-          PYTHONIOENCODING: "utf-8",
-          PYTHONUTF8: "1",
-          VECTOR_DB_API_KEY: this.plugin.settings.vector_db_api_key || "",
-          VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || "",
-          VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || "",
-        });
+        // Issue #79: resolve credentials immediately before embed build launch
+        const env = await buildTargetedEnv(
+          asPluginForSecrets((this as any).app),
+          "embed",
+        );
+        // Merge non-credential embed settings that aren't secret-managed
+        env.PYTHONIOENCODING = "utf-8";
+        env.PYTHONUTF8 = "1";
+        env.VECTOR_DB_API_BASE = this.plugin.settings.vector_db_api_base || "";
+        env.VECTOR_DB_API_MODEL = this.plugin.settings.vector_db_api_model || "";
         this.plugin._embedStderr = "";
         this.plugin._embedProgress = { current: 0, total: 0, key: "" };
         this.plugin._embedProcess = this._callPython(["embed", "build", flag], {
@@ -2420,7 +2502,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             text: t("maintenance_btn_rebuild") || "Rebuild",
           });
           if (isBusy) rebuildBtn.disabled = true;
-          rebuildBtn.addEventListener("click", () => {
+          rebuildBtn.addEventListener("click", async () => {
+            const _credEnv = await resolveCredentialEnv(asPluginForSecrets((this as any).app), "ocr");
+            const _baseEnv = paperforgeEnrichedEnv();
             execFile(
               pyPath,
               [...pyExtra, "-m", "paperforge", "ocr", "rebuild", p.key],
@@ -2428,6 +2512,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 cwd: vaultPath,
                 timeout: 120000,
                 windowsHide: true,
+                env: Object.assign({}, _baseEnv, _credEnv),
               },
               () => {
                 new Notice(
@@ -2444,7 +2529,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             text: t("ocr_maint_redo_btn") || "Redo",
           });
           if (isBusy) redoBtn.disabled = true;
-          redoBtn.addEventListener("click", () => {
+          redoBtn.addEventListener("click", async () => {
             if (
               maintenanceActionRequiresConfirmation("redo") &&
               !confirm(
@@ -2457,6 +2542,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             ) {
               return;
             }
+            const _credEnvR = await resolveCredentialEnv(asPluginForSecrets((this as any).app), "ocr");
+            const _baseEnvR = paperforgeEnrichedEnv();
             execFile(
               pyPath,
               [...pyExtra, "-m", "paperforge", "ocr", "redo", p.key],
@@ -2464,6 +2551,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 cwd: vaultPath,
                 timeout: 300000,
                 windowsHide: true,
+                env: Object.assign({}, _baseEnvR, _credEnvR),
               },
               () => {
                 new Notice(
@@ -2503,7 +2591,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
       redoBatchBtn.disabled = isBusy;
 
-      const runBatch = (action: "rebuild" | "redo") => {
+      const runBatch = async (action: "rebuild" | "redo") => {
         // Filter selected by eligibility for the chosen action (matches per-row canonical action)
         const selected = visible.filter(
           (p) =>
@@ -2567,10 +2655,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         stopBtn.disabled = false;
         stopBtn.textContent = t("maintenance_stop") || "Stop";
 
+        // Issue #79: resolve OCR credentials immediately before batch launch
+        const batchEnv = await buildTargetedEnv(asPluginForSecrets((this as any).app), "ocr");
         const child = this._callPython(
           ["ocr", action, ...keys],
           {
-            stream: true,
+            env: batchEnv,
             onData: (data: unknown) => {
               const text =
                 typeof data === "string"

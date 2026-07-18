@@ -6,8 +6,9 @@ import { VIEW_TYPE_PAPERFORGE, PF_ICON_ID, PF_RIBBON_SVG, ACTIONS, DEFAULT_SETTI
 import { t, setLanguage } from "./i18n";
 import { PaperForgeSettingTab } from "./settings";
 import { PaperForgeStatusView } from "./views/dashboard";
-import { resolvePythonExecutable, paperforgeEnrichedEnv } from "./services/python-bridge";
+import { resolvePythonExecutable, paperforgeEnrichedEnv, buildTargetedEnv } from "./services/python-bridge";
 import { resolveVaultPaths } from "./services/memory-state";
+import { migrateCredentials, type PluginForSecrets } from "./services/secret-storage";
 
 export default class PaperForgePlugin extends Plugin {
   settings!: PaperForgeSettings;
@@ -23,8 +24,28 @@ export default class PaperForgePlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
-    this.saveSettings();
+    // saveSettings moved after migration
     setLanguage(this.app);
+
+    // save settings baseline before migration; migration persists its own changes via saveData
+    await this.saveSettings();
+    // Issue #79: migrate plaintext credentials to SecretStorage (inline, not deferred)
+    try {
+      const result = await migrateCredentials(this as unknown as PluginForSecrets, this.settings);
+      if (result.migrated.length > 0) {
+        console.log("[PaperForge] Credential migration successful:", result.migrated.join(", "));
+      }
+      if (result.warnings.length > 0) {
+        const keyNames = result.warnings.map((k: string) => k === "paddleocr_api_key" ? "OCR" : "Memory").join(", ");
+        new Notice(
+          `PaperForge: Credential migration issue detected (${keyNames}). Your existing keys are preserved. Please re-enter them in Settings to store securely.`,
+          0,
+        );
+      }
+    } catch (err) {
+      console.warn("[PaperForge] Credential migration failed:", err);
+    }
+
     this.registerView(VIEW_TYPE_PAPERFORGE, (leaf) => new PaperForgeStatusView(leaf));
 
     try { addIcon(PF_ICON_ID, PF_RIBBON_SVG); } catch (_) {}
@@ -32,11 +53,12 @@ export default class PaperForgePlugin extends Plugin {
 
     const redoAction = ACTIONS.find(a => a.id === "paperforge-ocr-redo");
     if (redoAction) {
-      this.addRibbonIcon("reset", "PaperForge: Redo OCR", () => {
+      this.addRibbonIcon("reset", "PaperForge: Redo OCR", async () => {
         const vp = (this.app.vault.adapter as any).basePath as string;
         new Notice(`PaperForge: Redo OCR starting...`);
         const { path: py, extraArgs: ex } = resolvePythonExecutable(vp, this.settings, undefined, undefined);
-        execFile(py, [...ex, "-m", "paperforge", "ocr", "redo"], { cwd: vp, timeout: 600000 }, (err, stdout, stderr) => {
+        const env = await buildTargetedEnv(this as unknown as PluginForSecrets, "ocr");
+        execFile(py, [...ex, "-m", "paperforge", "ocr", "redo"], { cwd: vp, timeout: 600000, env }, (err, stdout, stderr) => {
           if (err) { new Notice(`PaperForge: Redo OCR failed`); return; }
           new Notice(`PaperForge: Redo OCR done`);
         });
@@ -55,7 +77,7 @@ export default class PaperForgePlugin extends Plugin {
       this.addCommand({
         id: a.id,
         name: `PaperForge: ${a.title}`,
-        callback: () => {
+        callback: async () => {
           if (a.disabled) {
             new Notice(`[i] ${a.disabledMsg || 'This action is not yet available.'}`, 6000);
             return;
@@ -64,7 +86,9 @@ export default class PaperForgePlugin extends Plugin {
           new Notice(`PaperForge: running ${a.cmd}...`);
           const { path: cmdPythonExe, extraArgs: cmdExtra = [] } = resolvePythonExecutable(vp, this.settings, undefined, undefined);
           const cmdArgs = Array.isArray(a.args) ? [...a.args] : [];
-          execFile(cmdPythonExe, [...cmdExtra, "-m", "paperforge", a.cmd, ...cmdArgs], { cwd: vp, timeout: 300000 }, (err, stdout, stderr) => {
+          // Issue #79: inject credentials for allowlisted command types immediately before launch
+          const env = await buildTargetedEnv(this as unknown as PluginForSecrets, a.cmd);
+          execFile(cmdPythonExe, [...cmdExtra, "-m", "paperforge", a.cmd, ...cmdArgs], { cwd: vp, timeout: 300000, env }, (err, stdout, stderr) => {
             if (err) {
               new Notice(`[!!] ${a.cmd} failed: ${(stderr || err.message).slice(0, 120)}`, 8000);
               return;

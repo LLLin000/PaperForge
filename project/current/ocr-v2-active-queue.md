@@ -1,6 +1,6 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; #75 canonical setup/config migration and #76 Installation/Help capability tracer are implemented; #77 Managed Runtime lifecycle is the next unblocked control-center slice.
-> Last updated: 2026-07-15
+> Status: OCR-v2 is stable; #75 setup, #76 capability, #77 Managed Runtime, and #79 SecretStorage credential migration are implemented; #78 Library/OCR/Memory tracers are implemented; #80 is next.
+> Last updated: 2026-07-18
 
 ## Current checkpoint
 
@@ -24,6 +24,7 @@
 - **[#74](https://github.com/LLLin000/PaperForge/issues/74) published**: split into eight agent-ready issues (#75–#82) with native dependencies.
 - **[#75](https://github.com/LLLin000/PaperForge/issues/75) implemented and reviewed**: bare/headless/modular setup share `SetupPlan`; schema-v2 `vault_config` wins; v1 path keys are warned read fallback; all configured directories are forwarded; required failures return non-zero.
 - **[#76](https://github.com/LLLin000/PaperForge/issues/76) implemented**: schema-v1 Installation/Help probes flow through the six-module Overview; persisted malformed/stale envelopes fail closed; backend set_config/update actions route to setup; unimplemented modules remain explicit placeholders.
+- **[#79](https://github.com/LLLin000/PaperForge/issues/79) implemented**: Obsidian SecretStorage credential migration with copy-readback-verify-delete, idempotent re-run, crash-safe plaintext preservation, visible non-secret warnings, reference-only settings persistence, per-command credential allowlisting (OCR → PADDLEOCR_*, Memory → VECTOR_DB_*), non-target env stripping, minAppVersion 1.11.4. 44/44 focused SecretStorage production-path tests + 333/333 full plugin tests pass; typecheck/build clean; production bundle 232.8kb. Real Obsidian smoke passed at 730/768 (migration/restart/conflict warning/exact OCR-Memory handoff/non-target isolation/redaction/no-overflow).
 - **Wayfinder navigation refinement approved**: preserve Overview and stage `概览 / 模块详情 / 维护 / 帮助` across #77/#78/#80. Installation owns Agent platform/Skills under Agent 集成; no empty placeholder detail pages.
 
 ## Verification status
@@ -38,6 +39,8 @@
 - Both prototypes browser-verified at 768px viewport with scenario-switching, action-button interactions, expand/collapse diagnostics, and issue-draft flow.
 - Issue #75 verification: **61/61 focused tests passed**; independent review returned **Spec PASS / Quality APPROVED**.
 - Issue #76 verification: **21/21 backend probe tests and 169/169 plugin tests passed**; TypeScript check and production build passed; live Obsidian stale-cache/action-label smoke test and independent review passed.
+- Issue #79: **44/44 focused SecretStorage production-path tests**, **333/333 full plugin suite** passed; TypeScript check and production build passed; production bundle 232.8kb.
+- Real Obsidian smoke: migration, restart, conflict warning, exact OCR-Memory credential handoff, non-target env isolation, redaction, and no-overflow all verified at 730/768.
 - No production plugin code was modified during prototype work.
 - The repository-wide Python suite remains blocked during collection by the pre-existing `test_pr9a_resume_rebuild.py` import of removed `_assert_collections_healthy`.
 
@@ -48,7 +51,9 @@
 - [x] Lock migration/acceptance contract (#73), publish PRD #74, and create dependency-linked issues #75–#82.
 - [x] Canonicalize setup and configuration migration ([#75](https://github.com/LLLin000/PaperForge/issues/75)).
 - [x] Implement [#76](https://github.com/LLLin000/PaperForge/issues/76): Installation/Help capability envelope through the existing settings surface.
-- [ ] Start [#77](https://github.com/LLLin000/PaperForge/issues/77) in a fresh Matt `/implement` session: Managed Runtime lifecycle plus the approved Installation-detail navigation shell.
+- [x] Implement [#77](https://github.com/LLLin000/PaperForge/issues/77): Managed Runtime lifecycle + approved Installation-detail navigation shell.
+- [x] Implement [#78](https://github.com/LLLin000/PaperForge/issues/78): Library/OCR/Memory capability tracers — completed at `69a62239`.
+- [x] Implement [#79](https://github.com/LLLin000/PaperForge/issues/79): SecretStorage credential migration (44/44 focused, 333/333 full, smoke passed).
 
 ## Deferred
 
