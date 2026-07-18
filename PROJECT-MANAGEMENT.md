@@ -1,13 +1,13 @@
 > **Branch:** `master` | **Last Updated:** 2026-07-18
-> **Active work:** [Control-center PRD #74](https://github.com/LLLin000/PaperForge/issues/74) is split into eight dependency-linked implementation issues (#75–#82). Setup/config (#75), capability envelopes (#76), and Managed Runtime/navigation (#77) are implemented; Library/OCR/Memory capability tracers (#78) are next.
+> **Active work:** [Control-center PRD #74](https://github.com/LLLin000/PaperForge/issues/74) is split into eight dependency-linked implementation issues (#75–#82). Setup/config (#75), capability envelopes (#76), Managed Runtime/navigation (#77), and Library/OCR/Memory capability tracers (#78) are implemented; SecretStorage (#79) is next.
 >
 > ---
 >
 > **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo streams progress and refreshes canonical maintenance state. The control plane now includes schema-v1 capability envelopes plus a machine-local Managed Runtime with immutable slots, atomic activation, rollback, cancellation, and managed-first command dispatch.
 >
-> #71/#72 prototypes and #73 migration contract are complete. PRD #74 defines the six-module production program; #75–#77 are implemented. The Wayfinder overview and `概览 / 模块详情 / 维护 / 帮助` shell are live; #78 adds real Library/OCR/Memory detail tracers without placeholder pages.
+> #71/#72 prototypes and #73 migration contract are complete. PRD #74 defines the six-module production program; #75–#78 are implemented. The Wayfinder overview and `概览 / 模块详情 / 维护 / 帮助` shell are live; #78 added real Library/OCR/Memory detail tracers, replacing placeholder pages.
 >
-> Next: implement [#78](https://github.com/LLLin000/PaperForge/issues/78) in a fresh Matt `/implement` session.
+> Next: implement [#79](https://github.com/LLLin000/PaperForge/issues/79) (SecretStorage) in a fresh Matt `/implement` session.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -63,6 +63,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Managed Runtime lifecycle + navigation (#77) | **192 focused + 289 full passed; typecheck/build clean** ✅ |
 | OMP Matt workflow guard | **Fresh OMP auto-discovery confirmed; 7/7 deterministic guard cases passed** ✅ |
 
+| Library/OCR/Memory capability tracers (#78) | **65 backend tests + 178 focused plugin tests, 324 full plugin tests passed across 11 files; typecheck/build clean; backup restore end-to-end** ✅ |
 </br>
 </br>
 | Component | Status |
@@ -90,6 +91,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | **Managed Runtime** | ✅ Immutable machine-local slots, atomic pointer activation, rollback/cancel/retention, managed-first command dispatch |
 | **Agent workflow controls** | ✅ `.omp/RULES.md` + `matt-guard.ts` enforce one-writer Matt flow, worktree isolation, and post-mutation verification before release operations |
 
+| **Library/OCR/Memory detail tracers** | ✅ Real capability probes with module-detail-navigation, installation-navigation, and capability-state views; Python owns capability fact definitions; TypeScript render uses exact allowlist, fails closed on unknown keys |
 ### 2.3 Fix Status
 
 | # | Paper | Issue | Type | Fix | Commit |
@@ -155,7 +157,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) completed and the resulting retrieval fixes are merged to `master`. The live Literature-hub vault has a healthy 2560-dimensional vec0 index; M and @ search paths are operational.
 
 ### Layer 3: Plugin UI
-The OCR maintenance slice has a canonical All/Recommended state model, selected batch actions, streaming progress, cooperative stop, and canonical per-row action routing with confirmation gates for destructive operations. Issues #76–#77 now provide production capability envelopes, the four-destination navigation shell, and the machine-local Managed Runtime lifecycle. Installation/Help are real probes; Library/OCR/Memory/Maintenance remain explicit placeholders pending #78/#80. Stale or malformed persisted evidence fails closed.
+The OCR maintenance slice has a canonical All/Recommended state model, selected batch actions, streaming progress, cooperative stop, and canonical per-row action routing with confirmation gates for destructive operations. Issues #76–#78 now provide production capability envelopes, the four-destination navigation shell, the machine-local Managed Runtime lifecycle, and real Library/OCR/Memory detail probes. Installation/Help/Library/OCR/Memory are real probes; Maintenance remains an explicit placeholder pending #80. Stale or malformed persisted evidence fails closed.
 
 ### Layer 4: Downstream Tools
 `chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
@@ -163,7 +165,7 @@ The OCR maintenance slice has a canonical All/Recommended state model, selected 
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. 🔴 **[Control-center PRD #74](https://github.com/LLLin000/PaperForge/issues/74)** — published and split into eight native dependency-linked issues (#75–#82). #75–#77 are implemented; #78 Library/OCR/Memory capability tracers are the next unblocked slice.
+1. 🔴 **[Control-center PRD #74](https://github.com/LLLin000/PaperForge/issues/74)** — published and split into eight native dependency-linked issues (#75–#82). #75–#78 are implemented; #79 SecretStorage is the next unblocked slice.
 2. ✅ **[Capability-state vocabulary](https://github.com/LLLin000/PaperForge/issues/69)** — resolved at `issuecomment-4971161072`. Orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
 3. ✅ **[Managed runtime](https://github.com/LLLin000/PaperForge/issues/70)** — resolved at `issuecomment-4971239398`. Plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
 4. ✅ **[Control-center prototype](https://github.com/LLLin000/PaperForge/issues/71)** — resolved with independent Critical/Important PASS review and browser verification at 768px. Six-module control-center HTML prototype covers 5 scenarios with plain-button switcher, primary attention zone, responsive layout, and capability-gated actions. Design decisions recorded in `docs/prototypes/2026-07-14-six-module-control-center.html/.md`. No production implementation before #73.
@@ -190,7 +192,8 @@ Remaining legacy OCR issues (carried forward):
 - [x] Canonicalize setup/config migration ([#75](https://github.com/LLLin000/PaperForge/issues/75)) — 61 focused tests; spec PASS; quality APPROVED
 - [x] Implement Installation/Help capability tracer ([#76](https://github.com/LLLin000/PaperForge/issues/76)) — 21 backend tests; 169 plugin tests; typecheck/build clean; independent review PASS
 - [x] Implement Managed Runtime lifecycle and the approved Installation-detail navigation shell ([#77](https://github.com/LLLin000/PaperForge/issues/77)) — 192 focused + 289 full tests; typecheck/build clean; merged to `master`
-- [ ] Expose Library, OCR, and Memory capabilities end to end ([#78](https://github.com/LLLin000/PaperForge/issues/78))
+- [x] Expose Library, OCR, and Memory capabilities end to end ([#78](https://github.com/LLLin000/PaperForge/issues/78)) — 65 backend tests + 178 focused plugin tests, 324 full plugin tests across 11 files; typecheck/build clean; fail-closed recognizable config for Library/OCR; red rebuild_result stays non-destructive rebuild; queued OCR progress starts at 0; failed/null Library sync exit outcome is forwarded into fresh Python probe and remains sync actionable
+- [ ] Implement SecretStorage for capability secrets ([#79](https://github.com/LLLin000/PaperForge/issues/79))
 ---
 
 ## 5. Key File Map
@@ -348,6 +351,7 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-15 | Capability integration advances by real tracer, never frontend optimism | #76 exposes only Installation and Help as real probes; Library/OCR/Memory/Maintenance remain explicit placeholders until their backend envelopes ship. Persisted malformed or stale evidence becomes unknown/invalid rather than ready. |
 | 2026-07-15 | Module detail navigation extends Wayfinder instead of replacing it | Preserve the primary-attention zone and concrete backend action. Stage `概览 / 模块详情 / 维护 / 帮助` across #77/#78/#80; use explicit module-title navigation, top ordinary buttons, and no dead placeholder details. |
 | 2026-07-18 | Enforce Matt with sticky rules plus a minimal deterministic hook | Prose alone cannot prevent orchestration drift. Keep lifecycle guidance in `.omp/RULES.md`; use the hook only for mechanically provable boundaries: one writer, worktree isolation, and verification-after-last-mutation before release operations. |
+| 2026-07-18 | Capability facts are Python-owned; TypeScript renders via exact allowlist, fail-closed | Python owns all capability fact definitions and cross-module consistency. TypeScript receives only pre-classified display objects; rendering uses an exact allowlist of known content component keys. Unknown keys render nothing (fail-closed) rather than guessing a classification. TypeScript forwards operation exit outcomes but Python classifies sync failure. This avoids duplicating classification logic across the stack. |
 
 ---
 
@@ -453,6 +457,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-15 | Installation/Help capability tracer + navigation refinement | Implemented schema-v1 probe envelopes, six-module Overview, setup-complete migration, strict persistence/TTL validation, backend-owned action labels and dispatch, responsive/focus-visible UI, and generated bundle. Verification: 21 backend tests, 169 plugin tests, typecheck/build, live Obsidian stale-cache/action-label smoke test, independent review PASS. Matt flow refined PRD #74 and existing #77/#78/#80 without duplicating issues. | [Issue #76](https://github.com/LLLin000/PaperForge/issues/76), [PRD refinement](https://github.com/LLLin000/PaperForge/issues/74#issuecomment-4980322098) |
 | 2026-07-15 | Managed Runtime lifecycle + final navigation shell | Completed #77 with immutable runtime slots, synchronous fail-closed `current`, probed `status`, install/repair/update/rollback/cancel/retention, managed-first dispatch, Release-N fallback, four-destination navigation, Installation detail, Agent integration, and Help focus restoration. Verification: 192 focused + 289 full tests; typecheck/build clean. Merged to `master` in `173a4e8..4ef9e98`. | [Issue #77](https://github.com/LLLin000/PaperForge/issues/77) |
 | 2026-07-18 | OMP Matt workflow enforcement | Removed all discoverable Superpowers installations, retained canonical Ask Matt skills, added sticky project rules, and installed an auto-discovered hook for one-writer batches, worktree isolation, and fresh verification gates. Fresh OMP smoke reached the hook; 7/7 deterministic guard cases passed. | `.omp/RULES.md`, `.omp/hooks/pre/matt-guard.ts` |
+| 2026-07-18 | Library/OCR/Memory capability tracers (#78) | Implemented real capability probes for Library, OCR, and Memory with module-detail-navigation, installation-navigation, and capability-state views. Python owns capability facts; TypeScript exact allowlist/fail-closed rendering avoids duplicate classification. Repair: canonical PADDLEOCR_API_TOKEN resolution (env/WinReg/dotenv), OCR probe priority fix (provider-unreachable after actionable rows), overview card dispatch (exact allowlist, not probe), memory backup restore end-to-end (integrity_check + atomic os.replace + corrupt preservation), _embedProcess lifecycle cleanup. Final: fail-closed recognizable config for Library/OCR, red rebuild_result stays non-destructive rebuild, queued OCR progress starts at 0, failed/null Library sync exit outcome forwarded into fresh Python probe and remains sync actionable. Verification: 65 backend + 178 focused plugin + 324 full plugin tests across 11 files; typecheck/build clean; live Obsidian 730/768 smoke. |
 
 ## 9. Historical Detail Archive
 

@@ -4766,10 +4766,53 @@
 }
 
 /* ── Installation Detail ── */
-.pf-installation-detail-heading {
+.pf-installation-detail-heading,
+.pf-library-detail-heading,
+.pf-ocr-detail-heading,
+.pf-memory-detail-heading {
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 12px 0;
+}
+
+.pf-notice {
+  padding: 6px 10px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--background-modifier-border);
+  margin-bottom: 8px;
+  color: var(--text-muted);
+}
+.pf-notice--info {
+  background: color-mix(in srgb, var(--text-accent) 8%, transparent);
+}
+.pf-notice--warning {
+  background: color-mix(in srgb, var(--text-warning) 8%, transparent);
+  border-color: var(--text-warning);
+  color: var(--text-warning);
+}
+.pf-notice--error {
+  background: color-mix(in srgb, var(--text-error) 8%, transparent);
+  border-color: var(--text-error);
+  color: var(--text-error);
+}
+
+/* ── Module Detail Controls ── */
+.pf-detail-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 0;
+}
+.pf-detail-controls .mod-cta {
+  font-weight: 500;
+}
+.pf-detail-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  width: 100%;
 }
 
 .pf-runtime-status-card {
@@ -4876,4 +4919,25 @@
   color: var(--text-muted);
   margin-top: 2px;
   font-style: italic;
+}
+
+
+/* ── Module Detail heading responsive wrap ── */
+.pf-module-detail-heading {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 12px 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.pf-module-detail-card {
+  margin-bottom: 12px;
+}
+
+.pf-detail-progress {
+  margin-left: 8px;
+  font-size: 13px;
 }

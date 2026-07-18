@@ -1,9 +1,8 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; #75 canonical setup/config migration and #76 Installation/Help capability tracer are implemented; #77 Managed Runtime lifecycle is the next unblocked control-center slice.
-> Last updated: 2026-07-15
+> Status: OCR-v2 is stable; #75–#78 are implemented; #79 SecretStorage is the next unblocked control-center slice.
+> Last updated: 2026-07-18
 
 ## Current checkpoint
-
 - Retrieval recovery is merged to `master`; the real Literature-hub vault has a healthy 2560-dimensional vec0 index and working M / @ search paths.
 - [OCR rebuild: streaming progress + maintenance UI redesign](https://github.com/LLLin000/PaperForge/issues/64) is implemented and reviewed.
 - Multi-key `ocr rebuild` and full `ocr redo` emit separate, flushed progress streams and accept a cross-platform cooperative stop request between papers.
@@ -17,7 +16,6 @@
 - [Desktop runtime/recovery research](https://github.com/LLLin000/PaperForge/issues/68#issuecomment-4970660288) establishes module-scoped repair, compatibility-gated updates, local redacted diagnostics, and user-reviewed issue drafts.
 - **[#69](https://github.com/LLLin000/PaperForge/issues/69) resolved** at `issuecomment-4971161072`: orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
 - **[#70](https://github.com/LLLin000/PaperForge/issues/70) resolved** at `issuecomment-4971239398`: plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
-
 - **[#71](https://github.com/LLLin000/PaperForge/issues/71) resolved**: six-module control-center HTML prototype with 5 scenarios, plain-button switcher, primary attention zone, responsive layout (768px breakpoint), and capability-gated actions. Independent Critical/Important PASS review. Design decisions recorded in `docs/prototypes/2026-07-14-six-module-control-center.{html,md}`.
 - **[#72](https://github.com/LLLin000/PaperForge/issues/72) resolved**: actionable-only maintenance inbox prototype with single-action rows, inline issue-draft review, local redacted export, and confirmation-first report flow. Independent Critical/Important PASS review. Design decisions recorded in `docs/prototypes/2026-07-14-maintenance-issue-reporting.{html,md}`.
 - **[#73](https://github.com/LLLin000/PaperForge/issues/73) resolved**: locked migration, security, platform, accessibility, and release-gate acceptance contract after five-domain audit and independent review.
@@ -25,9 +23,9 @@
 - **[#75](https://github.com/LLLin000/PaperForge/issues/75) implemented and reviewed**: bare/headless/modular setup share `SetupPlan`; schema-v2 `vault_config` wins; v1 path keys are warned read fallback; all configured directories are forwarded; required failures return non-zero.
 - **[#76](https://github.com/LLLin000/PaperForge/issues/76) implemented**: schema-v1 Installation/Help probes flow through the six-module Overview; persisted malformed/stale envelopes fail closed; backend set_config/update actions route to setup; unimplemented modules remain explicit placeholders.
 - **Wayfinder navigation refinement approved**: preserve Overview and stage `概览 / 模块详情 / 维护 / 帮助` across #77/#78/#80. Installation owns Agent platform/Skills under Agent 集成; no empty placeholder detail pages.
-
+- **[#77](https://github.com/LLLin000/PaperForge/issues/77) implemented**: immutable runtime slots, synchronous fail-closed `current`, probed `status`, install/repair/update/rollback/cancel/retention, managed-first dispatch, Release-N fallback, four-destination navigation, Installation detail, Agent integration, Help focus restoration.
+- **[#78](https://github.com/LLLin000/PaperForge/issues/78) implemented**: Library/OCR/Memory real capability probes with module-detail-navigation, installation-navigation, and capability-state views. Python owns capability fact definitions; TypeScript renders via exact allowlist, fails closed on unknown keys.
 ## Verification status
-
 - Focused Python OCR paths: **99 passed, 1 Windows SIGINT test skipped, 1 unrelated empty-result regression deselected**.
 - Plugin: **93 passed**; TypeScript check and production build passed.
 - Maintenance regression tests: **19/19 passed** (canonical action routing, confirmation gate, cache manifest preservation).
@@ -38,20 +36,20 @@
 - Both prototypes browser-verified at 768px viewport with scenario-switching, action-button interactions, expand/collapse diagnostics, and issue-draft flow.
 - Issue #75 verification: **61/61 focused tests passed**; independent review returned **Spec PASS / Quality APPROVED**.
 - Issue #76 verification: **21/21 backend probe tests and 169/169 plugin tests passed**; TypeScript check and production build passed; live Obsidian stale-cache/action-label smoke test and independent review passed.
+- Issue #77 verification: **192/192 focused + 289/289 full tests passed**; typecheck/build clean; merged to `master` in `173a4e8..4ef9e98`.
+- Issue #78 verification: **65/65 backend tests and 178/178 focused plugin tests, 324/324 full plugin tests passed** across 11 files; typecheck clean; production build clean; fail-closed recognizable config for Library/OCR; red rebuild_result stays non-destructive rebuild; queued OCR progress starts at 0; failed/null Library sync exit outcome is forwarded into fresh Python probe and remains sync actionable.
 - No production plugin code was modified during prototype work.
 - The repository-wide Python suite remains blocked during collection by the pre-existing `test_pr9a_resume_rebuild.py` import of removed `_assert_collections_healthy`.
-
 ## Frontier
-
 - [x] Prototype the six-module control center ([#71](https://github.com/LLLin000/PaperForge/issues/71)).
 - [x] Design the actionable-only maintenance inbox ([#72](https://github.com/LLLin000/PaperForge/issues/72)).
 - [x] Lock migration/acceptance contract (#73), publish PRD #74, and create dependency-linked issues #75–#82.
 - [x] Canonicalize setup and configuration migration ([#75](https://github.com/LLLin000/PaperForge/issues/75)).
 - [x] Implement [#76](https://github.com/LLLin000/PaperForge/issues/76): Installation/Help capability envelope through the existing settings surface.
-- [ ] Start [#77](https://github.com/LLLin000/PaperForge/issues/77) in a fresh Matt `/implement` session: Managed Runtime lifecycle plus the approved Installation-detail navigation shell.
-
+- [x] Implement [#77](https://github.com/LLLin000/PaperForge/issues/77): Managed Runtime lifecycle plus the approved Installation-detail navigation shell.
+- [x] Implement [#78](https://github.com/LLLin000/PaperForge/issues/78): Library, OCR, and Memory capability tracers end to end.
+- [ ] Start [#79](https://github.com/LLLin000/PaperForge/issues/79) in a fresh Matt `/implement` session: SecretStorage for capability secrets.
 ## Deferred
-
 - Vector rebuild UX (PRD Slice 1): deferred.
 - Memory/global maintenance cleanup (PRD Slice 3): deferred.
 - OCR ETA and real-time per-row mutation: out of scope for the completed OCR slice.

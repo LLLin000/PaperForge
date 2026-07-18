@@ -1914,7 +1914,7 @@ describe("Issue #77 RED 1: Maintenance navigation entry", () => {
     for (const mod of ["library", "ocr", "memory"] as CapabilityModule[]) {
       const container = document.createElement("div");
       tab._renderCard(container, mod, createUnknownEnvelope(mod));
-      expect(container.querySelector("button.pf-open-module-btn")).toBeFalsy();
+      expect(container.querySelector("button.pf-open-module-btn")).toBeTruthy();
     }
   });
 
