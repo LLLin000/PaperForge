@@ -1,13 +1,13 @@
 > **Branch:** `master` | **Last Updated:** 2026-07-18
-> **Active work:** [Control-center PRD #74](https://github.com/LLLin000/PaperForge/issues/74) is split into eight dependency-linked implementation issues (#75–#82). Setup/config (#75), capability envelopes (#76), Managed Runtime/navigation (#77), and SecretStorage credential migration (#79) and Library/OCR/Memory capability tracers (#78, at 69a62239) are implemented; detail tracers (#80) are next.
+> **Active work:** [Control-center PRD #74](https://github.com/LLLin000/PaperForge/issues/74) is split into eight dependency-linked implementation issues (#75–#82). Setup/config (#75), capability envelopes (#76), Managed Runtime/navigation (#77), Library/OCR/Memory capability tracers (#78), and SecretStorage credential migration (#79) are implemented; Maintenance (#80) is next.
 >
 > ---
 >
 > **Current state:** Retrieval recovery is merged and live. OCR multi-key rebuild/redo streams progress and refreshes canonical maintenance state. The control plane now includes schema-v1 capability envelopes plus a machine-local Managed Runtime with immutable slots, atomic activation, rollback, cancellation, and managed-first command dispatch.
 >
-> #71/#72 prototypes and #73 migration contract are complete. PRD #74 defines the six-module production program; #75–#79 are implemented. The Wayfinder overview and `概览 / 模块详情 / 维护 / 帮助` shell are live; #79 migrated plugin credentials to Obsidian SecretStorage with copy-readback-verify-delete safety; #78 added real Library/OCR/Memory detail tracers without placeholder pages.
+> #71/#72 prototypes and #73 migration contract are complete. PRD #74 defines the six-module production program; #75–#79 are implemented. The Wayfinder overview and `概览 / 模块详情 / 维护 / 帮助` shell are live; #78 added real Library/OCR/Memory detail tracers, and #79 migrated plugin credentials to Obsidian SecretStorage with copy-readback-verify-delete safety.
 >
-> Next: implement [#80](https://github.com/LLLin000/PaperForge/issues/80). #78 completed at `69a62239`.
+> Next: implement [#80](https://github.com/LLLin000/PaperForge/issues/80).
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -63,6 +63,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Managed Runtime lifecycle + navigation (#77) | **192 focused + 289 full passed; typecheck/build clean** ✅ |
 | OMP Matt workflow guard | **Fresh OMP auto-discovery confirmed; 7/7 deterministic guard cases passed** ✅ |
 
+| Library/OCR/Memory capability tracers (#78) | **65 backend tests + 178 focused plugin tests, 324 full plugin tests passed across 11 files; typecheck/build clean; backup restore end-to-end** ✅ |
 </br>
 </br>
 | Component | Status |
@@ -90,6 +91,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | **Managed Runtime** | ✅ Immutable machine-local slots, atomic pointer activation, rollback/cancel/retention, managed-first command dispatch |
 | **Agent workflow controls** | ✅ `.omp/RULES.md` + `matt-guard.ts` enforce one-writer Matt flow, worktree isolation, and post-mutation verification before release operations |
 
+| **Library/OCR/Memory detail tracers** | ✅ Real capability probes with module-detail-navigation, installation-navigation, and capability-state views; Python owns capability fact definitions; TypeScript render uses exact allowlist, fails closed on unknown keys |
 ### 2.3 Fix Status
 
 | # | Paper | Issue | Type | Fix | Commit |
@@ -155,7 +157,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) completed and the resulting retrieval fixes are merged to `master`. The live Literature-hub vault has a healthy 2560-dimensional vec0 index; M and @ search paths are operational.
 
 ### Layer 3: Plugin UI
-The OCR maintenance slice has a canonical All/Recommended state model, selected batch actions, streaming progress, cooperative stop, and canonical per-row action routing with confirmation gates for destructive operations. Issues #76–#77 now provide production capability envelopes, the four-destination navigation shell, and the machine-local Managed Runtime lifecycle. Installation/Help are real probes; Library/OCR/Memory now have backend tracers via #78; Maintenance remains an explicit placeholder pending #80. Stale or malformed persisted evidence fails closed.
+The OCR maintenance slice has a canonical All/Recommended state model, selected batch actions, streaming progress, cooperative stop, and canonical per-row action routing with confirmation gates for destructive operations. Issues #76–#79 now provide production capability envelopes, the four-destination navigation shell, the machine-local Managed Runtime lifecycle, real Library/OCR/Memory detail probes, and SecretStorage credential ownership. Installation/Help/Library/OCR/Memory are real probes; Maintenance remains an explicit placeholder pending #80. Stale or malformed persisted evidence fails closed.
 
 ### Layer 4: Downstream Tools
 `chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
@@ -190,8 +192,8 @@ Remaining legacy OCR issues (carried forward):
 - [x] Canonicalize setup/config migration ([#75](https://github.com/LLLin000/PaperForge/issues/75)) — 61 focused tests; spec PASS; quality APPROVED
 - [x] Implement Installation/Help capability tracer ([#76](https://github.com/LLLin000/PaperForge/issues/76)) — 21 backend tests; 169 plugin tests; typecheck/build clean; independent review PASS
 - [x] Implement Managed Runtime lifecycle and the approved Installation-detail navigation shell ([#77](https://github.com/LLLin000/PaperForge/issues/77)) — 192 focused + 289 full tests; typecheck/build clean; merged to `master`
+- [x] Expose Library, OCR, and Memory capabilities end to end ([#78](https://github.com/LLLin000/PaperForge/issues/78)) — 65 backend tests + 178 focused plugin tests, 324 full plugin tests across 11 files; typecheck/build clean; fail-closed recognizable config for Library/OCR; red rebuild_result stays non-destructive rebuild; queued OCR progress starts at 0; failed/null Library sync exit outcome is forwarded into fresh Python probe and remains sync actionable; completed at `69a62239`
 - [x] Migrate plugin credentials to SecretStorage safely ([#79](https://github.com/LLLin000/PaperForge/issues/79)) — 44/44 focused SecretStorage production-path tests, 333/333 full plugin tests; typecheck/build clean; production bundle 232.8kb; real Obsidian smoke passed at 730/768 including migration/restart/conflict warning/exact OCR-Memory handoff/non-target isolation/redaction/no-overflow; root Python suite remains blocked only by pre-existing test_pr9a_resume_rebuild.py import of removed _assert_collections_healthy
-- [x] Expose Library, OCR, and Memory capabilities end to end ([#78](https://github.com/LLLin000/PaperForge/issues/78)) — completed at `69a62239`
 ---
 
 ## 5. Key File Map
@@ -349,6 +351,7 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-15 | Capability integration advances by real tracer, never frontend optimism | #76 exposes only Installation and Help as real probes; Library/OCR/Memory/Maintenance remain explicit placeholders until their backend envelopes ship. Persisted malformed or stale evidence becomes unknown/invalid rather than ready. |
 | 2026-07-15 | Module detail navigation extends Wayfinder instead of replacing it | Preserve the primary-attention zone and concrete backend action. Stage `概览 / 模块详情 / 维护 / 帮助` across #77/#78/#80; use explicit module-title navigation, top ordinary buttons, and no dead placeholder details. |
 | 2026-07-18 | Enforce Matt with sticky rules plus a minimal deterministic hook | Prose alone cannot prevent orchestration drift. Keep lifecycle guidance in `.omp/RULES.md`; use the hook only for mechanically provable boundaries: one writer, worktree isolation, and verification-after-last-mutation before release operations. |
+| 2026-07-18 | Capability facts are Python-owned; TypeScript renders via exact allowlist, fail-closed | Python owns all capability fact definitions and cross-module consistency. TypeScript receives only pre-classified display objects; rendering uses an exact allowlist of known content component keys. Unknown keys render nothing (fail-closed) rather than guessing a classification. TypeScript forwards operation exit outcomes but Python classifies sync failure. This avoids duplicating classification logic across the stack. |
 
 ---
 
@@ -455,6 +458,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-15 | Managed Runtime lifecycle + final navigation shell | Completed #77 with immutable runtime slots, synchronous fail-closed `current`, probed `status`, install/repair/update/rollback/cancel/retention, managed-first dispatch, Release-N fallback, four-destination navigation, Installation detail, Agent integration, and Help focus restoration. Verification: 192 focused + 289 full tests; typecheck/build clean. Merged to `master` in `173a4e8..4ef9e98`. | [Issue #77](https://github.com/LLLin000/PaperForge/issues/77) |
 | 2026-07-18 | Plugin credentials migrate to Obsidian SecretStorage (dash-format IDs) with copy-readback-verify-delete safety | #79 implements `migrateCredentials` in `secret-storage.ts` with idempotent migration, crash-safe plaintext preservation, visible non-secret warnings, reference-only settings persistence, per-command credential allowlisting (OCR → PADDLEOCR_*, Memory → VECTOR_DB_*), non-target env stripping, and minimum Obsidian 1.11.4. SecretStorage IDs use dash-format (`paddleocr-api-key`) per API requirement. Verified: 44/44 focused + 333/333 full plugin tests, typecheck/build clean, real Obsidian smoke passed at 730/768 including migration/restart/conflict warning/exact OCR-Memory handoff/non-target isolation/redaction/no-overflow. |
 | 2026-07-18 | OMP Matt workflow enforcement | Removed all discoverable Superpowers installations, retained canonical Ask Matt skills, added sticky project rules, and installed an auto-discovered hook for one-writer batches, worktree isolation, and fresh verification gates. Fresh OMP smoke reached the hook; 7/7 deterministic guard cases passed. | `.omp/RULES.md`, `.omp/hooks/pre/matt-guard.ts` |
+| 2026-07-18 | Library/OCR/Memory capability tracers (#78) | Implemented real capability probes for Library, OCR, and Memory with module-detail-navigation, installation-navigation, and capability-state views. Python owns capability facts; TypeScript exact allowlist/fail-closed rendering avoids duplicate classification. Repair: canonical PADDLEOCR_API_TOKEN resolution (env/WinReg/dotenv), OCR probe priority fix (provider-unreachable after actionable rows), overview card dispatch (exact allowlist, not probe), memory backup restore end-to-end (integrity_check + atomic os.replace + corrupt preservation), _embedProcess lifecycle cleanup. Final: fail-closed recognizable config for Library/OCR, red rebuild_result stays non-destructive rebuild, queued OCR progress starts at 0, failed/null Library sync exit outcome forwarded into fresh Python probe and remains sync actionable. Verification: 65 backend + 178 focused plugin + 324 full plugin tests across 11 files; typecheck/build clean; live Obsidian 730/768 smoke. |
 
 ## 9. Historical Detail Archive
 

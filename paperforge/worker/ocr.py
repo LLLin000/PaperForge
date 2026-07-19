@@ -35,6 +35,30 @@ def _read_dotenv(vault: Path, key: str) -> str:
     return ""
 
 
+def _resolve_paddleocr_token(vault: Path) -> str:
+    """Resolve PaddleOCR API token from canonical sources.
+
+    Priority: PADDLEOCR_API_TOKEN env → PADDLEOCR_API_TOKEN_USER env →
+    Windows HKCU Environment → vault/.env or System/PaperForge/.env.
+    Returns empty string when no token is found.
+    """
+    token = os.environ.get("PADDLEOCR_API_TOKEN", "").strip()
+    if not token:
+        token = os.environ.get("PADDLEOCR_API_TOKEN_USER", "").strip()
+    if not token:
+        try:
+            import winreg
+
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as env_key:
+                token = str(winreg.QueryValueEx(env_key, "PADDLEOCR_API_TOKEN")[0]).strip()
+        except Exception:
+            token = ""
+    if not token:
+        token = _read_dotenv(vault, "PADDLEOCR_API_TOKEN")
+    return token
+
+
+
 try:
     from paperforge.worker.ocr_roles import assign_block_role  # noqa: F401
 except ImportError:
@@ -2461,20 +2485,7 @@ def run_ocr(
             max_items = max(1, int(max_items_raw))
         except ValueError:
             max_items = 3
-    token = os.environ.get("PADDLEOCR_API_TOKEN", "").strip()
-    if not token:
-        token = os.environ.get("PADDLEOCR_API_TOKEN_USER", "").strip()
-    if not token:
-        try:
-            import winreg
-
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as env_key:
-                token = str(winreg.QueryValueEx(env_key, "PADDLEOCR_API_TOKEN")[0]).strip()
-        except Exception:
-            token = ""
-    if not token:
-        # Fallback: parse vault-root .env
-        token = _read_dotenv(vault, "PADDLEOCR_API_TOKEN")
+    token = _resolve_paddleocr_token(vault)
     job_url = os.environ.get("PADDLEOCR_JOB_URL", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs").strip()
     model = os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6").strip()
     optional_payload = {"useDocOrientationClassify": False, "useDocUnwarping": False, "useChartRecognition": False}

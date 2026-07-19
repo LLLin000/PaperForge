@@ -323,6 +323,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_memory_build.add_argument("--json", action="store_true", help="Output as JSON")
     p_memory_status = p_memory_sp.add_parser("status", help="Check memory database status")
     p_memory_status.add_argument("--json", action="store_true", help="Output as JSON")
+    p_memory_restore = p_memory_sp.add_parser("restore-backup", help="Restore memory database from a verified backup")
+    p_memory_restore.add_argument("--json", action="store_true", help="Output as JSON (PFResult envelope)")
 
     p_paper_status = sub.add_parser("paper-status", help="Look up a paper's status")
     p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
@@ -483,13 +485,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_probe = sub.add_parser("probe", help="Probe a module's capability state")
     p_probe.add_argument(
         "probe_module",
-        choices=["installation", "help"],
-        help="Module to probe (installation or help)",
+        choices=["installation", "help", "library", "ocr", "memory"],
+        help="Module to probe (installation, library, ocr, memory, or help)",
     )
     p_probe.add_argument(
         "--json",
         action="store_true",
         help="Output as schema-v1 capability envelope JSON",
+    )
+    p_probe.add_argument(
+        "--last-operation-exit-code",
+        type=int,
+        default=None,
+        metavar="CODE",
+        help="Last operation exit code for library sync failure probe",
     )
 
     return parser

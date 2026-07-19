@@ -128,6 +128,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _managedRuntime: ManagedRuntime | null = null;
   /** True while a runtime operation is in flight. */
   private _runtimeBusy: boolean = false;
+  /** True while a library sync or memory build is in flight. */
+  _libraryRunning: boolean = false;
 
   constructor(app: App, plugin: ISettingPlugin) {
     super(app, plugin as any);
@@ -277,7 +279,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const env = this._capabilityState?.[mod];
       if (env && env.capability_state === "unknown" && env.updated_at === new Date(0).toISOString() && !this._attemptedProbes.has(mod)) {
         this._attemptedProbes.add(mod);
-        if (mod === "installation" || mod === "help") {
+        if (mod !== "maintenance") {
           this._probeModule(mod);
         }
       }
@@ -877,10 +879,485 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     if (this._selectedDetailModule === "installation") {
       this._renderInstallationDetail(containerEl);
+    } else if (this._selectedDetailModule === "library") {
+      this._renderLibraryDetail(containerEl);
+    } else if (this._selectedDetailModule === "ocr") {
+      this._renderOcrDetail(containerEl);
+    } else if (this._selectedDetailModule === "memory") {
+      this._renderMemoryDetail(containerEl);
     } else {
       // Fallback to installation
       this._selectedDetailModule = "installation";
       this._renderInstallationDetail(containerEl);
+    }
+  }
+
+
+  /** Render the Library detail view (Issue #78). */
+  _renderLibraryDetail(containerEl: HTMLElement): void {
+    this._renderModuleDetailShell(containerEl, "library");
+    // Library detail surface consumes the shared envelope shell — no duplicate CTA.
+  }
+
+  /** Render the OCR detail view (Issue #78). */
+  _renderOcrDetail(containerEl: HTMLElement): void {
+    this._renderModuleDetailShell(containerEl, "ocr");
+    // ── Owner controls: cooperative stop only when _ocrProcess exists ──
+    const isRunning = this.plugin._ocrProcess != null;
+    if (isRunning) {
+      const ctrl = containerEl.createEl("div", { cls: "pf-detail-controls" });
+      const stopBtn = ctrl.createEl("button", {
+        cls: "mod-warning",
+        text: t("ocr_stop_batch") || "Stop OCR batch",
+      });
+      stopBtn.addEventListener("click", () => {
+        const child = this.plugin._ocrProcess as unknown as {
+          stdin?: { write: (_: string) => boolean };
+          kill?: (_: string) => void;
+        };
+        if (child?.stdin?.write) {
+          child.stdin.write("PAPERFORGE_STOP\n");
+          this.plugin._ocrWasStopped = true;
+        } else if (child?.kill) {
+          child.kill("SIGINT");
+        }
+      });
+      const prog = this.plugin._ocrProgress;
+      if (prog && prog.total > 0) {
+        ctrl.createEl("span", {
+          cls: "pf-detail-progress",
+          text: `${prog.current}/${prog.total} papers`,
+        });
+      }
+    }
+  }
+  /** Render the Memory detail view (Issue #78). */
+  _renderMemoryDetail(containerEl: HTMLElement): void {
+    this._renderModuleDetailShell(containerEl, "memory");
+    // Memory detail surface consumes the shared envelope shell — no duplicate CTA.
+  }
+    /** Dispatch a backend action command through exact (verb, command) allowlist (Issue #78). */
+  _dispatchModuleAction(mod: CapabilityModule, env: ProbeEnvelope): void {
+    const primary = env.action?.primary;
+    if (!primary) {
+      this._probeModule(mod);
+      return;
+    }
+    const verb = primary.verb;
+    const cmd = primary.command ?? "";
+
+    // Destructive confirmation from backend envelope
+    if (primary.destructive && primary.confirmation_required) {
+      const prompt = primary.confirmation_prompt ?? "Proceed?";
+      if (!confirm(prompt)) return;
+    }
+
+    // Setup/set_config verbs → exact command allowlist
+    if ((verb === "setup" || verb === "set_config") && cmd === "paperforge setup") {
+      if (mod === "installation" || mod === "library" || mod === "ocr") {
+        const probeMods: CapabilityModule[] = [mod];
+        if (mod === "installation") {
+          probeMods.push("help");
+        }
+        new PaperForgeSetupModal(this.app, this.plugin, () => {
+          for (const m of probeMods) this._probeModule(m);
+        }).open();
+        return;
+      }
+    }
+
+    // Probe verb → exact command match, directly re-probe without Notice
+    if (verb === "probe" && cmd === "probe " + mod) {
+      this._probeModule(mod);
+      return;
+    }
+
+    // Exact (verb, command) allowlist per module
+    if (mod === "installation") {
+      // setup/set_config handled above
+    } else if (mod === "library") {
+      if (verb === "sync" && cmd === "paperforge sync") {
+        this._runManualSync();
+        return;
+      }
+      // setup/set_config handled above
+    } else if (mod === "ocr") {
+      if (verb === "run" && cmd === "paperforge ocr run") {
+        this._dispatchOcrAction("run");
+        return;
+      }
+      if (verb === "rebuild_derived" && cmd === "paperforge ocr rebuild --all") {
+        this._dispatchOcrAction("rebuild");
+        return;
+      }
+      if (verb === "redo" && cmd === "paperforge ocr redo") {
+        this._dispatchOcrAction("redo");
+        return;
+      }
+      if (verb === "investigate") {
+        if (cmd === "paperforge ocr doctor") {
+          this._callPython(["ocr", "doctor"], {
+            timeout: 30000,
+            onClose: (_code: number | null) => {
+              this._probeModule("ocr");
+              this.display();
+            },
+          });
+          return;
+        }
+        if (cmd === "paperforge ocr list --json") {
+          this._callPython(["ocr", "list", "--json"], {
+            timeout: 30000,
+            onClose: (_code: number | null) => {
+              this._probeModule("ocr");
+              this.display();
+            },
+          });
+          return;
+        }
+      }
+      // setup/set_config handled above
+    } else if (mod === "memory") {
+      if ((verb === "run" || verb === "rebuild_index") && cmd === "paperforge memory build") {
+        this._dispatchMemoryBuild("build");
+        return;
+      }
+      if (verb === "rebuild_index" && cmd === "paperforge embed build --force") {
+        this._dispatchMemoryBuild("embed");
+        return;
+      }
+      if (verb === "restore_backup" && cmd === "paperforge memory restore-backup") {
+        this._callPython(["memory", "restore-backup"], {
+          timeout: 30000,
+          onClose: (_code: number | null) => {
+            this._probeModule("memory");
+            this.display();
+          },
+        });
+        return;
+      }
+    }
+
+    // Unknown pair → Notice + re-probe
+    new Notice(
+      (t("action_unknown_pair") || "Unknown action: {verb}").replace("{verb}", verb),
+      5000,
+    );
+    this._probeModule(mod);
+  }/** Dispatch OCR action with exact CLI args, progress tracking, cooperative stop (Issue #78). */
+  _dispatchOcrAction(mode: "run" | "rebuild" | "redo"): void {
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    const resolved = this._resolveRuntimeCommand(vp);
+    if (!resolved) {
+      new Notice(t("runtime_not_available") || "No Python runtime available");
+      return;
+    }
+
+    // Map mode to exact CLI args
+    const cliArgs: string[] = mode === "run"
+      ? ["ocr", "run"]
+      : mode === "rebuild"
+        ? ["ocr", "rebuild", "--all"]
+        : ["ocr", "redo"];
+    const labelMap: Record<string, string> = {
+      run: "Running OCR…",
+      rebuild: "Rebuilding OCR derived artifacts…",
+      redo: "Running OCR redo…",
+    };
+
+    // Set envelope activity overlay without changing capability/severity/reason
+    const envelopes = this._capabilityState ?? {};
+    if (envelopes["ocr"]) {
+      envelopes["ocr"].activity_state = "running";
+      envelopes["ocr"].activity_label = labelMap[mode] || "Running…";
+      envelopes["ocr"].activity_progress = { current: 0, total: 1 };
+    }
+    this.plugin._ocrBuffer = "";
+    this.plugin._ocrProgress = { current: 0, total: 1, key: "" };
+    this.plugin._ocrWasStopped = false;
+    this.display();
+
+    const child = this._callPython(
+      cliArgs,
+      {
+        stream: true,
+        onData: (data: unknown) => {
+          const text = typeof data === "string" ? data : Buffer.isBuffer(data) ? data.toString("utf-8") : String(data);
+          const { events, buffer } = processProgressChunk(text, this.plugin._ocrBuffer ?? "");
+          this.plugin._ocrBuffer = buffer;
+          for (const ev of events) {
+            if (ev.event === "START") {
+              if (this.plugin._ocrProgress) {
+                this.plugin._ocrProgress.total = ev.total || 1;
+              }
+              if (envelopes["ocr"]) {
+                envelopes["ocr"].activity_progress = { current: 0, total: ev.total || 1 };
+              }
+            } else if (ev.event === "PROGRESS") {
+              this.plugin._ocrProgress = { current: ev.current || 0, total: ev.total || 1, key: ev.key || "" };
+              if (envelopes["ocr"]) {
+                envelopes["ocr"].activity_progress = { current: ev.current || 0, total: ev.total || 1 };
+              }
+            }
+          }
+          this.display();
+        },
+        onError: (err: Error) => {
+          this.plugin._ocrProcess = null;
+          if (envelopes["ocr"]) {
+            envelopes["ocr"].activity_state = "idle";
+            envelopes["ocr"].activity_label = null;
+            envelopes["ocr"].activity_progress = null;
+          }
+          new Notice("OCR error: " + (err.message || err), 8000);
+          this._probeModule("ocr");
+          this.display();
+        },
+        onClose: (code: number | null) => {
+          this.plugin._ocrProcess = null;
+          if (envelopes["ocr"]) {
+            envelopes["ocr"].activity_state = "idle";
+            envelopes["ocr"].activity_label = null;
+            envelopes["ocr"].activity_progress = null;
+          }
+          if (code === 0) {
+            new Notice(mode === "run" ? "OCR run complete." : mode === "rebuild" ? "OCR rebuild complete." : "OCR redo complete.");
+          } else if (code === 130 || this.plugin._ocrWasStopped) {
+            this.plugin._ocrWasStopped = false;
+            new Notice("OCR batch stopped by user.");
+          } else {
+            new Notice("OCR operation failed with exit code " + (code ?? "?"), 8000);
+          }
+          // Terminal re-probe
+          this._probeModule("ocr");
+          this.display();
+        },
+      },
+    );
+    this.plugin._ocrProcess = child;
+  }  /** Dispatch memory build: distinct build vs embed modes, overlay activity, terminal re-probe (Issue #78). */
+  _dispatchMemoryBuild(kind: "build" | "embed"): void {
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    // Set activity overlay on Memory
+    const envelopes = this._capabilityState ?? {};
+    if (envelopes["memory"]) {
+      envelopes["memory"].activity_state = "running";
+      envelopes["memory"].activity_label = kind === "embed" ? "Building vector index…" : "Building memory…";
+    }
+    this.display();
+
+    const cliArgs = kind === "embed" ? ["embed", "build", "--force"] : ["memory", "build"];
+    const label = kind === "embed" ? "Vector index" : "Memory";
+
+    if (kind === "embed") {
+      // Embed build: stream progress
+      this.plugin._embedBuffer = "";
+      this.plugin._embedProgress = { current: 0, total: 0, key: "" };
+      const child = this._callPython(
+        cliArgs,
+        {
+          stream: true,
+          onData: (data: unknown) => {
+            const text = typeof data === "string" ? data : Buffer.isBuffer(data) ? data.toString("utf-8") : String(data);
+            const { events, buffer } = processProgressChunk(text, this.plugin._embedBuffer ?? "");
+            this.plugin._embedBuffer = buffer;
+            for (const ev of events) {
+              if (ev.event === "PROGRESS") {
+                this.plugin._embedProgress = { current: ev.current || 0, total: ev.total || 0, key: ev.key || "" };
+                if (envelopes["memory"]) {
+                  envelopes["memory"].activity_progress = { current: ev.current || 0, total: ev.total || 1 };
+                }
+              }
+            }
+            this.display();
+          },
+          onError: (err: Error) => {
+            this.plugin._embedProcess = null;
+            if (envelopes["memory"]) {
+              envelopes["memory"].activity_state = "idle";
+              envelopes["memory"].activity_label = null;
+              envelopes["memory"].activity_progress = null;
+            }
+            new Notice(label + " build error: " + (err.message || err), 8000);
+            this._probeModule("memory");
+            this.display();
+          },
+          onClose: (code: number | null) => {
+            this.plugin._embedProcess = null;
+            if (envelopes["memory"]) {
+              envelopes["memory"].activity_state = "idle";
+              envelopes["memory"].activity_label = null;
+              envelopes["memory"].activity_progress = null;
+            }
+            if (code === 0) {
+              new Notice(label + " build complete.");
+            } else {
+              new Notice(label + " build failed with exit code " + (code ?? "?"), 8000);
+            }
+            this._probeModule("memory");
+            this.display();
+          },
+        },
+      );
+      this.plugin._embedProcess = child;
+    } else {
+      // Memory build: timeout-based (no streaming)
+      this._callPython(cliArgs, {
+        timeout: 120000,
+        onClose: (code: number | null, _stdout: string, stderr: string) => {
+          if (envelopes["memory"]) {
+            envelopes["memory"].activity_state = "idle";
+            envelopes["memory"].activity_label = null;
+          }
+          if (code === 0) {
+            new Notice(label + " rebuild complete");
+          } else {
+            new Notice(
+              label + " build failed" + (stderr ? ": " + stderr.slice(0, 120) : ""),
+              8000,
+            );
+          }
+          this._probeModule("memory");
+          this.display();
+        },
+      });
+    }
+  }/** Shared module detail shell for Library, OCR, and Memory (Issue #78). */
+  _renderModuleDetailShell(containerEl: HTMLElement, mod: CapabilityModule): void {
+    const headingKey = mod + "_detail_heading";
+    const headingId = "pf-" + mod + "-detail-heading";
+
+    // ── Back button ──
+    const backBtn = containerEl.createEl("button", {
+      cls: "pf-back-btn",
+      text: t("btn_back_to_overview"),
+    });
+    backBtn.addEventListener("click", () => {
+      this.activeTab = "overview";
+      this._selectedDetailModule = "";
+      this._focusTargetId = "button.pf-open-module-btn[data-module=" + mod + "]";
+      this.display();
+    });
+
+    // ── Heading ──
+    const heading = containerEl.createEl("h2", {
+      cls: "pf-module-detail-heading",
+      text: t(headingKey) || t("cc_module_" + mod),
+      attr: { id: headingId, tabindex: "-1" },
+    });
+
+    // ── Module detail selector (all implemented modules) ──
+    const detailModules: { id: string; labelKey: string }[] = [
+      { id: "installation", labelKey: "md_select_installation" },
+      { id: "library", labelKey: "md_select_library" },
+      { id: "ocr", labelKey: "md_select_ocr" },
+      { id: "memory", labelKey: "md_select_memory" },
+    ];
+    const selector = containerEl.createEl("div", { cls: "pf-module-detail-selector" });
+    for (const dm of detailModules) {
+      const btn = selector.createEl("button", {
+        cls: "pf-module-detail-btn"
+          + (dm.id === mod ? " pf-module-detail-btn--active" : ""),
+        text: t(dm.labelKey),
+      });
+      btn.addEventListener("click", () => {
+        this._selectedDetailModule = dm.id;
+        this._focusTargetId = dm.id === "installation"
+          ? "#pf-installation-detail-heading"
+          : "#pf-" + dm.id + "-detail-heading";
+        this.display();
+      });
+    }
+
+    // ── Backend envelope summary card ──
+    const envelopes: Record<string, ProbeEnvelope> = this._capabilityState ?? {};
+    const env: ProbeEnvelope = envelopes[mod] ?? createUnknownEnvelope(mod);
+    const sevClass: string = this._sevClass(env.severity);
+    const isReady: boolean = isReadyEnvelope(env);
+
+    const summaryRow = containerEl.createEl("div", { cls: "pf-cc-card pf-module-detail-card" });
+    const summaryHeader = summaryRow.createEl("div", { cls: "pf-cc-card-header" });
+    summaryHeader.createEl("span", { cls: "pf-cc-card-name", text: t("cc_module_" + mod) });
+    summaryHeader.createEl("span", {
+      cls: "pf-cc-card-badge pf-cc-card-badge--" + sevClass,
+      text: t(this._ccBadgeKey(env, mod)),
+    });
+
+    // Activity label
+    if (env.activity_state === "running" && env.activity_label) {
+      const activityRow = summaryRow.createEl("div", { cls: "pf-cc-card-activity", attr: { "aria-live": "polite" } });
+      activityRow.createEl("span", { text: env.activity_label });
+      if (env.activity_progress && env.activity_progress.total > 0) {
+        const pct = Math.round((env.activity_progress.current / env.activity_progress.total) * 100);
+        const bar = activityRow.createEl("div", { cls: "pf-cc-card-progress", attr: { role: "progressbar", "aria-valuenow": String(env.activity_progress.current), "aria-valuemin": "0", "aria-valuemax": String(env.activity_progress.total) } });
+        const fill = bar.createEl("div", { cls: "pf-cc-card-progress-fill" });
+        fill.style.width = pct + "%";
+      }
+    }
+
+    const l10nReason = this._localizeReason(env.reason.code, mod);
+    summaryRow.createEl("div", { cls: "pf-cc-card-reason", text: l10nReason ?? env.reason.text });
+
+    // Destructive metadata before action
+    const primary = env.action?.primary;
+    if (primary && !isReady) {
+      if (primary.destructive && primary.confirmation_required) {
+        const destructiveRow = summaryRow.createEl("div", { cls: "pf-destructive-notice" });
+        destructiveRow.createEl("span", { text: primary.destructive_effect ?? "" });
+      }
+
+      // Action button — disabled while this module's activity is running
+      const isModuleRunning = env.activity_state === "running";
+      const action = classifyCapabilityAction(env);
+      const actionBtn = summaryRow.createEl("button", {
+        cls: "pf-cc-card-action pf-cc-card-action--primary",
+        text: action.label,
+      });
+      if (isModuleRunning) {
+        actionBtn.setAttr("disabled", "disabled");
+      }
+      actionBtn.addEventListener("click", () => {
+        if (isModuleRunning) return;
+        this._dispatchModuleAction(mod, env);
+      });
+    }
+
+    // Timestamp and TTL
+    const metaRow = summaryRow.createEl("div", { cls: "pf-meta" });
+    let dateLabel: string;
+    try { dateLabel = new Date(env.updated_at).toLocaleString(); } catch { dateLabel = env.updated_at; }
+    metaRow.createEl("span", { text: t("cc_diag_updated") + ": " + dateLabel + " | TTL: " + String(env.ttl_seconds) + "s" });
+
+    // Notices
+    if (env.notices && env.notices.length > 0) {
+      for (const notice of env.notices) {
+        containerEl.createEl("div", {
+          cls: "pf-notice pf-notice--" + (notice.level || "info"),
+          text: notice.message,
+        });
+      }
+    }
+
+    // Diagnostics disclosure
+    const details = summaryRow.createEl("details", { cls: "pf-cc-card-diagnostic" });
+    details.createEl("summary", { text: t("cc_diagnostic_toggle") });
+    const body = details.createEl("div", { cls: "pf-cc-card-diagnostic-body" });
+    const stateLabel = t("cc_state_" + env.capability_state) || env.capability_state;
+    const sevLabel = t("cc_severity_" + env.severity) || env.severity;
+    const activityLabel = t("cc_activity_" + env.activity_state) || env.activity_state;
+    body.createEl("div", { text: t("cc_diag_module") + ": " + env.module });
+    body.createEl("div", { text: t("cc_diag_state") + ": " + stateLabel });
+    body.createEl("div", { text: t("cc_diag_severity") + ": " + sevLabel });
+    body.createEl("div", { text: t("cc_diag_activity") + ": " + activityLabel });
+    const reasonRow = body.createEl("div");
+    reasonRow.appendText(t("cc_diag_reason") + ": " + (l10nReason ?? env.reason.text) + " ");
+    reasonRow.createEl("code", { text: env.reason.code });
+
+    // Focus heading on render
+    try {
+      heading.focus();
+    } catch {
+      // ignore focus failure
     }
   }
 
@@ -1172,6 +1649,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const py = getCachedPython(vp, this.plugin.settings);
     if (!py.path) return;
 
+    // Overlay envelope activity
+    const envelopes = this._capabilityState ?? {};
+    if (envelopes["library"]) {
+      envelopes["library"].activity_state = "running";
+      envelopes["library"].activity_label = "Syncing library…";
+    }
+
     const statusRow = document.querySelector(".paperforge-memory-status");
     if (statusRow) {
       this._renderMemoryStatusText(
@@ -1182,15 +1666,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     this.plugin._autoSyncRunning = true;
+    this._libraryRunning = true;
+    this.display();
     this._callPython(["sync"], {
       timeout: 120000,
       onClose: (code: number | null) => {
         this.plugin._autoSyncRunning = false;
+        this._libraryRunning = false;
         this._memoryStatusText = null;
+        // Clear activity overlay
+        if (envelopes["library"]) {
+          envelopes["library"].activity_state = "idle";
+          envelopes["library"].activity_label = null;
+        }
         if (code === 0) {
           this._lastSyncTime = new Date().toLocaleTimeString();
           this.plugin._lastSyncTime = this._lastSyncTime;
         }
+        // Re-probe library on every terminal outcome — pass exit code for sync failure detection
+        this._probeModule("library", code ?? 1);
         this.display();
         this._refreshSnapshots(vp);
         checkOrphanState(this.app, this.plugin, vp);
@@ -2922,7 +3416,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Call `paperforge probe <module> --json` and store the validated envelope unchanged. */
-  _probeModule(mod: CapabilityModule): void {
+  _probeModule(mod: CapabilityModule, lastOperationExitCode?: number): void {
     if (this._probing.has(mod)) return;
     this._probing.add(mod);
 
@@ -2985,6 +3479,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       mod,
       "--json",
     ];
+    if (mod === "library" && lastOperationExitCode != null && lastOperationExitCode !== 0) {
+      args.push("--last-operation-exit-code", String(lastOperationExitCode));
+    }
 
     execFile(
       resolved.path,
@@ -3064,9 +3561,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Modules with real Python probe support. */
-  private static _REAL_PROBE = new Set(["installation", "help"]);
+  private static _REAL_PROBE = new Set(["installation", "library", "ocr", "memory", "help"]);
   /** Modules that have a navigation entry in the overview card grid. */
-  private static _NAVIGABLE = new Set(["installation", "maintenance", "help"]);
+  private static _NAVIGABLE = new Set(["installation", "library", "ocr", "memory", "maintenance", "help"]);
 
   _renderCard(container: HTMLElement, mod: CapabilityModule, envelope: ProbeEnvelope): void {
     const env = envelope;
@@ -3085,11 +3582,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // Navigation entry — Enter/Space or click opens module detail
       const openLabel = mod === "installation"
         ? t("module_detail_open_installation")
-        : mod === "help"
-          ? t("module_detail_open_help")
-          : mod === "maintenance"
-            ? t("module_detail_open_maintenance")
-            : t("md_select_installation");
+        : mod === "library"
+          ? t("module_detail_open_library")
+          : mod === "ocr"
+            ? t("module_detail_open_ocr")
+            : mod === "memory"
+              ? t("module_detail_open_memory")
+              : mod === "help"
+                ? t("module_detail_open_help")
+                : mod === "maintenance"
+                  ? t("module_detail_open_maintenance")
+                  : t("md_select_installation");
       const navBtn = nameArea.createEl("button", {
         cls: "pf-open-module-btn",
         text: t("cc_module_" + mod),
@@ -3153,7 +3656,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             this._probeModule("help");
           }).open();
         } else {
-          this._probeModule(mod);
+          this._dispatchModuleAction(mod, env);
         }
       });
     }
@@ -3194,6 +3697,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.activeTab = "module-detail";
       this._selectedDetailModule = "installation";
       this._focusTargetId = "#pf-installation-detail-heading";
+    } else if (mod === "library") {
+      this.activeTab = "module-detail";
+      this._selectedDetailModule = "library";
+      this._focusTargetId = "#pf-library-detail-heading";
+    } else if (mod === "ocr") {
+      this.activeTab = "module-detail";
+      this._selectedDetailModule = "ocr";
+      this._focusTargetId = "#pf-ocr-detail-heading";
+    } else if (mod === "memory") {
+      this.activeTab = "module-detail";
+      this._selectedDetailModule = "memory";
+      this._focusTargetId = "#pf-memory-detail-heading";
     } else if (mod === "help") {
       this.activeTab = "help";
       this._selectedDetailModule = "";
