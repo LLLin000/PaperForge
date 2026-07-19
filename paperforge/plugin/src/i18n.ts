@@ -278,7 +278,8 @@ const LANG: Record<string, Record<string, string>> = {
     maintenance_batch_rebuild: "▶ Rebuild selected",
     maintenance_batch_redo: "▶ Full OCR redo selected",
     maintenance_stop: "Stop",
-    maintenance_batch_complete: "Batch operation complete — {n} papers processed.",
+    maintenance_batch_complete:
+      "Batch operation complete — {n} papers processed.",
     maintenance_progress_label: "{current}/{total} papers",
     version_panel_title: "Version History",
     version_panel_back: "Back",
@@ -379,9 +380,12 @@ const LANG: Record<string, Record<string, string>> = {
     cc_summary_ok: "All systems ready",
     cc_summary_core_ok: "Core environment ready; {n} modules pending detection",
     cc_summary_attention: "Some modules need attention",
-    cc_summary_ok_body: "PaperForge environment is fully operational. Installation and documentation are verified.",
-    cc_summary_core_ok_body: "Installation and Help modules are active. Library, OCR, Memory, and Maintenance will show live status once their backends are connected.",
-    cc_summary_attention_body: "One or more core modules require your attention to function properly.",
+    cc_summary_ok_body:
+      "PaperForge environment is fully operational. Installation and documentation are verified.",
+    cc_summary_core_ok_body:
+      "Installation and Help modules are active. Library, OCR, Memory, and Maintenance will show live status once their backends are connected.",
+    cc_summary_attention_body:
+      "One or more core modules require your attention to function properly.",
     cc_badge_ok: "Ready",
     cc_badge_pending: "Pending",
     cc_badge_setup: "Setup needed",
@@ -415,28 +419,43 @@ const LANG: Record<string, Record<string, string>> = {
     cc_action_set_config: "Set Config",
     cc_action_update: "Update",
     cc_reason_installation_ready: "PaperForge environment is set up correctly.",
-    cc_reason_config_missing: "Configuration file is missing. Run setup to create one.",
-    cc_reason_config_corrupt: "Configuration file is corrupt. Run setup to repair.",
-    cc_reason_python_version_unsupported: "Python version is not supported. Install Python 3.11+.",
+    cc_reason_config_missing:
+      "Configuration file is missing. Run setup to create one.",
+    cc_reason_config_corrupt:
+      "Configuration file is corrupt. Run setup to repair.",
+    cc_reason_python_version_unsupported:
+      "Python version is not supported. Install Python 3.11+.",
     cc_reason_help_ready: "Help documentation is available.",
     cc_reason_docs_missing: "Help documentation is not yet installed.",
-    cc_reason_placeholder: "Detection pending — will show live status once connected.",
+    cc_reason_placeholder:
+      "Detection pending — will show live status once connected.",
     cc_reason_library_ready: "Library is synced and indexed.",
-    cc_reason_library_config_missing: "Configuration not found — run setup to configure library.",
-    cc_reason_library_config_corrupt: "Configuration file is corrupt — library cannot proceed.",
-    cc_reason_library_zotero_missing: "Zotero data directory is not configured.",
-    cc_reason_library_zotero_not_found: "Zotero data directory path does not exist.",
-    cc_reason_library_index_missing: "Library index has not been built yet — run sync.",
+    cc_reason_library_config_missing:
+      "Configuration not found — run setup to configure library.",
+    cc_reason_library_config_corrupt:
+      "Configuration file is corrupt — library cannot proceed.",
+    cc_reason_library_zotero_missing:
+      "Zotero data directory is not configured.",
+    cc_reason_library_zotero_not_found:
+      "Zotero data directory path does not exist.",
+    cc_reason_library_index_missing:
+      "Library index has not been built yet — run sync.",
     cc_reason_library_index_stale: "Library index is stale — sync to refresh.",
     cc_reason_ocr_ready: "OCR pipeline is configured and functional.",
-    cc_reason_ocr_config_missing: "Configuration not found — run setup to configure OCR.",
-    cc_reason_ocr_config_corrupt: "Configuration file is corrupt — OCR cannot proceed.",
-    cc_reason_ocr_api_key_missing: "No OCR API key configured — add one in setup.",
+    cc_reason_ocr_config_missing:
+      "Configuration not found — run setup to configure OCR.",
+    cc_reason_ocr_config_corrupt:
+      "Configuration file is corrupt — OCR cannot proceed.",
+    cc_reason_ocr_api_key_missing:
+      "No OCR API key configured — add one in setup.",
     cc_reason_ocr_artifacts_missing: "No OCR output found — run OCR on papers.",
     cc_reason_memory_ready: "Memory database is healthy and indexed.",
-    cc_reason_memory_db_missing: "Memory database not built — run memory build.",
-    cc_reason_memory_db_corrupt: "Memory database is corrupted — restore from backup.",
-    cc_reason_memory_index_stale: "Memory index needs rebuild to match current library.",
+    cc_reason_memory_db_missing:
+      "Memory database not built — run memory build.",
+    cc_reason_memory_db_corrupt:
+      "Memory database is corrupted — restore from backup.",
+    cc_reason_memory_index_stale:
+      "Memory index needs rebuild to match current library.",
     cc_diag_module: "Module",
     cc_diag_state: "State",
     cc_diag_severity: "Severity",
@@ -447,8 +466,14 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_no_probe: "{module} has not been probed yet.",
     cc_reason_stale: "Cached probe data for {module} is stale.",
     cc_reason_invalid_response: "Probe response for {module} was invalid.",
+    activity_syncing: "Syncing...",
+    activity_ocr_running: "Processing OCR... {pct}%",
+    activity_ocr_running_noprogress: "Processing OCR...",
+    cc_action_unknown_verb: "Unknown backend action: {verb}",
+    cc_action_investigate: "Running diagnostics...",
     cc_reason_probing: "Checking {module} status...",
-    cc_notice_placeholder: "{module} module probing is not yet available; it will be added in a future update.",
+    cc_notice_placeholder:
+      "{module} module probing is not yet available; it will be added in a future update.",
     cc_notice_refreshed: "Module status refreshed.",
     cc_notice_refresh_failed: "Failed to refresh module status.",
     cc_activity_idle: "Idle",
@@ -462,20 +487,24 @@ const LANG: Record<string, Record<string, string>> = {
     maintenance_undismiss: "Show",
     maintenance_ocr_section: "OCR Maintenance",
     maintenance_action_result_success: "Action complete — module is now ready.",
-    maintenance_action_result_failure: "Action failed — module still needs attention.",
+    maintenance_action_result_failure:
+      "Action failed — module still needs attention.",
     maintenance_confirm_redo_title: "Confirm Rerun",
-    maintenance_confirm_redo_body: "This will delete and re-run OCR for the selected papers. Existing derived artifacts will be replaced.",
+    maintenance_confirm_redo_body:
+      "This will delete and re-run OCR for the selected papers. Existing derived artifacts will be replaced.",
     maintenance_confirm_restore_title: "Confirm Restore",
-    maintenance_confirm_restore_body: "This will restore the memory database from backup. Current data will be replaced.",
+    maintenance_confirm_restore_body:
+      "This will restore the memory database from backup. Current data will be replaced.",
     maintenance_confirm_ok: "Proceed",
     maintenance_confirm_cancel: "Cancel",
     maintenance_issue_draft_title: "OCR Issue Draft",
-    maintenance_issue_draft_preview: "Review the issue draft below before opening GitHub.",
+    maintenance_issue_draft_preview:
+      "Review the issue draft below before opening GitHub.",
     maintenance_issue_draft_included: "Included",
     maintenance_issue_draft_redacted: "Redacted",
     maintenance_issue_draft_open_github: "Open GitHub Issue",
     maintenance_issue_draft_edit: "Edit Draft",
-   },
+  },
   zh: {
     action_running: "正在执行 ",
     api_key_missing: "未配置 ✗",
@@ -814,7 +843,8 @@ const LANG: Record<string, Record<string, string>> = {
     retrieval_build_stopping: "正在停止...",
     cc_summary_attention: "部分模块需要关注",
     cc_summary_ok_body: "PaperForge 环境已完全就绪。安装和帮助文档均正常可用。",
-    cc_summary_core_ok_body: "安装和帮助模块已可用。文献索引、OCR、记忆层和维护模块将在后端接入后显示实时状态。",
+    cc_summary_core_ok_body:
+      "安装和帮助模块已可用。文献索引、OCR、记忆层和维护模块将在后端接入后显示实时状态。",
     cc_summary_attention_body: "一个或多个核心模块需要您的关注才能正常运行。",
     retrieval_build_stopped: "构建已停止（{n}/{t} 篇）",
     retrieval_build_failed: "构建失败",
@@ -863,7 +893,8 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_installation_ready: "PaperForge 环境已正确配置。",
     cc_reason_config_missing: "配置文件缺失，请运行安装向导。",
     cc_reason_config_corrupt: "配置文件损坏，请运行安装向导修复。",
-    cc_reason_python_version_unsupported: "Python 版本不受支持，请安装 Python 3.11+。",
+    cc_reason_python_version_unsupported:
+      "Python 版本不受支持，请安装 Python 3.11+。",
     cc_reason_help_ready: "帮助文档已可用。",
     cc_reason_docs_missing: "帮助文档尚未安装。",
     cc_reason_placeholder: "状态检测待接入，接入后将显示实时状态。",
@@ -877,8 +908,14 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_no_probe: "{module} 尚未检测。",
     cc_reason_stale: "{module} 的检测数据已过期。",
     cc_reason_invalid_response: "{module} 的检测响应无效。",
+    activity_syncing: "\u540C\u6B65\u4E2D...",
+    activity_ocr_running: "\u6B63\u5728\u5904\u7406 OCR... {pct}%",
+    activity_ocr_running_noprogress: "\u6B63\u5728\u5904\u7406 OCR...",
+    cc_action_unknown_verb: "\u672A\u77E5\u540E\u7AEF\u64CD\u4F5C: {verb}",
+    cc_action_investigate: "\u6B63\u5728\u8FD0\u884C\u8BCA\u65AD...",
     cc_reason_probing: "正在检测 {module} 状态...",
-    cc_notice_placeholder: "{module} 模块检测功能尚未可用，将在后续版本中添加。",
+    cc_notice_placeholder:
+      "{module} 模块检测功能尚未可用，将在后续版本中添加。",
     cc_notice_refreshed: "模块状态已刷新。",
     cc_notice_refresh_failed: "模块状态刷新失败。",
     cc_activity_idle: "空闲",
@@ -894,9 +931,11 @@ const LANG: Record<string, Record<string, string>> = {
     maintenance_action_result_success: "操作完成 — 模块已就绪。",
     maintenance_action_result_failure: "操作失败 — 模块仍需关注。",
     maintenance_confirm_redo_title: "确认重新运行",
-    maintenance_confirm_redo_body: "这将删除并重新运行所选论文的 OCR。已有的衍生结果将被替换。",
+    maintenance_confirm_redo_body:
+      "这将删除并重新运行所选论文的 OCR。已有的衍生结果将被替换。",
     maintenance_confirm_restore_title: "确认恢复",
-    maintenance_confirm_restore_body: "这将从备份恢复记忆数据库。当前数据将被替换。",
+    maintenance_confirm_restore_body:
+      "这将从备份恢复记忆数据库。当前数据将被替换。",
     maintenance_confirm_ok: "继续",
     maintenance_confirm_cancel: "取消",
     maintenance_issue_draft_title: "OCR 问题草稿",
@@ -905,7 +944,7 @@ const LANG: Record<string, Record<string, string>> = {
     maintenance_issue_draft_redacted: "已脱敏",
     maintenance_issue_draft_open_github: "打开 GitHub Issue",
     maintenance_issue_draft_edit: "编辑草稿",
-   },
+  },
 };
 
 let T: Record<string, string> | null = null;
