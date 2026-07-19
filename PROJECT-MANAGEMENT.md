@@ -1,13 +1,13 @@
 > **Branch:** `master` | **Last Updated:** 2026-07-19
-> **Active work:** Control-center UX redesign is now the approved next program after live #78–#80 verification exposed release-package and information-architecture failures.
+> **Active work:** Redesign PRD #83 and agent-ready issues #84–#93 are published; #84 capability presentation contract is the next Ask Matt implementation.
 >
 > ---
 >
-> **Current state:** Retrieval recovery and the current control plane are live, but the shipped UX contract is superseded. Literature-hub is temporarily pinned to the probe-capable `v1.5.15` runtime because the published `1.5.15` package lacks `paperforge probe`; the `v1.5.15_build2` slot remains the previous runtime.
+> **Current state:** Release N+1 implementation is verified on `master` through `b41b4c88`; #81 remains open only for an explicit release decision, #82 remains blocked on the N+1 support window, and no release was performed.
 >
 > Live diagnosis confirmed duplicated runtime actions, stale-as-“待接入” presentation, and an asymmetric Module Detail implementation: Installation renders a one-item legacy selector while Library/OCR/Memory use the shared selector. A user grilling session approved a five-module model (Foundation, Library, OCR, Smart Retrieval, Agent Integration), three top-level destinations (Overview, Maintenance, Help), a four-stage dynamic setup journey, user-problem-only Maintenance, and Obsidian-native progressive disclosure.
 >
-> Next: publish and clean-venv verify a backend package containing `paperforge probe`; then route `project/current/control-center-ux-redesign.md` through Ask Matt into dependency-linked agent-ready issues, beginning with the capability presentation contract.
+> Next: implement #84 through Ask Matt. Package/tag publication is deferred by owner direction and must not be performed without renewed approval.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -55,7 +55,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 86-paper pre-merge corpus diff | **86/86 no diff** ✅ |
 | 6 fixture-backed v3 parity gates | **6/6 pass** ✅ |
 | Focused OCR rebuild/redo/maintenance paths | **99 passed, 1 Windows signal test skipped, 1 unrelated empty-result regression deselected** ✅ |
-| Plugin tests + TypeScript + production build | **384/384 passed; typecheck/build clean; production bundle 259.3KB** ✅ |
+| Plugin tests + TypeScript + production build | **390/390 passed; typecheck/build clean; production bundle 259.3KB** ✅ |
 | Live Literature-hub maintenance UI | **734 All / 700 Recommended; no captured errors** ✅ |
 | Maintenance regression action model | **19/19 passed** ✅ (per-row canonical action routing, redo confirmation gate, cache manifest preservation) |
 | Canonical setup/config migration (#75) | **61 passed, 0 failed** ✅ (fresh/v1/v2 config, CLI routing, path forwarding, failure exit, idempotent rerun) |
@@ -170,8 +170,8 @@ The OCR maintenance slice has a canonical All/Recommended state model, selected 
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. ✅ **[Control-center PRD #74](https://github.com/LLLin000/PaperForge/issues/74)** — all eight implementation issues (#75–#82) are complete and live-verified in Literature-hub after duplicate-plugin and cold-runtime recovery.
-2. 🟡 **Control-center UX redesign** — approved design baseline in `project/current/control-center-ux-redesign.md`; replaces Installation-as-module, six mixed module cards, top-level Module Detail, raw backend labels, per-card Check actions, and non-actionable OCR quality maintenance. Implementation must be split through Ask Matt after the probe-capable package release.
+1. 🟡 **[Control-center redesign PRD #83](https://github.com/LLLin000/PaperForge/issues/83)** — approved source of truth; ten dependency-ordered agent-ready issues (#84–#93) are published. Start with #84 only.
+2. 🟡 **Release cutover #81/#82** — N+1 code is verified on `master`, but #81 stays open for the owner-controlled release gate; N+2 deletion #82 stays open until an N+1 package and support window exist. No release is authorized.
 3. ✅ **[Capability-state vocabulary](https://github.com/LLLin000/PaperForge/issues/69)** — resolved at `issuecomment-4971161072`. Orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
 4. ✅ **[Managed runtime](https://github.com/LLLin000/PaperForge/issues/70)** — resolved at `issuecomment-4971239398`. Plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
 5. ✅ **[Control-center prototype](https://github.com/LLLin000/PaperForge/issues/71)** — resolved with independent Critical/Important PASS review and browser verification at 768px. Six-module control-center HTML prototype covers 5 scenarios with plain-button switcher, primary attention zone, responsive layout, and capability-gated actions. Design decisions recorded in `docs/prototypes/2026-07-14-six-module-control-center.html/.md`. No production implementation before #73.
@@ -201,9 +201,9 @@ Remaining legacy OCR issues (carried forward):
 - [x] Expose Library, OCR, and Memory capabilities end to end ([#78](https://github.com/LLLin000/PaperForge/issues/78)) — 65 backend tests + 178 focused plugin tests, 324 full plugin tests across 11 files; typecheck/build clean; fail-closed recognizable config for Library/OCR; red rebuild_result stays non-destructive rebuild; queued OCR progress starts at 0; failed/null Library sync exit outcome is forwarded into fresh Python probe and remains sync actionable
 - [x] Implement SecretStorage for capability secrets ([#79](https://github.com/LLLin000/PaperForge/issues/79)) — backend-focused gate passes; plugin full suite passes; typecheck/build clean
 - [x] Implement Maintenance probe with backend-derived rows, privacy-safe local draft, and accessible destructive confirmation ([#80](https://github.com/LLLin000/PaperForge/issues/80)) — backend focused gate 77/77; plugin full suite 381/382 (only pre-existing capability-state test expecting help.stale but receiving help.invalid_response); typecheck/build clean; production bundle 264.4KB; real Obsidian 1.12.7 smoke at 730 and 768 confirmed actionable-only rows, keyboard Enter, accessible destructive confirmation with exact backend effect, focus trap/restoration, owned inert cleanup, redacted editable issue draft, no token input/auto-open, explicit GitHub open only, URL re-redaction, no horizontal overflow
-- [x] Implement Release N+1 owner cutover ([#81](https://github.com/LLLin000/PaperForge/issues/81)) and N+2 clean cutover ([#82](https://github.com/LLLin000/PaperForge/issues/82))
-  - [ ] Publish a backend package containing the `probe` command before removing the Literature-hub editable runtime
-  - [ ] Route the approved control-center UX redesign through Ask Matt into dependency-linked implementation issues; first slice is the capability presentation contract.
+- [x] Complete and verify Release N+1 implementation code ([#81](https://github.com/LLLin000/PaperForge/issues/81)) — 390/390 plugin tests, typecheck/build clean, live managed dispatch verified; issue remains open for the release gate.
+- [ ] Complete Release N+2 deletion ([#82](https://github.com/LLLin000/PaperForge/issues/82)) only after an N+1 package and support window; publication is currently deferred by owner direction.
+- [x] Publish redesign PRD [#83](https://github.com/LLLin000/PaperForge/issues/83) and ten dependency-ordered issues [#84–#93](https://github.com/LLLin000/PaperForge/issues/84); begin with #84 through Ask Matt.
 
 ## 5. Key File Map
 
@@ -368,6 +368,7 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-19 | Maintenance contains only user-visible, resolvable problems | Internal OCR quality estimates, ordinary OCR imperfections, stale cache, optimization suggestions, and optional capabilities never enabled do not merit user attention. A problem must block use, fail a requested task, make output unusable, or create material data risk and have a concrete action. |
 | 2026-07-19 | Backend owns action semantics; plugin owns localized presentation | Stable action IDs, exact commands, scope, and safety facts remain backend-authorized, while the plugin supplies user language and visual priority. This prevents frontend action guessing without leaking English CLI labels. |
 | 2026-07-19 | PaperForge UI is Obsidian-native with progressive disclosure | Default surfaces show outcomes, impact, and one next step. Technical detail becomes a one-click privacy-safe Support Diagnostic rather than ordinary UI content. |
+| 2026-07-19 | Release remains owner-controlled and deferred | N+1 implementation can be verified without publishing. Do not create a tag, package release, or support-window transition until the owner explicitly reauthorizes release. |
 
 ---
 
@@ -477,6 +478,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-19 | SecretStorage (#79) + Maintenance probe (#80) | Implemented SecretStorage capability secrets (backend-focused gate, plugin full suite). Implemented Maintenance probe: backend-derived actionable-only rows, privacy-safe local draft, accessible destructive confirmation via derived VerbModel with primary null for quality-ok items. Backend owns exact actions from `probe maintenance --json`; frontend renders downstream. Verification: backend focused gate 77/77; plugin full suite 381/382 (pre-existing capability-state test expecting help.stale but receiving help.invalid_response); typecheck/build clean; production bundle 264.4KB; Obsidian 1.12.7 smoke at 730 and 768 (entry focus, actionable-only, keyboard Enter, destructive confirmation with backend effect, focus trap/restoration, owned inert cleanup, redacted editable draft, no token/auto-open, explicit GitHub open only, URL re-redaction, no overflow). | §2-4 |
 | 2026-07-19 | Literature-hub #78–#80 deployment recovery | Found Obsidian loading duplicate `.obsidian/plugins/paperforge.bak`; moved it outside plugin discovery, migrated OCR/Vector secrets with readback verification, synchronized manifest 1.11.4, installed the current backend into the canonical managed venv, restored startup migration, and warmed the shared Managed Runtime before dispatch. Live cold-restart checks showed real Library/OCR/Memory actions, four-button detail selector, three actionable Maintenance rows, configured secrets with no plaintext, and no captured errors. Verification: 384/384 plugin tests, typecheck/build clean, 259.3KB bundle. | §2-6 |
 | 2026-07-19 | Control-center UX domain redesign | Live diagnosis proved that the current six-module vocabulary and navigation were not understandable despite passing earlier implementation gates. Completed a user grilling/domain-modeling session; approved five operational modules, three top-level destinations, dynamic setup, six user statuses, navigation-only cards, module-owned configuration, actionable-problem-only Maintenance, separate OCR workspace, and one-click redacted diagnostics. Added plugin domain language, ADR, Obsidian-native `DESIGN.md`, full UX specification, acceptance matrix, and ten dependency-ordered implementation slices. No production code changed. | `paperforge/plugin/CONTEXT.md`, `paperforge/plugin/DESIGN.md`, `project/current/control-center-ux-redesign.md`, `docs/adr/0001-capability-action-semantics.md` |
+| 2026-07-19 | N+1 cutover repair + redesign issue map | Completed the final ManagedRuntime/SecretStorage repair (`b41b4c88`), verified 390/390 plugin tests, clean typecheck/build, and live managed dispatch. Kept #81 open for the owner-controlled release gate and #82 open for the future N+2 window. Closed superseded PRD #74; published replacement PRD #83 and dependency-ordered implementation issues #84–#93. No release performed. | §2–4 |
 
 ## 9. Historical Detail Archive
 
