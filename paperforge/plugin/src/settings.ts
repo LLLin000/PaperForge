@@ -2293,7 +2293,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               0
             );
             try {
-              const env = Object.assign({}, process.env, {
+              const env = Object.assign(paperforgeEnrichedEnv(), {
                 PYTHONIOENCODING: "utf-8",
                 PYTHONUTF8: "1",
               });

@@ -33,10 +33,7 @@ import {
   paperforgeEnrichedEnv,
   buildTargetedEnv,
 } from "../services/python-bridge";
-import {
-  ManagedRuntime,
-  resolveRuntimeCommand,
-} from "../services/managed-runtime";
+import { resolveRuntimeCommand } from "../services/managed-runtime";
 import type { PluginForSecrets } from "../services/secret-storage";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
@@ -67,22 +64,13 @@ export class PaperForgeStatusView extends ItemView {
   _cachedItems: any[] | null = null;
   _modeSubscribers: { event: string; ref: any }[] = [];
 
-  _resolvePython(): { path: string; args: string[] } {
+  _resolvePython(): { path: string; args: string[] } | null {
     const plugin = ((this.app as any).plugins.plugins as any)["paperforge"];
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const rt = new ManagedRuntime({
-      runtimeDir: path.join(vp, ".paperforge-test-venv"),
-      pluginVersion: plugin?.manifest?.version || "0.0.0",
-      osPlatform: process.platform,
-      osArch: process.arch,
-      fs: fs as any,
-      execFile: execFile as any,
-      execFileSync: execFileSync as any,
-    });
-    const run = resolveRuntimeCommand(rt.current());
-    return run
-      ? { path: run.command, args: [...run.args] }
-      : { path: "python", args: [] };
+    const mr = plugin?.getManagedRuntime?.();
+    if (!mr) return null;
+    const run = resolveRuntimeCommand(mr.current());
+    if (!run) return null;
+    return { path: run.command, args: [...run.args] };
   }
   _leafChangeTimer: ReturnType<typeof setTimeout> | null = null;
   _ocrPrivacyShown = false;
@@ -238,7 +226,9 @@ export class PaperForgeStatusView extends ItemView {
       "paperforge"
     ] as any;
     const pluginVer = plugin?.manifest?.version || "?";
-    const { path: pythonExe, args = [] } = this._resolvePython();
+    const py = this._resolvePython();
+    if (!py) return;
+    const { path: pythonExe, args = [] } = py;
     Promise.resolve({ status: "ok", pyVersion: "?" }).then((result: any) => {
       if (result.status === "not-installed") return;
       const v = result.pyVersion || "";
@@ -277,7 +267,12 @@ export class PaperForgeStatusView extends ItemView {
     const plugin = ((this.app as any).plugins.plugins as any)[
       "paperforge"
     ] as any;
-    const { path: pythonExe, args = [] } = this._resolvePython();
+    const py = this._resolvePython();
+    if (!py) {
+      this._fallbackFetchStats(quiet, vp, plugin);
+      return;
+    }
+    const { path: pythonExe, args = [] } = py;
     (execFile as any)(
       pythonExe,
       [...args, "-m", "paperforge", "dashboard", "--json"],
@@ -416,7 +411,17 @@ export class PaperForgeStatusView extends ItemView {
           text: "No index \u2014 trying CLI...",
         });
       }
-      const { path: pythonExe, args = [] } = this._resolvePython();
+      const py = this._resolvePython();
+      if (!py) {
+        if (!this._cachedStats) {
+          this._metricsEl!.createEl("div", {
+            cls: "paperforge-status-error",
+            text: "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
+          });
+        }
+        return;
+      }
+      const { path: pythonExe, args = [] } = py;
       (execFile as any)(
         pythonExe,
         [...args, "-m", "paperforge", "status", "--json"],
@@ -1027,19 +1032,22 @@ export class PaperForgeStatusView extends ItemView {
     const pluginVer = plugin?.manifest?.version || "?";
     let pyVer = this._paperforgeVersion;
     if (!pyVer) {
-      try {
-        const vp = (this.app.vault.adapter as any).basePath as string;
-        const { path: pyExe, args = [] } = this._resolvePython();
-        const raw = execFileSync(
-          pyExe,
-          [...args, "-c", "import paperforge; print(paperforge.__version__)"],
-          { cwd: vp, timeout: 5000, encoding: "utf-8", windowsHide: true }
-        ).trim();
-        if (raw) {
-          pyVer = raw.startsWith("v") ? raw : "v" + raw;
-          this._paperforgeVersion = pyVer;
-        }
-      } catch {}
+      const py = this._resolvePython();
+      if (py) {
+        const { path: pyExe, args = [] } = py;
+        try {
+          const vp = (this.app.vault.adapter as any).basePath as string;
+          const raw = execFileSync(
+            pyExe,
+            [...args, "-c", "import paperforge; print(paperforge.__version__)"],
+            { cwd: vp, timeout: 5000, encoding: "utf-8", windowsHide: true }
+          ).trim();
+          if (raw) {
+            pyVer = raw.startsWith("v") ? raw : "v" + raw;
+            this._paperforgeVersion = pyVer;
+          }
+        } catch {}
+      }
     }
     pyVer = pyVer || "\u2014";
     const runtimeOk = pyVer === "v" + pluginVer;
@@ -1085,27 +1093,7 @@ export class PaperForgeStatusView extends ItemView {
     );
     // Issue #79: check configured flag; getSecret is async so use boolean status
     const pfPlugin = (this.app as any).plugins?.plugins?.["paperforge"];
-    let tokenOk = !!pfPlugin?.settings?._paddleocr_configured;
-    if (!tokenOk) {
-      try {
-        const sysDir = plugin?.settings?.system_dir || "System";
-        const envPath = path.join(vp, sysDir, "PaperForge", ".env");
-        if (fs.existsSync(envPath)) {
-          const envContent = fs.readFileSync(envPath, "utf-8");
-          const tokenMatch = envContent.match(
-            /^PADDLEOCR_API_TOKEN\s*=\s*(.+)$/m
-          );
-          tokenOk = !!(tokenMatch && tokenMatch[1] && tokenMatch[1].trim());
-        }
-      } catch (_) {}
-    }
-    if (!tokenOk) {
-      tokenOk = !!(
-        process.env.PADDLEOCR_API_TOKEN ||
-        process.env.PADDLEOCR_API_KEY ||
-        process.env.OCR_TOKEN
-      );
-    }
+    const tokenOk = !!pfPlugin?.settings?._paddleocr_configured;
     this._renderSystemStatusRow(
       statusGrid,
       "OCR Token",
@@ -2642,13 +2630,14 @@ export class PaperForgeStatusView extends ItemView {
           const vp = (
             this.app.vault.adapter as unknown as Record<string, unknown>
           )["basePath"];
-          if (typeof vp === "string") {
-            const { path: pyExe, args = [] } = this._resolvePython();
-            spawn(pyExe, [...args, "-m", "paperforge", "doctor"], {
-              cwd: vp,
-              stdio: "inherit",
-            });
-          }
+          if (typeof vp !== "string") return;
+          const py = this._resolvePython();
+          if (!py) return;
+          const { path: pyExe, args = [] } = py;
+          spawn(pyExe, [...args, "-m", "paperforge", "doctor"], {
+            cwd: vp,
+            stdio: "inherit",
+          });
         });
         const retryBtn = actions.createEl("button", {
           cls: "pf-btn-secondary",
@@ -2794,7 +2783,13 @@ export class PaperForgeStatusView extends ItemView {
       }
     }
 
-    const { path: pythonExe, args: pyExtra = [] } = this._resolvePython();
+    const py = this._resolvePython();
+    if (!py) {
+      this._searchState = "backend-unavailable";
+      this._renderSearchState();
+      return;
+    }
+    const { path: pythonExe, args: pyExtra = [] } = py;
     const deepFlag = mode === "retrieve" ? ["--deep"] : [];
     // Issue #79: resolve memory credentials immediately before search/retrieve spawn
     const searchEnv = await buildTargetedEnv(
@@ -3149,7 +3144,14 @@ export class PaperForgeStatusView extends ItemView {
       extraArgs = [...extraArgs, "--all"];
     }
     const cmdTimeout = a.needsFilter ? 60000 : a.needsKey ? 30000 : 600000;
-    const { path: pythonExe, args: pyExtra = [] } = this._resolvePython();
+    const py = this._resolvePython();
+    if (!py) {
+      this._showMessage("[!!] Runtime not available", "error");
+      new Notice("[!!] PaperForge runtime is not ready. Check settings.", 6000);
+      card.removeClass("running");
+      return;
+    }
+    const { path: pythonExe, args: pyExtra = [] } = py;
     // Issue #79: resolve credentials for allowlisted command types immediately before launch
     const actionEnv = await buildTargetedEnv(
       { app: this.app } as unknown as PluginForSecrets,
