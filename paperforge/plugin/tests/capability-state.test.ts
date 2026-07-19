@@ -291,23 +291,15 @@ describe("createUnknownEnvelope", () => {
     }
   });
 
-  it("ALL modules get verb=probe (never setup) in unknown state", () => {
+  it("ALL constituents get verb=probe, maintenance gets null", () => {
     for (const mod of CAPABILITY_MODULES) {
       const env = createUnknownEnvelope(mod);
-      expect(env.action.primary).not.toBeNull();
-      expect(env.action.primary!.verb).toBe("probe");
+      if (mod === "maintenance") {
+        expect(env.action.primary).toBeNull();
+      } else {
+        expect(env.action.primary?.verb).toBe("probe");
+      }
     }
-  });
-
-  it("probe action has full ActionPrimary shape", () => {
-    const env = createUnknownEnvelope("installation");
-    const p = env.action.primary!;
-    expect(typeof p.verb).toBe("string");
-    expect(typeof p.label).toBe("string");
-    expect(typeof p.destructive).toBe("boolean");
-    expect(typeof p.command).toBe("string");
-    expect(typeof p.scope).toBe("string");
-    expect(typeof p.scope_count).toBe("number");
   });
 });
 

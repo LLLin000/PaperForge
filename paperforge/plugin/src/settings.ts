@@ -4,7 +4,7 @@ import * as path from "path";
 import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
 import { t, setLanguage } from "./i18n";
-import { PaperForgeSettings, ProbeEnvelope, CapabilityModule, CAPABILITY_MODULES, createUnknownEnvelope, createStaleEnvelope, createInvalidEnvelope, isValidEnvelope, isEnvelopeStale, isReadyEnvelope, probeAction, setupAction, validatePersistedEnvelopes, classifyCapabilityAction } from "./constants";
+import { PaperForgeSettings, ProbeEnvelope, CapabilityModule, CAPABILITY_MODULES, createUnknownEnvelope, createStaleEnvelope, createInvalidEnvelope, isValidEnvelope, isEnvelopeStale, isReadyEnvelope, probeAction, setupAction, validatePersistedEnvelopes, classifyCapabilityAction, type MaintenanceItem } from "./constants";
 import releaseNotesData from "./release-notes.json";
 import {
   resolvePythonExecutable,
@@ -30,6 +30,9 @@ import {
 import {
   PaperForgeOcrPrivacyModal,
   PaperForgeSetupModal,
+  PaperForgeConfirmModal,
+  PaperForgeIssueDraftModal,
+  buildRedactedDraft,
   checkOrphanState,
 } from "./views/modals";
 import {
@@ -130,6 +133,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _runtimeBusy: boolean = false;
   /** True while a library sync or memory build is in flight. */
   _libraryRunning: boolean = false;
+  _dismissedMaintenanceItems: Set<string> = new Set();
+  private _displayInProgress: boolean = false;
+  _pendingMaintenanceRefresh: boolean = false;
+  _maintenanceNoticeShown: boolean = false;
+  _detailReturn: { tab: string; selector: string } | null = null;
 
   constructor(app: App, plugin: ISettingPlugin) {
     super(app, plugin as any);
@@ -142,6 +150,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   display() {
+    this._displayInProgress = true;
     const { containerEl } = this;
     containerEl.empty();
     this._refreshPfConfig();
@@ -178,6 +187,38 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 .paperforge-migration-warning { border: 1px solid var(--text-warning); border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; background: rgba(var(--color-yellow-rgb, 255, 208, 0), 0.08); color: var(--text-warning); font-size: 13px; }
                 .paperforge-migration-warning strong { color: var(--text-warning); }
                 .paperforge-migration-warning code { background: var(--background-modifier-border); padding: 1px 4px; border-radius: 3px; }
+                .pf-maintenance-inbox { margin-bottom: 24px; container-type: inline-size; }
+                .pf-maintenance-inbox-empty { color: var(--text-muted); font-style: italic; padding: 12px 0; }
+                .pf-maintenance-inbox-summary { font-weight: 600; margin-bottom: 8px; }
+                .pf-maintenance-inbox-list { display: flex; flex-direction: column; gap: 8px; }
+                .pf-maintenance-inbox-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 12px; border: 1px solid var(--background-modifier-border); border-radius: 6px; background: var(--background-primary); flex-wrap: wrap; }
+                @container (max-width: 730px) { .pf-maintenance-inbox-item { flex-direction: column; } .pf-maintenance-inbox-item-actions { width: 100%; justify-content: flex-end; } }
+                .pf-maintenance-inbox-item--dismissed { opacity: 0.45; }
+                .pf-maintenance-inbox-item-info { flex: 1; min-width: 0; }
+                .pf-maintenance-inbox-item-module { font-weight: 600; cursor: pointer; background: none; border: none; color: var(--text-accent); padding: 0; font-size: inherit; text-align: left; }
+                .pf-maintenance-inbox-item-module:hover { text-decoration: underline; }
+                .pf-maintenance-inbox-item-reason { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+                .pf-maintenance-inbox-item-activity { font-size: 11px; color: var(--text-accent); margin-top: 2px; }
+                .pf-maintenance-inbox-item-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+                .pf-maintenance-inbox-item-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--background-modifier-border); white-space: nowrap; }
+                .pf-maintenance-inbox-item-badge--warn { background: rgba(var(--color-yellow-rgb),0.15); color: var(--text-warning); }
+                .pf-maintenance-inbox-item-badge--error { background: rgba(var(--color-red-rgb),0.12); color: var(--text-error); }
+                .pf-maintenance-inbox-item-badge--unknown { background: var(--background-modifier-border); color: var(--text-muted); }
+                .pf-maintenance-inbox-item-action { font-size: 12px; padding: 3px 10px; cursor: pointer; }
+                .pf-maintenance-inbox-item-dismiss { font-size: 11px; padding: 2px 6px; background: none; border: 1px solid var(--background-modifier-border); border-radius: 4px; cursor: pointer; color: var(--text-muted); }
+                .paperforge-confirm-effect { margin: 8px 0; font-size: 13px; }
+                .paperforge-confirm-effect-label { font-weight: 600; }
+                .paperforge-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+                .paperforge-issue-draft-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+                .paperforge-issue-draft-field { margin-bottom: 12px; }
+                .paperforge-issue-draft-field label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 13px; }
+                .paperforge-issue-draft-input { width: 100%; padding: 6px 8px; border: 1px solid var(--background-modifier-border); border-radius: 4px; font-size: 13px; }
+                .paperforge-issue-draft-textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--background-modifier-border); border-radius: 4px; font-size: 13px; resize: vertical; min-height: 120px; }
+                .paperforge-issue-draft-preview { margin: 12px 0; padding: 8px 12px; background: var(--background-secondary); border-radius: 6px; font-size: 12px; }
+                .paperforge-issue-draft-preview-label { font-weight: 600; }
+                .paperforge-issue-draft-included { color: var(--text-success); margin-bottom: 2px; }
+                .paperforge-issue-draft-redacted { color: var(--text-warning); }
+                .paperforge-issue-draft-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
             `;
       document.head.appendChild(style);
     }
@@ -216,6 +257,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         text: tab.label,
       });
       btn.addEventListener("click", () => {
+        if (tab.id === "maintenance") {
+          this._maintenanceNoticeShown = false;
+          this._focusTargetId = "#pf-maintenance-heading";
+        } else {
+          this._detailReturn = null;
+        }
         this.activeTab = tab.id;
         this.display();
       });
@@ -251,6 +298,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
          this._focusTargetId = null;
        }
      }
+    this._displayInProgress = false;
   }
   /** Render the Overview tab (header + control center + advanced settings). */
   _renderOverviewTab(containerEl: HTMLElement) {
@@ -397,9 +445,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: t("btn_back_to_overview"),
     });
     backBtn.addEventListener("click", () => {
-      this.activeTab = "overview";
+      if (this._detailReturn?.tab === "maintenance") {
+        this.activeTab = this._detailReturn.tab;
+        this._focusTargetId = this._detailReturn.selector;
+        this._detailReturn = null;
+      } else {
+        this.activeTab = "overview";
+        this._focusTargetId = "button.pf-open-module-btn[data-module=installation]";
+      }
       this._selectedDetailModule = "";
-      this._focusTargetId = "button.pf-open-module-btn[data-module=installation]";
       this.display();
     });
 
@@ -946,12 +1000,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const verb = primary.verb;
     const cmd = primary.command ?? "";
 
-    // Destructive confirmation from backend envelope
+    // Destructive confirmation -> accessible modal (Issue #80)
     if (primary.destructive && primary.confirmation_required) {
-      const prompt = primary.confirmation_prompt ?? "Proceed?";
-      if (!confirm(prompt)) return;
+      new PaperForgeConfirmModal(this.app, {
+        title: primary.label,
+        effectLabel: primary.destructive_effect ?? (primary.confirmation_prompt ?? "Proceed?"),
+      }, () => {
+        this._runAllowedDispatch(mod, primary.verb, primary.command ?? '', env);
+      }).open();
+      return;
     }
 
+    this._runAllowedDispatch(mod, primary.verb, primary.command ?? '', env);
+  }
+
+  private _runAllowedDispatch(mod: CapabilityModule, verb: string, cmd: string, env: ProbeEnvelope): void {
     // Setup/set_config verbs → exact command allowlist
     if ((verb === "setup" || verb === "set_config") && cmd === "paperforge setup") {
       if (mod === "installation" || mod === "library" || mod === "ocr") {
@@ -995,6 +1058,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         return;
       }
       if (verb === "investigate") {
+        if (cmd === "paperforge ocr issue-draft") {
+          const vp = this._getVaultBasePath();
+          const draft = buildRedactedDraft(env.reason.code, env.reason.text, env.action?.primary?.scope_count ?? 0, vp);
+          new PaperForgeIssueDraftModal(this.app, draft, "https://github.com/LLLin000/PaperForge/issues/new").open();
+          return;
+        }
         if (cmd === "paperforge ocr doctor") {
           this._callPython(["ocr", "doctor"], {
             timeout: 30000,
@@ -1233,9 +1302,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: t("btn_back_to_overview"),
     });
     backBtn.addEventListener("click", () => {
-      this.activeTab = "overview";
+      if (this._detailReturn?.tab === "maintenance") {
+        this.activeTab = this._detailReturn.tab;
+        this._focusTargetId = this._detailReturn.selector;
+        this._detailReturn = null;
+      } else {
+        this.activeTab = "overview";
+        this._focusTargetId = "button.pf-open-module-btn[data-module=" + mod + "]";
+      }
       this._selectedDetailModule = "";
-      this._focusTargetId = "button.pf-open-module-btn[data-module=" + mod + "]";
       this.display();
     });
 
@@ -2752,10 +2827,103 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
   }
 
+  _dispatchItemAction(item: MaintenanceItem): void {
+    if (!item.action) return;
+    this._pendingMaintenanceRefresh = true;
+    const env: ProbeEnvelope = {
+      schema_version: 1, module: item.module,
+      capability_state: item.capability_state, activity_state: item.activity_state,
+      activity_label: item.activity_label, activity_progress: item.activity_progress,
+      severity: item.severity,
+      reason: { code: item.reason_code, text: item.reason_text },
+      action: { primary: item.action }, notices: [],
+      updated_at: item.module + "-item", ttl_seconds: 60,
+    };
+    this._dispatchModuleAction(item.module as CapabilityModule, env);
+  }
+
+  _requestMaintenanceProjection(): void {
+    if (this._probing.has("maintenance")) { this._pendingMaintenanceRefresh = true; return; }
+    this._pendingMaintenanceRefresh = false;
+    this._probeModule("maintenance");
+  }
+
+  _renderMaintenanceInbox(containerEl: HTMLElement): void {
+    const inboxSection = containerEl.createEl("div", { cls: "pf-maintenance-inbox" });
+    const maintEnv: ProbeEnvelope | undefined = this._capabilityState?.["maintenance"];
+    if (!maintEnv) {
+      inboxSection.createEl("div", { cls: "pf-maintenance-inbox-empty", text: t("maintenance_checking") || "Checking maintenance status\u2026" });
+      this._probeModule("maintenance");
+      return;
+    }
+    if (maintEnv.activity_state === "running" && maintEnv.reason?.code === "maintenance.probing") {
+      inboxSection.createEl("div", { cls: "pf-maintenance-inbox-empty", text: t("maintenance_checking") || "Checking maintenance status\u2026" });
+      return;
+    }
+    if (maintEnv.capability_state === "ready" && maintEnv.reason?.code === "maintenance.no_items"
+        && Array.isArray(maintEnv.items) && maintEnv.items.length === 0) {
+      inboxSection.createEl("div", { cls: "pf-maintenance-inbox-empty", text: t("maintenance_all_clear") || "All modules are ready \u2014 no maintenance needed." });
+      return;
+    }
+    if (maintEnv.capability_state === "unknown") {
+      inboxSection.createEl("div", { cls: "pf-maintenance-inbox-empty", text: t("maintenance_checking") || "Checking maintenance status\u2026" });
+      if (!this._probing.has("maintenance")) this._probeModule("maintenance");
+      return;
+    }
+    if (maintEnv.capability_state !== "ready" && maintEnv.capability_state !== "needs_action") {
+      inboxSection.createEl("div", { cls: "pf-maintenance-inbox-empty", text: t("maintenance_checking") || "Checking maintenance status\u2026" });
+      this._requestMaintenanceProjection();
+      return;
+    }
+    const items = maintEnv.items;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      inboxSection.createEl("div", { cls: "pf-maintenance-inbox-empty", text: t("maintenance_checking") || "Checking maintenance status\u2026" });
+      this._requestMaintenanceProjection();
+      return;
+    }
+    if (!this._maintenanceNoticeShown) {
+      this._maintenanceNoticeShown = true;
+      new Notice(t("maintenance_n_pending").replace("{n}", String(items.length)), 5000);
+    }
+    const summaryEl = inboxSection.createEl("div", { cls: "pf-maintenance-inbox-summary" });
+    summaryEl.createEl("span", { text: t("maintenance_n_pending").replace("{n}", String(items.length)) });
+    const listEl = inboxSection.createEl("div", { cls: "pf-maintenance-inbox-list", attr: { role: "list" } });
+    for (const item of items) { this._renderMaintenanceInboxItem(listEl, item); }
+  }
+
+  _renderMaintenanceInboxItem(container: HTMLElement, item: MaintenanceItem): void {
+    const isDismissed = this._dismissedMaintenanceItems.has(item.module);
+    const sevClass = this._sevClass(item.severity);
+    const row = container.createEl("div", { cls: "pf-maintenance-inbox-item" + (isDismissed ? " pf-maintenance-inbox-item--dismissed" : ""), attr: { role: "listitem", "data-module": item.module } });
+    const infoCol = row.createEl("div", { cls: "pf-maintenance-inbox-item-info" });
+    const modLabel = t("cc_module_" + item.module) || item.module;
+    const navBtn = infoCol.createEl("button", { cls: "pf-maintenance-inbox-item-module", text: modLabel, attr: { "data-module": item.module } });
+    navBtn.addEventListener("click", () => {
+      this._detailReturn = { tab: "maintenance", selector: 'button.pf-maintenance-inbox-item-module[data-module="' + item.module + '"]' };
+      this._handleCardNavigation(item.module);
+    });
+    const reasonL10n = this._localizeReason(item.reason_code, item.module);
+    infoCol.createEl("div", { cls: "pf-maintenance-inbox-item-reason", text: reasonL10n ?? item.reason_text });
+    if (item.activity_state === "running" && item.activity_label) {
+      infoCol.createEl("div", { cls: "pf-maintenance-inbox-item-activity", text: item.activity_label });
+    }
+    const actionCol = row.createEl("div", { cls: "pf-maintenance-inbox-item-actions" });
+    actionCol.createEl("span", { cls: "pf-maintenance-inbox-item-badge pf-maintenance-inbox-item-badge--" + sevClass, text: t("cc_badge_" + (sevClass === "ok" ? "ok" : "attention")) });
+    if (item.action) {
+      const actionBtn = actionCol.createEl("button", { cls: "pf-maintenance-inbox-item-action", text: item.action.label });
+      actionBtn.addEventListener("click", () => { this._dispatchItemAction(item); });
+    }
+    const dismissBtn = actionCol.createEl("button", { cls: "pf-maintenance-inbox-item-dismiss", text: isDismissed ? (t("maintenance_undismiss") || "Show") : (t("maintenance_dismiss") || "Dismiss") });
+    dismissBtn.addEventListener("click", () => { if (isDismissed) this._dismissedMaintenanceItems.delete(item.module); else this._dismissedMaintenanceItems.add(item.module); this.display(); });
+  }
+
   _renderMaintenanceTab(containerEl: HTMLElement) {
     containerEl.createEl("h2", {
       text: t("tab_maintenance") || "维护",
+      attr: { id: "pf-maintenance-heading", tabindex: "-1" },
     });
+    this._renderMaintenanceInbox(containerEl);
+    containerEl.createEl("h3", { text: t("maintenance_ocr_section") || "OCR Maintenance" });
 
     // vault path — DataAdapter.basePath is undocumented but stable
     const adapter = this.app.vault
@@ -3431,7 +3599,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       activity_progress: null,
       severity: "unknown",
       reason: { code: `${mod}.probing`, text: `Checking ${mod} status...` },
-      action: { primary: probeAction(mod) },
+      action: { primary: mod === "maintenance" ? null : probeAction(mod) },
       notices: current?.notices ?? [],
       updated_at: new Date().toISOString(),
       ttl_seconds: current?.ttl_seconds ?? 0,
@@ -3517,12 +3685,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const prev = this._capabilityState[envelope.module];
     this._capabilityState[envelope.module] = envelope;
     this._persistCapabilityState();
-    // Show notice when probe completes (transition from running to idle)
     if (prev?.activity_state === "running" && envelope.activity_state !== "running") {
       new Notice(t("cc_notice_refreshed"), 3000);
+      if (envelope.module !== "maintenance") {
+        if (this._pendingMaintenanceRefresh || this.activeTab === "maintenance") {
+          this._requestMaintenanceProjection();
+        }
+      } else if (this._pendingMaintenanceRefresh) {
+        this._pendingMaintenanceRefresh = false;
+        this._probeModule("maintenance");
+      }
     }
-    // Re-render the current tab to reflect changes
-    this.display();
+    if (!this._displayInProgress) { this.display(); }
   }
 
   /** Derive badge i18n key from envelope severity + module. */
@@ -3561,7 +3735,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Modules with real Python probe support. */
-  private static _REAL_PROBE = new Set(["installation", "library", "ocr", "memory", "help"]);
+  private static _REAL_PROBE = new Set(["installation", "library", "ocr", "memory", "help", "maintenance"]);
   /** Modules that have a navigation entry in the overview card grid. */
   private static _NAVIGABLE = new Set(["installation", "library", "ocr", "memory", "maintenance", "help"]);
 
@@ -3716,7 +3890,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     } else if (mod === "maintenance") {
       this.activeTab = "maintenance";
       this._selectedDetailModule = "";
-      this._focusTargetId = null;
+      this._focusTargetId = "#pf-maintenance-heading";
+    this._maintenanceNoticeShown = false;
     }
     this.display();
   }

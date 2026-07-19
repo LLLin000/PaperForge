@@ -1,5 +1,5 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; #75 setup, #76 capability, #77 Managed Runtime, #78 Library/OCR/Memory tracers, and #79 SecretStorage credential migration are implemented; #80 is next.
+> Status: OCR-v2 is stable; #75 setup, #76 capability, #77 Managed Runtime, #78 Library/OCR/Memory tracers, and #79 SecretStorage credential migration are implemented; #80 replaced Library/OCR/Memory/Maintenance placeholders; #81 is next.
 > Last updated: 2026-07-18
 
 ## Current checkpoint
@@ -21,7 +21,7 @@
 - **[#73](https://github.com/LLLin000/PaperForge/issues/73) resolved**: locked migration, security, platform, accessibility, and release-gate acceptance contract after five-domain audit and independent review.
 - **[#74](https://github.com/LLLin000/PaperForge/issues/74) published**: split into eight agent-ready issues (#75–#82) with native dependencies.
 - **[#75](https://github.com/LLLin000/PaperForge/issues/75) implemented and reviewed**: bare/headless/modular setup share `SetupPlan`; schema-v2 `vault_config` wins; v1 path keys are warned read fallback; all configured directories are forwarded; required failures return non-zero.
-- **[#76](https://github.com/LLLin000/PaperForge/issues/76) implemented**: schema-v1 Installation/Help probes flow through the six-module Overview; persisted malformed/stale envelopes fail closed; backend set_config/update actions route to setup; unimplemented modules remain explicit placeholders.
+- **[#76](https://github.com/LLLin000/PaperForge/issues/76) implemented**: schema-v1 Installation/Help probes flow through the six-module Overview; persisted malformed/stale envelopes fail closed; backend set_config/update actions route to setup; Library/OCR/Memory/Maintenance are now real backend-derived surfaces (#78, #80).
 - **[#79](https://github.com/LLLin000/PaperForge/issues/79) implemented**: Obsidian SecretStorage credential migration with copy-readback-verify-delete, idempotent re-run, crash-safe plaintext preservation, visible non-secret warnings, reference-only settings persistence, per-command credential allowlisting (OCR → PADDLEOCR_*, Memory → VECTOR_DB_*), non-target env stripping, minAppVersion 1.11.4. 44/44 focused SecretStorage production-path tests + 333/333 full plugin tests pass; typecheck/build clean; production bundle 232.8kb. Real Obsidian smoke passed at 730/768 (migration/restart/conflict warning/exact OCR-Memory handoff/non-target isolation/redaction/no-overflow).
 - **Wayfinder navigation refinement approved**: preserve Overview and stage `概览 / 模块详情 / 维护 / 帮助` across #77/#78/#80. Installation owns Agent platform/Skills under Agent 集成; no empty placeholder detail pages.
 - **[#77](https://github.com/LLLin000/PaperForge/issues/77) implemented**: immutable runtime slots, synchronous fail-closed `current`, probed `status`, install/repair/update/rollback/cancel/retention, managed-first dispatch, Release-N fallback, four-destination navigation, Installation detail, Agent integration, Help focus restoration.
@@ -39,8 +39,9 @@
 - Issue #76 verification: **21/21 backend probe tests and 169/169 plugin tests passed**; TypeScript check and production build passed; live Obsidian stale-cache/action-label smoke test and independent review passed.
 - Issue #77 verification: **192/192 focused + 289/289 full tests passed**; typecheck/build clean; merged to `master` in `173a4e8..4ef9e98`.
 - Issue #78 verification: **65/65 backend tests and 178/178 focused plugin tests, 324/324 full plugin tests passed** across 11 files; typecheck clean; production build clean; fail-closed recognizable config for Library/OCR; red rebuild_result stays non-destructive rebuild; queued OCR progress starts at 0; failed/null Library sync exit outcome is forwarded into fresh Python probe and remains sync actionable.
-- Issue #79: **44/44 focused SecretStorage production-path tests**, **333/333 full plugin suite** passed; TypeScript check and production build passed; production bundle 232.8kb.
-- Real Obsidian smoke: migration, restart, conflict warning, exact OCR-Memory credential handoff, non-target env isolation, redaction, and no-overflow all verified at 730/768.
+- Issue #79 verified: **44/44 focused SecretStorage production-path tests**, **333/333 full plugin suite** passed; typecheck/build clean; production bundle 232.8kb.
+- Issue #80 verified: **71/71 backend tests** and **384/385 plugin tests** (1 pre-existing help stale/invalid baseline) passed; typecheck/build clean; 264.5KB production bundle. Real Obsidian smoke at 730/768: focus, keyboard, exact-effect confirm, issue-draft privacy, inert cleanup, no overflow all verified.
+- Real Obsidian smoke (cross-issue): migration, restart, conflict warning, exact OCR-Memory credential handoff, non-target env isolation, redaction, and no-overflow all verified at 730/768.
 - No production plugin code was modified during prototype work.
 - The repository-wide Python suite remains blocked during collection by the pre-existing `test_pr9a_resume_rebuild.py` import of removed `_assert_collections_healthy`.
 ## Frontier
@@ -52,8 +53,10 @@
 - [x] Implement [#77](https://github.com/LLLin000/PaperForge/issues/77): Managed Runtime lifecycle plus the approved Installation-detail navigation shell.
 - [x] Implement [#78](https://github.com/LLLin000/PaperForge/issues/78): Library, OCR, and Memory capability tracers end to end — completed at `69a62239`.
 - [x] Implement [#79](https://github.com/LLLin000/PaperForge/issues/79): SecretStorage credential migration (44/44 focused, 333/333 full, smoke passed).
+- [x] Implement [#80](https://github.com/LLLin000/PaperForge/issues/80): actionable Maintenance inbox with privacy-safe OCR issue drafts (77/77 backend, 381/382 plugin, smoke passed).
+- [ ] Implement [#81](https://github.com/LLLin000/PaperForge/issues/81): Release N+1 owner cutover and shim deletion.
 ## Deferred
 - Vector rebuild UX (PRD Slice 1): deferred.
 - Memory/global maintenance cleanup (PRD Slice 3): deferred.
 - OCR ETA and real-time per-row mutation: out of scope for the completed OCR slice.
-- Release N+1/N+2 owner cutover and shim deletion remain blocked by their native issue dependencies (#81/#82).
+- Release N+1 owner cutover (#81) is next; #82 follows.

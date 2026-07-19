@@ -8,7 +8,8 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { JSDOM } from "jsdom";
 
 // ── Hoisted mutable state ──
-const { noticeCalls, spawnedProcesses, execFileCalls } = vi.hoisted(() => {
+const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens } = vi.hoisted(() => {
+  const modalOpens: Array<{ kind: string; title: string; effectLabel: string; onConfirm?: () => void; draft: unknown }> = [];
   const noticeCalls: string[] = [];
   const spawnedProcesses: Array<{
     args: string[];
@@ -17,7 +18,7 @@ const { noticeCalls, spawnedProcesses, execFileCalls } = vi.hoisted(() => {
     onClose?: (code: number | null) => void;
   }> = [];
   const execFileCalls: Array<{ args: string[]; cb?: (err: Error | null, stdout: string, stderr: string) => void }> = [];
-  return { noticeCalls, spawnedProcesses, execFileCalls };
+  return { noticeCalls, spawnedProcesses, execFileCalls, modalOpens };
 });
 
 // ── Mocks ──
@@ -77,7 +78,18 @@ vi.mock("obsidian", () => {
       app: Record<string, unknown>;
       contentEl: HTMLDivElement;
       constructor(app: Record<string, unknown>) { this.app = app; this.contentEl = document.createElement("div"); }
-      open() {}
+      open() {
+        const self = this as Record<string, unknown>;
+        const kind = this.constructor.name;
+        const cfg = self["_config"];
+        const title = cfg && typeof cfg === "object" ? String(Reflect.get(cfg, "title") ?? "") : "";
+        const effectLabel = cfg && typeof cfg === "object" ? String(Reflect.get(cfg, "effectLabel") ?? "") : "";
+        const cfgDraft = cfg && typeof cfg === "object" ? Reflect.get(cfg, "_draft") : undefined;
+        const draft = cfgDraft ?? self["_draft"] ?? null;
+        const rawOnConfirm = self["_onConfirm"];
+        const onConfirm = typeof rawOnConfirm === "function" ? (rawOnConfirm as () => void) : undefined;
+        modalOpens.push({ kind, title, effectLabel, onConfirm, draft });
+      }
       close() {}
     },
     Notice: class {
@@ -444,8 +456,15 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
     const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "redo", label: "Redo", command: "paperforge ocr redo", destructive: true, destructive_scope: "selection", destructive_effect: "Deletes.", confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } } } as any;
-    (globalThis as any).confirm = () => true;
+    modalOpens.length = 0;
+    spawnedProcesses.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
+    // Modal opens, no process spawned yet
+    expect(modalOpens.length).toBe(1);
+    expect(modalOpens[0].effectLabel).toBe("Deletes.");
+    expect(spawnedProcesses.length).toBe(0);
+    // Simulate confirm callback
+    if (modalOpens[0].onConfirm) modalOpens[0].onConfirm();
     expect(spawnedProcesses[spawnedProcesses.length - 1].args).toContain("redo");
   });
 
@@ -467,13 +486,32 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(es?.args).toContain("--force");
   });
 
-  it("destructive confirm called before dispatch", () => {
+  it("destructive opens modal with correct effect label", () => {
     const tab = makeTab();
-    let called = false;
-    (globalThis as any).confirm = (msg: string) => { called = true; expect(msg).toContain("Proceed"); return false; };
     const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "redo", label: "Redo", command: "paperforge ocr redo", destructive: true, destructive_scope: "selection", destructive_effect: "Deletes.", confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } } } as any;
+    modalOpens.length = 0;
+    spawnedProcesses.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
-    expect(called).toBe(true);
+    expect(modalOpens.length).toBe(1);
+    expect(modalOpens[0].title).toBe("Redo");
+    expect(modalOpens[0].effectLabel).toBe("Deletes.");
+    expect(spawnedProcesses.length).toBe(0);
+  });
+  it("investigate+issue-draft opens PaperForgeIssueDraftModal with scope_count", () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "investigate", label: "Report OCR issue", command: "paperforge ocr issue-draft", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "all", scope_count: 5 } }, reason: { code: "ocr.quality_unacceptable", text: "OCR output unacceptable for 5 papers" } } as any;
+    modalOpens.length = 0;
+    (tab as any)._dispatchModuleAction("ocr", env);
+    const draftOpens = modalOpens.filter(o => o.kind === "PaperForgeIssueDraftModal");
+    expect(draftOpens.length).toBe(1);
+    const draft = draftOpens[0].draft;
+    expect(draft && typeof draft === "object" && "labels" in draft).toBe(true);
+    if (draft && typeof draft === "object" && "labels" in draft) {
+      expect(Reflect.get(draft, "labels")).toEqual(["ocr", "quality", "auto-generated"]);
+      expect(String(Reflect.get(draft, "title") ?? "")).toContain("5");
+      expect(String(Reflect.get(draft, "body") ?? "")).toContain("5");
+    }
   });
 
   it("setup verb with wrong command falls through to Notice", () => {

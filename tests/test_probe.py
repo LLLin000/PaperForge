@@ -19,6 +19,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from paperforge.commands.probe import MAINTENANCE_CONSTITUENT_MODULES
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -39,7 +40,7 @@ REQUIRED_ACTION_PRIMARY_FIELDS = {
 }
 
 VALID_STATES = {"unknown", "unavailable", "missing_input", "needs_action", "limited", "ready"}
-VALID_SEVERITIES = {"ok", "warning", "error", "info"}
+VALID_SEVERITIES = {"ok", "warning", "error", "unknown"}
 
 
 def _run_probe(module: str, vault: Path, extra_args: list[str] | None = None, env: dict[str, str] | None = None) -> dict:
@@ -324,7 +325,7 @@ class TestProbeCliArgs:
         """Unknown module name is rejected by argparse."""
         result = subprocess.run(
             [sys.executable, "-m", "paperforge", "--vault", str(tmp_path),
-             "probe", "maintenance", "--json"],
+             "probe", "unknown", "--json"],
             capture_output=True, text=True, timeout=15,
         )
         assert result.returncode != 0
@@ -931,3 +932,290 @@ class TestOcrActivityProgress:
         assert data["activity_progress"]["current"] == 3  # 3 completed rows
         assert data["activity_progress"]["total"] == 5
         assert "3/5" in data["activity_label"]
+
+
+class TestOcrQualityUnacceptable:
+    """Dead-end red rows with no retry/rebuild path → quality_unacceptable."""
+
+    def test_dead_end_red_no_redo(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """health=red, display_action=none, can_redo=False → investigate."""
+        (tmp_path / "paperforge.json").write_text(json.dumps({"system_dir": "99_System"}), encoding="utf-8")
+        class DeadRow:
+            status = "done"
+            health = "red"
+            display_action = "none"
+            can_redo = False
+        monkeypatch.setattr("paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda v: [DeadRow()])
+        from paperforge.commands.probe import probe_ocr
+        data = probe_ocr(tmp_path)
+        assert data["reason"]["code"] == "ocr.quality_unacceptable"
+        assert data["capability_state"] == "needs_action"
+        assert data["severity"] == "warning"
+        assert data["action"]["primary"]["verb"] == "investigate"
+        assert data["action"]["primary"]["label"] == "Report OCR issue"
+        assert data["action"]["primary"]["command"] == "paperforge ocr issue-draft"
+        assert data["action"]["primary"]["destructive"] == False
+
+    def test_dead_end_does_not_override_redo(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """redo still takes priority over dead-end."""
+        (tmp_path / "paperforge.json").write_text(json.dumps({"system_dir": "99_System"}), encoding="utf-8")
+        class RedoRow:
+            status = "failed"
+            health = "red"
+            display_action = "retry_ocr"
+            can_redo = True
+        monkeypatch.setattr("paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda v: [RedoRow()])
+        from paperforge.commands.probe import probe_ocr
+        data = probe_ocr(tmp_path)
+        assert data["action"]["primary"]["verb"] == "redo"
+
+
+    def test_quality_unacceptable_scope_count_matches_dead_rows(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """Multiple dead rows -> scope_count matches dead_count."""
+        (tmp_path / 'paperforge.json').write_text(json.dumps({'system_dir': '99_System'}), encoding='utf-8')
+        class DeadRow1:
+            status = 'done'; health = 'red'; display_action = 'none'; can_redo = False
+        class DeadRow2:
+            status = 'done'; health = 'red'; display_action = 'none'; can_redo = False
+        monkeypatch.setattr('paperforge.worker.ocr_maintenance.collect_maintenance_rows',
+            lambda v: [DeadRow1(), DeadRow2()])
+        from paperforge.commands.probe import probe_ocr
+        data = probe_ocr(tmp_path)
+        assert data['action']['primary']['scope'] == 'selection'
+        assert data['action']['primary']['scope_count'] == 2
+
+# ---------------------------------------------------------------------------
+# Maintenance projection (Issue #80)
+# ---------------------------------------------------------------------------
+
+def _ready_env(mod: str) -> dict:
+    from paperforge.commands.probe import build_envelope, TTL_MAINTENANCE
+    return build_envelope(
+        module=mod, capability_state="ready", severity="ok",
+        reason_code=f"{mod}.ready", reason_text=f"{mod} ready",
+        action_primary=None, ttl_seconds=TTL_MAINTENANCE,
+    )
+
+def _needs_action_env(mod: str, verb: str = "rebuild_derived", label: str = "Rebuild") -> dict:
+    from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE
+    return build_envelope(
+        module=mod, capability_state="needs_action", severity="warning",
+        reason_code=f"{mod}.artifacts_stale", reason_text=f"{mod} needs action",
+        action_primary=build_action_primary(verb=verb, label=label, command=f"paperforge {mod} {verb}"),
+        ttl_seconds=TTL_MAINTENANCE,
+    )
+
+def _error_env(mod: str, code: str = "unavailable") -> dict:
+    from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE
+    return build_envelope(
+        module=mod, capability_state="unavailable", severity="error",
+        reason_code=f"{mod}.{code}", reason_text=f"{mod} broken",
+        action_primary=build_action_primary(verb="restore_backup", label="Restore", command=f"paperforge {mod} restore-backup"),
+        ttl_seconds=TTL_MAINTENANCE,
+    )
+
+def _running_env(mod: str, state: str = "ready") -> dict:
+    from paperforge.commands.probe import build_envelope, TTL_MAINTENANCE
+    return build_envelope(
+        module=mod, capability_state=state, severity="ok" if state == "ready" else "warning",
+        reason_code=f"{mod}.running", reason_text=f"{mod} in progress",
+        activity_state="running", activity_label=f"Processing {mod}...",
+        activity_progress={"current": 3, "total": 10}, action_primary=None,
+        ttl_seconds=TTL_MAINTENANCE,
+    )
+
+def _unknown_env(mod: str) -> dict:
+    from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE
+    return build_envelope(
+        module=mod, capability_state="unknown", severity="unknown",
+        reason_code=f"{mod}.probe_failed", reason_text=f"{mod} probe failed",
+        action_primary=build_action_primary(verb="probe", label="Re-check", command=f"probe {mod}"),
+        ttl_seconds=TTL_MAINTENANCE,
+    )
+
+MAINT_MODS = ["installation", "library", "ocr", "memory", "help"]
+
+
+class TestMaintenanceProjection:
+    """Maintenance is a derived projection — no independent probe."""
+
+    # ── All-ready ──
+
+    def test_all_ready_empty_items(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """All ready + idle → explicit items: [], capability_state=ready, severity=ok."""
+        for mod in MAINT_MODS:
+            monkeypatch.setattr(
+                f"paperforge.commands.probe.probe_{mod}",
+                lambda v, m=mod: _ready_env(m),
+            )
+        from paperforge.commands.probe import probe_maintenance
+        data = probe_maintenance(Path("."))
+        assert data["capability_state"] == "ready"
+        assert data["severity"] == "ok"
+        assert data["action"]["primary"] is None
+        assert data["items"] == []
+
+    # ── Ready + running included ──
+
+    def test_ready_running_included(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Ready BUT running → included in items."""
+        for mod in MAINT_MODS:
+            if mod == "ocr":
+                monkeypatch.setattr(
+                    f"paperforge.commands.probe.probe_{mod}",
+                    lambda v: _running_env("ocr", "ready"),
+                )
+            else:
+                monkeypatch.setattr(
+                    f"paperforge.commands.probe.probe_{mod}",
+                    lambda v, m=mod: _ready_env(m),
+                )
+        from paperforge.commands.probe import probe_maintenance
+        data = probe_maintenance(Path("."))
+        assert data["capability_state"] == "needs_action"
+        assert len(data["items"]) == 1
+        assert data["items"][0]["module"] == "ocr"
+        assert data["items"][0]["activity_state"] == "running"
+        assert data["items"][0]["capability_state"] == "ready"
+
+    # ── Stale/unknown ──
+
+    def test_unknown_included(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Unknown probe results → included with severity=unknown."""
+        for mod in MAINT_MODS:
+            monkeypatch.setattr(
+                f"paperforge.commands.probe.probe_{mod}",
+                lambda v, m=mod: _unknown_env(m),
+            )
+        from paperforge.commands.probe import probe_maintenance
+        data = probe_maintenance(Path("."))
+        assert data["capability_state"] == "needs_action"
+        assert len(data["items"]) == len(MAINT_MODS)
+        for item in data["items"]:
+            assert item["severity"] == "unknown"
+
+    # ── Failure/corrupt (error) ──
+
+    def test_error_constituent_sets_worst(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When one module is unavailable, worst severity = error."""
+        for mod in MAINT_MODS:
+            if mod == "memory":
+                monkeypatch.setattr(
+                    f"paperforge.commands.probe.probe_{mod}",
+                    lambda v: _error_env("memory", "db_corrupt"),
+                )
+            else:
+                monkeypatch.setattr(
+                    f"paperforge.commands.probe.probe_{mod}",
+                    lambda v, m=mod: _ready_env(m),
+                )
+        from paperforge.commands.probe import probe_maintenance
+        data = probe_maintenance(Path("."))
+        assert data["severity"] == "error"
+        assert data["capability_state"] == "needs_action"
+
+    # ── Worst severity: error > warning > unknown > ok ──
+
+    def test_worst_severity_error_beats_warning(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """One error + many warnings → worst = error."""
+        for mod in MAINT_MODS:
+            if mod == "installation":
+                monkeypatch.setattr(
+                    f"paperforge.commands.probe.probe_{mod}",
+                    lambda v: _error_env("installation", "runtime_not_found"),
+                )
+            else:
+                monkeypatch.setattr(
+                    f"paperforge.commands.probe.probe_{mod}",
+                    lambda v, m=mod: _needs_action_env(m),
+                )
+        from paperforge.commands.probe import probe_maintenance
+        data = probe_maintenance(Path("."))
+        assert data["severity"] == "error"
+
+    # ── Exact item action ──
+
+    def test_item_action_fidelity(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Each item.action matches the constituent probe's action.primary exactly."""
+        for mod in MAINT_MODS:
+            monkeypatch.setattr(
+                f"paperforge.commands.probe.probe_{mod}",
+                lambda v, m=mod: _needs_action_env(m, verb=f"action_{m}", label=f"Fix {m}"),
+            )
+        from paperforge.commands.probe import probe_maintenance
+        data = probe_maintenance(Path("."))
+        for item in data["items"]:
+            expected_verb = f"action_{item['module']}"
+            assert item["action"] is not None
+            assert item["action"]["verb"] == expected_verb
+            assert item["action"]["label"] == f"Fix {item['module']}"
+
+    # ── No maintenance action ──
+
+    def test_no_maintenance_action(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Maintenance itself never exposes a primary action, even with items."""
+        for mod in MAINT_MODS:
+            monkeypatch.setattr(
+                f"paperforge.commands.probe.probe_{mod}",
+                lambda v, m=mod: _needs_action_env(m),
+            )
+        from paperforge.commands.probe import probe_maintenance
+        data = probe_maintenance(Path("."))
+        assert data["action"]["primary"] is None
+
+    # ── _worst_severity ordinal ──
+
+    def test_worst_severity_ordinal(self) -> None:
+        """_worst_severity picks correct ordinal worst."""
+        from paperforge.commands.probe import _worst_severity
+        assert _worst_severity(['ok', 'ok']) == 'ok'
+        assert _worst_severity(['ok', 'warning']) == 'warning'
+        assert _worst_severity(['warning', 'error', 'ok']) == 'error'
+        assert _worst_severity(['unknown', 'ok']) == 'unknown'
+        assert _worst_severity([]) == 'ok'
+
+    # ── CLI acceptance ──
+
+    def test_cli_accepts_maintenance(self, tmp_path: Path) -> None:
+        """CLI accepts maintenance as a valid probe module."""
+        (tmp_path / 'paperforge.json').write_text(
+            json.dumps({'system_dir': '99_System'}), encoding='utf-8',
+        )
+        result = subprocess.run(
+            [sys.executable, '-m', 'paperforge', '--vault', str(tmp_path),
+             'probe', 'maintenance', '--json'],
+            capture_output=True, text=True, timeout=30,
+        )
+        assert result.returncode == 0, f'maintenance: {result.stderr[:200]}'
+        data = json.loads(result.stdout)
+
+    def test_quality_unacceptable_action_copied_exact(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Maintenance copies the exact quality_unacceptable investigate action."""
+        for mod in MAINT_MODS:
+            if mod == "ocr":
+                from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE
+                env = build_envelope(
+                    module="ocr", capability_state="needs_action", severity="warning",
+                    reason_code="ocr.quality_unacceptable",
+                    reason_text="OCR output unacceptable for 3 papers",
+                    action_primary=build_action_primary(
+                        verb="investigate", label="Report OCR issue",
+                        command="paperforge ocr issue-draft", destructive=False),
+                    ttl_seconds=TTL_MAINTENANCE,
+                )
+                monkeypatch.setattr(
+                    f"paperforge.commands.probe.probe_{mod}", lambda v: env)
+            else:
+                monkeypatch.setattr(
+                    f"paperforge.commands.probe.probe_{mod}",
+                    lambda v, m=mod: _ready_env(m))
+        from paperforge.commands.probe import probe_maintenance
+        data = probe_maintenance(Path("."))
+        ocr_item = next(it for it in data["items"] if it["module"] == "ocr")
+        assert ocr_item["action"]["verb"] == "investigate"
+        assert ocr_item["action"]["label"] == "Report OCR issue"
+        assert ocr_item["action"]["command"] == "paperforge ocr issue-draft"
+        assert ocr_item["reason_code"] == "ocr.quality_unacceptable"
+        assert data['module'] == 'maintenance'

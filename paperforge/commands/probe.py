@@ -24,13 +24,15 @@ TTL_LIBRARY = 300
 TTL_OCR = 60
 TTL_MEMORY = 300
 TTL_HELP = 3600
+TTL_MAINTENANCE = 60
 MIN_PYTHON = (3, 11)
 LEGACY_PATH_KEYS = frozenset({
     "system_dir", "resources_dir", "literature_dir",
     "base_dir", "control_dir", "skill_dir", "command_dir",
 })
 
-SUPPORTED_MODULES = frozenset({"installation", "library", "ocr", "memory", "help"})
+SUPPORTED_MODULES = frozenset({"installation", "library", "ocr", "memory", "help", "maintenance"})
+MAINTENANCE_CONSTITUENT_MODULES = ("installation", "library", "ocr", "memory", "help")
 
 
 # ---------------------------------------------------------------------------
@@ -413,6 +415,7 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         (r.status == "failed" or r.health == "red" or
          getattr(r, 'display_action', '') in ('retry_ocr', 'upgrade_legacy'))
         and getattr(r, 'display_action', '') != 'rebuild_result'
+        and (getattr(r, 'can_redo', False) or getattr(r, 'display_action', '') in ('retry_ocr', 'upgrade_legacy'))
         for r in rows
     )
     has_redo = any(
@@ -517,7 +520,30 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
             notices=notices, ttl_seconds=TTL_OCR,
         )
 
-    # Provider unreachable → limited + investigate (last resort before ready)
+    # Dead-end red rows with no retry/rebuild path → quality_unacceptable
+    has_dead_end = any(
+        (r.status == "failed" or r.health == "red")
+        and getattr(r, 'display_action', 'none') in ('none', None, '')
+        and not getattr(r, 'can_redo', False)
+        for r in rows
+    )
+    if has_dead_end:
+        dead_count = sum(1 for r in rows if (r.status == "failed" or r.health == "red")
+                         and getattr(r, 'display_action', 'none') in ('none', None, '')
+                         and not getattr(r, 'can_redo', False))
+        return build_envelope(
+            module="ocr", capability_state="needs_action", severity="warning",
+            reason_code="ocr.quality_unacceptable",
+            reason_text=f"OCR output is unacceptable for {dead_count} paper(s) — no automated repair available",
+            action_primary=build_action_primary(
+                verb="investigate", label="Report OCR issue",
+                command="paperforge ocr issue-draft",
+                destructive=False, scope="selection", scope_count=dead_count,
+            ),
+            activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+            notices=notices, ttl_seconds=TTL_OCR,
+        )
+
     if not provider_reachable:
         return build_envelope(
             module="ocr", capability_state="limited", severity="warning",
@@ -659,6 +685,83 @@ def probe_memory(vault: Path) -> dict[str, Any]:
         notices=notices, action_primary=None, ttl_seconds=TTL_MEMORY,
     )
 
+# ---------------------------------------------------------------------------
+# Maintenance projection (Issue #80)
+# ---------------------------------------------------------------------------
+
+def _worst_severity(severities: list[str]) -> str:
+    """Return the worst severity from a list. Ordinal: ok=0, unknown=1, warning=2, error=3."""
+    order = {"ok": 0, "unknown": 1, "warning": 2, "error": 3}
+    return max(severities, key=lambda s: order.get(s, 0), default="ok")
+
+
+def probe_maintenance(vault: Path) -> dict[str, Any]:
+    """Derive a Maintenance projection from the five constituent modules.
+
+    Maintenance is not an independent probe — it aggregates non-ready states
+    from Installation, Library, OCR, Memory, and Help.  Ready modules are
+    excluded UNLESS they are currently running.  All-ready produces an
+    explicitly empty items list with capability_state \"ready\".
+    """
+    probes = {
+        "installation": probe_installation,
+        "library": probe_library,
+        "ocr": probe_ocr,
+        "memory": probe_memory,
+        "help": probe_help,
+    }
+
+    items: list[dict[str, Any]] = []
+    for mod_name, probe_fn in probes.items():
+        try:
+            env = probe_fn(vault)
+        except Exception:
+            env = build_envelope(
+                module=mod_name, capability_state="unknown", severity="unknown",
+                reason_code=f"{mod_name}.probe_failed",
+                reason_text=f"{mod_name} probe failed — try again",
+                action_primary=build_action_primary(
+                    verb="probe", label="Re-check", command=f"probe {mod_name}"),
+                ttl_seconds=60,
+            )
+        # Ready AND idle → skip. Ready BUT running → still include.
+        if env["capability_state"] == "ready" and env["activity_state"] != "running":
+            continue
+        items.append({
+            "module": mod_name,
+            "capability_state": env["capability_state"],
+            "severity": env["severity"],
+            "activity_state": env["activity_state"],
+            "activity_label": env.get("activity_label"),
+            "activity_progress": env.get("activity_progress"),
+            "reason_code": env["reason"]["code"],
+            "reason_text": env["reason"]["text"],
+            "action": env["action"]["primary"],
+        })
+
+    if len(items) == 0:
+        envelope = build_envelope(
+            module="maintenance", capability_state="ready", severity="ok",
+            reason_code="maintenance.no_items",
+            reason_text="All modules are ready — no maintenance needed",
+            action_primary=None, ttl_seconds=TTL_MAINTENANCE,
+        )
+        envelope["items"] = []
+        return envelope
+
+    severities = [item["severity"] for item in items]
+    worst = _worst_severity(severities)
+    item_count = len(items)
+
+    envelope = build_envelope(
+        module="maintenance", capability_state="needs_action", severity=worst,
+        reason_code="maintenance.items_present",
+        reason_text=f"{item_count} module(s) need attention",
+        action_primary=None, ttl_seconds=TTL_MAINTENANCE,
+    )
+    envelope["items"] = items
+    return envelope
+
 
 # ---------------------------------------------------------------------------
 # CLI dispatch
@@ -679,6 +782,8 @@ def run(args: Any) -> int:
         envelope = probe_memory(vault)
     elif module == "help":
         envelope = probe_help(vault)
+    elif module == "maintenance":
+        envelope = probe_maintenance(vault)
     else:
         print(f"Error: unsupported probe module '{module}'", file=sys.stderr)
         return 1

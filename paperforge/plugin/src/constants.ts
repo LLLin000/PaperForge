@@ -203,6 +203,18 @@ export interface ProbeActivityProgress {
   total: number;
 }
 
+export interface MaintenanceItem {
+  module: string;
+  capability_state: CapabilityState;
+  severity: Severity;
+  activity_state: ActivityState;
+  activity_label: string | null;
+  activity_progress: ProbeActivityProgress | null;
+  reason_code: string;
+  reason_text: string;
+  action: ActionPrimary | null;
+}
+
 export interface ProbeEnvelope {
   schema_version: number;
   module: string;
@@ -216,6 +228,7 @@ export interface ProbeEnvelope {
   notices: ProbeNotice[];
   updated_at: string;
   ttl_seconds: number;
+  items?: MaintenanceItem[];
 }
 
 const VALID_CAPABILITY_STATES: readonly string[] = ["unknown", "unavailable", "missing_input", "needs_action", "limited", "ready"];
@@ -307,6 +320,30 @@ export function isValidEnvelope(raw: unknown, expectedModule?: string): raw is P
   if (typeof e.updated_at !== "string" || !e.updated_at) return false;
   if (typeof e.ttl_seconds !== "number") return false;
 
+  // Maintenance items validation (Issue #80) — strict per-field
+  if (e.module === "maintenance") {
+    if (a.primary !== null) return false;
+    if (!Array.isArray(e.items)) return false;
+    for (const item of e.items) {
+      if (!item || typeof item !== "object") return false;
+      const it = item as Record<string, unknown>;
+      const validMods = ["installation", "library", "ocr", "memory", "help"];
+      if (typeof it.module !== "string" || !validMods.includes(it.module)) return false;
+      if (typeof it.capability_state !== "string" || !VALID_CAPABILITY_STATES.includes(it.capability_state)) return false;
+      if (typeof it.severity !== "string" || !VALID_SEVERITIES.includes(it.severity)) return false;
+      if (typeof it.activity_state !== "string" || !VALID_ACTIVITY_STATES.includes(it.activity_state)) return false;
+      if (it.activity_label !== null && typeof it.activity_label !== "string") return false;
+      if (it.activity_progress !== null) {
+        if (typeof it.activity_progress !== "object") return false;
+        const iap = it.activity_progress as Record<string, unknown>;
+        if (typeof iap.current !== "number" || typeof iap.total !== "number") return false;
+      }
+      if (typeof it.reason_code !== "string" || !it.reason_code) return false;
+      if (typeof it.reason_text !== "string") return false;
+      if (it.action !== null && !isValidActionPrimary(it.action)) return false;
+    }
+  }
+
   return true;
 }
 
@@ -320,7 +357,7 @@ export function createUnknownEnvelope(module: CapabilityModule): ProbeEnvelope {
     activity_progress: null,
     severity: "unknown",
     reason: { code: `${module}.no_probe`, text: `${module} has not been probed yet.` },
-    action: { primary: probeAction(module) },
+    action: { primary: module === "maintenance" ? null : probeAction(module) },
     notices: [],
     updated_at: new Date(0).toISOString(),
     ttl_seconds: 0,
@@ -336,7 +373,7 @@ export function createStaleEnvelope(module: CapabilityModule): ProbeEnvelope {
     activity_progress: null,
     severity: "unknown",
     reason: { code: `${module}.stale`, text: `Cached probe data for ${module} is stale.` },
-    action: { primary: probeAction(module) },
+    action: { primary: module === "maintenance" ? null : probeAction(module) },
     notices: [],
     updated_at: new Date(0).toISOString(),
     ttl_seconds: 0,
@@ -352,7 +389,7 @@ export function createInvalidEnvelope(module: CapabilityModule): ProbeEnvelope {
     activity_progress: null,
     severity: "unknown",
     reason: { code: `${module}.invalid_response`, text: `Probe response for ${module} was invalid.` },
-    action: { primary: probeAction(module) },
+    action: { primary: module === "maintenance" ? null : probeAction(module) },
     notices: [],
     updated_at: new Date(0).toISOString(),
     ttl_seconds: 0,
