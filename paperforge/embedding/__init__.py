@@ -12,7 +12,6 @@ from paperforge.embedding.backends import (
     get_vector_backend,
 )
 from paperforge.embedding.build_state import (
-    get_vector_build_state_path,
     mark_vector_build_state,
     read_vector_build_state,
     write_vector_build_state,
@@ -34,7 +33,6 @@ __all__ = [
     "get_embed_status",
     "get_object_units_for_embedding",
     "get_vector_backend",
-    "get_vector_build_state_path",
     "get_vector_db_path",
     "mark_vector_build_state",
     "hybrid_search",

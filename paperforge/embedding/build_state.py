@@ -30,16 +30,6 @@ def _fallback_state() -> dict:
     return {"status": "idle", "current": 0, "total": 0, "paper_id": ""}
 
 
-def get_vector_build_state_path(vault: Path) -> Path:
-    """DEPRECATED: Build state is now stored in the build_state table in paperforge.db.
-
-    This function is kept for backward compatibility only.
-    """
-    paths = paperforge_paths(vault)
-    index_dir = (paths.get("memory_db", paths.get("index", vault / "System" / "PaperForge"))).parent
-    return index_dir / "vector-build-state.json"
-
-
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------

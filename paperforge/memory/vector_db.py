@@ -8,7 +8,6 @@ from paperforge.embedding import (
     embed_paper,  # noqa: F401
     get_collection,  # noqa: F401
     get_embed_status,  # noqa: F401
-    get_vector_build_state_path,  # noqa: F401
     get_vector_db_path,  # noqa: F401
     mark_vector_build_state,  # noqa: F401
     read_vector_build_state,  # noqa: F401

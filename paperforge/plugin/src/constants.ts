@@ -70,9 +70,6 @@ export const ACTIONS: ActionDef[] = [
 export interface PaperForgeSettings {
   python_path: string;
   vault_path: string;
-  setup_complete: boolean;
-  auto_update: boolean;
-  auto_update_on_startup: boolean;
   features: Record<string, boolean>;
   frozen_skills: Record<string, string>;
   system_dir: string;
@@ -83,7 +80,6 @@ export interface PaperForgeSettings {
   language: string;
   paddleocr_api_key: string;
   zotero_data_dir: string;
-  selected_skill_platform: string;
   vector_db_api_key: string;
   vector_db_api_base: string;
   vector_db_api_model: string;
@@ -99,23 +95,19 @@ export interface PaperForgeSettings {
 
 export const DEFAULT_SETTINGS: PaperForgeSettings = {
   vault_path: "",
-  setup_complete: false,
-  auto_update: true,
-  auto_update_on_startup: true,
-  agent_platform: "opencode",
+  frozen_skills: {},
   language: "",
   paddleocr_api_key: "",
   zotero_data_dir: "",
+  agent_platform: "opencode",
   python_path: "",
   features: {
     memory_layer: true,
     vector_db: false,
   },
-  selected_skill_platform: "opencode",
   vector_db_api_key: "",
   vector_db_api_base: "",
   vector_db_api_model: "text-embedding-3-small",
-  frozen_skills: {},
   system_dir: "",
   resources_dir: "",
   literature_dir: "",
@@ -142,13 +134,22 @@ export function overlayEntryWorkflowState(app: any, entry: any): WorkflowState {
   const fm = cache && cache.frontmatter;
   if (!fm) return entry;
   const merged = { ...entry };
-  for (const key of ["do_ocr", "analyze", "ocr_status", "ocr_redo", "deep_reading_status"]) {
+  for (const key of [
+    "do_ocr",
+    "analyze",
+    "ocr_status",
+    "ocr_redo",
+    "deep_reading_status",
+  ]) {
     if (Object.prototype.hasOwnProperty.call(fm, key)) merged[key] = fm[key];
   }
   return merged;
 }
 
-export function patchEntryWorkflowState(entry: any, patch: Partial<WorkflowState>): any {
+export function patchEntryWorkflowState(
+  entry: any,
+  patch: Partial<WorkflowState>
+): any {
   return entry ? { ...entry, ...patch } : entry;
 }
 
@@ -156,7 +157,13 @@ export function patchEntryWorkflowState(entry: any, patch: Partial<WorkflowState
 
 export const SCHEMA_VERSION = 1;
 
-export type CapabilityModule = "installation" | "help" | "library" | "ocr" | "memory" | "maintenance";
+export type CapabilityModule =
+  | "installation"
+  | "help"
+  | "library"
+  | "ocr"
+  | "memory"
+  | "maintenance";
 
 export const CAPABILITY_MODULES: readonly CapabilityModule[] = [
   "installation",
@@ -167,7 +174,13 @@ export const CAPABILITY_MODULES: readonly CapabilityModule[] = [
   "help",
 ] as const;
 
-export type CapabilityState = "unknown" | "unavailable" | "missing_input" | "needs_action" | "limited" | "ready";
+export type CapabilityState =
+  | "unknown"
+  | "unavailable"
+  | "missing_input"
+  | "needs_action"
+  | "limited"
+  | "ready";
 export type ActivityState = "idle" | "running";
 export type Severity = "unknown" | "ok" | "warning" | "error";
 
@@ -231,8 +244,20 @@ export interface ProbeEnvelope {
   items?: MaintenanceItem[];
 }
 
-const VALID_CAPABILITY_STATES: readonly string[] = ["unknown", "unavailable", "missing_input", "needs_action", "limited", "ready"];
-const VALID_SEVERITIES: readonly string[] = ["unknown", "ok", "warning", "error"];
+const VALID_CAPABILITY_STATES: readonly string[] = [
+  "unknown",
+  "unavailable",
+  "missing_input",
+  "needs_action",
+  "limited",
+  "ready",
+];
+const VALID_SEVERITIES: readonly string[] = [
+  "unknown",
+  "ok",
+  "warning",
+  "error",
+];
 const VALID_ACTIVITY_STATES: readonly string[] = ["idle", "running"];
 
 function isValidActionPrimary(p: unknown): p is ActionPrimary {
@@ -241,10 +266,16 @@ function isValidActionPrimary(p: unknown): p is ActionPrimary {
   if (typeof a.verb !== "string") return false;
   if (typeof a.label !== "string") return false;
   if (typeof a.destructive !== "boolean") return false;
-  if (a.destructive_scope !== null && typeof a.destructive_scope !== "string") return false;
-  if (a.destructive_effect !== null && typeof a.destructive_effect !== "string") return false;
+  if (a.destructive_scope !== null && typeof a.destructive_scope !== "string")
+    return false;
+  if (a.destructive_effect !== null && typeof a.destructive_effect !== "string")
+    return false;
   if (typeof a.confirmation_required !== "boolean") return false;
-  if (a.confirmation_prompt !== null && typeof a.confirmation_prompt !== "string") return false;
+  if (
+    a.confirmation_prompt !== null &&
+    typeof a.confirmation_prompt !== "string"
+  )
+    return false;
   if (typeof a.command !== "string") return false;
   if (typeof a.scope !== "string") return false;
   if (typeof a.scope_count !== "number") return false;
@@ -288,7 +319,10 @@ export function setupAction(): ActionPrimary {
  * When expectedModule is supplied, also checks module field matches.
  * Never reconstructs or coerces — passes validated object through unchanged.
  */
-export function isValidEnvelope(raw: unknown, expectedModule?: string): raw is ProbeEnvelope {
+export function isValidEnvelope(
+  raw: unknown,
+  expectedModule?: string
+): raw is ProbeEnvelope {
   if (!raw || typeof raw !== "object") return false;
   const e = raw as Record<string, unknown>;
 
@@ -296,18 +330,29 @@ export function isValidEnvelope(raw: unknown, expectedModule?: string): raw is P
   if (typeof e.module !== "string" || !e.module) return false;
   if (!CAPABILITY_MODULES.includes(e.module as CapabilityModule)) return false;
   if (expectedModule !== undefined && e.module !== expectedModule) return false;
-  if (typeof e.capability_state !== "string" || !VALID_CAPABILITY_STATES.includes(e.capability_state)) return false;
-  if (typeof e.severity !== "string" || !VALID_SEVERITIES.includes(e.severity)) return false;
-  if (typeof e.activity_state !== "string" || !VALID_ACTIVITY_STATES.includes(e.activity_state)) return false;
+  if (
+    typeof e.capability_state !== "string" ||
+    !VALID_CAPABILITY_STATES.includes(e.capability_state)
+  )
+    return false;
+  if (typeof e.severity !== "string" || !VALID_SEVERITIES.includes(e.severity))
+    return false;
+  if (
+    typeof e.activity_state !== "string" ||
+    !VALID_ACTIVITY_STATES.includes(e.activity_state)
+  )
+    return false;
 
   // activity_label: null or string (required)
-  if (e.activity_label !== null && typeof e.activity_label !== "string") return false;
+  if (e.activity_label !== null && typeof e.activity_label !== "string")
+    return false;
 
   // activity_progress: null or {current:number, total:number} (required)
   if (e.activity_progress !== null) {
     if (typeof e.activity_progress !== "object") return false;
     const ap = e.activity_progress as Record<string, unknown>;
-    if (typeof ap.current !== "number" || typeof ap.total !== "number") return false;
+    if (typeof ap.current !== "number" || typeof ap.total !== "number")
+      return false;
   }
 
   if (!Array.isArray(e.notices)) return false;
@@ -328,15 +373,30 @@ export function isValidEnvelope(raw: unknown, expectedModule?: string): raw is P
       if (!item || typeof item !== "object") return false;
       const it = item as Record<string, unknown>;
       const validMods = ["installation", "library", "ocr", "memory", "help"];
-      if (typeof it.module !== "string" || !validMods.includes(it.module)) return false;
-      if (typeof it.capability_state !== "string" || !VALID_CAPABILITY_STATES.includes(it.capability_state)) return false;
-      if (typeof it.severity !== "string" || !VALID_SEVERITIES.includes(it.severity)) return false;
-      if (typeof it.activity_state !== "string" || !VALID_ACTIVITY_STATES.includes(it.activity_state)) return false;
-      if (it.activity_label !== null && typeof it.activity_label !== "string") return false;
+      if (typeof it.module !== "string" || !validMods.includes(it.module))
+        return false;
+      if (
+        typeof it.capability_state !== "string" ||
+        !VALID_CAPABILITY_STATES.includes(it.capability_state)
+      )
+        return false;
+      if (
+        typeof it.severity !== "string" ||
+        !VALID_SEVERITIES.includes(it.severity)
+      )
+        return false;
+      if (
+        typeof it.activity_state !== "string" ||
+        !VALID_ACTIVITY_STATES.includes(it.activity_state)
+      )
+        return false;
+      if (it.activity_label !== null && typeof it.activity_label !== "string")
+        return false;
       if (it.activity_progress !== null) {
         if (typeof it.activity_progress !== "object") return false;
         const iap = it.activity_progress as Record<string, unknown>;
-        if (typeof iap.current !== "number" || typeof iap.total !== "number") return false;
+        if (typeof iap.current !== "number" || typeof iap.total !== "number")
+          return false;
       }
       if (typeof it.reason_code !== "string" || !it.reason_code) return false;
       if (typeof it.reason_text !== "string") return false;
@@ -350,13 +410,17 @@ export function isValidEnvelope(raw: unknown, expectedModule?: string): raw is P
 /** Unknown envelope — all modules get verb=probe; setup verb is backend-only. */
 export function createUnknownEnvelope(module: CapabilityModule): ProbeEnvelope {
   return {
-    schema_version: SCHEMA_VERSION, module,
+    schema_version: SCHEMA_VERSION,
+    module,
     capability_state: "unknown",
     activity_state: "idle",
     activity_label: null,
     activity_progress: null,
     severity: "unknown",
-    reason: { code: `${module}.no_probe`, text: `${module} has not been probed yet.` },
+    reason: {
+      code: `${module}.no_probe`,
+      text: `${module} has not been probed yet.`,
+    },
     action: { primary: module === "maintenance" ? null : probeAction(module) },
     notices: [],
     updated_at: new Date(0).toISOString(),
@@ -366,13 +430,17 @@ export function createUnknownEnvelope(module: CapabilityModule): ProbeEnvelope {
 
 export function createStaleEnvelope(module: CapabilityModule): ProbeEnvelope {
   return {
-    schema_version: SCHEMA_VERSION, module,
+    schema_version: SCHEMA_VERSION,
+    module,
     capability_state: "unknown",
     activity_state: "idle",
     activity_label: null,
     activity_progress: null,
     severity: "unknown",
-    reason: { code: `${module}.stale`, text: `Cached probe data for ${module} is stale.` },
+    reason: {
+      code: `${module}.stale`,
+      text: `Cached probe data for ${module} is stale.`,
+    },
     action: { primary: module === "maintenance" ? null : probeAction(module) },
     notices: [],
     updated_at: new Date(0).toISOString(),
@@ -382,13 +450,17 @@ export function createStaleEnvelope(module: CapabilityModule): ProbeEnvelope {
 
 export function createInvalidEnvelope(module: CapabilityModule): ProbeEnvelope {
   return {
-    schema_version: SCHEMA_VERSION, module,
+    schema_version: SCHEMA_VERSION,
+    module,
     capability_state: "unknown",
     activity_state: "idle",
     activity_label: null,
     activity_progress: null,
     severity: "unknown",
-    reason: { code: `${module}.invalid_response`, text: `Probe response for ${module} was invalid.` },
+    reason: {
+      code: `${module}.invalid_response`,
+      text: `Probe response for ${module} was invalid.`,
+    },
     action: { primary: module === "maintenance" ? null : probeAction(module) },
     notices: [],
     updated_at: new Date(0).toISOString(),
@@ -415,19 +487,21 @@ export function isReadyEnvelope(e: ProbeEnvelope): boolean {
  * - 'probe' verb → 'probe' kind (trigger a re-probe)
  * - all others → 'action' kind (execute the action directly)
  */
-export function classifyCapabilityAction(
-  envelope: ProbeEnvelope
-): { kind: 'setup' | 'probe' | 'action'; verb: string; label: string } {
+export function classifyCapabilityAction(envelope: ProbeEnvelope): {
+  kind: "setup" | "probe" | "action";
+  verb: string;
+  label: string;
+} {
   const primary = envelope.action?.primary;
-  const verb = primary?.verb ?? 'probe';
+  const verb = primary?.verb ?? "probe";
   const label = primary?.label ?? verb;
-  if (verb === 'setup' || verb === 'set_config' || verb === 'update') {
-    return { kind: 'setup', verb, label };
+  if (verb === "setup" || verb === "set_config" || verb === "update") {
+    return { kind: "setup", verb, label };
   }
-  if (verb === 'probe') {
-    return { kind: 'probe', verb, label };
+  if (verb === "probe") {
+    return { kind: "probe", verb, label };
   }
-  return { kind: 'action', verb, label };
+  return { kind: "action", verb, label };
 }
 
 /**
@@ -469,7 +543,7 @@ export function validatePersistedEnvelopes(
   for (const mod of allModules) {
     const raw = stateMap[mod];
 
-    if (!raw || typeof raw !== 'object') {
+    if (!raw || typeof raw !== "object") {
       result[mod] = createUnknownEnvelope(mod as CapabilityModule);
       continue;
     }

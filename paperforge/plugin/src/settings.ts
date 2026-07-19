@@ -52,7 +52,6 @@ import {
   checkOrphanState,
 } from "./views/modals";
 import {
-  categorizeMaintenanceRow,
   buildMaintenanceSummary,
   maintenanceActionForRow,
   maintenanceActionRequiresConfirmation,
@@ -3978,7 +3977,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /**
    * Ensure capabilityState exists for all six modules.
    * Always materializes unknown envelopes when stored map is absent/partial,
-   * regardless of setup_complete, so first-run immediately probes Installation+Help.
+   * so first-run immediately probes Installation+Help.
    */
   _initCapabilityState(): void {
     const stored = this.plugin.settings.capabilityState;
