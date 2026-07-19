@@ -23,8 +23,6 @@ import {
 } from "./constants";
 import releaseNotesData from "./release-notes.json";
 import {
-  resolvePythonExecutable,
-  buildRuntimeInstallCommand,
   paperforgeEnrichedEnv,
   buildTargetedEnv,
   scanBbtUnderProfiles,
@@ -32,15 +30,10 @@ import {
   runSubprocess,
 } from "./services/python-bridge";
 import {
-  resolveVaultPaths,
-  getMemoryRuntime,
   getVectorRuntime,
   getRuntimeHealth,
-  isMemoryReady,
-  isVectorReady,
   getMemoryStatusText,
   getVectorStatusText,
-  getCachedPython,
 } from "./services/memory-state";
 
 import {
@@ -787,16 +780,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // Copy of setup/runtime/path controls from original setup tab
     const vaultPath: string = this._getVaultBasePath();
-    const pyResult: { path: string; source: string } = resolvePythonExecutable(
-      vaultPath,
-      this.plugin.settings,
-      undefined,
-      undefined
-    ) as unknown as { path: string; source: string };
-    const pyPathDesc: string = this._getPythonDesc(
-      pyResult.path,
-      pyResult.source
-    );
+    const resolved = this._resolveRuntimeCommand(vaultPath);
+    const pyPathDesc: string = resolved
+      ? this._getPythonDesc(resolved.path, "managed")
+      : "Python runtime not ready — install via Managed Runtime above";
 
     new Setting(containerEl)
       .setName(t("field_python_interp") || "Python Interpreter")
@@ -814,8 +801,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       .addButton((button) => {
         button
           .setButtonText(t("runtime_health_sync") || "Sync Runtime")
-          .onClick(() => {
-            this._syncRuntime(button);
+          .onClick(async () => {
+            button.setDisabled(true);
+            button.setButtonText(t("runtime_health_syncing"));
+            await this._ensureManagedRuntime().ensure();
+            this.display();
           });
       });
 
@@ -1999,8 +1989,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     rebuildBtn.title = "Rebuild memory database";
     rebuildBtn.onclick = () => {
       const vp = (this.app.vault.adapter as any).basePath as string;
-      const py = getCachedPython(vp, this.plugin.settings);
-      if (!py.path) {
+      const py = this._resolveRuntimeCommand(vp);
+      if (!py?.path) {
         new Notice(t("feat_no_python"));
         return;
       }
@@ -2045,20 +2035,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   _getBuildCommand(settings: PaperForgeSettings): string | null {
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const pyResult = resolvePythonExecutable(
-      vp,
-      settings,
-      undefined,
-      undefined
-    );
-    if (!pyResult.path) return null;
-    return `"${pyResult.path}" -m paperforge --vault "${vp}" sync`;
+    const resolved = this._resolveRuntimeCommand(vp);
+    if (!resolved) return null;
+    return `"${resolved.path}" -m paperforge --vault "${vp}" sync`;
   }
 
   _runManualSync() {
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const py = getCachedPython(vp, this.plugin.settings);
-    if (!py.path) return;
+    const py = this._resolveRuntimeCommand(vp);
+    if (!py?.path) return;
 
     // Overlay envelope activity
     const envelopes = this._capabilityState ?? {};
@@ -2104,9 +2089,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _refreshSnapshots(vp: string) {
-    const py = getCachedPython(vp, this.plugin.settings);
+    const py = this._resolveRuntimeCommand(vp);
+    if (!py) return;
     const args = [
-      ...py.extraArgs,
+      ...py.args,
       "-m",
       "paperforge",
       "--vault",
@@ -2293,8 +2279,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           .setCta()
           .onClick(async () => {
             const vp = (this.app.vault.adapter as any).basePath as string;
-            const pyResult = getCachedPython(vp, this.plugin.settings);
-            if (!pyResult.path) {
+            const pyResult = this._resolveRuntimeCommand(vp);
+            if (!pyResult?.path) {
               new Notice(t("feat_no_python"));
               return;
             }
@@ -2314,7 +2300,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               await new Promise<void>((resolve, reject) => {
                 execFile(
                   pyResult.path,
-                  [...pyResult.extraArgs, "-m", "pip", "install", ...pkgsArg],
+                  [...pyResult.args, "-m", "pip", "install", ...pkgsArg],
                   {
                     cwd: vp,
                     timeout: 300000,
@@ -2440,8 +2426,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           if (!confirm(msg)) return;
         }
 
-        const py = getCachedPython(vp, this.plugin.settings);
-        if (!py.path) {
+        const py = this._resolveRuntimeCommand(vp);
+        if (!py?.path) {
           new Notice(t("retrieval_no_python"));
           return;
         }
@@ -2914,101 +2900,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
   }
 
-  _syncRuntime(btn: any) {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(
-      vp,
-      this.plugin.settings,
-      undefined,
-      undefined
-    );
-    const ver = this.plugin.manifest.version;
-    const installCmd = buildRuntimeInstallCommand(pythonExe, ver, extraArgs);
-
-    btn.setDisabled(true);
-    btn.setButtonText(t("runtime_health_syncing"));
-
-    const tryInstall = (args: string[], label: string) => {
-      console.log(`[PaperForge] Sync Runtime: trying ${label}`);
-      return runSubprocess(
-        installCmd.cmd,
-        args,
-        vp,
-        installCmd.timeout,
-        undefined,
-        paperforgeEnrichedEnv()
-      );
-    };
-
-    const deploySkills = () => {
-      let agentKey = "opencode";
-      try {
-        const cfgRaw = fs.readFileSync(
-          path.join(vp, "paperforge.json"),
-          "utf-8"
-        );
-        const cfg = JSON.parse(cfgRaw);
-        if (cfg.agent_key) agentKey = cfg.agent_key;
-      } catch {}
-      const deployArgs = [
-        ...extraArgs,
-        "-c",
-        "from paperforge.services.skill_deploy import deploy_skills; " +
-          "from pathlib import Path; " +
-          'r=deploy_skills(vault=Path(r"' +
-          vp.replace(/\\/g, "\\\\") +
-          '"), agent_key="' +
-          agentKey +
-          '", overwrite=True); ' +
-          'print("skills deployed" if r["skill_deployed"] else "skills skipped", flush=True)',
-      ];
-      const child = spawn(pythonExe, deployArgs, {
-        cwd: vp,
-        timeout: 30000,
-        windowsHide: true,
-      });
-      let out = "";
-      child.stdout.on("data", (d) => {
-        out += d.toString("utf-8");
-      });
-      child.on("close", (code) => {
-        console.log(`[PaperForge] Skill deploy: ${out.trim()} (exit ${code})`);
-      });
-    };
-
-    tryInstall(installCmd.pypiArgs, "PyPI").then((result) => {
-      if (result.exitCode === 0) {
-        console.log("[PaperForge] Sync Runtime: installed via PyPI");
-        deploySkills();
-        new Notice(t("runtime_health_sync_done").replace("{0}", ver), 5000);
-        this.display();
-        return;
-      }
-      console.warn(
-        "[PaperForge] Sync Runtime: PyPI failed, falling back to git..."
-      );
-      tryInstall(installCmd.gitArgs, "git").then((r2) => {
-        if (r2.exitCode === 0) {
-          console.log("[PaperForge] Sync Runtime: installed via git");
-          deploySkills();
-          new Notice(t("runtime_health_sync_done").replace("{0}", ver), 5000);
-          this.display();
-        } else {
-          btn.setDisabled(false);
-          btn.setButtonText(t("runtime_health_sync"));
-          console.error("[PaperForge] git fallback stderr:", r2.stderr);
-          new Notice(
-            t("runtime_health_sync_fail").replace(
-              "{0}",
-              "pip exit code " + r2.exitCode
-            ),
-            8000
-          );
-        }
-      });
-    });
-  }
-
   _debouncedSave() {
     clearTimeout(this._saveTimeout!);
     this._saveTimeout = setTimeout(() => this.plugin.saveSettings(), 500);
@@ -3016,15 +2907,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   _preCheck(onPass: () => void) {
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
-    const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(
-      vaultPath,
-      this.plugin?.settings,
-      undefined,
-      undefined
-    );
+    const resolved = this._resolveRuntimeCommand(vaultPath);
+    if (!resolved) {
+      onPass(); // runtime not ready, skip pre-check
+      return;
+    }
     execFile(
-      pythonExe,
-      [...extraArgs, "--version"],
+      resolved.path,
+      [...resolved.args, "--version"],
       { timeout: 8000 },
       (pyErr, pyOut) => {
         const results: { label: string; ok: boolean; detail: string }[] = [];
@@ -3377,17 +3267,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cache = readMaintenanceCache(vaultPath);
     } catch {}
 
-    // ── Phase 2: Try manifest refresh ──
-    const py = resolvePythonExecutable(
-      vaultPath,
-      // PaperForgeSettings — no cast needed, ISettingPlugin has it
-      this.plugin.settings,
-      fs,
-      execFileSync
-    );
-    if (!py.path) {
+    const resolved = this._resolveRuntimeCommand(vaultPath);
+    if (!resolved) {
       statusEl.createEl("p", {
-        text: "⚠ Python 未配置，请先在「安装」标签页配置。",
+        text: "⚠ Python runtime not ready — install via Installation tab.",
         cls: "setting-item-description",
       });
       return;
@@ -3438,8 +3321,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "setting-item-description",
         });
       } else {
-        const pyPath = py.path;
-        const pyExtra = (py.extraArgs || []) as string[];
+        const pyPath = resolved.path;
+        const pyExtra = resolved.args;
 
         // ── Progress bar (if batch running) — mutable DOM refs, no full re-render ──
         const progressContainer = statusEl.createEl("div", {
@@ -3853,8 +3736,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ── Phase 2: Background refresh ──
     refreshMaintenanceData(
       vaultPath,
-      py.path,
-      py.extraArgs || [],
+      resolved.path,
+      resolved.args,
       cache || null
     )
       .then((result) => {

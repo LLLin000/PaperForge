@@ -14,11 +14,14 @@ import { t, setLanguage } from "./i18n";
 import { PaperForgeSettingTab } from "./settings";
 import { PaperForgeStatusView } from "./views/dashboard";
 import {
-  resolvePythonExecutable,
   paperforgeEnrichedEnv,
   buildTargetedEnv,
 } from "./services/python-bridge";
 import { resolveVaultPaths } from "./services/memory-state";
+import {
+  ManagedRuntime,
+  resolveRuntimeCommand,
+} from "./services/managed-runtime";
 import {
   migrateCredentials,
   type PluginForSecrets,
@@ -36,6 +39,22 @@ export default class PaperForgePlugin extends Plugin {
   private _embedStderr = "";
   _memoryStatusText: string | null = null;
 
+  _getPythonCommand(): { path: string; args: string[] } | null {
+    const rt = new ManagedRuntime({
+      runtimeDir: path.join(
+        (this.app.vault.adapter as any).basePath as string,
+        ".paperforge-test-venv"
+      ),
+      pluginVersion: this.manifest.version,
+      osPlatform: process.platform,
+      osArch: process.arch,
+      fs: fs as any,
+      execFile: execFile as any,
+      execFileSync: require("child_process").execFileSync as any,
+    });
+    const run = resolveRuntimeCommand(rt.current());
+    return run ? { path: run.command, args: [...run.args] } : null;
+  }
   async onload() {
     await this.loadSettings();
     // saveSettings moved after migration
@@ -58,12 +77,12 @@ export default class PaperForgePlugin extends Plugin {
       this.addRibbonIcon("reset", "PaperForge: Redo OCR", async () => {
         const vp = (this.app.vault.adapter as any).basePath as string;
         new Notice(`PaperForge: Redo OCR starting...`);
-        const { path: py, extraArgs: ex } = resolvePythonExecutable(
-          vp,
-          this.settings,
-          undefined,
-          undefined
-        );
+        const pyCmd = this._getPythonCommand();
+        if (!pyCmd) {
+          new Notice("Runtime not ready");
+          return;
+        }
+        const { path: py, args: ex } = pyCmd;
         const env = await buildTargetedEnv(
           this as unknown as PluginForSecrets,
           "ocr"
@@ -105,8 +124,12 @@ export default class PaperForgePlugin extends Plugin {
           }
           const vp = (this.app.vault.adapter as any).basePath as string;
           new Notice(`PaperForge: running ${a.cmd}...`);
-          const { path: cmdPythonExe, extraArgs: cmdExtra = [] } =
-            resolvePythonExecutable(vp, this.settings, undefined, undefined);
+          const pyCmd = this._getPythonCommand();
+          if (!pyCmd) {
+            new Notice("Runtime not ready");
+            return;
+          }
+          const { path: cmdPythonExe, args: cmdExtra = [] } = pyCmd;
           const cmdArgs = Array.isArray(a.args) ? [...a.args] : [];
           // Issue #79: inject credentials for allowlisted command types immediately before launch
           const env = await buildTargetedEnv(
@@ -173,18 +196,14 @@ export default class PaperForgePlugin extends Plugin {
     if (this._autoSyncRunning) return;
     this._autoSyncRunning = true;
 
-    const pyResult = resolvePythonExecutable(
-      vaultPath,
-      this.settings,
-      undefined,
-      undefined
-    );
-    if (!pyResult.path) {
+    const pyCmd = this._getPythonCommand();
+    if (!pyCmd) {
       this._autoSyncRunning = false;
       return;
     }
 
-    const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync`;
+    const cmd = `"${pyCmd.path}" ${pyCmd.args.join(" ")} -m paperforge --vault "${vaultPath}" sync`;
+
     exec(
       cmd,
       { timeout: 120000, encoding: "utf-8" },
@@ -228,18 +247,13 @@ export default class PaperForgePlugin extends Plugin {
         if (this._autoSyncRunning) return;
         this._autoSyncRunning = true;
 
-        const pyResult = resolvePythonExecutable(
-          vaultPath,
-          this.settings,
-          undefined,
-          undefined
-        );
-        if (!pyResult.path) {
+        const pyCmd = this._getPythonCommand();
+        if (!pyCmd) {
           this._autoSyncRunning = false;
           return;
         }
 
-        const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync`;
+        const cmd = `"${pyCmd.path}" ${pyCmd.args.join(" ")} -m paperforge --vault "${vaultPath}" sync`;
         exec(cmd, { timeout: 30000, encoding: "utf-8" }, () => {
           this._autoSyncRunning = false;
           this._memoryStatusText = null;

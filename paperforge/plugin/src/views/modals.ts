@@ -5,12 +5,15 @@ import * as https from "https";
 import { execFile, spawn } from "child_process";
 import { t } from "../i18n";
 import { PaperForgeSettings } from "../constants";
-import { resolveVaultPaths, getCachedPython } from "../services/memory-state";
+import { resolveVaultPaths } from "../services/memory-state";
 import {
-  resolvePythonExecutable,
   resolveGitDir,
   paperforgeEnrichedEnv,
 } from "../services/python-bridge";
+import {
+  ManagedRuntime,
+  resolveRuntimeCommand,
+} from "../services/managed-runtime";
 import type { PythonResult } from "../services/python-bridge";
 import { shouldBlockStep3 } from "./step3-gate";
 
@@ -269,10 +272,12 @@ export function checkOrphanState(app: App, plugin: IPluginRef, vp: string) {
     console.log("[PF] orphan file FOUND");
     const raw = fs.readFileSync(orphanPath, "utf-8");
     const data = JSON.parse(raw);
-    const orphans = data.orphans || [];
-    console.log("[PF] orphans count:", orphans.length);
-    if (orphans.length === 0) return;
-    const py = getCachedPython(vp, plugin.settings);
+    const orphans = data;
+    const py = {
+      path: "python",
+      extraArgs: [] as string[],
+      source: "auto-detected" as const,
+    };
     console.log("[PF] py.path:", py ? py.path : "null");
     new PaperForgeOrphanModal(app, orphans, vp, py).open();
     fs.unlinkSync(orphanPath);
@@ -299,6 +304,23 @@ export class PaperForgeSetupModal extends Modal {
     this.plugin = plugin;
     this._step = 1;
     this._onComplete = onComplete;
+  }
+
+  _resolvePython(): { path: string; args: string[] } {
+    const vp = this.plugin.settings.vault_path?.trim() || ".";
+    const rt = new ManagedRuntime({
+      runtimeDir: path.join(vp, ".paperforge-test-venv"),
+      pluginVersion: this.plugin.manifest.version,
+      osPlatform: process.platform,
+      osArch: process.arch,
+      fs: fs as any,
+      execFile: execFile as any,
+      execFileSync: require("child_process").execFileSync as any,
+    });
+    const run = resolveRuntimeCommand(rt.current());
+    return run
+      ? { path: run.command, args: [...run.args] }
+      : { path: "python", args: [] };
   }
 
   onOpen() {
@@ -925,13 +947,7 @@ export class PaperForgeSetupModal extends Modal {
 
     const runPython = (args: string[], options: any = {}) =>
       new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-        const { path: pyExe, extraArgs: pyExtra = [] } =
-          resolvePythonExecutable(
-            s.vault_path.trim(),
-            this.plugin.settings,
-            undefined,
-            undefined
-          );
+        const { path: pyExe, args: pyExtra = [] } = this._resolvePython();
         const child = spawn(pyExe, [...pyExtra, ...args], {
           cwd: s.vault_path.trim(),
           env: paperforgeEnrichedEnv(),
@@ -1050,12 +1066,7 @@ export class PaperForgeSetupModal extends Modal {
           gitDir = "(error)";
         }
         try {
-          resolvedPy = resolvePythonExecutable(
-            s.vault_path.trim(),
-            this.plugin.settings,
-            undefined,
-            undefined
-          );
+          resolvedPy = this._resolvePython();
         } catch (_) {
           resolvedPy = null;
         }
@@ -1242,12 +1253,7 @@ export class PaperForgeSetupModal extends Modal {
     });
     {
       const vp = vault;
-      const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(
-        vp,
-        this.plugin.settings,
-        undefined,
-        undefined
-      );
+      const { path: pythonExe, args: extraArgs = [] } = this._resolvePython();
       execFile(
         pythonExe,
         [

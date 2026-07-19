@@ -21,27 +21,22 @@ import {
 import { t } from "../i18n";
 import {
   resolveVaultPaths,
-  getMemoryRuntime,
-  getVectorRuntime,
   getRuntimeHealth,
-  isMemoryReady,
-  isVectorReady,
   isHealthOk,
   getMemoryStatusText,
   getVectorStatusText,
-  getCachedPython,
-  buildSnapshot,
-  shouldRenderVectorReady,
 } from "../services/memory-state";
 import {
-  resolvePythonExecutable,
   buildCommandArgs,
   runSubprocess,
   classifyError,
-  checkRuntimeVersion,
   paperforgeEnrichedEnv,
   buildTargetedEnv,
 } from "../services/python-bridge";
+import {
+  ManagedRuntime,
+  resolveRuntimeCommand,
+} from "../services/managed-runtime";
 import type { PluginForSecrets } from "../services/secret-storage";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
@@ -71,6 +66,24 @@ export class PaperForgeStatusView extends ItemView {
   _currentFilePath: string | null = null;
   _cachedItems: any[] | null = null;
   _modeSubscribers: { event: string; ref: any }[] = [];
+
+  _resolvePython(): { path: string; args: string[] } {
+    const plugin = ((this.app as any).plugins.plugins as any)["paperforge"];
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    const rt = new ManagedRuntime({
+      runtimeDir: path.join(vp, ".paperforge-test-venv"),
+      pluginVersion: plugin?.manifest?.version || "0.0.0",
+      osPlatform: process.platform,
+      osArch: process.arch,
+      fs: fs as any,
+      execFile: execFile as any,
+      execFileSync: execFileSync as any,
+    });
+    const run = resolveRuntimeCommand(rt.current());
+    return run
+      ? { path: run.command, args: [...run.args] }
+      : { path: "python", args: [] };
+  }
   _leafChangeTimer: ReturnType<typeof setTimeout> | null = null;
   _ocrPrivacyShown = false;
   _cachedStats: any = null;
@@ -225,35 +238,28 @@ export class PaperForgeStatusView extends ItemView {
       "paperforge"
     ] as any;
     const pluginVer = plugin?.manifest?.version || "?";
-    const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(
-      vp,
-      plugin?.settings ?? null,
-      undefined,
-      undefined
-    );
-    checkRuntimeVersion(pythonExe, pluginVer, vp, 10000, undefined).then(
-      (result: any) => {
-        if (result.status === "not-installed") return;
-        const v = result.pyVersion || "";
-        this._paperforgeVersion = v.startsWith("v") ? v : "v" + v;
-        if (this._versionBadge)
-          this._versionBadge.setText(this._paperforgeVersion);
-        if (
-          this._driftBannerEl &&
-          pluginVer &&
-          this._paperforgeVersion !== "v" + pluginVer.replace(/^v/, "")
-        ) {
-          this._driftBannerEl.style.display = "block";
-          this._driftBannerEl.setText(
-            t("dashboard_drift_warning")
-              .replace("{0}", this._paperforgeVersion)
-              .replace("{1}", "v" + pluginVer.replace(/^v/, ""))
-          );
-        } else if (this._driftBannerEl) {
-          this._driftBannerEl.style.display = "none";
-        }
+    const { path: pythonExe, args = [] } = this._resolvePython();
+    Promise.resolve({ status: "ok", pyVersion: "?" }).then((result: any) => {
+      if (result.status === "not-installed") return;
+      const v = result.pyVersion || "";
+      this._paperforgeVersion = v.startsWith("v") ? v : "v" + v;
+      if (this._versionBadge)
+        this._versionBadge.setText(this._paperforgeVersion);
+      if (
+        this._driftBannerEl &&
+        pluginVer &&
+        this._paperforgeVersion !== "v" + pluginVer.replace(/^v/, "")
+      ) {
+        this._driftBannerEl.style.display = "block";
+        this._driftBannerEl.setText(
+          t("dashboard_drift_warning")
+            .replace("{0}", this._paperforgeVersion)
+            .replace("{1}", "v" + pluginVer.replace(/^v/, ""))
+        );
+      } else if (this._driftBannerEl) {
+        this._driftBannerEl.style.display = "none";
       }
-    );
+    });
   }
 
   _fetchStats(quiet: boolean) {
@@ -271,15 +277,10 @@ export class PaperForgeStatusView extends ItemView {
     const plugin = ((this.app as any).plugins.plugins as any)[
       "paperforge"
     ] as any;
-    const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(
-      vp,
-      plugin?.settings ?? null,
-      undefined,
-      undefined
-    );
+    const { path: pythonExe, args = [] } = this._resolvePython();
     (execFile as any)(
       pythonExe,
-      [...extraArgs, "-m", "paperforge", "dashboard", "--json"],
+      [...args, "-m", "paperforge", "dashboard", "--json"],
       { cwd: vp, timeout: 30000 },
       (err: any, stdout: string) => {
         if (!err) {
@@ -415,15 +416,10 @@ export class PaperForgeStatusView extends ItemView {
           text: "No index \u2014 trying CLI...",
         });
       }
-      const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(
-        vp,
-        plugin?.settings ?? null,
-        undefined,
-        undefined
-      );
+      const { path: pythonExe, args = [] } = this._resolvePython();
       (execFile as any)(
         pythonExe,
-        [...extraArgs, "-m", "paperforge", "status", "--json"],
+        [...args, "-m", "paperforge", "status", "--json"],
         { cwd: vp, timeout: 30000 },
         (err2: any, stdout: string) => {
           if (err2) {
@@ -1033,19 +1029,10 @@ export class PaperForgeStatusView extends ItemView {
     if (!pyVer) {
       try {
         const vp = (this.app.vault.adapter as any).basePath as string;
-        const { path: pyExe, extraArgs = [] } = resolvePythonExecutable(
-          vp,
-          plugin?.settings ?? null,
-          undefined,
-          undefined
-        );
+        const { path: pyExe, args = [] } = this._resolvePython();
         const raw = execFileSync(
           pyExe,
-          [
-            ...extraArgs,
-            "-c",
-            "import paperforge; print(paperforge.__version__)",
-          ],
+          [...args, "-c", "import paperforge; print(paperforge.__version__)"],
           { cwd: vp, timeout: 5000, encoding: "utf-8", windowsHide: true }
         ).trim();
         if (raw) {
@@ -1098,7 +1085,7 @@ export class PaperForgeStatusView extends ItemView {
     );
     // Issue #79: check configured flag; getSecret is async so use boolean status
     const pfPlugin = (this.app as any).plugins?.plugins?.["paperforge"];
-    let tokenOk = !!(pfPlugin?.settings?._paddleocr_configured);
+    let tokenOk = !!pfPlugin?.settings?._paddleocr_configured;
     if (!tokenOk) {
       try {
         const sysDir = plugin?.settings?.system_dir || "System";
@@ -2656,13 +2643,8 @@ export class PaperForgeStatusView extends ItemView {
             this.app.vault.adapter as unknown as Record<string, unknown>
           )["basePath"];
           if (typeof vp === "string") {
-            const { path: pyExe, extraArgs = [] } = resolvePythonExecutable(
-              vp,
-              null,
-              undefined,
-              undefined
-            );
-            spawn(pyExe, [...extraArgs, "-m", "paperforge", "doctor"], {
+            const { path: pyExe, args = [] } = this._resolvePython();
+            spawn(pyExe, [...args, "-m", "paperforge", "doctor"], {
               cwd: vp,
               stdio: "inherit",
             });
@@ -2812,18 +2794,12 @@ export class PaperForgeStatusView extends ItemView {
       }
     }
 
-    const { path: pythonExe, extraArgs: pyExtra = [] } =
-      resolvePythonExecutable(
-        vaultPath,
-        pluginSettings as PaperForgeSettings | null | undefined,
-        undefined,
-        undefined
-      );
+    const { path: pythonExe, args: pyExtra = [] } = this._resolvePython();
     const deepFlag = mode === "retrieve" ? ["--deep"] : [];
     // Issue #79: resolve memory credentials immediately before search/retrieve spawn
     const searchEnv = await buildTargetedEnv(
       { app: this.app } as unknown as PluginForSecrets,
-      "memory",
+      "memory"
     );
     const child = spawn(
       pythonExe,
@@ -3173,18 +3149,11 @@ export class PaperForgeStatusView extends ItemView {
       extraArgs = [...extraArgs, "--all"];
     }
     const cmdTimeout = a.needsFilter ? 60000 : a.needsKey ? 30000 : 600000;
-    const { path: pythonExe, extraArgs: pyExtra = [] } =
-      resolvePythonExecutable(
-        vp,
-        ((this.app as any).plugins.plugins as any)["paperforge"]?.settings ??
-          null,
-        undefined,
-        undefined
-      );
+    const { path: pythonExe, args: pyExtra = [] } = this._resolvePython();
     // Issue #79: resolve credentials for allowlisted command types immediately before launch
     const actionEnv = await buildTargetedEnv(
       { app: this.app } as unknown as PluginForSecrets,
-      a.cmd,
+      a.cmd
     );
     const child = spawn(
       pythonExe,
