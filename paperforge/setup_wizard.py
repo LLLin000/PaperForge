@@ -85,12 +85,12 @@ class EnvChecker:
     def check_python(self) -> CheckResult:
         r = self.results["python"]
         v = sys.version_info
-        if v >= (3, 10):
+        if v >= (3, 11):
             r.passed = True
             r.detail = f"Python {v.major}.{v.minor}.{v.micro}"
         else:
             r.passed = False
-            r.detail = f"Python {v.major}.{v.minor}.{v.micro} (需要 >= 3.10)"
+            r.detail = f"Python {v.major}.{v.minor}.{v.micro} (需要 >= 3.11)"
             r.action_required = True
         return r
 

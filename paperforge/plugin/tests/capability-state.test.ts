@@ -24,7 +24,9 @@ import {
 // ── Helpers ──
 
 /** Minimal valid envelope matching backend int/schema. */
-function validEnvelope(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+function validEnvelope(
+  overrides: Partial<Record<string, unknown>> = {}
+): Record<string, unknown> {
   return {
     schema_version: 1,
     module: "installation",
@@ -64,16 +66,24 @@ describe("isValidEnvelope", () => {
   });
 
   it("passes with backend-typical null activity_label and null activity_progress", () => {
-    expect(isValidEnvelope(validEnvelope({
-      activity_label: null,
-      activity_progress: null,
-    }))).toBe(true);
+    expect(
+      isValidEnvelope(
+        validEnvelope({
+          activity_label: null,
+          activity_progress: null,
+        })
+      )
+    ).toBe(true);
   });
 
   it("passes with full setup action primary", () => {
-    expect(isValidEnvelope(validEnvelope({
-      action: { primary: FULL_SETUP_ACTION },
-    }))).toBe(true);
+    expect(
+      isValidEnvelope(
+        validEnvelope({
+          action: { primary: FULL_SETUP_ACTION },
+        })
+      )
+    ).toBe(true);
   });
 
   it("rejects null input", () => {
@@ -90,7 +100,9 @@ describe("isValidEnvelope", () => {
   });
 
   it("rejects wrong schema_version", () => {
-    expect(isValidEnvelope(validEnvelope({ schema_version: "v1" }))).toBe(false);
+    expect(isValidEnvelope(validEnvelope({ schema_version: "v1" }))).toBe(
+      false
+    );
     expect(isValidEnvelope(validEnvelope({ schema_version: 2 }))).toBe(false);
   });
 
@@ -99,21 +111,36 @@ describe("isValidEnvelope", () => {
   });
 
   it("rejects module mismatch", () => {
-    expect(isValidEnvelope(validEnvelope({ module: "help" }), "installation")).toBe(false);
+    expect(
+      isValidEnvelope(validEnvelope({ module: "help" }), "installation")
+    ).toBe(false);
   });
 
   it("accepts matching module", () => {
-    expect(isValidEnvelope(validEnvelope({ module: "help" }), "help")).toBe(true);
+    expect(isValidEnvelope(validEnvelope({ module: "help" }), "help")).toBe(
+      true
+    );
   });
 
   it("accepts all six capability_states", () => {
-    for (const s of ["unknown", "unavailable", "missing_input", "needs_action", "limited", "ready"]) {
-      expect(isValidEnvelope(validEnvelope({ capability_state: s }))).toBe(true);
+    for (const s of [
+      "unknown",
+      "unavailable",
+      "missing_input",
+      "needs_action",
+      "limited",
+      "ready",
+    ]) {
+      expect(isValidEnvelope(validEnvelope({ capability_state: s }))).toBe(
+        true
+      );
     }
   });
 
   it("rejects invalid capability_state", () => {
-    expect(isValidEnvelope(validEnvelope({ capability_state: "bogus" }))).toBe(false);
+    expect(isValidEnvelope(validEnvelope({ capability_state: "bogus" }))).toBe(
+      false
+    );
   });
 
   it("accepts all four severities", () => {
@@ -123,7 +150,9 @@ describe("isValidEnvelope", () => {
   });
 
   it("rejects invalid severity", () => {
-    expect(isValidEnvelope(validEnvelope({ severity: "critical" }))).toBe(false);
+    expect(isValidEnvelope(validEnvelope({ severity: "critical" }))).toBe(
+      false
+    );
   });
 
   it("rejects missing activity_state", () => {
@@ -142,23 +171,35 @@ describe("isValidEnvelope", () => {
   });
 
   it("accepts valid activity_progress object", () => {
-    expect(isValidEnvelope(validEnvelope({
-      activity_state: "running",
-      activity_label: "Probing...",
-      activity_progress: { current: 1, total: 5 },
-    }))).toBe(true);
+    expect(
+      isValidEnvelope(
+        validEnvelope({
+          activity_state: "running",
+          activity_label: "Probing...",
+          activity_progress: { current: 1, total: 5 },
+        })
+      )
+    ).toBe(true);
   });
 
   it("rejects activity_progress with string current", () => {
-    expect(isValidEnvelope(validEnvelope({
-      activity_progress: { current: "1", total: 3 },
-    }))).toBe(false);
+    expect(
+      isValidEnvelope(
+        validEnvelope({
+          activity_progress: { current: "1", total: 3 },
+        })
+      )
+    ).toBe(false);
   });
 
   it("accepts notices array", () => {
-    expect(isValidEnvelope(validEnvelope({
-      notices: [{ level: "info", message: "test" }],
-    }))).toBe(true);
+    expect(
+      isValidEnvelope(
+        validEnvelope({
+          notices: [{ level: "info", message: "test" }],
+        })
+      )
+    ).toBe(true);
   });
 
   it("rejects missing notices", () => {
@@ -172,11 +213,15 @@ describe("isValidEnvelope", () => {
   });
 
   it("rejects reason missing code", () => {
-    expect(isValidEnvelope(validEnvelope({ reason: { text: "nope" } }))).toBe(false);
+    expect(isValidEnvelope(validEnvelope({ reason: { text: "nope" } }))).toBe(
+      false
+    );
   });
 
   it("rejects reason missing text", () => {
-    expect(isValidEnvelope(validEnvelope({ reason: { code: "nope" } }))).toBe(false);
+    expect(isValidEnvelope(validEnvelope({ reason: { code: "nope" } }))).toBe(
+      false
+    );
   });
 
   it("rejects missing action", () => {
@@ -185,23 +230,33 @@ describe("isValidEnvelope", () => {
   });
 
   it("rejects action with string primary", () => {
-    expect(isValidEnvelope(validEnvelope({ action: { primary: "setup" } }))).toBe(false);
+    expect(
+      isValidEnvelope(validEnvelope({ action: { primary: "setup" } }))
+    ).toBe(false);
   });
 
   it("rejects action with array primary", () => {
-    expect(isValidEnvelope(validEnvelope({ action: { primary: [] } }))).toBe(false);
+    expect(isValidEnvelope(validEnvelope({ action: { primary: [] } }))).toBe(
+      false
+    );
   });
 
   it("rejects action with incomplete primary (missing verb)", () => {
-    expect(isValidEnvelope(validEnvelope({ action: { primary: { label: "x" } } }))).toBe(false);
+    expect(
+      isValidEnvelope(validEnvelope({ action: { primary: { label: "x" } } }))
+    ).toBe(false);
   });
 
   it("accepts action with null primary", () => {
-    expect(isValidEnvelope(validEnvelope({ action: { primary: null } }))).toBe(true);
+    expect(isValidEnvelope(validEnvelope({ action: { primary: null } }))).toBe(
+      true
+    );
   });
 
   it("accepts action with full setup primary", () => {
-    expect(isValidEnvelope(validEnvelope({ action: { primary: FULL_SETUP_ACTION } }))).toBe(true);
+    expect(
+      isValidEnvelope(validEnvelope({ action: { primary: FULL_SETUP_ACTION } }))
+    ).toBe(true);
   });
 
   it("rejects missing updated_at", () => {
@@ -224,8 +279,10 @@ describe("isValidEnvelope", () => {
 describe("isEnvelopeStale", () => {
   function makeEnv(overrides: Partial<ProbeEnvelope> = {}): ProbeEnvelope {
     return {
-      schema_version: 1, module: "installation",
-      capability_state: "ready", severity: "ok",
+      schema_version: 1,
+      module: "installation",
+      capability_state: "ready",
+      severity: "ok",
       activity_state: "idle",
       activity_label: null,
       activity_progress: null,
@@ -243,7 +300,9 @@ describe("isEnvelopeStale", () => {
   });
 
   it("returns true for epoch date", () => {
-    expect(isEnvelopeStale(makeEnv({ updated_at: new Date(0).toISOString() }))).toBe(true);
+    expect(
+      isEnvelopeStale(makeEnv({ updated_at: new Date(0).toISOString() }))
+    ).toBe(true);
   });
 
   it("returns false when recent within TTL", () => {
@@ -357,8 +416,10 @@ describe("setupAction", () => {
 describe("isReadyEnvelope", () => {
   function make(overrides: Partial<ProbeEnvelope> = {}): ProbeEnvelope {
     return {
-      schema_version: 1, module: "installation",
-      capability_state: "ready", severity: "ok",
+      schema_version: 1,
+      module: "installation",
+      capability_state: "ready",
+      severity: "ok",
       activity_state: "idle",
       activity_label: null,
       activity_progress: null,
@@ -376,11 +437,15 @@ describe("isReadyEnvelope", () => {
   });
 
   it("returns false for ready with non-null action", () => {
-    expect(isReadyEnvelope(make({ action: { primary: FULL_SETUP_ACTION } }))).toBe(false);
+    expect(
+      isReadyEnvelope(make({ action: { primary: FULL_SETUP_ACTION } }))
+    ).toBe(false);
   });
 
   it("returns false for non-ready state", () => {
-    expect(isReadyEnvelope(make({ capability_state: "unavailable" }))).toBe(false);
+    expect(isReadyEnvelope(make({ capability_state: "unavailable" }))).toBe(
+      false
+    );
   });
 
   it("returns false for unknown state", () => {
@@ -419,7 +484,9 @@ describe("literal backend envelope", () => {
     severity: "ok",
     reason: { code: "ok", text: "PaperForge environment is set up correctly." },
     action: { primary: null },
-    notices: [{ level: "info", message: "Installation verified at 2026-01-15" }],
+    notices: [
+      { level: "info", message: "Installation verified at 2026-01-15" },
+    ],
     updated_at: "2026-01-15T00:00:00.000Z",
     ttl_seconds: 3600,
   };
@@ -433,7 +500,10 @@ describe("literal backend envelope", () => {
       ...BACKEND_INSTALLATION_READY,
       capability_state: "needs_action",
       severity: "warning",
-      reason: { code: "setup_required", text: "Initial setup not yet complete." },
+      reason: {
+        code: "setup_required",
+        text: "Initial setup not yet complete.",
+      },
       action: { primary: FULL_SETUP_ACTION },
     };
     expect(isValidEnvelope(envelope)).toBe(true);
@@ -456,22 +526,33 @@ describe("literal backend envelope", () => {
 
 describe("classifyCapabilityAction", () => {
   const base: Partial<ProbeEnvelope> = {
-    schema_version: 1, module: "installation", capability_state: "needs_action",
-    activity_state: "idle", severity: "warning", reason: { code: "test", text: "test" },
-    updated_at: new Date().toISOString(), ttl_seconds: 3600,
+    schema_version: 1,
+    module: "installation",
+    capability_state: "needs_action",
+    activity_state: "idle",
+    severity: "warning",
+    reason: { code: "test", text: "test" },
+    updated_at: new Date().toISOString(),
+    ttl_seconds: 3600,
   };
 
   it("preserves the backend-selected action label", () => {
-    const env: ProbeEnvelope = { ...base as ProbeEnvelope,
+    const env: ProbeEnvelope = {
+      ...(base as ProbeEnvelope),
       module: "help",
-      action: { primary: { verb: "setup", label: "Restore help", destructive: false } },
+      action: {
+        primary: { verb: "setup", label: "Restore help", destructive: false },
+      },
     };
     expect(classifyCapabilityAction(env).label).toBe("Restore help");
   });
 
   it("classifies set_config verb as setup kind", () => {
-    const env: ProbeEnvelope = { ...base as ProbeEnvelope,
-      action: { primary: { verb: "set_config", label: "Configure", destructive: false } },
+    const env: ProbeEnvelope = {
+      ...(base as ProbeEnvelope),
+      action: {
+        primary: { verb: "set_config", label: "Configure", destructive: false },
+      },
     };
     const result = classifyCapabilityAction(env);
     expect(result.kind).toBe("setup");
@@ -479,8 +560,11 @@ describe("classifyCapabilityAction", () => {
   });
 
   it("classifies update verb as setup kind", () => {
-    const env: ProbeEnvelope = { ...base as ProbeEnvelope,
-      action: { primary: { verb: "update", label: "Update", destructive: false } },
+    const env: ProbeEnvelope = {
+      ...(base as ProbeEnvelope),
+      action: {
+        primary: { verb: "update", label: "Update", destructive: false },
+      },
     };
     const result = classifyCapabilityAction(env);
     expect(result.kind).toBe("setup");
@@ -488,8 +572,11 @@ describe("classifyCapabilityAction", () => {
   });
 
   it("classifies probe verb as probe kind", () => {
-    const env: ProbeEnvelope = { ...base as ProbeEnvelope,
-      action: { primary: { verb: "probe", label: "Refresh", destructive: false } },
+    const env: ProbeEnvelope = {
+      ...(base as ProbeEnvelope),
+      action: {
+        primary: { verb: "probe", label: "Refresh", destructive: false },
+      },
     };
     const result = classifyCapabilityAction(env);
     expect(result.kind).toBe("probe");
@@ -497,7 +584,8 @@ describe("classifyCapabilityAction", () => {
 
   it("classifies sync/run/rebuild_index as action kind", () => {
     for (const verb of ["sync", "run", "rebuild_index", "migrate"]) {
-      const env: ProbeEnvelope = { ...base as ProbeEnvelope,
+      const env: ProbeEnvelope = {
+        ...(base as ProbeEnvelope),
         action: { primary: { verb, label: verb, destructive: false } },
       };
       expect(classifyCapabilityAction(env).kind).toBe("action");
@@ -505,12 +593,15 @@ describe("classifyCapabilityAction", () => {
   });
 
   it("defaults to probe when action is null", () => {
-    const env: ProbeEnvelope = { ...base as ProbeEnvelope, action: null };
+    const env: ProbeEnvelope = { ...(base as ProbeEnvelope), action: null };
     expect(classifyCapabilityAction(env).kind).toBe("probe");
   });
 
   it("defaults to probe when primary action is null", () => {
-    const env: ProbeEnvelope = { ...base as ProbeEnvelope, action: { primary: null } };
+    const env: ProbeEnvelope = {
+      ...(base as ProbeEnvelope),
+      action: { primary: null },
+    };
     expect(classifyCapabilityAction(env).kind).toBe("probe");
   });
 });
@@ -519,15 +610,26 @@ describe("classifyCapabilityAction", () => {
 
 describe("computeModuleSummary", () => {
   const readyEnv: ProbeEnvelope = {
-    schema_version: 1, module: "installation", capability_state: "ready",
-    activity_state: "idle", severity: "ok", reason: null,
-    action: { primary: null }, updated_at: new Date().toISOString(), ttl_seconds: 3600,
+    schema_version: 1,
+    module: "installation",
+    capability_state: "ready",
+    activity_state: "idle",
+    severity: "ok",
+    reason: null,
+    action: { primary: null },
+    updated_at: new Date().toISOString(),
+    ttl_seconds: 3600,
   };
   const unknownEnv: ProbeEnvelope = {
-    schema_version: 1, module: "installation", capability_state: "unknown",
-    activity_state: "idle", severity: "unknown", reason: { code: "test", text: "test" },
+    schema_version: 1,
+    module: "installation",
+    capability_state: "unknown",
+    activity_state: "idle",
+    severity: "unknown",
+    reason: { code: "test", text: "test" },
     action: { primary: { verb: "probe", label: "Probe", destructive: false } },
-    updated_at: new Date(0).toISOString(), ttl_seconds: 0,
+    updated_at: new Date(0).toISOString(),
+    ttl_seconds: 0,
   };
   const realModules = ["installation", "help"];
 
@@ -598,7 +700,9 @@ describe("validatePersistedEnvelopes", () => {
     };
     const result = validatePersistedEnvelopes(input, allModules);
     expect(result["installation"].capability_state).toBe("unknown");
-    expect(result["installation"].reason?.code).toBe("installation.invalid_response");
+    expect(result["installation"].reason?.code).toBe(
+      "installation.invalid_response"
+    );
   });
 
   it("replaces stale entries with stale envelopes", () => {
@@ -634,7 +738,9 @@ describe("validatePersistedEnvelopes", () => {
     };
     const result = validatePersistedEnvelopes(input, allModules);
     expect(result["installation"].capability_state).toBe("unknown");
-    expect(result["installation"].reason?.code).toBe("installation.invalid_response");
+    expect(result["installation"].reason?.code).toBe(
+      "installation.invalid_response"
+    );
   });
 
   it("replaces entries with non-ready severity/state mismatch with invalid envelope", () => {
@@ -723,32 +829,48 @@ describe("production-seam runtime dispatch", () => {
     polyfill("appendText", function (this: HTMLElement, text: string) {
       this.appendChild(this.ownerDocument.createTextNode(text));
     });
-    polyfill("createDiv", function (this: HTMLElement, opts?: Record<string, unknown>): HTMLElement {
-      const el = document.createElement("div");
-      if (opts?.cls) el.className = String(opts.cls);
-      if (opts?.text) el.textContent = String(opts.text);
-      if (opts?.attr) {
-        const attrs = opts.attr as Record<string, string>;
-        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    polyfill(
+      "createDiv",
+      function (
+        this: HTMLElement,
+        opts?: Record<string, unknown>
+      ): HTMLElement {
+        const el = document.createElement("div");
+        if (opts?.cls) el.className = String(opts.cls);
+        if (opts?.text) el.textContent = String(opts.text);
+        if (opts?.attr) {
+          const attrs = opts.attr as Record<string, string>;
+          for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+        }
+        this.appendChild(el);
+        return el;
       }
-      this.appendChild(el);
-      return el;
-    });
-    polyfill("createEl", function (this: HTMLElement, tag: string, opts?: Record<string, unknown>): HTMLElement {
-      const el = document.createElement(tag);
-      if (opts?.cls) el.className = String(opts.cls);
-      if (opts?.text) el.textContent = String(opts.text);
-      if (opts?.attr) {
-        const attrs = opts.attr as Record<string, string>;
-        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    );
+    polyfill(
+      "createEl",
+      function (
+        this: HTMLElement,
+        tag: string,
+        opts?: Record<string, unknown>
+      ): HTMLElement {
+        const el = document.createElement(tag);
+        if (opts?.cls) el.className = String(opts.cls);
+        if (opts?.text) el.textContent = String(opts.text);
+        if (opts?.attr) {
+          const attrs = opts.attr as Record<string, string>;
+          for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+        }
+        this.appendChild(el);
+        return el;
       }
-      this.appendChild(el);
-      return el;
-    });
-    polyfill("setAttr", function (this: HTMLElement, attr: string, value: string): HTMLElement {
-      this.setAttribute(attr, value);
-      return this;
-    });
+    );
+    polyfill(
+      "setAttr",
+      function (this: HTMLElement, attr: string, value: string): HTMLElement {
+        this.setAttribute(attr, value);
+        return this;
+      }
+    );
     polyfill("setText", function (this: HTMLElement, text: string): void {
       this.textContent = text;
     });
@@ -800,7 +922,9 @@ describe("production-seam runtime dispatch", () => {
         ttl_seconds: 3600,
       };
     }
-    (plugin.settings as Record<string, unknown>).capabilityState = { ...tab._capabilityState };
+    (plugin.settings as Record<string, unknown>).capabilityState = {
+      ...tab._capabilityState,
+    };
   });
 
   it("uses managed python path in _probeModule when runtime is ready", () => {
@@ -876,7 +1000,7 @@ describe("production-seam runtime dispatch", () => {
     expect(mockExecFile.mock.calls[0][3]).toBeInstanceOf(Function);
   });
 
-  it("falls back to legacy resolver with Release-N warning when managed is cold/stale", () => {
+  it("fails closed when managed runtime is cold/stale — no legacy fallback", () => {
     setManagedHealth({
       state: "unknown",
       pythonPath: null,
@@ -895,14 +1019,11 @@ describe("production-seam runtime dispatch", () => {
 
     tab._probeModule("installation");
 
-    expect(warnMessages.some((w) => w.includes("Release N"))).toBe(true);
-    expect(mockExecFile).toHaveBeenCalledTimes(1);
-    const execPath: string = mockExecFile.mock.calls[0][0];
-    expect(execPath).toBe("/legacy/python");
-    const execArgs: string[] = mockExecFile.mock.calls[0][1];
-    expect(execArgs).toContain("-3");
-    expect(execArgs).toContain("-m");
-    expect(execArgs).toContain("paperforge");
+    // Legacy fallback is removed — no execFile, no warning, setup envelope
+    expect(mockExecFile).not.toHaveBeenCalled();
+    const env = tab._capabilityState?.["installation"];
+    expect(env?.reason?.code).toBe("installation.no_python");
+    expect(env?.action?.primary?.verb).toBe("setup");
   });
 
   it("RED Gap 2 follow-up: null resolver produces persistent setup envelope (installation.no_python + setup verb)", () => {
@@ -968,7 +1089,7 @@ describe("production-seam runtime dispatch", () => {
     expect(execOpts.timeout).toBe(8000);
   });
 
-  it("reproduces managed-install->legacy-invalid regression: managed absent and legacy empty path", () => {
+  it("managed absent and legacy empty path produces stale envelope without fallback warning", () => {
     (tab as any)._managedRuntime = null;
     mockResolveRuntimeCommand.mockReturnValue(null);
     mockGetCachedPython.mockReturnValue({
@@ -980,7 +1101,10 @@ describe("production-seam runtime dispatch", () => {
     tab._probeModule("help");
 
     expect(mockExecFile).not.toHaveBeenCalled();
-    expect(warnMessages.some((w) => w.includes("Release N"))).toBe(true);
-    expect(tab._capabilityState?.["help"]?.reason?.code).toBe("help.stale");
+    // No Release N legacy fallback warning — fail closed
+    expect(warnMessages.some((w) => w.includes("Release N"))).toBe(false);
+    expect(tab._capabilityState?.["help"]?.reason?.code).toBe(
+      "help.invalid_response"
+    );
   });
 });

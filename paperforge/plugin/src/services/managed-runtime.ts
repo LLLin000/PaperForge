@@ -18,7 +18,10 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { execFile as cpExecFile, execFileSync as cpExecFileSync } from "child_process";
+import {
+  execFile as cpExecFile,
+  execFileSync as cpExecFileSync,
+} from "child_process";
 import * as os from "os";
 
 // ── Public types ──
@@ -86,25 +89,45 @@ export interface RuntimeAction {
 export interface FsOps {
   existsSync(p: string): boolean;
   readFileSync(p: string, encoding?: string | null): string;
-  writeFileSync(p: string, data: string | NodeJS.ArrayBufferView, encoding?: string | null): void;
+  writeFileSync(
+    p: string,
+    data: string | NodeJS.ArrayBufferView,
+    encoding?: string | null
+  ): void;
   renameSync(oldP: string, newP: string): void;
   mkdirSync(p: string, opts?: { recursive?: boolean }): string | undefined;
   rmSync(p: string, opts?: { recursive?: boolean; force?: boolean }): void;
   readdirSync(p: string, opts?: { withFileTypes?: boolean }): fs.Dirent[];
 }
 
-export type ExecFileCallback = (error: Error | null, stdout: string, stderr: string) => void;
-export type ExecFileFn = (command: string, args: readonly string[], opts: { timeout?: number; encoding?: string; signal?: AbortSignal }, cb: ExecFileCallback) => void;
-export type ExecFileSyncFn = (command: string, args: readonly string[], opts: { encoding: string; timeout: number }) => string;
+export type ExecFileCallback = (
+  error: Error | null,
+  stdout: string,
+  stderr: string
+) => void;
+export type ExecFileFn = (
+  command: string,
+  args: readonly string[],
+  opts: { timeout?: number; encoding?: string; signal?: AbortSignal },
+  cb: ExecFileCallback
+) => void;
+export type ExecFileSyncFn = (
+  command: string,
+  args: readonly string[],
+  opts: { encoding: string; timeout: number }
+) => string;
 
 // ── Constants ──
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const MIN_PYTHON_NEW = "3.11";
-const MIN_PYTHON_LEGACY = "3.10";
+const MIN_PYTHON = "3.11";
 
 /** ES2018-compatible Promise.withResolvers polyfill. */
-function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void; reject: (err: unknown) => void } {
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (err: unknown) => void;
+} {
   let resolve!: (value: T) => void;
   let reject!: (err: unknown) => void;
   const promise = new Promise<T>((res, rej) => {
@@ -146,7 +169,12 @@ function detectContainer(): boolean {
     if (fs.existsSync("/.dockerenv")) return true;
     if (fs.existsSync("/run/.containerenv")) return true;
     const cgroup = fs.readFileSync("/proc/1/cgroup", "utf-8");
-    if (cgroup.includes("docker") || cgroup.includes("flatpak") || cgroup.includes("snap")) return true;
+    if (
+      cgroup.includes("docker") ||
+      cgroup.includes("flatpak") ||
+      cgroup.includes("snap")
+    )
+      return true;
   } catch {
     // ignore
   }
@@ -154,15 +182,19 @@ function detectContainer(): boolean {
 }
 
 function detectFlatpak(): boolean {
-  return process.env.FLATPAK_ID !== undefined ||
+  return (
+    process.env.FLATPAK_ID !== undefined ||
     (process.env.XDG_DATA_DIRS ?? "").includes("flatpak") ||
-    false;
+    false
+  );
 }
 
 function detectSnap(): boolean {
-  return process.env.SNAP !== undefined ||
+  return (
+    process.env.SNAP !== undefined ||
     process.env.SNAP_NAME !== undefined ||
-    false;
+    false
+  );
 }
 
 export function getOsArch(osPlatform: string, osArch: string): string {
@@ -192,10 +224,20 @@ export function isSnapEnv(): boolean {
 // ── Canonical actions per health state ──
 
 /** Return internal actions with id/primary/destructive. Used by DI tests. */
-export function runtimeActionsForHealth(health: RuntimeHealth): readonly RuntimeAction[];
+export function runtimeActionsForHealth(
+  health: RuntimeHealth
+): readonly RuntimeAction[];
 /** Return UI actions with verb/label. Used by settings rendering. */
-export function runtimeActionsForHealth(health: RuntimeHealth, targetVersion: string, running: boolean): readonly RuntimeUiAction[];
-export function runtimeActionsForHealth(health: RuntimeHealth, targetVersion?: string, running?: boolean): readonly RuntimeAction[] | readonly RuntimeUiAction[] {
+export function runtimeActionsForHealth(
+  health: RuntimeHealth,
+  targetVersion: string,
+  running: boolean
+): readonly RuntimeUiAction[];
+export function runtimeActionsForHealth(
+  health: RuntimeHealth,
+  targetVersion?: string,
+  running?: boolean
+): readonly RuntimeAction[] | readonly RuntimeUiAction[] {
   // 3-param UI path (settings rendering)
   if (targetVersion !== undefined || running !== undefined) {
     if (running) {
@@ -235,33 +277,83 @@ export function runtimeActionsForHealth(health: RuntimeHealth, targetVersion?: s
   // 1-param internal path (unchanged, for DI tests)
   switch (health.state) {
     case "not_installed":
-      return [{ id: "install", label: "Install Runtime", primary: true, destructive: false }];
+      return [
+        {
+          id: "install",
+          label: "Install Runtime",
+          primary: true,
+          destructive: false,
+        },
+      ];
     case "needs_repair": {
       const actions: RuntimeAction[] = [
-        { id: "repair", label: "Repair Runtime", primary: true, destructive: false },
+        {
+          id: "repair",
+          label: "Repair Runtime",
+          primary: true,
+          destructive: false,
+        },
       ];
       if (health.pythonPath) {
-        actions.push({ id: "rollback", label: "Rollback", primary: false, destructive: false });
+        actions.push({
+          id: "rollback",
+          label: "Rollback",
+          primary: false,
+          destructive: false,
+        });
       }
       return actions;
     }
     case "ready":
       return [
-        { id: "status", label: "Check Status", primary: false, destructive: false },
-        { id: "update", label: "Update Runtime", primary: false, destructive: false },
+        {
+          id: "status",
+          label: "Check Status",
+          primary: false,
+          destructive: false,
+        },
+        {
+          id: "update",
+          label: "Update Runtime",
+          primary: false,
+          destructive: false,
+        },
       ];
     case "unknown":
-      return [{ id: "probe", label: "Refresh Status", primary: true, destructive: false }];
+      return [
+        {
+          id: "probe",
+          label: "Refresh Status",
+          primary: true,
+          destructive: false,
+        },
+      ];
     case "unavailable":
-      return [{ id: "setup", label: "Manual Setup", primary: true, destructive: false }];
+      return [
+        {
+          id: "setup",
+          label: "Manual Setup",
+          primary: true,
+          destructive: false,
+        },
+      ];
     default:
-      return [{ id: "probe", label: "Refresh Status", primary: true, destructive: false }];
+      return [
+        {
+          id: "probe",
+          label: "Refresh Status",
+          primary: true,
+          destructive: false,
+        },
+      ];
   }
 }
 
 // ── Resolve runtime command from health ──
 
-export function resolveRuntimeCommand(health: RuntimeHealth): RuntimeRun | null {
+export function resolveRuntimeCommand(
+  health: RuntimeHealth
+): RuntimeRun | null {
   if (health.state !== "ready" || !health.pythonPath) return null;
   return { command: health.pythonPath, args: [] };
 }
@@ -324,7 +416,8 @@ export class ManagedRuntime {
     this.pointerPath = path.join(this.rootDir, "active-runtime.json");
     this._fs = opts.fs ?? (fs as unknown as FsOps);
     this._execFile = opts.execFile ?? (cpExecFile as unknown as ExecFileFn);
-    this._execFileSync = opts.execFileSync ?? (cpExecFileSync as unknown as ExecFileSyncFn);
+    this._execFileSync =
+      opts.execFileSync ?? (cpExecFileSync as unknown as ExecFileSyncFn);
   }
 
   // ── Sync: fails closed on cold/stale cache ──
@@ -377,10 +470,18 @@ export class ManagedRuntime {
       const ptr: Record<string, unknown> = JSON.parse(raw);
       pointerVersion = typeof ptr.version === "string" ? ptr.version : null;
       const pp = typeof ptr.pythonPath === "string" ? ptr.pythonPath : null;
-      pointerPythonPath = pp ? path.resolve(path.dirname(this.pointerPath), pp) : null;
-      pointerPrevVersion = typeof ptr.previousVersion === "string" ? ptr.previousVersion : null;
-      pointerPrevPythonPath = typeof ptr.previousPythonPath === "string" ? ptr.previousPythonPath : null;
-      pointerWarnings = Array.isArray(ptr.warnings) ? ptr.warnings as WarningInfo[] : [];
+      pointerPythonPath = pp
+        ? path.resolve(path.dirname(this.pointerPath), pp)
+        : null;
+      pointerPrevVersion =
+        typeof ptr.previousVersion === "string" ? ptr.previousVersion : null;
+      pointerPrevPythonPath =
+        typeof ptr.previousPythonPath === "string"
+          ? ptr.previousPythonPath
+          : null;
+      pointerWarnings = Array.isArray(ptr.warnings)
+        ? (ptr.warnings as WarningInfo[])
+        : [];
     } catch {
       // No pointer → not installed
       return this._setCache({
@@ -441,28 +542,7 @@ export class ManagedRuntime {
     try {
       const result = await this._probe(pointerPythonPath);
 
-      // Check Python version and add Release-N warning for 3.10
       const probeWarnings = [...pointerWarnings];
-      try {
-        const pyVerOut = this._execFileSync(pointerPythonPath, ["--version"], {
-          encoding: "utf-8",
-          timeout: 5000,
-        });
-        const pyVer = parsePythonVersion(pyVerOut);
-        if (pyVer && isAtLeast(pyVer, MIN_PYTHON_LEGACY) && !isAtLeast(pyVer, MIN_PYTHON_NEW)) {
-          // Only add if not already present
-          if (!probeWarnings.some((w) => w.code === "PYTHON_310_DEPRECATED")) {
-            probeWarnings.push({
-              code: "PYTHON_310_DEPRECATED",
-              message: `Python ${pyVer} is running. Python 3.10 support enters legacy phase in Release N — upgrade to Python ${MIN_PYTHON_NEW}+ recommended.`,
-              platformAction: `Upgrade to Python ${MIN_PYTHON_NEW}+`,
-            });
-          }
-        }
-      } catch {
-        // Version check is best-effort; ignore failures
-      }
-
       return this._setCache({
         state: "ready",
         pythonPath: pointerPythonPath,
@@ -476,7 +556,8 @@ export class ManagedRuntime {
         previousPythonPath: pointerPrevPythonPath,
       });
     } catch (probeErr: unknown) {
-      const msg = probeErr instanceof Error ? probeErr.message : String(probeErr);
+      const msg =
+        probeErr instanceof Error ? probeErr.message : String(probeErr);
       return this._setCache({
         state: "needs_repair",
         pythonPath: pointerPythonPath,
@@ -530,8 +611,10 @@ export class ManagedRuntime {
           source: "none",
           error: {
             code: "FLATPAK_SNAP_UNSUPPORTED",
-            message: "Flatpak and Snap are not supported. Install Python 3.11+ natively.",
-            platformAction: "Install Python 3.11+ from python.org or package manager",
+            message:
+              "Flatpak and Snap are not supported. Install Python 3.11+ natively.",
+            platformAction:
+              "Install Python 3.11+ from python.org or package manager",
           },
           lastVerifiedAt: null,
           stale: false,
@@ -554,7 +637,8 @@ export class ManagedRuntime {
           source: "none",
           error: {
             code: "NO_PYTHON",
-            message: "No Python 3.11+ found. macOS auto-download disabled until signed/notarized artifacts exist.",
+            message:
+              "No Python 3.11+ found. macOS auto-download disabled until signed/notarized artifacts exist.",
             platformAction: "Install Python 3.11+ from python.org or Homebrew",
           },
           lastVerifiedAt: null,
@@ -592,7 +676,8 @@ export class ManagedRuntime {
         source: "none",
         error: {
           code: "FALLBACK_UNAVAILABLE",
-          message: "No Python found and this platform has no validated fallback.",
+          message:
+            "No Python found and this platform has no validated fallback.",
           platformAction: "Install Python 3.11+ manually from python.org",
         },
         lastVerifiedAt: null,
@@ -605,10 +690,8 @@ export class ManagedRuntime {
 
     if (signal?.aborted) return this._abortedHealth();
 
-    // Step 2: Compatibility gate — version check
-    const isExistingInstall = this._currentSlotExists(version);
-
-    if (!isAtLeast(bootstrap.version, MIN_PYTHON_LEGACY)) {
+    // All installations require 3.11+
+    if (!isAtLeast(bootstrap.version, MIN_PYTHON)) {
       return this._setCache({
         state: "unavailable",
         pythonPath: null,
@@ -616,28 +699,8 @@ export class ManagedRuntime {
         source: "none",
         error: {
           code: "PYTHON_TOO_OLD",
-          message: `Python ${bootstrap.version} is too old. Python 3.10+ required.`,
-          platformAction: "Install Python 3.10+",
-        },
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-        previousVersion: null,
-        previousPythonPath: null,
-      });
-    }
-
-    // New installs / repairs require 3.11+
-    if (!isExistingInstall && !isAtLeast(bootstrap.version, MIN_PYTHON_NEW)) {
-      return this._setCache({
-        state: "needs_repair",
-        pythonPath: null,
-        version: bootstrap.version,
-        source: "none",
-        error: {
-          code: "PYTHON_VERSION_WARNING",
-          message: `Python ${bootstrap.version} found. New installations require Python ${MIN_PYTHON_NEW}+.`,
-          platformAction: `Upgrade to Python ${MIN_PYTHON_NEW}+`,
+          message: `Python ${bootstrap.version} is too old. Python 3.11+ required.`,
+          platformAction: "Install Python 3.11+",
         },
         lastVerifiedAt: null,
         stale: false,
@@ -648,30 +711,30 @@ export class ManagedRuntime {
     }
 
     // Step 2.5: Rollback/retained-slot fast path — if the version slot
-    // already exists, we are not forcing a rebuild, AND the currently
-    // active pointer points to a different version, verify the retained
+    // already exists and we are not forcing a rebuild, verify the retained
     // immutable slot and atomically rewrite the pointer without creating
-    // a new venv or running pip.  This preserves the slot exactly as it
-    // was built and is never a bootstrap / venv / pip operation.
-    if (isExistingInstall && !force) {
+    // a new venv or running pip. Only enters when rolling back to a
+    // *different* version; same-version ensure falls through to full build.
+    if (this._currentSlotExists(version) && !force) {
       // Determine whether this is a rollback (active version != requested)
       let isRollback = false;
       try {
         const curRaw = this._fs.readFileSync(this.pointerPath, "utf-8");
         const curPtr: Record<string, unknown> = JSON.parse(curRaw);
-        const activeVer = typeof curPtr.version === "string" ? curPtr.version : null;
+        const activeVer =
+          typeof curPtr.version === "string" ? curPtr.version : null;
         isRollback = activeVer !== null && activeVer !== version;
       } catch {
         // No pointer — not a rollback
       }
 
       if (isRollback) {
-
         const rollbackSlotDir = path.join(this.runtimeDir, `v${version}`);
         const rollbackVenvDir = path.join(rollbackSlotDir, "venv");
-        const rollbackPythonExe = this.osPlatform === "win32"
-          ? path.join(rollbackVenvDir, "Scripts", "python.exe")
-          : path.join(rollbackVenvDir, "bin", "python");
+        const rollbackPythonExe =
+          this.osPlatform === "win32"
+            ? path.join(rollbackVenvDir, "Scripts", "python.exe")
+            : path.join(rollbackVenvDir, "bin", "python");
 
         // Verify the retained slot's Python can import paperforge
         try {
@@ -680,7 +743,8 @@ export class ManagedRuntime {
           if (probeErr instanceof Error && probeErr.name === "AbortError") {
             return this._abortedHealth();
           }
-          const msg = probeErr instanceof Error ? probeErr.message : String(probeErr);
+          const msg =
+            probeErr instanceof Error ? probeErr.message : String(probeErr);
           return this._setCache({
             state: "needs_repair",
             pythonPath: rollbackPythonExe,
@@ -705,8 +769,10 @@ export class ManagedRuntime {
         try {
           const oldRaw = this._fs.readFileSync(this.pointerPath, "utf-8");
           const oldPtr: Record<string, unknown> = JSON.parse(oldRaw);
-          prevVersion = typeof oldPtr.version === "string" ? oldPtr.version : null;
-          prevPythonPath = typeof oldPtr.pythonPath === "string" ? oldPtr.pythonPath : null;
+          prevVersion =
+            typeof oldPtr.version === "string" ? oldPtr.version : null;
+          prevPythonPath =
+            typeof oldPtr.pythonPath === "string" ? oldPtr.pythonPath : null;
         } catch {
           // No previous pointer — first install
         }
@@ -717,7 +783,10 @@ export class ManagedRuntime {
           this._fs.mkdirSync(pointerDir, { recursive: true });
         }
 
-        const relativePyPath = path.relative(path.dirname(this.pointerPath), rollbackPythonExe);
+        const relativePyPath = path.relative(
+          path.dirname(this.pointerPath),
+          rollbackPythonExe
+        );
         const pointerContent = JSON.stringify(
           {
             schema_version: 1,
@@ -728,7 +797,7 @@ export class ManagedRuntime {
             previousPythonPath: prevPythonPath,
           },
           null,
-          2,
+          2
         );
 
         const tmpPath = this.pointerPath + ".tmp";
@@ -755,52 +824,79 @@ export class ManagedRuntime {
         this._cleanupOldSlots(version);
 
         return health;
-      }
+      } // end if (isRollback)
     }
 
     if (signal?.aborted) return this._abortedHealth();
-
 
     // Step 3: Build immutable version slot
     const slotDir = force
       ? path.join(this.runtimeDir, `v${version}_build2`)
       : path.join(this.runtimeDir, `v${version}`);
     const venvDir = path.join(slotDir, "venv");
-    const pythonExe = this.osPlatform === "win32"
-      ? path.join(venvDir, "Scripts", "python.exe")
-      : path.join(venvDir, "bin", "python");
+    const pythonExe =
+      this.osPlatform === "win32"
+        ? path.join(venvDir, "Scripts", "python.exe")
+        : path.join(venvDir, "bin", "python");
 
     try {
       this._fs.mkdirSync(slotDir, { recursive: true });
 
       // Create venv
-      const { promise: venvPromise, reject: venvReject, resolve: venvResolve } = deferred<void>();
-      this._execFile(bootstrap.path, ["-m", "venv", venvDir], { timeout: 60000, signal }, (err) => {
-        if (err) venvReject(err);
-        else venvResolve();
-      });
+      const {
+        promise: venvPromise,
+        reject: venvReject,
+        resolve: venvResolve,
+      } = deferred<void>();
+      this._execFile(
+        bootstrap.path,
+        ["-m", "venv", venvDir],
+        { timeout: 60000, signal },
+        (err) => {
+          if (err) venvReject(err);
+          else venvResolve();
+        }
+      );
       await venvPromise;
     } catch (venvErr: unknown) {
       if (venvErr instanceof Error && venvErr.name === "AbortError") {
-        try { this._fs.rmSync(slotDir, { recursive: true, force: true }); } catch {}
+        try {
+          this._fs.rmSync(slotDir, { recursive: true, force: true });
+        } catch {}
         return this._abortedHealth();
       }
-      return this._slotFailed(version, "VENV_CREATION_FAILED", venvErr, slotDir);
+      return this._slotFailed(
+        version,
+        "VENV_CREATION_FAILED",
+        venvErr,
+        slotDir
+      );
     }
 
     if (signal?.aborted) return this._abortedHealth();
 
     try {
       // pip install paperforge
-      const { promise: pipPromise, reject: pipReject, resolve: pipResolve } = deferred<void>();
-      this._execFile(pythonExe, ["-m", "pip", "install", `paperforge==${version}`], { timeout: 120000, signal }, (err) => {
-        if (err) pipReject(err);
-        else pipResolve();
-      });
+      const {
+        promise: pipPromise,
+        reject: pipReject,
+        resolve: pipResolve,
+      } = deferred<void>();
+      this._execFile(
+        pythonExe,
+        ["-m", "pip", "install", `paperforge==${version}`],
+        { timeout: 120000, signal },
+        (err) => {
+          if (err) pipReject(err);
+          else pipResolve();
+        }
+      );
       await pipPromise;
     } catch (pipErr: unknown) {
       if (pipErr instanceof Error && pipErr.name === "AbortError") {
-        try { this._fs.rmSync(slotDir, { recursive: true, force: true }); } catch {}
+        try {
+          this._fs.rmSync(slotDir, { recursive: true, force: true });
+        } catch {}
         return this._abortedHealth();
       }
       return this._slotFailed(version, "PIP_INSTALL_FAILED", pipErr, slotDir);
@@ -810,15 +906,26 @@ export class ManagedRuntime {
 
     try {
       // Verify with isolated import
-      const { promise: verifyPromise, reject: verifyReject, resolve: verifyResolve } = deferred<void>();
-      this._execFile(pythonExe, ["-I", "-c", `import paperforge; print(paperforge.__version__)`], { timeout: 30000, signal }, (err) => {
-        if (err) verifyReject(err);
-        else verifyResolve();
-      });
+      const {
+        promise: verifyPromise,
+        reject: verifyReject,
+        resolve: verifyResolve,
+      } = deferred<void>();
+      this._execFile(
+        pythonExe,
+        ["-I", "-c", `import paperforge; print(paperforge.__version__)`],
+        { timeout: 30000, signal },
+        (err) => {
+          if (err) verifyReject(err);
+          else verifyResolve();
+        }
+      );
       await verifyPromise;
     } catch (verifyErr: unknown) {
       if (verifyErr instanceof Error && verifyErr.name === "AbortError") {
-        try { this._fs.rmSync(slotDir, { recursive: true, force: true }); } catch {}
+        try {
+          this._fs.rmSync(slotDir, { recursive: true, force: true });
+        } catch {}
         return this._abortedHealth();
       }
       return this._slotFailed(version, "VERIFY_FAILED", verifyErr, slotDir);
@@ -831,7 +938,8 @@ export class ManagedRuntime {
       const oldRaw = this._fs.readFileSync(this.pointerPath, "utf-8");
       const oldPtr: Record<string, unknown> = JSON.parse(oldRaw);
       prevVersion = typeof oldPtr.version === "string" ? oldPtr.version : null;
-      prevPythonPath = typeof oldPtr.pythonPath === "string" ? oldPtr.pythonPath : null;
+      prevPythonPath =
+        typeof oldPtr.pythonPath === "string" ? oldPtr.pythonPath : null;
     } catch {
       // No previous pointer — first install
     }
@@ -842,7 +950,10 @@ export class ManagedRuntime {
       this._fs.mkdirSync(pointerDir, { recursive: true });
     }
 
-    const relativePyPath = path.relative(path.dirname(this.pointerPath), pythonExe);
+    const relativePyPath = path.relative(
+      path.dirname(this.pointerPath),
+      pythonExe
+    );
 
     const pointerContent = JSON.stringify(
       {
@@ -854,7 +965,7 @@ export class ManagedRuntime {
         previousPythonPath: prevPythonPath,
       },
       null,
-      2,
+      2
     );
 
     const tmpPath = this.pointerPath + ".tmp";
@@ -897,7 +1008,11 @@ export class ManagedRuntime {
       pythonPath: null,
       version: null,
       source: "none",
-      error: { code: "ABORTED", message: "Operation was cancelled", platformAction: "Retry operation" },
+      error: {
+        code: "ABORTED",
+        message: "Operation was cancelled",
+        platformAction: "Retry operation",
+      },
       lastVerifiedAt: null,
       stale: false,
       warnings: [],
@@ -906,7 +1021,12 @@ export class ManagedRuntime {
     };
   }
 
-  private _slotFailed(version: string, code: string, err: unknown, slotDir: string): RuntimeHealth {
+  private _slotFailed(
+    version: string,
+    code: string,
+    err: unknown,
+    slotDir: string
+  ): RuntimeHealth {
     // Clean up failed slot
     try {
       this._fs.rmSync(slotDir, { recursive: true, force: true });
@@ -941,20 +1061,20 @@ export class ManagedRuntime {
         { path: "py", args: ["-3.11"] },
         { path: "py", args: ["-3.10"] },
         { path: "py", args: ["-3"] },
-        { path: "python", args: [] },
+        { path: "python", args: [] }
       );
     } else if (this.osPlatform === "darwin") {
       candidates.push(
         { path: "/usr/bin/python3", args: [] },
         { path: "python3", args: [] },
-        { path: "python", args: [] },
+        { path: "python", args: [] }
       );
     } else {
       // Linux
       candidates.push(
         { path: "/usr/bin/python3", args: [] },
         { path: "python3", args: [] },
-        { path: "python", args: [] },
+        { path: "python", args: [] }
       );
     }
 
@@ -973,25 +1093,38 @@ export class ManagedRuntime {
       }
     }
 
-    throw new Error("No Python 3.10+ found on system");
+    throw new Error("No Python 3.11+ found on system");
   }
 
-  private _probe(pythonPath: string, signal?: AbortSignal): Promise<{ version: string | null }> {
+  private _probe(
+    pythonPath: string,
+    signal?: AbortSignal
+  ): Promise<{ version: string | null }> {
     const { promise, resolve, reject } = deferred<{ version: string | null }>();
-    this._execFile(pythonPath, ["-I", "-c", "import paperforge; print(paperforge.__version__)"], { timeout: 30000, signal }, (err, stdout) => {
-      if (err) {
-        reject(err);
-      } else {
-        const version = (stdout ?? "").trim() || null;
-        resolve({ version });
+    this._execFile(
+      pythonPath,
+      ["-I", "-c", "import paperforge; print(paperforge.__version__)"],
+      { timeout: 30000, signal },
+      (err, stdout) => {
+        if (err) {
+          reject(err);
+        } else {
+          const version = (stdout ?? "").trim() || null;
+          resolve({ version });
+        }
       }
-    });
+    );
     return promise;
   }
 
-  private _cleanupOldSlots(currentVersion: string, keepOldSlots: number = 2): void {
+  private _cleanupOldSlots(
+    currentVersion: string,
+    keepOldSlots: number = 2
+  ): void {
     try {
-      const entries = this._fs.readdirSync(this.runtimeDir, { withFileTypes: true });
+      const entries = this._fs.readdirSync(this.runtimeDir, {
+        withFileTypes: true,
+      });
       const slots = entries
         .filter((e) => e.isDirectory() && e.name.startsWith("v"))
         .map((e) => {
@@ -1003,7 +1136,10 @@ export class ManagedRuntime {
 
       // Keep at most keepOldSlots old slots
       for (let i = keepOldSlots; i < slots.length; i++) {
-        this._fs.rmSync(path.join(this.runtimeDir, slots[i].name), { recursive: true, force: true });
+        this._fs.rmSync(path.join(this.runtimeDir, slots[i].name), {
+          recursive: true,
+          force: true,
+        });
       }
     } catch {
       // best-effort

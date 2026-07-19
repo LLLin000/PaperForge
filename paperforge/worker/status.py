@@ -392,7 +392,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
     current_process_status = "pass" if sys_version.major >= 3 and sys_version.minor >= 10 else "warn"
     current_process_fix = ""
     if current_process_status == "warn":
-        current_process_fix = "建议使用插件已解析的解释器运行 doctor，或升级当前 shell Python 到 3.10+"
+        current_process_fix = "建议使用插件已解析的解释器运行 doctor，或升级当前 shell Python 到 3.11+"
     add_check(
         "Python 环境",
         current_process_status,
@@ -403,14 +403,14 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
     # --- Plugin-resolved interpreter checks ---
     add_check("Python 环境 (插件)", "pass", f"已解析解释器: {interp} (来源: {source})")
 
-    if version_tuple is not None and version_tuple >= (3, 10, 0):
+    if version_tuple is not None and version_tuple >= (3, 11, 0):
         add_check("Python 环境 (插件)", "pass", f"Python {version_str}")
     elif version_tuple is not None:
         add_check(
             "Python 环境 (插件)",
             "fail",
-            f"Python {version_str} (需要 3.10+)",
-            f"升级解释器 {interp} 到 Python 3.10 或更高版本",
+            f"Python {version_str} (需要 3.11+)",
+            f"升级解释器 {interp} 到 Python 3.11 或更高版本",
         )
     else:
         add_check(
@@ -823,7 +823,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
         if "PaperForge 包" in _fail_categories and not bool(_fail_categories - {"PaperForge 包"}):
             _next_action = "Recommended: run pip install via the resolved interpreter"
         elif "Python 环境" in _fail_categories or "Python 环境 (插件)" in _fail_categories:
-            _next_action = "Recommended: install/upgrade Python to 3.10+"
+            _next_action = "Recommended: install/upgrade Python to 3.11+"
         elif "Vault 结构" in _fail_categories or "Config Migration" in _fail_categories:
             _next_action = "Recommended: run `paperforge sync`"
         elif "OCR 配置" in _fail_categories:
@@ -901,7 +901,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
     if "PaperForge 包" in fail_categories and not bool(fail_categories - {"PaperForge 包"}):
         next_action = "Recommended: run pip install via the resolved interpreter"
     elif "Python 环境" in fail_categories or "Python 环境 (插件)" in fail_categories:
-        next_action = "Recommended: install/upgrade Python to 3.10+"
+        next_action = "Recommended: install/upgrade Python to 3.11+"
     elif "Vault 结构" in fail_categories or "Config Migration" in fail_categories:
         next_action = "Recommended: run `paperforge sync`"
     elif "OCR 配置" in fail_categories:

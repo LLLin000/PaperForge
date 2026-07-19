@@ -13,7 +13,7 @@ from paperforge.setup import SetupStepResult
 class SetupChecker:
     """Validate all preconditions before any installation step."""
 
-    MIN_PYTHON = (3, 10)
+    MIN_PYTHON = (3, 11)
 
     def __init__(self, vault: Path):
         self.vault = vault

@@ -149,7 +149,7 @@ const LANG: Record<string, Record<string, string>> = {
     not_set: "Not entered",
     notice_check_fail: "Missing: ",
     notice_python_missing:
-      "Python was not detected. Install Python 3.10+ and add it to PATH.",
+      "Python was not detected. Install Python 3.11+ and add it to PATH.",
     ocr_privacy_title: "OCR Privacy Notice",
     ocr_privacy_warning:
       "OCR will upload PDFs to the PaddleOCR API. Do not upload sensitive or confidential documents.",
@@ -178,7 +178,7 @@ const LANG: Record<string, Record<string, string>> = {
     prep_export_path_label: "Save the exported JSON file into this folder:",
     prep_key: "PaddleOCR Key",
     prep_key_desc: "Get your API key from https://aistudio.baidu.com/paddleocr",
-    prep_python: "Python 3.10+",
+    prep_python: "Python 3.11+",
     prep_python_desc:
       "Python must be available from the command line. If you are not sure, click below to auto-detect.",
     prep_zotero: "Zotero Desktop",
@@ -636,8 +636,7 @@ const LANG: Record<string, Record<string, string>> = {
     nav_prev: "← 上一步",
     no_pending_ocr: "所有 OCR 任务已完成",
     not_set: "未设置",
-    notice_check_fail: "未通过: ",
-    notice_python_missing: "Python 未检测到，请先安装 Python 3.10+ 并加入 PATH",
+    notice_python_missing: "Python 未检测到，请先安装 Python 3.11+ 并加入 PATH",
     ocr_privacy_title: "OCR 隐私提示",
     ocr_privacy_warning:
       "OCR 会将 PDF 上传到 PaddleOCR API 进行处理。请不要上传包含敏感信息或无法外传的文献。",
@@ -664,8 +663,7 @@ const LANG: Record<string, Record<string, string>> = {
     prep_export_desc:
       "右键文献子分类 → 导出分类 → BetterBibTeX JSON → 勾选保持更新 → 导出到（JSON 文件名即为 Base 名）：",
     prep_key: "PaddleOCR Key",
-    prep_key_desc: "在 https://aistudio.baidu.com/paddleocr 获取 API Key",
-    prep_python: "Python 3.10+",
+    prep_python: "Python 3.11+",
     prep_python_desc: "确保 Python 可命令行调用。点击下方按钮自动检测。",
     prep_zotero: "Zotero 桌面版",
     prep_zotero_desc: "安装 Zotero (https://www.zotero.org)",

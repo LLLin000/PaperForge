@@ -31,7 +31,13 @@ import type {
 } from "../src/services/managed-runtime";
 
 // ── OS-independent path constants ──
-const RUNTIME_DIR = path.join("home", "user", ".paperforge", "runtime", "windows-x64");
+const RUNTIME_DIR = path.join(
+  "home",
+  "user",
+  ".paperforge",
+  "runtime",
+  "windows-x64"
+);
 const RUNTIME_PARENT = path.dirname(RUNTIME_DIR);
 const POINTER_PATH = path.join(RUNTIME_PARENT, "active-runtime.json");
 const PLUGIN_VER = "1.3.0";
@@ -40,12 +46,32 @@ const PLUGIN_VER = "1.3.0";
 
 interface MockFs extends FsOps {
   existsSync: ReturnType<typeof vi.fn<(p: string) => boolean>>;
-  readFileSync: ReturnType<typeof vi.fn<(p: string, encoding?: string | null) => string>>;
-  writeFileSync: ReturnType<typeof vi.fn<(p: string, data: string | NodeJS.ArrayBufferView, encoding?: string | null) => void>>;
+  readFileSync: ReturnType<
+    typeof vi.fn<(p: string, encoding?: string | null) => string>
+  >;
+  writeFileSync: ReturnType<
+    typeof vi.fn<
+      (
+        p: string,
+        data: string | NodeJS.ArrayBufferView,
+        encoding?: string | null
+      ) => void
+    >
+  >;
   renameSync: ReturnType<typeof vi.fn<(oldP: string, newP: string) => void>>;
-  mkdirSync: ReturnType<typeof vi.fn<(p: string, opts?: { recursive?: boolean }) => string | undefined>>;
-  rmSync: ReturnType<typeof vi.fn<(p: string, opts?: { recursive?: boolean; force?: boolean }) => void>>;
-  readdirSync: ReturnType<typeof vi.fn<(p: string, opts?: { withFileTypes?: boolean }) => Dirent[]>>;
+  mkdirSync: ReturnType<
+    typeof vi.fn<
+      (p: string, opts?: { recursive?: boolean }) => string | undefined
+    >
+  >;
+  rmSync: ReturnType<
+    typeof vi.fn<
+      (p: string, opts?: { recursive?: boolean; force?: boolean }) => void
+    >
+  >;
+  readdirSync: ReturnType<
+    typeof vi.fn<(p: string, opts?: { withFileTypes?: boolean }) => Dirent[]>
+  >;
 }
 
 /** Create a mock FsOps with full mock-control access. */
@@ -53,11 +79,25 @@ function createMockFs(): MockFs {
   return {
     existsSync: vi.fn<(p: string) => boolean>(),
     readFileSync: vi.fn<(p: string, encoding?: string | null) => string>(),
-    writeFileSync: vi.fn<(p: string, data: string | NodeJS.ArrayBufferView, encoding?: string | null) => void>(),
+    writeFileSync:
+      vi.fn<
+        (
+          p: string,
+          data: string | NodeJS.ArrayBufferView,
+          encoding?: string | null
+        ) => void
+      >(),
     renameSync: vi.fn<(oldP: string, newP: string) => void>(),
-    mkdirSync: vi.fn<(p: string, opts?: { recursive?: boolean }) => string | undefined>(),
-    rmSync: vi.fn<(p: string, opts?: { recursive?: boolean; force?: boolean }) => void>(),
-    readdirSync: vi.fn<(p: string, opts?: { withFileTypes?: boolean }) => Dirent[]>(),
+    mkdirSync:
+      vi.fn<
+        (p: string, opts?: { recursive?: boolean }) => string | undefined
+      >(),
+    rmSync:
+      vi.fn<
+        (p: string, opts?: { recursive?: boolean; force?: boolean }) => void
+      >(),
+    readdirSync:
+      vi.fn<(p: string, opts?: { withFileTypes?: boolean }) => Dirent[]>(),
   };
 }
 
@@ -68,9 +108,14 @@ type MockExecFile = ReturnType<typeof vi.fn<(...args: unknown[]) => void>>;
 function createMockExecFile(probeVersion: string): MockExecFile {
   const fn = vi.fn<(...args: unknown[]) => void>();
   fn.mockImplementation(
-    (cmd: unknown, args: unknown, opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+    (
+      cmd: unknown,
+      args: unknown,
+      opts: unknown,
+      cb: (err: Error | null, stdout: string, stderr: string) => void
+    ) => {
       cb(null, probeVersion, "");
-    },
+    }
   );
   return fn;
 }
@@ -79,23 +124,36 @@ function createMockExecFile(probeVersion: string): MockExecFile {
 function createFailingExecFile(errorMsg: string): MockExecFile {
   const fn = vi.fn<(...args: unknown[]) => void>();
   fn.mockImplementation(
-    (_cmd: unknown, _args: unknown, _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+    (
+      _cmd: unknown,
+      _args: unknown,
+      _opts: unknown,
+      cb: (err: Error | null, stdout: string, stderr: string) => void
+    ) => {
       cb(new Error(errorMsg), "", "stderr");
-    },
+    }
   );
   return fn;
 }
 
 /** Create a mock ExecFileSyncFn with mock control. Default: returns "Python 3.11.0". */
 function createMockExecFileSync(pythonVersion: string): ExecFileSyncFn {
-  return ((_cmd: string, _args: readonly string[], _opts: { encoding: string; timeout: number }) => {
+  return ((
+    _cmd: string,
+    _args: readonly string[],
+    _opts: { encoding: string; timeout: number }
+  ) => {
     return `Python ${pythonVersion}`;
   }) as ExecFileSyncFn;
 }
 
 /** Create a throwing mock ExecFileSyncFn. */
 function createThrowingExecFileSync(): ExecFileSyncFn {
-  return ((_cmd: string, _args: readonly string[], _opts: { encoding: string; timeout: number }) => {
+  return ((
+    _cmd: string,
+    _args: readonly string[],
+    _opts: { encoding: string; timeout: number }
+  ) => {
     throw new Error("Not found");
   }) as ExecFileSyncFn;
 }
@@ -116,7 +174,9 @@ function mkDirent(name: string, isDir = true): Dirent {
 
 /** Build a canonical relative pythonPath from version (forward-slash for JSON). */
 function relPythonPath(version: string): string {
-  return path.join("windows-x64", `v${version}`, "venv", "Scripts", "python.exe").replace(/\\/g, "/");
+  return path
+    .join("windows-x64", `v${version}`, "venv", "Scripts", "python.exe")
+    .replace(/\\/g, "/");
 }
 
 /** Default active-runtime.json content. pythonPath is relative to pointer parent dir. */
@@ -153,7 +213,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = rt.current();
@@ -175,7 +237,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
       await rt.status();
 
@@ -206,7 +270,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
       await rt.status();
 
@@ -230,7 +296,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.status();
@@ -251,7 +319,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.status();
@@ -274,8 +344,12 @@ describe("ManagedRuntime", () => {
         osPlatform: "win32",
         osArch: "x64",
         fs: fs as unknown as FsOps,
-        execFile: createFailingExecFile("Probe failed") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFile: createFailingExecFile(
+          "Probe failed"
+        ) as unknown as ExecFileFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.status();
@@ -301,7 +375,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.status();
@@ -320,7 +396,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
       await rt.status(); // populate cache
 
@@ -339,7 +417,11 @@ describe("ManagedRuntime", () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockReturnValue(
-        JSON.stringify({ schema_version: 1, version: "1.3.0", pythonPath: null }),
+        JSON.stringify({
+          schema_version: 1,
+          version: "1.3.0",
+          pythonPath: null,
+        })
       );
 
       const rt = new ManagedRuntime({
@@ -349,7 +431,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.status();
@@ -372,7 +456,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure();
@@ -403,7 +489,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure({ signal: ac.signal });
@@ -415,7 +503,8 @@ describe("ManagedRuntime", () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) return defaultPointer("1.3.0");
+        if (normalisePath(p) === normalisePath(POINTER_PATH))
+          return defaultPointer("1.3.0");
         return "";
       });
 
@@ -426,7 +515,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure({ force: true, version: "1.3.0" });
@@ -437,16 +528,22 @@ describe("ManagedRuntime", () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) return defaultPointer();
+        if (normalisePath(p) === normalisePath(POINTER_PATH))
+          return defaultPointer();
         return "";
       });
       fs.readdirSync.mockReturnValue([mkDirent("v1.3.0")]);
 
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
-        (_cmd: unknown, _args: unknown, _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+        (
+          _cmd: unknown,
+          _args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
           cb(new Error("venv creation failed"), "", "error");
-        },
+        }
       );
 
       const rt = new ManagedRuntime({
@@ -456,7 +553,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure();
@@ -474,7 +573,12 @@ describe("ManagedRuntime", () => {
       const callLog: Array<{ cmd: string; args: readonly string[] }> = [];
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
-        (cmd: unknown, args: unknown, _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+        (
+          cmd: unknown,
+          args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
           const a = args as readonly string[];
           callLog.push({ cmd: cmd as string, args: a });
           if (a[0] === "-m" && a[1] === "venv") {
@@ -484,7 +588,7 @@ describe("ManagedRuntime", () => {
           } else {
             cb(null, "", "");
           }
-        },
+        }
       );
 
       const rt = new ManagedRuntime({
@@ -494,7 +598,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure();
@@ -522,17 +628,26 @@ describe("ManagedRuntime", () => {
       fs.readdirSync.mockReturnValue([mkDirent("v1.3.0"), mkDirent("v1.4.0")]);
 
       let writtenPointer = "";
-      fs.writeFileSync = vi.fn<(p: string, data: string | NodeJS.ArrayBufferView, encoding?: string | null) => void>(
-        (p: string, data: string | NodeJS.ArrayBufferView) => {
-          if (typeof p === "string" && p.endsWith(".tmp")) {
-            writtenPointer = typeof data === "string" ? data : String(data);
-          }
-        },
-      );
+      fs.writeFileSync = vi.fn<
+        (
+          p: string,
+          data: string | NodeJS.ArrayBufferView,
+          encoding?: string | null
+        ) => void
+      >((p: string, data: string | NodeJS.ArrayBufferView) => {
+        if (typeof p === "string" && p.endsWith(".tmp")) {
+          writtenPointer = typeof data === "string" ? data : String(data);
+        }
+      });
 
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
-        (cmd: unknown, args: unknown, _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+        (
+          cmd: unknown,
+          args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
           const a = args as readonly string[];
           // venv + pip succeed
           if (a[0] === "-m") {
@@ -542,7 +657,7 @@ describe("ManagedRuntime", () => {
           } else {
             cb(null, "", "");
           }
-        },
+        }
       );
 
       const rt = new ManagedRuntime({
@@ -552,7 +667,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure({ version: "1.3.0" });
@@ -583,7 +700,12 @@ describe("ManagedRuntime", () => {
       });
       // Slot for v1.3.0 exists (retained)
       fs.existsSync.mockImplementation((p: string) => {
-        if (typeof p === "string" && p.includes("v1.3.0") && !p.includes("v1.4.0")) return true;
+        if (
+          typeof p === "string" &&
+          p.includes("v1.3.0") &&
+          !p.includes("v1.4.0")
+        )
+          return true;
         return true;
       });
       fs.readdirSync.mockReturnValue([mkDirent("v1.3.0"), mkDirent("v1.4.0")]);
@@ -592,7 +714,12 @@ describe("ManagedRuntime", () => {
       const execCalls: Array<{ cmd: string; args: readonly string[] }> = [];
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
-        (cmd: unknown, args: unknown, _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+        (
+          cmd: unknown,
+          args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
           const a = args as readonly string[];
           execCalls.push({ cmd: cmd as string, args: a });
           // Only the import probe should succeed
@@ -601,17 +728,17 @@ describe("ManagedRuntime", () => {
           } else {
             cb(new Error("unexpected call"), "", "unexpected");
           }
-        },
+        }
       );
 
       let writtenContent = "";
-      fs.writeFileSync = vi.fn<(p: string, data: string | NodeJS.ArrayBufferView) => void>(
-        (p: string, data: string | NodeJS.ArrayBufferView) => {
-          if (typeof p === "string" && p.endsWith(".tmp")) {
-            writtenContent = typeof data === "string" ? data : String(data);
-          }
-        },
-      );
+      fs.writeFileSync = vi.fn<
+        (p: string, data: string | NodeJS.ArrayBufferView) => void
+      >((p: string, data: string | NodeJS.ArrayBufferView) => {
+        if (typeof p === "string" && p.endsWith(".tmp")) {
+          writtenContent = typeof data === "string" ? data : String(data);
+        }
+      });
 
       const rt = new ManagedRuntime({
         runtimeDir: RUNTIME_DIR,
@@ -620,7 +747,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure({ version: "1.3.0" });
@@ -628,11 +757,15 @@ describe("ManagedRuntime", () => {
       expect(h.version).toBe("1.3.0");
 
       // Assert: NO venv creation (no "-m venv" call)
-      const venvCalls = execCalls.filter((c) => c.args[0] === "-m" && c.args[1] === "venv");
+      const venvCalls = execCalls.filter(
+        (c) => c.args[0] === "-m" && c.args[1] === "venv"
+      );
       expect(venvCalls).toHaveLength(0);
 
       // Assert: NO pip install (no "-m pip" call)
-      const pipCalls = execCalls.filter((c) => c.args[0] === "-m" && c.args[1] === "pip");
+      const pipCalls = execCalls.filter(
+        (c) => c.args[0] === "-m" && c.args[1] === "pip"
+      );
       expect(pipCalls).toHaveLength(0);
 
       // Assert: retained slot was verified via import probe
@@ -659,10 +792,15 @@ describe("ManagedRuntime", () => {
       const capturedOpts: Array<Record<string, unknown>> = [];
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
-        (_cmd: unknown, _args: unknown, opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+        (
+          _cmd: unknown,
+          _args: unknown,
+          opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
           capturedOpts.push(opts as Record<string, unknown>);
           cb(null, "", "");
-        },
+        }
       );
 
       const rt = new ManagedRuntime({
@@ -672,7 +810,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const ac = new AbortController();
@@ -692,10 +832,15 @@ describe("ManagedRuntime", () => {
       const capturedOpts: Array<Record<string, unknown>> = [];
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
-        (_cmd: unknown, _args: unknown, opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+        (
+          _cmd: unknown,
+          _args: unknown,
+          opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
           capturedOpts.push(opts as Record<string, unknown>);
           cb(null, "", "");
-        },
+        }
       );
 
       const rt = new ManagedRuntime({
@@ -705,7 +850,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const ac = new AbortController();
@@ -724,10 +871,15 @@ describe("ManagedRuntime", () => {
       const capturedOpts: Array<Record<string, unknown>> = [];
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
-        (_cmd: unknown, _args: unknown, opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+        (
+          _cmd: unknown,
+          _args: unknown,
+          opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
           capturedOpts.push(opts as Record<string, unknown>);
           cb(null, "", "");
-        },
+        }
       );
 
       const rt = new ManagedRuntime({
@@ -737,7 +889,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const ac = new AbortController();
@@ -758,10 +912,15 @@ describe("ManagedRuntime", () => {
 
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
-        (_cmd: unknown, _args: unknown, _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+        (
+          _cmd: unknown,
+          _args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
           // Simulate child killed by abort signal
           cb(abortError, "", "");
-        },
+        }
       );
 
       const rt = new ManagedRuntime({
@@ -771,7 +930,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure();
@@ -808,9 +969,14 @@ describe("ManagedRuntime", () => {
 
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
-        (_cmd: unknown, _args: unknown, _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+        (
+          _cmd: unknown,
+          _args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
           cb(abortError, "", "");
-        },
+        }
       );
 
       const rt = new ManagedRuntime({
@@ -820,7 +986,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure({ version: "1.3.0" });
@@ -837,11 +1005,14 @@ describe("ManagedRuntime", () => {
 
   // ── Python version gating ──
   describe("Python version gating", () => {
-    it("RED Gap 3: accepts existing 3.10 install as ready with one Release-N warning", async () => {
+    it("status() returns ready for valid existing install regardless of Python 3.x version", async () => {
+      // status() checks the installed runtime, not bootstrap version;
+      // version gating is enforced by ensure() at build/repair time.
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) return defaultPointer("1.2.3");
+        if (normalisePath(p) === normalisePath(POINTER_PATH))
+          return defaultPointer("1.2.3");
         return "";
       });
       fs.readdirSync.mockReturnValue([mkDirent("v1.2.3"), mkDirent("v1.3.0")]);
@@ -853,24 +1024,20 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.2.3") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.10.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.status();
       expect(h.state).toBe("ready");
-      // RED: must carry exactly one Release-N deprecation warning for Python < 3.11
-      expect(h.warnings).toBeDefined();
-      expect(h.warnings!.length).toBeGreaterThanOrEqual(1);
-      const releaseWarning = h.warnings!.find((w) => w.code === "PYTHON_310_DEPRECATED");
-      expect(releaseWarning).toBeDefined();
-      expect(releaseWarning!.message).toContain("3.10");
+      expect(h.warnings).toEqual([]);
     });
 
-    it("rejects new install with Python 3.10 (requires 3.11+)", async () => {
+    it("rejects ensure() with Python below 3.11", async () => {
       const fs = createMockFs();
       fs.existsSync.mockImplementation((p: string) => {
-        // No pointer exists AND no slot directory exists
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) return false;
+        if (normalisePath(p) === normalisePath(POINTER_PATH)) return true;
         if (p.includes("v1.3.0")) return false;
         return true;
       });
@@ -883,21 +1050,24 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.10.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.10.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure();
-      expect(h.state).not.toBe("ready");
-      expect(h.error?.code).toBe("PYTHON_VERSION_WARNING");
+      expect(h.state).toBe("unavailable");
+      expect(h.error?.code).toBe("PYTHON_TOO_OLD");
     });
 
-    it("rejects Python below 3.10", async () => {
+    it("rejects ensure() with Python 3.9", async () => {
       const fs = createMockFs();
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) return defaultPointer();
-        return "";
+      fs.existsSync.mockImplementation((p: string) => {
+        if (normalisePath(p) === normalisePath(POINTER_PATH)) return true;
+        if (p.includes("v1.3.0")) return false;
+        return true;
       });
+      fs.readFileSync.mockReturnValue("");
 
       const rt = new ManagedRuntime({
         runtimeDir: RUNTIME_DIR,
@@ -906,7 +1076,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.9.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.9.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       const h = await rt.ensure();
@@ -925,14 +1097,36 @@ describe("ManagedRuntime", () => {
     it("macOS reports unavailable with NO_PYTHON (auto-download disabled)", async () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(false);
-      const execFileSync = vi.fn<(cmd: string, args: readonly string[], opts: { encoding: string; timeout: number }) => string>();
-      execFileSync.mockImplementation(() => { throw new Error("Not found"); });
-      const execFile = vi.fn<(...args: unknown[]) => void>();
-      execFile.mockImplementation((_cmd: unknown, _args: unknown, _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
-        cb(null, "1.3.0", "");
+      const execFileSync =
+        vi.fn<
+          (
+            cmd: string,
+            args: readonly string[],
+            opts: { encoding: string; timeout: number }
+          ) => string
+        >();
+      execFileSync.mockImplementation(() => {
+        throw new Error("Not found");
       });
+      const execFile = vi.fn<(...args: unknown[]) => void>();
+      execFile.mockImplementation(
+        (
+          _cmd: unknown,
+          _args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
+          cb(null, "1.3.0", "");
+        }
+      );
       const rt = new ManagedRuntime({
-        runtimeDir: path.join("home", "user", ".paperforge", "runtime", "macos-arm64"),
+        runtimeDir: path.join(
+          "home",
+          "user",
+          ".paperforge",
+          "runtime",
+          "macos-arm64"
+        ),
         pluginVersion: "1.3.0",
         osPlatform: "darwin",
         osArch: "arm64",
@@ -949,14 +1143,36 @@ describe("ManagedRuntime", () => {
     it("macOS x64 also reports unavailable (system Python not found)", async () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(false);
-      const execFileSync = vi.fn<(cmd: string, args: readonly string[], opts: { encoding: string; timeout: number }) => string>();
-      execFileSync.mockImplementation(() => { throw new Error("Not found"); });
-      const execFile = vi.fn<(...args: unknown[]) => void>();
-      execFile.mockImplementation((_cmd: unknown, _args: unknown, _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
-        cb(null, "1.3.0", "");
+      const execFileSync =
+        vi.fn<
+          (
+            cmd: string,
+            args: readonly string[],
+            opts: { encoding: string; timeout: number }
+          ) => string
+        >();
+      execFileSync.mockImplementation(() => {
+        throw new Error("Not found");
       });
+      const execFile = vi.fn<(...args: unknown[]) => void>();
+      execFile.mockImplementation(
+        (
+          _cmd: unknown,
+          _args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
+          cb(null, "1.3.0", "");
+        }
+      );
       const rt = new ManagedRuntime({
-        runtimeDir: path.join("home", "user", ".paperforge", "runtime", "macos-x64"),
+        runtimeDir: path.join(
+          "home",
+          "user",
+          ".paperforge",
+          "runtime",
+          "macos-x64"
+        ),
         pluginVersion: "1.3.0",
         osPlatform: "darwin",
         osArch: "x64",
@@ -973,8 +1189,17 @@ describe("ManagedRuntime", () => {
     it("Windows validated fallback returns NO_PYTHON with manual instruction when bootstrap fails", async () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(false);
-      const execFileSync = vi.fn<(cmd: string, args: readonly string[], opts: { encoding: string; timeout: number }) => string>();
-      execFileSync.mockImplementation(() => { throw new Error("Not found"); });
+      const execFileSync =
+        vi.fn<
+          (
+            cmd: string,
+            args: readonly string[],
+            opts: { encoding: string; timeout: number }
+          ) => string
+        >();
+      execFileSync.mockImplementation(() => {
+        throw new Error("Not found");
+      });
       const execFile = vi.fn<(...args: unknown[]) => void>();
       const rt = new ManagedRuntime({
         runtimeDir: RUNTIME_DIR,
@@ -994,11 +1219,26 @@ describe("ManagedRuntime", () => {
     it("Linux validated fallback returns NO_PYTHON with manual instruction", async () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(false);
-      const execFileSync = vi.fn<(cmd: string, args: readonly string[], opts: { encoding: string; timeout: number }) => string>();
-      execFileSync.mockImplementation(() => { throw new Error("Not found"); });
+      const execFileSync =
+        vi.fn<
+          (
+            cmd: string,
+            args: readonly string[],
+            opts: { encoding: string; timeout: number }
+          ) => string
+        >();
+      execFileSync.mockImplementation(() => {
+        throw new Error("Not found");
+      });
       const execFile = vi.fn<(...args: unknown[]) => void>();
       const rt = new ManagedRuntime({
-        runtimeDir: path.join("home", "user", ".paperforge", "runtime", "linux-x64"),
+        runtimeDir: path.join(
+          "home",
+          "user",
+          ".paperforge",
+          "runtime",
+          "linux-x64"
+        ),
         pluginVersion: "1.3.0",
         osPlatform: "linux",
         osArch: "x64",
@@ -1014,11 +1254,26 @@ describe("ManagedRuntime", () => {
     it("unsupported triplet returns FALLBACK_UNAVAILABLE", async () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(false);
-      const execFileSync = vi.fn<(cmd: string, args: readonly string[], opts: { encoding: string; timeout: number }) => string>();
-      execFileSync.mockImplementation(() => { throw new Error("Not found"); });
+      const execFileSync =
+        vi.fn<
+          (
+            cmd: string,
+            args: readonly string[],
+            opts: { encoding: string; timeout: number }
+          ) => string
+        >();
+      execFileSync.mockImplementation(() => {
+        throw new Error("Not found");
+      });
       const execFile = vi.fn<(...args: unknown[]) => void>();
       const rt = new ManagedRuntime({
-        runtimeDir: path.join("home", "user", ".paperforge", "runtime", "linux-arm64"),
+        runtimeDir: path.join(
+          "home",
+          "user",
+          ".paperforge",
+          "runtime",
+          "linux-arm64"
+        ),
         pluginVersion: "1.3.0",
         osPlatform: "linux",
         osArch: "arm64",
@@ -1035,11 +1290,26 @@ describe("ManagedRuntime", () => {
       process.env.FLATPAK_ID = "org.flatpak.Flatpak";
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(false);
-      const execFileSync = vi.fn<(cmd: string, args: readonly string[], opts: { encoding: string; timeout: number }) => string>();
-      execFileSync.mockImplementation(() => { throw new Error("Not found"); });
+      const execFileSync =
+        vi.fn<
+          (
+            cmd: string,
+            args: readonly string[],
+            opts: { encoding: string; timeout: number }
+          ) => string
+        >();
+      execFileSync.mockImplementation(() => {
+        throw new Error("Not found");
+      });
       const execFile = vi.fn<(...args: unknown[]) => void>();
       const rt = new ManagedRuntime({
-        runtimeDir: path.join("home", "user", ".paperforge", "runtime", "linux-x64"),
+        runtimeDir: path.join(
+          "home",
+          "user",
+          ".paperforge",
+          "runtime",
+          "linux-x64"
+        ),
         pluginVersion: "1.3.0",
         osPlatform: "linux",
         osArch: "x64",
@@ -1056,11 +1326,26 @@ describe("ManagedRuntime", () => {
       process.env.SNAP = "/snap/core/current";
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(false);
-      const execFileSync = vi.fn<(cmd: string, args: readonly string[], opts: { encoding: string; timeout: number }) => string>();
-      execFileSync.mockImplementation(() => { throw new Error("Not found"); });
+      const execFileSync =
+        vi.fn<
+          (
+            cmd: string,
+            args: readonly string[],
+            opts: { encoding: string; timeout: number }
+          ) => string
+        >();
+      execFileSync.mockImplementation(() => {
+        throw new Error("Not found");
+      });
       const execFile = vi.fn<(...args: unknown[]) => void>();
       const rt = new ManagedRuntime({
-        runtimeDir: path.join("home", "user", ".paperforge", "runtime", "linux-x64"),
+        runtimeDir: path.join(
+          "home",
+          "user",
+          ".paperforge",
+          "runtime",
+          "linux-x64"
+        ),
         pluginVersion: "1.3.0",
         osPlatform: "linux",
         osArch: "x64",
@@ -1082,17 +1367,23 @@ describe("ManagedRuntime", () => {
 
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) return defaultPointer();
+        if (normalisePath(p) === normalisePath(POINTER_PATH))
+          return defaultPointer();
         return "";
       });
-      fs.writeFileSync = vi.fn<(p: string, data: string | NodeJS.ArrayBufferView, encoding?: string | null) => void>(
-        (p: string, data: string | NodeJS.ArrayBufferView) => {
-          if (typeof p === "string" && p.endsWith(".tmp")) {
-            writtenContent = typeof data === "string" ? data : String(data);
-          }
-        },
-      );
-      fs.readdirSync = vi.fn<(p: string, opts?: { withFileTypes?: boolean }) => Dirent[]>();
+      fs.writeFileSync = vi.fn<
+        (
+          p: string,
+          data: string | NodeJS.ArrayBufferView,
+          encoding?: string | null
+        ) => void
+      >((p: string, data: string | NodeJS.ArrayBufferView) => {
+        if (typeof p === "string" && p.endsWith(".tmp")) {
+          writtenContent = typeof data === "string" ? data : String(data);
+        }
+      });
+      fs.readdirSync =
+        vi.fn<(p: string, opts?: { withFileTypes?: boolean }) => Dirent[]>();
 
       const rt = new ManagedRuntime({
         runtimeDir: RUNTIME_DIR,
@@ -1101,7 +1392,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       await rt.ensure();
@@ -1129,17 +1422,22 @@ describe("ManagedRuntime", () => {
 
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) return originalContent;
+        if (normalisePath(p) === normalisePath(POINTER_PATH))
+          return originalContent;
         if (p.endsWith(".tmp")) return writtenContent;
         return "";
       });
-      fs.writeFileSync = vi.fn<(p: string, data: string | NodeJS.ArrayBufferView, encoding?: string | null) => void>(
-        (p: string, data: string | NodeJS.ArrayBufferView) => {
-          if (typeof p === "string" && p.endsWith(".tmp")) {
-            writtenContent = typeof data === "string" ? data : String(data);
-          }
-        },
-      );
+      fs.writeFileSync = vi.fn<
+        (
+          p: string,
+          data: string | NodeJS.ArrayBufferView,
+          encoding?: string | null
+        ) => void
+      >((p: string, data: string | NodeJS.ArrayBufferView) => {
+        if (typeof p === "string" && p.endsWith(".tmp")) {
+          writtenContent = typeof data === "string" ? data : String(data);
+        }
+      });
       fs.renameSync = vi.fn<(oldP: string, newP: string) => void>();
 
       const rt = new ManagedRuntime({
@@ -1149,7 +1447,9 @@ describe("ManagedRuntime", () => {
         osArch: "x64",
         fs: fs as unknown as FsOps,
         execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+        execFileSync: createMockExecFileSync(
+          "3.11.0"
+        ) as unknown as ExecFileSyncFn,
       });
 
       await rt.ensure();
@@ -1181,7 +1481,9 @@ describe("ManagedRuntime", () => {
 
   // ── runtimeActionsForHealth ──
   describe("runtimeActionsForHealth", () => {
-    function health(overrides: Partial<RuntimeHealth> & { state: RuntimeHealth["state"] }): RuntimeHealth {
+    function health(
+      overrides: Partial<RuntimeHealth> & { state: RuntimeHealth["state"] }
+    ): RuntimeHealth {
       return {
         state: overrides.state,
         pythonPath: overrides.pythonPath ?? null,
@@ -1203,7 +1505,7 @@ describe("ManagedRuntime", () => {
 
     it("needs_repair with pythonPath → repair (primary) + rollback", () => {
       const acts = runtimeActionsForHealth(
-        health({ state: "needs_repair", pythonPath: "/usr/bin/python" }),
+        health({ state: "needs_repair", pythonPath: "/usr/bin/python" })
       );
       expect(acts).toHaveLength(2);
       expect(acts[0].id).toBe("repair");
@@ -1245,7 +1547,17 @@ describe("ManagedRuntime", () => {
     it("returns command only when ready and pythonPath set", () => {
       const result = resolveRuntimeCommand({
         state: "ready",
-        pythonPath: path.join("home", "user", ".paperforge", "runtime", "windows-x64", "v1.3.0", "venv", "Scripts", "python.exe"),
+        pythonPath: path.join(
+          "home",
+          "user",
+          ".paperforge",
+          "runtime",
+          "windows-x64",
+          "v1.3.0",
+          "venv",
+          "Scripts",
+          "python.exe"
+        ),
         version: "1.3.0",
         source: "venv",
         error: null,
@@ -1287,7 +1599,11 @@ describe("ManagedRuntime", () => {
 // ── Real filesystem slot retention tests ──
 
 /** Create a slot directory structure for real-FS tests. */
-function createSlotDir(baseDir: string, version: string, build2 = false): string {
+function createSlotDir(
+  baseDir: string,
+  version: string,
+  build2 = false
+): string {
   const name = build2 ? `v${version}_build2` : `v${version}`;
   const slotDir = path.join(baseDir, name);
   const venvDir = path.join(slotDir, "venv", "Scripts");
@@ -1297,7 +1613,11 @@ function createSlotDir(baseDir: string, version: string, build2 = false): string
 }
 
 /** Create a pointer file on the real filesystem. */
-function createRealPointer(pointerDir: string, runtimeDirName: string, version: string): void {
+function createRealPointer(
+  pointerDir: string,
+  runtimeDirName: string,
+  version: string
+): void {
   const ptr = {
     schema_version: 1,
     version,
@@ -1306,12 +1626,16 @@ function createRealPointer(pointerDir: string, runtimeDirName: string, version: 
     previousVersion: null,
     previousPythonPath: null,
   };
-  fs.writeFileSync(path.join(pointerDir, "active-runtime.json"), JSON.stringify(ptr, null, 2));
+  fs.writeFileSync(
+    path.join(pointerDir, "active-runtime.json"),
+    JSON.stringify(ptr, null, 2)
+  );
 }
 
 /** List slot directory names under a runtime directory (sorted). */
 function listSlotDirs(runtimeDir: string): string[] {
-  return fs.readdirSync(runtimeDir, { withFileTypes: true })
+  return fs
+    .readdirSync(runtimeDir, { withFileTypes: true })
     .filter((e) => e.isDirectory() && e.name.startsWith("v"))
     .map((e) => e.name)
     .sort();
@@ -1343,7 +1667,9 @@ describe("Real filesystem slot retention", () => {
       osPlatform: "win32",
       osArch: "x64",
       execFile: createMockExecFile("1.4.0") as unknown as ExecFileFn,
-      execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+      execFileSync: createMockExecFileSync(
+        "3.11.0"
+      ) as unknown as ExecFileSyncFn,
     });
 
     const h = await rt.ensure({ version: "1.4.0" });
@@ -1375,7 +1701,9 @@ describe("Real filesystem slot retention", () => {
       osPlatform: "win32",
       osArch: "x64",
       execFile: execFile as unknown as ExecFileFn,
-      execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+      execFileSync: createMockExecFileSync(
+        "3.11.0"
+      ) as unknown as ExecFileSyncFn,
     });
 
     const h = await rt.ensure({ version: "1.1.0" });
@@ -1403,15 +1731,30 @@ describe("Real filesystem slot retention", () => {
     const failingFs: FsOps = {
       existsSync: (p: string) => fs.existsSync(p),
       readFileSync: (p: string, encoding?: string | null): string | Buffer => {
-        return fs.readFileSync(p, encoding ? { encoding: encoding as BufferEncoding } : undefined);
+        return fs.readFileSync(
+          p,
+          encoding ? { encoding: encoding as BufferEncoding } : undefined
+        );
       },
-      writeFileSync: (p: string, data: string | NodeJS.ArrayBufferView, encoding?: string | null): void => {
-        fs.writeFileSync(p, data, encoding ? { encoding: encoding as BufferEncoding } : undefined);
+      writeFileSync: (
+        p: string,
+        data: string | NodeJS.ArrayBufferView,
+        encoding?: string | null
+      ): void => {
+        fs.writeFileSync(
+          p,
+          data,
+          encoding ? { encoding: encoding as BufferEncoding } : undefined
+        );
       },
       renameSync: (oldP: string, newP: string) => fs.renameSync(oldP, newP),
-      mkdirSync: (p: string, opts?: { recursive?: boolean }) => fs.mkdirSync(p, opts),
-      rmSync: () => { throw new Error("Simulated cleanup failure"); },
-      readdirSync: (p: string, opts?: { withFileTypes?: boolean }) => fs.readdirSync(p, opts) as Dirent[],
+      mkdirSync: (p: string, opts?: { recursive?: boolean }) =>
+        fs.mkdirSync(p, opts),
+      rmSync: () => {
+        throw new Error("Simulated cleanup failure");
+      },
+      readdirSync: (p: string, opts?: { withFileTypes?: boolean }) =>
+        fs.readdirSync(p, opts) as Dirent[],
     };
 
     const rt = new ManagedRuntime({
@@ -1421,7 +1764,9 @@ describe("Real filesystem slot retention", () => {
       osArch: "x64",
       fs: failingFs as unknown as FsOps,
       execFile: createMockExecFile("1.4.0") as unknown as ExecFileFn,
-      execFileSync: createMockExecFileSync("3.11.0") as unknown as ExecFileSyncFn,
+      execFileSync: createMockExecFileSync(
+        "3.11.0"
+      ) as unknown as ExecFileSyncFn,
     });
 
     const h = await rt.ensure({ version: "1.4.0" });
@@ -1429,13 +1774,19 @@ describe("Real filesystem slot retention", () => {
     expect(h.version).toBe("1.4.0");
 
     // Pointer must point to the new version
-    const ptrRaw = fs.readFileSync(path.join(tmpDir, "active-runtime.json"), "utf-8");
+    const ptrRaw = fs.readFileSync(
+      path.join(tmpDir, "active-runtime.json"),
+      "utf-8"
+    );
     const ptr = JSON.parse(ptrRaw);
     expect(ptr.version).toBe("1.4.0");
     // Active slot directory must exist — cleanup failure cannot delete it
     expect(fs.existsSync(path.join(runtimeDir, "v1.4.0"))).toBe(true);
     // Pointer resolves to the active slot (relative pythonPath must form a path we can resolve)
-    const resolvedPy = path.resolve(path.dirname(path.join(tmpDir, "active-runtime.json")), ptr.pythonPath);
+    const resolvedPy = path.resolve(
+      path.dirname(path.join(tmpDir, "active-runtime.json")),
+      ptr.pythonPath
+    );
     expect(resolvedPy).toContain("v1.4.0");
   });
 });
@@ -1446,7 +1797,8 @@ describe("Real filesystem slot retention", () => {
 function setupDefaultMockFs(fs: MockFs, version: string): void {
   fs.existsSync.mockReturnValue(true);
   fs.readFileSync.mockImplementation((p: string) => {
-    if (normalisePath(p) === normalisePath(POINTER_PATH)) return defaultPointer(version);
+    if (normalisePath(p) === normalisePath(POINTER_PATH))
+      return defaultPointer(version);
     return "";
   });
 }
