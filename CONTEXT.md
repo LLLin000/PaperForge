@@ -15,7 +15,7 @@ A stable, opinion-free normalization of raw signals into a status (`green | yell
 *Not:* a score or composite.  Each indicator stands alone.
 
 ### User Readiness
-A **policy-based estimate** of whether the OCR result is usable by an end user.  It is *not* ground truth — it is `policy_estimated_readiness`.
+A **policy-based internal estimate** of whether the OCR result supports a use case. It is not ground truth and does not by itself create a user-visible problem or maintenance item.
 
 ```python
 user_readiness = {
@@ -26,6 +26,13 @@ user_readiness = {
     "primary_reasons": [...],
 }
 ```
+
+### Usable OCR Result
+An OCR result that supports the user's intended reading or retrieval task despite ordinary recognition and layout imperfections.
+
+### User-visible OCR Failure
+An OCR outcome that prevents reading or retrieval and has a concrete recovery action likely to improve or restore the result.
+*Not:* a low confidence score, minor defect, or internal quality warning with no useful action.
 
 ### Recommended Use
 A per-use-case assessment, each with its own gate.
@@ -66,19 +73,19 @@ The user-facing capability for finding either a known paper or knowledge inside 
 Regenerable data derived from the Source Corpus for search: FTS indexes, embeddings, vector tables, and their companion metadata. Retrieval Artifacts may be discarded and rebuilt; they are not preservation targets or sources of truth.
 
 ### Capability State
-The current usability of one PaperForge module. Installation, Library, OCR, Memory, Maintenance, and Help each report their own state; there is no global “setup complete” state.
+The current usability of one operational module. Foundation, Library, OCR, Smart Retrieval, and Agent Integration each report their own state; Maintenance and Help are not modules.
 
 ### Activity State
-Work currently being performed by a module, such as installing, rebuilding, or stopping. Activity is independent of capability: a module may keep a warning while repair is running.
+Work currently being performed by a module, such as installing, rebuilding, or stopping. Activity is independent of capability: a module may remain usable while maintenance runs.
 
 ### Attention State
-Whether a module currently needs a user decision or action. Normal capability stays quiet; warnings expose one concrete primary action.
+Whether a module has a concrete user-visible problem and a backend-authorized action. Internal quality warnings and non-actionable imperfections stay quiet.
 
 ### Maintenance Inbox
-A derived view of actionable stale, failed, or corrupt work reported by the other modules. It is not an independent source of truth, and successful work leaves the inbox.
+A derived view of unresolved user-visible problems that have concrete recovery actions. It excludes internal quality signals, non-actionable imperfections, and completed work.
 
 ### Managed Runtime
-The verified, versioned PaperForge execution environment selected by the plugin. Installation, health checks, upgrades, and rollback operate on one runtime identity; commands fail closed when that identity is unknown or stale.
+The verified, versioned execution component inside Foundation. Runtime identity and recovery are advanced diagnostics; normal user language refers to the Foundation or PaperForge environment.
 
 ## Architecture layers
 
