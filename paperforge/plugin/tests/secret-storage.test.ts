@@ -12,14 +12,20 @@ import {
 } from "../src/services/secret-storage";
 import { paperforgeEnrichedEnv } from "../src/services/python-bridge";
 
-interface SecretStore { [id: string]: string; }
+interface SecretStore {
+  [id: string]: string;
+}
 
 function createMockSecretStorage(initial: SecretStore = {}) {
   const store: SecretStore = { ...initial };
   return {
     store,
-    getSecret: vi.fn(async (id: string): Promise<string | null> => store[id] ?? null),
-    setSecret: vi.fn(async (id: string, secret: string): Promise<void> => { store[id] = secret; }),
+    getSecret: vi.fn(
+      async (id: string): Promise<string | null> => store[id] ?? null
+    ),
+    setSecret: vi.fn(async (id: string, secret: string): Promise<void> => {
+      store[id] = secret;
+    }),
     listSecrets: vi.fn((): string[] => Object.keys(store)),
   };
 }
@@ -36,7 +42,9 @@ function createMockPlugin(opts: PluginMockOpts) {
   return {
     settings: opts.settings,
     app: { secretStorage: ss },
-    saveData: vi.fn(async (data: unknown) => { saved.push(data); }),
+    saveData: vi.fn(async (data: unknown) => {
+      saved.push(data);
+    }),
     _saved: saved,
     _ss: ss,
   };
@@ -47,27 +55,39 @@ const VEC_ID = "vector-db-api-key";
 
 describe("SecretStorage migration", () => {
   it("migrates plaintext paddleocr_api_key with copy-readback-verify-delete", async () => {
-    const plugin = createMockPlugin({ settings: { paddleocr_api_key: "test-ocr-key-12345" } });
+    const plugin = createMockPlugin({
+      settings: { paddleocr_api_key: "test-ocr-key-12345" },
+    });
     const result = await migrateCredentials(plugin as never, plugin.settings);
     expect(result.migrated).toContain("paddleocr_api_key");
     expect(result.warnings).toHaveLength(0);
-    expect(plugin._ss.setSecret).toHaveBeenCalledWith(OCR_ID, "test-ocr-key-12345");
+    expect(plugin._ss.setSecret).toHaveBeenCalledWith(
+      OCR_ID,
+      "test-ocr-key-12345"
+    );
     expect(plugin._ss.getSecret).toHaveBeenCalledWith(OCR_ID);
     expect(plugin.settings.paddleocr_api_key).toBe("");
     expect(plugin.saveData).toHaveBeenCalled();
   });
 
   it("migrates plaintext vector_db_api_key", async () => {
-    const plugin = createMockPlugin({ settings: { vector_db_api_key: "sk-test-openai-key" } });
+    const plugin = createMockPlugin({
+      settings: { vector_db_api_key: "sk-test-openai-key" },
+    });
     const result = await migrateCredentials(plugin as never, plugin.settings);
     expect(result.migrated).toContain("vector_db_api_key");
     expect(result.warnings).toHaveLength(0);
-    expect(plugin._ss.setSecret).toHaveBeenCalledWith(VEC_ID, "sk-test-openai-key");
+    expect(plugin._ss.setSecret).toHaveBeenCalledWith(
+      VEC_ID,
+      "sk-test-openai-key"
+    );
     expect(plugin.settings.vector_db_api_key).toBe("");
   });
 
   it("skips migration for empty credential values", async () => {
-    const plugin = createMockPlugin({ settings: { paddleocr_api_key: "", vector_db_api_key: "" } });
+    const plugin = createMockPlugin({
+      settings: { paddleocr_api_key: "", vector_db_api_key: "" },
+    });
     const result = await migrateCredentials(plugin as never, plugin.settings);
     expect(result.migrated).toHaveLength(0);
     expect(plugin._ss.setSecret).not.toHaveBeenCalled();
@@ -98,7 +118,9 @@ describe("SecretStorage migration", () => {
   });
 
   it("produces warning when readback verification fails", async () => {
-    const plugin = createMockPlugin({ settings: { paddleocr_api_key: "original-value" } });
+    const plugin = createMockPlugin({
+      settings: { paddleocr_api_key: "original-value" },
+    });
     let callCount = 0;
     plugin._ss.getSecret.mockImplementation((id: string) => {
       callCount++;
@@ -112,8 +134,12 @@ describe("SecretStorage migration", () => {
   });
 
   it("clears plaintext only after successful readback", async () => {
-    const plugin = createMockPlugin({ settings: { paddleocr_api_key: "secret-abc" } });
-    plugin._ss.getSecret.mockImplementation((id: string) => plugin._ss.store[id] ?? null);
+    const plugin = createMockPlugin({
+      settings: { paddleocr_api_key: "secret-abc" },
+    });
+    plugin._ss.getSecret.mockImplementation(
+      (id: string) => plugin._ss.store[id] ?? null
+    );
     const result = await migrateCredentials(plugin as never, plugin.settings);
     expect(result.migrated).toContain("paddleocr_api_key");
     expect(plugin.settings.paddleocr_api_key).toBe("");
@@ -121,7 +147,10 @@ describe("SecretStorage migration", () => {
 
   it("is idempotent on already-migrated settings", async () => {
     const plugin = createMockPlugin({
-      settings: { paddleocr_api_key: "", _migrated_keys: ["paddleocr_api_key"] },
+      settings: {
+        paddleocr_api_key: "",
+        _migrated_keys: ["paddleocr_api_key"],
+      },
       secretStore: { [OCR_ID]: "stored-secret" },
     });
     const result = await migrateCredentials(plugin as never, plugin.settings);
@@ -130,8 +159,12 @@ describe("SecretStorage migration", () => {
   });
 
   it("handles setSecret throwing without corrupting plaintext", async () => {
-    const plugin = createMockPlugin({ settings: { paddleocr_api_key: "will-survive-crash" } });
-    plugin._ss.setSecret.mockImplementation(() => { throw new Error("OS keychain unavailable"); });
+    const plugin = createMockPlugin({
+      settings: { paddleocr_api_key: "will-survive-crash" },
+    });
+    plugin._ss.setSecret.mockImplementation(() => {
+      throw new Error("OS keychain unavailable");
+    });
     const result = await migrateCredentials(plugin as never, plugin.settings);
     expect(plugin.settings.paddleocr_api_key).toBe("will-survive-crash");
     expect(result.warnings).toContain("paddleocr_api_key");
@@ -266,8 +299,22 @@ describe("production env isolation", () => {
   });
 
   it("resolveCredentialEnv returns empty for non-allowlisted commands", async () => {
-    const plugin = createMockPlugin({ settings: {}, secretStore: { "paddleocr-api-key": "secret", "vector-db-api-key": "secret" } });
-    for (const cmd of ["pip", "doctor", "install", "status", "diagnostics", "probe", ""]) {
+    const plugin = createMockPlugin({
+      settings: {},
+      secretStore: {
+        "paddleocr-api-key": "secret",
+        "vector-db-api-key": "secret",
+      },
+    });
+    for (const cmd of [
+      "pip",
+      "doctor",
+      "install",
+      "status",
+      "diagnostics",
+      "probe",
+      "",
+    ]) {
       const env = await resolveCredentialEnv(plugin as never, cmd);
       expect(Object.keys(env)).toHaveLength(0);
     }
@@ -276,7 +323,10 @@ describe("production env isolation", () => {
   it("resolveCredentialEnv for OCR never returns VECTOR_DB_API_KEY", async () => {
     const plugin = createMockPlugin({
       settings: {},
-      secretStore: { "paddleocr-api-key": "ocr-secret", "vector-db-api-key": "vec-secret" },
+      secretStore: {
+        "paddleocr-api-key": "ocr-secret",
+        "vector-db-api-key": "vec-secret",
+      },
     });
     const env = await resolveCredentialEnv(plugin as never, "ocr");
     expect(env.PADDLEOCR_API_KEY).toBe("ocr-secret");
@@ -287,7 +337,10 @@ describe("production env isolation", () => {
   it("resolveCredentialEnv for memory never returns PADDLEOCR keys", async () => {
     const plugin = createMockPlugin({
       settings: {},
-      secretStore: { "paddleocr-api-key": "ocr-secret", "vector-db-api-key": "vec-secret" },
+      secretStore: {
+        "paddleocr-api-key": "ocr-secret",
+        "vector-db-api-key": "vec-secret",
+      },
     });
     const env = await resolveCredentialEnv(plugin as never, "memory");
     expect(env.VECTOR_DB_API_KEY).toBe("vec-secret");
@@ -347,9 +400,22 @@ describe("buildTargetedEnv (production dispatch seam)", () => {
   it("non-allowlisted command returns base env with no credential injection", async () => {
     const plugin = createMockPlugin({
       settings: {},
-      secretStore: { "paddleocr-api-key": "secret", "vector-db-api-key": "secret" },
+      secretStore: {
+        "paddleocr-api-key": "secret",
+        "vector-db-api-key": "secret",
+      },
     });
-    for (const cmd of ["pip", "doctor", "install", "status", "diagnostics", "probe", "sync", "repair", ""]) {
+    for (const cmd of [
+      "pip",
+      "doctor",
+      "install",
+      "status",
+      "diagnostics",
+      "probe",
+      "sync",
+      "repair",
+      "",
+    ]) {
       const env = await buildTargetedEnv(plugin as never, cmd);
       expect(env.PADDLEOCR_API_KEY).toBeUndefined();
       expect(env.PADDLEOCR_API_TOKEN).toBeUndefined();
@@ -361,7 +427,10 @@ describe("buildTargetedEnv (production dispatch seam)", () => {
   it("OCR command never leaks vector-db secret", async () => {
     const plugin = createMockPlugin({
       settings: {},
-      secretStore: { "paddleocr-api-key": "ocr-only", "vector-db-api-key": "vec-should-not-leak" },
+      secretStore: {
+        "paddleocr-api-key": "ocr-only",
+        "vector-db-api-key": "vec-should-not-leak",
+      },
     });
     const env = await buildTargetedEnv(plugin as never, "ocr");
     expect(env.PADDLEOCR_API_KEY).toBe("ocr-only");
@@ -382,22 +451,42 @@ describe("targeted vs non-targeted command isolation", () => {
   });
 
   it("targeted OCR: PADDLEOCR_API_KEY present, VECTOR_DB_API_KEY absent", async () => {
-    const env = await resolveCredentialEnv(PLUGIN_WITH_ALL_SECRETS as never, "ocr");
+    const env = await resolveCredentialEnv(
+      PLUGIN_WITH_ALL_SECRETS as never,
+      "ocr"
+    );
     expect(env.PADDLEOCR_API_KEY).toBe("ocr-secret-123");
     expect(env.PADDLEOCR_API_TOKEN).toBe("ocr-secret-123");
     expect(env.VECTOR_DB_API_KEY).toBeUndefined();
   });
 
   it("targeted memory: VECTOR_DB_API_KEY present, PADDLEOCR keys absent", async () => {
-    const env = await resolveCredentialEnv(PLUGIN_WITH_ALL_SECRETS as never, "memory");
+    const env = await resolveCredentialEnv(
+      PLUGIN_WITH_ALL_SECRETS as never,
+      "memory"
+    );
     expect(env.VECTOR_DB_API_KEY).toBe("vec-secret-456");
     expect(env.PADDLEOCR_API_KEY).toBeUndefined();
     expect(env.PADDLEOCR_API_TOKEN).toBeUndefined();
   });
 
   it("non-targeted paths (install/ensure/status/pip/probe/diagnostics) receive zero secrets", async () => {
-    for (const cmd of ["install", "ensure", "status", "pip", "probe", "diagnostics", "doctor", "sync", "repair", ""]) {
-      const env = await resolveCredentialEnv(PLUGIN_WITH_ALL_SECRETS as never, cmd);
+    for (const cmd of [
+      "install",
+      "ensure",
+      "status",
+      "pip",
+      "probe",
+      "diagnostics",
+      "doctor",
+      "sync",
+      "repair",
+      "",
+    ]) {
+      const env = await resolveCredentialEnv(
+        PLUGIN_WITH_ALL_SECRETS as never,
+        cmd
+      );
       expect(Object.keys(env)).toHaveLength(0);
     }
   });
@@ -449,7 +538,11 @@ describe("migration warnings shape (settings surface contract)", () => {
 
   it("successful migration clears plaintext and records migrated key", async () => {
     const plugin = createMockPlugin({
-      settings: { paddleocr_api_key: "pk-to-migrate", _migrated_keys: [], _migration_warnings: [] },
+      settings: {
+        paddleocr_api_key: "pk-to-migrate",
+        _migrated_keys: [],
+        _migration_warnings: [],
+      },
       secretStore: {},
     });
     const result = await migrateCredentials(plugin as never, plugin.settings);
@@ -457,11 +550,16 @@ describe("migration warnings shape (settings surface contract)", () => {
     expect(result.warnings).toHaveLength(0);
     expect(plugin.settings.paddleocr_api_key).toBe("");
     expect(plugin.settings._migrated_keys).toContain("paddleocr_api_key");
+    expect(plugin.settings._paddleocr_configured).toBe(true);
   });
 
   it("re-running migration is idempotent (already-migrated keys skipped)", async () => {
     const plugin = createMockPlugin({
-      settings: { paddleocr_api_key: "pk-already-done", _migrated_keys: ["paddleocr_api_key"], _migration_warnings: [] },
+      settings: {
+        paddleocr_api_key: "pk-already-done",
+        _migrated_keys: ["paddleocr_api_key"],
+        _migration_warnings: [],
+      },
       secretStore: {},
     });
     const result = await migrateCredentials(plugin as never, plugin.settings);
@@ -502,7 +600,9 @@ describe("SecretStorage write + read-back verification (Fix A)", () => {
     // Boolean flag must be set
     expect(plugin.settings._paddleocr_configured).toBe(true);
     // SecretStorage must have the key
-    expect(await plugin._ss.getSecret("paddleocr-api-key")).toBe("validated-key-abc");
+    expect(await plugin._ss.getSecret("paddleocr-api-key")).toBe(
+      "validated-key-abc"
+    );
   });
 });
 
@@ -519,7 +619,10 @@ describe("setup/install argv isolation (Fix B)", () => {
   it("resolveCredentialEnv returns empty for install command", async () => {
     const plugin = createMockPlugin({
       settings: {},
-      secretStore: { "paddleocr-api-key": "ocr-secret-123", "vector-db-api-key": "vec-secret" },
+      secretStore: {
+        "paddleocr-api-key": "ocr-secret-123",
+        "vector-db-api-key": "vec-secret",
+      },
     });
     const env = await resolveCredentialEnv(plugin as never, "install");
     expect(Object.keys(env)).toHaveLength(0);
@@ -564,9 +667,19 @@ describe("embed env strip-before-inject (Fix C)", () => {
     const { buildTargetedEnv } = await import("../src/services/python-bridge");
     const plugin = createMockPlugin({
       settings: {},
-      secretStore: { "paddleocr-api-key": "ocr-secret", "vector-db-api-key": "vec-secret" },
+      secretStore: {
+        "paddleocr-api-key": "ocr-secret",
+        "vector-db-api-key": "vec-secret",
+      },
     });
-    for (const cmd of ["setup", "install", "status", "diagnostics", "probe", ""]) {
+    for (const cmd of [
+      "setup",
+      "install",
+      "status",
+      "diagnostics",
+      "probe",
+      "",
+    ]) {
       const env = await buildTargetedEnv(plugin as never, cmd);
       expect(env.PADDLEOCR_API_KEY).toBeUndefined();
       expect(env.VECTOR_DB_API_KEY).toBeUndefined();

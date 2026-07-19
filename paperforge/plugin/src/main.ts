@@ -38,26 +38,36 @@ export default class PaperForgePlugin extends Plugin {
   private _embedProgress = { current: 0, total: 0, key: "" };
   private _embedStderr = "";
   _memoryStatusText: string | null = null;
+  private _managedRuntime: ManagedRuntime | null = null;
+
+  getManagedRuntime(): ManagedRuntime {
+    if (!this._managedRuntime) {
+      this._managedRuntime = new ManagedRuntime({
+        version: this.manifest.version,
+      });
+    }
+    return this._managedRuntime;
+  }
 
   _getPythonCommand(): { path: string; args: string[] } | null {
-    const rt = new ManagedRuntime({
-      runtimeDir: path.join(
-        (this.app.vault.adapter as any).basePath as string,
-        ".paperforge-test-venv"
-      ),
-      pluginVersion: this.manifest.version,
-      osPlatform: process.platform,
-      osArch: process.arch,
-      fs: fs as any,
-      execFile: execFile as any,
-      execFileSync: require("child_process").execFileSync as any,
-    });
-    const run = resolveRuntimeCommand(rt.current());
+    const run = resolveRuntimeCommand(this.getManagedRuntime().current());
     return run ? { path: run.command, args: [...run.args] } : null;
   }
   async onload() {
     await this.loadSettings();
-    // saveSettings moved after migration
+    await migrateCredentials(
+      {
+        app: { secretStorage: (this.app as any).secretStorage },
+        saveData: async () => this.saveSettings(),
+      },
+      this.settings as unknown as Record<string, unknown>
+    );
+    await this.saveSettings();
+    try {
+      await this.getManagedRuntime().status();
+    } catch {
+      // Runtime UI exposes repair/install actions; plugin loading must continue.
+    }
     setLanguage(this.app);
 
     this.registerView(

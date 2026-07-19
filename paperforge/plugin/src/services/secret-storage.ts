@@ -14,6 +14,10 @@ const SETTINGS_TO_SECRET_ID: Record<string, string> = {
   paddleocr_api_key: "paddleocr-api-key",
   vector_db_api_key: "vector-db-api-key",
 };
+const SETTINGS_TO_CONFIGURED_FLAG: Record<string, string> = {
+  paddleocr_api_key: "_paddleocr_configured",
+  vector_db_api_key: "_vector_db_configured",
+};
 
 // ── Allowlist ──
 
@@ -44,7 +48,7 @@ export interface PluginForSecrets {
 
 export async function migrateCredentials(
   plugin: PluginForSecrets,
-  settings: Record<string, unknown>,
+  settings: Record<string, unknown>
 ): Promise<MigrationResult> {
   const ss = plugin.app?.secretStorage;
   if (!ss || typeof ss.getSecret !== "function") {
@@ -60,7 +64,8 @@ export async function migrateCredentials(
   for (const key of SECRET_KEYS) {
     if (alreadyMigrated.includes(key)) continue;
 
-    const plaintext = typeof settings[key] === "string" ? (settings[key] as string) : "";
+    const plaintext =
+      typeof settings[key] === "string" ? (settings[key] as string) : "";
     if (!plaintext) continue;
 
     const secretId = SETTINGS_TO_SECRET_ID[key] || key;
@@ -69,6 +74,7 @@ export async function migrateCredentials(
       if (existing === plaintext) {
         // Crash recovery: secret was stored but plaintext not yet cleared
         settings[key] = "";
+        settings[SETTINGS_TO_CONFIGURED_FLAG[key]] = true;
         migrated.push(key);
         continue;
       }
@@ -91,6 +97,7 @@ export async function migrateCredentials(
 
     settings[key] = "";
     migrated.push(key);
+    settings[SETTINGS_TO_CONFIGURED_FLAG[key]] = true;
   }
 
   if (migrated.length > 0 || warnings.length > 0) {
@@ -117,7 +124,7 @@ export async function migrateCredentials(
 
 export async function resolveCredentialEnv(
   plugin: PluginForSecrets,
-  commandType: string,
+  commandType: string
 ): Promise<Record<string, string>> {
   const allowlist = CREDENTIAL_COMMAND_ALLOWLIST[commandType];
   if (!allowlist) return {};
@@ -144,11 +151,12 @@ export async function resolveCredentialEnv(
 const CREDENTIAL_ENV_PREFIXES = ["PADDLEOCR_", "VECTOR_DB_", "OPENAI_"];
 
 export function stripCredentialEnv(
-  env: Record<string, string | undefined>,
+  env: Record<string, string | undefined>
 ): Record<string, string | undefined> {
   const result: Record<string, string | undefined> = {};
   for (const [key, value] of Object.entries(env)) {
-    if (CREDENTIAL_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))) continue;
+    if (CREDENTIAL_ENV_PREFIXES.some((prefix) => key.startsWith(prefix)))
+      continue;
     result[key] = value;
   }
   return result;

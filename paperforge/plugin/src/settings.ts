@@ -88,6 +88,7 @@ interface ISettingPlugin {
   manifest: { version: string };
   readPaperforgeJson(): Record<string, string>;
   savePaperforgeJson(pc: Record<string, string>): void;
+  getManagedRuntime?(): ManagedRuntime;
   _autoSyncRunning?: boolean;
   _lastSyncTime?: string | null;
   _memoryStatusText?: string | null;
@@ -437,9 +438,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Ensure ManagedRuntime singleton is initialized for the current machine. */
   private _ensureManagedRuntime(): ManagedRuntime {
     if (this._managedRuntime) return this._managedRuntime;
-    this._managedRuntime = new ManagedRuntime({
-      version: this.plugin.manifest.version,
-    });
+    this._managedRuntime =
+      this.plugin.getManagedRuntime?.() ??
+      new ManagedRuntime({ version: this.plugin.manifest.version });
     return this._managedRuntime;
   }
 

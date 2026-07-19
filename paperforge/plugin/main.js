@@ -1,27 +1,27 @@
 "use strict";
-var fr = Object.create;
+var gr = Object.create;
 var Xe = Object.defineProperty;
-var hr = Object.getOwnPropertyDescriptor;
-var gr = Object.getOwnPropertyNames;
-var mr = Object.getPrototypeOf,
-  yr = Object.prototype.hasOwnProperty;
-var vr = (p, d) => () => (d || p((d = { exports: {} }).exports, d), d.exports),
-  br = (p, d) => {
+var mr = Object.getOwnPropertyDescriptor;
+var yr = Object.getOwnPropertyNames;
+var vr = Object.getPrototypeOf,
+  br = Object.prototype.hasOwnProperty;
+var Er = (p, d) => () => (d || p((d = { exports: {} }).exports, d), d.exports),
+  xr = (p, d) => {
     for (var e in d) Xe(p, e, { get: d[e], enumerable: !0 });
   },
   Ot = (p, d, e, t) => {
     if ((d && typeof d == "object") || typeof d == "function")
-      for (let r of gr(d))
-        !yr.call(p, r) &&
+      for (let r of yr(d))
+        !br.call(p, r) &&
           r !== e &&
           Xe(p, r, {
             get: () => d[r],
-            enumerable: !(t = hr(d, r)) || t.enumerable,
+            enumerable: !(t = mr(d, r)) || t.enumerable,
           });
     return p;
   };
 var z = (p, d, e) => (
-    (e = p != null ? fr(mr(p)) : {}),
+    (e = p != null ? gr(vr(p)) : {}),
     Ot(
       d || !p || !p.__esModule
         ? Xe(e, "default", { value: p, enumerable: !0 })
@@ -29,9 +29,9 @@ var z = (p, d, e) => (
       p
     )
   ),
-  Er = (p) => Ot(Xe({}, "__esModule", { value: !0 }), p);
-var vt = vr((zr, wr) => {
-  wr.exports = {
+  wr = (p) => Ot(Xe({}, "__esModule", { value: !0 }), p);
+var vt = Er((qr, Sr) => {
+  Sr.exports = {
     versions: [
       {
         version: "1.5.15",
@@ -63,15 +63,15 @@ var vt = vr((zr, wr) => {
     ],
   };
 });
-var Vr = {};
-br(Vr, { default: () => dt });
-module.exports = Er(Vr);
+var zr = {};
+xr(zr, { default: () => dt });
+module.exports = wr(zr);
 var J = require("obsidian"),
-  W = z(require("fs")),
-  Re = z(require("path")),
-  Te = require("child_process");
+  Z = z(require("fs")),
+  Ne = z(require("path")),
+  He = require("child_process");
 var ke = "paperforge-status",
-  He = "paperforge",
+  Ve = "paperforge",
   Nt =
     '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><line x1="8" y1="7" x2="16" y2="7"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>',
   ie = [
@@ -141,7 +141,7 @@ var ke = "paperforge-status",
     _paddleocr_configured: !1,
     _vector_db_configured: !1,
   };
-function Vt(p, d) {
+function Ht(p, d) {
   if (!d || !d.note_path) return d;
   let e = p.vault.getAbstractFileByPath(d.note_path);
   if (!e) return d;
@@ -163,7 +163,7 @@ function ut(p, d) {
   return p && { ...p, ...d };
 }
 var _t = 1,
-  Ae = ["installation", "library", "ocr", "memory", "maintenance", "help"],
+  Re = ["installation", "library", "ocr", "memory", "maintenance", "help"],
   Mt = [
     "unknown",
     "unavailable",
@@ -206,7 +206,7 @@ function $e(p) {
     scope_count: 1,
   };
 }
-function Ht() {
+function Vt() {
   return {
     verb: "setup",
     label: "Open Setup Wizard",
@@ -220,14 +220,14 @@ function Ht() {
     scope_count: 1,
   };
 }
-function ft(p, d) {
+function ht(p, d) {
   if (!p || typeof p != "object") return !1;
   let e = p;
   if (
     e.schema_version !== 1 ||
     typeof e.module != "string" ||
     !e.module ||
-    !Ae.includes(e.module) ||
+    !Re.includes(e.module) ||
     (d !== void 0 && e.module !== d) ||
     typeof e.capability_state != "string" ||
     !Mt.includes(e.capability_state) ||
@@ -281,8 +281,8 @@ function ft(p, d) {
         return !1;
       if (s.activity_progress !== null) {
         if (typeof s.activity_progress != "object") return !1;
-        let o = s.activity_progress;
-        if (typeof o.current != "number" || typeof o.total != "number")
+        let i = s.activity_progress;
+        if (typeof i.current != "number" || typeof i.total != "number")
           return !1;
       }
       if (
@@ -312,7 +312,7 @@ function Se(p) {
     ttl_seconds: 0,
   };
 }
-function ht(p) {
+function ft(p) {
   return {
     schema_version: _t,
     module: p,
@@ -331,7 +331,7 @@ function ht(p) {
     ttl_seconds: 0,
   };
 }
-function Fe(p) {
+function Te(p) {
   return {
     schema_version: _t,
     module: p,
@@ -378,12 +378,12 @@ function jt(p, d) {
       e[t] = Se(t);
       continue;
     }
-    if (!ft(r, t)) {
-      e[t] = Fe(t);
+    if (!ht(r, t)) {
+      e[t] = Te(t);
       continue;
     }
     if (gt(r)) {
-      e[t] = ht(t);
+      e[t] = ft(t);
       continue;
     }
     e[t] = r;
@@ -1417,7 +1417,7 @@ var mt = {
     },
   },
   yt = null;
-function xr(p) {
+function kr(p) {
   try {
     let d = p.vault;
     if (typeof d.getConfig == "function") {
@@ -1434,28 +1434,82 @@ function xr(p) {
   return "en";
 }
 function $t(p) {
-  yt = xr(p) === "zh" ? mt.zh : mt.en;
+  yt = kr(p) === "zh" ? mt.zh : mt.en;
 }
-function i(p) {
+function o(p) {
   return (yt && yt[p]) || mt.en[p] || p;
 }
 var R = require("obsidian"),
   G = z(require("fs")),
   te = z(require("path")),
-  lr = z(require("os")),
+  dr = z(require("os")),
   ee = require("child_process");
-var cr = z(vt());
+var pr = z(vt());
 var be = z(require("fs")),
   Pe = z(require("path")),
-  Ut = z(require("os")),
-  De = require("child_process");
-var kr = {
-  ocr: ["PADDLEOCR_API_KEY", "PADDLEOCR_API_TOKEN"],
-  memory: ["VECTOR_DB_API_KEY", "VECTOR_DB_API_BASE", "VECTOR_DB_API_MODEL"],
-  embed: ["VECTOR_DB_API_KEY", "VECTOR_DB_API_BASE", "VECTOR_DB_API_MODEL"],
-};
+  qt = z(require("os")),
+  Ae = require("child_process");
+var Pr = ["paddleocr_api_key", "vector_db_api_key"],
+  Cr = {
+    paddleocr_api_key: "paddleocr-api-key",
+    vector_db_api_key: "vector-db-api-key",
+  },
+  zt = {
+    paddleocr_api_key: "_paddleocr_configured",
+    vector_db_api_key: "_vector_db_configured",
+  },
+  Rr = {
+    ocr: ["PADDLEOCR_API_KEY", "PADDLEOCR_API_TOKEN"],
+    memory: ["VECTOR_DB_API_KEY", "VECTOR_DB_API_BASE", "VECTOR_DB_API_MODEL"],
+    embed: ["VECTOR_DB_API_KEY", "VECTOR_DB_API_BASE", "VECTOR_DB_API_MODEL"],
+  };
+async function Kt(p, d) {
+  var s;
+  let e = (s = p.app) == null ? void 0 : s.secretStorage;
+  if (!e || typeof e.getSecret != "function")
+    return { migrated: [], warnings: [] };
+  let t = [],
+    r = [],
+    n = Array.isArray(d._migrated_keys) ? d._migrated_keys : [];
+  for (let a of Pr) {
+    if (n.includes(a)) continue;
+    let i = typeof d[a] == "string" ? d[a] : "";
+    if (!i) continue;
+    let l = Cr[a] || a,
+      c = await e.getSecret(l);
+    if (c !== null) {
+      if (c === i) {
+        ((d[a] = ""), (d[zt[a]] = !0), t.push(a));
+        continue;
+      }
+      r.push(a);
+      continue;
+    }
+    try {
+      await e.setSecret(l, i);
+    } catch (_) {
+      r.push(a);
+      continue;
+    }
+    if ((await e.getSecret(l)) !== i) {
+      r.push(a);
+      continue;
+    }
+    ((d[a] = ""), t.push(a), (d[zt[a]] = !0));
+  }
+  if (t.length > 0 || r.length > 0) {
+    let a = Array.isArray(d._migrated_keys) ? [...d._migrated_keys] : [];
+    for (let i of t) a.includes(i) || a.push(i);
+    if (((d._migrated_keys = a), r.length > 0)) {
+      let i = Array.isArray(d._migration_warnings) ? d._migration_warnings : [];
+      d._migration_warnings = [...i, ...r];
+    }
+    await p.saveData(d);
+  }
+  return { migrated: t, warnings: r };
+}
 async function Ue(p, d) {
-  if (!kr[d]) return {};
+  if (!Rr[d]) return {};
   let t = p.app.secretStorage,
     r = {};
   if (d === "ocr") {
@@ -1467,15 +1521,15 @@ async function Ue(p, d) {
   }
   return r;
 }
-var Sr = ["PADDLEOCR_", "VECTOR_DB_", "OPENAI_"];
-function zt(p) {
+var Tr = ["PADDLEOCR_", "VECTOR_DB_", "OPENAI_"];
+function Ut(p) {
   let d = {};
   for (let [e, t] of Object.entries(p))
-    Sr.some((r) => e.startsWith(r)) || (d[e] = t);
+    Tr.some((r) => e.startsWith(r)) || (d[e] = t);
   return d;
 }
 var bt = null,
-  Kt = !1;
+  Wt = !1;
 function Et(p) {
   let d = String(p),
     t = {
@@ -1569,19 +1623,19 @@ function Et(p) {
     : { type: "unknown", message: String(p), recoverable: !1 };
 }
 function xt() {
-  if (Kt) return bt;
-  Kt = !0;
+  if (Wt) return bt;
+  Wt = !0;
   try {
     let p;
     if (process.platform === "win32") {
       let d = process.env.ComSpec || "C:\\Windows\\System32\\cmd.exe";
-      p = (0, De.execFileSync)(d, ["/c", "where", "git"], {
+      p = (0, Ae.execFileSync)(d, ["/c", "where", "git"], {
         timeout: 5e3,
         windowsHide: !0,
         encoding: "utf-8",
       });
     } else
-      p = (0, De.execFileSync)("which", ["git"], {
+      p = (0, Ae.execFileSync)("which", ["git"], {
         timeout: 5e3,
         encoding: "utf-8",
       });
@@ -1600,7 +1654,7 @@ function xt() {
 function ge() {
   let p = { ...process.env },
     d = process.platform,
-    e = Ut.homedir(),
+    e = qt.homedir(),
     t = [],
     r = xt();
   (r && t.push(r),
@@ -1614,14 +1668,14 @@ function ge() {
       : d === "linux" &&
         t.push("/usr/local/bin", "/usr/bin", `${e}/.local/bin`));
   let n = p.PATH || "";
-  return ((p.PATH = [...t, n].filter(Boolean).join(Pe.delimiter)), zt(p));
+  return ((p.PATH = [...t, n].filter(Boolean).join(Pe.delimiter)), Ut(p));
 }
 async function me(p, d) {
   let e = await Ue(p, d),
     t = ge();
   return Object.keys(e).length === 0 ? t : Object.assign({}, t, e);
 }
-function Wt(p) {
+function Zt(p) {
   return String(p)
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
@@ -1631,7 +1685,7 @@ function wt(p) {
   if (!p) return !1;
   try {
     if (!be.existsSync(p)) return !1;
-    for (let d of be.readdirSync(p)) if (Wt(d)) return !0;
+    for (let d of be.readdirSync(p)) if (Zt(d)) return !0;
   } catch (d) {}
   return !1;
 }
@@ -1643,17 +1697,17 @@ function Qe(p) {
       let e = Pe.join(p, d, "extensions");
       try {
         if (!be.existsSync(e)) continue;
-        for (let t of be.readdirSync(e)) if (Wt(t)) return !0;
+        for (let t of be.readdirSync(e)) if (Zt(t)) return !0;
       } catch (t) {}
     }
   } catch (d) {}
   return !1;
 }
-var Me = z(require("fs")),
+var De = z(require("fs")),
   X = z(require("path")),
-  qt = require("child_process");
-function Pr(p, d) {
-  let e = d || Me,
+  Gt = require("child_process");
+function Ar(p, d) {
+  let e = d || De,
     t = X.join(p, "paperforge.json"),
     r = {
       system_dir: "System",
@@ -1685,7 +1739,7 @@ function Pr(p, d) {
   }
 }
 function de(p, d) {
-  let e = Pr(p, d),
+  let e = Ar(p, d),
     t = X.join(p, e.system_dir, "PaperForge");
   return {
     vault: p,
@@ -1713,20 +1767,20 @@ function de(p, d) {
 }
 function kt(p) {
   try {
-    return Me.existsSync(p) ? JSON.parse(Me.readFileSync(p, "utf-8")) : null;
+    return De.existsSync(p) ? JSON.parse(De.readFileSync(p, "utf-8")) : null;
   } catch (d) {
     return null;
   }
 }
-function Cr(p) {
+function Fr(p) {
   let d = de(p);
   return kt(d.memoryStatePath);
 }
-var Oe = null;
+var Fe = null;
 function et(p) {
   let d = de(p),
     e = Date.now();
-  if (Oe && Oe.vaultPath === p && e - Oe.ts < 2e3) return Oe.result;
+  if (Fe && Fe.vaultPath === p && e - Fe.ts < 2e3) return Fe.result;
   let t = "",
     r = [
       X.join(p, ".paperforge-test-venv", "Scripts", "python.exe"),
@@ -1734,42 +1788,42 @@ function et(p) {
       X.join(p, "venv", "Scripts", "python.exe"),
     ];
   for (let s = 0; s < r.length; s++)
-    if (Me.existsSync(r[s])) {
+    if (De.existsSync(r[s])) {
       t = r[s];
       break;
     }
   if (t)
     try {
-      let s = (0, qt.execFileSync)(
+      let s = (0, Gt.execFileSync)(
           t,
           ["-m", "paperforge", "--vault", p, "embed", "status", "--json"],
           { encoding: "utf-8", timeout: 1e4, windowsHide: !0 }
         ),
         a = JSON.parse(s);
       if (a.ok && a.data) {
-        let o = a.data;
-        return ((Oe = { vaultPath: p, result: o, ts: e }), o);
+        let i = a.data;
+        return ((Fe = { vaultPath: p, result: i, ts: e }), i);
       }
     } catch (s) {}
   let n = kt(d.vectorStatePath);
-  return ((Oe = { vaultPath: p, result: n, ts: e }), n);
+  return ((Fe = { vaultPath: p, result: n, ts: e }), n);
 }
 function We(p) {
   let d = de(p);
   return kt(d.healthStatePath);
 }
-function Zt(p) {
+function Jt(p) {
   var e;
   let d = We(p);
   return !!(d && ((e = d.summary) == null ? void 0 : e.status) === "ok");
 }
 function tt(p) {
-  let d = Cr(p);
+  let d = Fr(p);
   return !d || d.paper_count_db === 0
     ? "DB not found. Run paperforge memory build."
     : "Papers: " + d.paper_count_db + " | " + (d.fresh ? "fresh" : "stale");
 }
-function Be(p) {
+function Oe(p) {
   var t, r, n;
   let d = et(p);
   return d
@@ -1788,14 +1842,14 @@ function Be(p) {
 var Q = require("obsidian"),
   le = z(require("fs")),
   Pt = z(require("path")),
-  tr = z(require("https")),
-  Ie = require("child_process");
+  nr = z(require("https")),
+  Me = require("child_process");
 var St = z(require("fs")),
   $ = z(require("path")),
   nt = require("child_process"),
-  Yt = z(require("os")),
-  Gt = 300 * 1e3,
-  Rr = "3.11";
+  Qt = z(require("os")),
+  Yt = 300 * 1e3,
+  Dr = "3.11";
 function rt() {
   let p, d;
   return {
@@ -1806,27 +1860,27 @@ function rt() {
     reject: d,
   };
 }
-function Tr(p) {
+function Or(p) {
   let d = p.match(/Python\s+(\d+\.\d+(?:\.\d+)?)/);
   if (d) return d[1];
   let e = p.match(/Python\s+(\d+\.\d+)/);
   return e ? e[1] + ".0" : null;
 }
-function Xt(p, d) {
+function er(p, d) {
   var r, n;
   let e = p.split(".").map(Number),
     t = d.split(".").map(Number);
   for (let s = 0; s < Math.max(e.length, t.length); s++) {
     let a = (r = e[s]) != null ? r : 0,
-      o = (n = t[s]) != null ? n : 0;
-    if (a !== o) return a - o;
+      i = (n = t[s]) != null ? n : 0;
+    if (a !== i) return a - i;
   }
   return 0;
 }
-function Ar(p, d) {
-  return Xt(p, d) >= 0;
+function Mr(p, d) {
+  return er(p, d) >= 0;
 }
-function Fr() {
+function Br() {
   var p;
   return (
     process.env.FLATPAK_ID !== void 0 ||
@@ -1834,14 +1888,14 @@ function Fr() {
     !1
   );
 }
-function Dr() {
+function Ir() {
   return process.env.SNAP !== void 0 || process.env.SNAP_NAME !== void 0 || !1;
 }
-function Jt(p, d) {
+function Xt(p, d) {
   var t;
   return `${(t = { win32: "windows", darwin: "macos", linux: "linux" }[p]) != null ? t : p}-${d}`;
 }
-function Qt(p, d, e) {
+function tr(p, d, e) {
   if (d !== void 0 || e !== void 0) {
     if (e) return [{ verb: "stop", label: "Stop" }];
     switch (p.state) {
@@ -1925,7 +1979,7 @@ var ye = class {
   constructor(d) {
     this._cache = null;
     this._cacheTime = 0;
-    var r, n, s, a, o, l, c, u, _, g, f;
+    var r, n, s, a, i, l, c, u, _, g, h;
     let e =
         (n = (r = d.osPlatform) != null ? r : d.platform) != null
           ? n
@@ -1940,13 +1994,13 @@ var ye = class {
       ((this.runtimeDir = d.runtimeDir),
         (this.rootDir = $.dirname(d.runtimeDir)),
         (this.pluginVersion =
-          (l = (o = d.pluginVersion) != null ? o : d.version) != null
+          (l = (i = d.pluginVersion) != null ? i : d.version) != null
             ? l
             : "0.0.0"));
     else {
-      let h = Yt.homedir();
-      ((this.rootDir = $.join(h, ".paperforge", "runtime")),
-        (this.runtimeDir = $.join(this.rootDir, Jt(e, t))),
+      let f = Qt.homedir();
+      ((this.rootDir = $.join(f, ".paperforge", "runtime")),
+        (this.runtimeDir = $.join(this.rootDir, Xt(e, t))),
         (this.pluginVersion =
           (u = (c = d.version) != null ? c : d.pluginVersion) != null
             ? u
@@ -1956,11 +2010,11 @@ var ye = class {
       (this._fs = (_ = d.fs) != null ? _ : St),
       (this._execFile = (g = d.execFile) != null ? g : nt.execFile),
       (this._execFileSync =
-        (f = d.execFileSync) != null ? f : nt.execFileSync));
+        (h = d.execFileSync) != null ? h : nt.execFileSync));
   }
   current() {
     return this._cache
-      ? Date.now() - this._cacheTime > Gt
+      ? Date.now() - this._cacheTime > Yt
         ? { ...this._cache, state: "unknown", stale: !0 }
         : { ...this._cache, stale: !1 }
       : {
@@ -1979,10 +2033,10 @@ var ye = class {
   async status(d) {
     var a;
     if (this._cache) {
-      let o = Date.now() - this._cacheTime > Gt;
-      if (!o && this._cache.state === "ready")
+      let i = Date.now() - this._cacheTime > Yt;
+      if (!i && this._cache.state === "ready")
         return { ...this._cache, stale: !1 };
-      if (o && d != null && d.allowStale) return { ...this._cache, stale: !0 };
+      if (i && d != null && d.allowStale) return { ...this._cache, stale: !0 };
     }
     let e = null,
       t = null,
@@ -1990,8 +2044,8 @@ var ye = class {
       n = null,
       s = [];
     try {
-      let o = this._fs.readFileSync(this.pointerPath, "utf-8"),
-        l = JSON.parse(o);
+      let i = this._fs.readFileSync(this.pointerPath, "utf-8"),
+        l = JSON.parse(i);
       e = typeof l.version == "string" ? l.version : null;
       let c = typeof l.pythonPath == "string" ? l.pythonPath : null;
       ((t = c ? $.resolve($.dirname(this.pointerPath), c) : null),
@@ -2001,7 +2055,7 @@ var ye = class {
             ? l.previousPythonPath
             : null),
         (s = Array.isArray(l.warnings) ? l.warnings : []));
-    } catch (o) {
+    } catch (i) {
       return this._setCache({
         state: "not_installed",
         pythonPath: null,
@@ -2050,12 +2104,12 @@ var ye = class {
         previousPythonPath: n,
       });
     try {
-      let o = await this._probe(t),
+      let i = await this._probe(t),
         l = [...s];
       return this._setCache({
         state: "ready",
         pythonPath: t,
-        version: (a = o.version) != null ? a : e,
+        version: (a = i.version) != null ? a : e,
         source: "venv",
         error: null,
         lastVerifiedAt: new Date().toISOString(),
@@ -2064,8 +2118,8 @@ var ye = class {
         previousVersion: r,
         previousPythonPath: n,
       });
-    } catch (o) {
-      let l = o instanceof Error ? o.message : String(o);
+    } catch (i) {
+      let l = i instanceof Error ? i.message : String(i);
       return this._setCache({
         state: "needs_repair",
         pythonPath: t,
@@ -2103,7 +2157,7 @@ var ye = class {
     try {
       n = this._resolveBootstrapPython();
     } catch (v) {
-      if (Fr() || Dr())
+      if (Br() || Ir())
         return this._setCache({
           state: "unavailable",
           pythonPath: null,
@@ -2122,7 +2176,7 @@ var ye = class {
           previousVersion: null,
           previousPythonPath: null,
         });
-      let x = Jt(this.osPlatform, this.osArch),
+      let x = Xt(this.osPlatform, this.osArch),
         k = this.osPlatform === "darwin",
         b = ["macos-x64", "macos-arm64"],
         E = ["windows-x64", "linux-x64"];
@@ -2181,7 +2235,7 @@ var ye = class {
             });
     }
     if (r != null && r.aborted) return this._abortedHealth();
-    if (!Ar(n.version, Rr))
+    if (!Mr(n.version, Dr))
       return this._setCache({
         state: "unavailable",
         pythonPath: null,
@@ -2287,7 +2341,7 @@ var ye = class {
         ? $.join(this.runtimeDir, `v${e}_build2`)
         : $.join(this.runtimeDir, `v${e}`),
       a = $.join(s, "venv"),
-      o =
+      i =
         this.osPlatform === "win32"
           ? $.join(a, "Scripts", "python.exe")
           : $.join(a, "bin", "python");
@@ -2316,7 +2370,7 @@ var ye = class {
     try {
       let { promise: v, reject: x, resolve: k } = rt();
       (this._execFile(
-        o,
+        i,
         ["-m", "pip", "install", `paperforge==${e}`],
         { timeout: 12e4, signal: r },
         (b) => {
@@ -2337,7 +2391,7 @@ var ye = class {
     try {
       let { promise: v, reject: x, resolve: k } = rt();
       (this._execFile(
-        o,
+        i,
         ["-I", "-c", "import paperforge; print(paperforge.__version__)"],
         { timeout: 3e4, signal: r },
         (b) => {
@@ -2364,7 +2418,7 @@ var ye = class {
     } catch (v) {}
     let u = $.dirname(this.pointerPath);
     this._fs.existsSync(u) || this._fs.mkdirSync(u, { recursive: !0 });
-    let _ = $.relative($.dirname(this.pointerPath), o),
+    let _ = $.relative($.dirname(this.pointerPath), i),
       g = JSON.stringify(
         {
           schema_version: 1,
@@ -2377,12 +2431,12 @@ var ye = class {
         null,
         2
       ),
-      f = this.pointerPath + ".tmp";
-    (this._fs.writeFileSync(f, g, "utf-8"),
-      this._fs.renameSync(f, this.pointerPath));
-    let h = {
+      h = this.pointerPath + ".tmp";
+    (this._fs.writeFileSync(h, g, "utf-8"),
+      this._fs.renameSync(h, this.pointerPath));
+    let f = {
       state: "ready",
-      pythonPath: o,
+      pythonPath: i,
       version: e,
       source: "venv",
       error: null,
@@ -2393,10 +2447,10 @@ var ye = class {
       previousPythonPath: c,
     };
     return (
-      (this._cache = h),
+      (this._cache = f),
       (this._cacheTime = Date.now()),
       this._cleanupOldSlots(e),
-      h
+      f
     );
   }
   _setCache(d) {
@@ -2468,7 +2522,7 @@ var ye = class {
             encoding: "utf-8",
             timeout: 5e3,
           }),
-          r = Tr(t);
+          r = Or(t);
         if (r) return { path: e.path, version: r };
       } catch (t) {}
     throw new Error("No Python 3.11+ found on system");
@@ -2483,8 +2537,8 @@ var ye = class {
         (s, a) => {
           if (s) n(s);
           else {
-            let o = (a != null ? a : "").trim() || null;
-            r({ version: o });
+            let i = (a != null ? a : "").trim() || null;
+            r({ version: i });
           }
         }
       ),
@@ -2501,7 +2555,7 @@ var ye = class {
           return { name: n.name, version: s };
         })
         .filter((n) => n.version !== d)
-        .sort((n, s) => Xt(s.version, n.version));
+        .sort((n, s) => er(s.version, n.version));
       for (let n = e; n < r.length; n++)
         this._fs.rmSync($.join(this.runtimeDir, r[n].name), {
           recursive: !0,
@@ -2510,7 +2564,7 @@ var ye = class {
     } catch (t) {}
   }
 };
-function er(p, d) {
+function rr(p, d) {
   return !d || !d.trim()
     ? { blocked: !0, reason: "zotero" }
     : p
@@ -2528,12 +2582,12 @@ var Ct = class extends Q.Modal {
   _updateUI() {
     let e = this.orphans.filter((t) => t._selected);
     (this._countEl.setText(
-      i("orphan_delete_selected").replace("{count}", String(e.length))
+      o("orphan_delete_selected").replace("{count}", String(e.length))
     ),
       this._selectAllBtn.setText(
         e.length === this.orphans.length
-          ? i("orphan_deselect_all")
-          : i("orphan_select_all")
+          ? o("orphan_deselect_all")
+          : o("orphan_select_all")
       ));
     for (let t of this.orphans) {
       let r = this._rowEls[t._idx];
@@ -2544,9 +2598,9 @@ var Ct = class extends Q.Modal {
     let { contentEl: e } = this;
     (e.addClass("paperforge-modal"),
       e.createEl("h2", {
-        text: i("orphan_title").replace("{count}", String(this.orphans.length)),
+        text: o("orphan_title").replace("{count}", String(this.orphans.length)),
       }),
-      e.createEl("p", { cls: "paperforge-modal-desc", text: i("orphan_desc") }),
+      e.createEl("p", { cls: "paperforge-modal-desc", text: o("orphan_desc") }),
       (this._rowEls = []));
     let t = e.createEl("div", { cls: "paperforge-orphan-list" });
     for (let n of this.orphans) {
@@ -2557,12 +2611,12 @@ var Ct = class extends Q.Modal {
       });
       this._rowEls.push(s);
       let a = s.createEl("div", { cls: "paperforge-orphan-info" }),
-        o = a.createEl("div", { cls: "paperforge-orphan-header" });
-      o.createEl("span", {
+        i = a.createEl("div", { cls: "paperforge-orphan-header" });
+      i.createEl("span", {
         cls: "paperforge-orphan-key",
         text: n.citation_key || n.key,
       });
-      let l = o.createEl("span", { cls: "paperforge-orphan-tags" });
+      let l = i.createEl("span", { cls: "paperforge-orphan-tags" });
       (l.createEl("span", {
         cls: "paperforge-tag " + (n.has_pdf ? "tag-pdf" : "tag-nopdf"),
         text: n.has_pdf ? "PDF" : "no PDF",
@@ -2584,7 +2638,7 @@ var Ct = class extends Q.Modal {
           }),
         a.createEl("div", {
           cls: "paperforge-orphan-explain",
-          text: i("orphan_explain"),
+          text: o("orphan_explain"),
         }),
         s.addEventListener("click", () => {
           ((n._selected = !n._selected), this._updateUI());
@@ -2610,7 +2664,7 @@ var Ct = class extends Q.Modal {
       this._countEl.addEventListener("click", () => {
         let n = this.orphans.filter((a) => a._selected);
         if (n.length === 0) {
-          new Q.Notice(i("orphan_none_selected"));
+          new Q.Notice(o("orphan_none_selected"));
           return;
         }
         if (
@@ -2623,7 +2677,7 @@ var Ct = class extends Q.Modal {
           return;
         }
         let s = n.map((a) => a.key);
-        (0, Ie.execFile)(
+        (0, Me.execFile)(
           this.py.path,
           [
             ...this.py.extraArgs,
@@ -2637,13 +2691,13 @@ var Ct = class extends Q.Modal {
             ...s,
           ],
           { cwd: this.vaultPath, timeout: 6e4 },
-          (a, o) => {
+          (a, i) => {
             if (a) {
               (new Q.Notice("PaperForge: prune failed"), this.close());
               return;
             }
             try {
-              let l = JSON.parse(o),
+              let l = JSON.parse(i),
                 c = (l.data && l.data.deleted) || [];
               new Q.Notice("Deleted " + c.length + " orphan workspace(s)");
             } catch (l) {
@@ -2669,9 +2723,9 @@ function it(p, d, e) {
     console.log("[PF] orphan file FOUND");
     let n = le.readFileSync(r, "utf-8"),
       a = JSON.parse(n),
-      o = { path: "python", extraArgs: [], source: "auto-detected" };
-    (console.log("[PF] py.path:", o ? o.path : "null"),
-      new Ct(p, a, e, o).open(),
+      i = { path: "python", extraArgs: [], source: "auto-detected" };
+    (console.log("[PF] py.path:", i ? i.path : "null"),
+      new Ct(p, a, e, i).open(),
       le.unlinkSync(r),
       console.log("[PF] orphan file cleaned"));
   } catch (t) {
@@ -2696,7 +2750,7 @@ var Ce = class extends Q.Modal {
         osPlatform: process.platform,
         osArch: process.arch,
         fs: le,
-        execFile: Ie.execFile,
+        execFile: Me.execFile,
         execFileSync: require("child_process").execFileSync,
       }),
       r = Ee(t.current());
@@ -2720,11 +2774,11 @@ var Ce = class extends Q.Modal {
   }
   _renderStepIndicator() {
     let e = [
-        i("wizard_step1"),
-        i("wizard_step2"),
-        i("wizard_step3"),
-        i("wizard_step4"),
-        i("wizard_step5"),
+        o("wizard_step1"),
+        o("wizard_step2"),
+        o("wizard_step3"),
+        o("wizard_step4"),
+        o("wizard_step5"),
       ],
       t = this.contentEl.createEl("div", { cls: "paperforge-step-bar" });
     e.forEach((r, n) => {
@@ -2760,7 +2814,7 @@ var Ce = class extends Q.Modal {
     let e = this.contentEl.createEl("div", { cls: "paperforge-step-nav" });
     (this._step > 1 &&
       e
-        .createEl("button", { cls: "paperforge-step-btn", text: i("nav_prev") })
+        .createEl("button", { cls: "paperforge-step-btn", text: o("nav_prev") })
         .addEventListener("click", () => {
           (this._step--, (this._showSkipConfirm = !1), this._render());
         }),
@@ -2768,7 +2822,7 @@ var Ce = class extends Q.Modal {
         ? e
             .createEl("button", {
               cls: "paperforge-step-btn mod-cta",
-              text: i("nav_next"),
+              text: o("nav_next"),
             })
             .addEventListener("click", () => {
               if (this._step === 3) {
@@ -2786,13 +2840,13 @@ var Ce = class extends Q.Modal {
         : e
             .createEl("button", {
               cls: "paperforge-step-btn",
-              text: i("nav_close"),
+              text: o("nav_close"),
             })
             .addEventListener("click", () => this.close()));
   }
   _validateStep3() {
     let e = this.plugin.settings,
-      t = er(this._apiKeyValidated, e.zotero_data_dir);
+      t = rr(this._apiKeyValidated, e.zotero_data_dir);
     if (t.reason === "ocr") return t;
     let r = (e.zotero_data_dir || "").trim();
     if (!r)
@@ -2825,17 +2879,17 @@ var Ce = class extends Q.Modal {
       : { blocked: !1 };
   }
   _stepOverview(e) {
-    (e.createEl("h2", { text: i("wizard_title") }),
-      e.createEl("p", { text: i("wizard_intro") }));
+    (e.createEl("h2", { text: o("wizard_title") }),
+      e.createEl("p", { text: o("wizard_intro") }));
     let t = this.plugin.settings,
       r = this.app.vault.adapter.basePath,
       n = e.createEl("div", { cls: "paperforge-dir-tree" }),
       s = n.createEl("div", { cls: "paperforge-dir-node root" });
     s.textContent = `\u{1F4C1} Vault (${r})`;
     let a = n.createEl("div", { cls: "paperforge-dir-children" }),
-      o = a.createEl("div", { cls: "paperforge-dir-node folder" });
-    ((o.textContent = `\u{1F4C1} ${t.resources_dir || "Resources"}/ \u2014 \u6587\u732E\u5361\u7247\u76EE\u5F55\uFF08Base \u6570\u636E\u6765\u6E90\uFF09`),
-      o
+      i = a.createEl("div", { cls: "paperforge-dir-node folder" });
+    ((i.textContent = `\u{1F4C1} ${t.resources_dir || "Resources"}/ \u2014 \u6587\u732E\u5361\u7247\u76EE\u5F55\uFF08Base \u6570\u636E\u6765\u6E90\uFF09`),
+      i
         .createEl("div", { cls: "paperforge-dir-children" })
         .createEl("div", {
           cls: "paperforge-dir-node file",
@@ -2850,25 +2904,25 @@ var Ce = class extends Q.Modal {
         text: `\u{1F4C1} ${t.system_dir || "System"}/ \u2014 Zotero \u8F6F\u94FE\u63A5 + PaperForge \u7CFB\u7EDF\u6587\u4EF6\u5939`,
       }),
       e.createEl("p", {
-        text: i("wizard_preview"),
+        text: o("wizard_preview"),
         cls: "paperforge-modal-hint",
       }),
       e.createEl("p", {
-        text: i("wizard_safety"),
+        text: o("wizard_safety"),
         cls: "paperforge-modal-hint",
       }));
     let c = e.createEl("div", { cls: "paperforge-summary" }),
       u = [
         {
-          label: i("dir_resources"),
+          label: o("dir_resources"),
           val: `${r}/${t.resources_dir || "Resources"}`,
         },
         {
-          label: i("dir_notes"),
+          label: o("dir_notes"),
           val: `${r}/${t.resources_dir || "Resources"}/${t.literature_dir || "Literature"}`,
         },
-        { label: i("dir_base"), val: `${r}/${t.base_dir || "Bases"}` },
-        { label: i("dir_system"), val: `${r}/${t.system_dir || "System"}` },
+        { label: o("dir_base"), val: `${r}/${t.base_dir || "Bases"}` },
+        { label: o("dir_system"), val: `${r}/${t.system_dir || "System"}` },
       ];
     for (let _ of u) {
       let g = c.createEl("div", { cls: "paperforge-summary-row" });
@@ -2877,13 +2931,13 @@ var Ce = class extends Q.Modal {
     }
   }
   _stepDirectories(e) {
-    (e.createEl("h2", { text: i("wizard_step2") }),
-      e.createEl("p", { text: i("wizard_intro") }));
+    (e.createEl("h2", { text: o("wizard_step2") }),
+      e.createEl("p", { text: o("wizard_intro") }));
     let t = this.plugin.settings,
       r = this.app.vault.adapter.basePath;
-    (this._modalField(e, i("dir_vault"), r, !0),
+    (this._modalField(e, o("dir_vault"), r, !0),
       e.createEl("p", {
-        text: i("wizard_dir_hint"),
+        text: o("wizard_dir_hint"),
         cls: "paperforge-modal-hint",
       }),
       this._modalInput(
@@ -2894,7 +2948,7 @@ var Ce = class extends Q.Modal {
         "Resources"
       ),
       e.createEl("p", {
-        text: i("wizard_dir_sub_hint"),
+        text: o("wizard_dir_sub_hint"),
         cls: "paperforge-modal-hint",
       }),
       this._modalInput(
@@ -2905,7 +2959,7 @@ var Ce = class extends Q.Modal {
         "Literature"
       ),
       e.createEl("p", {
-        text: i("wizard_sys_hint"),
+        text: o("wizard_sys_hint"),
         cls: "paperforge-modal-hint",
       }),
       this._modalInput(
@@ -2923,35 +2977,35 @@ var Ce = class extends Q.Modal {
         "Bases"
       ),
       e.createEl("p", {
-        text: i("wizard_safety"),
+        text: o("wizard_safety"),
         cls: "paperforge-modal-hint",
       }));
     let n = e.createEl("div", { cls: "paperforge-summary" }),
       s = [
-        { label: i("dir_resources"), val: `${r}/${t.resources_dir || ""}` },
+        { label: o("dir_resources"), val: `${r}/${t.resources_dir || ""}` },
         {
-          label: i("dir_notes"),
+          label: o("dir_notes"),
           val: `${r}/${t.resources_dir || ""}/${t.literature_dir || ""}`,
         },
-        { label: i("dir_system"), val: `${r}/${t.system_dir || ""}` },
-        { label: i("dir_base"), val: `${r}/${t.base_dir || ""}` },
+        { label: o("dir_system"), val: `${r}/${t.system_dir || ""}` },
+        { label: o("dir_base"), val: `${r}/${t.base_dir || ""}` },
       ];
     for (let a of s) {
-      let o = n.createEl("div", { cls: "paperforge-summary-row" });
-      (o.createEl("span", { cls: "paperforge-summary-label", text: a.label }),
-        o.createEl("span", { cls: "paperforge-summary-value", text: a.val }));
+      let i = n.createEl("div", { cls: "paperforge-summary-row" });
+      (i.createEl("span", { cls: "paperforge-summary-label", text: a.label }),
+        i.createEl("span", { cls: "paperforge-summary-value", text: a.val }));
     }
   }
   _stepKeys(e) {
     if (
-      (e.createEl("h2", { text: i("wizard_step3") }), this._showSkipConfirm)
+      (e.createEl("h2", { text: o("wizard_step3") }), this._showSkipConfirm)
     ) {
       this._renderSkipConfirm(e);
       return;
     }
     let t = this.plugin.settings;
     e.createEl("p", {
-      text: i("wizard_agent_hint"),
+      text: o("wizard_agent_hint"),
       cls: "paperforge-modal-hint",
     });
     let r = [
@@ -2967,12 +3021,12 @@ var Ce = class extends Q.Modal {
       n = e.createEl("div", { cls: "paperforge-modal-field" });
     n.createEl("label", {
       cls: "paperforge-modal-label",
-      text: i("label_agent"),
+      text: o("label_agent"),
     });
     let s = n.createEl("select", { cls: "paperforge-modal-select" });
     for (let g of r) {
-      let f = s.createEl("option", { text: g.name, attr: { value: g.key } });
-      g.key === (t.agent_platform || "opencode") && (f.selected = !0);
+      let h = s.createEl("option", { text: g.name, attr: { value: g.key } });
+      g.key === (t.agent_platform || "opencode") && (h.selected = !0);
     }
     (s.addEventListener("change", () => {
       ((t.agent_platform = s.value),
@@ -2982,23 +3036,23 @@ var Ce = class extends Q.Modal {
         }, 500)));
     }),
       e.createEl("p", {
-        text: i("wizard_keys_hint"),
+        text: o("wizard_keys_hint"),
         cls: "paperforge-modal-hint",
       }));
     let a = e.createEl("div", { cls: "paperforge-modal-field" });
     a.createEl("label", {
       cls: "paperforge-modal-label",
-      text: i("field_paddleocr"),
+      text: o("field_paddleocr"),
     });
-    let o = a.createEl("input", {
+    let i = a.createEl("input", {
         cls: "paperforge-modal-input",
         attr: { type: "password", placeholder: "API Key" },
       }),
       l = this.plugin.settings._paddleocr_configured || !1;
-    ((o.placeholder = l
+    ((i.placeholder = l
       ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (stored securely)"
       : "API Key"),
-      (o.value = ""),
+      (i.value = ""),
       (this._apiKeyValidated = !1),
       (this._apiKeyStatus = a.createEl("span", {
         cls: "paperforge-apikey-status",
@@ -3008,8 +3062,8 @@ var Ce = class extends Q.Modal {
       cls: "paperforge-step-btn",
       text: "\u9A8C\u8BC1",
     });
-    (c.addEventListener("click", () => this._validateApiKey(o.value, c)),
-      o.addEventListener("input", () => {
+    (c.addEventListener("click", () => this._validateApiKey(i.value, c)),
+      i.addEventListener("input", () => {
         ((this._apiKeyValidated = !1),
           (this._apiKeyStatus.textContent = ""),
           (this._apiKeyStatus.className = "paperforge-apikey-status"));
@@ -3019,17 +3073,17 @@ var Ce = class extends Q.Modal {
         (this.plugin.saveSettings(), (this._pendingSave = null));
       }, 500)),
       e.createEl("p", {
-        text: i("wizard_api_hint_skip"),
+        text: o("wizard_api_hint_skip"),
         cls: "paperforge-modal-hint",
       }));
     let u = e.createEl("div", { cls: "paperforge-modal-field" });
     u.createEl("label", {
       cls: "paperforge-modal-label",
-      text: i("field_zotero_data"),
+      text: o("field_zotero_data"),
     });
     let _ = u.createEl("input", {
       cls: "paperforge-modal-input",
-      attr: { type: "text", placeholder: i("field_zotero_placeholder") },
+      attr: { type: "text", placeholder: o("field_zotero_placeholder") },
     });
     ((_.value = t.zotero_data_dir || ""),
       _.addEventListener("input", () => {
@@ -3063,14 +3117,14 @@ var Ce = class extends Q.Modal {
         },
         timeout: 1e4,
       },
-      s = tr.request(n, async (a) => {
+      s = nr.request(n, async (a) => {
         ((t.disabled = !1), (t.textContent = "\u9A8C\u8BC1"));
-        let o = "";
-        (a.on("data", (l) => (o += l)),
+        let i = "";
+        (a.on("data", (l) => (i += l)),
           a.on("end", async () => {
             var l, c;
             try {
-              let u = JSON.parse(o);
+              let u = JSON.parse(i);
               if (a.statusCode === 400 && u.code === 10001) {
                 let _ = this.app.secretStorage;
                 try {
@@ -3082,9 +3136,9 @@ var Ce = class extends Q.Modal {
                       ? void 0
                       : c.call(_, "paddleocr-api-key"))) === e)
                   ) {
-                    let f = this.plugin.settings;
-                    ((f._paddleocr_configured = !0),
-                      (f.paddleocr_api_key = ""),
+                    let h = this.plugin.settings;
+                    ((h._paddleocr_configured = !0),
+                      (h.paddleocr_api_key = ""),
                       this.plugin.saveSettings());
                   }
                 } catch (g) {}
@@ -3131,14 +3185,14 @@ var Ce = class extends Q.Modal {
   }
   _renderSkipConfirm(e) {
     e.createEl("p", {
-      text: i("wizard_skip_ocr_desc"),
+      text: o("wizard_skip_ocr_desc"),
       cls: "paperforge-modal-desc",
     });
     let t = e.createEl("div", { cls: "paperforge-modal-actions" });
     (t
       .createEl("button", {
         cls: "paperforge-step-btn mod-cta",
-        text: i("wizard_skip_ocr_continue"),
+        text: o("wizard_skip_ocr_continue"),
       })
       .addEventListener("click", () => {
         ((this._showSkipConfirm = !1), this._step++, this._render());
@@ -3146,7 +3200,7 @@ var Ce = class extends Q.Modal {
       t
         .createEl("button", {
           cls: "paperforge-step-btn",
-          text: i("wizard_skip_ocr_back"),
+          text: o("wizard_skip_ocr_back"),
         })
         .addEventListener("click", () => {
           ((this._showSkipConfirm = !1), this._render());
@@ -3164,14 +3218,14 @@ var Ce = class extends Q.Modal {
   _modalInput(e, t, r, n, s) {
     let a = e.createEl("div", { cls: "paperforge-modal-field" });
     a.createEl("label", { cls: "paperforge-modal-label", text: t });
-    let o = a.createEl("input", {
+    let i = a.createEl("input", {
       cls: "paperforge-modal-input",
       attr: { type: "text", placeholder: s || "" },
     });
-    o.value = n;
+    i.value = n;
     let l = this.plugin.settings;
-    o.addEventListener("input", () => {
-      ((l[r] = o.value),
+    i.addEventListener("input", () => {
+      ((l[r] = i.value),
         this._pendingSave && clearTimeout(this._pendingSave),
         (this._pendingSave = setTimeout(() => {
           (this.plugin.saveSettings(), (this._pendingSave = null));
@@ -3181,14 +3235,14 @@ var Ce = class extends Q.Modal {
   _modalSecret(e, t, r, n, s) {
     let a = e.createEl("div", { cls: "paperforge-modal-field" });
     a.createEl("label", { cls: "paperforge-modal-label", text: t });
-    let o = a.createEl("input", {
+    let i = a.createEl("input", {
       cls: "paperforge-modal-input",
       attr: { type: "password", placeholder: s || "" },
     });
-    o.value = n;
+    i.value = n;
     let l = this.plugin.settings;
-    o.addEventListener("input", () => {
-      ((l[r] = o.value),
+    i.addEventListener("input", () => {
+      ((l[r] = i.value),
         this._pendingSave && clearTimeout(this._pendingSave),
         (this._pendingSave = setTimeout(() => {
           (this.plugin.saveSettings(), (this._pendingSave = null));
@@ -3196,49 +3250,49 @@ var Ce = class extends Q.Modal {
     });
   }
   _stepInstall(e) {
-    (e.createEl("h2", { text: i("wizard_step4") }),
+    (e.createEl("h2", { text: o("wizard_step4") }),
       (this._installLog = e.createEl("div", {
         cls: "paperforge-install-log",
       })));
     let t = e.createEl("button", {
       cls: "paperforge-step-btn mod-cta",
-      text: i("install_btn"),
+      text: o("install_btn"),
     });
     t.addEventListener("click", () => this._runInstall(t));
   }
   async _runInstall(e) {
-    var a, o, l, c, u, _;
+    var a, i, l, c, u, _;
     ((e.disabled = !0),
-      (e.textContent = i("install_btn_running")),
+      (e.textContent = o("install_btn_running")),
       this._installLog.setText(
-        i("install_validating") +
+        o("install_validating") +
           `
 `
       ),
-      this._log(i("install_validating")));
+      this._log(o("install_validating")));
     let t = this.plugin.settings,
       r = this._validate();
     if (r.length > 0) {
-      (this._log(i("validate_fail") + ":"),
+      (this._log(o("validate_fail") + ":"),
         r.forEach((g) => this._log("  \u2717 " + g)),
         (e.disabled = !1),
-        (e.textContent = i("install_btn_retry")));
+        (e.textContent = o("install_btn_retry")));
       return;
     }
-    let n = (g, f = {}) =>
-        new Promise((h, m) => {
+    let n = (g, h = {}) =>
+        new Promise((f, m) => {
           let { path: y, args: v = [] } = this._resolvePython(),
-            x = (0, Ie.spawn)(y, [...v, ...g], {
+            x = (0, Me.spawn)(y, [...v, ...g], {
               cwd: t.vault_path.trim(),
               env: ge(),
               timeout: 12e4,
-              ...f,
+              ...h,
             }),
             k = "",
             b = "";
           (x.stdout.on("data", (E) => {
             let S = E.toString("utf-8");
-            ((k += S), f.logStdout && this._processSetupOutput(S));
+            ((k += S), h.logStdout && this._processSetupOutput(S));
           }),
             x.stderr.on("data", (E) => {
               let S = E.toString("utf-8");
@@ -3246,7 +3300,7 @@ var Ce = class extends Q.Modal {
             }),
             x.on("close", (E) => {
               E === 0
-                ? h({ stdout: k, stderr: b })
+                ? f({ stdout: k, stderr: b })
                 : m(new Error(b.trim() || k.trim() || `exit code ${E}`));
             }),
             x.on("error", (E) => m(E)));
@@ -3276,21 +3330,21 @@ var Ce = class extends Q.Modal {
       let g = !0;
       try {
         await n(["-c", "import paperforge"]);
-      } catch (f) {
+      } catch (h) {
         g = !1;
       }
       if (!g) {
-        this._log(i("install_bootstrapping"));
-        let f = this.plugin.manifest.version;
-        this._log(`[install] Trying PyPI: pip install paperforge==${f}`);
-        let h = ["-m", "pip", "install", "--upgrade"];
-        (process.platform !== "win32" && h.push("--user"),
-          h.push(`paperforge==${f}`));
+        this._log(o("install_bootstrapping"));
+        let h = this.plugin.manifest.version;
+        this._log(`[install] Trying PyPI: pip install paperforge==${h}`);
+        let f = ["-m", "pip", "install", "--upgrade"];
+        (process.platform !== "win32" && f.push("--user"),
+          f.push(`paperforge==${h}`));
         try {
-          await n(h, { logStdout: !0 });
+          await n(f, { logStdout: !0 });
         } catch (m) {
           (this._log(
-            `[install] PyPI failed, falling back to git: git+https://...@v${f}`
+            `[install] PyPI failed, falling back to git: git+https://...@v${h}`
           ),
             console.warn(
               "[PaperForge] PyPI install failed, falling back to git:",
@@ -3298,12 +3352,12 @@ var Ce = class extends Q.Modal {
             ));
           let y = ["-m", "pip", "install", "--upgrade"];
           (process.platform !== "win32" && y.push("--user"),
-            y.push(`git+https://github.com/LLLin000/PaperForge.git@v${f}`),
+            y.push(`git+https://github.com/LLLin000/PaperForge.git@v${h}`),
             await n(y, { logStdout: !0 }));
         }
       }
       (await n(s, { logStdout: !0, env: ge() }),
-        this._log(i("install_complete")),
+        this._log(o("install_complete")),
         await this.plugin.saveSettings(),
         this._onComplete && this._onComplete(),
         setTimeout(() => {
@@ -3311,16 +3365,16 @@ var Ce = class extends Q.Modal {
         }, 800));
     } catch (g) {
       console.error("PaperForge setup failed:", g.message);
-      let f = this._formatSetupError(g.message);
-      this._log(i("install_failed") + f);
-      let h =
-        (o = this._installLog.parentElement) == null
+      let h = this._formatSetupError(g.message);
+      this._log(o("install_failed") + h);
+      let f =
+        (i = this._installLog.parentElement) == null
           ? void 0
-          : o.createEl("button", {
+          : i.createEl("button", {
               cls: "paperforge-copy-diag-btn",
-              text: i("error_copy_diagnostic") || "Copy diagnostic",
+              text: o("error_copy_diagnostic") || "Copy diagnostic",
             });
-      if (h) {
+      if (f) {
         let m = g.message,
           y =
             ((c = (l = this.plugin) == null ? void 0 : l.settings) == null
@@ -3347,7 +3401,7 @@ var Ce = class extends Q.Modal {
           S = (process.env.PATH || "").toLowerCase().includes("git"),
           C = [
             "[PaperForge Diagnostic]",
-            "Category: " + f,
+            "Category: " + h,
             "Plugin version: " + v,
             "Python: " + y,
             "Resolved Python: " + ((b == null ? void 0 : b.path) || "?"),
@@ -3361,13 +3415,13 @@ var Ce = class extends Q.Modal {
             m.slice(0, 2e3),
           ].join(`
 `);
-        h.addEventListener("click", () => {
+        f.addEventListener("click", () => {
           navigator.clipboard
             .writeText(C)
             .then(() => {
-              (h.setText(i("error_copied") || "Copied!"),
+              (f.setText(o("error_copied") || "Copied!"),
                 setTimeout(() => {
-                  h.setText(i("error_copy_diagnostic") || "Copy diagnostic");
+                  f.setText(o("error_copy_diagnostic") || "Copy diagnostic");
                 }, 3e3));
             })
             .catch(() => {
@@ -3375,7 +3429,7 @@ var Ce = class extends Q.Modal {
             });
         });
       }
-      ((e.disabled = !1), (e.textContent = i("install_btn_retry")));
+      ((e.disabled = !1), (e.textContent = o("install_btn_retry")));
     }
   }
   _log(e) {
@@ -3391,17 +3445,17 @@ var Ce = class extends Q.Modal {
     let e = [],
       t = this.plugin.settings;
     return (
-      (!t.vault_path || !t.vault_path.trim()) && e.push(i("validate_vault")),
+      (!t.vault_path || !t.vault_path.trim()) && e.push(o("validate_vault")),
       (!t.resources_dir || !t.resources_dir.trim()) &&
-        e.push(i("validate_resources")),
+        e.push(o("validate_resources")),
       (!t.literature_dir || !t.literature_dir.trim()) &&
-        e.push(i("validate_notes")),
-      (!t.base_dir || !t.base_dir.trim()) && e.push(i("validate_base")),
+        e.push(o("validate_notes")),
+      (!t.base_dir || !t.base_dir.trim()) && e.push(o("validate_base")),
       this.plugin.settings._paddleocr_configured ||
         !1 ||
-        this._log("  ! " + i("validate_key") + " " + i("optional_later")),
+        this._log("  ! " + o("validate_key") + " " + o("optional_later")),
       (!t.zotero_data_dir || !t.zotero_data_dir.trim()) &&
-        this._log("  ! " + i("validate_zotero") + " " + i("optional_later")),
+        this._log("  ! " + o("validate_zotero") + " " + o("optional_later")),
       e
     );
   }
@@ -3470,32 +3524,32 @@ var Ce = class extends Q.Modal {
     );
   }
   _stepComplete(e) {
-    e.createEl("h2", { text: i("complete_title") });
+    e.createEl("h2", { text: o("complete_title") });
     let t = e.createEl("div", { cls: "paperforge-summary" });
     t.createEl("div", {
       cls: "paperforge-summary-title",
-      text: i("complete_summary"),
+      text: o("complete_summary"),
     });
     let r = this.plugin.settings,
       n = this.app.vault.adapter.basePath,
       s = [
-        { label: i("dir_vault"), val: n },
-        { label: i("dir_resources"), val: `${n}/${r.resources_dir}` },
+        { label: o("dir_vault"), val: n },
+        { label: o("dir_resources"), val: `${n}/${r.resources_dir}` },
         {
-          label: i("dir_notes"),
+          label: o("dir_notes"),
           val: `${n}/${r.resources_dir}/${r.literature_dir}`,
         },
-        { label: i("dir_base"), val: `${n}/${r.base_dir}` },
-        { label: i("dir_system"), val: `${n}/${r.system_dir}` },
+        { label: o("dir_base"), val: `${n}/${r.base_dir}` },
+        { label: o("dir_system"), val: `${n}/${r.system_dir}` },
         {
           label: "API Key",
           val: this.plugin.settings._paddleocr_configured
-            ? i("api_key_set")
-            : i("api_key_missing"),
+            ? o("api_key_set")
+            : o("api_key_missing"),
         },
         {
-          label: i("field_zotero_data"),
-          val: r.zotero_data_dir || i("not_set"),
+          label: o("field_zotero_data"),
+          val: r.zotero_data_dir || o("not_set"),
         },
       ];
     for (let u of s) {
@@ -3505,19 +3559,19 @@ var Ce = class extends Q.Modal {
     }
     let a = t.createEl("div", { cls: "paperforge-summary-row" });
     a.createEl("span", { cls: "paperforge-summary-label", text: "PaperForge" });
-    let o = a.createEl("span", {
+    let i = a.createEl("span", {
       cls: "paperforge-summary-value",
       text: "\u2014",
     });
     {
       let u = n,
         { path: _, args: g = [] } = this._resolvePython();
-      (0, Ie.execFile)(
+      (0, Me.execFile)(
         _,
         [...g, "-c", "import paperforge; print(paperforge.__version__)"],
         { cwd: u, timeout: 1e4 },
-        (f, h) => {
-          !f && h && (o.textContent = "v" + h.trim());
+        (h, f) => {
+          !h && f && (i.textContent = "v" + f.trim());
         }
       );
     }
@@ -3526,17 +3580,17 @@ var Ce = class extends Q.Modal {
       (_.createEl("span", { cls: "paperforge-summary-label", text: u.label }),
         _.createEl("span", { cls: "paperforge-summary-value", text: u.val }));
     }
-    e.createEl("h3", { text: i("complete_next") });
+    e.createEl("h3", { text: o("complete_next") });
     let l = e.createEl("div", { cls: "paperforge-nextsteps" }),
       c = [
-        [i("complete_step4"), i("complete_step4_desc")],
+        [o("complete_step4"), o("complete_step4_desc")],
         [
           "",
-          `${i("complete_export_path")} ${n}/${r.system_dir}/PaperForge/exports/`,
+          `${o("complete_export_path")} ${n}/${r.system_dir}/PaperForge/exports/`,
         ],
-        [i("complete_step1"), i("complete_step1_desc")],
-        [i("complete_step2"), i("complete_step2_desc")],
-        [i("complete_step3"), i("complete_step3_desc")],
+        [o("complete_step1"), o("complete_step1_desc")],
+        [o("complete_step2"), o("complete_step2_desc")],
+        [o("complete_step3"), o("complete_step3_desc")],
       ];
     for (let [u, _] of c) {
       let g = l.createEl("div", { cls: "paperforge-nextstep-item" });
@@ -3544,7 +3598,7 @@ var Ce = class extends Q.Modal {
     }
   }
 };
-function rr(p, d) {
+function ar(p, d) {
   if (d.key !== "Tab") return;
   let e = p.querySelectorAll(
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -3573,9 +3627,9 @@ var at = class extends Q.Modal {
         e.setAttr("aria-modal", "true"));
       let t = e.closest(".modal-container");
       if (t) {
-        let o = t.parentElement;
-        if (o)
-          for (let l of Array.from(o.children))
+        let i = t.parentElement;
+        if (i)
+          for (let l of Array.from(i.children))
             l !== t &&
               !l.hasAttribute("inert") &&
               (l.setAttribute("inert", ""), this._inertedEls.push(l));
@@ -3591,7 +3645,7 @@ var at = class extends Q.Modal {
         s = n.createEl("button", {
           text:
             this._config.cancelLabel ||
-            i("maintenance_confirm_cancel") ||
+            o("maintenance_confirm_cancel") ||
             "Cancel",
         });
       (s.addEventListener("click", () => this.close()),
@@ -3600,13 +3654,13 @@ var at = class extends Q.Modal {
             cls: "mod-warning",
             text:
               this._config.confirmLabel ||
-              i("maintenance_confirm_ok") ||
+              o("maintenance_confirm_ok") ||
               "Proceed",
           })
           .addEventListener("click", () => {
             (this._onConfirm && this._onConfirm(), this.close());
           }),
-        (this._boundKeydown = (o) => rr(e, o)),
+        (this._boundKeydown = (i) => ar(e, i)),
         e.addEventListener("keydown", this._boundKeydown),
         s.focus());
     }
@@ -3624,7 +3678,7 @@ var at = class extends Q.Modal {
         } catch (e) {}
     }
   },
-  Or = [
+  Lr = [
     { pattern: /sk-[A-Za-z0-9]{16,}/g, label: "API key", class_: "credential" },
     {
       pattern: /[A-Za-z0-9+/]{20,}={0,2}/g,
@@ -3670,7 +3724,7 @@ var at = class extends Q.Modal {
 function qe(p) {
   let d = {},
     e = p;
-  for (let { pattern: t, label: r, class_: n } of Or) {
+  for (let { pattern: t, label: r, class_: n } of Lr) {
     let s = 0;
     ((e = e.replace(t, () => (s++, "[REDACTED]"))),
       s > 0 &&
@@ -3679,7 +3733,7 @@ function qe(p) {
   }
   return { clean: e, redactions: Object.values(d) };
 }
-function nr(p, d, e, t) {
+function sr(p, d, e, t) {
   let r = `OCR: ${p} (${e} papers)`,
     n = [
       "## Diagnostic Summary",
@@ -3716,20 +3770,20 @@ var st = class extends Q.Modal {
       e.setAttr("aria-modal", "true"));
     let t = e.closest(".modal-container");
     if (t) {
-      let h = t.parentElement;
-      if (h)
-        for (let m of Array.from(h.children))
+      let f = t.parentElement;
+      if (f)
+        for (let m of Array.from(f.children))
           m !== t &&
             !m.hasAttribute("inert") &&
             (m.setAttribute("inert", ""), this._inertedEls.push(m));
     }
     (e.createEl("h2", {
-      text: i("maintenance_issue_draft_title") || "OCR Issue Draft",
+      text: o("maintenance_issue_draft_title") || "OCR Issue Draft",
     }),
       e.createEl("p", {
         cls: "paperforge-issue-draft-desc",
         text:
-          i("maintenance_issue_draft_preview") ||
+          o("maintenance_issue_draft_preview") ||
           "Review the issue draft below before opening GitHub.",
       }));
     let r = e.createEl("div", { cls: "paperforge-issue-draft-field" });
@@ -3747,7 +3801,7 @@ var st = class extends Q.Modal {
       attr: { rows: "12" },
       text: a,
     });
-    let { redactions: o } = qe(
+    let { redactions: i } = qe(
         this._draft.title +
           `
 ` +
@@ -3757,7 +3811,7 @@ var st = class extends Q.Modal {
       c = l.createEl("div", { cls: "paperforge-issue-draft-included" });
     (c.createEl("span", {
       cls: "paperforge-issue-draft-preview-label",
-      text: (i("maintenance_issue_draft_included") || "Included") + ": ",
+      text: (o("maintenance_issue_draft_included") || "Included") + ": ",
     }),
       c.createEl("span", {
         text: `Title, Body, Labels (${this._draft.labels.join(", ")})`,
@@ -3765,30 +3819,30 @@ var st = class extends Q.Modal {
     let u = l.createEl("div", { cls: "paperforge-issue-draft-redacted" });
     (u.createEl("span", {
       cls: "paperforge-issue-draft-preview-label",
-      text: (i("maintenance_issue_draft_redacted") || "Redacted") + ": ",
+      text: (o("maintenance_issue_draft_redacted") || "Redacted") + ": ",
     }),
       u.createEl("span", {
         text:
           "Credentials, vault/Zotero paths, paper titles, paper content are excluded" +
-          (o.length > 0
-            ? " (" + o.map((h) => `${h.count} ${h.label}`).join(", ") + ")"
+          (i.length > 0
+            ? " (" + i.map((f) => `${f.count} ${f.label}`).join(", ") + ")"
             : ""),
       }));
     let _ = e.createEl("div", { cls: "paperforge-issue-draft-actions" });
     (_.createEl("button", {
-      text: i("maintenance_confirm_cancel") || "Cancel",
+      text: o("maintenance_confirm_cancel") || "Cancel",
     }).addEventListener("click", () => this.close()),
       _.createEl("button", {
         cls: "mod-cta",
-        text: i("maintenance_issue_draft_open_github") || "Open GitHub Issue",
+        text: o("maintenance_issue_draft_open_github") || "Open GitHub Issue",
       }).addEventListener("click", () => {
-        let h = encodeURIComponent(qe(this._titleInput.value).clean),
+        let f = encodeURIComponent(qe(this._titleInput.value).clean),
           m = encodeURIComponent(qe(this._bodyTextarea.value).clean),
           y = encodeURIComponent(this._draft.labels.join(",")),
-          v = `${this._githubUrl}?title=${h}&body=${m}&labels=${y}`;
+          v = `${this._githubUrl}?title=${f}&body=${m}&labels=${y}`;
         window.open(v, "_blank", "noopener,noreferrer");
       }),
-      (this._boundKeydown = (h) => rr(e, h)),
+      (this._boundKeydown = (f) => ar(e, f)),
       e.addEventListener("keydown", this._boundKeydown),
       this._titleInput.focus());
   }
@@ -3806,9 +3860,9 @@ var st = class extends Q.Modal {
       } catch (e) {}
   }
 };
-var Le = z(require("fs")),
+var Be = z(require("fs")),
   ot = z(require("path")),
-  sr = require("child_process");
+  or = require("child_process");
 function Rt(p) {
   return p.display_action === "rebuild_result"
     ? "rebuild"
@@ -3819,40 +3873,40 @@ function Rt(p) {
 function Tt(p) {
   return p === "redo";
 }
-function Mr(p, d, e) {
+function Nr(p, d, e) {
   let t = { manifest: p, papers: {}, cached_at: new Date().toISOString() };
   if (e != null && e.papers)
     for (let r of Object.keys(p)) e.papers[r] && (t.papers[r] = e.papers[r]);
   for (let r of d) t.papers[r.key] = r;
   return t;
 }
-function ir(p) {
+function lr(p) {
   return ot.join(p, "System", "PaperForge", "cache", "ocr_maintenance.json");
 }
 function lt(p) {
   try {
-    let d = ir(p),
-      e = Le.readFileSync(d, "utf-8");
+    let d = lr(p),
+      e = Be.readFileSync(d, "utf-8");
     return JSON.parse(e);
   } catch (d) {
     return null;
   }
 }
-function Br(p, d) {
-  let e = ir(p),
+function Hr(p, d) {
+  let e = lr(p),
     t = ot.dirname(e);
-  (Le.mkdirSync(t, { recursive: !0 }),
-    Le.writeFileSync(e, JSON.stringify(d, null, 2), "utf-8"));
+  (Be.mkdirSync(t, { recursive: !0 }),
+    Be.writeFileSync(e, JSON.stringify(d, null, 2), "utf-8"));
 }
-function ar(p, d, e) {
+function ir(p, d, e) {
   return new Promise((t, r) => {
-    (0, sr.execFile)(p, d, e, (n, s) => {
+    (0, or.execFile)(p, d, e, (n, s) => {
       n ? r(n) : t(s);
     });
   });
 }
 async function At(p, d, e, t) {
-  let r = await ar(d, [...e, "-m", "paperforge", "ocr", "list", "--manifest"], {
+  let r = await ir(d, [...e, "-m", "paperforge", "ocr", "list", "--manifest"], {
       cwd: p,
       timeout: 3e4,
     }),
@@ -3862,22 +3916,22 @@ async function At(p, d, e, t) {
       _ = Object.keys(n);
     if (
       u.length === _.length &&
-      u.every((f) => t.manifest[f] === n[f]) &&
+      u.every((h) => t.manifest[h] === n[h]) &&
       Object.values(t.papers).every(
-        (h) => typeof h.needs_derived_rebuild == "boolean"
+        (f) => typeof f.needs_derived_rebuild == "boolean"
       )
     )
       return { data: Object.values(t.papers), changed: !1 };
   }
   let s = Object.keys(n),
-    a = await ar(
+    a = await ir(
       d,
       [...e, "-m", "paperforge", "ocr", "list", "--json", "--keys", ...s],
       { cwd: p, timeout: 3e4 }
     ),
-    o = JSON.parse(a),
-    l = Mr(n, o, t);
-  return (Br(p, l), { data: Object.values(l.papers), changed: !0 });
+    i = JSON.parse(a),
+    l = Nr(n, i, t);
+  return (Hr(p, l), { data: Object.values(l.papers), changed: !0 });
 }
 function Ft(p, d, e) {
   return !p ||
@@ -3886,27 +3940,27 @@ function Ft(p, d, e) {
     ? !!e
     : !!p[d];
 }
-function or(p, d, e) {
+function cr(p, d, e) {
   let t = !Ft(p, d, e);
   return (p && typeof p == "object" && (p[d] = t), t);
 }
-var Ir = ["EMBED", "OCR_REBUILD", "OCR_REDO"];
+var Vr = ["EMBED", "OCR_REBUILD", "OCR_REDO"];
 function Ze(p, d) {
   var s, a;
   let t = (d + p).split(`
 `),
     r = (s = t.pop()) != null ? s : "",
     n = [];
-  for (let o of t)
-    for (let l of Ir) {
+  for (let i of t)
+    for (let l of Vr) {
       let c = l.length;
-      if (o.startsWith(l + "_START:")) {
-        let u = parseInt(o.slice(c + 7), 10) || 0;
+      if (i.startsWith(l + "_START:")) {
+        let u = parseInt(i.slice(c + 7), 10) || 0;
         n.push({ prefix: l, event: "START", total: u });
         break;
       }
-      if (o.startsWith(l + "_PROGRESS:")) {
-        let _ = o.slice(c + 10).split(":");
+      if (i.startsWith(l + "_PROGRESS:")) {
+        let _ = i.slice(c + 10).split(":");
         n.push({
           prefix: l,
           event: "PROGRESS",
@@ -3916,7 +3970,7 @@ function Ze(p, d) {
         });
         break;
       }
-      if (o === l + "_DONE" || o.startsWith(l + "_DONE:")) {
+      if (i === l + "_DONE" || i.startsWith(l + "_DONE:")) {
         n.push({ prefix: l, event: "DONE" });
         break;
       }
@@ -4041,14 +4095,14 @@ var xe = class xe extends R.PluginSettingTab {
     let t = this.plugin.settings._migration_warnings;
     if (Array.isArray(t) && t.length > 0) {
       let a = e.createDiv({ cls: "paperforge-migration-warning" }),
-        o = t
+        i = t
           .map((l) =>
             l === "paddleocr_api_key" ? "OCR (PaddleOCR)" : "Memory (Vector DB)"
           )
           .join(", ");
       (a.createEl("strong", { text: "Credential Migration Notice" }),
         a.createEl("p", {
-          text: `One or more credentials could not be automatically migrated (${o}). Your existing keys are preserved in plaintext and remain functional. To complete the migration, re-enter the affected keys in the Settings fields below.`,
+          text: `One or more credentials could not be automatically migrated (${i}). Your existing keys are preserved in plaintext and remain functional. To complete the migration, re-enter the affected keys in the Settings fields below.`,
         }),
         a.createEl("p", {
           text: "After re-entering, save settings. The plugin will retry migration on next restart.",
@@ -4057,10 +4111,10 @@ var xe = class xe extends R.PluginSettingTab {
     }
     let r = e.createDiv({ cls: "paperforge-settings-tabs" }),
       n = [
-        { id: "overview", label: i("tab_overview") || "Overview" },
-        { id: "module-detail", label: i("tab_modules") || "Module Detail" },
-        { id: "maintenance", label: i("tab_maintenance") || "Maintenance" },
-        { id: "help", label: i("tab_help") || "Help" },
+        { id: "overview", label: o("tab_overview") || "Overview" },
+        { id: "module-detail", label: o("tab_modules") || "Module Detail" },
+        { id: "maintenance", label: o("tab_maintenance") || "Maintenance" },
+        { id: "help", label: o("tab_help") || "Help" },
       ],
       s = {};
     if (
@@ -4099,7 +4153,7 @@ var xe = class xe extends R.PluginSettingTab {
       if (a) {
         try {
           a.focus();
-        } catch (o) {}
+        } catch (i) {}
         this._focusTargetId = null;
       }
     }
@@ -4110,11 +4164,11 @@ var xe = class xe extends R.PluginSettingTab {
     let t = this._getVaultBasePath();
     (this.plugin.settings.vault_path ||
       ((this.plugin.settings.vault_path = t), this._debouncedSave()),
-      e.createEl("h2", { text: i("header_title") || "PaperForge" }),
-      e.createEl("p", { text: i("desc"), cls: "paperforge-settings-desc" }),
+      e.createEl("h2", { text: o("header_title") || "PaperForge" }),
+      e.createEl("p", { text: o("desc"), cls: "paperforge-settings-desc" }),
       this._renderControlCenter(e),
       this._renderAdvancedSection(e));
-    for (let n of Ae) {
+    for (let n of Re) {
       let s = (r = this._capabilityState) == null ? void 0 : r[n];
       s &&
         s.capability_state === "unknown" &&
@@ -4152,7 +4206,7 @@ var xe = class xe extends R.PluginSettingTab {
       a.createEl("h4", { text: "Memory Layer" }),
       a
         .createEl("div", { cls: "paperforge-desc-box" })
-        .setText(i("feat_memory_desc")));
+        .setText(o("feat_memory_desc")));
     let l = a.createEl("div", { cls: "paperforge-memory-status" }),
       c = this.app.vault.adapter.basePath;
     (this.plugin._lastSyncTime &&
@@ -4175,11 +4229,16 @@ var xe = class xe extends R.PluginSettingTab {
     return "";
   }
   _ensureManagedRuntime() {
+    var e, t, r;
     return this._managedRuntime
       ? this._managedRuntime
-      : ((this._managedRuntime = new ye({
-          version: this.plugin.manifest.version,
-        })),
+      : ((this._managedRuntime =
+          (r =
+            (t = (e = this.plugin).getManagedRuntime) == null
+              ? void 0
+              : t.call(e)) != null
+            ? r
+            : new ye({ version: this.plugin.manifest.version })),
         this._managedRuntime);
   }
   _resolveRuntimeCommand(e) {
@@ -4190,7 +4249,7 @@ var xe = class xe extends R.PluginSettingTab {
     var S, C;
     e.createEl("button", {
       cls: "pf-back-btn",
-      text: i("btn_back_to_overview"),
+      text: o("btn_back_to_overview"),
     }).addEventListener("click", () => {
       var w;
       (((w = this._detailReturn) == null ? void 0 : w.tab) === "maintenance"
@@ -4205,7 +4264,7 @@ var xe = class xe extends R.PluginSettingTab {
     });
     let r = e.createEl("h2", {
         cls: "pf-installation-detail-heading",
-        text: i("installation_detail_heading") || "Installation Details",
+        text: o("installation_detail_heading") || "Installation Details",
         attr: { id: "pf-installation-detail-heading", tabindex: "-1" },
       }),
       n = [
@@ -4222,13 +4281,13 @@ var xe = class xe extends R.PluginSettingTab {
           "pf-module-detail-btn" +
           (w.id === "installation" ? " pf-module-detail-btn--active" : "") +
           (w.disabled ? " pf-module-detail-btn--disabled" : ""),
-        text: i(w.labelKey),
+        text: o(w.labelKey),
       });
       w.disabled && (T.disabled = !0);
     }
     let a = (S = this._capabilityState) != null ? S : {},
-      o = "installation",
-      l = (C = a[o]) != null ? C : Se(o),
+      i = "installation",
+      l = (C = a[i]) != null ? C : Se(i),
       c = this._sevClass(l.severity),
       u = ze(l),
       _ = e.createEl("div", {
@@ -4238,17 +4297,17 @@ var xe = class xe extends R.PluginSettingTab {
       g = _.createEl("div", { cls: "pf-cc-card-header" });
     (g.createEl("span", {
       cls: "pf-cc-card-name",
-      text: i("cc_module_installation"),
+      text: o("cc_module_installation"),
     }),
       g.createEl("span", {
         cls: `pf-cc-card-badge pf-cc-card-badge--${c}`,
-        text: i(this._ccBadgeKey(l, o)),
+        text: o(this._ccBadgeKey(l, i)),
       }));
-    let f = this._localizeReason(l.reason.code, "installation");
+    let h = this._localizeReason(l.reason.code, "installation");
     if (
       (_.createEl("div", {
         cls: "pf-cc-card-reason",
-        text: f != null ? f : l.reason.text,
+        text: h != null ? h : l.reason.text,
       }),
       l.action.primary && !u)
     ) {
@@ -4264,14 +4323,14 @@ var xe = class xe extends R.PluginSettingTab {
             ? new Ce(this.app, this.plugin, () => {
                 (this._probeModule("installation"), this._probeModule("help"));
               }).open()
-            : this._probeModule(o);
+            : this._probeModule(i);
         }
       );
     }
-    e.createEl("h3", { text: i("managed_runtime_status") });
-    let h = e.createEl("div", { cls: "pf-runtime-status-card" }),
+    e.createEl("h3", { text: o("managed_runtime_status") });
+    let f = e.createEl("div", { cls: "pf-runtime-status-card" }),
       m = (w, T, O) => {
-        let M = h.createEl("div", { cls: "pf-runtime-actions" });
+        let M = f.createEl("div", { cls: "pf-runtime-actions" });
         for (let F of w) {
           let A = M.createEl("button", {
             cls: "pf-runtime-action-btn",
@@ -4281,10 +4340,10 @@ var xe = class xe extends R.PluginSettingTab {
             A.addEventListener("click", async () => {
               var K;
               if (F.verb === "stop") {
-                let H = this._runtimeAbortController;
-                if (!H || H.signal.aborted) return;
-                (H.abort(),
-                  new R.Notice(i("managed_runtime_action_cancelled")),
+                let V = this._runtimeAbortController;
+                if (!V || V.signal.aborted) return;
+                (V.abort(),
+                  new R.Notice(o("managed_runtime_action_cancelled")),
                   this.display(),
                   this._probeModule("installation"),
                   this._probeModule("help"));
@@ -4294,7 +4353,7 @@ var xe = class xe extends R.PluginSettingTab {
                 I = new AbortController();
               ((this._runtimeAbortController = I),
                 (this._runtimeBusy = !0),
-                new R.Notice(i("managed_runtime_running")));
+                new R.Notice(o("managed_runtime_running")));
               try {
                 (F.verb === "install" ||
                 F.verb === "repair" ||
@@ -4310,12 +4369,12 @@ var xe = class xe extends R.PluginSettingTab {
                       })
                     : await P.status(),
                   I.signal.aborted ||
-                    new R.Notice(i("managed_runtime_action_complete")));
-              } catch (H) {
-                if ((H == null ? void 0 : H.name) !== "AbortError") {
-                  let N = H instanceof Error ? H.message : String(H);
+                    new R.Notice(o("managed_runtime_action_complete")));
+              } catch (V) {
+                if ((V == null ? void 0 : V.name) !== "AbortError") {
+                  let N = V instanceof Error ? V.message : String(V);
                   new R.Notice(
-                    i("managed_runtime_action_failed").replace("{error}", N),
+                    o("managed_runtime_action_failed").replace("{error}", N),
                     8e3
                   );
                 }
@@ -4331,29 +4390,29 @@ var xe = class xe extends R.PluginSettingTab {
       },
       y = () => {
         var P;
-        h.empty();
+        f.empty();
         let T = this._ensureManagedRuntime().current(),
-          O = h.createEl("div", { cls: "pf-runtime-status-header" });
+          O = f.createEl("div", { cls: "pf-runtime-status-header" });
         O.createEl("div", {
           cls: "pf-runtime-status-label",
-          text: i("managed_runtime_status"),
+          text: o("managed_runtime_status"),
         });
         let M, F;
         switch (T.state) {
           case "ready":
-            ((M = "ok"), (F = i("managed_runtime_ok_state")));
+            ((M = "ok"), (F = o("managed_runtime_ok_state")));
             break;
           case "not_installed":
-            ((M = "warn"), (F = i("managed_runtime_not_installed")));
+            ((M = "warn"), (F = o("managed_runtime_not_installed")));
             break;
           case "needs_repair":
-            ((M = "warn"), (F = i("managed_runtime_needs_repair")));
+            ((M = "warn"), (F = o("managed_runtime_needs_repair")));
             break;
           case "unavailable":
-            ((M = "error"), (F = i("managed_runtime_unavailable")));
+            ((M = "error"), (F = o("managed_runtime_unavailable")));
             break;
           default:
-            ((M = "unknown"), (F = i("managed_runtime_unknown_state")));
+            ((M = "unknown"), (F = o("managed_runtime_unknown_state")));
         }
         if (
           (O.createEl("span", {
@@ -4361,30 +4420,30 @@ var xe = class xe extends R.PluginSettingTab {
             text: F,
           }),
           T.version &&
-            h.createEl("div", { cls: "pf-meta", text: `Python ${T.version}` }),
+            f.createEl("div", { cls: "pf-meta", text: `Python ${T.version}` }),
           T.pythonPath &&
-            h.createEl("div", {
+            f.createEl("div", {
               cls: "pf-meta",
               text: T.pythonPath,
               attr: { style: "word-break: break-all;" },
             }),
           T.lastVerifiedAt &&
-            h.createEl("div", {
+            f.createEl("div", {
               cls: "pf-meta",
-              text: i("managed_runtime_last_verified").replace(
+              text: o("managed_runtime_last_verified").replace(
                 "{time}",
                 new Date(T.lastVerifiedAt).toLocaleString()
               ),
             }),
           T.error &&
-            h.createEl("div", {
+            f.createEl("div", {
               cls: "pf-runtime-error",
               text: `${T.error.code}: ${T.error.message}`,
             }),
           T.warnings && T.warnings.length > 0)
         )
           for (let I of T.warnings) {
-            let K = h.createEl("div", {
+            let K = f.createEl("div", {
               cls: "pf-runtime-warning",
               text: `\u26A0 ${I.message}`,
             });
@@ -4396,11 +4455,11 @@ var xe = class xe extends R.PluginSettingTab {
           }
         (P = T.error) != null &&
           P.platformAction &&
-          h.createEl("div", {
+          f.createEl("div", {
             cls: "pf-runtime-error-action",
             text: T.error.platformAction,
           });
-        let A = Qt(T, this.plugin.manifest.version, this._runtimeBusy);
+        let A = tr(T, this.plugin.manifest.version, this._runtimeBusy);
         m(A, T, this._runtimeBusy);
       };
     y();
@@ -4412,7 +4471,7 @@ var xe = class xe extends R.PluginSettingTab {
         })
         .catch(() => {}),
       e.createEl("h3", {
-        text: i("section_config") || "Current Configuration",
+        text: o("section_config") || "Current Configuration",
       }));
     let x = this._getVaultBasePath(),
       k = this._resolveRuntimeCommand(x),
@@ -4420,7 +4479,7 @@ var xe = class xe extends R.PluginSettingTab {
         ? this._getPythonDesc(k.path, "managed")
         : "Python runtime not ready \u2014 install via Managed Runtime above";
     new R.Setting(e)
-      .setName(i("field_python_interp") || "Python Interpreter")
+      .setName(o("field_python_interp") || "Python Interpreter")
       .setDesc(b)
       .addExtraButton((w) => {
         w.setIcon("reset")
@@ -4432,10 +4491,10 @@ var xe = class xe extends R.PluginSettingTab {
           });
       })
       .addButton((w) => {
-        w.setButtonText(i("runtime_health_sync") || "Sync Runtime").onClick(
+        w.setButtonText(o("runtime_health_sync") || "Sync Runtime").onClick(
           async () => {
             (w.setDisabled(!0),
-              w.setButtonText(i("runtime_health_syncing")),
+              w.setButtonText(o("runtime_health_syncing")),
               await this._ensureManagedRuntime().ensure(),
               this.display());
           }
@@ -4444,8 +4503,8 @@ var xe = class xe extends R.PluginSettingTab {
     let E = e.createEl("div", { cls: "setting-item-description" });
     ((this._customPathDescEl = E),
       new R.Setting(e)
-        .setName(i("field_python_custom") || "Custom Python Path")
-        .setDesc(i("optional_later"))
+        .setName(o("field_python_custom") || "Custom Python Path")
+        .setDesc(o("optional_later"))
         .addText((w) => {
           w.setPlaceholder("e.g. C:\\Python311\\python.exe")
             .setValue(this.plugin.settings.python_path || "")
@@ -4456,13 +4515,13 @@ var xe = class xe extends R.PluginSettingTab {
             });
         })
         .addButton((w) => {
-          w.setButtonText(i("feat_verify") || "Validate").onClick(() => {
+          w.setButtonText(o("feat_verify") || "Validate").onClick(() => {
             this._validatePythonOverride();
           });
         }),
       new R.Setting(e)
-        .setName(i("field_zotero_data") || "Zotero Data Dir")
-        .setDesc(i("field_zotero_placeholder"))
+        .setName(o("field_zotero_data") || "Zotero Data Dir")
+        .setDesc(o("field_zotero_placeholder"))
         .addText((w) => {
           w.setPlaceholder("C:\\Users\\...\\Zotero")
             .setValue(this.plugin.settings.zotero_data_dir || "")
@@ -4472,7 +4531,7 @@ var xe = class xe extends R.PluginSettingTab {
             });
         }),
       e.createEl("h3", {
-        text: i("agent_integration_section") || "Agent Integration",
+        text: o("agent_integration_section") || "Agent Integration",
       }),
       this._renderSkillsList(e));
     try {
@@ -4501,12 +4560,12 @@ var xe = class xe extends R.PluginSettingTab {
       n = this._getVaultBasePath(),
       s = this.plugin.settings.agent_platform || "opencode";
     (new R.Setting(e)
-      .setName(i("label_agent") || "Agent Platform")
-      .setDesc(i("feat_agent_platform_desc"))
+      .setName(o("label_agent") || "Agent Platform")
+      .setDesc(o("feat_agent_platform_desc"))
       .addDropdown((g) => {
-        (Object.entries(t).forEach(([f, h]) => g.addOption(f, h)),
-          g.setValue(s).onChange((f) => {
-            ((this.plugin.settings.agent_platform = f),
+        (Object.entries(t).forEach(([h, f]) => g.addOption(h, f)),
+          g.setValue(s).onChange((h) => {
+            ((this.plugin.settings.agent_platform = h),
               this.plugin.saveSettings(),
               this.display());
           }));
@@ -4515,29 +4574,29 @@ var xe = class xe extends R.PluginSettingTab {
         g.setIcon("folder")
           .setTooltip("Open skills folder")
           .onClick(() => {
-            let f = r[s] || ".opencode/skills",
-              h = te.join(n, f);
-            G.existsSync(h)
-              ? (0, ee.exec)(`start "" "${h}"`)
-              : new R.Notice(`Skills folder not found: ${f}`);
+            let h = r[s] || ".opencode/skills",
+              f = te.join(n, h);
+            G.existsSync(f)
+              ? (0, ee.exec)(`start "" "${f}"`)
+              : new R.Notice(`Skills folder not found: ${h}`);
           });
       }),
       e.createEl("h3", { text: "Skills" }));
     let a = e.createEl("div", { cls: "paperforge-desc-box" });
-    (a.setText(i("feat_skills_desc")),
+    (a.setText(o("feat_skills_desc")),
       a.createEl("br"),
-      a.createEl("span", { text: i("feat_skills_system") }));
-    let o = te.join(n, r[s]),
+      a.createEl("span", { text: o("feat_skills_system") }));
+    let i = te.join(n, r[s]),
       l = [],
       c = [];
-    G.existsSync(o) &&
-      G.readdirSync(o, { withFileTypes: !0 }).forEach((g) => {
+    G.existsSync(i) &&
+      G.readdirSync(i, { withFileTypes: !0 }).forEach((g) => {
         if (!g.isDirectory()) return;
-        let f = te.join(o, g.name, "SKILL.md");
-        if (!G.existsSync(f)) return;
-        let h = G.readFileSync(f, "utf-8"),
-          m = h.match(/^name:\s*(.+)$/m),
-          y = h.split(`
+        let h = te.join(i, g.name, "SKILL.md");
+        if (!G.existsSync(h)) return;
+        let f = G.readFileSync(h, "utf-8"),
+          m = f.match(/^name:\s*(.+)$/m),
+          y = f.split(`
 `),
           v = y.findIndex((C) => /^description:/.test(C)),
           x = "";
@@ -4555,24 +4614,24 @@ var xe = class xe extends R.PluginSettingTab {
             x = x.trim();
           }
         }
-        let k = h.match(/^source:\s*(.+)$/m),
-          b = h.match(/^disable-model-invocation:\s*(.+)$/m),
-          E = h.match(/^version:\s*(.+)$/m),
+        let k = f.match(/^source:\s*(.+)$/m),
+          b = f.match(/^disable-model-invocation:\s*(.+)$/m),
+          E = f.match(/^version:\s*(.+)$/m),
           S = {
             name: m ? m[1].trim() : g.name,
             desc: x,
             source: k ? k[1].trim() : "user",
             disabled: !!b && b[1].trim() === "true",
             version: E ? E[1].trim() : "",
-            path: f,
-            content: h,
+            path: h,
+            content: f,
             dirName: g.name,
           };
         S.source === "paperforge" ? l.push(S) : c.push(S);
       });
     let u = e.createEl("div", { cls: "paperforge-skills-box" }),
-      _ = (g, f, h) => {
-        if (f.length === 0) return;
+      _ = (g, h, f) => {
+        if (h.length === 0) return;
         let m = u.createEl("div", { cls: "paperforge-skills-group" }),
           y = m.createEl("div", { cls: "paperforge-skills-collapse-header" }),
           v = m.createEl("div", { cls: "paperforge-skills-collapse-content" }),
@@ -4581,12 +4640,12 @@ var xe = class xe extends R.PluginSettingTab {
             cls: "paperforge-skills-arrow",
           });
         (y.createEl("h4", {
-          text: `${g} (${f.length})`,
+          text: `${g} (${h.length})`,
           cls: "paperforge-skills-subheader",
         }),
-          f.forEach((E) => {
+          h.forEach((E) => {
             let S = E.name + (E.version ? " v" + E.version : ""),
-              C = h ? " [system]" : " [user]",
+              C = f ? " [system]" : " [user]",
               w = E.desc || "",
               T = new R.Setting(v).setName(S + C).setDesc(w);
             ((T.settingEl.style.opacity = E.disabled ? "0.4" : "1"),
@@ -4610,7 +4669,7 @@ var xe = class xe extends R.PluginSettingTab {
                 });
               }));
           }));
-        let k = h ? "system" : "user";
+        let k = f ? "system" : "user";
         ((this._skillsCollapsed[k] || !1) &&
           ((v.style.display = "none"), (x.style.transform = "rotate(-90deg)")),
           y.addEventListener("click", () => {
@@ -4654,11 +4713,11 @@ var xe = class xe extends R.PluginSettingTab {
       let r = e.createEl("div", { cls: "pf-detail-controls" });
       r.createEl("button", {
         cls: "mod-warning",
-        text: i("ocr_stop_batch") || "Stop OCR batch",
+        text: o("ocr_stop_batch") || "Stop OCR batch",
       }).addEventListener("click", () => {
-        var o;
+        var i;
         let a = this.plugin._ocrProcess;
-        (o = a == null ? void 0 : a.stdin) != null && o.write
+        (i = a == null ? void 0 : a.stdin) != null && i.write
           ? (a.stdin.write(`PAPERFORGE_STOP
 `),
             (this.plugin._ocrWasStopped = !0))
@@ -4677,14 +4736,14 @@ var xe = class xe extends R.PluginSettingTab {
     this._renderModuleDetailShell(e, "memory");
   }
   _dispatchModuleAction(e, t) {
-    var a, o, l, c, u;
+    var a, i, l, c, u;
     let r = (a = t.action) == null ? void 0 : a.primary;
     if (!r) {
       this._probeModule(e);
       return;
     }
     let n = r.verb,
-      s = (o = r.command) != null ? o : "";
+      s = (i = r.command) != null ? i : "";
     if (r.destructive && r.confirmation_required) {
       new at(
         this.app,
@@ -4712,7 +4771,7 @@ var xe = class xe extends R.PluginSettingTab {
     this._runAllowedDispatch(e, r.verb, (u = r.command) != null ? u : "", t);
   }
   _runAllowedDispatch(e, t, r, n) {
-    var s, a, o;
+    var s, a, i;
     if (
       (t === "setup" || t === "set_config") &&
       r === "paperforge setup" &&
@@ -4751,14 +4810,14 @@ var xe = class xe extends R.PluginSettingTab {
         if (t === "investigate") {
           if (r === "paperforge ocr issue-draft") {
             let l = this._getVaultBasePath(),
-              c = nr(
+              c = sr(
                 n.reason.code,
                 n.reason.text,
-                (o =
+                (i =
                   (a = (s = n.action) == null ? void 0 : s.primary) == null
                     ? void 0
                     : a.scope_count) != null
-                  ? o
+                  ? i
                   : 0,
                 l
               );
@@ -4815,7 +4874,7 @@ var xe = class xe extends R.PluginSettingTab {
       }
     }
     (new R.Notice(
-      (i("action_unknown_pair") || "Unknown action: {verb}").replace(
+      (o("action_unknown_pair") || "Unknown action: {verb}").replace(
         "{verb}",
         t
       ),
@@ -4827,7 +4886,7 @@ var xe = class xe extends R.PluginSettingTab {
     var l;
     let t = this.app.vault.adapter.basePath;
     if (!this._resolveRuntimeCommand(t)) {
-      new R.Notice(i("runtime_not_available") || "No Python runtime available");
+      new R.Notice(o("runtime_not_available") || "No Python runtime available");
       return;
     }
     let n =
@@ -4850,10 +4909,10 @@ var xe = class xe extends R.PluginSettingTab {
       (this.plugin._ocrProgress = { current: 0, total: 1, key: "" }),
       (this.plugin._ocrWasStopped = !1),
       this.display());
-    let o = this._callPython(n, {
+    let i = this._callPython(n, {
       stream: !0,
       onData: (c) => {
-        var f;
+        var h;
         let u =
             typeof c == "string"
               ? c
@@ -4862,25 +4921,25 @@ var xe = class xe extends R.PluginSettingTab {
                 : String(c),
           { events: _, buffer: g } = Ze(
             u,
-            (f = this.plugin._ocrBuffer) != null ? f : ""
+            (h = this.plugin._ocrBuffer) != null ? h : ""
           );
         this.plugin._ocrBuffer = g;
-        for (let h of _)
-          h.event === "START"
+        for (let f of _)
+          f.event === "START"
             ? (this.plugin._ocrProgress &&
-                (this.plugin._ocrProgress.total = h.total || 1),
+                (this.plugin._ocrProgress.total = f.total || 1),
               a.ocr &&
-                (a.ocr.activity_progress = { current: 0, total: h.total || 1 }))
-            : h.event === "PROGRESS" &&
+                (a.ocr.activity_progress = { current: 0, total: f.total || 1 }))
+            : f.event === "PROGRESS" &&
               ((this.plugin._ocrProgress = {
-                current: h.current || 0,
-                total: h.total || 1,
-                key: h.key || "",
+                current: f.current || 0,
+                total: f.total || 1,
+                key: f.key || "",
               }),
               a.ocr &&
                 (a.ocr.activity_progress = {
-                  current: h.current || 0,
-                  total: h.total || 1,
+                  current: f.current || 0,
+                  total: f.total || 1,
                 }));
         this.display();
       },
@@ -4920,7 +4979,7 @@ var xe = class xe extends R.PluginSettingTab {
           this.display());
       },
     });
-    this.plugin._ocrProcess = o;
+    this.plugin._ocrProcess = i;
   }
   _dispatchMemoryBuild(e) {
     var a;
@@ -4938,7 +4997,7 @@ var xe = class xe extends R.PluginSettingTab {
     if (e === "embed") {
       ((this.plugin._embedBuffer = ""),
         (this.plugin._embedProgress = { current: 0, total: 0, key: "" }));
-      let o = this._callPython(n, {
+      let i = this._callPython(n, {
         stream: !0,
         onData: (l) => {
           var g;
@@ -4953,17 +5012,17 @@ var xe = class xe extends R.PluginSettingTab {
               (g = this.plugin._embedBuffer) != null ? g : ""
             );
           this.plugin._embedBuffer = _;
-          for (let f of u)
-            f.event === "PROGRESS" &&
+          for (let h of u)
+            h.event === "PROGRESS" &&
               ((this.plugin._embedProgress = {
-                current: f.current || 0,
-                total: f.total || 0,
-                key: f.key || "",
+                current: h.current || 0,
+                total: h.total || 0,
+                key: h.key || "",
               }),
               r.memory &&
                 (r.memory.activity_progress = {
-                  current: f.current || 0,
-                  total: f.total || 1,
+                  current: h.current || 0,
+                  total: h.total || 1,
                 }));
           this.display();
         },
@@ -4993,15 +5052,15 @@ var xe = class xe extends R.PluginSettingTab {
             this.display());
         },
       });
-      this.plugin._embedProcess = o;
+      this.plugin._embedProcess = i;
     } else
       this._callPython(n, {
         timeout: 12e4,
-        onClose: (o, l, c) => {
+        onClose: (i, l, c) => {
           (r.memory &&
             ((r.memory.activity_state = "idle"),
             (r.memory.activity_label = null)),
-            o === 0
+            i === 0
               ? new R.Notice(s + " rebuild complete")
               : new R.Notice(
                   s + " build failed" + (c ? ": " + c.slice(0, 120) : ""),
@@ -5018,7 +5077,7 @@ var xe = class xe extends R.PluginSettingTab {
       n = "pf-" + t + "-detail-heading";
     e.createEl("button", {
       cls: "pf-back-btn",
-      text: i("btn_back_to_overview"),
+      text: o("btn_back_to_overview"),
     }).addEventListener("click", () => {
       var A;
       (((A = this._detailReturn) == null ? void 0 : A.tab) === "maintenance"
@@ -5033,22 +5092,22 @@ var xe = class xe extends R.PluginSettingTab {
     });
     let a = e.createEl("h2", {
         cls: "pf-module-detail-heading",
-        text: i(r) || i("cc_module_" + t),
+        text: o(r) || o("cc_module_" + t),
         attr: { id: n, tabindex: "-1" },
       }),
-      o = [
+      i = [
         { id: "installation", labelKey: "md_select_installation" },
         { id: "library", labelKey: "md_select_library" },
         { id: "ocr", labelKey: "md_select_ocr" },
         { id: "memory", labelKey: "md_select_memory" },
       ],
       l = e.createEl("div", { cls: "pf-module-detail-selector" });
-    for (let A of o)
+    for (let A of i)
       l.createEl("button", {
         cls:
           "pf-module-detail-btn" +
           (A.id === t ? " pf-module-detail-btn--active" : ""),
-        text: i(A.labelKey),
+        text: o(A.labelKey),
       }).addEventListener("click", () => {
         ((this._selectedDetailModule = A.id),
           (this._focusTargetId =
@@ -5063,20 +5122,20 @@ var xe = class xe extends R.PluginSettingTab {
           : Se(t),
       _ = this._sevClass(u.severity),
       g = ze(u),
-      f = e.createEl("div", { cls: "pf-cc-card pf-module-detail-card" }),
-      h = f.createEl("div", { cls: "pf-cc-card-header" });
+      h = e.createEl("div", { cls: "pf-cc-card pf-module-detail-card" }),
+      f = h.createEl("div", { cls: "pf-cc-card-header" });
     if (
-      (h.createEl("span", {
+      (f.createEl("span", {
         cls: "pf-cc-card-name",
-        text: i("cc_module_" + t),
+        text: o("cc_module_" + t),
       }),
-      h.createEl("span", {
+      f.createEl("span", {
         cls: "pf-cc-card-badge pf-cc-card-badge--" + _,
-        text: i(this._ccBadgeKey(u, t)),
+        text: o(this._ccBadgeKey(u, t)),
       }),
       u.activity_state === "running" && u.activity_label)
     ) {
-      let A = f.createEl("div", {
+      let A = h.createEl("div", {
         cls: "pf-cc-card-activity",
         attr: { "aria-live": "polite" },
       });
@@ -5100,7 +5159,7 @@ var xe = class xe extends R.PluginSettingTab {
       }
     }
     let m = this._localizeReason(u.reason.code, t);
-    f.createEl("div", {
+    h.createEl("div", {
       cls: "pf-cc-card-reason",
       text: m != null ? m : u.reason.text,
     });
@@ -5108,14 +5167,14 @@ var xe = class xe extends R.PluginSettingTab {
     if (y && !g) {
       y.destructive &&
         y.confirmation_required &&
-        f
+        h
           .createEl("div", { cls: "pf-destructive-notice" })
           .createEl("span", {
             text: (F = y.destructive_effect) != null ? F : "",
           });
       let A = u.activity_state === "running",
         P = Ke(u),
-        I = f.createEl("button", {
+        I = h.createEl("button", {
           cls: "pf-cc-card-action pf-cc-card-action--primary",
           text: P.label,
         });
@@ -5124,7 +5183,7 @@ var xe = class xe extends R.PluginSettingTab {
           A || this._dispatchModuleAction(t, u);
         }));
     }
-    let v = f.createEl("div", { cls: "pf-meta" }),
+    let v = h.createEl("div", { cls: "pf-meta" }),
       x;
     try {
       x = new Date(u.updated_at).toLocaleString();
@@ -5134,7 +5193,7 @@ var xe = class xe extends R.PluginSettingTab {
     if (
       (v.createEl("span", {
         text:
-          i("cc_diag_updated") +
+          o("cc_diag_updated") +
           ": " +
           x +
           " | TTL: " +
@@ -5148,19 +5207,19 @@ var xe = class xe extends R.PluginSettingTab {
           cls: "pf-notice pf-notice--" + (A.level || "info"),
           text: A.message,
         });
-    let k = f.createEl("details", { cls: "pf-cc-card-diagnostic" });
-    k.createEl("summary", { text: i("cc_diagnostic_toggle") });
+    let k = h.createEl("details", { cls: "pf-cc-card-diagnostic" });
+    k.createEl("summary", { text: o("cc_diagnostic_toggle") });
     let b = k.createEl("div", { cls: "pf-cc-card-diagnostic-body" }),
-      E = i("cc_state_" + u.capability_state) || u.capability_state,
-      S = i("cc_severity_" + u.severity) || u.severity,
-      C = i("cc_activity_" + u.activity_state) || u.activity_state;
-    (b.createEl("div", { text: i("cc_diag_module") + ": " + u.module }),
-      b.createEl("div", { text: i("cc_diag_state") + ": " + E }),
-      b.createEl("div", { text: i("cc_diag_severity") + ": " + S }),
-      b.createEl("div", { text: i("cc_diag_activity") + ": " + C }));
+      E = o("cc_state_" + u.capability_state) || u.capability_state,
+      S = o("cc_severity_" + u.severity) || u.severity,
+      C = o("cc_activity_" + u.activity_state) || u.activity_state;
+    (b.createEl("div", { text: o("cc_diag_module") + ": " + u.module }),
+      b.createEl("div", { text: o("cc_diag_state") + ": " + E }),
+      b.createEl("div", { text: o("cc_diag_severity") + ": " + S }),
+      b.createEl("div", { text: o("cc_diag_activity") + ": " + C }));
     let w = b.createEl("div");
     (w.appendText(
-      i("cc_diag_reason") + ": " + (m != null ? m : u.reason.text) + " "
+      o("cc_diag_reason") + ": " + (m != null ? m : u.reason.text) + " "
     ),
       w.createEl("code", { text: u.reason.code }));
     try {
@@ -5174,26 +5233,26 @@ var xe = class xe extends R.PluginSettingTab {
       n = (k = t[r]) != null ? k : Se(r),
       s = this._sevClass(n.severity),
       a = xe._REAL_PROBE.has(r);
-    e.createEl("h2", { text: i("cc_module_help") || "Help & Docs" });
-    let o = e.createEl("div", {
+    e.createEl("h2", { text: o("cc_module_help") || "Help & Docs" });
+    let i = e.createEl("div", {
         cls: "pf-cc-card",
         attr: { style: "margin-bottom: 12px;" },
       }),
-      l = o.createEl("div", { cls: "pf-cc-card-header" });
-    (l.createEl("span", { cls: "pf-cc-card-name", text: i("cc_module_help") }),
+      l = i.createEl("div", { cls: "pf-cc-card-header" });
+    (l.createEl("span", { cls: "pf-cc-card-name", text: o("cc_module_help") }),
       l.createEl("span", {
         cls: `pf-cc-card-badge pf-cc-card-badge--${s}`,
-        text: i(this._ccBadgeKey(n, r)),
+        text: o(this._ccBadgeKey(n, r)),
       }));
     let c;
     if (!a)
-      c = i("cc_reason_placeholder").replace("{module}", i("cc_module_" + r));
+      c = o("cc_reason_placeholder").replace("{module}", o("cc_module_" + r));
     else {
       let b = this._localizeReason(n.reason.code, r);
       c = b != null ? b : n.reason.text;
     }
     if (
-      (o.createEl("div", { cls: "pf-cc-card-reason", text: c }),
+      (i.createEl("div", { cls: "pf-cc-card-reason", text: c }),
       n.action.primary && !ze(n))
     ) {
       let b = Ke(n),
@@ -5201,7 +5260,7 @@ var xe = class xe extends R.PluginSettingTab {
           b.kind === "setup"
             ? "pf-cc-card-action pf-cc-card-action--primary"
             : "pf-cc-card-action";
-      o.createEl("button", {
+      i.createEl("button", {
         cls: S,
         text: b.label,
         attr: { "aria-label": b.label },
@@ -5213,29 +5272,29 @@ var xe = class xe extends R.PluginSettingTab {
           : this._probeModule(r);
       });
     }
-    let u = o.createEl("details", { cls: "pf-cc-card-diagnostic" });
-    u.createEl("summary", { text: i("cc_diagnostic_toggle") });
+    let u = i.createEl("details", { cls: "pf-cc-card-diagnostic" });
+    u.createEl("summary", { text: o("cc_diagnostic_toggle") });
     let _ = u.createEl("div", { cls: "pf-cc-card-diagnostic-body" }),
-      g = i("cc_state_" + n.capability_state) || n.capability_state,
-      f = i("cc_severity_" + n.severity) || n.severity,
-      h = i("cc_activity_" + n.activity_state) || n.activity_state,
+      g = o("cc_state_" + n.capability_state) || n.capability_state,
+      h = o("cc_severity_" + n.severity) || n.severity,
+      f = o("cc_activity_" + n.activity_state) || n.activity_state,
       m;
     try {
       m = new Date(n.updated_at).toLocaleString();
     } catch (b) {
       m = n.updated_at;
     }
-    (_.createEl("div", { text: `${i("cc_diag_module")}: ${n.module}` }),
-      _.createEl("div", { text: `${i("cc_diag_state")}: ${g}` }),
-      _.createEl("div", { text: `${i("cc_diag_severity")}: ${f}` }),
-      _.createEl("div", { text: `${i("cc_diag_activity")}: ${h}` }));
+    (_.createEl("div", { text: `${o("cc_diag_module")}: ${n.module}` }),
+      _.createEl("div", { text: `${o("cc_diag_state")}: ${g}` }),
+      _.createEl("div", { text: `${o("cc_diag_severity")}: ${h}` }),
+      _.createEl("div", { text: `${o("cc_diag_activity")}: ${f}` }));
     let y = _.createEl("div");
-    y.appendText(i("cc_diag_reason") + ": " + c + " ");
+    y.appendText(o("cc_diag_reason") + ": " + c + " ");
     let v = y.createEl("code", { text: n.reason.code });
     (_.createEl("div", {
-      text: `${i("cc_diag_ttl")}: ${String(n.ttl_seconds)}s`,
+      text: `${o("cc_diag_ttl")}: ${String(n.ttl_seconds)}s`,
     }),
-      _.createEl("div", { text: `${i("cc_diag_updated")}: ${m}` }),
+      _.createEl("div", { text: `${o("cc_diag_updated")}: ${m}` }),
       this._renderReleaseNotesTab(e));
   }
   _execMemoryStatus(e, t, r) {
@@ -5249,15 +5308,15 @@ var xe = class xe extends R.PluginSettingTab {
           return;
         }
         try {
-          let o = JSON.parse(a);
-          if (o.ok) {
-            let l = o.data,
+          let i = JSON.parse(a);
+          if (i.ok) {
+            let l = i.data,
               c = l.fresh ? "fresh" : "stale";
             r(
               `Papers: ${l.paper_count_db} | ${c}${l.needs_rebuild ? " - needs rebuild" : ""}`
             );
           } else r("DB not found. Run paperforge memory build.");
-        } catch (o) {
+        } catch (i) {
           r("Could not parse status.");
         }
       }
@@ -5274,13 +5333,13 @@ var xe = class xe extends R.PluginSettingTab {
           return;
         }
         try {
-          let o = JSON.parse(a);
-          o.ok
+          let i = JSON.parse(a);
+          i.ok
             ? r(
-                `Chunks: ${o.data.chunk_count} | ${o.data.model} | ${o.data.mode}`
+                `Chunks: ${i.data.chunk_count} | ${i.data.model} | ${i.data.mode}`
               )
             : r("Could not parse status.");
-        } catch (o) {
+        } catch (i) {
           r("Could not parse status.");
         }
       }
@@ -5296,7 +5355,7 @@ var xe = class xe extends R.PluginSettingTab {
       );
     let s = [...n.args, "-m", "paperforge", "--vault", r, ...e],
       a = (t == null ? void 0 : t.credentialType) && !(t != null && t.env),
-      o = (u) => {
+      i = (u) => {
         let _ = (0, ee.spawn)(n.path, s, { cwd: r, env: u, windowsHide: !0 });
         return (
           t.onData && _.stdout.on("data", t.onData),
@@ -5311,20 +5370,20 @@ var xe = class xe extends R.PluginSettingTab {
           n.path,
           s,
           { cwd: r, timeout: (t && t.timeout) || 6e4, env: u },
-          (_, g, f) => {
-            t && t.onClose && t.onClose(_ ? 1 : 0, g, f);
+          (_, g, h) => {
+            t && t.onClose && t.onClose(_ ? 1 : 0, g, h);
           }
         );
       };
     if (a)
       return (
         me(Ge(this.app), t.credentialType).then((u) => {
-          t && t.stream ? o(u) : l(u);
+          t && t.stream ? i(u) : l(u);
         }),
         null
       );
     let c = (t == null ? void 0 : t.env) || ge();
-    return t && t.stream ? o(c) : (l(c), null);
+    return t && t.stream ? i(c) : (l(c), null);
   }
   _renderMemoryStatusText(e, t, r) {
     ((e.innerHTML = ""),
@@ -5337,18 +5396,18 @@ var xe = class xe extends R.PluginSettingTab {
         : r && e.createEl("span", { text: r, cls: "paperforge-sync-status" }));
     let n = e.createEl("button", {
       cls: "paperforge-rebuild-btn",
-      text: i("feat_memory_rebuild_btn"),
+      text: o("feat_memory_rebuild_btn"),
     });
     ((n.title = "Rebuild memory database"),
       (n.onclick = () => {
         let a = this.app.vault.adapter.basePath,
-          o = this._resolveRuntimeCommand(a);
-        if (!(o != null && o.path)) {
-          new R.Notice(i("feat_no_python"));
+          i = this._resolveRuntimeCommand(a);
+        if (!(i != null && i.path)) {
+          new R.Notice(o("feat_no_python"));
           return;
         }
-        (console.log("[PaperForge] Rebuilding memory:", o.path),
-          n.setText(i("feat_memory_rebuilding")),
+        (console.log("[PaperForge] Rebuilding memory:", i.path),
+          n.setText(o("feat_memory_rebuilding")),
           n.setAttr("disabled", ""),
           this._callPython(["memory", "build"], {
             timeout: 6e4,
@@ -5359,12 +5418,12 @@ var xe = class xe extends R.PluginSettingTab {
                 (c || "").slice(0, 200),
                 (u || "").slice(0, 200)
               ),
-                n.setText(i("feat_memory_rebuild_btn")),
+                n.setText(o("feat_memory_rebuild_btn")),
                 n.removeAttribute("disabled"),
                 l === 0
-                  ? new R.Notice(i("feat_memory_rebuild_done"))
+                  ? new R.Notice(o("feat_memory_rebuild_done"))
                   : new R.Notice(
-                      i("feat_memory_rebuild_failed") +
+                      o("feat_memory_rebuild_failed") +
                         (u ? " " + u.slice(0, 80) : "")
                     ),
                 (this._memoryStatusText = tt(a)),
@@ -5439,7 +5498,7 @@ var xe = class xe extends R.PluginSettingTab {
         (n, s, a) => {
           ((this._refreshPending = !1),
             (this._memoryStatusText = tt(e)),
-            (this._embedStatusText = Be(e)),
+            (this._embedStatusText = Oe(e)),
             this.display());
         }
       ));
@@ -5452,10 +5511,10 @@ var xe = class xe extends R.PluginSettingTab {
         (this.plugin.settings.features = { memory_layer: !0, vector_db: !1 }),
       e
         .createEl("div", { cls: "paperforge-desc-box" })
-        .setText(i("feat_vector_desc")),
+        .setText(o("feat_vector_desc")),
       new R.Setting(e)
-        .setName(i("feat_vector_enable"))
-        .setDesc(i("feat_vector_enable_desc"))
+        .setName(o("feat_vector_enable"))
+        .setDesc(o("feat_vector_enable_desc"))
         .addToggle((c) => {
           c.setValue(!!this.plugin.settings.features.vector_db).onChange(
             (u) => {
@@ -5478,18 +5537,18 @@ var xe = class xe extends R.PluginSettingTab {
       });
     n.createEl("span", {
       cls: "paperforge-vec-header-label",
-      text: i("feat_vector_config_label"),
+      text: o("feat_vector_config_label"),
     });
     let a = e.createEl("div", { cls: "paperforge-vector-config" }),
-      o = (c) => {
+      i = (c) => {
         ((a.style.display = c ? "none" : ""),
           (s.style.transform = c ? "rotate(-90deg)" : "rotate(0deg)"));
       };
     if (
-      (o(Ft(this._featurePanelsCollapsed, "vectorConfig", !1)),
+      (i(Ft(this._featurePanelsCollapsed, "vectorConfig", !1)),
       n.addEventListener("click", () => {
-        let c = or(this._featurePanelsCollapsed, "vectorConfig", !1);
-        o(c);
+        let c = cr(this._featurePanelsCollapsed, "vectorConfig", !1);
+        i(c);
       }),
       this._vectorDepsOk === !0)
     ) {
@@ -5503,7 +5562,7 @@ var xe = class xe extends R.PluginSettingTab {
     if (this._vectorDepsOk === null) {
       let c = et(r);
       ((this._vectorDepsOk = c && (l = c.deps_installed) != null ? l : !1),
-        this._vectorDepsOk && (this._embedStatusText = Be(r)),
+        this._vectorDepsOk && (this._embedStatusText = Oe(r)),
         this.display());
     }
   }
@@ -5514,8 +5573,8 @@ var xe = class xe extends R.PluginSettingTab {
           : "sk-...",
       n = null;
     (new R.Setting(e)
-      .setName(i("feat_openai_key"))
-      .setDesc(i("feat_openai_key_desc"))
+      .setName(o("feat_openai_key"))
+      .setDesc(o("feat_openai_key_desc"))
       .addText((s) => {
         ((s.inputEl.type = "password"),
           s
@@ -5525,11 +5584,11 @@ var xe = class xe extends R.PluginSettingTab {
               a &&
                 (n && clearTimeout(n),
                 (n = setTimeout(async () => {
-                  let o = this.app.secretStorage;
-                  if (o != null && o.setSecret) {
+                  let i = this.app.secretStorage;
+                  if (i != null && i.setSecret) {
                     try {
-                      (await o.setSecret("vector-db-api-key", a),
-                        (await o.getSecret("vector-db-api-key")) === a &&
+                      (await i.setSecret("vector-db-api-key", a),
+                        (await i.getSecret("vector-db-api-key")) === a &&
                           ((this.plugin.settings._vector_db_configured = !0),
                           (this.plugin.settings.vector_db_api_key = ""),
                           await this.plugin.saveSettings(),
@@ -5541,8 +5600,8 @@ var xe = class xe extends R.PluginSettingTab {
             }));
       }),
       new R.Setting(e)
-        .setName(i("feat_api_base_url"))
-        .setDesc(i("feat_api_base_url_desc"))
+        .setName(o("feat_api_base_url"))
+        .setDesc(o("feat_api_base_url_desc"))
         .addText((s) => {
           s.setPlaceholder("https://api.openai.com/v1")
             .setValue(this.plugin.settings.vector_db_api_base || "")
@@ -5552,8 +5611,8 @@ var xe = class xe extends R.PluginSettingTab {
             });
         }),
       new R.Setting(e)
-        .setName(i("feat_api_model"))
-        .setDesc(i("feat_api_model_desc"))
+        .setName(o("feat_api_model"))
+        .setDesc(o("feat_api_model_desc"))
         .addText((s) => {
           s.setPlaceholder("text-embedding-3-small")
             .setValue(
@@ -5569,24 +5628,24 @@ var xe = class xe extends R.PluginSettingTab {
   _renderVectorNoDeps(e) {
     (e
       .createEl("div", { cls: "paperforge-desc-box" })
-      .setText(i("feat_deps_missing")),
+      .setText(o("feat_deps_missing")),
       new R.Setting(e)
-        .setName(i("feat_install_deps"))
-        .setDesc(i("feat_install_deps_desc"))
+        .setName(o("feat_install_deps"))
+        .setDesc(o("feat_install_deps_desc"))
         .addButton((r) => {
-          r.setButtonText(i("feat_install_btn"))
+          r.setButtonText(o("feat_install_btn"))
             .setCta()
             .onClick(async () => {
               let n = this.app.vault.adapter.basePath,
                 s = this._resolveRuntimeCommand(n);
               if (!(s != null && s.path)) {
-                new R.Notice(i("feat_no_python"));
+                new R.Notice(o("feat_no_python"));
                 return;
               }
-              (r.setButtonText(i("feat_installing")), r.setDisabled(!0));
+              (r.setButtonText(o("feat_installing")), r.setDisabled(!0));
               let a = "chromadb openai",
-                o = new R.Notice(
-                  i("feat_installing_pkgs").replace("{pkgs}", a),
+                i = new R.Notice(
+                  o("feat_installing_pkgs").replace("{pkgs}", a),
                   0
                 );
               try {
@@ -5605,37 +5664,37 @@ var xe = class xe extends R.PluginSettingTab {
                     }
                   );
                 }),
-                  o.hide(),
-                  new R.Notice(i("feat_install_done")),
+                  i.hide(),
+                  new R.Notice(o("feat_install_done")),
                   (this._vectorDepsOk = !0),
-                  (this._embedStatusText = Be(n)),
+                  (this._embedStatusText = Oe(n)),
                   this.display());
               } catch (l) {
-                (o.hide(),
+                (i.hide(),
                   new R.Notice(
-                    i("feat_install_failed") + (l.stderr || l.message || l)
+                    o("feat_install_failed") + (l.stderr || l.message || l)
                   ),
-                  r.setButtonText(i("feat_retry_btn")),
+                  r.setButtonText(o("feat_retry_btn")),
                   r.setDisabled(!1));
               }
             });
         }));
   }
   _renderVectorReady(e, t) {
-    (e.createEl("div", { cls: "paperforge-desc-box" }).setText(Be(t)),
+    (e.createEl("div", { cls: "paperforge-desc-box" }).setText(Oe(t)),
       this._renderApiConfig(e));
     let n = e.createEl("div", { cls: "paperforge-embed-section" });
     n.createEl("div", { cls: "paperforge-embed-header" }).createEl("span", {
-      text: i("retrieval_rebuild_vectors"),
+      text: o("retrieval_rebuild_vectors"),
       cls: "setting-item-name",
     });
     let a = n.createEl("div", { cls: "paperforge-embed-controls" }),
-      o = n.createEl("div", {
+      i = n.createEl("div", {
         cls: "paperforge-embed-status-text",
         attr: { "aria-live": "polite" },
       });
     (() => {
-      (a.empty(), o.empty());
+      (a.empty(), i.empty());
       let c = et(t),
         u = c == null ? void 0 : c.build_state,
         _ = u && typeof u == "object" && !Array.isArray(u) ? u : {};
@@ -5651,7 +5710,7 @@ var xe = class xe extends R.PluginSettingTab {
             total: typeof _.total == "number" ? _.total : 1,
             key: typeof _.paper_id == "string" ? _.paper_id : "",
           }));
-      let { current: g, total: f, key: h } = this.plugin._embedProgress,
+      let { current: g, total: h, key: f } = this.plugin._embedProgress,
         m =
           typeof (c == null ? void 0 : c.body_chunk_count) == "number"
             ? c.body_chunk_count
@@ -5677,9 +5736,9 @@ var xe = class xe extends R.PluginSettingTab {
         w = typeof _.status == "string" ? _.status : "",
         T = typeof _.message == "string" ? _.message : "",
         O = async (P) => {
-          var H;
+          var V;
           if (P === "--resume" && k && !b) {
-            let N = i("retrieval_rebuild_warning").replace("{n}", String(x));
+            let N = o("retrieval_rebuild_warning").replace("{n}", String(x));
             if (!confirm(N)) return;
           }
           if (P === "--force" && k && !b) {
@@ -5691,7 +5750,7 @@ var xe = class xe extends R.PluginSettingTab {
           }
           let I = this._resolveRuntimeCommand(t);
           if (!(I != null && I.path)) {
-            new R.Notice(i("retrieval_no_python"));
+            new R.Notice(o("retrieval_no_python"));
             return;
           }
           let K = await me(Ge(this.app), "embed");
@@ -5721,14 +5780,14 @@ var xe = class xe extends R.PluginSettingTab {
                       (ae = this.plugin._embedBuffer) != null ? ae : ""
                     );
                   this.plugin._embedBuffer = ue;
-                  for (let q of ne)
-                    q.event === "START"
-                      ? (this.plugin._embedProgress.total = q.total || 0)
-                      : q.event === "PROGRESS"
+                  for (let W of ne)
+                    W.event === "START"
+                      ? (this.plugin._embedProgress.total = W.total || 0)
+                      : W.event === "PROGRESS"
                         ? ((this.plugin._embedProgress.current =
-                            q.current || 0),
-                          (this.plugin._embedProgress.key = q.key || ""))
-                        : q.event === "DONE" &&
+                            W.current || 0),
+                          (this.plugin._embedProgress.key = W.key || ""))
+                        : W.event === "DONE" &&
                           ((this.plugin._embedProcess = null),
                           (this.plugin._embedProgress.current =
                             this.plugin._embedProgress.total));
@@ -5741,7 +5800,7 @@ var xe = class xe extends R.PluginSettingTab {
                 onError: (N) => {
                   ((this.plugin._embedProcess = null),
                     new R.Notice(
-                      i("feat_build_failed") + ": " + (N.message || N)
+                      o("feat_build_failed") + ": " + (N.message || N)
                     ),
                     this.display());
                 },
@@ -5760,13 +5819,13 @@ var xe = class xe extends R.PluginSettingTab {
                     ((this.plugin._embedProgress.current =
                       this.plugin._embedProgress.total),
                       this.plugin.saveSettings(),
-                      (this._embedStatusText = Be(t)),
-                      new R.Notice(i("feat_build_complete")));
+                      (this._embedStatusText = Oe(t)),
+                      new R.Notice(o("feat_build_complete")));
                   else {
                     this._embedStatusText = null;
                     let ne = (this.plugin._embedStderr || "").slice(0, 200);
                     new R.Notice(
-                      i("feat_build_failed") + (ne ? ": " + ne : ""),
+                      o("feat_build_failed") + (ne ? ": " + ne : ""),
                       8e3
                     );
                   }
@@ -5777,7 +5836,7 @@ var xe = class xe extends R.PluginSettingTab {
               }
             )),
             clearInterval(
-              (H = this.plugin._embedPollInterval) != null ? H : void 0
+              (V = this.plugin._embedPollInterval) != null ? V : void 0
             ),
             (this.plugin._embedPollInterval = setInterval(() => {
               this.plugin._embedPolling ||
@@ -5790,8 +5849,8 @@ var xe = class xe extends R.PluginSettingTab {
                       try {
                         let ae = JSON.parse(re).data;
                         if (ae && ae.build_state) {
-                          let q = ae.build_state;
-                          ((q.status === "stopping" || q.status === "idle") &&
+                          let W = ae.build_state;
+                          ((W.status === "stopping" || W.status === "idle") &&
                             this.plugin._embedProcess &&
                             ((this.plugin._embedProcess = null),
                             clearInterval(
@@ -5801,12 +5860,12 @@ var xe = class xe extends R.PluginSettingTab {
                             ),
                             (this.plugin._embedPollInterval = null),
                             this.display()),
-                            q.current !== void 0 &&
-                              q.total !== void 0 &&
-                              ((this.plugin._embedProgress.current = q.current),
-                              (this.plugin._embedProgress.total = q.total || 1),
+                            W.current !== void 0 &&
+                              W.total !== void 0 &&
+                              ((this.plugin._embedProgress.current = W.current),
+                              (this.plugin._embedProgress.total = W.total || 1),
                               (this.plugin._embedProgress.key =
-                                q.paper_id || "")));
+                                W.paper_id || "")));
                         }
                       } catch (ue) {}
                   },
@@ -5847,30 +5906,30 @@ var xe = class xe extends R.PluginSettingTab {
         case "building": {
           let P = a.createEl("div", { cls: "paperforge-progress-track" });
           P.style.cssText = "flex:1;";
-          let I = f > 0 ? ((g / f) * 100).toFixed(1) : "0",
+          let I = h > 0 ? ((g / h) * 100).toFixed(1) : "0",
             K = P.createEl("div", { cls: "paperforge-progress-seg done" });
           if (
             ((K.style.cssText = `width:${I}%; min-width:${g > 0 ? "2px" : "0"};`),
-            g < f)
+            g < h)
           ) {
             let N = P.createEl("div", {
               cls: "paperforge-progress-seg pending",
             });
             N.style.cssText = `width:${(100 - parseFloat(I)).toFixed(1)}%;`;
           }
-          (o.createEl("span", {
+          (i.createEl("span", {
             cls: "paperforge-embed-progress-text",
-            text: `${g}/${f} papers`,
+            text: `${g}/${h} papers`,
           }),
-            h &&
-              o.createEl("span", {
+            f &&
+              i.createEl("span", {
                 cls: "paperforge-embed-progress-key",
-                text: ` (${h})`,
+                text: ` (${f})`,
               }));
-          let H = a.createEl("button");
-          (H.setText(i("retrieval_stop")),
-            (H.className = "mod-warning"),
-            H.addEventListener("click", () => {
+          let V = a.createEl("button");
+          (V.setText(o("retrieval_stop")),
+            (V.className = "mod-warning"),
+            V.addEventListener("click", () => {
               (this._callPython(["embed", "stop", "--json"], { timeout: 8e3 }),
                 this.display());
             }));
@@ -5879,68 +5938,68 @@ var xe = class xe extends R.PluginSettingTab {
         case "stopping": {
           let P = a.createEl("div", { cls: "paperforge-progress-track" });
           P.style.cssText = "flex:1; opacity:0.5;";
-          let I = f > 0 ? ((g / f) * 100).toFixed(1) : "0",
+          let I = h > 0 ? ((g / h) * 100).toFixed(1) : "0",
             K = P.createEl("div", { cls: "paperforge-progress-seg done" });
           if (
             ((K.style.cssText = `width:${I}%; min-width:${g > 0 ? "2px" : "0"};`),
-            g < f)
+            g < h)
           ) {
             let N = P.createEl("div", {
               cls: "paperforge-progress-seg pending",
             });
             N.style.cssText = `width:${(100 - parseFloat(I)).toFixed(1)}%;`;
           }
-          o.createEl("span", { text: i("retrieval_build_stopping") });
-          let H = a.createEl("button");
-          (H.setText(i("retrieval_stop")),
-            (H.className = "mod-warning"),
-            H.setAttr("disabled", ""));
+          i.createEl("span", { text: o("retrieval_build_stopping") });
+          let V = a.createEl("button");
+          (V.setText(o("retrieval_stop")),
+            (V.className = "mod-warning"),
+            V.setAttr("disabled", ""));
           break;
         }
         case "failed": {
-          o.createEl("div", {
+          i.createEl("div", {
             cls: "paperforge-desc-box",
-            text: i("retrieval_build_failed") + (T ? ": " + T : ""),
+            text: o("retrieval_build_failed") + (T ? ": " + T : ""),
             attr: { style: "color:var(--text-error);" },
           });
           let P = a.createEl("button");
-          (P.setText(i("retrieval_retry")),
+          (P.setText(o("retrieval_retry")),
             (P.className = "mod-cta"),
             P.addEventListener("click", () => O("--resume")));
           let I = a.createEl("button");
-          (I.setText(i("retrieval_force_rebuild")),
+          (I.setText(o("retrieval_force_rebuild")),
             (I.style.marginLeft = "6px"),
             I.addEventListener("click", () => O("--force")));
           break;
         }
         case "stopped": {
-          o.setText(i("retrieval_build_stopped"));
+          i.setText(o("retrieval_build_stopped"));
           let P = a.createEl("button");
-          (P.setText(i("retrieval_retry")),
+          (P.setText(o("retrieval_retry")),
             (P.className = "mod-cta"),
             P.addEventListener("click", () => O("--resume")));
           break;
         }
         case "corrupted": {
-          o.createEl("div", {
+          i.createEl("div", {
             cls: "paperforge-desc-box",
-            text: i("feat_vector_corrupted"),
+            text: o("feat_vector_corrupted"),
             attr: { style: "background:var(--background-modifier-warning);" },
           });
           let P = a.createEl("button");
-          (P.setText(i("retrieval_force_rebuild")),
+          (P.setText(o("retrieval_force_rebuild")),
             (P.className = "mod-cta"),
             P.addEventListener("click", () => O("--force")));
           break;
         }
         case "stale": {
-          o.createEl("div", {
+          i.createEl("div", {
             cls: "paperforge-desc-box",
-            text: i("retrieval_build_stale"),
+            text: o("retrieval_build_stale"),
             attr: { style: "color:var(--text-warning);" },
           });
           let P = a.createEl("button");
-          (P.setText(i("retrieval_rebuild_vectors")),
+          (P.setText(o("retrieval_rebuild_vectors")),
             (P.className = "mod-cta"),
             P.addEventListener("click", () => O("--resume")));
           break;
@@ -5951,19 +6010,19 @@ var xe = class xe extends R.PluginSettingTab {
             cls: "setting-item-description",
           });
           let P = a.createEl("button");
-          (P.setText(i("retrieval_rebuild_vectors")),
+          (P.setText(o("retrieval_rebuild_vectors")),
             (P.className = "mod-cta"),
             P.addEventListener("click", () => O("--resume")));
           let I = a.createEl("button");
-          (I.setText(i("retrieval_force_rebuild")),
+          (I.setText(o("retrieval_force_rebuild")),
             (I.style.marginLeft = "6px"),
             I.addEventListener("click", () => O("--force")));
           break;
         }
         case "deps-missing": {
-          o.setText(i("retrieval_build_deps_missing"));
+          i.setText(o("retrieval_build_deps_missing"));
           let P = a.createEl("a");
-          (P.setText(i("feat_install_deps")),
+          (P.setText(o("feat_install_deps")),
             (P.style.cssText = "cursor:pointer; text-decoration:underline;"),
             P.addEventListener("click", () => {
               this.display();
@@ -5971,13 +6030,13 @@ var xe = class xe extends R.PluginSettingTab {
           break;
         }
         case "runtime-mismatch": {
-          o.createEl("div", {
+          i.createEl("div", {
             cls: "paperforge-desc-box",
-            text: i("retrieval_build_runtime_mismatch"),
+            text: o("retrieval_build_runtime_mismatch"),
             attr: { style: "color:var(--text-warning);" },
           });
           let P = a.createEl("a");
-          (P.setText(i("runtime_health_sync")),
+          (P.setText(o("runtime_health_sync")),
             (P.style.cssText = "cursor:pointer; text-decoration:underline;"),
             P.addEventListener("click", () => {
               this.display();
@@ -5986,9 +6045,9 @@ var xe = class xe extends R.PluginSettingTab {
         }
         case "idle":
         default: {
-          o.setText(i("retrieval_build_idle"));
+          i.setText(o("retrieval_build_idle"));
           let P = a.createEl("button");
-          (P.setText(i("feat_build_btn")),
+          (P.setText(o("feat_build_btn")),
             (P.className = "mod-cta"),
             P.addEventListener("click", () => O("--resume")));
           break;
@@ -6079,8 +6138,8 @@ var xe = class xe extends R.PluginSettingTab {
         return;
       }
       let a = parseInt(s[1], 10),
-        o = parseInt(s[2], 10);
-      if (a < 3 || (a === 3 && o < 11)) {
+        i = parseInt(s[2], 10);
+      if (a < 3 || (a === 3 && i < 11)) {
         let l =
           "Python \u7248\u672C\u8FC7\u4F4E\uFF0C\u9700\u8981 3.11+ / Python version too low, need 3.11+";
         (t &&
@@ -6090,12 +6149,12 @@ var xe = class xe extends R.PluginSettingTab {
       }
       (0, ee.execFile)(e, ["-m", "pip", "--version"], { timeout: 8e3 }, (l) => {
         if (l) {
-          let c = `\u2713 Python ${a}.${o} \u6709\u6548\uFF0C\u4F46\u672A\u68C0\u6D4B\u5230 pip / Valid, but pip not found`;
+          let c = `\u2713 Python ${a}.${i} \u6709\u6548\uFF0C\u4F46\u672A\u68C0\u6D4B\u5230 pip / Valid, but pip not found`;
           (t &&
             (t.innerHTML = `<span style="color:var(--text-warning)">\u26A0 ${c}</span>`),
             new R.Notice(c, 4e3));
         } else {
-          let c = `\u2713 Python ${a}.${o} \u6709\u6548 / Valid`;
+          let c = `\u2713 Python ${a}.${i} \u6709\u6548 / Valid`;
           (t &&
             (t.innerHTML = `<span style="color:var(--text-accent)">${c}</span>`),
             new R.Notice(c, 4e3));
@@ -6123,12 +6182,12 @@ var xe = class xe extends R.PluginSettingTab {
         a.push({
           label: "Python",
           ok: !n,
-          detail: n ? i("check_python_fail") : s.trim(),
+          detail: n ? o("check_python_fail") : s.trim(),
         });
-        let o = !1,
-          l = process.env.HOME || process.env.USERPROFILE || lr.homedir() || "";
+        let i = !1,
+          l = process.env.HOME || process.env.USERPROFILE || dr.homedir() || "";
         if (process.platform === "darwin")
-          o = [
+          i = [
             "/Applications/Zotero.app",
             te.join(l, "Applications", "Zotero.app"),
           ].some((m) => {
@@ -6139,11 +6198,11 @@ var xe = class xe extends R.PluginSettingTab {
             }
           });
         else if (process.platform === "win32") {
-          let h = process.env.ProgramFiles || "",
+          let f = process.env.ProgramFiles || "",
             m = process.env.LOCALAPPDATA || "";
-          o = [
-            te.join(h, "Zotero"),
-            te.join(h, "(x86)", "Zotero"),
+          i = [
+            te.join(f, "Zotero"),
+            te.join(f, "(x86)", "Zotero"),
             te.join(m, "Programs", "Zotero"),
             te.join(m, "Zotero"),
             te.join(l, "AppData", "Local", "Programs", "Zotero"),
@@ -6157,7 +6216,7 @@ var xe = class xe extends R.PluginSettingTab {
               }
             });
         } else
-          o = [
+          i = [
             te.join(l, ".local", "share", "zotero", "zotero"),
             "/usr/bin/zotero",
             "/usr/local/bin/zotero",
@@ -6169,14 +6228,14 @@ var xe = class xe extends R.PluginSettingTab {
             }
           });
         let c = this.plugin.settings.zotero_data_dir;
-        if (!o && c)
+        if (!i && c)
           try {
-            o = G.existsSync(c);
-          } catch (h) {}
+            i = G.existsSync(c);
+          } catch (f) {}
         a.push({
           label: "Zotero",
-          ok: o,
-          detail: o ? i("check_zotero_ok") : i("check_zotero_fail"),
+          ok: i,
+          detail: i ? o("check_zotero_ok") : o("check_zotero_fail"),
         });
         let u = !1,
           _ = process.env.APPDATA || "";
@@ -6199,7 +6258,7 @@ var xe = class xe extends R.PluginSettingTab {
           a.push({
             label: "Better BibTeX",
             ok: u,
-            detail: u ? i("check_bbt_ok") : i("check_bbt_fail"),
+            detail: u ? o("check_bbt_ok") : o("check_bbt_fail"),
           }));
         let g = { true: "\u2713", false: "\u2717" };
         if (this._checkEl) {
@@ -6207,13 +6266,13 @@ var xe = class xe extends R.PluginSettingTab {
             a.map((m) => `${g[String(m.ok)]} ${m.label}: ${m.detail}`).join(`
 `)
           );
-          let h = a.some((m) => !m.ok);
-          this._checkEl.className = `paperforge-message msg-${h ? "error" : "ok"}`;
+          let f = a.some((m) => !m.ok);
+          this._checkEl.className = `paperforge-message msg-${f ? "error" : "ok"}`;
         }
-        let f = a.filter((h) => !h.ok);
-        (f.length > 0 &&
+        let h = a.filter((f) => !f.ok);
+        (h.length > 0 &&
           new R.Notice(
-            `[!!] \u672A\u901A\u8FC7: ${f.map((h) => h.label).join(", ")}`,
+            `[!!] \u672A\u901A\u8FC7: ${h.map((f) => f.label).join(", ")}`,
             6e3
           ),
           e());
@@ -6247,13 +6306,13 @@ var xe = class xe extends R.PluginSettingTab {
     ((this._pendingMaintenanceRefresh = !1), this._probeModule("maintenance"));
   }
   _renderMaintenanceInbox(e) {
-    var o, l, c;
+    var i, l, c;
     let t = e.createEl("div", { cls: "pf-maintenance-inbox" }),
-      r = (o = this._capabilityState) == null ? void 0 : o.maintenance;
+      r = (i = this._capabilityState) == null ? void 0 : i.maintenance;
     if (!r) {
       (t.createEl("div", {
         cls: "pf-maintenance-inbox-empty",
-        text: i("maintenance_checking") || "Checking maintenance status\u2026",
+        text: o("maintenance_checking") || "Checking maintenance status\u2026",
       }),
         this._probeModule("maintenance"));
       return;
@@ -6264,7 +6323,7 @@ var xe = class xe extends R.PluginSettingTab {
     ) {
       t.createEl("div", {
         cls: "pf-maintenance-inbox-empty",
-        text: i("maintenance_checking") || "Checking maintenance status\u2026",
+        text: o("maintenance_checking") || "Checking maintenance status\u2026",
       });
       return;
     }
@@ -6277,7 +6336,7 @@ var xe = class xe extends R.PluginSettingTab {
       t.createEl("div", {
         cls: "pf-maintenance-inbox-empty",
         text:
-          i("maintenance_all_clear") ||
+          o("maintenance_all_clear") ||
           "All modules are ready \u2014 no maintenance needed.",
       });
       return;
@@ -6285,7 +6344,7 @@ var xe = class xe extends R.PluginSettingTab {
     if (r.capability_state === "unknown") {
       (t.createEl("div", {
         cls: "pf-maintenance-inbox-empty",
-        text: i("maintenance_checking") || "Checking maintenance status\u2026",
+        text: o("maintenance_checking") || "Checking maintenance status\u2026",
       }),
         this._probing.has("maintenance") || this._probeModule("maintenance"));
       return;
@@ -6296,7 +6355,7 @@ var xe = class xe extends R.PluginSettingTab {
     ) {
       (t.createEl("div", {
         cls: "pf-maintenance-inbox-empty",
-        text: i("maintenance_checking") || "Checking maintenance status\u2026",
+        text: o("maintenance_checking") || "Checking maintenance status\u2026",
       }),
         this._requestMaintenanceProjection());
       return;
@@ -6305,7 +6364,7 @@ var xe = class xe extends R.PluginSettingTab {
     if (!n || !Array.isArray(n) || n.length === 0) {
       (t.createEl("div", {
         cls: "pf-maintenance-inbox-empty",
-        text: i("maintenance_checking") || "Checking maintenance status\u2026",
+        text: o("maintenance_checking") || "Checking maintenance status\u2026",
       }),
         this._requestMaintenanceProjection());
       return;
@@ -6313,13 +6372,13 @@ var xe = class xe extends R.PluginSettingTab {
     (this._maintenanceNoticeShown ||
       ((this._maintenanceNoticeShown = !0),
       new R.Notice(
-        i("maintenance_n_pending").replace("{n}", String(n.length)),
+        o("maintenance_n_pending").replace("{n}", String(n.length)),
         5e3
       )),
       t
         .createEl("div", { cls: "pf-maintenance-inbox-summary" })
         .createEl("span", {
-          text: i("maintenance_n_pending").replace("{n}", String(n.length)),
+          text: o("maintenance_n_pending").replace("{n}", String(n.length)),
         }));
     let a = t.createEl("div", {
       cls: "pf-maintenance-inbox-list",
@@ -6337,10 +6396,10 @@ var xe = class xe extends R.PluginSettingTab {
         attr: { role: "listitem", "data-module": t.module },
       }),
       a = s.createEl("div", { cls: "pf-maintenance-inbox-item-info" }),
-      o = i("cc_module_" + t.module) || t.module;
+      i = o("cc_module_" + t.module) || t.module;
     a.createEl("button", {
       cls: "pf-maintenance-inbox-item-module",
-      text: o,
+      text: i,
       attr: { "data-module": t.module },
     }).addEventListener("click", () => {
       ((this._detailReturn = {
@@ -6367,7 +6426,7 @@ var xe = class xe extends R.PluginSettingTab {
     (u.createEl("span", {
       cls:
         "pf-maintenance-inbox-item-badge pf-maintenance-inbox-item-badge--" + n,
-      text: i("cc_badge_" + (n === "ok" ? "ok" : "attention")),
+      text: o("cc_badge_" + (n === "ok" ? "ok" : "attention")),
     }),
       t.action &&
         u
@@ -6382,8 +6441,8 @@ var xe = class xe extends R.PluginSettingTab {
         .createEl("button", {
           cls: "pf-maintenance-inbox-item-dismiss",
           text: r
-            ? i("maintenance_undismiss") || "Show"
-            : i("maintenance_dismiss") || "Dismiss",
+            ? o("maintenance_undismiss") || "Show"
+            : o("maintenance_dismiss") || "Dismiss",
         })
         .addEventListener("click", () => {
           (r
@@ -6395,12 +6454,12 @@ var xe = class xe extends R.PluginSettingTab {
   _renderMaintenanceTab(e) {
     var u;
     (e.createEl("h2", {
-      text: i("tab_maintenance") || "\u7EF4\u62A4",
+      text: o("tab_maintenance") || "\u7EF4\u62A4",
       attr: { id: "pf-maintenance-heading", tabindex: "-1" },
     }),
       this._renderMaintenanceInbox(e),
       e.createEl("h3", {
-        text: i("maintenance_ocr_section") || "OCR Maintenance",
+        text: o("maintenance_ocr_section") || "OCR Maintenance",
       }));
     let r = (u = this.app.vault.adapter.basePath) != null ? u : "",
       n = e.createEl("div"),
@@ -6409,8 +6468,8 @@ var xe = class xe extends R.PluginSettingTab {
     try {
       a = lt(r);
     } catch (_) {}
-    let o = this._resolveRuntimeCommand(r);
-    if (!o) {
+    let i = this._resolveRuntimeCommand(r);
+    if (!i) {
       n.createEl("p", {
         text: "\u26A0 Python runtime not ready \u2014 install via Installation tab.",
         cls: "setting-item-description",
@@ -6421,18 +6480,18 @@ var xe = class xe extends R.PluginSettingTab {
       c = (_) => {
         n.empty();
         let g = _,
-          f = n.createEl("div", { cls: "pf-maint-filters" }),
-          h = f.createEl("button", {
+          h = n.createEl("div", { cls: "pf-maint-filters" }),
+          f = h.createEl("button", {
             cls: "pf-maint-filter" + (s.active === "all" ? " active" : ""),
-            text: i("maintenance_filter_all") || "All",
+            text: o("maintenance_filter_all") || "All",
           });
-        h.addEventListener("click", () => {
+        f.addEventListener("click", () => {
           ((s.active = "all"), c(_));
         });
-        let m = f.createEl("button", {
+        let m = h.createEl("button", {
           cls:
             "pf-maint-filter" + (s.active === "recommended" ? " active" : ""),
-          text: i("maintenance_filter_recommended") || "Recommended",
+          text: o("maintenance_filter_recommended") || "Recommended",
         });
         m.addEventListener("click", () => {
           ((s.active = "recommended"), c(_));
@@ -6447,8 +6506,8 @@ var xe = class xe extends R.PluginSettingTab {
             cls: "setting-item-description",
           });
         else {
-          let v = o.path,
-            x = o.args,
+          let v = i.path,
+            x = i.args,
             k = n.createEl("div", { cls: "pf-maint-progress" });
           k.style.display = "none";
           let b = k.createEl("div", { cls: "paperforge-progress-track" });
@@ -6457,7 +6516,7 @@ var xe = class xe extends R.PluginSettingTab {
             S = b.createEl("div", { cls: "paperforge-progress-seg pending" }),
             C = k.createEl("span", { cls: "pf-maint-progress-text" }),
             w = k.createEl("span", { cls: "pf-maint-progress-key" }),
-            T = k.createEl("button", { text: i("maintenance_stop") || "Stop" });
+            T = k.createEl("button", { text: o("maintenance_stop") || "Stop" });
           ((T.className = "mod-warning"),
             T.addEventListener("click", () => {
               let D = this.plugin._ocrProcess;
@@ -6468,7 +6527,7 @@ var xe = class xe extends R.PluginSettingTab {
                   : typeof D.kill == "function" && D.kill("SIGINT")),
                 (this.plugin._ocrWasStopped = !0),
                 (T.disabled = !0),
-                (T.textContent = (i("maintenance_stop") || "Stop") + "\u2026"));
+                (T.textContent = (o("maintenance_stop") || "Stop") + "\u2026"));
             }));
           let O = () => {
             let D = this.plugin._ocrProgress;
@@ -6485,7 +6544,7 @@ var xe = class xe extends R.PluginSettingTab {
                 ? ((S.style.display = ""), (S.style.flex = "1"))
                 : (S.style.display = "none"),
               (C.textContent = (
-                i("maintenance_progress_label") || "{current}/{total} papers"
+                o("maintenance_progress_label") || "{current}/{total} papers"
               )
                 .replace("{current}", String(D.current))
                 .replace("{total}", String(D.total))),
@@ -6503,7 +6562,7 @@ var xe = class xe extends R.PluginSettingTab {
             let Y = document.createElement("th");
             ((Y.textContent = D), K.appendChild(Y));
           });
-          let H = l();
+          let V = l();
           for (let D of y) {
             let Y = I.insertRow(),
               ce = Y.insertCell();
@@ -6533,15 +6592,15 @@ var xe = class xe extends R.PluginSettingTab {
             let U = Y.insertCell();
             U.style.cssText = "padding:3px 4px;white-space:nowrap;";
             let se = U.createEl("div", { cls: "pf-maint-actions" }),
-              fe = Rt(D);
-            if (fe === "rebuild") {
+              he = Rt(D);
+            if (he === "rebuild") {
               let oe = se.createEl("button", {
                 cls: "pf-maint-action-btn rebuild",
-                text: i("maintenance_btn_rebuild") || "Rebuild",
+                text: o("maintenance_btn_rebuild") || "Rebuild",
               });
-              (H && (oe.disabled = !0),
+              (V && (oe.disabled = !0),
                 oe.addEventListener("click", async () => {
-                  let he = await Ue(Ge(this.app), "ocr"),
+                  let fe = await Ue(Ge(this.app), "ocr"),
                     pt = ge();
                   (0, ee.execFile)(
                     v,
@@ -6550,35 +6609,35 @@ var xe = class xe extends R.PluginSettingTab {
                       cwd: r,
                       timeout: 12e4,
                       windowsHide: !0,
-                      env: Object.assign({}, pt, he),
+                      env: Object.assign({}, pt, fe),
                     },
                     () => {
                       new R.Notice(
-                        (i("maintenance_btn_rebuild") || "Rebuild") +
+                        (o("maintenance_btn_rebuild") || "Rebuild") +
                           " \u2014 " +
                           D.key
                       );
                     }
                   );
                 }));
-            } else if (fe === "redo") {
+            } else if (he === "redo") {
               let oe = se.createEl("button", {
                 cls: "pf-maint-action-btn redo",
-                text: i("ocr_maint_redo_btn") || "Redo",
+                text: o("ocr_maint_redo_btn") || "Redo",
               });
-              (H && (oe.disabled = !0),
+              (V && (oe.disabled = !0),
                 oe.addEventListener("click", async () => {
                   if (
                     Tt("redo") &&
                     !confirm(
                       (
-                        i("ocr_maint_redo_confirm") ||
+                        o("ocr_maint_redo_confirm") ||
                         "Rerun OCR for {n} paper(s)? Existing derived OCR artifacts will be replaced."
                       ).replace("{n}", "1")
                     )
                   )
                     return;
-                  let he = await Ue(Ge(this.app), "ocr"),
+                  let fe = await Ue(Ge(this.app), "ocr"),
                     pt = ge();
                   (0, ee.execFile)(
                     v,
@@ -6587,11 +6646,11 @@ var xe = class xe extends R.PluginSettingTab {
                       cwd: r,
                       timeout: 3e5,
                       windowsHide: !0,
-                      env: Object.assign({}, pt, he),
+                      env: Object.assign({}, pt, fe),
                     },
                     () => {
                       new R.Notice(
-                        (i("ocr_maint_redo_btn") || "Redo OCR") +
+                        (o("ocr_maint_redo_btn") || "Redo OCR") +
                           " \u2014 " +
                           D.key
                       );
@@ -6611,22 +6670,22 @@ var xe = class xe extends R.PluginSettingTab {
             },
             ue = N.createEl("button", {
               cls: "mod-cta",
-              text: i("maintenance_batch_rebuild") || "\u25B6 Rebuild selected",
+              text: o("maintenance_batch_rebuild") || "\u25B6 Rebuild selected",
             });
-          ue.disabled = H;
+          ue.disabled = V;
           let ae = N.createEl("button", {
             cls: "mod-cta",
             text:
-              i("maintenance_batch_redo") || "\u25B6 Full OCR redo selected",
+              o("maintenance_batch_redo") || "\u25B6 Full OCR redo selected",
           });
-          ae.disabled = H;
-          let q = async (D) => {
+          ae.disabled = V;
+          let W = async (D) => {
             let Y = y.filter((L) => M.get(L.key) && Rt(L) === D);
             if (Y.length === 0) {
               let L =
                 D === "rebuild"
-                  ? i("maintenance_btn_rebuild") || "Rebuild"
-                  : i("ocr_maint_redo_btn") || "Redo";
+                  ? o("maintenance_btn_rebuild") || "Rebuild"
+                  : o("ocr_maint_redo_btn") || "Redo";
               new R.Notice(
                 "Selected papers are not eligible for " +
                   L +
@@ -6639,7 +6698,7 @@ var xe = class xe extends R.PluginSettingTab {
               Tt(D) &&
               !confirm(
                 (
-                  i("ocr_maint_redo_confirm") ||
+                  o("ocr_maint_redo_confirm") ||
                   "Rerun OCR for {n} paper(s)? Existing derived OCR artifacts will be replaced."
                 ).replace("{n}", String(Y.length))
               )
@@ -6664,10 +6723,10 @@ var xe = class xe extends R.PluginSettingTab {
               Array.from(F.querySelectorAll(".pf-maint-sel")).forEach((L) => {
                 L.disabled = !0;
               }),
-              (h.disabled = !0),
+              (f.disabled = !0),
               (m.disabled = !0),
               (T.disabled = !1),
-              (T.textContent = i("maintenance_stop") || "Stop"));
+              (T.textContent = o("maintenance_stop") || "Stop"));
             let B = await me(Ge(this.app), "ocr"),
               j = this._callPython(["ocr", D, ...ce], {
                 env: B,
@@ -6679,20 +6738,20 @@ var xe = class xe extends R.PluginSettingTab {
                         : Buffer.isBuffer(L)
                           ? L.toString("utf-8")
                           : String(L),
-                    { events: se, buffer: fe } = Ze(
+                    { events: se, buffer: he } = Ze(
                       U,
                       (oe = this.plugin._ocrBuffer) != null ? oe : ""
                     );
-                  this.plugin._ocrBuffer = fe;
-                  for (let he of se)
-                    he.event === "START"
+                  this.plugin._ocrBuffer = he;
+                  for (let fe of se)
+                    fe.event === "START"
                       ? this.plugin._ocrProgress &&
-                        (this.plugin._ocrProgress.total = he.total || ce.length)
-                      : he.event === "PROGRESS" &&
+                        (this.plugin._ocrProgress.total = fe.total || ce.length)
+                      : fe.event === "PROGRESS" &&
                         (this.plugin._ocrProgress = {
-                          current: he.current || 0,
-                          total: he.total || ce.length,
-                          key: he.key || "",
+                          current: fe.current || 0,
+                          total: fe.total || ce.length,
+                          key: fe.key || "",
                         });
                   O();
                 },
@@ -6715,7 +6774,7 @@ var xe = class xe extends R.PluginSettingTab {
                         O(),
                         new R.Notice(
                           (
-                            i("maintenance_batch_complete") ||
+                            o("maintenance_batch_complete") ||
                             "Batch operation complete \u2014 {n} papers processed."
                           ).replace("{n}", String(ce.length))
                         ))
@@ -6736,8 +6795,8 @@ var xe = class xe extends R.PluginSettingTab {
               });
             ((this.plugin._ocrProcess = j), O());
           };
-          (ue.addEventListener("click", () => q("rebuild")),
-            ae.addEventListener("click", () => q("redo")),
+          (ue.addEventListener("click", () => W("rebuild")),
+            ae.addEventListener("click", () => W("redo")),
             ne());
         }
       };
@@ -6748,7 +6807,7 @@ var xe = class xe extends R.PluginSettingTab {
       n.createEl("p", {
         text: "\u6B63\u5728\u52A0\u8F7D OCR \u7EF4\u62A4\u6570\u636E\u2026",
       });
-    At(r, o.path, o.args, a || null)
+    At(r, i.path, i.args, a || null)
       .then((_) => {
         ((a = lt(r)), (_.changed || !a) && c(_.data));
       })
@@ -6764,13 +6823,13 @@ var xe = class xe extends R.PluginSettingTab {
   _renderReleaseNotesTab(e) {
     (e.createEl("h2", { text: "\u66F4\u65B0\u4E0E\u624B\u518C" }),
       e.createEl("h3", { text: "\u7248\u672C\u66F4\u65B0\u8BB0\u5F55" }));
-    let t = cr.default.versions || [];
+    let t = pr.default.versions || [];
     for (let s of t) {
       let a = e.createEl("div", { cls: "paperforge-release-card" }),
-        o = a.createEl("div", { cls: "paperforge-release-header" });
+        i = a.createEl("div", { cls: "paperforge-release-header" });
       if (
-        (o.createEl("strong", { text: `v${s.version} \u2014 ${s.title}` }),
-        o.createEl("span", {
+        (i.createEl("strong", { text: `v${s.version} \u2014 ${s.title}` }),
+        i.createEl("span", {
           cls: "paperforge-release-date",
           text: `  (${s.date})`,
         }),
@@ -6837,7 +6896,7 @@ var xe = class xe extends R.PluginSettingTab {
   }
   _initCapabilityState() {
     let e = this.plugin.settings.capabilityState;
-    ((this._capabilityState = jt(e != null ? e : {}, Ae)),
+    ((this._capabilityState = jt(e != null ? e : {}, Re)),
       this._persistCapabilityState());
   }
   _persistCapabilityState() {
@@ -6882,41 +6941,41 @@ var xe = class xe extends R.PluginSettingTab {
             code: "installation.no_python",
             text: "No Python found. Run the Setup Wizard to install the managed runtime.",
           },
-          action: { primary: Ht() },
+          action: { primary: Vt() },
           notices: [],
           updated_at: new Date().toISOString(),
           ttl_seconds: 60,
         };
         this._updateCapabilityEnvelope(e, g);
-      } else this._updateCapabilityEnvelope(e, Fe(e));
+      } else this._updateCapabilityEnvelope(e, Te(e));
       return;
     }
-    let o = [...a.args, "-m", "paperforge", "--vault", s, "probe", e, "--json"];
+    let i = [...a.args, "-m", "paperforge", "--vault", s, "probe", e, "--json"];
     (e === "library" &&
       t != null &&
       t !== 0 &&
-      o.push("--last-operation-exit-code", String(t)),
-      (0, ee.execFile)(a.path, o, { cwd: s, timeout: 15e3 }, (g, f, h) => {
+      i.push("--last-operation-exit-code", String(t)),
+      (0, ee.execFile)(a.path, i, { cwd: s, timeout: 15e3 }, (g, h, f) => {
         if ((this._probing.delete(e), g)) {
           (console.warn(`[PaperForge] Probe ${e} failed:`, g.message),
-            this._updateCapabilityEnvelope(e, Fe(e)));
+            this._updateCapabilityEnvelope(e, Te(e)));
           return;
         }
         try {
-          let m = JSON.parse(f);
-          ft(m, e)
+          let m = JSON.parse(h);
+          ht(m, e)
             ? this._updateCapabilityEnvelope(e, m)
             : (console.warn(
                 `[PaperForge] Probe ${e}: invalid envelope schema`,
-                f == null ? void 0 : f.slice(0, 200)
+                h == null ? void 0 : h.slice(0, 200)
               ),
-              this._updateCapabilityEnvelope(e, Fe(e)));
+              this._updateCapabilityEnvelope(e, Te(e)));
         } catch (m) {
           (console.warn(
             `[PaperForge] Probe ${e}: unparseable JSON`,
-            f == null ? void 0 : f.slice(0, 200)
+            h == null ? void 0 : h.slice(0, 200)
           ),
-            this._updateCapabilityEnvelope(e, Fe(e)));
+            this._updateCapabilityEnvelope(e, Te(e)));
         }
       }));
   }
@@ -6927,7 +6986,7 @@ var xe = class xe extends R.PluginSettingTab {
       this._persistCapabilityState(),
       (r == null ? void 0 : r.activity_state) === "running" &&
         t.activity_state !== "running" &&
-        (new R.Notice(i("cc_notice_refreshed"), 3e3),
+        (new R.Notice(o("cc_notice_refreshed"), 3e3),
         t.module !== "maintenance"
           ? (this._pendingMaintenanceRefresh ||
               this.activeTab === "maintenance") &&
@@ -6957,46 +7016,46 @@ var xe = class xe extends R.PluginSettingTab {
   }
   _localizeReason(e, t) {
     let r = "cc_reason_" + e.replace(/\./g, "_"),
-      n = i(r);
+      n = o(r);
     if (n !== r) return n.replace("{module}", t);
     let a = "cc_reason_" + e.replace(/^[a-z]+\./, ""),
-      o = i(a);
-    return o === a ? null : o.replace("{module}", t);
+      i = o(a);
+    return i === a ? null : i.replace("{module}", t);
   }
   _renderCard(e, t, r) {
     let n = r,
       s = this._sevClass(n.severity),
       a = xe._REAL_PROBE.has(t),
-      o = xe._NAVIGABLE.has(t),
+      i = xe._NAVIGABLE.has(t),
       l = e.createEl("div", {
         cls: "pf-cc-card",
         attr: {
           role: "listitem",
           tabindex: "0",
           "data-module": t,
-          "aria-label": `${i("cc_module_" + t)} \u2014 ${i(this._ccBadgeKey(n, t))}`,
+          "aria-label": `${o("cc_module_" + t)} \u2014 ${o(this._ccBadgeKey(n, t))}`,
         },
       }),
       c = l.createEl("div", { cls: "pf-cc-card-header" }),
       u = c.createEl("div", { cls: "pf-cc-card-name-area" });
-    if (o) {
+    if (i) {
       let E =
           t === "installation"
-            ? i("module_detail_open_installation")
+            ? o("module_detail_open_installation")
             : t === "library"
-              ? i("module_detail_open_library")
+              ? o("module_detail_open_library")
               : t === "ocr"
-                ? i("module_detail_open_ocr")
+                ? o("module_detail_open_ocr")
                 : t === "memory"
-                  ? i("module_detail_open_memory")
+                  ? o("module_detail_open_memory")
                   : t === "help"
-                    ? i("module_detail_open_help")
+                    ? o("module_detail_open_help")
                     : t === "maintenance"
-                      ? i("module_detail_open_maintenance")
-                      : i("md_select_installation"),
+                      ? o("module_detail_open_maintenance")
+                      : o("md_select_installation"),
         S = u.createEl("button", {
           cls: "pf-open-module-btn",
-          text: i("cc_module_" + t),
+          text: o("cc_module_" + t),
           attr: { "data-module": t, "aria-label": E },
         });
       (S.addEventListener("click", () => this._handleCardNavigation(t)),
@@ -7005,14 +7064,14 @@ var xe = class xe extends R.PluginSettingTab {
             (C.preventDefault(), this._handleCardNavigation(t));
         }));
     } else
-      u.createEl("div", { cls: "pf-cc-card-name", text: i("cc_module_" + t) });
+      u.createEl("div", { cls: "pf-cc-card-name", text: o("cc_module_" + t) });
     c.createEl("div", {
       cls: `pf-cc-card-badge pf-cc-card-badge--${s}`,
-      text: i(this._ccBadgeKey(n, t)),
+      text: o(this._ccBadgeKey(n, t)),
     });
     let _;
     if (!a)
-      _ = i("cc_reason_placeholder").replace("{module}", i("cc_module_" + t));
+      _ = o("cc_reason_placeholder").replace("{module}", o("cc_module_" + t));
     else {
       let E = this._localizeReason(n.reason.code, t);
       _ = E != null ? E : n.reason.text;
@@ -7063,29 +7122,29 @@ var xe = class xe extends R.PluginSettingTab {
           : this._dispatchModuleAction(t, n);
       });
     }
-    let f = l.createEl("details", { cls: "pf-cc-card-diagnostic" });
-    f.createEl("summary", { text: i("cc_diagnostic_toggle") });
-    let h = f.createEl("div", { cls: "pf-cc-card-diagnostic-body" }),
-      m = i("cc_state_" + n.capability_state) || n.capability_state,
-      y = i("cc_severity_" + n.severity) || n.severity,
-      v = i("cc_activity_" + n.activity_state) || n.activity_state,
+    let h = l.createEl("details", { cls: "pf-cc-card-diagnostic" });
+    h.createEl("summary", { text: o("cc_diagnostic_toggle") });
+    let f = h.createEl("div", { cls: "pf-cc-card-diagnostic-body" }),
+      m = o("cc_state_" + n.capability_state) || n.capability_state,
+      y = o("cc_severity_" + n.severity) || n.severity,
+      v = o("cc_activity_" + n.activity_state) || n.activity_state,
       x;
     try {
       x = new Date(n.updated_at).toLocaleString();
     } catch (E) {
       x = n.updated_at;
     }
-    (h.createEl("div", { text: `${i("cc_diag_module")}: ${n.module}` }),
-      h.createEl("div", { text: `${i("cc_diag_state")}: ${m}` }),
-      h.createEl("div", { text: `${i("cc_diag_severity")}: ${y}` }),
-      h.createEl("div", { text: `${i("cc_diag_activity")}: ${v}` }));
-    let k = h.createEl("div");
-    k.appendText(i("cc_diag_reason") + ": " + _ + " ");
+    (f.createEl("div", { text: `${o("cc_diag_module")}: ${n.module}` }),
+      f.createEl("div", { text: `${o("cc_diag_state")}: ${m}` }),
+      f.createEl("div", { text: `${o("cc_diag_severity")}: ${y}` }),
+      f.createEl("div", { text: `${o("cc_diag_activity")}: ${v}` }));
+    let k = f.createEl("div");
+    k.appendText(o("cc_diag_reason") + ": " + _ + " ");
     let b = k.createEl("code", { text: n.reason.code });
-    (h.createEl("div", {
-      text: `${i("cc_diag_ttl")}: ${String(n.ttl_seconds)}s`,
+    (f.createEl("div", {
+      text: `${o("cc_diag_ttl")}: ${String(n.ttl_seconds)}s`,
     }),
-      h.createEl("div", { text: `${i("cc_diag_updated")}: ${x}` }));
+      f.createEl("div", { text: `${o("cc_diag_updated")}: ${x}` }));
   }
   _handleCardNavigation(e) {
     (e === "installation"
@@ -7117,15 +7176,15 @@ var xe = class xe extends R.PluginSettingTab {
       this.display());
   }
   _renderControlCenter(e) {
-    var f, h, m;
+    var h, f, m;
     let t = e.createEl("div", { cls: "pf-control-center" }),
-      r = Ae,
-      n = (f = this._capabilityState) != null ? f : {},
+      r = Re,
+      n = (h = this._capabilityState) != null ? h : {},
       s = 0,
       a = 0,
-      o = 0;
+      i = 0;
     for (let y of r) {
-      let v = (h = n[y]) != null ? h : Se(y);
+      let v = (f = n[y]) != null ? f : Se(y);
       v.severity === "ok" &&
       v.capability_state === "ready" &&
       v.action.primary === null
@@ -7135,35 +7194,35 @@ var xe = class xe extends R.PluginSettingTab {
               v.severity === "warning" ||
               v.severity === "unknown") &&
             a++
-          : o++;
+          : i++;
     }
     let l = t.createEl("div", { cls: "pf-cc-summary" });
-    l.createEl("div", { cls: "pf-cc-summary-eyebrow", text: i("cc_title") });
+    l.createEl("div", { cls: "pf-cc-summary-eyebrow", text: o("cc_title") });
     let c, u;
     (a > 0
-      ? ((c = i("cc_summary_attention")), (u = i("cc_summary_attention_body")))
+      ? ((c = o("cc_summary_attention")), (u = o("cc_summary_attention_body")))
       : s === r.length
-        ? ((c = i("cc_summary_ok")), (u = i("cc_summary_ok_body")))
-        : s > 0 && o > 0 && a === 0
-          ? ((c = i("cc_summary_core_ok").replace("{n}", String(o))),
-            (u = i("cc_summary_core_ok_body")))
-          : ((c = i("cc_summary_core_ok").replace("{n}", String(r.length - s))),
-            (u = i("cc_desc"))),
+        ? ((c = o("cc_summary_ok")), (u = o("cc_summary_ok_body")))
+        : s > 0 && i > 0 && a === 0
+          ? ((c = o("cc_summary_core_ok").replace("{n}", String(i))),
+            (u = o("cc_summary_core_ok_body")))
+          : ((c = o("cc_summary_core_ok").replace("{n}", String(r.length - s))),
+            (u = o("cc_desc"))),
       l.createEl("div", { cls: "pf-cc-summary-title", text: c }),
       l.createEl("div", { cls: "pf-cc-summary-body", text: u }));
     let _ = l.createEl("div", { cls: "pf-cc-summary-counts" });
     (_.createEl("div", {
       cls: "pf-cc-summary-count",
-      text: i("cc_n_ready").replace("{n}", String(s)),
+      text: o("cc_n_ready").replace("{n}", String(s)),
     }),
-      o > 0 &&
+      i > 0 &&
         _.createEl("div", {
           cls: "pf-cc-summary-count",
-          text: i("cc_n_pending").replace("{n}", String(o)),
+          text: o("cc_n_pending").replace("{n}", String(i)),
         }));
     let g = t.createEl("div", {
       cls: "pf-cc-grid",
-      attr: { role: "list", "aria-label": i("cc_zone_modules") },
+      attr: { role: "list", "aria-label": o("cc_zone_modules") },
     });
     for (let y of r) {
       let v = (m = n[y]) != null ? m : Se(y);
@@ -7173,9 +7232,9 @@ var xe = class xe extends R.PluginSettingTab {
   _applyStaleTolerance() {
     if (!this._capabilityState) return;
     let e = !1;
-    for (let t of Ae) {
+    for (let t of Re) {
       let r = this._capabilityState[t];
-      r && gt(r) && ((this._capabilityState[t] = ht(t)), (e = !0));
+      r && gt(r) && ((this._capabilityState[t] = ft(t)), (e = !0));
     }
     e && this._persistCapabilityState();
   }
@@ -7197,12 +7256,12 @@ var xe = class xe extends R.PluginSettingTab {
     "help",
   ])));
 var ct = xe;
-var V = require("obsidian"),
+var H = require("obsidian"),
   ve = z(require("fs")),
-  Ne = z(require("path")),
+  Ie = z(require("path")),
   pe = require("child_process");
 var Je = z(require("path"));
-function dr(p) {
+function ur(p) {
   if (!p) return null;
   let d = Je.dirname(p);
   for (;;) {
@@ -7216,16 +7275,16 @@ function dr(p) {
   }
   return null;
 }
-var Z = z(require("fs")),
+var q = z(require("fs")),
   we = z(require("path"));
 function Ye(p) {
   return de(p).ocrDir;
 }
-function Lr(p, d) {
+function jr(p, d) {
   let e = we.join(Ye(p), d, "versions", "manifest.json");
   try {
-    if (!Z.existsSync(e)) return null;
-    let t = Z.readFileSync(e, "utf-8"),
+    if (!q.existsSync(e)) return null;
+    let t = q.readFileSync(e, "utf-8"),
       r = JSON.parse(t);
     if (r && typeof r == "object" && "versions" in r && "current" in r) {
       let n = r,
@@ -7239,11 +7298,12 @@ function Lr(p, d) {
     return null;
   }
 }
-function Nr(p) {
+function $r(p) {
   let d = Ye(p);
   try {
-    return Z.existsSync(d)
-      ? Z.readdirSync(d, { withFileTypes: !0 })
+    return q.existsSync(d)
+      ? q
+          .readdirSync(d, { withFileTypes: !0 })
           .filter((e) => e.isDirectory())
           .map((e) => e.name)
       : [];
@@ -7252,17 +7312,17 @@ function Nr(p) {
   }
 }
 function Dt(p) {
-  let d = Nr(p),
+  let d = $r(p),
     e = [];
   for (let t of d) {
-    let r = Lr(p, t);
+    let r = jr(p, t);
     if (!r) continue;
     let n = r.versions.map((a) => a.label),
       s = 0;
     for (let a of n) {
-      let o = we.join(Ye(p), t, "versions", a, "fulltext.md");
+      let i = we.join(Ye(p), t, "versions", a, "fulltext.md");
       try {
-        Z.existsSync(o) && (s += Z.statSync(o).size);
+        q.existsSync(i) && (s += q.statSync(i).size);
       } catch (l) {}
     }
     e.push({
@@ -7275,65 +7335,65 @@ function Dt(p) {
   }
   return (e.sort((t, r) => t.title.localeCompare(r.title)), e);
 }
-function ur(p, d, e) {
+function hr(p, d, e) {
   let t = Ye(p),
     r = we.join(t, d, "versions", e, "fulltext.md"),
     n = we.join(t, d, "render"),
     s = we.join(n, "fulltext.md");
   try {
-    return Z.existsSync(r)
-      ? (Z.existsSync(n) || Z.mkdirSync(n, { recursive: !0 }),
-        Z.copyFileSync(r, s),
+    return q.existsSync(r)
+      ? (q.existsSync(n) || q.mkdirSync(n, { recursive: !0 }),
+        q.copyFileSync(r, s),
         !0)
       : !1;
   } catch (a) {
     return !1;
   }
 }
-function _r(p, d, e, t) {
+function fr(p, d, e, t) {
   var g;
   let r = Ye(p),
     n = we.join(r, d, "versions", e, "fulltext.md"),
     s = we.join(r, d, "versions", t, "fulltext.md"),
     a = "",
-    o = "";
+    i = "";
   try {
-    Z.existsSync(n) && (a = Z.readFileSync(n, "utf-8"));
-  } catch (f) {}
+    q.existsSync(n) && (a = q.readFileSync(n, "utf-8"));
+  } catch (h) {}
   try {
-    Z.existsSync(s) && (o = Z.readFileSync(s, "utf-8"));
-  } catch (f) {}
-  let l = pr(a),
-    c = pr(o),
+    q.existsSync(s) && (i = q.readFileSync(s, "utf-8"));
+  } catch (h) {}
+  let l = _r(a),
+    c = _r(i),
     u = Math.max(l.length, c.length),
     _ = [];
-  for (let f = 0; f < u; f++) {
-    let h = f < l.length ? l[f] : "",
-      m = f < c.length ? c[f] : "",
+  for (let h = 0; h < u; h++) {
+    let f = h < l.length ? l[h] : "",
+      m = h < c.length ? c[h] : "",
       y =
-        (g = (h || m).split(`
+        (g = (f || m).split(`
 `)[0]) != null
           ? g
           : "",
       v = y.startsWith("## ") ? y.replace(/^##\s+/, "") : "",
       x = "unchanged";
-    (!h && m
+    (!f && m
       ? (x = "added")
-      : h && !m
+      : f && !m
         ? (x = "removed")
-        : h !== m && (x = "changed"),
+        : f !== m && (x = "changed"),
       x !== "unchanged" &&
         _.push({
-          paragraphIndex: f,
+          paragraphIndex: h,
           heading: v,
           type: x,
-          oldText: h || void 0,
+          oldText: f || void 0,
           newText: m || void 0,
         }));
   }
   return _;
 }
-function pr(p) {
+function _r(p) {
   let d = p.split(`
 `),
     e = [],
@@ -7369,7 +7429,7 @@ function pr(p) {
   }
   return e;
 }
-var Ve = class extends V.ItemView {
+var Le = class extends H.ItemView {
   constructor(e) {
     super(e);
     this._currentMode = null;
@@ -7421,7 +7481,7 @@ var Ve = class extends V.ItemView {
     let e = this.app.plugins.plugins.paperforge,
       t = this.app.vault.adapter.basePath,
       r = new ye({
-        runtimeDir: Ne.join(t, ".paperforge-test-venv"),
+        runtimeDir: Ie.join(t, ".paperforge-test-venv"),
         pluginVersion:
           ((s = e == null ? void 0 : e.manifest) == null
             ? void 0
@@ -7444,7 +7504,7 @@ var Ve = class extends V.ItemView {
     return "PaperForge";
   }
   getIcon() {
-    return He;
+    return Ve;
   }
   async onOpen() {
     (this._buildPanel(),
@@ -7528,9 +7588,9 @@ var Ve = class extends V.ItemView {
         ((a = t == null ? void 0 : t.manifest) == null ? void 0 : a.version) ||
         "?",
       { path: n, args: s = [] } = this._resolvePython();
-    Promise.resolve({ status: "ok", pyVersion: "?" }).then((o) => {
-      if (o.status === "not-installed") return;
-      let l = o.pyVersion || "";
+    Promise.resolve({ status: "ok", pyVersion: "?" }).then((i) => {
+      if (i.status === "not-installed") return;
+      let l = i.pyVersion || "";
       ((this._paperforgeVersion = l.startsWith("v") ? l : "v" + l),
         this._versionBadge &&
           this._versionBadge.setText(this._paperforgeVersion),
@@ -7539,7 +7599,7 @@ var Ve = class extends V.ItemView {
         this._paperforgeVersion !== "v" + r.replace(/^v/, "")
           ? ((this._driftBannerEl.style.display = "block"),
             this._driftBannerEl.setText(
-              i("dashboard_drift_warning")
+              o("dashboard_drift_warning")
                 .replace("{0}", this._paperforgeVersion)
                 .replace("{1}", "v" + r.replace(/^v/, ""))
             ))
@@ -7563,10 +7623,10 @@ var Ve = class extends V.ItemView {
       n,
       [...s, "-m", "paperforge", "dashboard", "--json"],
       { cwd: t, timeout: 3e4 },
-      (a, o) => {
+      (a, i) => {
         if (!a)
           try {
-            let l = JSON.parse(o);
+            let l = JSON.parse(i);
             if (l.ok && l.data) {
               let c = this._normalizeDashboardData(l.data);
               ((this._cachedStats = c),
@@ -7608,12 +7668,12 @@ var Ve = class extends V.ItemView {
     };
   }
   _fallbackFetchStats(e, t, r) {
-    var a, o;
+    var a, i;
     let n =
         ((a = r == null ? void 0 : r.settings) == null
           ? void 0
           : a.system_dir) || "System",
-      s = Ne.join(t, n, "PaperForge", "indexes", "formal-library.json");
+      s = Ie.join(t, n, "PaperForge", "indexes", "formal-library.json");
     try {
       let l = ve.readFileSync(s, "utf-8"),
         c = JSON.parse(l),
@@ -7625,8 +7685,8 @@ var Ve = class extends V.ItemView {
           note_health: { healthy: 0, unhealthy: 0 },
           asset_health: { healthy: 0, unhealthy: 0 },
         },
-        f = 0,
         h = 0,
+        f = 0,
         m = 0,
         y = 0,
         v = 0,
@@ -7644,9 +7704,9 @@ var Ve = class extends V.ItemView {
         ])
           (E[C] || "healthy") === "healthy" ? g[C].healthy++ : g[C].unhealthy++;
         let S = k.ocr_status || "";
-        (f++,
+        (h++,
           S === "done"
-            ? h++
+            ? f++
             : S === "pending"
               ? m++
               : S === "processing" || S === "queued" || S === "running"
@@ -7656,13 +7716,13 @@ var Ve = class extends V.ItemView {
       ((this._cachedStats = {
         version:
           c.paperforge_version ||
-          ((o = this._cachedStats) == null ? void 0 : o.version) ||
+          ((i = this._cachedStats) == null ? void 0 : i.version) ||
           "\u2014",
         total_papers: u.length,
         formal_notes: x,
         exports: 0,
         bases: 0,
-        ocr: { total: f, pending: m, processing: y, done: h, failed: v },
+        ocr: { total: h, pending: m, processing: y, done: f, failed: v },
         path_errors: 0,
         lifecycle_level_counts: _,
         health_aggregate: g,
@@ -7693,12 +7753,12 @@ Make sure paperforge is installed and in your PATH.`,
             return;
           }
           try {
-            let f = JSON.parse(g);
-            ((this._cachedStats = f),
+            let h = JSON.parse(g);
+            ((this._cachedStats = h),
               this._metricsEl.empty(),
-              this._renderStats(f),
-              this._renderOcr(f));
-          } catch (f) {
+              this._renderStats(h),
+              this._renderOcr(h));
+          } catch (h) {
             this._cachedStats ||
               this._metricsEl.createEl("div", {
                 cls: "paperforge-status-error",
@@ -7731,7 +7791,7 @@ Make sure paperforge is installed and in your PATH.`,
         ((s = t == null ? void 0 : t.settings) == null
           ? void 0
           : s.system_dir) || "System",
-      n = Ne.join(e, r, "PaperForge", "indexes", "formal-library.json");
+      n = Ie.join(e, r, "PaperForge", "indexes", "formal-library.json");
     try {
       let a = ve.readFileSync(n, "utf-8");
       return JSON.parse(a);
@@ -7749,7 +7809,7 @@ Make sure paperforge is installed and in your PATH.`,
   _findEntry(e) {
     if (!e) return null;
     let t = this._getCachedIndex().find((r) => r.zotero_key === e) || null;
-    return Vt(this.app, t);
+    return Ht(this.app, t);
   }
   _patchCachedEntry(e, t) {
     if (!e || !this._cachedItems) return;
@@ -7790,34 +7850,34 @@ Make sure paperforge is installed and in your PATH.`,
           barMax: 0,
         },
       ];
-    for (let o of n) {
+    for (let i of n) {
       let l = this._metricsEl.createEl("div", {
         cls: "paperforge-metric-card",
       });
-      (l.style.setProperty("--metric-color", o.color),
+      (l.style.setProperty("--metric-color", i.color),
         l.createEl("div", {
           cls: "paperforge-metric-value",
-          text: ((a = o.value) == null ? void 0 : a.toString()) || "\u2014",
+          text: ((a = i.value) == null ? void 0 : a.toString()) || "\u2014",
         }),
-        l.createEl("div", { cls: "paperforge-metric-label", text: o.label }),
-        o.barMax > 0 && this._buildMetricBar(l, o.value, o.barMax));
+        l.createEl("div", { cls: "paperforge-metric-label", text: i.label }),
+        i.barMax > 0 && this._buildMetricBar(l, i.value, i.barMax));
     }
     let s = e.ocr_version_state || {};
     if (
       s.total_papers > 0 &&
       (s.derived_stale_count > 0 || s.raw_upgradable_count > 0)
     ) {
-      let o = [];
-      (s.derived_stale_count > 0 && o.push(`${s.derived_stale_count} stale`),
+      let i = [];
+      (s.derived_stale_count > 0 && i.push(`${s.derived_stale_count} stale`),
         s.raw_upgradable_count > 0 &&
-          o.push(`${s.raw_upgradable_count} upgradable`));
+          i.push(`${s.raw_upgradable_count} upgradable`));
       let l = this._metricsEl.createEl("div", {
         cls: "paperforge-metric-card",
       });
       (l.style.setProperty("--metric-color", "var(--color-yellow)"),
         l.createEl("div", {
           cls: "paperforge-metric-value",
-          text: o.join(", "),
+          text: i.join(", "),
         }),
         l.createEl("div", {
           cls: "paperforge-metric-label",
@@ -7838,7 +7898,7 @@ Make sure paperforge is installed and in your PATH.`,
     let n = t.done || 0,
       s = t.pending || 0,
       a = t.processing || 0,
-      o = t.failed || 0;
+      i = t.failed || 0;
     if (
       (this._ocrBadge &&
         (this._ocrBadge.removeClass("active", "idle"),
@@ -7860,7 +7920,7 @@ Make sure paperforge is installed and in your PATH.`,
         { cls: "pending", count: s },
         { cls: "active", count: a },
         { cls: "done", count: n },
-        { cls: "failed", count: o },
+        { cls: "failed", count: i },
       ];
       for (let c of l)
         if (c.count > 0) {
@@ -7877,7 +7937,7 @@ Make sure paperforge is installed and in your PATH.`,
         { cls: "pending", value: s, label: "Pending" },
         { cls: "active", value: a, label: "Processing" },
         { cls: "done", value: n, label: "Done" },
-        { cls: "failed", value: o, label: "Failed" },
+        { cls: "failed", value: i, label: "Failed" },
       ];
       for (let c of l) {
         let u = this._ocrCounts.createEl("div", {
@@ -7907,11 +7967,11 @@ Make sure paperforge is installed and in your PATH.`,
       ],
       s = e.createEl("div", { cls: "paperforge-lifecycle-stepper" }),
       a = !1;
-    for (let o of n) {
+    for (let i of n) {
       let l = s.createEl("div", { cls: "step" });
       (l.createEl("div", { cls: "step-indicator" }),
-        l.createEl("div", { cls: "step-label", text: o.label }),
-        o.key === r
+        l.createEl("div", { cls: "step-label", text: i.label }),
+        i.key === r
           ? (l.addClass("current"), (a = !0))
           : a
             ? l.addClass("pending")
@@ -7956,7 +8016,7 @@ Make sure paperforge is installed and in your PATH.`,
       n = e.createEl("div", { cls: "paperforge-health-matrix" });
     for (let s of r) {
       let a = t[s.key] || "healthy",
-        o = n.createEl("div", { cls: "paperforge-health-cell" }),
+        i = n.createEl("div", { cls: "paperforge-health-cell" }),
         l,
         c,
         u;
@@ -7967,10 +8027,10 @@ Make sure paperforge is installed and in your PATH.`,
             (c = "warn"),
             (u = `${s.label}: Needs Attention`))
           : ((l = s.iconFail), (c = "fail"), (u = `${s.label}: Failed`)),
-        o.addClass(c),
-        o.setAttribute("title", u),
-        o.createEl("div", { cls: "paperforge-health-cell-icon", text: l }),
-        o.createEl("div", {
+        i.addClass(c),
+        i.setAttribute("title", u),
+        i.createEl("div", { cls: "paperforge-health-cell-icon", text: l }),
+        i.createEl("div", {
           cls: "paperforge-health-cell-label",
           text: s.label,
         }));
@@ -7984,14 +8044,14 @@ Make sure paperforge is installed and in your PATH.`,
     let n = e.createEl("div", { cls: "paperforge-maturity-gauge" }),
       s = n.createEl("div", { cls: "gauge-track" }),
       a = 4,
-      o = Math.max(1, Math.min(a, Math.round(t)));
+      i = Math.max(1, Math.min(a, Math.round(t)));
     for (let l = 1; l <= a; l++) {
       let c = s.createEl("div", { cls: "gauge-segment" });
-      l <= o && (c.addClass("filled"), c.addClass(`level-${l}`));
+      l <= i && (c.addClass("filled"), c.addClass(`level-${l}`));
     }
     if (
-      (n.createEl("div", { cls: "gauge-level", text: `Level ${o} / ${a}` }),
-      o < a && r)
+      (n.createEl("div", { cls: "gauge-level", text: `Level ${i} / ${a}` }),
+      i < a && r)
     ) {
       let l = typeof r == "string" ? [r] : r;
       if (l.length > 0) {
@@ -8018,8 +8078,8 @@ Make sure paperforge is installed and in your PATH.`,
       n = e.createEl("div", { cls: "paperforge-bar-chart" }),
       s = Math.max(1, ...r.map((a) => t[a.key] || 0));
     for (let a of r) {
-      let o = t[a.key] || 0,
-        l = (o / s) * 100,
+      let i = t[a.key] || 0,
+        l = (i / s) * 100,
         c = n.createEl("div", { cls: "bar-row" });
       (c.createEl("div", { cls: "bar-label", text: a.label }),
         c
@@ -8028,14 +8088,14 @@ Make sure paperforge is installed and in your PATH.`,
             cls: `bar-fill ${a.cls}`,
             attr: { style: `width:${l.toFixed(1)}%` },
           }),
-        c.createEl("div", { cls: "bar-count", text: o.toString() }));
+        c.createEl("div", { cls: "bar-count", text: i.toString() }));
     }
   }
   _invalidateIndex() {
     this._cachedItems = null;
   }
   _extractZoteroKeyFromPath(e) {
-    return dr(e);
+    return ur(e);
   }
   _resolveModeForFile(e) {
     if (!e) return { mode: "global", filePath: null, key: null, domain: null };
@@ -8056,8 +8116,8 @@ Make sure paperforge is installed and in your PATH.`,
     if (t === "pdf") {
       let s = this._getCachedIndex();
       for (let a of s) {
-        let o = (a.pdf_path || "").match(/\[\[([^\]]+)\]\]/);
-        if ((o ? o[1] : a.pdf_path) === r)
+        let i = (a.pdf_path || "").match(/\[\[([^\]]+)\]\]/);
+        if ((i ? i[1] : a.pdf_path) === r)
           return {
             mode: "paper",
             filePath: r,
@@ -8110,7 +8170,7 @@ Make sure paperforge is installed and in your PATH.`,
       }
   }
   _renderGlobalMode() {
-    var ne, ue, ae, q, D, Y, ce, _e;
+    var ne, ue, ae, W, D, Y, ce, _e;
     if (!this._contentEl) return;
     let e = this._contentEl.createEl("div", { cls: "paperforge-global-view" });
     ((this._driftBannerEl = e.createEl("div", {
@@ -8126,12 +8186,12 @@ Make sure paperforge is installed and in your PATH.`,
       (B.has_pdf && n++,
         B.ocr_status === "done" && s++,
         B.deep_reading_status === "done" && a++);
-    let o = e.createEl("div", { cls: "paperforge-library-snapshot" });
-    o.createEl("div", {
+    let i = e.createEl("div", { cls: "paperforge-library-snapshot" });
+    i.createEl("div", {
       cls: "paperforge-section-label",
       text: "Library Snapshot",
     });
-    let l = o.createEl("div", { cls: "paperforge-snapshot-pills" }),
+    let l = i.createEl("div", { cls: "paperforge-snapshot-pills" }),
       c = [
         { value: r, label: "papers" },
         { value: n, label: "PDFs ready" },
@@ -8156,12 +8216,12 @@ Make sure paperforge is installed and in your PATH.`,
     });
     let _ = u.createEl("div", { cls: "paperforge-status-grid" }),
       g = this.app.plugins.plugins.paperforge,
-      f =
+      h =
         ((ne = g == null ? void 0 : g.manifest) == null
           ? void 0
           : ne.version) || "?",
-      h = this._paperforgeVersion;
-    if (!h)
+      f = this._paperforgeVersion;
+    if (!f)
       try {
         let B = this.app.vault.adapter.basePath,
           { path: j, args: L = [] } = this._resolvePython(),
@@ -8171,16 +8231,16 @@ Make sure paperforge is installed and in your PATH.`,
             { cwd: B, timeout: 5e3, encoding: "utf-8", windowsHide: !0 }
           ).trim();
         U &&
-          ((h = U.startsWith("v") ? U : "v" + U),
-          (this._paperforgeVersion = h));
+          ((f = U.startsWith("v") ? U : "v" + U),
+          (this._paperforgeVersion = f));
       } catch (B) {}
-    h = h || "\u2014";
-    let m = h === "v" + f;
+    f = f || "\u2014";
+    let m = f === "v" + h;
     this._renderSystemStatusRow(
       _,
       "Runtime",
       m ? "healthy" : "mismatch",
-      m ? "v" + f : "plugin v" + f + " \u2260 CLI " + h
+      m ? "v" + h : "plugin v" + h + " \u2260 CLI " + f
     );
     let y = this._loadIndex(),
       v = y && y.items && y.items.length > 0;
@@ -8198,7 +8258,7 @@ Make sure paperforge is installed and in your PATH.`,
       b = !1,
       E = "No exports found";
     try {
-      let B = Ne.join(k, x, "PaperForge", "exports");
+      let B = Ie.join(k, x, "PaperForge", "exports");
       if (ve.existsSync(B)) {
         let j = ve.readdirSync(B).filter((L) => L.endsWith(".json"));
         ((b = j.length > 0),
@@ -8212,9 +8272,9 @@ Make sure paperforge is installed and in your PATH.`,
       E
     );
     let S =
-        (q = (ae = this.app.plugins) == null ? void 0 : ae.plugins) == null
+        (W = (ae = this.app.plugins) == null ? void 0 : ae.plugins) == null
           ? void 0
-          : q.paperforge,
+          : W.paperforge,
       C = !!(
         (D = S == null ? void 0 : S.settings) != null && D._paddleocr_configured
       );
@@ -8224,7 +8284,7 @@ Make sure paperforge is installed and in your PATH.`,
             ((Y = g == null ? void 0 : g.settings) == null
               ? void 0
               : Y.system_dir) || "System",
-          j = Ne.join(k, B, "PaperForge", ".env");
+          j = Ie.join(k, B, "PaperForge", ".env");
         if (ve.existsSync(j)) {
           let U = ve
             .readFileSync(j, "utf-8")
@@ -8248,7 +8308,7 @@ Make sure paperforge is installed and in your PATH.`,
       T = "",
       O = this.app.vault.adapter.basePath,
       M = We(O);
-    ((w = Zt(O)),
+    ((w = Jt(O)),
       (T =
         (M && ((ce = M.summary) == null ? void 0 : ce.reason)) ||
         (M && ((_e = M.summary) == null ? void 0 : _e.status)) ||
@@ -8259,7 +8319,7 @@ Make sure paperforge is installed and in your PATH.`,
         w ? "healthy" : "fail",
         T
       ));
-    let F = !m && h !== "\u2014";
+    let F = !m && f !== "\u2014";
     if (F || !v || !b || !C) {
       let B = e.createEl("div", { cls: "paperforge-issue-summary" });
       B.createEl("div", {
@@ -8291,14 +8351,14 @@ Make sure paperforge is installed and in your PATH.`,
         U = L.createEl("button", { cls: "paperforge-contextual-btn" });
       (U.createEl("span", { text: "Run Doctor" }),
         U.addEventListener("click", () => {
-          let fe = ie.find((oe) => oe.id === "paperforge-doctor");
-          fe && this._runAction(fe, U);
+          let he = ie.find((oe) => oe.id === "paperforge-doctor");
+          he && this._runAction(he, U);
         }));
       let se = L.createEl("button", { cls: "paperforge-contextual-btn" });
       (se.createEl("span", { text: "Repair Issues" }),
         se.addEventListener("click", () => {
-          let fe = ie.find((oe) => oe.id === "paperforge-repair");
-          fe && this._runAction(fe, se);
+          let he = ie.find((oe) => oe.id === "paperforge-repair");
+          he && this._runAction(he, se);
         }));
     }
     let P = e.createEl("div", { cls: "paperforge-global-actions" });
@@ -8329,18 +8389,18 @@ Make sure paperforge is installed and in your PATH.`,
           ) {
             let se = this.app.workspace.getLeaf(!1);
             se && se.openFile(U);
-          } else new V.Notice("[!!] No .base file found in " + B, 6e3);
-        } else new V.Notice("[!!] Base directory not found: " + B, 6e3);
+          } else new H.Notice("[!!] No .base file found in " + B, 6e3);
+        } else new H.Notice("[!!] Base directory not found: " + B, 6e3);
       }));
-    let H = I.createEl("button", { cls: "paperforge-contextual-btn" });
-    (H.createEl("span", {
+    let V = I.createEl("button", { cls: "paperforge-contextual-btn" });
+    (V.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
       text: "\u21BB",
     }),
-      H.createEl("span", { text: "Sync Library" }),
-      H.addEventListener("click", () => {
+      V.createEl("span", { text: "Sync Library" }),
+      V.addEventListener("click", () => {
         let B = ie.find((j) => j.id === "paperforge-sync");
-        B && this._runAction(B, H);
+        B && this._runAction(B, V);
       }));
     let N = I.createEl("button", { cls: "paperforge-contextual-btn" });
     (N.createEl("span", {
@@ -8393,7 +8453,7 @@ Make sure paperforge is installed and in your PATH.`,
       text: e.title || "Untitled",
     }).addEventListener("click", () => {
       (navigator.clipboard.writeText(e.title || ""),
-        new V.Notice("Title copied"));
+        new H.Notice("Title copied"));
     });
     let a = n.createEl("div", { cls: "paperforge-paper-meta" });
     (e.authors &&
@@ -8407,9 +8467,9 @@ Make sure paperforge is installed and in your PATH.`,
           cls: "paperforge-paper-year",
           text: String(e.year),
         }));
-    let o = r.createEl("div", { cls: "paperforge-status-strip" }),
-      l = o.createEl("div", { cls: "paperforge-status-strip-left" }),
-      c = o.createEl("div", { cls: "paperforge-status-strip-right" }),
+    let i = r.createEl("div", { cls: "paperforge-status-strip" }),
+      l = i.createEl("div", { cls: "paperforge-status-strip-left" }),
+      c = i.createEl("div", { cls: "paperforge-status-strip-right" }),
       u = [
         { key: "pdf", label: "PDF", ok: e.has_pdf === !0 },
         {
@@ -8430,13 +8490,13 @@ Make sure paperforge is installed and in your PATH.`,
         },
       ];
     for (let g of u) {
-      let f = l.createEl("span", { cls: "paperforge-status-pill" }),
-        h = "pending";
-      (g.ok ? (h = "ok") : g.fail ? (h = "fail") : g.pending && (h = "pending"),
-        f.addClass(h));
+      let h = l.createEl("span", { cls: "paperforge-status-pill" }),
+        f = "pending";
+      (g.ok ? (f = "ok") : g.fail ? (f = "fail") : g.pending && (f = "pending"),
+        h.addClass(f));
       let m = g.ok ? "\u2713" : g.fail ? "\u2717" : "\u25CB";
-      (f.createEl("span", { cls: "paperforge-status-pill-icon", text: m }),
-        f.createEl("span", { text: " " + g.label }));
+      (h.createEl("span", { cls: "paperforge-status-pill-icon", text: m }),
+        h.createEl("span", { text: " " + g.label }));
     }
     if (e.pdf_path) {
       let g = c.createEl("button", { cls: "paperforge-contextual-btn" });
@@ -8446,11 +8506,11 @@ Make sure paperforge is installed and in your PATH.`,
       }),
         g.createEl("span", { text: "\u6253\u5F00 PDF" }),
         g.addEventListener("click", () => {
-          let f = e.pdf_path.match(/\[\[([^\]]+)\]\]/),
-            h = f ? f[1] : e.pdf_path;
-          this.app.vault.getAbstractFileByPath(h)
-            ? this.app.workspace.openLinkText(h, "")
-            : new V.Notice("[!!] PDF not found: " + h, 6e3);
+          let h = e.pdf_path.match(/\[\[([^\]]+)\]\]/),
+            f = h ? h[1] : e.pdf_path;
+          this.app.vault.getAbstractFileByPath(f)
+            ? this.app.workspace.openLinkText(f, "")
+            : new H.Notice("[!!] PDF not found: " + f, 6e3);
         }));
     }
     if (e.fulltext_path) {
@@ -8464,7 +8524,7 @@ Make sure paperforge is installed and in your PATH.`,
     }
     let _ = c.createEl("button", { cls: "paperforge-contextual-btn" });
     if (
-      (_.createEl("span", { text: i("version_panel_title") }),
+      (_.createEl("span", { text: o("version_panel_title") }),
       _.addEventListener("click", () => {
         this._switchToVersionMode(t);
       }),
@@ -8495,10 +8555,10 @@ Make sure paperforge is installed and in your PATH.`,
         text: "\u52A0\u8F7D\u4E2D...",
       });
     if (t.note_path) {
-      let o = this.app.vault.getAbstractFileByPath(t.note_path);
-      o
+      let i = this.app.vault.getAbstractFileByPath(t.note_path);
+      i
         ? this.app.vault
-            .read(o)
+            .read(i)
             .then((l) => {
               let c = this._extractOverviewFromNote(l);
               if (c) {
@@ -8513,13 +8573,13 @@ Make sure paperforge is installed and in your PATH.`,
                     });
                   g.innerHTML =
                     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-                  let f = !1;
+                  let h = !1;
                   _.addEventListener("click", () => {
-                    (a.setText(f ? u : c),
-                      (g.innerHTML = f
+                    (a.setText(h ? u : c),
+                      (g.innerHTML = h
                         ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
                         : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>'),
-                      (f = !f));
+                      (h = !h));
                   });
                 }
               } else
@@ -8544,25 +8604,25 @@ Make sure paperforge is installed and in your PATH.`,
         "**\u6587\u7AE0\u6458\u8981:**",
         "**\u6587\u7AE0\u6458\u8981**",
       ];
-    for (let o of n) {
-      let l = r.indexOf(o);
+    for (let i of n) {
+      let l = r.indexOf(i);
       if (l !== -1) {
-        let c = r.slice(l + o.length),
+        let c = r.slice(l + i.length),
           u = ["**5 Cs", "**Figure", "**\u8BC1\u636E", "### Pass 2", "## "],
           _ = c.length;
-        for (let h of u) {
-          let m = c.indexOf(h);
+        for (let f of u) {
+          let m = c.indexOf(f);
           m !== -1 && m < _ && (_ = m);
         }
         let g = c.indexOf(`
 
 `);
         g !== -1 && g < _ && (_ = g);
-        let f = c.slice(0, _).trim();
+        let h = c.slice(0, _).trim();
         return (
-          f.startsWith("**") && (f = f.slice(2)),
-          f.endsWith("**") && (f = f.slice(0, -2)),
-          f || null
+          h.startsWith("**") && (h = h.slice(2)),
+          h.endsWith("**") && (h = h.slice(0, -2)),
+          h || null
         );
       }
     }
@@ -8590,12 +8650,12 @@ Make sure paperforge is installed and in your PATH.`,
       a = (n !== -1 ? t.note_path.substring(0, n) : ".") + "/ai/discussion.md";
     this.app.vault.adapter
       .exists(a)
-      .then((o) => {
-        if (o) return this.app.vault.adapter.read(a);
+      .then((i) => {
+        if (i) return this.app.vault.adapter.read(a);
       })
-      .then(async (o) => {
-        if (!o) return;
-        let l = this._parseDiscussionMD(o);
+      .then(async (i) => {
+        if (!i) return;
+        let l = this._parseDiscussionMD(i);
         if (!l || l.length === 0) return;
         ((r.style.display = "block"),
           r
@@ -8606,25 +8666,25 @@ Make sure paperforge is installed and in your PATH.`,
             }));
         for (let _ of l) {
           let g = r.createEl("div", { cls: "paperforge-discussion-item" }),
-            f = g.createEl("div", { cls: "paperforge-discussion-q" });
-          (f.createEl("span", {
+            h = g.createEl("div", { cls: "paperforge-discussion-q" });
+          (h.createEl("span", {
             cls: "paperforge-discussion-q-label",
             text: "\u63D0\u95EE\uFF1A",
           }),
-            f.createEl("span", {
+            h.createEl("span", {
               cls: "paperforge-discussion-q-text",
               text: _.question,
             }));
-          let h = g.createEl("div", { cls: "paperforge-discussion-a" }),
+          let f = g.createEl("div", { cls: "paperforge-discussion-a" }),
             m = !1;
           if (
             (_.answer &&
               _.answer.length > 500 &&
-              ((m = !0), h.classList.add("paperforge-discussion-a-collapsed")),
-            await V.MarkdownRenderer.render(
+              ((m = !0), f.classList.add("paperforge-discussion-a-collapsed")),
+            await H.MarkdownRenderer.render(
               this.app,
               _.answer || "",
-              h,
+              f,
               a,
               this
             ),
@@ -8634,8 +8694,8 @@ Make sure paperforge is installed and in your PATH.`,
             ((g.style.cursor = "pointer"),
               g.addEventListener("click", () => {
                 ((y = !y),
-                  h.classList.toggle("paperforge-discussion-a-collapsed", !y),
-                  h.classList.toggle("paperforge-discussion-a-expanded", y));
+                  f.classList.toggle("paperforge-discussion-a-collapsed", !y),
+                  f.classList.toggle("paperforge-discussion-a-expanded", y));
               }));
           }
         }
@@ -8646,13 +8706,13 @@ Make sure paperforge is installed and in your PATH.`,
           (_.preventDefault(),
             this.app.vault.getAbstractFileByPath(a)
               ? this.app.workspace.openLinkText(a, "")
-              : new V.Notice(
+              : new H.Notice(
                   "\u8BA8\u8BBA\u6587\u4EF6\u5C1A\u672A\u751F\u6210"
                 ));
         });
       })
-      .catch((o) => {
-        console.error("PaperForge: discussion.md read error", a, o.message);
+      .catch((i) => {
+        console.error("PaperForge: discussion.md read error", a, i.message);
       });
   }
   _parseDiscussionMD(e) {
@@ -8662,10 +8722,10 @@ Make sure paperforge is installed and in your PATH.`,
       n = [],
       s = r.split(/\*\*\u95EE\u9898:\*\*/).slice(1);
     for (let a of s) {
-      let o = a.match(/\*\*\u89E3\u7B54:\*\*/);
-      if (!o) continue;
-      let l = a.substring(0, o.index).trim(),
-        c = a.substring(o.index + 3 + 4).trim();
+      let i = a.match(/\*\*\u89E3\u7B54:\*\*/);
+      if (!i) continue;
+      let l = a.substring(0, i.index).trim(),
+        c = a.substring(i.index + 3 + 4).trim();
       n.push({ question: l, answer: c });
     }
     return n.slice(-3);
@@ -8690,7 +8750,7 @@ Make sure paperforge is installed and in your PATH.`,
           ),
           (this._techDetailsExpanded = !g));
       }));
-    let o = a.createEl("div", { cls: "paperforge-workflow-toggles" }),
+    let i = a.createEl("div", { cls: "paperforge-workflow-toggles" }),
       l = [
         { key: "do_ocr", label: "OCR", hint: "\u52A0\u5165 OCR" },
         {
@@ -8700,29 +8760,29 @@ Make sure paperforge is installed and in your PATH.`,
         },
       ];
     for (let g of l) {
-      let f = o.createEl("label", { cls: "paperforge-workflow-toggle" }),
-        h = f.createEl("input", {
+      let h = i.createEl("label", { cls: "paperforge-workflow-toggle" }),
+        f = h.createEl("input", {
           type: "checkbox",
           cls: "paperforge-workflow-checkbox",
         });
-      ((h.checked = t[g.key] === !0),
-        f.createEl("span", {
+      ((f.checked = t[g.key] === !0),
+        h.createEl("span", {
           cls: "paperforge-workflow-toggle-label",
           text: g.label,
         }),
-        f.createEl("span", {
+        h.createEl("span", {
           cls: "paperforge-workflow-toggle-hint",
           text: g.hint,
         }),
-        h.addEventListener("change", async () => {
+        f.addEventListener("change", async () => {
           let m = t.note_path
             ? this.app.vault.getAbstractFileByPath(t.note_path)
             : null;
           if (!m) {
-            new V.Notice("[!!] Note file not found", 6e3);
+            new H.Notice("[!!] Note file not found", 6e3);
             return;
           }
-          let y = h.checked;
+          let y = f.checked;
           (await this.app.fileManager.processFrontMatter(m, (v) => {
             v[g.key] = y;
           }),
@@ -8741,19 +8801,19 @@ Make sure paperforge is installed and in your PATH.`,
         ["Fulltext Path", t.fulltext_path || "\u2014"],
       ],
       _ = new Set(["Note Path", "Fulltext Path", "Key"]);
-    for (let [g, f] of u) {
-      let h = a.createEl("div", { cls: "paperforge-technical-row" });
-      h.createEl("span", { cls: "paperforge-technical-label", text: g });
-      let m = h.createEl("span", {
+    for (let [g, h] of u) {
+      let f = a.createEl("div", { cls: "paperforge-technical-row" });
+      f.createEl("span", { cls: "paperforge-technical-label", text: g });
+      let m = f.createEl("span", {
         cls: "paperforge-technical-value",
-        text: String(f),
+        text: String(h),
       });
       _.has(g) &&
-        f &&
-        f !== "\u2014" &&
+        h &&
+        h !== "\u2014" &&
         (m.addClass("pf-copy"),
         m.addEventListener("click", () => {
-          (navigator.clipboard.writeText(f), new V.Notice(g + " copied"));
+          (navigator.clipboard.writeText(h), new H.Notice(g + " copied"));
         }));
     }
   }
@@ -8799,35 +8859,35 @@ Make sure paperforge is installed and in your PATH.`,
         },
       },
       a = s[n] || s.ready,
-      o = e.createEl("div", { cls: "paperforge-next-step-card" });
+      i = e.createEl("div", { cls: "paperforge-next-step-card" });
     if (
-      (n === "ready" && o.addClass("ready"),
-      o.createEl("div", {
+      (n === "ready" && i.addClass("ready"),
+      i.createEl("div", {
         cls: "paperforge-next-step-label",
         text: "Recommended Next Step",
       }),
-      o.createEl("div", { cls: "paperforge-next-step-text", text: a.text }),
+      i.createEl("div", { cls: "paperforge-next-step-text", text: a.text }),
       a.cmd && a.cmd !== "ready")
     ) {
-      let u = o.createEl("button", { cls: "paperforge-next-step-trigger" });
+      let u = i.createEl("button", { cls: "paperforge-next-step-trigger" });
       (u.createEl("span", { text: a.icon + "  " + a.label }),
         u.addEventListener("click", () => {
           let _ = ie.find((g) => g.cmd === a.cmd);
           _ && this._runAction(_, u);
         }));
     } else if (n === "/pf-deep") {
-      let u = o.createEl("button", { cls: "paperforge-next-step-trigger" });
-      (u.createEl("span", { text: "\u{1F4CB}  " + i("copy_pf_deep_cmd") }),
+      let u = i.createEl("button", { cls: "paperforge-next-step-trigger" });
+      (u.createEl("span", { text: "\u{1F4CB}  " + o("copy_pf_deep_cmd") }),
         u.addEventListener("click", () => {
           let m = "/pf-deep " + r;
           navigator.clipboard
             .writeText(m)
             .then(() => {
-              (u.setText("\u2713  " + i("copied")),
-                new V.Notice(m + " copied"));
+              (u.setText("\u2713  " + o("copied")),
+                new H.Notice(m + " copied"));
             })
             .catch(() => {
-              new V.Notice("[!!] Clipboard write failed", 6e3);
+              new H.Notice("[!!] Clipboard write failed", 6e3);
             });
         }));
       let _ =
@@ -8837,7 +8897,7 @@ Make sure paperforge is installed and in your PATH.`,
               : l.settings) == null
             ? void 0
             : c.agent_platform) || "opencode",
-        f =
+        h =
           {
             opencode: "OpenCode",
             claude: "Claude Code",
@@ -8848,24 +8908,24 @@ Make sure paperforge is installed and in your PATH.`,
             gemini: "Gemini CLI",
             cline: "Cline",
           }[_] || _;
-      o.createEl("div", { cls: "paperforge-agent-platform-label" }).setText(
-        i("run_in_agent").replace("{0}", f)
+      i.createEl("div", { cls: "paperforge-agent-platform-label" }).setText(
+        o("run_in_agent").replace("{0}", h)
       );
     } else
       n === "ready" &&
-        o
+        i
           .createEl("button", { cls: "paperforge-next-step-trigger" })
           .createEl("span", { text: "\u2713  " + a.label });
   }
   _openFulltext(e) {
     if (!e) {
-      new V.Notice("[!!] No fulltext path available for this paper", 6e3);
+      new H.Notice("[!!] No fulltext path available for this paper", 6e3);
       return;
     }
     let t = this.app.vault.getAbstractFileByPath(e);
     t
       ? this.app.workspace.openLinkText(t.path, "")
-      : new V.Notice("[!!] Fulltext file not found: " + e, 6e3);
+      : new H.Notice("[!!] Fulltext file not found: " + e, 6e3);
   }
   _renderCollectionMode() {
     let e = this._currentDomain || "Unknown",
@@ -8881,7 +8941,7 @@ Make sure paperforge is installed and in your PATH.`,
       n = t.length,
       s = 0,
       a = 0,
-      o = 0,
+      i = 0,
       l = 0,
       c = 0,
       u = 0,
@@ -8889,7 +8949,7 @@ Make sure paperforge is installed and in your PATH.`,
     for (let b of t) {
       (b.has_pdf && s++,
         b.ocr_status === "done" && a++,
-        b.ocr_status === "done" && b.analyze === !0 && o++,
+        b.ocr_status === "done" && b.analyze === !0 && i++,
         b.deep_reading_status === "done" && l++);
       let E = b.ocr_status || "";
       E === "pending" || E === "queued"
@@ -8906,12 +8966,12 @@ Make sure paperforge is installed and in your PATH.`,
       cls: "paperforge-collection-title",
       text: e,
     });
-    let f = r.createEl("div", { cls: "paperforge-workflow-overview" });
-    f.createEl("div", {
+    let h = r.createEl("div", { cls: "paperforge-workflow-overview" });
+    h.createEl("div", {
       cls: "paperforge-section-label",
       text: "Workflow Overview",
     });
-    let h = f.createEl("div", { cls: "paperforge-workflow-funnel" }),
+    let f = h.createEl("div", { cls: "paperforge-workflow-funnel" }),
       m = [
         { value: n, label: "Total" },
         { value: s, label: "PDF Ready" },
@@ -8919,7 +8979,7 @@ Make sure paperforge is installed and in your PATH.`,
         { value: l, label: "Deep Read" },
       ];
     for (let b = 0; b < m.length; b++) {
-      let E = h.createEl("div", { cls: "paperforge-workflow-stage" });
+      let E = f.createEl("div", { cls: "paperforge-workflow-stage" });
       (E.createEl("div", {
         cls: "paperforge-workflow-stage-value",
         text: String(m[b].value),
@@ -8929,7 +8989,7 @@ Make sure paperforge is installed and in your PATH.`,
           text: m[b].label,
         }),
         b < m.length - 1 &&
-          h.createEl("div", {
+          f.createEl("div", {
             cls: "paperforge-workflow-arrow",
             text: "\u2192",
           }));
@@ -9048,7 +9108,7 @@ Make sure paperforge is installed and in your PATH.`,
     let r = this.app.vault.adapter.basePath,
       n = typeof r == "string" ? r : "";
     if (!n) {
-      new V.Notice("Cannot determine vault path");
+      new H.Notice("Cannot determine vault path");
       return;
     }
     ((this._versionPapers = Dt(n)),
@@ -9080,11 +9140,11 @@ Make sure paperforge is installed and in your PATH.`,
       (this._versionPapers = Dt(n));
     let s = e.createEl("div", { cls: "paperforge-version-left" }),
       a = e.createEl("div", { cls: "paperforge-version-right" }),
-      o = s.createEl("input", {
+      i = s.createEl("input", {
         cls: "paperforge-version-filter",
-        attr: { type: "text", placeholder: i("version_filter_placeholder") },
+        attr: { type: "text", placeholder: o("version_filter_placeholder") },
       });
-    o.value = this._versionFilter;
+    i.value = this._versionFilter;
     let l = s.createEl("div", { cls: "paperforge-version-paper-list" }),
       c = () => {
         l.empty();
@@ -9100,13 +9160,13 @@ Make sure paperforge is installed and in your PATH.`,
         if (x.length === 0) {
           l.createEl("div", {
             cls: "paperforge-meta",
-            text: i("version_no_backups"),
+            text: o("version_no_backups"),
           });
           return;
         }
         let k = l.createEl("div", {
           cls: "paperforge-meta",
-          text: i("version_papers_count").replace("{n}", String(x.length)),
+          text: o("version_papers_count").replace("{n}", String(x.length)),
         });
         for (let b of x) {
           let E = l.createEl("div", { cls: "paperforge-version-paper-item" }),
@@ -9127,8 +9187,8 @@ Make sure paperforge is installed and in your PATH.`,
           });
         }
       };
-    o.addEventListener("input", () => {
-      ((this._versionFilter = o.value), c());
+    i.addEventListener("input", () => {
+      ((this._versionFilter = i.value), c());
     });
     let u = a.createEl("div", { cls: "paperforge-version-timeline-area" }),
       _ = (v) => {
@@ -9141,7 +9201,7 @@ Make sure paperforge is installed and in your PATH.`,
         ) {
           u.createEl("div", {
             cls: "paperforge-meta",
-            text: i("version_no_backups"),
+            text: o("version_no_backups"),
           });
           return;
         }
@@ -9163,7 +9223,7 @@ Make sure paperforge is installed and in your PATH.`,
             E &&
               T.createEl("span", {
                 cls: "paperforge-version-current-tag",
-                text: i("version_current"),
+                text: o("version_current"),
               }));
           let O = b.created_at ? b.created_at.slice(0, 10) : "";
           w.createEl("div", {
@@ -9179,40 +9239,40 @@ Make sure paperforge is installed and in your PATH.`,
           let F = w.createEl("div", { cls: "paperforge-version-actions" });
           (F.createEl("button", {
             cls: "pf-btn-primary",
-            text: i("version_restore_btn"),
+            text: o("version_restore_btn"),
           }).addEventListener("click", () => {
-            ur(n, v.key, b.label)
-              ? new V.Notice(
-                  i("version_restore_done").replace("{label}", b.label)
+            hr(n, v.key, b.label)
+              ? new H.Notice(
+                  o("version_restore_done").replace("{label}", b.label)
                 )
-              : new V.Notice("Restore failed", 6e3);
+              : new H.Notice("Restore failed", 6e3);
           }),
             v.versions.length > 1 &&
               !E &&
               F.createEl("button", {
                 cls: "pf-btn-secondary",
-                text: i("version_compare_btn"),
+                text: o("version_compare_btn"),
               }).addEventListener("click", () => {
-                f(v, b.label, v.currentLabel);
+                h(v, b.label, v.currentLabel);
               }));
         }
       },
       g = a.createEl("div", { cls: "paperforge-version-compare" });
     g.style.display = "none";
-    let f = (v, x, k) => {
-        let b = _r(n, v.key, x, k);
+    let h = (v, x, k) => {
+        let b = fr(n, v.key, x, k);
         ((g.style.display = "block"), g.empty());
         let E = g.createEl("div", { cls: "paperforge-version-compare-header" });
         if (
           (E.createEl("span", {
             cls: "pf-title",
-            text: i("version_compare_title")
+            text: o("version_compare_title")
               .replace("{vA}", x)
               .replace("{vB}", k),
           }),
           E.createEl("span", {
             cls: "paperforge-meta",
-            text: i("version_compare_paragraphs").replace(
+            text: o("version_compare_paragraphs").replace(
               "{n}",
               String(b.length)
             ),
@@ -9244,14 +9304,14 @@ Make sure paperforge is installed and in your PATH.`,
               }));
         }
       },
-      h = e.createEl("div", { cls: "paperforge-version-actions-bar" }),
-      m = h.createEl("button", {
+      f = e.createEl("div", { cls: "paperforge-version-actions-bar" }),
+      m = f.createEl("button", {
         cls: "pf-btn-primary",
-        text: i("version_restore_selected"),
+        text: o("version_restore_selected"),
       }),
-      y = h.createEl("button", {
+      y = f.createEl("button", {
         cls: "pf-btn-secondary",
-        text: i("version_clear_old").replace("{size}", ""),
+        text: o("version_clear_old").replace("{size}", ""),
       });
     c();
   }
@@ -9276,7 +9336,7 @@ Make sure paperforge is installed and in your PATH.`,
       (this._searchResultsEl = this._searchContainer.createEl("div", {
         cls: "paperforge-search-results",
       })),
-      (this._searchInput.placeholder = i("retrieval_search_placeholder")),
+      (this._searchInput.placeholder = o("retrieval_search_placeholder")),
       this._searchInput.addEventListener("input", () => {
         var a;
         let s = ((a = this._searchInput) == null ? void 0 : a.value) || "";
@@ -9286,14 +9346,14 @@ Make sure paperforge is installed and in your PATH.`,
               n.setText("@"),
               n.addClass("deep"),
               this._searchInput &&
-                (this._searchInput.placeholder = i(
+                (this._searchInput.placeholder = o(
                   "retrieval_search_placeholder_deep"
                 )))
             : ((this._searchMode = "M"),
               n.setText("M"),
               n.removeClass("deep"),
               this._searchInput &&
-                (this._searchInput.placeholder = i(
+                (this._searchInput.placeholder = o(
                   "retrieval_search_placeholder"
                 ))),
           clearTimeout(this._searchTimer),
@@ -9311,7 +9371,7 @@ Make sure paperforge is installed and in your PATH.`,
           }, 200));
       }),
       this._searchInput.addEventListener("keydown", (s) => {
-        var a, o;
+        var a, i;
         if (s.key === "Escape") {
           (s.preventDefault(),
             this._searchInput &&
@@ -9340,9 +9400,9 @@ Make sure paperforge is installed and in your PATH.`,
                 -1
               ));
           let c =
-            (o = this._searchResultsEl) == null
+            (i = this._searchResultsEl) == null
               ? void 0
-              : o.querySelectorAll(".paperforge-search-result-card");
+              : i.querySelectorAll(".paperforge-search-result-card");
           c &&
             c.forEach((u, _) => {
               _ === this._searchActiveIndex
@@ -9386,8 +9446,8 @@ Make sure paperforge is installed and in your PATH.`,
         (this._searchResultsEl.createEl("div", {
           cls: "paperforge-search-loading",
           text: t
-            ? i("retrieval_searching_deep")
-            : i("retrieval_searching_metadata"),
+            ? o("retrieval_searching_deep")
+            : o("retrieval_searching_metadata"),
         }),
           this._searchResultsEl.setAttr("aria-live", "polite"),
           t && this._searchInput && (this._searchInput.disabled = !0));
@@ -9416,10 +9476,10 @@ Make sure paperforge is installed and in your PATH.`,
           cls: "paperforge-search-empty",
         });
         (t.setAttr("role", "alert"),
-          t.createEl("div", { text: i("retrieval_empty") }),
+          t.createEl("div", { text: o("retrieval_empty") }),
           t.createEl("div", {
             cls: "paperforge-search-empty-tips",
-            text: i("retrieval_empty_tips"),
+            text: o("retrieval_empty_tips"),
           }));
         break;
       }
@@ -9431,15 +9491,15 @@ Make sure paperforge is installed and in your PATH.`,
         (t.addClass("warning-soft"),
           t.createEl("div", {
             cls: "paperforge-search-state-title",
-            text: i("retrieval_vectors_not_built"),
+            text: o("retrieval_vectors_not_built"),
           }),
           t.createEl("div", {
             cls: "paperforge-search-state-desc",
-            text: i("retrieval_vectors_not_built_desc"),
+            text: o("retrieval_vectors_not_built_desc"),
           }));
         let r = t.createEl("button", {
           cls: "pf-btn-link",
-          text: i("retrieval_open_vector_settings"),
+          text: o("retrieval_open_vector_settings"),
         });
         (r.addEventListener("click", () => {
           let n = this.app.setting;
@@ -9461,22 +9521,22 @@ Make sure paperforge is installed and in your PATH.`,
         (t.addClass("error-soft"),
           t.createEl("div", {
             cls: "paperforge-search-state-title",
-            text: i("retrieval_backend_unavailable"),
+            text: o("retrieval_backend_unavailable"),
           }),
           t.createEl("div", {
             cls: "paperforge-search-state-desc",
-            text: i("retrieval_backend_unavailable_desc"),
+            text: o("retrieval_backend_unavailable_desc"),
           }));
         let r = t.createEl("div", { cls: "paperforge-search-state-actions" }),
           n = r.createEl("button", {
             cls: "pf-btn-primary",
-            text: i("retrieval_run_doctor"),
+            text: o("retrieval_run_doctor"),
           });
         (n.addEventListener("click", () => {
           let a = this.app.vault.adapter.basePath;
           if (typeof a == "string") {
-            let { path: o, args: l = [] } = this._resolvePython();
-            (0, pe.spawn)(o, [...l, "-m", "paperforge", "doctor"], {
+            let { path: i, args: l = [] } = this._resolvePython();
+            (0, pe.spawn)(i, [...l, "-m", "paperforge", "doctor"], {
               cwd: a,
               stdio: "inherit",
             });
@@ -9485,7 +9545,7 @@ Make sure paperforge is installed and in your PATH.`,
           r
             .createEl("button", {
               cls: "pf-btn-secondary",
-              text: i("retrieval_retry"),
+              text: o("retrieval_retry"),
             })
             .addEventListener("click", () => {
               this.executeSearch();
@@ -9503,15 +9563,15 @@ Make sure paperforge is installed and in your PATH.`,
         (t.addClass("warning-soft"),
           t.createEl("div", {
             cls: "paperforge-search-state-title",
-            text: i("retrieval_timeout_title"),
+            text: o("retrieval_timeout_title"),
           }),
           t.createEl("div", {
             cls: "paperforge-search-state-desc",
-            text: i("retrieval_timeout_desc"),
+            text: o("retrieval_timeout_desc"),
           }));
         let r = t.createEl("button", {
           cls: "pf-btn-primary",
-          text: i("retrieval_retry"),
+          text: o("retrieval_retry"),
         });
         (r.addEventListener("click", () => {
           this.executeSearch();
@@ -9529,15 +9589,15 @@ Make sure paperforge is installed and in your PATH.`,
         (t.addClass("warning-soft"),
           t.createEl("div", {
             cls: "paperforge-search-state-title",
-            text: i("retrieval_model_changed"),
+            text: o("retrieval_model_changed"),
           }),
           t.createEl("div", {
             cls: "paperforge-search-state-desc",
-            text: i("retrieval_model_changed_desc"),
+            text: o("retrieval_model_changed_desc"),
           }));
         let r = t.createEl("button", {
           cls: "pf-btn-primary",
-          text: i("retrieval_rebuild_vectors"),
+          text: o("retrieval_rebuild_vectors"),
         });
         (r.addEventListener("click", () => {
           let n = this.app.setting;
@@ -9555,7 +9615,7 @@ Make sure paperforge is installed and in your PATH.`,
         (this._searchResultsEl
           .createEl("div", {
             cls: "paperforge-search-state-card",
-            text: i("retrieval_internal_error"),
+            text: o("retrieval_internal_error"),
             attr: { role: "alert" },
           })
           .addClass("error-soft"),
@@ -9588,29 +9648,29 @@ Make sure paperforge is installed and in your PATH.`,
       ((this._searchState = "backend-unavailable"), this._renderSearchState());
       return;
     }
-    let o = null,
+    let i = null,
       c = this.app.plugins;
     if (c && typeof c == "object" && "plugins" in c) {
       let y = c.plugins;
       if (y && typeof y == "object" && "paperforge" in y) {
         let v = y.paperforge;
-        v && typeof v == "object" && "settings" in v && (o = v.settings);
+        v && typeof v == "object" && "settings" in v && (i = v.settings);
       }
     }
     let { path: u, args: _ = [] } = this._resolvePython(),
       g = n === "retrieve" ? ["--deep"] : [],
-      f = await me({ app: this.app }, "memory"),
-      h = (0, pe.spawn)(
+      h = await me({ app: this.app }, "memory"),
+      f = (0, pe.spawn)(
         u,
         [..._, "-m", "paperforge", "--vault", a, n, r, ...g, "--json"],
-        { cwd: a, timeout: 3e4, env: f }
+        { cwd: a, timeout: 3e4, env: h }
       ),
       m = [];
-    (h.stdout.on("data", (y) => {
+    (f.stdout.on("data", (y) => {
       m.push(y.toString("utf-8"));
     }),
-      h.stderr.on("data", () => {}),
-      h.on("close", (y) => {
+      f.stderr.on("data", () => {}),
+      f.on("close", (y) => {
         if (y !== 0) {
           let E = Et(String(y));
           ((this._searchState = this._mapErrorToSearchState(E.type)),
@@ -9649,7 +9709,7 @@ Make sure paperforge is installed and in your PATH.`,
           ((this._searchState = "internal-error"), this._renderSearchState());
         }
       }),
-      h.on("error", (y) => {
+      f.on("error", (y) => {
         let v = y.code;
         if (typeof v == "string") {
           let x = Et(v);
@@ -9695,7 +9755,7 @@ Make sure paperforge is installed and in your PATH.`,
     });
     (r
       .createEl("span", {
-        text: i("retrieval_results_count")
+        text: o("retrieval_results_count")
           .replace("{n}", String(e.length))
           .replace("{s}", e.length !== 1 ? "s" : ""),
       })
@@ -9707,7 +9767,7 @@ Make sure paperforge is installed and in your PATH.`,
     for (let s = 0; s < e.length; s++) {
       let a = e[s];
       if (!a || typeof a != "object") continue;
-      let o = a,
+      let i = a,
         l = s === this._searchActiveIndex,
         c = this._searchResultsEl.createEl("div", {
           cls: "paperforge-search-result-card",
@@ -9721,20 +9781,20 @@ Make sure paperforge is installed and in your PATH.`,
         });
       l && c.addClass("active");
       let u =
-        typeof o.title == "string"
-          ? o.title
-          : typeof o.file_name == "string"
-            ? o.file_name
+        typeof i.title == "string"
+          ? i.title
+          : typeof i.file_name == "string"
+            ? i.file_name
             : "(untitled)";
       c.createEl("div", { cls: "paperforge-search-result-title", text: u });
-      let _ = typeof o.zotero_key == "string" ? o.zotero_key : "",
+      let _ = typeof i.zotero_key == "string" ? i.zotero_key : "",
         g =
-          typeof o.main_note_path == "string" && o.main_note_path
-            ? o.main_note_path
+          typeof i.main_note_path == "string" && i.main_note_path
+            ? i.main_note_path
             : null,
-        f = typeof o.note_path == "string" && o.note_path ? o.note_path : null,
-        h = g || f;
-      if (!h && _) {
+        h = typeof i.note_path == "string" && i.note_path ? i.note_path : null,
+        f = g || h;
+      if (!f && _) {
         let v = this._getCachedIndex().find(
           (x) =>
             x !== null &&
@@ -9744,7 +9804,7 @@ Make sure paperforge is installed and in your PATH.`,
         );
         if (v && typeof v == "object") {
           let x = v;
-          h =
+          f =
             typeof x.main_note_path == "string" && x.main_note_path
               ? x.main_note_path
               : typeof x.note_path == "string" && x.note_path
@@ -9752,38 +9812,38 @@ Make sure paperforge is installed and in your PATH.`,
                 : null;
         }
       }
-      (h
+      (f
         ? c.addEventListener("click", (y) => {
             let v = y.ctrlKey || y.metaKey;
-            this.app.workspace.openLinkText(h, "", v);
+            this.app.workspace.openLinkText(f, "", v);
           })
         : c.addEventListener("click", () => {
-            new V.Notice("[!!] Note not found: " + (_ || "unknown"), 6e3);
+            new H.Notice("[!!] Note not found: " + (_ || "unknown"), 6e3);
           }),
         c.addEventListener("keydown", (y) => {
-          if (y.key === "Enter" && h) {
+          if (y.key === "Enter" && f) {
             y.preventDefault();
             let v = y.ctrlKey || y.metaKey;
-            this.app.workspace.openLinkText(h, "", v);
+            this.app.workspace.openLinkText(f, "", v);
           }
         }));
       let m = c.createEl("div", { cls: "paperforge-search-result-meta" });
       if (
-        (typeof o.first_author == "string" &&
-          o.first_author &&
+        (typeof i.first_author == "string" &&
+          i.first_author &&
           m.createEl("span", {
             cls: "paperforge-search-result-author",
-            text: o.first_author,
+            text: i.first_author,
           }),
-        typeof o.journal == "string" &&
-          o.journal &&
+        typeof i.journal == "string" &&
+          i.journal &&
           m.createEl("span", {
             cls: "paperforge-search-result-journal",
-            text: o.journal,
+            text: i.journal,
           }),
-        o.score !== void 0)
+        i.score !== void 0)
       ) {
-        let y = o.score,
+        let y = i.score,
           v = typeof y == "number" ? y.toFixed(3) : String(y);
         m.createEl("span", {
           cls: "paperforge-search-result-score",
@@ -9791,22 +9851,22 @@ Make sure paperforge is installed and in your PATH.`,
         });
       }
       if (
-        (typeof o.domain == "string" &&
-          o.domain &&
+        (typeof i.domain == "string" &&
+          i.domain &&
           c.createEl("span", {
             cls: "paperforge-search-result-tag",
-            text: o.domain,
+            text: i.domain,
           }),
-        typeof o.abstract == "string" && o.abstract)
+        typeof i.abstract == "string" && i.abstract)
       ) {
-        let y = o.abstract;
+        let y = i.abstract;
         c.createEl("div", {
           cls: "paperforge-search-result-abstract",
           text: y.length > 200 ? y.slice(0, 200) + "..." : y,
         });
       }
-      if (t && typeof o.text == "string" && o.text) {
-        let y = o.text;
+      if (t && typeof i.text == "string" && i.text) {
+        let y = i.text;
         c.createEl("div", {
           cls: "paperforge-search-result-source",
           text: y.length > 300 ? y.slice(0, 300) + "..." : y,
@@ -9824,7 +9884,7 @@ Make sure paperforge is installed and in your PATH.`,
   }
   async _runAction(e, t) {
     if (e.disabled) {
-      new V.Notice(
+      new H.Notice(
         `[i] ${e.disabledMsg || "This action is not yet available."}`,
         6e3
       );
@@ -9836,23 +9896,23 @@ Make sure paperforge is installed and in your PATH.`,
     this._showMessage("Processing...", "running");
     let n = Array.isArray(e.args) ? [...e.args] : [];
     if (e.needsKey) {
-      let f = this.app.workspace.getActiveFile(),
-        h = null;
-      if (f) {
-        let m = this.app.metadataCache.getFileCache(f);
+      let h = this.app.workspace.getActiveFile(),
+        f = null;
+      if (h) {
+        let m = this.app.metadataCache.getFileCache(h);
         if (
           (m && m.frontmatter && m.frontmatter.zotero_key
-            ? (h = m.frontmatter.zotero_key)
-            : (h = this._extractZoteroKeyFromPath(f.path)),
-          h)
+            ? (f = m.frontmatter.zotero_key)
+            : (f = this._extractZoteroKeyFromPath(h.path)),
+          f)
         )
-          n = [...n, h];
+          n = [...n, f];
         else if (m && m.frontmatter) {
           (this._showMessage(
             "[!!] No zotero_key in active note frontmatter",
             "error"
           ),
-            new V.Notice(
+            new H.Notice(
               "[!!] Open a paper note with a zotero_key in its frontmatter first",
               6e3
             ),
@@ -9860,7 +9920,7 @@ Make sure paperforge is installed and in your PATH.`,
           return;
         } else {
           (this._showMessage("[!!] No frontmatter in active note", "error"),
-            new V.Notice(
+            new H.Notice(
               "[!!] The active note has no frontmatter with a zotero_key",
               6e3
             ),
@@ -9869,7 +9929,7 @@ Make sure paperforge is installed and in your PATH.`,
         }
       } else {
         (this._showMessage("[!!] No active note open", "error"),
-          new V.Notice(
+          new H.Notice(
             "[!!] Open a paper note with a zotero_key in its frontmatter first",
             6e3
           ),
@@ -9879,9 +9939,9 @@ Make sure paperforge is installed and in your PATH.`,
     }
     e.needsFilter && (n = [...n, "--all"]);
     let s = e.needsFilter ? 6e4 : e.needsKey ? 3e4 : 6e5,
-      { path: a, args: o = [] } = this._resolvePython(),
+      { path: a, args: i = [] } = this._resolvePython(),
       l = await me({ app: this.app }, e.cmd),
-      c = (0, pe.spawn)(a, [...o, "-m", "paperforge", e.cmd, ...n], {
+      c = (0, pe.spawn)(a, [...i, "-m", "paperforge", e.cmd, ...n], {
         cwd: r,
         timeout: s,
         env: l,
@@ -9889,15 +9949,15 @@ Make sure paperforge is installed and in your PATH.`,
       u = [],
       _ = Date.now(),
       g = setInterval(() => this._fetchStats(!0), 4e3);
-    (c.stdout.on("data", (f) => {
-      let h = f
+    (c.stdout.on("data", (h) => {
+      let f = h
         .toString("utf-8")
         .split(
           `
 `
         )
         .filter(Boolean);
-      for (let m of h) {
+      for (let m of f) {
         let y = m.trim();
         y &&
           (u.push(y),
@@ -9908,15 +9968,15 @@ Make sure paperforge is installed and in your PATH.`,
           ));
       }
     }),
-      c.stderr.on("data", (f) => {
-        let h = f
+      c.stderr.on("data", (h) => {
+        let f = h
           .toString("utf-8")
           .split(
             `
 `
           )
           .filter(Boolean);
-        for (let m of h) {
+        for (let m of f) {
           if (m.includes("\r") || m.includes("%") || m.includes("\u2588"))
             continue;
           let y = m.trim();
@@ -9930,17 +9990,17 @@ Make sure paperforge is installed and in your PATH.`,
             ));
         }
       }),
-      c.on("close", (f) => {
+      c.on("close", (h) => {
         (clearInterval(g), t.removeClass("running"));
-        let h = ((Date.now() - _) / 1e3).toFixed(1);
-        if (f !== 0) {
-          let m = u.slice(-3).join(" | ") || "exit code " + f;
-          (e.cmd === "repair" || e.cmd === "ocr") && f === 1
+        let f = ((Date.now() - _) / 1e3).toFixed(1);
+        if (h !== 0) {
+          let m = u.slice(-3).join(" | ") || "exit code " + h;
+          (e.cmd === "repair" || e.cmd === "ocr") && h === 1
             ? (this._showMessage("[WARN] " + m, "running"),
-              new V.Notice("[WARN] " + e.cmd + " partial: " + m, 8e3),
+              new H.Notice("[WARN] " + e.cmd + " partial: " + m, 8e3),
               this._fetchStats(!0))
             : (this._showMessage("[!!] " + m, "error"),
-              new V.Notice("[!!] " + e.cmd + " failed: " + m, 8e3));
+              new H.Notice("[!!] " + e.cmd + " failed: " + m, 8e3));
         } else if (e.needsKey || e.needsFilter) {
           let m = u.join(`
 `);
@@ -9950,9 +10010,9 @@ Make sure paperforge is installed and in your PATH.`,
                 navigator.clipboard
                   .writeText(m)
                   .then(() => {
-                    let y = `${h}s \u2014 ${m.length} chars copied`;
+                    let y = `${f}s \u2014 ${m.length} chars copied`;
                     (this._showMessage("[OK] " + e.title + ": " + y, "ok"),
-                      new V.Notice(
+                      new H.Notice(
                         "[OK] " + e.okMsg + " \u2014 " + m.length + " chars"
                       ));
                   })
@@ -9961,11 +10021,11 @@ Make sure paperforge is installed and in your PATH.`,
                       "[!!] Clipboard write failed: " + y.message,
                       "error"
                     ),
-                      new V.Notice("[!!] Clipboard error", 6e3));
+                      new H.Notice("[!!] Clipboard error", 6e3));
                   }));
             } catch (y) {
               (this._showMessage("[!!] Invalid JSON from " + e.title, "error"),
-                new V.Notice(
+                new H.Notice(
                   "[!!] " +
                     e.title +
                     " returned invalid JSON: " +
@@ -9975,16 +10035,16 @@ Make sure paperforge is installed and in your PATH.`,
             }
           else
             (this._showMessage("[!!] No output from context command", "error"),
-              new V.Notice("[!!] Context command returned empty output", 8e3));
+              new H.Notice("[!!] Context command returned empty output", 8e3));
           this._fetchStats(!0);
         } else {
           let y =
               u.filter((x) => x.match(/updated \d+/)).pop() ||
               u[u.length - 1] ||
               "",
-            v = `${h}s \u2014 ${y}`;
+            v = `${f}s \u2014 ${y}`;
           (this._showMessage("[OK] " + e.title + ": " + v, "ok"),
-            new V.Notice("[OK] " + e.okMsg),
+            new H.Notice("[OK] " + e.okMsg),
             this._contentEl && this._contentEl.removeClass("switching"),
             (this._cachedStats = null));
           try {
@@ -9997,11 +10057,11 @@ Make sure paperforge is installed and in your PATH.`,
               it(this.app, this.app.plugins.plugins.paperforge, r));
         }
       }),
-      c.on("error", (f) => {
+      c.on("error", (h) => {
         (t.removeClass("running"),
           this._contentEl && this._contentEl.removeClass("switching"),
-          this._showMessage("[!!] " + f.message, "error"),
-          new V.Notice("[!!] Cannot start: " + f.message, 8e3));
+          this._showMessage("[!!] " + h.message, "error"),
+          new H.Notice("[!!] Cannot start: " + h.message, 8e3));
       }));
   }
   _showMessage(e, t) {
@@ -10044,9 +10104,9 @@ Make sure paperforge is installed and in your PATH.`,
         break;
       case "versions":
         (t.addClass("versions"),
-          t.setText(i("version_panel_title")),
+          t.setText(o("version_panel_title")),
           this._headerTitle &&
-            this._headerTitle.setText(i("version_panel_title")));
+            this._headerTitle.setText(o("version_panel_title")));
         break;
     }
     r &&
@@ -10099,31 +10159,37 @@ var dt = class extends J.Plugin {
     this._embedProgress = { current: 0, total: 0, key: "" };
     this._embedStderr = "";
     this._memoryStatusText = null;
+    this._managedRuntime = null;
+  }
+  getManagedRuntime() {
+    return (
+      this._managedRuntime ||
+        (this._managedRuntime = new ye({ version: this.manifest.version })),
+      this._managedRuntime
+    );
   }
   _getPythonCommand() {
-    let e = new ye({
-        runtimeDir: Re.join(
-          this.app.vault.adapter.basePath,
-          ".paperforge-test-venv"
-        ),
-        pluginVersion: this.manifest.version,
-        osPlatform: process.platform,
-        osArch: process.arch,
-        fs: W,
-        execFile: Te.execFile,
-        execFileSync: require("child_process").execFileSync,
-      }),
-      t = Ee(e.current());
-    return t ? { path: t.command, args: [...t.args] } : null;
+    let e = Ee(this.getManagedRuntime().current());
+    return e ? { path: e.command, args: [...e.args] } : null;
   }
   async onload() {
     (await this.loadSettings(),
-      $t(this.app),
-      this.registerView(ke, (t) => new Ve(t)));
+      await Kt(
+        {
+          app: { secretStorage: this.app.secretStorage },
+          saveData: async () => this.saveSettings(),
+        },
+        this.settings
+      ),
+      await this.saveSettings());
     try {
-      (0, J.addIcon)(He, Nt);
+      await this.getManagedRuntime().status();
     } catch (t) {}
-    (this.addRibbonIcon(He, "PaperForge Dashboard", () => Ve.open(this)),
+    ($t(this.app), this.registerView(ke, (t) => new Le(t)));
+    try {
+      (0, J.addIcon)(Ve, Nt);
+    } catch (t) {}
+    (this.addRibbonIcon(Ve, "PaperForge Dashboard", () => Le.open(this)),
       ie.find((t) => t.id === "paperforge-ocr-redo") &&
         this.addRibbonIcon("reset", "PaperForge: Redo OCR", async () => {
           let t = this.app.vault.adapter.basePath;
@@ -10135,12 +10201,12 @@ var dt = class extends J.Plugin {
           }
           let { path: n, args: s } = r,
             a = await me(this, "ocr");
-          (0, Te.execFile)(
+          (0, He.execFile)(
             n,
             [...s, "-m", "paperforge", "ocr", "redo"],
             { cwd: t, timeout: 6e5, env: a },
-            (o, l, c) => {
-              if (o) {
+            (i, l, c) => {
+              if (i) {
                 new J.Notice("PaperForge: Redo OCR failed");
                 return;
               }
@@ -10151,8 +10217,8 @@ var dt = class extends J.Plugin {
       this.addSettingTab(new ct(this.app, this)),
       this.addCommand({
         id: "paperforge-status-panel",
-        name: `PaperForge: ${i("guide_open")}`,
-        callback: () => Ve.open(this),
+        name: `PaperForge: ${o("guide_open")}`,
+        callback: () => Le.open(this),
       }));
     for (let t of ie)
       this.addCommand({
@@ -10174,11 +10240,11 @@ var dt = class extends J.Plugin {
             return;
           }
           let { path: s, args: a = [] } = n,
-            o = Array.isArray(t.args) ? [...t.args] : [],
+            i = Array.isArray(t.args) ? [...t.args] : [],
             l = await me(this, t.cmd);
-          (0, Te.execFile)(
+          (0, He.execFile)(
             s,
-            [...a, "-m", "paperforge", t.cmd, ...o],
+            [...a, "-m", "paperforge", t.cmd, ...i],
             { cwd: r, timeout: 3e5, env: l },
             (c, u, _) => {
               if (c) {
@@ -10215,12 +10281,12 @@ var dt = class extends J.Plugin {
   _checkExports(e) {
     if (this._autoSyncRunning) return;
     let t = de(e).exportsDir;
-    if (!W.existsSync(t)) return;
+    if (!Z.existsSync(t)) return;
     let r = 0;
     try {
-      W.readdirSync(t).forEach((n) => {
+      Z.readdirSync(t).forEach((n) => {
         if (!n.endsWith(".json")) return;
-        let s = W.statSync(Re.join(t, n));
+        let s = Z.statSync(Ne.join(t, n));
         s.mtimeMs > r && (r = s.mtimeMs);
       });
     } catch (n) {
@@ -10238,31 +10304,31 @@ var dt = class extends J.Plugin {
       return;
     }
     let r = `"${t.path}" ${t.args.join(" ")} -m paperforge --vault "${e}" sync`;
-    (0, Te.exec)(r, { timeout: 12e4, encoding: "utf-8" }, (n, s, a) => {
+    (0, He.exec)(r, { timeout: 12e4, encoding: "utf-8" }, (n, s, a) => {
       ((this._autoSyncRunning = !1),
         (this._memoryStatusText = null),
         n || (this._lastSyncTime = new Date().toLocaleTimeString()));
       try {
-        let o = de(e).exportsDir,
+        let i = de(e).exportsDir,
           l = 0;
-        (W.readdirSync(o).forEach((c) => {
+        (Z.readdirSync(i).forEach((c) => {
           c.endsWith(".json") &&
-            (l = Math.max(l, W.statSync(Re.join(o, c)).mtimeMs));
+            (l = Math.max(l, Z.statSync(Ne.join(i, c)).mtimeMs));
         }),
           (this._lastExportMtime = l));
-      } catch (o) {}
+      } catch (i) {}
     });
   }
   _checkOcr(e) {
     if (this._autoSyncRunning) return;
     let t = de(e).ocrDir;
-    if (W.existsSync(t))
+    if (Z.existsSync(t))
       try {
-        W.readdirSync(t, { withFileTypes: !0 }).forEach((r) => {
+        Z.readdirSync(t, { withFileTypes: !0 }).forEach((r) => {
           if (!r.isDirectory()) return;
-          let n = Re.join(t, r.name, "meta.json");
-          if (!W.existsSync(n)) return;
-          let s = W.statSync(n),
+          let n = Ne.join(t, r.name, "meta.json");
+          if (!Z.existsSync(n)) return;
+          let s = Z.statSync(n),
             a = this._lastOcrMtimes[r.name] || 0;
           if (
             s.mtimeMs <= a ||
@@ -10270,13 +10336,13 @@ var dt = class extends J.Plugin {
           )
             return;
           this._autoSyncRunning = !0;
-          let o = this._getPythonCommand();
-          if (!o) {
+          let i = this._getPythonCommand();
+          if (!i) {
             this._autoSyncRunning = !1;
             return;
           }
-          let l = `"${o.path}" ${o.args.join(" ")} -m paperforge --vault "${e}" sync`;
-          (0, Te.exec)(l, { timeout: 3e4, encoding: "utf-8" }, () => {
+          let l = `"${i.path}" ${i.args.join(" ")} -m paperforge --vault "${e}" sync`;
+          (0, He.exec)(l, { timeout: 3e4, encoding: "utf-8" }, () => {
             ((this._autoSyncRunning = !1), (this._memoryStatusText = null));
           });
         });
@@ -10284,7 +10350,7 @@ var dt = class extends J.Plugin {
   }
   readPaperforgeJson() {
     let e = this.app.vault.adapter.basePath,
-      t = Re.join(e, "paperforge.json"),
+      t = Ne.join(e, "paperforge.json"),
       r = {
         system_dir: "System",
         resources_dir: "Resources",
@@ -10292,8 +10358,8 @@ var dt = class extends J.Plugin {
         base_dir: "Bases",
       };
     try {
-      if (!W.existsSync(t)) return r;
-      let n = W.readFileSync(t, "utf-8"),
+      if (!Z.existsSync(t)) return r;
+      let n = Z.readFileSync(t, "utf-8"),
         s = JSON.parse(n),
         a = s.vault_config || {};
       return {
@@ -10315,10 +10381,10 @@ var dt = class extends J.Plugin {
   }
   savePaperforgeJson(e) {
     let t = this.app.vault.adapter.basePath,
-      r = Re.join(t, "paperforge.json"),
+      r = Ne.join(t, "paperforge.json"),
       n = {};
     try {
-      W.existsSync(r) && (n = JSON.parse(W.readFileSync(r, "utf-8")));
+      Z.existsSync(r) && (n = JSON.parse(Z.readFileSync(r, "utf-8")));
     } catch (a) {
       console.warn("PaperForge: Failed to read paperforge.json for update", a);
     }
@@ -10330,7 +10396,7 @@ var dt = class extends J.Plugin {
     for (let a of s) delete n[a];
     try {
       if (
-        (W.writeFileSync(r, JSON.stringify(n, null, 2), "utf-8"), this.settings)
+        (Z.writeFileSync(r, JSON.stringify(n, null, 2), "utf-8"), this.settings)
       ) {
         let a = this.readPaperforgeJson();
         ((this.settings.system_dir = a.system_dir),
@@ -10368,7 +10434,7 @@ var dt = class extends J.Plugin {
       this.settings.python_path && this.settings.python_path.trim())
     ) {
       let t = this.settings.python_path.trim();
-      W.existsSync(t)
+      Z.existsSync(t)
         ? (this.settings._python_path_stale = !1)
         : (console.warn(
             `PaperForge: Saved python_path "${t}" no longer exists - showing stale warning`
@@ -10385,7 +10451,7 @@ var dt = class extends J.Plugin {
   _checkReleaseNotes() {
     let e = this.manifest.version;
     if (this.settings.last_seen_version === e) return;
-    let s = (vt().versions || []).find((o) => o.version === e);
+    let s = (vt().versions || []).find((i) => i.version === e);
     class a extends J.Modal {
       constructor(l, c) {
         (super(l), (this._entry = c));
