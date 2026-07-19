@@ -1,0 +1,41 @@
+{
+  "items": [
+    {
+      "key": "FIXT0002",
+      "itemKey": "FIXT0002",
+      "itemType": "journalArticle",
+      "title": "ACL Reconstruction: A Meta-Analysis of Outcomes",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "Alice",
+          "lastName": "Johnson"
+        },
+        {
+          "creatorType": "author",
+          "firstName": "Bob",
+          "lastName": "Williams"
+        }
+      ],
+      "publicationTitle": "American Journal of Sports Medicine",
+      "date": "2024-06-01",
+      "DOI": "10.1177/ajsm.2024.06.001",
+      "PMID": "23456789",
+      "abstractNote": "Meta-analysis evaluating long-term outcomes of ACL reconstruction techniques.",
+      "attachments": [
+        {
+          "path": "storage:FIXT0002/FIXT0002.pdf",
+          "contentType": "application/pdf"
+        }
+      ],
+      "collections": ["运动医学"]
+    }
+  ],
+  "collections": {
+    "运动医学": {
+      "name": "运动医学",
+      "parent": "",
+      "items": ["FIXT0002"]
+    }
+  }
+}

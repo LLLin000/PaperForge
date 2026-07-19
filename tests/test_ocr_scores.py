@@ -1,0 +1,136 @@
+from __future__ import annotations
+
+
+def test_figure_caption_score_returns_evidence() -> None:
+    from paperforge.worker.ocr_scores import score_figure_caption
+
+    block = {"role": "figure_caption_candidate", "text": "Figure 1. Cell migration assay", "page": 1, "bbox": [100, 500, 800, 540]}
+    result = score_figure_caption(block, nearby_media=True, caption_style_match=True)
+    assert result["decision"] == "figure_caption"
+    assert result["score"] >= 0.7
+    assert "figure_number" in result["evidence"]
+
+
+def test_table_match_score_prefers_same_page_overlap() -> None:
+    from paperforge.worker.ocr_scores import score_table_match
+
+    caption = {"text": "Table 1. Baseline characteristics", "page": 2, "bbox": [100, 100, 700, 140]}
+    asset = {"block_id": "t1", "page": 2, "bbox": [100, 160, 700, 500]}
+    result = score_table_match(caption, asset)
+    assert result["decision"] == "matched"
+    assert result["matched_asset_id"] == "t1"
+    assert result["score"] >= 0.7
+
+
+def test_table_match_score_distinguishes_previous_page_assets() -> None:
+    from paperforge.worker.ocr_scores import score_table_match
+
+    caption = {"text": "Table 1. Baseline characteristics", "page": 2, "bbox": [100, 80, 700, 120]}
+    previous_page_asset = {"block_id": "t_prev", "page": 1, "bbox": [100, 900, 700, 1200]}
+    same_page_asset = {"block_id": "t_same", "page": 2, "bbox": [100, 160, 700, 500]}
+
+    previous_result = score_table_match(caption, previous_page_asset)
+    same_page_result = score_table_match(caption, same_page_asset)
+
+    assert "previous_page" in previous_result["evidence"]
+    assert "asset_below_caption" not in previous_result["evidence"]
+    assert previous_result["score"] < same_page_result["score"]
+    assert previous_result["score"] >= 0.4
+
+
+def test_tail_boundary_score_returns_reason_list() -> None:
+    from paperforge.worker.ocr_scores import score_tail_boundary
+
+    result = score_tail_boundary(forward_body_end=8, backward_backmatter_start=9, references_start={"page": 10})
+    assert result["score"] >= 0.7
+    assert result["body_end_page"] == 8
+    assert result["reason"]
+
+
+def test_figure_match_score_prefers_same_page_overlap() -> None:
+    from paperforge.worker.ocr_scores import score_figure_match
+
+    legend = {"block_id": "cap1", "page": 2, "bbox": [100, 500, 700, 540]}
+    asset = {"block_id": "fig1", "page": 2, "bbox": [120, 120, 680, 480]}
+
+    result = score_figure_match(legend, asset, caption_score={"score": 0.8})
+
+    assert result["decision"] == "matched"
+    assert result["matched_asset_id"] == "fig1"
+    assert result["score"] >= 0.6
+    assert "same_page" in result["evidence"]
+    assert "x_overlap" in result["evidence"]
+
+
+def test_figure_match_score_allows_strong_same_page_geometry_without_x_overlap() -> None:
+    from paperforge.worker.ocr_scores import score_figure_match
+
+    legend = {"block_id": "cap1", "page": 2, "bbox": [100, 500, 700, 540]}
+    asset = {"block_id": "fig1", "page": 2, "bbox": [710, 120, 1110, 480]}
+
+    result = score_figure_match(
+        legend,
+        asset,
+        caption_score={"score": 0.8},
+        caption_text_supported=True,
+    )
+
+    assert result["decision"] == "matched"
+    assert result["matched_asset_id"] == "fig1"
+    assert result["score"] >= 0.6
+    assert "same_page" in result["evidence"]
+    assert "nearby_y" in result["evidence"]
+    assert "caption_above_or_below" in result["evidence"]
+    assert "caption_text_supported" in result["evidence"]
+
+
+def test_figure_match_score_keeps_short_caption_without_x_overlap_ambiguous() -> None:
+    from paperforge.worker.ocr_scores import score_figure_match
+
+    legend = {"block_id": "cap1", "page": 2, "bbox": [50, 500, 250, 530]}
+    asset = {"block_id": "fig1", "page": 2, "bbox": [700, 60, 1100, 420]}
+
+    result = score_figure_match(
+        legend,
+        asset,
+        caption_score={"score": 0.7},
+    )
+
+    assert result["decision"] == "ambiguous"
+
+
+def test_figure_match_score_rejects_low_caption_score() -> None:
+    from paperforge.worker.ocr_scores import score_figure_match
+
+    legend = {"block_id": "cap1", "page": 2, "bbox": [100, 500, 700, 540]}
+    asset = {"block_id": "fig1", "page": 2, "bbox": [120, 120, 680, 480]}
+
+    result = score_figure_match(legend, asset, caption_score={"score": 0.2})
+
+    assert result["decision"] == "rejected"
+    assert result["score"] < 0.4
+    assert "low_caption_score" in result["evidence"]
+
+
+def test_structured_insert_score_uses_multiple_evidence_terms() -> None:
+    from paperforge.worker.ocr_scores import score_structured_insert
+
+    block = {"text": "Box 1. Key points", "role": "body_paragraph", "_in_visual_container": True, "bbox": [50, 100, 400, 180], "page_width": 1200}
+
+    result = score_structured_insert(block, body_spine_match=False, cluster_coherent=True)
+
+    assert result["decision"] == "structured_insert"
+    assert result["score"] >= 0.7
+    assert "visual_container" in result["evidence"]
+    assert "box_or_summary_keyword" in result["evidence"]
+
+
+def test_structured_insert_score_keeps_visual_container_alone_as_candidate() -> None:
+    from paperforge.worker.ocr_scores import score_structured_insert
+
+    block = {"text": "Ordinary paragraph text", "role": "body_paragraph", "_in_visual_container": True, "bbox": [100, 100, 900, 180], "page_width": 1200}
+
+    result = score_structured_insert(block, body_spine_match=True, cluster_coherent=False)
+
+    assert result["decision"] != "structured_insert"
+    assert result["score"] < 0.7

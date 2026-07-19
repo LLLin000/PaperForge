@@ -1,0 +1,287 @@
+{
+  "audit_date": "2026-06-28",
+  "audit_type": "data_driven",
+  "papers": {
+    "2HEUD5P9": {
+      "total_blocks": 670,
+      "total_pages": 27,
+      "findings": [
+        {
+          "severity": "BUG",
+          "page": 2,
+          "block_role": "paper_title",
+          "text": "2. Main Types of Bone Biomaterials",
+          "issue": "section heading on page 2 misclassified as paper_title (title repeat detection too broad)",
+          "expected": "section_heading or noise",
+          "category": "title_repeat_misclassification"
+        },
+        {
+          "severity": "BUG",
+          "pages": [
+            "1",
+            "23"
+          ],
+          "block_role": "frontmatter_noise",
+          "zone": "body_zone",
+          "text": "ORCID + Received/Revised dates",
+          "issue": "frontmatter metadata elements in body_zone instead of frontmatter_main_zone",
+          "expected": "frontmatter_noise in frontmatter_main_zone",
+          "category": "zone_leak"
+        },
+        {
+          "severity": "MINOR",
+          "pages": [
+            "2",
+            "3",
+            "6",
+            "8",
+            "10",
+            "12",
+            "16",
+            "19",
+            "22",
+            "23",
+            "25",
+            "26"
+          ],
+          "block_role": "unknown_structural",
+          "zone": "body_zone",
+          "text": "empty or whitespace",
+          "issue": "12 empty unknown_structural blocks spread across body zone — likely OCR ghost blocks",
+          "expected": "dropped or noise in no_zone",
+          "category": "ocr_ghost_blocks"
+        },
+        {
+          "severity": "BUG",
+          "page": 23,
+          "zone_mix": true,
+          "zones": [
+            "body_zone(7)",
+            "reference_zone(45)",
+            "frontmatter_side_zone(1)"
+          ],
+          "issue": "body blocks intermixed with reference zone on page 23 — body blocks before reference boundary",
+          "expected": "body blocks should be pre-reference and reference_zone should start cleanly",
+          "category": "reference_boundary_body_leak"
+        },
+        {
+          "severity": "INFO",
+          "pages": [
+            "1"
+          ],
+          "note": "Frontmatter clean: paper_title (2 blocks), authors (1 block) in frontmatter_main_zone"
+        },
+        {
+          "severity": "INFO",
+          "pages": [
+            "1"
+          ],
+          "note": "Abstract: 1 abstract_body in body_zone — correct"
+        },
+        {
+          "severity": "PASS",
+          "domain": "frontmatter",
+          "note": "17/17 blocks correct on page 1",
+          "category": "visual_audit"
+        },
+        {
+          "severity": "BUG",
+          "domain": "figures",
+          "page": 13,
+          "block": "p13:6",
+          "issue": "Figure 4 caption mislabeled as body_paragraph (should be figure_caption)",
+          "category": "figure_caption_mislabel"
+        },
+        {
+          "severity": "PASS",
+          "domain": "boundary",
+          "page": 23,
+          "note": "Clean body/ref transition. No body-ref mixing found.",
+          "category": "visual_audit"
+        },
+        {
+          "severity": "PASS",
+          "domain": "figures",
+          "pages": [
+            4,
+            6,
+            9,
+            10,
+            15,
+            21
+          ],
+          "note": "All figures correctly grouped, captions correct, panels covered.",
+          "category": "visual_audit"
+        }
+      ]
+    },
+    "4AG67PBH": {
+      "total_blocks": 599,
+      "total_pages": 25,
+      "findings": [
+        {
+          "severity": "BUG",
+          "page": 1,
+          "block_role": "frontmatter_noise",
+          "zone": "body_zone",
+          "text": "ORCID, copyright, DOI",
+          "issue": "3 frontmatter_noise metadata blocks in body_zone instead of frontmatter_main_zone",
+          "expected": "frontmatter_noise in frontmatter_main_zone",
+          "category": "zone_leak"
+        },
+        {
+          "severity": "BUG",
+          "page": 21,
+          "block_role": "backmatter_body",
+          "zone": "body_zone",
+          "text": "Supporting Information, dates, animal models",
+          "issue": "5 backmatter_body blocks in body_zone — post-reference backmatter should be in tail zone",
+          "expected": "backmatter_body in post_reference_backmatter_zone or tail_nonref_hold_zone",
+          "category": "backmatter_zone_leak"
+        },
+        {
+          "severity": "BUG",
+          "page": 21,
+          "zone_mix": true,
+          "zones": [
+            "body_zone(8)",
+            "reference_zone(35)",
+            "frontmatter_side_zone(1)"
+          ],
+          "issue": "Mixed body + reference zone on page 21 with Conflict of Interest in frontmatter_side_zone",
+          "expected": "conflict of interest should be in tail zone or body_zone",
+          "category": "reference_boundary_mix"
+        },
+        {
+          "severity": "INFO",
+          "pages": [
+            "1"
+          ],
+          "note": "Frontmatter clean: paper_title (1), authors (1) in frontmatter_main_zone"
+        },
+        {
+          "severity": "INFO",
+          "pages": [
+            "1"
+          ],
+          "note": "Abstract: 1 abstract_body in body_zone — correct"
+        },
+        {
+          "severity": "BUG",
+          "domain": "frontmatter",
+          "page": 1,
+          "blocks": [
+            "p1:11",
+            "p1:13",
+            "p1:15"
+          ],
+          "issue": "Affiliation blocks misclassified as footnote (3 blocks)",
+          "category": "footnote_vs_affiliation"
+        },
+        {
+          "severity": "MINOR",
+          "domain": "frontmatter",
+          "page": 1,
+          "blocks": [
+            "p1:12",
+            "p1:16"
+          ],
+          "issue": "DOI/copyright: frontmatter_noise -> frontmatter_support",
+          "category": "noise_vs_support"
+        },
+        {
+          "severity": "BUG",
+          "domain": "figures",
+          "page": 3,
+          "blocks": [
+            "3:4",
+            "3:7",
+            "3:10"
+          ],
+          "issue": "non_body_insert vs figure_caption_candidate mislabel",
+          "category": "figure_caption_mislabel"
+        },
+        {
+          "severity": "MINOR",
+          "domain": "figures",
+          "page": 10,
+          "issue": "Panel D split across 2 asset blocks",
+          "category": "figure_over_segmentation"
+        },
+        {
+          "severity": "BUG",
+          "domain": "figures",
+          "page": 25,
+          "blocks": [
+            "25:4",
+            "25:8",
+            "25:10"
+          ],
+          "issue": "Author-bio page: caption/ref_item -> backmatter_body",
+          "category": "backmatter_mislabel"
+        },
+        {
+          "severity": "BUG",
+          "domain": "boundary",
+          "page": 21,
+          "blocks": [
+            "21:8",
+            "21:9"
+          ],
+          "issue": "Conflict Interest heading/body mislabeled",
+          "category": "backmatter_heading_mislabel"
+        }
+      ]
+    }
+  },
+  "cross_paper_patterns": {
+    "zone_leak_frontmatter_to_body": {
+      "count": 2,
+      "papers": [
+        "2HEUD5P9",
+        "4AG67PBH"
+      ],
+      "description": "ORCID/copyright/DOI/date metadata blocks in body_zone — likely from frontmatter normalization missing these specific text patterns",
+      "fix": "Add ORCID, DOI, and date text patterns to frontmatter_noise normalization in _normalize_frontmatter_blocks"
+    },
+    "reference_boundary_body_mix": {
+      "count": 2,
+      "papers": [
+        "2HEUD5P9",
+        "4AG67PBH"
+      ],
+      "description": "Body paragraphs intermixed with reference zone on reference boundary pages",
+      "fix": "P1 backmatter boundary redesign should handle this — verify ref-anchored partition"
+    },
+    "title_repeat_on_page_2": {
+      "count": 1,
+      "papers": [
+        "2HEUD5P9"
+      ],
+      "description": "Section heading on page 2 classified as paper_title",
+      "fix": "Tighten doc_title raw_label check for page 2: only accept if text matches page 1 title"
+    },
+    "footnote_vs_affiliation": {
+      "count": 1,
+      "papers": [
+        "4AG67PBH"
+      ],
+      "fix": "Add address-specific patterns to footnote detection."
+    },
+    "figure_caption_mislabel_as_body": {
+      "count": 2,
+      "papers": [
+        "2HEUD5P9",
+        "4AG67PBH"
+      ],
+      "fix": "Relax caption rules for blocks below figure assets in display zones."
+    },
+    "backmatter_page_mislabel": {
+      "count": 1,
+      "papers": [
+        "4AG67PBH"
+      ],
+      "fix": "Add backmatter page guard: pages after reference boundary should not create new figure objects."
+    }
+  }
+}

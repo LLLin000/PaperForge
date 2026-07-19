@@ -1,0 +1,29 @@
+{
+  "name": "PaperForge-Lite",
+  "description": "Lightweight literature management automation for Obsidian + Zotero",
+  "repository": "https://github.com/LLLin000/PaperForge",
+  "update": {
+    "channel": "stable",
+    "auto_check": true,
+    "check_interval_days": 7
+  },
+  "protected_paths": [
+    "<resources_dir>/",
+    "<base_dir>/",
+    "<system_dir>/PaperForge/ocr/",
+    "<system_dir>/PaperForge/exports/",
+    "<system_dir>/PaperForge/indexes/",
+    "<system_dir>/PaperForge/candidates/",
+    ".env",
+    "AGENTS.md"
+  ],
+  "updateable_paths": [
+    "skills/",
+    "pipeline/",
+    "command/",
+    "scripts/",
+    "plugin/"
+  ],
+  "changelog_url": "https://github.com/LLLin000/PaperForge/releases",
+  "auto_analyze_after_ocr": false
+}

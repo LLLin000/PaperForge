@@ -1,0 +1,20 @@
+{
+  "figures": [
+    {
+      "page": 1,
+      "filename": "page_001_fig_01.png",
+      "caption": "Mock figure 1: Testing flowchart.",
+      "key": "fig_001"
+    }
+  ],
+  "tables": [
+    {
+      "page": 2,
+      "filename": "page_002_table_01.png",
+      "caption": "Mock table 1: Results summary.",
+      "key": "tbl_001"
+    }
+  ],
+  "total_figures": 1,
+  "total_tables": 1
+}

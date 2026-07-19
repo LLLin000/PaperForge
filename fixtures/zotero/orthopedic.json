@@ -1,0 +1,41 @@
+{
+  "items": [
+    {
+      "key": "FIXT0001",
+      "itemKey": "FIXT0001",
+      "itemType": "journalArticle",
+      "title": "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "John",
+          "lastName": "Smith"
+        },
+        {
+          "creatorType": "author",
+          "firstName": "Jane",
+          "lastName": "Doe"
+        }
+      ],
+      "publicationTitle": "Journal of Shoulder and Elbow Surgery",
+      "date": "2024-03-15",
+      "DOI": "10.1016/j.jse.2024.01.001",
+      "PMID": "12345678",
+      "abstractNote": "This study compares the biomechanical properties of various suture anchor configurations used in rotator cuff repair surgery.",
+      "attachments": [
+        {
+          "path": "storage:FIXT0001/FIXT0001.pdf",
+          "contentType": "application/pdf"
+        }
+      ],
+      "collections": ["orthopedic"]
+    }
+  ],
+  "collections": {
+    "orthopedic": {
+      "name": "orthopedic",
+      "parent": "",
+      "items": ["FIXT0001"]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{"block_id":"p1_b1","page":1,"role":"paper_title","text":"Synthetic OCR Paper","bbox":[90,60,720,100],"page_width":1200,"page_height":1600,"render_default":false}
+{"block_id":"p1_b2","page":1,"role":"abstract_heading","text":"Abstract","bbox":[90,180,260,220],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p1_b3","page":1,"role":"abstract_body","text":"This fixture includes figures tables inserts and tail content.","bbox":[90,230,1000,290],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p2_img1","page":2,"role":"media_asset","raw_label":"image","text":"","bbox":[100,180,700,620],"page_width":1200,"page_height":1600,"render_default":false}
+{"block_id":"p2_cap1","page":2,"role":"figure_caption","text":"Figure 1. Synthetic figure caption.","bbox":[100,640,900,690],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p2_table1","page":2,"role":"media_asset","raw_label":"table","text":"","bbox":[100,820,900,1120],"page_width":1200,"page_height":1600,"render_default":false}
+{"block_id":"p2_tcap1","page":2,"role":"table_caption","text":"Table 1. Synthetic table caption.","bbox":[100,760,900,810],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p2_insert1","page":2,"role":"structured_insert","text":"Key points","bbox":[930,180,1130,220],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p2_insert2","page":2,"role":"structured_insert","text":"- Synthetic insert item","bbox":[930,230,1130,270],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p3_back1","page":3,"role":"backmatter_boundary_heading","text":"Additional Information and Declarations","bbox":[90,90,800,130],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p3_back2","page":3,"role":"backmatter_heading","text":"Funding","bbox":[90,150,260,190],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p3_back3","page":3,"role":"backmatter_body","text":"No external funding was received.","bbox":[90,200,900,250],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p3_refh","page":3,"role":"reference_heading","text":"References","bbox":[90,360,300,400],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p3_ref1","page":3,"role":"reference_item","text":"1. Author A. Synthetic reference. Journal. 2026.","bbox":[90,420,950,470],"page_width":1200,"page_height":1600,"render_default":true}

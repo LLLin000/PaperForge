@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "key": "STORAGE1",
+      "itemKey": "STORAGE1",
+      "itemType": "journalArticle",
+      "title": "Storage Prefix Test Paper",
+      "date": "2023",
+      "publicationTitle": "Storage Journal",
+      "DOI": "10.5678/storage.002",
+      "attachments": [
+        {
+          "path": "storage:STORAGE1/Storage Prefix Test Paper.pdf",
+          "contentType": "application/pdf",
+          "title": "PDF",
+          "size": 1024000
+        }
+      ]
+    }
+  ],
+  "collections": {}
+}

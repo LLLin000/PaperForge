@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "command": "status",
+  "version": "<VERSION>",
+  "data": {
+    "version": "<VERSION>",
+    "vault": "<VAULT>",
+    "system_dir": "System",
+    "resources_dir": "Resources",
+    "exports": 0,
+    "domains": 0,
+    "total_papers": 0,
+    "formal_notes": 0,
+    "bases": 1,
+    "ocr": {
+      "total": 0,
+      "pending": 0,
+      "processing": 0,
+      "done": 0,
+      "failed": 0
+    },
+    "structured_ocr_health": [],
+    "ocr_version_state": {
+      "total_papers": 0,
+      "derived_stale_count": 0,
+      "raw_upgradable_count": 0,
+      "derived_stale_keys": [],
+      "raw_upgrade_keys": [],
+      "legacy_backfilled_count": 0,
+      "legacy_backfilled_keys": []
+    },
+    "path_errors": 0,
+    "env_configured": true,
+    "lifecycle_level_counts": {},
+    "health_aggregate": {},
+    "maturity_distribution": {}
+  },
+  "error": null
+}

@@ -1,0 +1,28 @@
+A Randomized Trial of Remimazolam vs Propofol for Sedation in Elderly Patients
+
+Wong M, Johnson S, Kim D
+Anesthesiology, Mayo Clinic
+
+Abstract
+
+Background: Remimazolam may offer advantages over propofol for sedation in elderly patients. Methods: 120 patients (age >=65) undergoing colonoscopy were randomized. Results: Recovery time shorter with remimazolam (8.2 vs 12.7 min, p=0.003). Hypotension less frequent (8% vs 22%, p=0.01). Conclusion: Remimazolam provides faster recovery and fewer hemodynamic events.
+
+1. Introduction
+
+Sedation in elderly is challenging. Propofol has narrow therapeutic window and hemodynamic effects. Remimazolam is a novel ultra-short-acting benzodiazepine.
+
+2. Methods
+
+Single-center double-blind RCT. Inclusion: age >=65, ASA I-III, colonoscopy.
+
+Table 1. Baseline
+
+Table 2. Events
+
+3. Results
+
+All 120 patients completed. Primary outcome: recovery time shorter with remimazolam (8.2+/-2.1 vs 12.7+/-3.4 min; p=0.003). Patient satisfaction favored remimazolam.
+
+4. Discussion
+
+Remimazolam provides faster recovery and fewer complications vs propofol in elderly.

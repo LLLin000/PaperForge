@@ -1,0 +1,63 @@
+schema_version: ocr_readiness_policy_v1
+
+weights:
+  rendered_text_integrity: 0.35
+  body_reference_structure: 0.25
+  figure_table_integrity: 0.20
+  metadata_frontmatter_quality: 0.10
+  confidence_and_fallbacks: 0.10
+
+hard_red:
+  - rule: "rendered_text_gap_excessive"
+    field: "quality_indicators.rendered_text_integrity.signals.gap_count"
+    op: "gt"
+    value: 10
+
+  - rule: "body_weak_and_no_refs"
+    condition:
+      field_a: "quality_indicators.body_reference_structure.signals.body_spine_quality"
+      op_a: "eq"
+      value_a: "weak"
+      field_b: "quality_indicators.body_reference_structure.signals.references_found"
+      op_b: "eq"
+      value_b: false
+
+  - rule: "fulltext_too_short"
+    field: "developer_diagnostics.run_integrity.output_fulltext_chars"
+    op: "lt"
+    value: 2000
+
+use_cases:
+  reading:
+    gates:
+      required:
+        - indicator: "rendered_text_integrity"
+          min_status: "yellow"
+        - indicator: "body_reference_structure"
+          min_status: "yellow"
+
+  qa:
+    gates:
+      required:
+        - indicator: "rendered_text_integrity"
+          min_status: "yellow"
+        - indicator: "body_reference_structure"
+          min_status: "yellow"
+      soft:
+        - indicator: "metadata_frontmatter_quality"
+          min_status: "yellow"
+
+  figure_table_reasoning:
+    if_no_figure_table_evidence: "not_applicable"
+    gates:
+      required:
+        - indicator: "figure_table_integrity"
+          min_status: "yellow"
+
+  section_chunking:
+    gates:
+      required:
+        - indicator: "body_reference_structure"
+          min_status: "green"
+        - indicator: "rendered_text_integrity"
+          min_status: "yellow"

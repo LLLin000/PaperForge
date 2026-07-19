@@ -1,0 +1,58 @@
+{
+  "plain_subtypes": {
+    "short_alpha_label": 222,
+    "very_short_trash": 418,
+    "descriptive_paragraph": 767,
+    "mislabeled_table": 67,
+    "subfigure_label": 5,
+    "box_or_appendix_text": 3
+  },
+  "selected_papers": {
+    "appendix_alpha": [
+      "2BFG5P6B",
+      "4CML4K3Y",
+      "7CIULR7G",
+      "AH6Q7DLC",
+      "APNGVIIY",
+      "BAGSWM3L",
+      "HXZHMT2Q",
+      "LCGJ6IMF",
+      "LJU5RQUB",
+      "M84CTEM9",
+      "NSV8KBJY",
+      "XTUQTWER"
+    ],
+    "scheme_numeric": [
+      "3FQYMMXS",
+      "4ZCBXS4P",
+      "5CK2JEIS",
+      "6ZWKUPCU",
+      "7Q3VTNHT",
+      "7THZ5Y9G"
+    ],
+    "fig_nospace": [
+      "5MAW65YD",
+      "A6IC2SIK",
+      "UGA8GFAR"
+    ],
+    "numeric_alpha": [
+      "8CCATQE3"
+    ],
+    "plain_majority": [
+      "KBLPLRVL",
+      "P9D6GZ9M",
+      "KIX7SKXQ",
+      "XBSC5X2H",
+      "VAMSAZMG",
+      "A6IC2SIK"
+    ],
+    "standard_baseline": [
+      "NC66N4Q3",
+      "LISDYT7V",
+      "S9UMIF83",
+      "PJBMGVTF",
+      "Y5KQ4JQ7",
+      "4IG7M4FI"
+    ]
+  }
+}

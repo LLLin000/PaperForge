@@ -1,0 +1,19 @@
+[
+  {"role": "title", "approx_page": 0},
+  {"role": "author", "approx_page": 0},
+  {"role": "abstract", "approx_page": 0},
+  {"role": "heading", "approx_page": 1},
+  {"role": "text", "approx_page": 1},
+  {"role": "heading", "approx_page": 1},
+  {"role": "text", "approx_page": 1},
+  {"role": "table", "approx_page": 1},
+  {"role": "table", "approx_page": 1},
+  {"role": "heading", "approx_page": 2},
+  {"role": "text", "approx_page": 2},
+  {"role": "heading", "approx_page": 2},
+  {"role": "text", "approx_page": 2},
+  {"role": "heading", "approx_page": 2},
+  {"role": "reference", "approx_page": 2},
+  {"role": "reference", "approx_page": 2},
+  {"role": "reference", "approx_page": 2}
+]

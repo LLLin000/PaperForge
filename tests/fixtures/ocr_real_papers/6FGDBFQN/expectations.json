@@ -1,0 +1,161 @@
+{
+  "document": {
+    "expected_abstract_span": true,
+    "expected_reference_zone": true,
+    "notes": [
+      "Comprehensive block-level gold expectations following CAQ/DWQQ pattern.",
+      "Every significant block on every page is annotated with expected_role and expected_zone.",
+      "BUG annotations mark current pipeline output mismatches.",
+      "Known issues: frontmatter noise leaking into body (ISSN, journal citation), body text fragmentation across pages (mid-word breaks), caption fragments in body flow, references out of order, conclusion text interleaved with references."
+    ]
+  },
+  "pages": {
+    "1": {
+      "assertions": [
+        {"text_contains": "Musculoskeletal Research", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
+        {"text_contains": "Rotator Cable: MRI Study of Its Appearance", "expected_role": "paper_title"},
+        {"text_contains": "Soterios Gyftopoulos", "expected_role": "authors", "notes": "BUG: Real: unknown_structural"},
+        {"text_contains": "Keywords: arthroscopy, cadaveric study, MRI, rotator cable, rotator cuff", "expected_role_any_of": ["frontmatter_support", "keywords"], "notes": "BUG: Real: frontmatter_noise"},
+        {"text_contains": "DOI:10.2214/AJR.12.9312", "expected_role_any_of": ["frontmatter_noise", "frontmatter_support"], "must_not_render": true, "notes": "BUG: Real: frontmatter_noise. Must not render in body flow."},
+        {"text_contains": "Received May 29, 2012; accepted after revision July 25, 2012", "expected_role_any_of": ["frontmatter_noise", "frontmatter_support"], "must_not_render": true},
+        {"text_contains": "Department of Radiology, NYU Langone Medical Center", "expected_role": "affiliation", "notes": "BUG: Real: frontmatter_noise"},
+        {"text_contains": "AJR 2013; 200:1101", "expected_role_any_of": ["frontmatter_noise", "noise"], "must_not_render": true, "notes": "BUG: Real: body_paragraph. Journal citation leaking into body flow."},
+        {"text_contains": "0361-803X/13/2005-1101", "expected_role_any_of": ["frontmatter_noise", "noise"], "must_not_render": true, "notes": "BUG: Real: body_paragraph. ISSN leaking into body flow."},
+        {"text_contains": "MATERIALS AND METHODS. Two cadaveric shoulders underwent 3-T MRI", "expected_role": "abstract_body"},
+        {"text_contains": "RESULTS. A linear band of hypointense signal intensity", "expected_role": "abstract_body"},
+        {"text_contains": "CONCLUSION. The rotator cable is a structure", "expected_role": "abstract_body"},
+        {"text_contains": "The rotator cable was initially described by Clark and Harryman", "expected_role": "body_paragraph", "notes": "BUG: Real: frontmatter_support. Should be body_paragraph in body_zone."},
+        {"text_contains": "ment that coursed along the undersurface of the rotator cuff", "expected_role": "body_paragraph", "notes": "BUG: Mid-word fragment. Text starts with 'ment that coursed...' — continuation of previous block split across page boundary."},
+        {"text_contains": "In the initial descriptions of the cable", "expected_role": "body_paragraph"}
+      ]
+    },
+    "2": {
+      "assertions": [
+        {"text_contains": "There is no consensus in terms of the MRI appearance", "expected_role": "body_paragraph"},
+        {"text_equals": "Materials and Methods", "expected_role": "section_heading"},
+        {"text_contains": "Institutional review board approval was obtained", "expected_role": "body_paragraph"},
+        {"text_equals": "Cadaveric Study", "expected_role": "subsection_heading"},
+        {"text_contains": "Two shoulders from fresh-frozen cadavers", "expected_role": "body_paragraph"},
+        {"text_contains": "After the imaging was completed", "expected_role": "body_paragraph"},
+        {"text_contains": "The MR images of the shoulder cadavers were evaluated", "expected_role": "body_paragraph", "notes": "BUG: Real: frontmatter_noise in frontmatter_side_zone. Should be body_paragraph in body_zone."},
+        {"text_equals": "Clinical Study", "expected_role": "subsection_heading"},
+        {"text_contains": "Seventy consecutive 1.5- and 3-T MRI studies", "expected_role": "body_paragraph"},
+        {"text_contains": "Two musculoskeletal radiologists", "expected_role": "body_paragraph"},
+        {"text_contains": "Fig. 1", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Location of cable was measured from medial enthesis", "expected_role": "figure_caption_candidate"}
+      ],
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 1, "asset_block_ids": [13, 14, 16], "must_render_as_object": true, "notes": "Figure 1 is a multi-panel figure with three same-row images on page 2."}
+      ]
+    },
+    "3": {
+      "assertions": [
+        {"text_contains": "Fig. 2", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Fig. 3", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "MRI-gross anatomic correlation in coronal plane", "expected_role": "figure_caption_candidate"},
+        {"text_equals": "Cadaveric Study Results", "expected_role": "subsection_heading"},
+        {"text_contains": "A linear band of hypointense signal intensity", "expected_role": "body_paragraph"},
+        {"text_contains": "Arthroscopic evaluation of cadaver 1 showed", "expected_role": "body_paragraph"},
+        {"text_contains": "don (Fig. 6). The posterior insertion was not clearly visualized", "expected_role": "figure_caption_candidate", "notes": "BUG: Starts mid-word 'don'. Caption continuation fragment mis-split."},
+        {"text_equals": "Clinical Study", "expected_role": "subsection_heading"},
+        {"text_contains": "The rotator cable was seen in 74.3% of the MRI studies", "expected_role": "body_paragraph"},
+        {"text_equals": "Discussion", "expected_role": "section_heading"},
+        {"text_contains": "The rotator cable was initially described in the orthopedic literature", "expected_role": "body_paragraph"}
+      ],
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 2, "asset_block_ids": [3, 4], "must_render_as_object": true, "notes": "Figure 2 captures the top band of same-page images via sidecar partition."},
+        {"object_type": "figure", "figure_number": 3, "asset_block_ids": [11, 13], "must_render_as_object": true, "notes": "Figure 3 captures the bottom band of same-page images via sidecar partition."}
+      ]
+    },
+    "4": {
+      "assertions": [
+        {"text_contains": "coracohumeral ligament that plays a role in the stability", "expected_role": "body_paragraph"},
+        {"text_contains": "Using MRI, Sheah et al.", "expected_role": "body_paragraph"},
+        {"text_contains": "We were able to identify the rotator cable", "expected_role": "body_paragraph"},
+        {"text_contains": "Fig. 4", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Fig. 5", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Fig. 6", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Arthroscopic image obtained from posterior portal", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Sagittal oblique image from corresponding MRI shows similar band of tissue", "expected_role": "figure_caption_candidate", "notes": "BUG: Real: footnote. Figure 5 panel B continuation — should be figure_caption_candidate, not footnote leaking into body flow."}
+      ],
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 4, "asset_block_ids": [7, 8], "must_render_as_object": true, "notes": "Figure 4 captures the top band of page 4 images via sidecar partition."},
+        {"object_type": "figure", "figure_number": 5, "asset_block_ids": [9, 10], "must_render_as_object": true, "notes": "Figure 5 captures the middle band of page 4 images via sidecar partition."},
+        {"object_type": "figure", "figure_number": 6, "asset_block_ids": [11, 13], "must_render_as_object": true, "notes": "Figure 6 captures the bottom band of page 4 images via sidecar partition."}
+      ]
+    },
+    "5": {
+      "assertions": [
+        {"text_contains": "cadaver 1 showed the cable along the under-surface", "expected_role": "body_paragraph"},
+        {"text_contains": "We identified the rotator cable in 74.3% of the clinical MRI studies", "expected_role": "body_paragraph"},
+        {"text_contains": "The realization that the rotator cable can be frequently seen", "expected_role": "body_paragraph", "notes": "BUG: Real: backmatter_body in tail_nonref_hold_zone. Discussion conclusion text mis-zoned — should be body_paragraph, currently rendered interleaved with references."},
+        {"text_contains": "The mean cable thickness in our study differed", "expected_role": "body_paragraph"},
+        {"text_contains": "Our study had several limitations", "expected_role": "body_paragraph"},
+        {"text_equals": "Conclusion", "expected_role": "section_heading"},
+        {"text_contains": "Our study has shown that the rotator cable is a structure", "expected_role": "body_paragraph", "notes": "BUG: Real: backmatter_body in tail_nonref_hold_zone. Conclusion body text mis-zoned — currently rendered interleaved with references."},
+        {"text_equals": "References", "expected_role": "reference_heading"},
+        {"count_reference_content": {"min": 9, "max": 12}},
+        {"text_contains": "Clark JM, Harryman DT II. Tendons, ligaments", "expected_role": "reference_item", "expected_zone": "reference_zone"},
+        {"text_contains": "Burkhart SS. Fluoroscopic comparison of kinematic patterns", "expected_role": "reference_item", "expected_zone": "reference_zone"},
+        {"text_contains": "Burkhart SS, Esch JC, Jolson RS", "expected_role": "reference_item", "expected_zone": "reference_zone"},
+        {"text_contains": "Burkhart SS. Reconciling the paradox", "expected_role": "reference_item", "expected_zone": "reference_zone"},
+        {"text_contains": "Sheah K, Bredella MA, Warner JJ", "expected_role": "reference_item", "expected_zone": "reference_zone"},
+        {"text_contains": "Kask K, Kolts I, Lubienski A", "expected_role": "reference_item", "expected_zone": "reference_zone"},
+        {"text_contains": "Morag Y, Jacobson JA, Lucas D", "expected_role": "reference_item", "expected_zone": "reference_zone"},
+        {"text_contains": "Morag Y, Jamadar DA, Boon TA", "expected_role": "reference_item", "expected_zone": "reference_zone"},
+        {"text_contains": "Burkhart SS, Nottage WM, Ogilvie-Harris DJ", "expected_role": "reference_item", "expected_zone": "reference_zone"},
+        {"text_contains": "Burkhart SS. Arthroscopic debridement and decompression", "expected_role": "reference_item", "expected_zone": "reference_zone", "notes": "BUG: Real: tail_nonref_hold_zone. Ref 10 is in wrong zone, appears between ref 1 and ref 2 in fulltext."}
+      ]
+    }
+  },
+  "expected_bugs": [
+    {
+      "bug": "page1_authors_unknown_structural",
+      "pages": [1],
+      "description": "Author block has seed_role=authors but gate HELD to unknown_structural.",
+      "fix": "Author matching needs J C vs J.C. normalization"
+    },
+    {
+      "bug": "page1_frontmatter_noise_in_body",
+      "pages": [1],
+      "description": "ISSN (0361-803X), journal citation (AJR 2013; 200:1101), and DOI rendered in body flow as body_paragraph. Must not render.",
+      "fix": "Pre-proof/frontmatter classification or zone assignment need to suppress these blocks"
+    },
+    {
+      "bug": "page1_body_split_across_pages",
+      "pages": [1],
+      "description": "Body text split mid-word: 'liga-' on block 17, 'ment that coursed...' on block 18.",
+      "fix": "Cross-page text continuation detection"
+    },
+    {
+      "bug": "page2_left_column_side_zone",
+      "pages": [2],
+      "description": "Page 2 block 9 (cadaver imaging criteria) classified as frontmatter_noise in frontmatter_side_zone instead of body_paragraph in body_zone.",
+      "fix": "Left-column body text should not be classified as frontmatter side zone"
+    },
+    {
+      "bug": "page3_caption_split_midword",
+      "pages": [3],
+      "description": "Caption continuation starts mid-word: 'don (Fig. 6).' — belongs to 'Arthroscopic evaluation of cadaver 1 showe don' split.",
+      "fix": "Cross-page/cross-block caption attachment detection"
+    },
+    {
+      "bug": "page4_caption_panel_leaking_into_body",
+      "pages": [4],
+      "description": "Block 15: 'B, Sagittal oblique image from corresponding MRI shows...' is a figure caption panel fragment classified as footnote. Leaks into body flow in fulltext.",
+      "fix": "Figure caption panel continuation attachment"
+    },
+    {
+      "bug": "page5_body_in_reference_zone",
+      "pages": [5],
+      "description": "Blocks 4 and 9 ('The realization that...' and 'Our study has shown...') classified as backmatter_body in tail_nonref_hold_zone. These are conclusion discussion paragraphs that render interleaved with references.",
+      "fix": "Tail zone boundary: conclusion body should precede references, not interleave"
+    },
+    {
+      "bug": "page5_reference_out_of_order",
+      "pages": [5],
+      "description": "Reference 10 (block 20) is in tail_nonref_hold_zone, appears between ref 1 and ref 2 in fulltext rendering order.",
+      "fix": "Reference zone normalization should include all reference items on the page"
+    }
+  ]
+}

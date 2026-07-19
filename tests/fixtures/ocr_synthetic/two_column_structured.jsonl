@@ -1,0 +1,9 @@
+{"block_id":"p1_b1","page":1,"role":"paper_title","text":"Synthetic Two Column OCR Paper","bbox":[90,60,720,100],"page_width":1200,"page_height":1600,"render_default":false}
+{"block_id":"p1_b2","page":1,"role":"authors","text":"A. Author, B. Writer","bbox":[90,120,650,150],"page_width":1200,"page_height":1600,"render_default":false}
+{"block_id":"p1_b3","page":1,"role":"abstract_heading","text":"Abstract","bbox":[90,210,240,240],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p1_b4","page":1,"role":"abstract_body","text":"This synthetic abstract verifies frontmatter rendering.","bbox":[90,250,980,310],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p2_b1","page":2,"role":"section_heading","text":"1. Introduction","bbox":[90,90,430,130],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p2_b2","page":2,"role":"body_paragraph","text":"Left column body paragraph one.","bbox":[90,150,530,210],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p2_b3","page":2,"role":"body_paragraph","text":"Right column body paragraph one.","bbox":[650,150,1090,210],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p3_b1","page":3,"role":"reference_heading","text":"References","bbox":[90,90,300,130],"page_width":1200,"page_height":1600,"render_default":true}
+{"block_id":"p3_b2","page":3,"role":"reference_item","text":"1. Author A. Synthetic reference. Journal. 2026.","bbox":[90,150,950,210],"page_width":1200,"page_height":1600,"render_default":true}

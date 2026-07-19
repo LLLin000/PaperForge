@@ -1,0 +1,2491 @@
+page,block_id,raw_label,content_preview,bbox,role,role_confidence,evidence,seed_role,seed_confidence,zone,style_family,marker_type,render_default,index_default
+1,0,header_image,,"[83, 75, 569, 174]",unknown_structural,0.2,"[""unrecognized label 'header_image'""]",unknown_structural,0.2,frontmatter_main_zone,support_like,empty,False,True
+1,1,header_image,,"[815, 70, 1123, 142]",unknown_structural,0.2,"[""unrecognized label 'header_image'""]",unknown_structural,0.2,frontmatter_main_zone,support_like,empty,False,True
+1,2,header,Subscriber access provided by University of Glasgow Library,"[685, 195, 1120, 216]",noise,0.9,"[""header label""]",noise,0.9,frontmatter_main_zone,support_like,none,False,False
+1,3,text,Tissue Engineering and Regenerative Medicine,"[86, 219, 640, 251]",authors,0.8,"[""page-1 zone author_zone: Tissue Engineering and Regenerative Medicine""]",authors,0.8,frontmatter_main_zone,support_like,none,True,True
+1,4,doc_title,3D-printed #- tricalcium phosphate scaffold combined with a pulse electromagnetic field promotes the repair of skull defects in rats,"[134, 263, 1055, 328]",paper_title,0.8,"[""page-1 zone title_zone: 3D-printed #- tricalcium phosphate scaffold combined with a ""]",paper_title,0.8,frontmatter_main_zone,support_like,none,True,True
+1,5,text,"Haifeng Liang, Xiao Liu, Ying Pi, Qiang Yu, Yukun Yin, Xian Li, Yipei Yang, and Jing Tian","[153, 335, 1036, 364]",authors,0.8,"[""page-1 zone author_zone: Haifeng Liang, Xiao Liu, Ying Pi, Qiang Yu, Yukun Yin, Xian ""]",authors,0.8,frontmatter_main_zone,support_like,none,True,True
+1,6,text,"ACS Biomater. Sci. Eng., Just Accepted Manuscript • DOI: 10.1021/acsbiomaterials.9b00858 • Publication Date (Web): 03 Sep 2019","[308, 369, 874, 414]",frontmatter_noise,0.8,"[""page-1 zone journal_furniture_zone: ACS Biomater. Sci. Eng., Just Accepted Manuscript \u2022 DOI: 10.""]",frontmatter_noise,0.8,frontmatter_main_zone,support_like,none,False,False
+1,7,text,"Downloaded from pubs.acs.org on September 3, 2019","[361, 420, 831, 445]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,frontmatter_main_zone,support_like,none,True,True
+1,8,paragraph_title,Just Accepted,"[124, 515, 281, 541]",frontmatter_noise,0.8,"[""page-1 zone journal_furniture_zone: Just Accepted""]",frontmatter_noise,0.8,frontmatter_main_zone,heading_like,short_fragment,False,False
+1,9,abstract,"“Just Accepted” manuscripts have been peer-reviewed and accepted for publication. They are posted online prior to technical editing, formatting for publication and author proofing. The American Chemic","[132, 564, 1058, 883]",unknown_structural,0.85,"[""abstract label from Paddle OCR""]",abstract_body,0.85,frontmatter_main_zone,support_like,none,False,True
+1,10,footer,"is published by the American Chemical Society. 1155 Sixteenth Street N.W., Washington, DC 20036","[591, 1562, 1071, 1595]",noise,0.9,"[""footer label""]",noise,0.9,frontmatter_main_zone,support_like,none,False,False
+1,11,footer,"Published by American Chemical Society. Copyright © American Chemical Society. However, no copyright claim is made to original U.S. Government works, or works produced by employees of any Commonwealth","[590, 1597, 1113, 1665]",noise,0.9,"[""footer label""]",noise,0.9,frontmatter_main_zone,support_like,none,False,False
+2,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[8, 90, 44, 1530]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,frontmatter_main_zone,reference_like,reference_numeric_dot,False,False
+2,1,number,Page 1 of 36,"[12, 18, 122, 44]",noise,0.9,"[""page number label""]",noise,0.9,frontmatter_side_zone,support_like,short_fragment,False,False
+2,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,frontmatter_side_zone,support_like,none,False,False
+2,3,doc_title,3D-printed  $ \beta $-tricalcium phosphate scaffold combined with a pulse electromagnetic field promotes the repair of skull defects in rats,"[191, 182, 1000, 344]",unknown_structural,0.8,"[""page-1 zone title_zone: 3D-printed  $ \\beta $-tricalcium phosphate scaffold combined""]",paper_title,0.8,body_zone,body_like,none,False,True
+2,4,text,"Haifeng Liang $ ^{a} $, Xiao Liu $ ^{b} $, Ying Pi $ ^{a} $, Qiang Yu $ ^{a} $, Yukun Yin $ ^{a} $, Xian Li $ ^{a} $, Yipei Yang $ ^{a} $, Jing Tian $ ^{*a} $","[174, 380, 946, 408]",unknown_structural,0.8,"[""page-1 zone author_zone: Haifeng Liang $ ^{a} $, Xiao Liu $ ^{b} $, Ying Pi $ ^{a} $,""]",authors,0.8,body_zone,body_like,none,False,True
+2,5,text,"a Department of Orthopedics, Zhujiang Hospital, Southern Medical University, No. 253 Industrial Avenue, Haizhu, Guangzhou 510280, People's Republic of China","[174, 443, 1015, 533]",affiliation,0.8,"[""page-1 zone affiliation_zone: a Department of Orthopedics, Zhujiang Hospital, Southern Med""]",affiliation,0.8,body_zone,body_like,none,True,True
+2,6,text," $ ^{b} $ School of Materials Science and Engineering, South China University of Technology, Wushan,
+Guangzhou 510640, People's Republic of China","[173, 568, 1015, 657]",affiliation,0.8,"[""page-1 zone affiliation_zone: $ ^{b} $ School of Materials Science and Engineering, South ""]",affiliation,0.8,body_zone,body_like,affiliation_marker,True,True
+2,7,text,"*Corresponding author: Jing Tian, Email: tianjing_ortho@163.com","[176, 693, 748, 720]",frontmatter_support,0.78,"[""first-surviving-page support text: *Corresponding author: Jing Tian, Email: tianjing_ortho@163.""]",frontmatter_support,0.78,frontmatter_side_zone,support_like,none,True,True
+2,8,paragraph_title,ABSTRACT,"[175, 815, 277, 842]",abstract_heading,0.95,"[""abstract heading""]",abstract_heading,0.95,frontmatter_side_zone,heading_like,short_fragment,True,True
+2,9,abstract,"Trauma, infection, cancer and congenital diseases can lead to bone defects. The combination of 3D printing with biomaterials is of great significance in the treatment of bone defects. In addition, pul","[174, 880, 1017, 1533]",abstract_body,0.85,"[""abstract label from Paddle OCR""]",abstract_body,0.85,body_zone,body_like,none,True,True
+2,10,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+3,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 85, 42, 1532]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+3,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+3,2,number,Page 2 of 36,"[1069, 18, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+3,3,text,"proliferation and differentiation of rADSCs and the repair of a critical defect in the rat skull.
+Therefore, the combination of  $ \beta $-TCP and PEMF with 3D printing technology can provide better
+t","[175, 164, 1015, 316]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+3,4,text,KEYWORDS: 3D printing;  $ \beta $-tricalcium phosphate; pulse electromagnetic field; bone defect,"[175, 476, 953, 502]",structured_insert,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,False,False
+3,5,paragraph_title,INTRODUCTION,"[176, 664, 311, 687]",section_heading,0.9,"[""explicit scholarly heading: INTRODUCTION""]",section_heading,0.9,body_zone,heading_like,canonical_section_name,True,True
+3,6,text,Pulse electromagnetic fields (PEMFs) are transient electromagnetic fields produced in a coil when a pulse current generated by a pulse generator passes through the coil. The strength and frequency of ,"[173, 726, 1017, 1503]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+3,7,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+4,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 90, 44, 1530]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+4,1,number,Page 3 of 36,"[12, 18, 121, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+4,2,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 46]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+4,3,text,"PEMFs have a ""window effect"" $ ^{39} $; that is, the field strength, frequency and action time of PEMFs do not have linear relationships with the biological effects observed in cells. The field streng","[171, 162, 1019, 1504]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+4,4,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+5,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 84, 42, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+5,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+5,2,number,Page 4 of 36,"[1069, 18, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+5,3,text,"nonunion and other orthopedic diseases, it is rarely used to treat bone defects. Prior to this study, we demonstrated that PEMF therapy (50 Hz, 1 mT) can promote the proliferation and osteogenic diffe","[174, 166, 1017, 441]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+5,4,text,"The treatment of bone defects has always been a clinical problem, and the gold standard for treatment is autografts. However, bone transplantation has disadvantages such as few available sources, a la","[173, 476, 1017, 1504]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+5,5,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+6,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[10, 90, 42, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+6,1,number,Page 5 of 36,"[13, 18, 121, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+6,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 763, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+6,3,text,"also contains a porous structure design and rapid prototyping technology to provide space for
+osteoblast growth and vascular formation and to shorten the whole transplantation process. The
+combination","[175, 166, 1016, 380]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+6,4,paragraph_title,MATERIALS AND METHODS,"[176, 539, 423, 562]",section_heading,0.9,"[""explicit scholarly heading: MATERIALS AND METHODS""]",section_heading,0.9,body_zone,heading_like,canonical_section_name,True,True
+6,5,paragraph_title,Fabrication and characterization of  $ \beta $-TCP scaffolds,"[176, 601, 626, 625]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: Fabrication and characterization of  $ \\beta $-TCP scaffolds""]",subsection_heading,0.6,body_zone,heading_like,none,True,True
+6,6,text,"The β-TCP scaffolds were fabricated as previously described $ ^{33} $. Briefly, β-TCP powder was prepared using the chemical precipitation method. Then, ammonium polyacrylate (PAA-NH4) and hydroxyprop","[174, 663, 1016, 1502]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+6,7,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+7,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[10, 85, 41, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+7,1,header,ACS Biomaterials Science & Engineering,"[425, 19, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+7,2,number,Page 6 of 36,"[1069, 18, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+7,3,text,"volume of the  $ \beta $-TCP scaffolds was reduced to 90% after sintering. The design of the scaffold was completed by the CAD software SolidWorks (Massachusetts, USA). The scaffold was coated with go","[174, 164, 1015, 317]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+7,4,paragraph_title,Cell culture and PEMF treatment,"[176, 352, 470, 376]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: Cell culture and PEMF treatment""]",subsection_heading,0.6,body_zone,heading_like,none,True,True
+7,5,text,"ADSCs were obtained from the groin of 3-day-old Sprague Dawley rats. The cells were cultured on Dulbecco's minimum Eagle's medium (DMEM, Gibco) with 10% fetal bovine serum (FBS, Gibco) and 5% antibiot","[174, 415, 1016, 628]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+7,6,text,"The prepared cells were randomly divided into four groups and seeded on tissue culture plates (TCPS) or  $ \beta $-TCP scaffolds. The LIVE/DEAD Cell Staining Kit (BioVision, Inc.) was applied to rADSC","[173, 665, 1016, 940]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+7,7,text,"The PEMF device (Yongyikeji, Hunan, China) consisted of a generator and its connected coils. When the generator produces a pulse current of a certain intensity, a PEMF will be generated between the co","[173, 977, 1016, 1377]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+7,8,paragraph_title,CCK-8 and LIVE/DEAD cell staining,"[176, 1475, 480, 1499]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: CCK-8 and LIVE/DEAD cell staining""]",subsection_heading,0.6,body_zone,heading_like,none,True,True
+7,9,footer,ACS Paragon Plus Environment,"[463, 1602, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+8,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 91, 44, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+8,1,number,Page 7 of 36,"[13, 18, 121, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+8,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+8,3,text,"The CCK-8 assay was performed to evaluate the proliferation of ADSCs under the influence of PEMF and the scaffolds. rADSCs were cultured in basic culture medium for 1, 4 or 7 days on TCPS and  $ \beta","[173, 165, 1016, 563]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+8,4,text,"LIVE/DEAD cell staining was performed to evaluate the cytotoxicity of the  $ \beta $-TCP scaffolds. Each scaffold was washed twice with PBS after 24, 48 and 72 hours, before the working solution was a","[174, 601, 1016, 878]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+8,5,paragraph_title,ALP activity and osteogenesis - related gene expression,"[175, 913, 661, 938]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: ALP activity and osteogenesis - related gene expression""]",subsection_heading,0.6,body_zone,heading_like,none,True,True
+8,6,text,"To evaluate the osteogenic differentiation of ADSCs, cellular ALP activity was accessed with an alkaline phosphatase assay kit (A059-1, Nanjing Jiancheng Bioengineering Institute, China) after 7 or 14","[174, 978, 1017, 1503]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+8,7,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+9,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 86, 42, 1530]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+9,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+9,2,number,Page 8 of 36,"[1069, 18, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+9,3,text,"was completed with the cALP Stain Kit (D001-1-1, Nanjing Jiancheng Bioengineering Institute,
+China).","[174, 164, 1015, 254]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+9,4,text,"The expression of osteogenesis-related genes in the four groups was evaluated by SYBR
+Green Real-Time PCR (Thermo Fisher Scientific, Waltham, MA, USA). Total RNA of the ADSCs of
+the four groups was is","[173, 289, 1017, 818]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+9,5,figure_title,Table 1. Primer sequences used for qRT-PCR.,"[197, 851, 587, 877]",table_caption,0.9,"[""table prefix matched: Table 1. Primer sequences used for qRT-PCR.""]",table_caption,0.9,display_zone,table_caption_like,table_number,True,True
+9,6,table,<table><tr><td>Gene</td><td>Forward(5′-3′)</td><td>Reverse(5′-3′)</td></tr><tr><td>ALP</td><td>ACCATTCCCACGTCTTCACATTT</td><td>AGACATTCTCTCGTTCACCGCC</td></tr><tr><td>RUNX2</td><td>ACTTCCTGTGCTCGGTGCT,"[204, 911, 979, 1110]",media_asset,0.85,"[""media label: table""]",media_asset,0.85,body_zone,unknown_like,none,True,True
+9,7,paragraph_title,Surgical operation and PEMF treatment,"[175, 1163, 529, 1188]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: Surgical operation and PEMF treatment""]",subsection_heading,0.6,body_zone,heading_like,none,True,True
+9,8,text,All the surgical operations were approved by the Ethics Committee of Southern Medical University. Eighteen female Sprague-Dawley rats (180-200 g) were anesthetized with chloral hydrate (300 mg/kg body,"[173, 1225, 1017, 1502]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+9,9,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+10,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 89, 42, 1530]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+10,1,number,Page 9 of 36,"[13, 18, 121, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+10,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+10,3,text,"mm, on both sides of the parietal bone; physiological saline was added dropwise to help reduce the increase in temperature from the drill. A size matched scaffold, with a diameter of 4.8 mm and a heig","[173, 166, 1017, 441]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+10,4,text,"On the third day after the operation, the 18 SD rats were randomly divided into 2 groups. One group was treated with PEMF (50 Hz, 1 mT, 2 hours per day), and the other group, as a control, did not rec","[173, 476, 1017, 877]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+10,5,paragraph_title,Micro-CT,"[175, 912, 264, 936]",sub_subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level sub_subsection_heading: Micro-CT""]",sub_subsection_heading,0.6,body_zone,heading_like,short_fragment,True,True
+10,6,text,The skulls were placed into an X-ray CT scanner for experimental animals (Latheta LCT-200) and scanned with a resolution of 18  $ \mu $m. DICOM images were obtained. Bone mineral density was analyzed ,"[173, 975, 1017, 1249]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+10,7,paragraph_title,Histological examination,"[176, 1288, 400, 1313]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: Histological examination""]",subsection_heading,0.6,body_zone,heading_like,none,True,True
+10,8,text,"The free skulls were fixed with formalin for 24 hours and then decalcified with EDTA decalcifying solution (Solarbio, China) for 14 days. The decalcified samples were dehydrated by gradient alcohol an","[173, 1349, 1017, 1502]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+10,9,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+11,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59","[11, 89, 41, 1517]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+11,1,header,ACS Biomaterials Science & Engineering,"[426, 19, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+11,2,number,Page 10 of 36,"[1060, 18, 1178, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+11,3,text,tissue sections. Hematoxylin-eosin staining of the sections was used to stain the nucleus blue and the cytoplasm red.,"[174, 164, 1014, 253]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+11,4,paragraph_title,Statistics,"[176, 289, 262, 312]",sub_subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level sub_subsection_heading: Statistics""]",sub_subsection_heading,0.6,body_zone,heading_like,short_fragment,True,True
+11,5,text,The statistical analyses of this study were completed with SPSS software (Version 20.0). All biological experiments in this study were repeated at least three times. The data were analyzed by one-way ,"[174, 352, 1015, 568]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+11,6,paragraph_title,RESULTS AND DISCUSSION,"[176, 725, 415, 749]",section_heading,0.9,"[""explicit scholarly heading: RESULTS AND DISCUSSION""]",section_heading,0.9,body_zone,heading_like,canonical_section_name,True,True
+11,7,paragraph_title,β-TCP scaffold characterization,"[176, 788, 454, 812]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: \u03b2-TCP scaffold characterization""]",subsection_heading,0.6,body_zone,heading_like,none,True,True
+11,8,text,"The surface morphology of the fritted β-TCP scaffolds was observed by SEM (Figure 1a and 1b.), which showed that the structure of the scaffolds was arranged regularly with a bar that was 170±10 μm in ","[173, 851, 1017, 1252]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+11,9,text,"The  $ \beta $-TCP scaffolds produced by 3D printing technology had great porosity. This property can provide a large number of adhesion areas for cells. When used as a graft, high porosity scaffolds ","[174, 1289, 1015, 1502]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+11,10,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+12,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 92, 42, 1517]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+12,1,number,Page 11 of 36,"[12, 18, 131, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+12,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+12,3,vision_footnote,beneficial for osteogenesis and angiogenesis.,"[177, 163, 566, 189]",footnote,0.7,"[""vision_footnote label: beneficial for osteogenesis and angiogenesis.""]",footnote,0.7,body_zone,body_like,none,True,True
+12,4,image,,"[178, 206, 588, 560]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+12,5,image,,"[598, 206, 1011, 559]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+12,6,image,,"[179, 574, 590, 922]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+12,7,image,,"[599, 570, 1010, 922]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+12,8,figure_title,"Figure 1. SEM images of 3D-printed β-TCP scaffolds: the top panels are (a) 100×, (b) 240× and show that the diameter of the bar is approximately 170±10 microns. The bars are arranged vertically, which","[173, 943, 1016, 1159]",figure_caption,0.92,"[""figure_title label: Figure 1. SEM images of 3D-printed \u03b2-TCP scaffolds: the top ""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
+12,9,paragraph_title,LIVE/DEAD staining,"[175, 1256, 354, 1283]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: LIVE/DEAD staining""]",subsection_heading,0.6,body_zone,heading_like,short_fragment,True,True
+12,10,text,"To determine the cytocompatibility and cytotoxicity of the scaffolds, we performed the LIVE/DEAD cell staining assay. As the results show (Figure 2.), living cells were dyed green, and dead cells were","[173, 1319, 1017, 1534]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+12,11,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+13,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 84, 41, 1530]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+13,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+13,2,number,Page 12 of 36,"[1059, 18, 1178, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+13,3,text,"morphology of the rADSCs attached to the scaffold was observed. The ratios of live/dead rADSCs at 24, 48 and 72 hours were 4.36 (Figure 2a, 109/25), 5.81 (Figure 2b, 343/59) and 7.60 (Figure 2c, 251/3","[172, 164, 1017, 441]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+13,4,image,,"[244, 463, 624, 733]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+13,5,image,,"[635, 464, 1011, 732]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+13,6,image,,"[188, 742, 625, 1011]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+13,7,image,,"[633, 744, 1012, 1012]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+13,8,image,,"[244, 1022, 624, 1291]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+13,9,image,,"[634, 1023, 1011, 1291]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+13,10,figure_title,"Figure 2. LIVE/DEAD staining of rADSCs cultured on scaffolds in ordinary medium for 24, 48 or 72 hours. Live cells are stained green and dead cells are stained red. In the low power field of vision, t","[173, 1318, 1019, 1533]",figure_caption,0.92,"[""figure_title label: Figure 2. LIVE/DEAD staining of rADSCs cultured on scaffolds""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
+13,11,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+14,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59","[9, 95, 42, 1515]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+14,1,number,Page 13 of 36,"[12, 18, 130, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+14,2,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+14,3,text,"of culture time. In the high-power field of vision, the living cells exhibit a state of expansion in the early stage (b) and elongation in the later stage (f).","[173, 164, 1015, 254]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+14,4,paragraph_title,CCK-8 assay,"[175, 351, 288, 378]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: CCK-8 assay""]",subsection_heading,0.6,body_zone,heading_like,short_fragment,True,True
+14,5,text,"As shown in Figure 3, after one day of culture, the proliferation rate of the rADSCs cultured on the scaffold was significantly higher than that of the cells cultured on TCPS, but PEMF treatment had n","[172, 415, 1018, 1317]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+14,6,footer,ACS Paragon Plus Environment,"[463, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+15,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59","[9, 87, 42, 1514]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+15,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+15,2,number,Page 14 of 36,"[1059, 18, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+15,3,chart,,"[200, 182, 993, 583]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+15,4,figure_title,"Figure 3. CCK-8 analysis after culture for 1, 4, or 7 days on TCPS or  $ \beta $-TCP scaffolds. After 1 day of culture, the proliferation rate of rADSCs cultured on  $ \beta $-TCP scaffolds was signif","[172, 631, 1016, 1037]",figure_caption,0.92,"[""figure_title label: Figure 3. CCK-8 analysis after culture for 1, 4, or 7 days o""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
+15,5,paragraph_title,ALP activity and osteogenesis-related gene expression,"[175, 1132, 656, 1157]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: ALP activity and osteogenesis-related gene expression""]",subsection_heading,0.6,body_zone,heading_like,none,True,True
+15,6,text,"ALP activity and ALP staining were used to assess the osteogenic differentiation of rADSCs in the four groups after 14 days of culture. As shown in Figure 4., the ALP activity of the  $ \beta $-TCP+PE","[173, 1194, 1018, 1472]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+15,7,footer,ACS Paragon Plus Environment,"[463, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+16,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59","[8, 94, 44, 1514]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+16,1,number,Page 15 of 36,"[12, 18, 131, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+16,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+16,3,chart,,"[198, 181, 995, 648]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+16,4,figure_title,"Figure 4. ALP activity analysis of rADSCs after culture in osteogenic induction medium for 14 days. The activity of ALP in the TCPS+PEMF and  $ \beta $-TCP groups was similar, and a significant differ","[173, 693, 1017, 973]",figure_caption,0.92,"[""figure_title label: Figure 4. ALP activity analysis of rADSCs after culture in o""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
+16,5,text,"Areas of positive ALP staining are shown as purple. As seen from Figure 5a and 5c, the positive area of the TCPS+PEMF group is more disperse than that of the TCPS group, and the coloration is deeper. ","[174, 1070, 1016, 1344]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+16,6,footer,ACS Paragon Plus Environment,"[463, 1601, 727, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+17,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[8, 83, 44, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+17,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 765, 46]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+17,2,number,Page 16 of 36,"[1059, 18, 1179, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+17,3,image,,"[190, 158, 661, 398]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+17,4,image,,"[673, 156, 1012, 396]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+17,5,image,,"[323, 408, 662, 652]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+17,6,image,,"[672, 409, 1011, 650]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+17,7,figure_title,β-TCP,"[348, 688, 421, 720]",figure_caption_candidate,0.85,"[""figure_title label: \u03b2-TCP""]",figure_caption,0.85,body_zone,unknown_like,short_fragment,False,False
+17,8,figure_title,β-TCP+PEMF,"[742, 687, 890, 720]",figure_caption,0.85,"[""figure_title label: \u03b2-TCP+PEMF""]",figure_caption,0.85,body_zone,unknown_like,short_fragment,True,True
+17,9,image,,"[179, 751, 593, 1158]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+17,10,image,,"[610, 750, 1011, 1157]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+17,11,figure_title,"Figure 5. ALP staining of rADSCs after culture in osteogenic induction medium for 14 days. (a), (b) rADSCs exposed to PEMF and cultured on TCPS. (c), (d) rADSCs not exposed to PEMF and cultured on TCP","[172, 1192, 1016, 1408]",figure_caption,0.92,"[""figure_title label: Figure 5. ALP staining of rADSCs after culture in osteogenic""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
+17,12,text,qRT-PCR was performed to detect the expression of osteoblast-related genes in cells. As,"[216, 1504, 1016, 1534]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+17,13,footer,ACS Paragon Plus Environment,"[462, 1600, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+18,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 90, 42, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+18,1,number,Page 17 of 36,"[12, 18, 130, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+18,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+18,3,text,"shown in Figure 6a, the mean values of ALP and Runx2 expression were the highest in the  $ \beta $-TCP+PEMF group after 7 days of culture, and there were significant differences among the groups. Ther","[174, 166, 1017, 503]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+18,4,text,"On the 14th day (Figure 6b.), the expression of ALP, Runx2 and OPN was highest in the  $ \beta $-TCP+PEMF group and was significantly higher than that in the other three groups. The expression of OPN ","[174, 540, 1016, 753]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+18,5,text,"On the 21st day (Figure 6c.), the expression of ALP, Runx2 and OPN in the  $ \beta $-TCP+PEMF group was significantly higher than that in the other three groups, and the expression of ALP and Runx2 in","[174, 788, 1016, 1004]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+18,6,text,"The ALP activity assay showed that the ALP activity of the cells treated with PEMF was significantly increased, and the ALP activity of the cells treated with PEMF was similar to that of the cells tre","[173, 1039, 1016, 1252]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+18,7,text,"A study by LeGeros, R  $ Z^{32} $ et al. showed that calcium phosphate compounds have the following characteristics: similarity to the composition of bone minerals, ability to form a unique bone-calci","[174, 1289, 1016, 1502]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+18,8,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+19,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[10, 84, 41, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+19,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+19,2,number,Page 18 of 36,"[1059, 18, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+19,3,text,mechanism by which PEMFs can promote osteogenic differentiation is not completely clear. Wang et al. showed that PEMFs could stimulate osteoblast differentiation by stimulating the sAC-cAMP-PKA-CREB s,"[174, 165, 1017, 754]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+19,4,figure_title,ALP,"[393, 796, 440, 822]",figure_caption,0.85,"[""figure_title label: ALP""]",figure_caption,0.85,body_zone,unknown_like,short_fragment,True,True
+19,5,chart,,"[196, 824, 587, 1134]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+19,6,figure_title,Runx2,"[788, 796, 860, 823]",figure_caption_candidate,0.85,"[""figure_title label: Runx2""]",figure_caption,0.85,body_zone,unknown_like,short_fragment,False,False
+19,7,chart,,"[610, 828, 993, 1133]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+19,8,figure_title,OPN,"[401, 1160, 451, 1187]",figure_caption,0.85,"[""figure_title label: OPN""]",figure_caption,0.85,body_zone,unknown_like,short_fragment,True,True
+19,9,chart,,"[196, 1187, 907, 1497]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+19,10,footer,ACS Paragon Plus Environment,"[463, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+20,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 89, 44, 1529]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+20,1,number,Page 19 of 36,"[13, 18, 131, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+20,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+20,3,figure_title,"Figure 6. qRT-PCR analysis was used to evaluate the expression of osteogenesis-related genes in rADSCs cultured in osteogenic induction medium for 7, 14 or 21 days. (a) The expression of ALPin the  $ ","[173, 165, 1017, 817]",figure_caption,0.92,"[""figure_title label: Figure 6. qRT-PCR analysis was used to evaluate the expressi""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
+20,4,paragraph_title,Micro CT scanning and hematoxylin-eosin staining,"[175, 913, 621, 938]",subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: Micro CT scanning and hematoxylin-eosin staining""]",subsection_heading,0.6,body_zone,heading_like,none,True,True
+20,5,text,"As shown in Figure 7, the bone defect site of the SD rats not treated with PEMF, especially the side without the scaffold, grew slowly and new bone appeared at the edge of the defect site at the eight","[173, 978, 1016, 1441]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+20,6,text,Osteogenic differentiation and angiogenesis are essential for bone regeneration. In addition,"[216, 1474, 1014, 1501]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+20,7,footer,ACS Paragon Plus Environment,"[463, 1601, 727, 1626]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+21,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[10, 85, 41, 1532]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+21,1,header,ACS Biomaterials Science & Engineering,"[425, 19, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+21,2,number,Page 20 of 36,"[1059, 18, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+21,3,text,"to promoting the osteogenic differentiation of stem cells, PEMF therapy can also promote angiogenesis. Yen-Patton, G P $ ^{43} $ et al. used PEMFs to treat endothelial cells of the human umbilical vei","[174, 165, 1017, 567]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+21,4,footer,ACS Paragon Plus Environment,"[463, 1602, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+22,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[8, 87, 45, 1528]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+22,1,number,Page 21 of 36,"[11, 17, 132, 45]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+22,2,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+22,3,image,,"[178, 154, 1011, 1130]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+22,4,figure_title,"Figure 7. 3D reconstruction of the imaging data of SD rats after 0, 4, 8 and 12 weeks of rearing.
+The rats in the PEMF group were treated with PEMFs for 2 hours per day, whereas the rats in the withou","[173, 1161, 1015, 1315]",figure_caption,0.92,"[""figure_title label: Figure 7. 3D reconstruction of the imaging data of SD rats a""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
+22,5,text,"Bone mineral density (BMD) measurements of the new bone were determined in SD rats after 12 weeks. As shown in Figure 8, the highest BMD values were found in the cranial defects","[172, 1412, 1017, 1502]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+22,6,footer,ACS Paragon Plus Environment,"[461, 1600, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+23,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 84, 42, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+23,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+23,2,number,Page 22 of 36,"[1059, 18, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+23,3,text,"of rats treated with the scaffold and PEMFs. The cranial defect of rats with the scaffold but without PEMF treatment followed closely. The blank group, which did not receive any treatments, had the lo","[174, 164, 1016, 317]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+23,4,chart,,"[208, 370, 988, 986]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+23,5,figure_title,Figure 8. Bone mineral density analysis based on micro-CT data was used to detect the growth of skull defects in SD rats after 12 weeks of rearing. The BMD values of the defect site of rats in the  $ ,"[173, 1038, 1016, 1314]",figure_caption,0.92,"[""figure_title label: Figure 8. Bone mineral density analysis based on micro-CT da""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
+23,6,text,"The results of the HE staining (Figure 9) showed that the implanted scaffold defects possessed good bone mass; however, the rats treated with PEMFs grew thicker bone tissue than","[173, 1412, 1016, 1502]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+23,7,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+24,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 91, 44, 1532]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+24,1,number,Page 23 of 36,"[12, 18, 131, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+24,2,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+24,3,text,"the rats who had not been treated with PEMFs. In the defect sites without  $ \beta $-TCP scaffold implantation, the amount of new bone tissue was reduced, and the new bone tissue structure was more di","[173, 164, 1016, 380]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+24,4,text,"The BMD results of this study indicate that the BMD values of the defect sites of the rats treated with PEMFs were higher than those of the rats who did not receive PEMF treatment, regardless of wheth","[174, 415, 1017, 878]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+24,5,footer,ACS Paragon Plus Environment,"[463, 1602, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
+25,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 84, 42, 1530]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+25,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,none,False,False
+25,2,number,Page 24 of 36,"[1059, 18, 1178, 44]",noise,0.9,"[""page number label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,short_fragment,False,False
+25,3,image,,"[178, 154, 1010, 426]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,tail_nonref_hold_zone,unknown_like,empty,True,True
+25,4,image,,"[179, 491, 1010, 766]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,tail_nonref_hold_zone,unknown_like,empty,True,True
+25,5,image,,"[180, 829, 1009, 1107]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,tail_nonref_hold_zone,unknown_like,empty,True,True
+25,6,image,,"[179, 1168, 1009, 1444]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,tail_nonref_hold_zone,unknown_like,empty,True,True
+25,7,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,none,False,False
+26,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 91, 41, 1530]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+26,1,number,Page 25 of 36,"[12, 18, 131, 44]",noise,0.9,"[""page number label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,short_fragment,False,False
+26,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 763, 45]",noise,0.9,"[""header label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,none,False,False
+26,3,image,,"[180, 146, 1010, 770]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,tail_nonref_hold_zone,unknown_like,empty,True,True
+26,4,image,,"[180, 858, 1009, 1478]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,tail_nonref_hold_zone,unknown_like,empty,True,True
+26,5,footer,ACS Paragon Plus Environment,"[463, 1600, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,none,False,False
+27,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 84, 44, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,reference_like,reference_numeric_dot,False,False
+27,1,header,ACS Biomaterials Science & Engineering,"[425, 17, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,none,False,False
+27,2,number,Page 26 of 36,"[1059, 18, 1178, 44]",noise,0.9,"[""page number label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,short_fragment,False,False
+27,3,image,,"[180, 145, 1010, 770]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,tail_nonref_hold_zone,unknown_like,empty,True,True
+27,4,image,,"[179, 856, 1010, 1479]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,tail_nonref_hold_zone,unknown_like,empty,True,True
+27,5,figure_title,"Figure 9. HE staining of the cranial defects of rats after 12 weeks of rearing. (A), (E) Rats","[173, 1504, 1014, 1532]",figure_caption,0.92,"[""figure_title label: Figure 9. HE staining of the cranial defects of rats after 1""]",figure_caption,0.92,tail_nonref_hold_zone,legend_like,figure_number,True,True
+27,6,footer,ACS Paragon Plus Environment,"[461, 1600, 729, 1627]",noise,0.9,"[""footer label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,none,False,False
+28,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 90, 44, 1530]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+28,1,number,Page 27 of 36,"[12, 18, 131, 44]",noise,0.9,"[""page number label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
+28,2,header,ACS Biomaterials Science & Engineering,"[426, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
+28,3,text,"implanted with a  $ \beta $-TCP scaffold and exposed to PEMFs. (B), (F) Rats implanted with a  $ \beta $-TCP scaffold and not exposed to PEMFs. (C), (G) Rats exposed to PEMFs. (D), (H) Rats not expose","[175, 163, 1017, 314]",body_paragraph,0.6,"[""default body_paragraph for text label"", ""promoted in tail spread from body_paragraph""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+28,4,paragraph_title,CONCLUSION,"[176, 475, 301, 500]",section_heading,0.9,"[""explicit scholarly heading: CONCLUSION""]",section_heading,0.9,body_zone,heading_like,canonical_section_name,True,True
+28,5,text,"To summarize, 3D-printed  $ \beta $-TCP porous scaffolds have excellent performance in the treatment of skull defects in rats. These scaffolds solve the problems associated with complications and limi","[173, 541, 1018, 1253]",body_paragraph,0.6,"[""default body_paragraph for text label"", ""promoted in tail spread from body_paragraph""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+28,6,paragraph_title,REFERENCES,"[176, 1411, 293, 1437]",reference_heading,0.9,"[""references heading: REFERENCES""]",reference_heading,0.9,reference_zone,heading_like,short_fragment,True,True
+28,7,reference_content,"(1) Bassett, C. A.; Pawluk, R. J.; Pilla, A. A., Acceleration of fracture repair by electromagnetic","[187, 1474, 1014, 1500]",reference_item,0.85,"[""reference content label: (1) Bassett, C. A.; Pawluk, R. J.; Pilla, A. A., Acceleratio""]",reference_item,0.85,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+28,8,footer,ACS Paragon Plus Environment,"[462, 1602, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,tail_nonref_hold_zone,unknown_like,none,False,False
+29,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[11, 91, 41, 1532]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+29,1,header,ACS Biomaterials Science & Engineering,"[425, 19, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
+29,2,number,Page 28 of 36,"[1060, 19, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,,unknown_like,short_fragment,False,False
+29,3,text,"fields. A surgically noninvasive method. Ann N Y Acad Sci 1974, 238, 242-62","[176, 164, 826, 189]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,unknown_like,none,True,True
+29,4,text,"(2) Bassett, C. A.; Mitchell, S. N.; Gaston, S. R., Treatment of ununited tibial diaphyseal fractures with pulsing electromagnetic fields. J BONE JOINT SURG AM 1981, 63, (4), 511-23","[176, 228, 1014, 316]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+29,5,text,"(3) Ryaby, J. T., Clinical effects of electromagnetic and electric fields on fracture healing. Clin Orthop Relat Res 1998, (355 Suppl), S205-15","[176, 351, 1014, 439]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+29,6,text,"(4) Adie, S.; Harris, I. A.; Naylor, J. M.; Rae, H.; Dao, A.; Yong, S.; Ying, V., Pulsed electromagnetic field stimulation for acute tibial shaft fractures: a multicenter, double-blind, randomized tri","[175, 476, 1016, 626]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+29,7,text,"(5) Prakash, D.; Behari, J., Synergistic role of hydroxyapatite nanoparticles and pulsed electromagnetic field therapy to prevent bone loss in rats following exposure to simulated microgravity. Int J ","[175, 664, 1015, 814]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+29,8,text,"(6) Thamsborg, G.;Florescu, A.;Oturai, P.;Fallentin, E.;Tritsaris, K.;Dissing, S., Treatment of knee osteoarthritis with pulsed electromagnetic fields: a randomized, double-blind, placebo-controlled s","[175, 851, 1014, 1065]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+29,9,text,"(7) Ryang, W. S.; Koog, Y. H.; Jeong, K. I.; Wi, H., Effects of pulsed electromagnetic field on knee osteoarthritis: a systematic review. Rheumatology (Oxford) 2013, 52, (5), 815-24. DOI:10.1093/rheum","[175, 1101, 1014, 1250]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+29,10,text,"(8) Bagnato, G. L.; Miceli, G.; Marino, N.; Sciortino, D.; Bagnato, G. F., Pulsed electromagnetic fields in knee osteoarthritis: a double blind, placebo-controlled, randomized clinical trial. Rheumato","[175, 1288, 1014, 1440]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+29,11,text,"(9) Barker, A. T.; Dixon, R. A.; Sharrard, W. J.; Sutcliffe, M. L., Pulsed magnetic field therapy for","[186, 1474, 1015, 1500]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+29,12,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
+30,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[11, 92, 41, 1532]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+30,1,number,Page 29 of 36,"[13, 18, 131, 44]",noise,0.9,"[""page number label""]",noise,0.9,,unknown_like,short_fragment,False,False
+30,2,header,ACS Biomaterials Science & Engineering,"[426, 19, 764, 44]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
+30,3,text,"tibial non-union. Interim results of a double-blind trial. LANCET 1984, 1, (8384), 994-6
+(10) de Haas, W. G.;Beaupre, A.;Cameron, H.;English, E., The Canadian experience with pulsed
+magnetic fields in","[175, 166, 1014, 374]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,body_like,none,True,True
+30,4,text,"(11) Khooshideh, M.; Latifi, R. S.; Sheikh, M.; Ghorbani, Y. B.; Shahriari, A., Pulsed Electromagnetic Fields for Postsurgical Pain Management in Women Undergoing Cesarean Section: A Randomized, Doubl","[176, 415, 1015, 625]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+30,5,text,"(12) Varani, K.; Vincenzi, F.; Ravani, A.; Pasquini, S.; Merighi, S.; Gessi, S.; Setti, S.; Cadossi, M.; Borea, P. A.; Cadossi, R., Adenosine Receptors as a Biological Pathway for the Anti-Inflammator","[174, 665, 1016, 876]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+30,6,text,"(13) Martiny, K.; Lunde, M.; Bech, P., Transcranial low voltage pulsed electromagnetic fields in patients with treatment-resistant depression. Biol Psychiatry 2010, 68, (2), 163-9. DOI:10.1016/j.biops","[175, 914, 1014, 1063]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+30,7,text,"(14) van Belkum, S. M.; Bosker, F. J.; Kortekaas, R.; Beersma, D. G.; Schoevers, R. A., Treatment of depression with low-strength transcranial pulsed electromagnetic fields: A mechanistic point of vie","[176, 1102, 1015, 1314]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+30,8,text,"(15) Rezaei, K. M.; Tabeie, F.; Sahebjam, F.; Poursani, N.; Jahanbakhsh, N.; Paymanpour, P.; AfsarAski, S., Short-term effects of extremely low-frequency pulsed electromagnetic field and pulsed low-le","[175, 1351, 1015, 1501]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+30,9,footer,ACS Paragon Plus Environment,"[462, 1602, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
+31,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[11, 92, 41, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+31,1,header,ACS Biomaterials Science & Engineering,"[425, 19, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
+31,2,number,Page 30 of 36,"[1060, 19, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,,unknown_like,short_fragment,False,False
+31,3,text,216-223.DOI:10.1016/j.exer.2016.01.007,"[177, 164, 533, 187]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,unknown_like,none,True,True
+31,4,text,"(16) Pena-Philippides, J. C.; Yang, Y.; Bragina, O.; Hagberg, S.; Nemoto, E.; Roitbak, T., Effect of pulsed electromagnetic field (PEMF) on infarct size and inflammation after cerebral ischemia in mic","[175, 228, 1015, 378]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+31,5,text,"(17) Leoci, R.; Aiudi, G.; Silvestre, F.; Lissner, E.; Lacalandra, G. M., Effect of pulsed electromagnetic field therapy on prostate volume and vascularity in the treatment of benign prostatic hyperpl","[175, 415, 1015, 626]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+31,6,text,"(18) Wang, Y. Y.; Pu, X. Y.; Shi, W. G.; Fang, Q. Q.; Chen, X. R.; Xi, H. R.; Gao, Y. H.; Zhou, J.; Xian, C. J.; Chen, K. M., Pulsed electromagnetic fields promote bone formation by activating the sAC","[174, 665, 1014, 876]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+31,7,text,"(19) Poh, P.; Seeliger, C.; Unger, M.; Falldorf, K.; Balmayor, E. R.; van Griensven, M., Osteogenic
+Effect and Cell Signaling Activation of Extremely Low-Frequency Pulsed Electromagnetic Fields in
+Adi","[175, 914, 1014, 1127]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+31,8,text,"(20) Bagheri, L.; Pellati, A.; Rizzo, P.; Aquila, G.; Massari, L.; De Mattei, M.; Ongaro, A., Notch pathway is active during osteogenic differentiation of human bone marrow mesenchymal stem cells indu","[175, 1164, 1014, 1375]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+31,9,text,"(21) Selvamurugan, N.; He, Z.; Rifkin, D.; Dabovic, B.; Partridge, N. C., Pulsed Electromagnetic Field Regulates MicroRNA 21 Expression to Activate TGF-beta Signaling in Human Bone Marrow","[175, 1413, 1014, 1500]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+31,10,footer,ACS Paragon Plus Environment,"[462, 1602, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
+32,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 92, 41, 1531]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+32,1,number,Page 31 of 36,"[12, 18, 130, 44]",noise,0.9,"[""page number label""]",noise,0.9,,unknown_like,short_fragment,False,False
+32,2,header,ACS Biomaterials Science & Engineering,"[426, 19, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
+32,3,text,"Stromal Cells to Enhance Osteoblast Differentiation. STEM CELLS INT 2017, 2017,
+2450327\.DOI:10\.1155/2017/2450327","[174, 164, 1015, 251]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,body_like,none,True,True
+32,4,text,"(22) Xie, Y. F.; Shi, W. G.; Zhou, J.; Gao, Y. H.; Li, S. F.; Fang, Q. Q.; Wang, M. G.; Ma, H. P.; Wang, J.
+F.; Xian, C. J.; Chen, K. M., Pulsed electromagnetic fields stimulate osteogenic differentia","[174, 290, 1016, 502]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+32,5,text,"(23) Yin, Y.; Chen, P.; Yu, Q.; Peng, Y.; Zhu, Z.; Tian, J., The Effects of a Pulsed Electromagnetic Field on the Proliferation and Osteogenic Differentiation of Human Adipose-Derived Stem Cells. Med ","[175, 539, 1016, 689]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+32,6,text,"(24) Hollister, S. J., Porous scaffold design for tissue engineering. NAT MATER 2005, 4, (7), 518-24. DOI:10.1038/nmat1421","[175, 726, 1013, 812]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+32,7,text,"(25) Verrier, S.;Alini, M.;Alsberg, E.;Buchman, S. R.;Kelly, D.;Laschke, M. W.;Menger, M.
+D.;Murphy, W. L.;Stegemann, J. P.;Schutz, M.;Miclau, T.;Stoddart, M. J.;Evans, C., Tissue
+engineering and rege","[174, 852, 1016, 1064]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+32,8,text,"(26) Matinfar, M.;Mesgar, A. S.;Mohammadi, Z., Evaluation of physicochemical, mechanical and biological properties of chitosan/carboxymethyl cellulose reinforced with multiphasic calcium phosphate whi","[175, 1102, 1014, 1314]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+32,9,text,"(27) Dasgupta, S.; Maji, K.; Nandi, S. K., Investigating the mechanical, physiochemical and osteogenic properties in gelatin-chitosan-bioactive nanoceramic composite scaffolds for bone tissue regenera","[175, 1350, 1015, 1501]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+32,10,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
+33,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[11, 91, 41, 1532]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+33,1,header,ACS Biomaterials Science & Engineering,"[426, 19, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
+33,2,number,Page 32 of 36,"[1060, 19, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,,unknown_like,short_fragment,False,False
+33,3,text,713-728.DOI:10.1016/j.msec.2018.10.022,"[177, 164, 540, 188]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,unknown_like,none,True,True
+33,4,text,"(28) Mathieu, L. M.; Mueller, T. L.; Bourban, P. E.; Pioletti, D. P.; Muller, R.; Manson, J. A.,
+Architecture and properties of anisotropic polymer composite scaffolds for bone tissue
+engineering. BIO","[176, 228, 1015, 379]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+33,5,text,"(29) Park, H. J.; Lee, O. J.; Lee, M. C.; Moon, B. M.; Ju, H. W.; Lee, J.; Kim, J. H.; Kim, D. W.; Park, C. H.,
+Fabrication of 3D porous silk scaffolds by particulate (salt/sucrose) leaching for bone ","[176, 414, 1016, 564]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+33,6,text,"(30) Ma, H.; Feng, C.; Chang, J.; Wu, C., 3D-printed bioceramic scaffolds: From bone tissue engineering to tumor therapy. ACTA BIOMATER 2018, 79, 37-59.DOI:10.1016/j.actbio.2018.08.026","[176, 601, 1015, 751]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+33,7,text,"(31) Samavedi, S.; Whittington, A. R.; Goldstein, A. S., Calcium phosphate ceramics in bone tissue engineering: a review of properties and their influence on cell behavior. ACTA BIOMATER 2013, 9, (9),","[175, 788, 1014, 938]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+33,8,text,"(32) LeGeros, R. Z., Properties of osteoconductive biomaterials: calcium phosphates. Clin Orthop Relat Res 2002, (395), 81-98","[176, 976, 1014, 1063]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+33,9,text,"(33) Zou, F.;Zhao, N.;Fu, X.;Diao, J.;Ma, Y.;Cao, X.;Wan, S.;Zhong, S.;Wang, Y., Enhanced osteogenic differentiation and biomineralization in mouse mesenchymal stromal cells on a beta-TCP robocast sca","[176, 1102, 1015, 1313]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+33,10,text,"(34) Jarcho, M., Calcium phosphate ceramics as hard tissue prosthetics. Clin Orthop Relat Res
+1981, (157), 259-78","[177, 1350, 1013, 1437]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+33,11,text,"(35) Zhang, Y.;Xia, L.;Zhai, D.;Shi, M.;Luo, Y.;Feng, C.;Fang, B.;Yin, J.;Chang, J.;Wu, C., Mesoporous","[178, 1475, 1014, 1500]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+33,12,footer,ACS Paragon Plus Environment,"[462, 1602, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
+34,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[11, 92, 41, 1532]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+34,1,number,Page 33 of 36,"[13, 18, 131, 44]",noise,0.9,"[""page number label""]",noise,0.9,,unknown_like,short_fragment,False,False
+34,2,header,ACS Biomaterials Science & Engineering,"[426, 19, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
+34,3,text,"bioactive glass nanolayer-functionalized 3D-printed scaffolds for accelerating osteogenesis and angiogenesis. NANOSCALE 2015, 7, (45), 19207-21. DOI:10.1039/c5nr05421d","[175, 165, 1013, 253]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,body_like,none,True,True
+34,4,text,"(36) Bose, S.; Tarafder, S.; Bandyopadhyay, A., Effect of Chemistry on Osteogenesis and Angiogenesis Towards Bone Tissue Engineering Using 3D Printed Scaffolds. ANN BIOMED ENG 2017, 45, (1), 261-272. ","[175, 289, 1015, 439]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+34,5,text,"(37) Karageorgiou, V.; Kaplan, D., Porosity of 3D biomaterial scaffolds and osteogenesis.
+BIOMATERIALS 2005, 26, (27), 5474-91. DOI:10.1016/j.biomaterials.2005.02.002","[175, 476, 1012, 565]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+34,6,text,"(38) Midura, R. J.; Ibiwoye, M. O.; Powell, K. A.; Sakai, Y.; Doehring, T.; Grabiner, M. D.; Patterson, T. E.; Zborowski, M.; Wolfman, A., Pulsed electromagnetic field treatments enhance the healing o","[175, 601, 1015, 752]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+34,7,text,"(39) Parkinson, W. C.; Hanks, C. T., Search for cyclotron resonance in cells in vitro.
+BIOELECTROMAGNETICS 1989, 10, (2), 129-45","[175, 788, 1013, 875]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+34,8,text,"(40) Liu, C.; Yu, J.; Yang, Y.; Tang, X.; Zhao, D.; Zhao, W.; Wu, H., Effect of 1 mT sinusoidal electromagnetic fields on proliferation and osteogenic differentiation of rat bone marrow mesenchymal st","[175, 914, 1015, 1128]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+34,9,text,"(41) Tsai, M. T.; Chang, W. H.; Chang, K.; Hou, R. J.; Wu, T. W., Pulsed electromagnetic fields affect osteoblast proliferation and differentiation in bone tissue engineering. BIOELECTROMAGNETICS 2007","[175, 1164, 1015, 1313]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+34,10,text,"(42) Wang, P.; Liu, J.; Yang, Y.; Zhai, M.; Shao, X.; Yan, Z.; Zhang, X.; Wu, Y.; Cao, L.; Sui, B.; Luo, E.; Jing, D. Differential intensity-dependent effects of pulsed electromagnetic fields on RANKL","[176, 1350, 1015, 1500]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+34,11,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
+35,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[11, 93, 41, 1525]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+35,1,header,ACS Biomaterials Science & Engineering,"[426, 19, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
+35,2,number,Page 34 of 36,"[1060, 19, 1178, 43]",noise,0.9,"[""page number label""]",noise,0.9,,unknown_like,short_fragment,False,False
+35,3,text,"BIOELECTROMAGNETICS 2017, 38, (8), 602-612.DOI:10.1002/bem.22070","[176, 164, 802, 188]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,unknown_like,none,True,True
+35,4,text,"(43) Yen-Patton, G. P.; Patton, W. F.; Beer, D. M.; Jacobson, B. S., Endothelial cell response to pulsed electromagnetic fields: stimulation of growth rate and angiogenesis in vitro. J CELL PHYSIOL 19","[175, 228, 1015, 377]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+35,5,text,"(44) Tepper, O. M.; Callaghan, M. J.; Chang, E. I.; Galiano, R. D.; Bhatt, K. A.; Baharestani, S.; Gan, J.; Simon, B.; Hopper, R. A.; Levine, J. P.; Gurtner, G. C., Electromagnetic fields increase in ","[175, 415, 1014, 626]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+35,6,text,"(45) Loh, Q. L.; Choong, C., Three-Dimensional Scaffolds for Tissue Engineering Applications: Role of Porosity and Pore Size. TISSUE ENGINEERING PART B-REVIEWS 2013, 19, (6), 485-502. DOI:10.1089/ten.","[175, 664, 1014, 812]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+35,7,text,"(46) Koski, C.; Onuike, B.; Bandyopadhyay, A.; Bose, S., Starch-hydroxyapatite composite bone scaffold fabrication utilizing a slurry extrusion-based solid freeform fabricator. ADDITIVE MANUFACTURING ","[175, 852, 1016, 1001]",reference_item,0.82,"[""default body_paragraph for text label"", ""late role resolution: reference_like family + reference zone"", ""style_family_authority=reference_marker"", ""context_source=block""]",body_paragraph,0.6,reference_zone,reference_like,reference_numeric_parenthesis,True,True
+35,8,footer,ACS Paragon Plus Environment,"[463, 1603, 728, 1626]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
+36,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[8, 91, 44, 1532]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+36,1,number,Page 35 of 36,"[12, 18, 132, 44]",noise,0.9,"[""page number label""]",noise,0.9,,unknown_like,short_fragment,False,False
+36,2,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 46]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
+36,3,text,Table of Contents graphic,"[480, 287, 712, 317]",table_caption_candidate,0.78,"[""default body_paragraph for text label"", ""late role resolution: non-body family 'table_caption_like' overrides body_paragraph"", ""style_family_authority=table_marker"", ""context_source=families""]",body_paragraph,0.6,,table_caption_like,none,True,True
+36,4,doc_title,3D-printed  $ \beta $-tricalcium phosphate scaffold combined with a pulse electromagnetic field promotes the repair of skull defects in rats,"[204, 349, 985, 441]",unknown_structural,0.2,"[""unrecognized label 'doc_title'""]",unknown_structural,0.2,,unknown_like,none,False,True
+36,5,text,"Haifeng Liang, Xiao Liu, Ying Pi, Qiang Yu, Yukun Yin, Xian Li, Yipei Yang, Jing Tian","[245, 474, 946, 503]",frontmatter_noise,0.7,"[""keyword-like block: Haifeng Liang, Xiao Liu, Ying Pi, Qiang Yu, Yukun Yin, Xian ""]",frontmatter_noise,0.7,,unknown_like,none,False,False
+36,6,image,,"[221, 554, 943, 884]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,,unknown_like,empty,True,True
+36,7,vision_footnote,Skull Defects Model in S-D Rat,"[285, 814, 583, 879]",footnote,0.7,"[""vision_footnote label: Skull Defects Model in S-D Rat""]",footnote,0.7,,unknown_like,none,True,True
+36,8,vision_footnote,"3D-Printed
+β-TCP Scaffold","[683, 816, 896, 883]",footnote,0.7,"[""vision_footnote label: 3D-Printed\n\u03b2-TCP Scaffold""]",footnote,0.7,,unknown_like,none,True,True
+36,9,image,,"[303, 938, 587, 1088]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,,unknown_like,empty,True,True
+36,10,image,,"[617, 933, 860, 1094]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,,unknown_like,empty,True,True
+36,11,vision_footnote,PEMF Generator,"[351, 1100, 594, 1136]",footnote,0.7,"[""vision_footnote label: PEMF Generator""]",footnote,0.7,,unknown_like,short_fragment,True,True
+36,12,image,,"[634, 1102, 878, 1191]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,,unknown_like,empty,True,True
+36,13,vision_footnote,20ms,"[669, 1167, 729, 1190]",footnote,0.7,"[""vision_footnote label: 20ms""]",footnote,0.7,,unknown_like,short_fragment,True,True
+36,14,image,,"[269, 1224, 539, 1422]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,,unknown_like,empty,True,True
+36,15,vision_footnote,The rat exposed to PEMF,"[245, 1428, 577, 1460]",footnote,0.7,"[""vision_footnote label: The rat exposed to PEMF""]",footnote,0.7,,unknown_like,none,True,True
+36,16,image,,"[674, 1224, 925, 1425]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,,unknown_like,empty,True,True
+36,17,vision_footnote,The rat not exposed to PEMF,"[608, 1428, 994, 1460]",footnote,0.7,"[""vision_footnote label: The rat not exposed to PEMF""]",footnote,0.7,,unknown_like,none,True,True
+36,18,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
+37,0,aside_text,"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60","[9, 86, 42, 1532]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,reference_zone,reference_like,reference_numeric_dot,False,False
+37,1,header,ACS Biomaterials Science & Engineering,"[425, 18, 764, 45]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
+37,2,number,Page 36 of 36,"[1059, 18, 1178, 44]",noise,0.9,"[""page number label""]",noise,0.9,,unknown_like,short_fragment,False,False
+37,3,text,For Table of Contents Use Only,"[456, 163, 735, 190]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,unknown_like,none,True,True
+37,4,footer,ACS Paragon Plus Environment,"[462, 1601, 728, 1627]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False

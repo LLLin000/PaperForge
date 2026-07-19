@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PaperForge — Maintenance Inbox 原型</title>
+<style>
+[hidden]{display:none!important}
+/* ── Reset & base ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  color:#171717;background:#fff;line-height:1.5;
+  min-height:100vh;display:flex;flex-direction:column;
+}
+
+/* ── Tokens ── */
+:root{
+  --ink:#171717;--body:#4d4d4d;--mute:#888;--hairline:#ebebeb;--hairline-strong:#a1a1a1;
+  --canvas:#fff;--soft:#fafafa;--soft-2:#f5f5f5;
+  --link:#0070f3;--link-deep:#0761d1;--link-bg:#d3e5ff;
+  --success:#0070f3;--error:#ee0000;--error-soft:#f7d4d6;--error-deep:#c50000;
+  --warning:#f5a623;--warning-soft:#ffefcf;--warning-deep:#ab570a;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;
+  --space-xxs:4px;--space-xs:8px;--space-sm:12px;--space-md:16px;--space-lg:24px;--space-xl:32px;--space-2xl:40px;
+  --font-body:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,monospace;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+}
+
+/* ── Typography ── */
+h1{font-size:24px;font-weight:600;letter-spacing:-.96px;line-height:32px}
+h2{font-size:18px;font-weight:500;letter-spacing:-.28px;line-height:24px;color:var(--body)}
+h3{font-size:14px;font-weight:500;letter-spacing:-.28px;line-height:20px}
+label{font-size:13px;font-weight:500;color:var(--body);display:block;margin-bottom:var(--space-xxs)}
+p,body,button,input,select,textarea{font-family:var(--font-body)}
+
+/* ── Layout ── */
+.page-wrap{max-width:840px;margin:0 auto;padding:var(--space-xl) var(--space-lg);width:100%}
+
+/* ── Header ── */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-xl);flex-wrap:wrap;gap:var(--space-sm)}
+.header-left{display:flex;align-items:center;gap:var(--space-sm)}
+.header-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--ink);color:#fff;font-size:12px;font-weight:500;
+  min-width:24px;height:24px;border-radius:100px;padding:0 var(--space-xs);
+  letter-spacing:-.28px;
+}
+
+/* ── Scenario bar ── */
+.scenario-bar{
+  display:flex;flex-wrap:wrap;gap:var(--space-xs);
+  padding:var(--space-sm) var(--space-md);
+  background:var(--soft);border-radius:var(--radius-md);
+  margin-bottom:var(--space-lg);
+  align-items:center;
+}
+.scenario-bar-label{font-size:12px;font-weight:500;color:var(--mute);letter-spacing:-.28px;margin-right:var(--space-xxs);white-space:nowrap}
+.scenario-btn{
+  font-size:12px;font-weight:500;letter-spacing:-.28px;
+  padding:var(--space-xxs) var(--space-sm);
+  border:1px solid var(--hairline);border-radius:100px;
+  background:var(--canvas);color:var(--body);cursor:pointer;
+  transition:background .15s,border-color .15s,color .15s;
+  white-space:nowrap;
+}
+.scenario-btn:hover{background:var(--soft-2);border-color:var(--hairline-strong)}
+.scenario-btn:focus-visible{outline:2px solid var(--link);outline-offset:2px;border-color:var(--link)}
+.scenario-btn.reset-btn{background:var(--ink);color:#fff;border-color:var(--ink)}
+.scenario-btn.reset-btn:hover{background:var(--body)}
+.scenario-btn.s-resolve{color:var(--success);border-color:var(--link-bg)}
+
+/* ── Inbox ── */
+.inbox{display:flex;flex-direction:column;gap:var(--space-xxs)}
+
+/* ── Item card ── */
+.item{
+  display:grid;grid-template-columns:1fr auto auto;
+  gap:var(--space-sm);align-items:center;
+  padding:var(--space-md);
+  background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-md);
+  transition:opacity .3s,transform .3s,max-height .4s,padding .3s,margin .3s,border-color .3s;
+  overflow:hidden;
+}
+.item.running{
+  background:var(--soft);
+}
+.item.removing{
+  opacity:0;transform:translateX(-16px);max-height:0;padding:0 var(--space-md);margin:0;border-color:transparent;
+  pointer-events:none;
+}
+.item.info-area{grid-column:1/-1;border:0;padding:var(--space-sm) 0 0;background:transparent;overflow:visible}
+.item.with-border-red{border-color:var(--error-soft)}
+.item.with-border-yellow{border-color:var(--warning-soft)}
+
+.item-info{min-width:0}
+.item-title{font-size:14px;font-weight:500;margin-bottom:2px}
+.item-meta{font-size:12px;color:var(--mute)}
+.item-reason{font-size:12px;color:var(--body);margin-top:4px}
+.item-actions{display:flex;gap:var(--space-xxs)}
+.action-btn{
+  font-size:12px;font-weight:500;letter-spacing:-.28px;
+  padding:var(--space-xxs) var(--space-sm);
+  border:1px solid var(--hairline);border-radius:100px;
+  background:var(--canvas);color:var(--ink);cursor:pointer;
+  white-space:nowrap;transition:background .15s,color .15s,border-color .15s;
+}
+.action-btn:hover{background:var(--soft-2)}
+.action-btn:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.action-btn.primary{background:var(--link);color:#fff;border-color:var(--link)}
+.action-btn.primary:hover{background:var(--link-deep);border-color:var(--link-deep)}
+.action-btn.destructive{color:var(--error);border-color:var(--error-soft)}
+.action-btn.destructive:hover{background:var(--error-soft)}
+.action-btn.destructive.primary{background:var(--error);color:#fff;border-color:var(--error)}
+.action-btn.destructive.primary:hover{background:var(--error-deep);border-color:var(--error-deep)}
+.action-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── Running progress ── */
+.progress-row{display:flex;align-items:center;gap:var(--space-sm);margin-top:var(--space-xs)}
+.progress-bar{
+  flex:1;height:4px;border-radius:100px;
+  background:var(--soft-2);overflow:hidden;
+}
+.progress-fill{
+  height:100%;border-radius:100px;
+  background:var(--link);transition:width .5s;
+}
+.progress-label{font-size:11px;color:var(--mute);white-space:nowrap}
+
+/* ── Badge per action type ── */
+.item-badge{
+  display:inline-flex;align-items:center;gap:var(--space-xxs);
+  font-size:11px;font-weight:500;letter-spacing:-.28px;
+  padding:2px var(--space-xs);border-radius:100px;
+  white-space:nowrap;
+}
+.item-badge.retry{background:var(--error-soft);color:var(--error-deep)}
+.item-badge.rebuild{background:var(--warning-soft);color:var(--warning-deep)}
+.item-badge.corrupt{background:var(--error-soft);color:var(--error-deep)}
+.item-badge.running-indicator{background:var(--link-bg);color:var(--link-deep)}
+.item-badge.draft{background:var(--link-bg);color:var(--link-deep)}
+
+/* ── Confirmation modal ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(23,23,23,.4);
+  z-index:100;align-items:center;justify-content:center;
+  padding:var(--space-md);
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--canvas);border-radius:var(--radius-lg);
+  padding:var(--space-xl);max-width:480px;width:100%;
+  box-shadow:var(--shadow-md);
+}
+.modal h2{font-size:18px;font-weight:600;margin-bottom:var(--space-sm);color:var(--ink)}
+.modal p{font-size:14px;color:var(--body);margin-bottom:var(--space-md);line-height:1.6}
+.modal .destructive-scope{
+  background:var(--error-soft);color:var(--error-deep);
+  font-size:13px;font-weight:500;padding:var(--space-sm) var(--space-md);
+  border-radius:var(--radius-sm);margin-bottom:var(--space-md);
+}
+.modal-actions{display:flex;gap:var(--space-sm);justify-content:flex-end}
+
+/* ── Issue Draft panel ── */
+.draft-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(23,23,23,.4);
+  z-index:100;align-items:center;justify-content:center;
+  padding:var(--space-md);
+}
+.draft-overlay.open{display:flex}
+.draft-panel{
+  background:var(--canvas);border-radius:var(--radius-lg);
+  padding:var(--space-xl);max-width:600px;width:100%;max-height:85vh;
+  overflow-y:auto;box-shadow:var(--shadow-md);
+}
+.draft-panel h2{font-size:18px;font-weight:600;margin-bottom:var(--space-sm)}
+.draft-panel .draft-subtitle{font-size:13px;color:var(--mute);margin-bottom:var(--space-lg)}
+.draft-section{margin-bottom:var(--space-lg)}
+.draft-section h3{font-size:13px;font-weight:500;color:var(--body);margin-bottom:var(--space-xs);text-transform:uppercase;letter-spacing:.4px}
+.field-table{width:100%;font-size:13px;border-collapse:collapse}
+.field-table th{padding:var(--space-xxs) var(--space-xs);text-align:left;color:var(--mute);font-weight:500;border-bottom:1px solid var(--hairline);width:120px}
+.field-table td{padding:var(--space-xxs) var(--space-xs);border-bottom:1px solid var(--hairline)}
+.field-table td.redacted{color:var(--mute);font-family:var(--font-mono);font-size:11px}
+.field-table td.included{color:var(--body)}
+.draft-panel textarea{
+  width:100%;min-height:140px;padding:var(--space-sm);
+  font-size:13px;font-family:var(--font-mono);
+  border:1px solid var(--hairline);border-radius:var(--radius-sm);
+  resize:vertical;color:var(--ink);background:var(--soft);
+}
+.draft-panel textarea:focus{outline:none;border-color:var(--link);box-shadow:0 0 0 2px var(--link-bg)}
+.draft-panel input[type="text"]{
+  width:100%;padding:var(--space-sm);
+  font-size:14px;font-weight:500;font-family:var(--font-body);
+  border:1px solid var(--hairline);border-radius:var(--radius-sm);
+  color:var(--ink);background:var(--soft);
+}
+.draft-panel input[type="text"]:focus{outline:none;border-color:var(--link);box-shadow:0 0 0 2px var(--link-bg)}
+.draft-notice{
+  background:var(--warning-soft);color:var(--warning-deep);
+  font-size:12px;padding:var(--space-sm) var(--space-md);
+  border-radius:var(--radius-sm);margin-bottom:var(--space-md);
+}
+
+/* ── Empty state ── */
+.empty-state{
+  text-align:center;padding:var(--space-2xl) var(--space-lg);
+}
+.empty-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:48px;height:48px;border-radius:100px;
+  background:var(--soft-2);margin-bottom:var(--space-md);
+  font-size:20px;
+}
+.empty-state h3{font-size:16px;font-weight:500;margin-bottom:var(--space-xxs);color:var(--ink)}
+.empty-state p{font-size:14px;color:var(--mute);max-width:360px;margin:0 auto}
+
+/* ── Separator ── */
+.inbox-sep{font-size:11px;font-weight:500;color:var(--mute);padding:var(--space-sm) 0;letter-spacing:.4px;text-transform:uppercase}
+
+/* ── Footer ── */
+.footer-notes{margin-top:var(--space-lg);font-size:11px;color:var(--mute);border-top:1px solid var(--hairline);padding-top:var(--space-sm)}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .page-wrap{padding:var(--space-md)}
+  .header{flex-direction:column;align-items:flex-start}
+  .scenario-bar{flex-direction:column;align-items:stretch}
+  .item{grid-template-columns:1fr;gap:var(--space-xs)}
+  .item-actions{justify-content:flex-end;margin-top:var(--space-xxs)}
+  .modal{padding:var(--space-md)}
+  .draft-panel{padding:var(--space-md)}
+}
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- ─── HEADER ─── -->
+  <div class="header">
+    <div class="header-left">
+      <h1>维护</h1>
+      <span class="header-badge" id="badge">0</span>
+    </div>
+    <div style="font-size:12px;color:var(--mute)">
+      <span id="status-label">全部正常</span>
+    </div>
+  </div>
+
+  <!-- ─── SCENARIO BAR ─── -->
+  <div class="scenario-bar">
+    <span class="scenario-bar-label">场景</span>
+    <button class="scenario-btn" data-scenario="stale-ocr">过期 OCR 结果</button>
+    <button class="scenario-btn" data-scenario="failed-ocr">OCR 失败</button>
+    <button class="scenario-btn" data-scenario="corrupt-index">索引损坏</button>
+    <button class="scenario-btn" data-scenario="running" id="scn-running">正在重建</button>
+    <button class="scenario-btn s-resolve" data-scenario="resolve">→ 解决一项</button>
+    <button class="scenario-btn" data-scenario="unacceptable">质量不合格</button>
+    <button class="scenario-btn" data-scenario="empty">全部正常</button>
+    <button class="scenario-btn reset-btn" id="reset-all">重置</button>
+  </div>
+
+  <!-- ─── INBOX ─── -->
+  <div class="inbox" id="inbox">
+    <!-- Items rendered by JS -->
+  </div>
+
+  <!-- ─── FOOTER ─── -->
+  <div class="footer-notes">
+    PaperForge · 维护标签页原型 · 设计语言 Vercel 灰阶
+  </div>
+</div>
+
+<!-- ─── CONFIRMATION MODAL ─── -->
+<div class="modal-overlay" id="confirm-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <h2 id="confirm-title">确认操作</h2>
+    <p id="confirm-body">此操作将执行变更。</p>
+    <div class="destructive-scope" id="confirm-scope" hidden></div>
+    <div class="modal-actions">
+      <button class="action-btn" id="confirm-cancel">取消</button>
+      <button class="action-btn destructive primary" id="confirm-ok">确认执行</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ISSUE DRAFT OVERLAY ─── -->
+<div class="draft-overlay" id="draft-overlay">
+  <div class="draft-panel" role="dialog" aria-modal="true" aria-labelledby="draft-title">
+    <h2 id="draft-title">提交 Issue</h2>
+    <p class="draft-subtitle">隐私安全模式 · 预览将包含和排除的字段</p>
+
+    <div class="draft-section">
+      <h3>标题（可编辑）</h3>
+      <input type="text" id="draft-title-input" value="[PaperForge] OCR quality unacceptable — 2BB8VM5W" aria-label="Issue 标题">
+    </div>
+
+    <div class="draft-section">
+      <h3>包含的字段</h3>
+      <table class="field-table">
+        <tr><th>模块</th><td class="included">ocr</td></tr>
+        <tr><th>reason.code</th><td class="included">ocr.quality_unacceptable</td></tr>
+        <tr><th>reason.text</th><td class="included"><span id="draft-reason-text">OCR quality assessment failed</span></td></tr>
+        <tr><th>error_summary</th><td class="included"><span id="draft-error">character error rate above threshold</span></td></tr>
+        <tr><th>key/ID</th><td class="included"><span id="draft-key">5T8JX2</span></td></tr>
+      </table>
+    </div>
+
+    <div class="draft-section">
+      <h3>排除的字段（已脱敏）</h3>
+      <table class="field-table">
+        <tr><th>论文标题</th><td class="redacted">[redacted — contains identifiable content]</td></tr>
+        <tr><th>vault path</th><td class="redacted">[redacted — local filesystem path]</td></tr>
+        <tr><th>zotero path</th><td class="redacted">[redacted — local filesystem path]</td></tr>
+        <tr><th>config values</th><td class="redacted">[redacted — may contain secrets]</td></tr>
+        <tr><th>API key</th><td class="redacted">[redacted — credential]</td></tr>
+      </table>
+    </div>
+
+    <div class="draft-section">
+      <h3>Issue 草稿（可编辑）</h3>
+      <div class="draft-notice">⚠ 草稿仅本地展示，不会自动提交。编辑完成后，点击下方按钮再 Github 新建 Issue。</div>
+      <textarea id="draft-body" aria-label="Issue 草稿内容">## Bug: OCR quality assessment failed
+
+**Module:** ocr
+**reason.code:** ocr.quality_unacceptable
+**reason.text:** OCR quality assessment failed
+**error:** character error rate above threshold
+**paper key:** 5T8JX2
+
+### Redacted fields
+- title: [redacted]
+- vault path: [redacted]
+- zotero path: [redacted]
+- config values: [redacted]
+- API key: [redacted]
+
+### Steps to reproduce
+1. Open the paper in PaperForge
+2. Review OCR output
+3. Character error rate exceeds acceptable threshold
+
+### Expected behavior
+OCR quality should meet the configured threshold.
+
+### Environment
+[User fills in manually — none collected]</textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="action-btn" id="draft-close">关闭</button>
+      <button class="action-btn primary" id="draft-open-github">在 GitHub 新建 Issue</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── State ─── */
+/*
+  Each item represents a maintenance inbox entry backed by the capability model.
+  Fields following the envelope spec from research/2026-07-14-capability-state-action-contract.md
+ */
+const SCENARIOS = {
+  'stale-ocr': {
+    items: [{
+      id:'S1',module:'ocr',title:'Efficient Retrieval-Augmented Generation',
+      key:'5T8JX2',capability_state:'needs_action',activity_state:'idle',
+      severity:'warning',reason_code:'ocr.artifacts_stale',
+      reason_text:'12 篇论文的派生 OCR 结果已过期',
+      action_verb:'rebuild_derived',action_label:'重建结果',
+      destructive:false,destructive_scope:null,destructive_effect:null,
+      badge_label:'重建',badge_class:'rebuild',
+    }]
+  },
+  'failed-ocr': {
+    items: [{
+      id:'F1',module:'ocr',title:'Deep Learning for Medical Imaging — 2024 Review',
+      key:'9KM2P',capability_state:'needs_action',activity_state:'idle',
+      severity:'warning',reason_code:'ocr.retryable_error',
+      reason_text:'OCR 处理中断 — 可重试',
+      action_verb:'redo',action_label:'重试 OCR',
+      destructive:true,destructive_scope:'paper',destructive_effect:'删除该论文的现有 OCR 结果并重新处理',
+      confirmation_prompt:'将删除该论文的所有 OCR 派生数据并重新处理。源代码 PDF 不受影响。',
+      badge_label:'重试',badge_class:'retry',
+    }]
+  },
+  'corrupt-index': {
+    items: [{
+      id:'M1',module:'memory',title:'Memory Index',
+      key:'——',capability_state:'unavailable',activity_state:'idle',
+      severity:'error',reason_code:'memory.db_corrupt',
+      reason_text:'记忆库索引文件损坏，搜索功能不可用',
+      action_verb:'restore_backup',action_label:'恢复备份',
+      destructive:true,destructive_scope:'module',destructive_effect:'替换当前索引文件为最近的备份副本',
+      confirmation_prompt:'将替换损坏的 memory.db 索引文件为最近备份。原始 PDF 来源、OCR 派生数据、论文元数据和设置配置均不受影响。如备份也损坏，后续需完全重建搜索索引。',
+      badge_label:'损坏',badge_class:'corrupt',
+    }]
+  },
+  'running': {
+    items: [
+      {
+        id:'R1',module:'ocr',title:'Advances in Transformer Architecture',
+        key:'R3X7H',capability_state:'needs_action',activity_state:'running',
+        severity:'warning',reason_code:'ocr.artifacts_stale',
+        reason_text:'正在重建派生结果…',
+        action_verb:'rebuild_derived',action_label:'重建中',
+        destructive:false,destructive_scope:null,destructive_effect:null,
+        badge_label:'运行中',badge_class:'running-indicator',
+        running:true,progress_label:'3 / 12 篇已完成',
+      },
+      {
+        id:'R2',module:'ocr',title:'Graph Neural Networks in Drug Discovery',
+        key:'X8Y4K',capability_state:'needs_action',activity_state:'idle',
+        severity:'warning',reason_code:'ocr.artifacts_stale',
+        reason_text:'派生 OCR 结果已过期',
+        action_verb:'rebuild_derived',action_label:'重建结果',
+        destructive:false,destructive_scope:null,destructive_effect:null,
+        badge_label:'重建',badge_class:'rebuild',
+      }
+    ]
+  },
+  'unacceptable': {
+    items: [
+      {
+        id:'U1',module:'ocr',title:'Medical Image Analysis — A Systematic Review',
+        key:'2BB8VM5W',capability_state:'needs_action',activity_state:'idle',
+        severity:'warning',reason_code:'ocr.quality_unacceptable',
+        reason_text:'OCR 质量低于阈值，可手动报告',
+        action_verb:'investigate',action_label:'报告 Issue',
+        destructive:false,destructive_scope:null,destructive_effect:null,
+        badge_label:'质量不合格',badge_class:'draft',
+        issue_reportable:true,
+        issue_error:'character error rate above threshold (CER 0.23 vs max 0.05)',
+        issue_title:'Medical Image Analysis — A Systematic Review',
+        issue_path:'D:\\Vault\\Literature\\Papers\\2BB8VM5W',
+        issue_zotero:'D:\\Zotero\\storage\\2BB8VM5W',
+      },
+      {
+        id:'U2',module:'ocr',title:'Towards Explainable AI in Radiology',
+        key:'6M9QN',capability_state:'needs_action',activity_state:'idle',
+        severity:'warning',reason_code:'ocr.artifacts_stale',
+        reason_text:'派生 OCR 结果已过期',
+        action_verb:'rebuild_derived',action_label:'重建结果',
+        destructive:false,destructive_scope:null,destructive_effect:null,
+        badge_label:'重建',badge_class:'rebuild',
+      }
+    ]
+  },
+  'empty': { items: [] },
+  'resolve': null, /* handled specially — resolves the first item */
+};
+
+let currentItems = [];
+let removedIds = new Set();
+
+/* ─── Render ─── */
+function render() {
+  const inbox = document.getElementById('inbox');
+  const visible = currentItems.filter(i => !removedIds.has(i.id));
+  const badge = document.getElementById('badge');
+  const label = document.getElementById('status-label');
+
+  badge.textContent = visible.length;
+
+  if (visible.length === 0) {
+    label.textContent = '全部正常';
+    inbox.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✓</div>
+        <h3>全部正常</h3>
+        <p>所有模块运行正常，无需维护操作。</p>
+      </div>
+    `;
+    return;
+  }
+
+  label.textContent = `${visible.length} 项需要处理`;
+
+  let html = '';
+  visible.forEach((item, idx) => {
+    const infoStyle = item.running ? ' style="background:var(--soft);"' : '';
+    const borderCls = item.severity === 'error' ? ' with-border-red' : (item.severity === 'warning' ? ' with-border-yellow' : '');
+
+    html += `<div class="item${borderCls}" data-id="${item.id}"${infoStyle}>`;
+    html += `<div class="item-info">`;
+    html += `<div class="item-title">${escHtml(item.title)}</div>`;
+    html += `<div class="item-meta"><span class="item-badge ${item.badge_class}">${escHtml(item.badge_label)}</span> · ${escHtml(item.key)} · ${escHtml(moduleLabel(item.module))}</div>`;
+    html += `<div class="item-reason">${escHtml(item.reason_text)}</div>`;
+
+    if (item.running) {
+      html += `<div class="progress-row">`;
+      html += `<div class="progress-bar"><div class="progress-fill" style="width:${item.progress_pct || 30}%"></div></div>`;
+      html += `<span class="progress-label">${escHtml(item.progress_label || '')}</span>`;
+      html += `</div>`;
+    }
+
+    html += `</div>`; /* info */
+
+    html += `<div class="item-actions">`;
+    if (item.activity_state !== 'running' && !item.running) {
+      if (item.destructive) {
+        html += `<button class="action-btn destructive" data-action="destructive" data-idx="${idx}">${escHtml(item.action_label)}</button>`;
+      } else if (item.issue_reportable) {
+        html += `<button class="action-btn" data-action="issue-draft" data-idx="${idx}">${escHtml(item.action_label)}</button>`;
+      } else {
+        html += `<button class="action-btn primary" data-action="resolve" data-idx="${idx}">${escHtml(item.action_label)}</button>`;
+      }
+    } else {
+      html += `<button class="action-btn" disabled>处理中</button>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`; /* item */
+  });
+
+  inbox.innerHTML = html;
+  updateBadge();
+}
+
+function moduleLabel(m) {
+  switch(m) {
+    case 'ocr': return 'OCR';
+    case 'memory': return '记忆';
+    case 'library': return '文献库';
+    default: return m;
+  }
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function updateBadge() {
+  const visible = currentItems.filter(i => !removedIds.has(i.id));
+  const badge = document.getElementById('badge');
+  badge.textContent = visible.length;
+}
+
+/* ─── Scenario loading ─── */
+function loadScenario(name) {
+  if (name === 'resolve') {
+    resolveOne();
+    return;
+  }
+  const data = SCENARIOS[name];
+  if (!data) return;
+  removedIds.clear();
+  // deep clone
+  currentItems = data.items.map(i => ({
+    ...i,
+    running: i.running || false,
+    progress_pct: i.progress_pct || 0,
+    progress_label: i.progress_label || '',
+  }));
+  render();
+}
+
+function resolveOne() {
+  const visible = currentItems.filter(i => !removedIds.has(i.id));
+  if (visible.length === 0) return;
+  // Resolve the first non-running item
+  const target = visible.find(i => i.activity_state !== 'running' && !i.running);
+  if (!target) return;
+  removedIds.add(target.id);
+  render();
+  focusAfterRemoval();
+}
+
+/* ─── Modal helpers: focus trap + inert + restoration ─── */
+let lastFocusedElement = null;
+let activeFocusTrapOverlay = null;
+
+function openModal(overlay) {
+  // Ensure other overlay is hidden — only one modal at a time
+  document.getElementById('confirm-overlay').classList.remove('open');
+  document.getElementById('draft-overlay').classList.remove('open');
+  // Inert background content
+  document.querySelector('.page-wrap').inert = true;
+  // Track previously focused element for restoration
+  lastFocusedElement = document.activeElement;
+  overlay.classList.add('open');
+  activeFocusTrapOverlay = overlay;
+}
+
+function closeModal(overlay, opts) {
+  opts = opts || {};
+  overlay.classList.remove('open');
+  // Restore inert
+  document.querySelector('.page-wrap').inert = false;
+  activeFocusTrapOverlay = null;
+  // Restore focus to element that opened the modal (skip when caller manages it)
+  if (!opts.skipRestore && lastFocusedElement && lastFocusedElement.focus && typeof lastFocusedElement.focus === 'function') {
+    try { lastFocusedElement.focus(); } catch (_) {}
+  }
+  if (!opts.skipRestore) lastFocusedElement = null;
+}
+
+function focusAfterRemoval() {
+  const visible = currentItems.filter(i => !removedIds.has(i.id));
+  // Focus deterministically: actionable button > heading
+  if (visible.length > 0) {
+    // Try first non-running item's action button
+    const targetIdx = visible.findIndex(i => i.activity_state !== 'running' && !i.running);
+    if (targetIdx >= 0) {
+      const btn = document.querySelector(`.item:not(.removing) [data-action][data-idx="${targetIdx}"]`);
+      if (btn && typeof btn.focus === 'function') { btn.focus(); return; }
+    }
+    // Fallback: any actionable button (skip disabled)
+    const anyBtn = document.querySelector('.item:not(.removing) .action-btn:not(:disabled):not([hidden])');
+    if (anyBtn && typeof anyBtn.focus === 'function') { anyBtn.focus(); return; }
+  }
+  // Empty/no-actionable state — focus the heading
+  const h1 = document.querySelector('h1');
+  if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus(); }
+}
+
+// Focus trap: cycle Tab within the active overlay
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || !activeFocusTrapOverlay) return;
+  const focusable = activeFocusTrapOverlay.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+});
+
+/* ─── Confirmation flow ─── */
+let pendingDestructive = null;
+
+function showConfirmation(item) {
+  const overlay = document.getElementById('confirm-overlay');
+  document.getElementById('confirm-title').textContent = '确认 ' + item.action_label;
+  document.getElementById('confirm-body').textContent = item.confirmation_prompt || '此操作将执行变更。';
+  const scopeEl = document.getElementById('confirm-scope');
+  if (item.destructive_scope && item.destructive_effect) {
+    scopeEl.hidden = false;
+    scopeEl.textContent = '范围: ' + item.destructive_scope + ' · ' + item.destructive_effect;
+  } else {
+    scopeEl.hidden = true;
+  }
+  pendingDestructive = item;
+  openModal(overlay);
+  document.getElementById('confirm-ok').focus();
+}
+
+function closeAnyOverlay() {
+  const confirmEl = document.getElementById('confirm-overlay');
+  const draftEl = document.getElementById('draft-overlay');
+  if (confirmEl.classList.contains('open')) {
+    confirmEl.classList.remove('open');
+    pendingDestructive = null;
+  }
+  if (draftEl.classList.contains('open')) {
+    draftEl.classList.remove('open');
+    draftItem = null;
+  }
+  document.querySelector('.page-wrap').inert = false;
+  activeFocusTrapOverlay = null;
+  if (lastFocusedElement && lastFocusedElement.focus && typeof lastFocusedElement.focus === 'function') {
+    try { lastFocusedElement.focus(); } catch (_) {}
+  }
+  lastFocusedElement = null;
+}
+
+document.getElementById('confirm-cancel').addEventListener('click', () => {
+  closeModal(document.getElementById('confirm-overlay'));
+  pendingDestructive = null;
+});
+
+document.getElementById('confirm-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    closeModal(document.getElementById('confirm-overlay'));
+    pendingDestructive = null;
+  }
+});
+
+document.getElementById('confirm-ok').addEventListener('click', () => {
+  const item = pendingDestructive;
+  if (!item) return;
+  // Mark confirmed — remove from inbox
+  removedIds.add(item.id);
+  closeModal(document.getElementById('confirm-overlay'), { skipRestore: true });
+  pendingDestructive = null;
+  lastFocusedElement = null;
+  render();
+  focusAfterRemoval();
+});
+
+/* ─── Issue Draft flow ─── */
+let draftItem = null;
+
+function showIssueDraft(item) {
+  draftItem = item;
+  const overlay = document.getElementById('draft-overlay');
+
+  document.getElementById('draft-key').textContent = item.key;
+  document.getElementById('draft-error').textContent = item.issue_error || 'N/A';
+  document.getElementById('draft-reason-text').textContent = item.reason_text;
+
+  const titleInput = document.getElementById('draft-title-input');
+  titleInput.value = '[PaperForge] OCR quality unacceptable — ' + item.key;
+
+  const body = document.getElementById('draft-body');
+  body.value = `## Bug: OCR quality assessment failed
+
+**Module:** ocr
+**reason.code:** ocr.quality_unacceptable
+**reason.text:** ${item.reason_text}
+**error:** ${item.issue_error || 'N/A'}
+**paper key:** ${item.key}
+
+### Redacted fields
+- title: [redacted]
+- vault path: [redacted]
+- zotero path: [redacted]
+- config values: [redacted]
+- API key: [redacted]
+
+### Steps to reproduce
+1. Open the paper in PaperForge
+2. Review OCR output
+3. Character error rate exceeds acceptable threshold
+
+### Expected behavior
+OCR quality should meet the configured threshold.
+
+### Environment
+[User fills in manually — none collected]`;
+
+  openModal(overlay);
+  titleInput.focus();
+  titleInput.select();
+}
+
+document.getElementById('draft-close').addEventListener('click', () => {
+  closeModal(document.getElementById('draft-overlay'));
+  draftItem = null;
+});
+
+document.getElementById('draft-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    closeModal(document.getElementById('draft-overlay'));
+    draftItem = null;
+  }
+});
+
+document.getElementById('draft-open-github').addEventListener('click', () => {
+  const title = document.getElementById('draft-title-input').value.trim();
+  const body = document.getElementById('draft-body').value.trim();
+
+  // User-edited title and body are included
+  // We NEVER auto-submit — only open a pre-filled GitHub new-issue URL
+  const params = new URLSearchParams();
+  params.set('title', title || '[PaperForge] OCR quality issue');
+  params.set('body', body);
+
+  // Open in new window — user must click "Submit new issue" themselves
+  const url = 'https://github.com/LLLin000/PaperForge/issues/new?' + params.toString();
+  window.open(url, '_blank');
+
+  // Do NOT close the draft — user may want to continue editing
+});
+
+
+/* ─── Inbox event delegation ─── */
+document.getElementById('inbox').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const idx = parseInt(btn.dataset.idx, 10);
+  const visible = currentItems.filter(i => !removedIds.has(i.id));
+  const item = visible[idx];
+  if (!item) return;
+
+  switch (action) {
+    case 'resolve':
+      removedIds.add(item.id);
+      render();
+      focusAfterRemoval();
+      break;
+    case 'destructive':
+      showConfirmation(item);
+      break;
+    case 'issue-draft':
+      showIssueDraft(item);
+      break;
+  }
+});
+
+/* ─── Scenario button wiring ─── */
+document.querySelectorAll('[data-scenario]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    loadScenario(btn.dataset.scenario);
+  });
+});
+
+document.getElementById('reset-all').addEventListener('click', () => {
+  removedIds.clear();
+  currentItems = [];
+  render();
+});
+/* ─── Keyboard support ─── */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeAnyOverlay();
+  }
+});
+
+
+
+/* ─── Init ─── */
+loadScenario('empty');
+</script>
+</body>
+</html>

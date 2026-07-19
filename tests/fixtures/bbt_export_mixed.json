@@ -1,0 +1,51 @@
+{
+  "items": [
+    {
+      "key": "MIXED001",
+      "itemKey": "MIXED001",
+      "itemType": "journalArticle",
+      "title": "Mixed Formats Paper",
+      "date": "2024",
+      "publicationTitle": "Mixed Journal",
+      "DOI": "10.9012/mixed.003",
+      "attachments": [
+        {
+          "path": "D:\\L\\Med\\Research\\99_System\\Zotero\\storage\\MIXED001\\Mixed Formats Paper.pdf",
+          "contentType": "application/pdf",
+          "title": "PDF",
+          "size": 2048000
+        },
+        {
+          "path": "storage:MIXED001/supplementary data.pdf",
+          "contentType": "application/pdf",
+          "title": "Supplementary Data",
+          "size": 512000
+        },
+        {
+          "path": "MIXED001/MIXED001.docx",
+          "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "title": "Word Document",
+          "size": 256000
+        }
+      ]
+    },
+    {
+      "key": "BARE002",
+      "itemKey": "BARE002",
+      "itemType": "journalArticle",
+      "title": "Bare Relative Path Paper",
+      "date": "2023",
+      "publicationTitle": "Bare Journal",
+      "DOI": "10.3456/bare.004",
+      "attachments": [
+        {
+          "path": "BARE002/BARE002.pdf",
+          "contentType": "application/pdf",
+          "title": "PDF",
+          "size": 1536000
+        }
+      ]
+    }
+  ],
+  "collections": {}
+}

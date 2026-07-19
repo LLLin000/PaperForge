@@ -1,0 +1,37 @@
+name: Chaos Tests (L6)
+
+on:
+  schedule:
+    # Weekly: Sunday 06:00 UTC
+    - cron: "0 6 * * 0"
+  workflow_dispatch:
+    # Manual trigger from GitHub UI
+
+jobs:
+  chaos-tests:
+    name: Chaos / Destructive Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package with test dependencies
+        run: |
+          pip install -e ".[test]"
+          pip install pytest pytest-timeout responses PyYAML
+
+      - name: Run chaos tests
+        run: |
+          python -m pytest tests/chaos/ -m chaos -v --tb=long --timeout=120 \
+            --junit-xml=chaos-results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-test-results
+          path: chaos-results.xml

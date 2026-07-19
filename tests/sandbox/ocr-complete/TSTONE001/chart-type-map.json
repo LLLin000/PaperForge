@@ -1,0 +1,69 @@
+{
+  "zotero_key": "TSTONE001",
+  "figures": [
+    {
+      "number": "1",
+      "label": "Figure 1: Overview of suture anchor placement techniques",
+      "caption_preview": "Overview of suture anchor placement techniques. (A) Single row repair. (B) Double row repair. (C) Transosseous equivalent repair.",
+      "detected_chart_types": [
+        "生存曲线"
+      ],
+      "recommended_guides": [
+        "chart-reading/生存曲线.md"
+      ]
+    },
+    {
+      "number": "2",
+      "label": "Figure 2: Biomechanical testing setup",
+      "caption_preview": "Biomechanical testing setup. (A) Custom loading fixture. (B) Cyclic loading protocol.",
+      "detected_chart_types": [
+        "折线图与时间序列"
+      ],
+      "recommended_guides": [
+        "chart-reading/折线图与时间序列.md"
+      ]
+    },
+    {
+      "number": "3",
+      "label": "Figure 3: Load to failure comparison",
+      "caption_preview": "Load to failure comparison. Error bars represent standard deviation. *p < 0.05 vs single row.",
+      "detected_chart_types": [
+        "条形图与误差棒"
+      ],
+      "recommended_guides": [
+        "chart-reading/条形图与误差棒.md"
+      ]
+    },
+    {
+      "number": "4",
+      "label": "Figure 4: Stiffness comparison between repair techniques",
+      "caption_preview": "Stiffness comparison between repair techniques.",
+      "detected_chart_types": [
+        "GSEA富集图"
+      ],
+      "recommended_guides": [
+        "chart-reading/GSEA富集图.md"
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "number": "1",
+      "label": "Table 1: Patient demographics and baseline characteristics (n=45)",
+      "caption_preview": "Patient demographics and baseline characteristics (n=45).",
+      "detected_chart_types": [
+        "火山图与曼哈顿图"
+      ],
+      "recommended_guides": [
+        "chart-reading/火山图与曼哈顿图.md"
+      ]
+    },
+    {
+      "number": "2",
+      "label": "Table 2: Biomechanical properties summary",
+      "caption_preview": "Biomechanical properties summary.",
+      "detected_chart_types": [],
+      "recommended_guides": []
+    }
+  ]
+}

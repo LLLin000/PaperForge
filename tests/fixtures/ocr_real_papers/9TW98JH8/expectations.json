@@ -1,0 +1,12 @@
+{
+  "layout": {
+    "mixed_tail_pages": [5],
+    "min_reference_items_on_mixed_tail_page": 3
+  },
+  "document": {
+    "notes": [
+      "5-page mixed_tail fixture. Page 5: 4 body_paragraph + 9 reference_item blocks.",
+      "Expands coverage for mixed_tail layout classification."
+    ]
+  }
+}

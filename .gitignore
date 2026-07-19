@@ -1,0 +1,60 @@
+# Obsidian
+.obsidian/
+.trash/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+config.json
+
+# Data (user-specific)
+Bases/
+05_Bases/
+System/
+99_System/
+00_Inbox/
+Resources/
+03_Resources/
+
+# Test sandbox (wizard output)
+tests/sandbox/00_TestVault/
+
+# OS
+.DS_Store
+Thumbs.db
+.worktrees/
+
+.vite/
+paperforge/plugin/node_modules/
+
+# Temp files
+.opencode/tmp/
+.ai-bridge/
+
+# Audit per-paper artifacts (keep root-level summary files)
+audit/*/
+!audit/*.json
+!audit/*.md
+
+# Temp / generated files
+.git-rewrite/
+.tmp/
+local-*.md
+loss_*.md
+audit/tmp_pdf/
+audit/media_asset_samples/
+
+# OpenCode MCP binaries
+.opencode/mcp/

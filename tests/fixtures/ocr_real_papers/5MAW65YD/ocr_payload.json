@@ -1,0 +1,4756 @@
+[
+  {
+    "layoutParsingResults": [
+      {
+        "prunedResult": {
+          "page_count": 5,
+          "width": 1224,
+          "height": 1584,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "doc_title",
+              "block_content": "Biomechanical characterization of tissue-engineered cartilages by photoacoustic measurement",
+              "block_bbox": [
+                192,
+                172,
+                1047,
+                247
+              ],
+              "block_id": 0,
+              "block_order": 1,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  192.0,
+                  172.0
+                ],
+                [
+                  1047.0,
+                  172.0
+                ],
+                [
+                  1047.0,
+                  247.0
+                ],
+                [
+                  192.0,
+                  247.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "Miya Ishihara $ ^{*a} $, Masato Sato $ ^{a} $, Shunichi Sato $ ^{b} $, Toshiyuki Kikuchi $ ^{c} $, Kyosuke Fujikawa $ ^{c} $, Makoto Kikuchi $ ^{a} $",
+              "block_bbox": [
+                327,
+                286,
+                913,
+                346
+              ],
+              "block_id": 1,
+              "block_order": 2,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  327.0,
+                  286.0
+                ],
+                [
+                  913.0,
+                  286.0
+                ],
+                [
+                  913.0,
+                  346.0
+                ],
+                [
+                  327.0,
+                  346.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": " $ ^{a} $ Dept. of Med. Engng., National Defense Medical College, 3-2 Namiki, Tokorozawa, JAPAN\n $ ^{b} $ Div. of Bio. Inf. Sci., National Defense Medical College Research Inst., 3-2 Namiki, Tokorozawa\n $ ^{c} $ Dept. of Orthopaedic surg., National Defense Medical College, 3-2 Namiki, Tokorozawa",
+              "block_bbox": [
+                141,
+                365,
+                1099,
+                451
+              ],
+              "block_id": 2,
+              "block_order": 3,
+              "group_id": 2,
+              "block_polygon_points": [
+                [
+                  141.0,
+                  365.0
+                ],
+                [
+                  1099.0,
+                  365.0
+                ],
+                [
+                  1099.0,
+                  451.0
+                ],
+                [
+                  141.0,
+                  451.0
+                ]
+              ]
+            },
+            {
+              "block_label": "paragraph_title",
+              "block_content": "ABSTRACT",
+              "block_bbox": [
+                556,
+                494,
+                683,
+                518
+              ],
+              "block_id": 3,
+              "block_order": 4,
+              "group_id": 3,
+              "block_polygon_points": [
+                [
+                  556.0,
+                  494.0
+                ],
+                [
+                  683.0,
+                  494.0
+                ],
+                [
+                  683.0,
+                  518.0
+                ],
+                [
+                  556.0,
+                  518.0
+                ]
+              ]
+            },
+            {
+              "block_label": "abstract",
+              "block_content": "We have demonstrated a capability of biomechanical characterization by photoacoustic measurement using various concentration gelatins as tissue phantom. We have also evaluated the viscoelasticity of the cartilages tissue-engineered under the different culture conditions. Structural tissues, such as cartilage, bone, tendon, and muscle require time-dependent mechanical responses (viscoelastic properties) to describe their mechanical behavior. However, non-invasive measurement of tissue viscoelasticities has not been developed; such measurement is necessary for tissue engineering applications on weight-bearing tissues. As tissue viscoelasticity affects the propagation and attenuation of the stress waves generated in the tissue, their relaxation times which are defined as the time for the stress wave amplitude to decrease by a factor of 1/e, give the viscosity-elasticity ratio of the tissue. In this study, stress waves (photoacoustic waves) which were induced by 250-nm, 6-ns, light pulses from an OPO were detected by a piezoelectric transducer. The relaxation time of the photoacoustic wave was measured for various concentrations of gelatins which had been measured their viscoelastic properties by a conventional method. Consequently, the relaxation time corresponded to the known viscosity-elasticity ratio of the gelatins. For the tissue-engineered cartilages, photoacoustic measurements were performed under the different cultured conditions. The relaxation time of the cartilages closely correlated with the viscosity-elasticity ratio measured by a conventional method. Therefore, the photoacoustic measurement is one of the qualified candidates for a non-invasive viscoelastic measurement of tissue.",
+              "block_bbox": [
+                130,
+                533,
+                1106,
+                895
+              ],
+              "block_id": 4,
+              "block_order": 5,
+              "group_id": 4,
+              "block_polygon_points": [
+                [
+                  130.0,
+                  533.0
+                ],
+                [
+                  1106.0,
+                  533.0
+                ],
+                [
+                  1106.0,
+                  895.0
+                ],
+                [
+                  130.0,
+                  895.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "Keywords: viscoelastic, photoacoustic, laser-induced stress wave, piezoelectric, rheological, relaxation parameter, cartilage, tissue engineering, gelatin, culture",
+              "block_bbox": [
+                149,
+                968,
+                1075,
+                1016
+              ],
+              "block_id": 5,
+              "block_order": 6,
+              "group_id": 5,
+              "block_polygon_points": [
+                [
+                  149.0,
+                  968.0
+                ],
+                [
+                  1075.0,
+                  968.0
+                ],
+                [
+                  1075.0,
+                  1016.0
+                ],
+                [
+                  149.0,
+                  1016.0
+                ]
+              ]
+            },
+            {
+              "block_label": "paragraph_title",
+              "block_content": "1. INTRODUCTION",
+              "block_bbox": [
+                506,
+                1070,
+                728,
+                1095
+              ],
+              "block_id": 6,
+              "block_order": 7,
+              "group_id": 6,
+              "block_polygon_points": [
+                [
+                  506.0,
+                  1070.0
+                ],
+                [
+                  728.0,
+                  1070.0
+                ],
+                [
+                  728.0,
+                  1095.0
+                ],
+                [
+                  506.0,
+                  1095.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "In order to describe the behavior of structural tissues, such as cartilage, muscle, etc, viscoelastic parameters are required  $ {}^{(1)} $. For example, articular cartilage functions to distribute joint forces more evenly and thus reduce steep stress gradient  $ {}^{(2)} $. This behavior with nonlinear or time-dependent mechanical response is just as viscoelastic material  $ {}^{(3)} $. There have been many studies on biomechanical characterization of biological tissues. Studies of biomechanical analysis are often used invasive mechanical test such as creep test. On the other hand, studies of in situ biomechanical characterization are often used indenter  $ {}^{(4)} $, which can evaluate only elastic properties. To the best of our knowledge, however, there is no report of a completely noninvasive method for viscoelastic characterization of structural tissue.",
+              "block_bbox": [
+                128,
+                1121,
+                1103,
+                1286
+              ],
+              "block_id": 7,
+              "block_order": 8,
+              "group_id": 7,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  1121.0
+                ],
+                [
+                  1103.0,
+                  1121.0
+                ],
+                [
+                  1103.0,
+                  1286.0
+                ],
+                [
+                  128.0,
+                  1286.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "There has been an emerging and decisive needs in recent years for a noninvasive method of measuring tissue viscoelasticities for applications of tissue engineering to weight-bearing structural tissues because tissue engineering should be enable maximization of the potential of cells to generate functional replacement tissue as an alternative to conventional organ transplantation and tissue reconstruction $ ^{(3)} $. To satisfy this demand, noninvasive measurement of",
+              "block_bbox": [
+                128,
+                1303,
+                1105,
+                1396
+              ],
+              "block_id": 8,
+              "block_order": 9,
+              "group_id": 8,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  1303.0
+                ],
+                [
+                  1105.0,
+                  1303.0
+                ],
+                [
+                  1105.0,
+                  1396.0
+                ],
+                [
+                  128.0,
+                  1396.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footnote",
+              "block_content": "*kobako@cc.ndmc.ac.jp; phone +81-42-995-1627; fax +81-42-996-5199",
+              "block_bbox": [
+                134,
+                1414,
+                729,
+                1440
+              ],
+              "block_id": 9,
+              "block_order": null,
+              "group_id": 9,
+              "block_polygon_points": [
+                [
+                  134.0,
+                  1414.0
+                ],
+                [
+                  729.0,
+                  1414.0
+                ],
+                [
+                  729.0,
+                  1440.0
+                ],
+                [
+                  134.0,
+                  1440.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footnote",
+              "block_content": "Laser-Tissue Interaction XIV, Steven L. Jacques, Donald D. Duncan, Sean J. Kirkpatrick, Andres Kriete, Editors, Proceedings of SPIE Vol. 4961 (2003) © 2003 SPIE · 1605-7422/03/$15.00",
+              "block_bbox": [
+                102,
+                1459,
+                808,
+                1495
+              ],
+              "block_id": 10,
+              "block_order": null,
+              "group_id": 10,
+              "block_polygon_points": [
+                [
+                  102,
+                  1459
+                ],
+                [
+                  102,
+                  1494
+                ],
+                [
+                  807,
+                  1494
+                ],
+                [
+                  807,
+                  1459
+                ]
+              ]
+            },
+            {
+              "block_label": "number",
+              "block_content": "221",
+              "block_bbox": [
+                1070,
+                1454,
+                1102,
+                1472
+              ],
+              "block_id": 11,
+              "block_order": null,
+              "group_id": 11,
+              "block_polygon_points": [
+                [
+                  1070.0,
+                  1454.0
+                ],
+                [
+                  1101.0,
+                  1454.0
+                ],
+                [
+                  1101.0,
+                  1471.0
+                ],
+                [
+                  1070.0,
+                  1471.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "Downloaded From: http://proceedings.spiedigitallibrary.org/ on 06/15/2016 Terms of Use: http://spiedigitallibrary.org/ss/TermsOfUse.aspx",
+              "block_bbox": [
+                15,
+                1563,
+                972,
+                1582
+              ],
+              "block_id": 12,
+              "block_order": null,
+              "group_id": 12,
+              "block_polygon_points": [
+                [
+                  22.0,
+                  1563.0
+                ],
+                [
+                  970.9998779296875,
+                  1563.0
+                ],
+                [
+                  970.9998779296875,
+                  1581.0
+                ],
+                [
+                  22.0,
+                  1581.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 6,
+                "label": "doc_title",
+                "score": 0.9361024498939514,
+                "coordinate": [
+                  192,
+                  172,
+                  1047,
+                  247
+                ],
+                "order": 1,
+                "polygon_points": [
+                  [
+                    192.0,
+                    172.0
+                  ],
+                  [
+                    1047.0,
+                    172.0
+                  ],
+                  [
+                    1047.0,
+                    247.0
+                  ],
+                  [
+                    192.0,
+                    247.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.886206865310669,
+                "coordinate": [
+                  327,
+                  286,
+                  913,
+                  346
+                ],
+                "order": 2,
+                "polygon_points": [
+                  [
+                    327.0,
+                    286.0
+                  ],
+                  [
+                    913.0,
+                    286.0
+                  ],
+                  [
+                    913.0,
+                    346.0
+                  ],
+                  [
+                    327.0,
+                    346.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.8562150001525879,
+                "coordinate": [
+                  141,
+                  365,
+                  1099,
+                  451
+                ],
+                "order": 3,
+                "polygon_points": [
+                  [
+                    141.0,
+                    365.0
+                  ],
+                  [
+                    1099.0,
+                    365.0
+                  ],
+                  [
+                    1099.0,
+                    451.0
+                  ],
+                  [
+                    141.0,
+                    451.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 17,
+                "label": "paragraph_title",
+                "score": 0.8028078079223633,
+                "coordinate": [
+                  556,
+                  494,
+                  683,
+                  518
+                ],
+                "order": 4,
+                "polygon_points": [
+                  [
+                    556.0,
+                    494.0
+                  ],
+                  [
+                    683.0,
+                    494.0
+                  ],
+                  [
+                    683.0,
+                    518.0
+                  ],
+                  [
+                    556.0,
+                    518.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 0,
+                "label": "abstract",
+                "score": 0.9769114851951599,
+                "coordinate": [
+                  130,
+                  533,
+                  1106,
+                  895
+                ],
+                "order": 5,
+                "polygon_points": [
+                  [
+                    130.0,
+                    533.0
+                  ],
+                  [
+                    1106.0,
+                    533.0
+                  ],
+                  [
+                    1106.0,
+                    895.0
+                  ],
+                  [
+                    130.0,
+                    895.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.8935496211051941,
+                "coordinate": [
+                  149,
+                  968,
+                  1075,
+                  1016
+                ],
+                "order": 6,
+                "polygon_points": [
+                  [
+                    149.0,
+                    968.0
+                  ],
+                  [
+                    1075.0,
+                    968.0
+                  ],
+                  [
+                    1075.0,
+                    1016.0
+                  ],
+                  [
+                    149.0,
+                    1016.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 17,
+                "label": "paragraph_title",
+                "score": 0.8318653106689453,
+                "coordinate": [
+                  506,
+                  1070,
+                  728,
+                  1095
+                ],
+                "order": 7,
+                "polygon_points": [
+                  [
+                    506.0,
+                    1070.0
+                  ],
+                  [
+                    728.0,
+                    1070.0
+                  ],
+                  [
+                    728.0,
+                    1095.0
+                  ],
+                  [
+                    506.0,
+                    1095.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9565839767456055,
+                "coordinate": [
+                  128,
+                  1121,
+                  1103,
+                  1286
+                ],
+                "order": 8,
+                "polygon_points": [
+                  [
+                    128.0,
+                    1121.0
+                  ],
+                  [
+                    1103.0,
+                    1121.0
+                  ],
+                  [
+                    1103.0,
+                    1286.0
+                  ],
+                  [
+                    128.0,
+                    1286.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.948104739189148,
+                "coordinate": [
+                  128,
+                  1303,
+                  1105,
+                  1396
+                ],
+                "order": 9,
+                "polygon_points": [
+                  [
+                    128.0,
+                    1303.0
+                  ],
+                  [
+                    1105.0,
+                    1303.0
+                  ],
+                  [
+                    1105.0,
+                    1396.0
+                  ],
+                  [
+                    128.0,
+                    1396.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 10,
+                "label": "footnote",
+                "score": 0.7347042560577393,
+                "coordinate": [
+                  134,
+                  1414,
+                  729,
+                  1440
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    134.0,
+                    1414.0
+                  ],
+                  [
+                    729.0,
+                    1414.0
+                  ],
+                  [
+                    729.0,
+                    1440.0
+                  ],
+                  [
+                    134.0,
+                    1440.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 10,
+                "label": "footnote",
+                "score": 0.3543592095375061,
+                "coordinate": [
+                  103,
+                  1459,
+                  740,
+                  1478
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    103.0,
+                    1459.0
+                  ],
+                  [
+                    739.0,
+                    1459.0
+                  ],
+                  [
+                    739.0,
+                    1477.0
+                  ],
+                  [
+                    103.0,
+                    1477.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 10,
+                "label": "footnote",
+                "score": 0.36571204662323,
+                "coordinate": [
+                  102,
+                  1459,
+                  808,
+                  1495
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    102,
+                    1459
+                  ],
+                  [
+                    102,
+                    1494
+                  ],
+                  [
+                    807,
+                    1494
+                  ],
+                  [
+                    807,
+                    1459
+                  ]
+                ]
+              },
+              {
+                "cls_id": 10,
+                "label": "footnote",
+                "score": 0.3284950256347656,
+                "coordinate": [
+                  102,
+                  1476,
+                  810,
+                  1496
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    102,
+                    1476
+                  ],
+                  [
+                    102,
+                    1495
+                  ],
+                  [
+                    809,
+                    1495
+                  ],
+                  [
+                    809,
+                    1476
+                  ]
+                ]
+              },
+              {
+                "cls_id": 16,
+                "label": "number",
+                "score": 0.7334131002426147,
+                "coordinate": [
+                  1070,
+                  1454,
+                  1102,
+                  1472
+                ],
+                "order": 10,
+                "polygon_points": [
+                  [
+                    1070.0,
+                    1454.0
+                  ],
+                  [
+                    1101.0,
+                    1454.0
+                  ],
+                  [
+                    1101.0,
+                    1471.0
+                  ],
+                  [
+                    1070.0,
+                    1471.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.8368988037109375,
+                "coordinate": [
+                  15,
+                  1563,
+                  972,
+                  1582
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    22.0,
+                    1563.0
+                  ],
+                  [
+                    970.9998779296875,
+                    1563.0
+                  ],
+                  [
+                    970.9998779296875,
+                    1581.0
+                  ],
+                  [
+                    22.0,
+                    1581.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "# Biomechanical characterization of tissue-engineered cartilages by photoacoustic measurement\n\nMiya Ishihara $ ^{*a} $, Masato Sato $ ^{a} $, Shunichi Sato $ ^{b} $, Toshiyuki Kikuchi $ ^{c} $, Kyosuke Fujikawa $ ^{c} $, Makoto Kikuchi $ ^{a} $\n\n $ ^{a} $ Dept. of Med. Engng., National Defense Medical College, 3-2 Namiki, Tokorozawa, JAPAN\n\n $ ^{b} $ Div. of Bio. Inf. Sci., National Defense Medical College Research Inst., 3-2 Namiki, Tokorozawa\n\n $ ^{c} $ Dept. of Orthopaedic surg., National Defense Medical College, 3-2 Namiki, Tokorozawa\n\n## ABSTRACT\n\nWe have demonstrated a capability of biomechanical characterization by photoacoustic measurement using various concentration gelatins as tissue phantom. We have also evaluated the viscoelasticity of the cartilages tissue-engineered under the different culture conditions. Structural tissues, such as cartilage, bone, tendon, and muscle require time-dependent mechanical responses (viscoelastic properties) to describe their mechanical behavior. However, non-invasive measurement of tissue viscoelasticities has not been developed; such measurement is necessary for tissue engineering applications on weight-bearing tissues. As tissue viscoelasticity affects the propagation and attenuation of the stress waves generated in the tissue, their relaxation times which are defined as the time for the stress wave amplitude to decrease by a factor of 1/e, give the viscosity-elasticity ratio of the tissue. In this study, stress waves (photoacoustic waves) which were induced by 250-nm, 6-ns, light pulses from an OPO were detected by a piezoelectric transducer. The relaxation time of the photoacoustic wave was measured for various concentrations of gelatins which had been measured their viscoelastic properties by a conventional method. Consequently, the relaxation time corresponded to the known viscosity-elasticity ratio of the gelatins. For the tissue-engineered cartilages, photoacoustic measurements were performed under the different cultured conditions. The relaxation time of the cartilages closely correlated with the viscosity-elasticity ratio measured by a conventional method. Therefore, the photoacoustic measurement is one of the qualified candidates for a non-invasive viscoelastic measurement of tissue.\n\nKeywords: viscoelastic, photoacoustic, laser-induced stress wave, piezoelectric, rheological, relaxation parameter, cartilage, tissue engineering, gelatin, culture\n\n### 1. INTRODUCTION\n\nIn order to describe the behavior of structural tissues, such as cartilage, muscle, etc, viscoelastic parameters are required  $ {}^{(1)} $. For example, articular cartilage functions to distribute joint forces more evenly and thus reduce steep stress gradient  $ {}^{(2)} $. This behavior with nonlinear or time-dependent mechanical response is just as viscoelastic material  $ {}^{(3)} $. There have been many studies on biomechanical characterization of biological tissues. Studies of biomechanical analysis are often used invasive mechanical test such as creep test. On the other hand, studies of in situ biomechanical characterization are often used indenter  $ {}^{(4)} $, which can evaluate only elastic properties. To the best of our knowledge, however, there is no report of a completely noninvasive method for viscoelastic characterization of structural tissue.\n\nThere has been an emerging and decisive needs in recent years for a noninvasive method of measuring tissue viscoelasticities for applications of tissue engineering to weight-bearing structural tissues because tissue engineering should be enable maximization of the potential of cells to generate functional replacement tissue as an alternative to conventional organ transplantation and tissue reconstruction $ ^{(3)} $. To satisfy this demand, noninvasive measurement of",
+          "images": {}
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/layout_det_res_0.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A13Z%2F-1%2F%2F53376adcb1bad316bf7adcf8e5ba14778f2eac137b10e134ffc1e073663aea3d"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/input_img_0.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A13Z%2F-1%2F%2F50537e3ae447a3f770a3a702ea11df0060bbc5777a6d6d13cfb69fcc50bfe2b9"
+      },
+      {
+        "prunedResult": {
+          "page_count": 5,
+          "width": 1224,
+          "height": 1584,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "text",
+              "block_content": "the viscoelasticities of tissue-engineered structural tissues (i.e., evaluation of the major functions of structural tissues) such as cartilage is needed.",
+              "block_bbox": [
+                130,
+                169,
+                1103,
+                218
+              ],
+              "block_id": 0,
+              "block_order": 1,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  130.04885864257812,
+                  162.21640014648438
+                ],
+                [
+                  1102.3441162109375,
+                  169.21853637695312
+                ],
+                [
+                  1102.0,
+                  217.0
+                ],
+                [
+                  129.70474243164062,
+                  209.99786376953125
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "In this study, we propose a novel noninvasive method for viscoelastic characterization of structural tissue by photoacoustic measurement which includes capability of noninvasive and real-time measurement. By pulsed laser irradiation to biological tissue, stress waves (photoacoustic waves) can be induced through a thermoelastic process. The dynamics of stress waves have a possible measurement of viscoelastic properties of the tissue using their characteristics of propagation.",
+              "block_bbox": [
+                128,
+                235,
+                1058,
+                353
+              ],
+              "block_id": 1,
+              "block_order": 2,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  235.0
+                ],
+                [
+                  1058.0,
+                  235.0
+                ],
+                [
+                  1058.0,
+                  353.0
+                ],
+                [
+                  128.0,
+                  353.0
+                ]
+              ]
+            },
+            {
+              "block_label": "paragraph_title",
+              "block_content": "2. THEORETICAL STUDY",
+              "block_bbox": [
+                470,
+                394,
+                762,
+                419
+              ],
+              "block_id": 2,
+              "block_order": 3,
+              "group_id": 2,
+              "block_polygon_points": [
+                [
+                  470.0,
+                  394.0
+                ],
+                [
+                  762.0,
+                  394.0
+                ],
+                [
+                  762.0,
+                  419.0
+                ],
+                [
+                  470.0,
+                  419.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "Stress waves can be induced under the following condition:  $ t_p \\ll 1/\\mu_a $ x Vs, where, Vs is sound velocity of the sample,  $ t_p $ is pulse duration of the light and  $ \\mu_a $ is absorption coefficient. Displacements induced by stresses in viscoelastic materials are expressed in terms of a stress-strain relation in the viscoelastic Kelvin-Voigt model in rheology $ ^{(5)} $.",
+              "block_bbox": [
+                128,
+                446,
+                1103,
+                541
+              ],
+              "block_id": 3,
+              "block_order": 4,
+              "group_id": 3,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  446.0
+                ],
+                [
+                  1103.0,
+                  446.0
+                ],
+                [
+                  1103.0,
+                  541.0
+                ],
+                [
+                  128.0,
+                  541.0
+                ]
+              ]
+            },
+            {
+              "block_label": "display_formula",
+              "block_content": " $$ \\mathbf{p=G\\gamma+\\eta d\\gamma/d t}, $$ ",
+              "block_bbox": [
+                129,
+                571,
+                269,
+                597
+              ],
+              "block_id": 4,
+              "block_order": 5,
+              "group_id": 4,
+              "block_polygon_points": [
+                [
+                  129.0,
+                  571.0
+                ],
+                [
+                  269.0,
+                  571.0
+                ],
+                [
+                  269.0,
+                  597.0
+                ],
+                [
+                  129.0,
+                  597.0
+                ]
+              ]
+            },
+            {
+              "block_label": "formula_number",
+              "block_content": "Eq.(1)",
+              "block_bbox": [
+                417,
+                572,
+                477,
+                597
+              ],
+              "block_id": 5,
+              "block_order": 6,
+              "group_id": 5,
+              "block_polygon_points": [
+                [
+                  417.0,
+                  572.0
+                ],
+                [
+                  476.0,
+                  572.0
+                ],
+                [
+                  476.0,
+                  596.0
+                ],
+                [
+                  417.0,
+                  596.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "where p is stress,  $ \\gamma $ is strain, G is elastic modulus and  $ \\eta $ is viscosity. The expression Eq.(1) becomes",
+              "block_bbox": [
+                128,
+                612,
+                948,
+                638
+              ],
+              "block_id": 6,
+              "block_order": 7,
+              "group_id": 6,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  612.0
+                ],
+                [
+                  948.0,
+                  612.0
+                ],
+                [
+                  948.0,
+                  638.0
+                ],
+                [
+                  128.0,
+                  638.0
+                ]
+              ]
+            },
+            {
+              "block_label": "display_formula",
+              "block_content": " $$ \\mathbf{p}=\\mathbf{G}(\\gamma+\\eta/\\mathrm{~G~d}\\gamma/\\mathrm{d t}). $$ ",
+              "block_bbox": [
+                128,
+                651,
+                318,
+                676
+              ],
+              "block_id": 7,
+              "block_order": 8,
+              "group_id": 7,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  651.0
+                ],
+                [
+                  318.0,
+                  651.0
+                ],
+                [
+                  318.0,
+                  676.0
+                ],
+                [
+                  128.0,
+                  676.0
+                ]
+              ]
+            },
+            {
+              "block_label": "display_formula",
+              "block_content": " $$ \\mathrm{Eq.}(2) $$ ",
+              "block_bbox": [
+                417,
+                653,
+                477,
+                676
+              ],
+              "block_id": 8,
+              "block_order": 9,
+              "group_id": 8,
+              "block_polygon_points": [
+                [
+                  417.0,
+                  653.0
+                ],
+                [
+                  476.0,
+                  653.0
+                ],
+                [
+                  476.0,
+                  675.0
+                ],
+                [
+                  417.0,
+                  675.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "Viscosity-elasticity ratio ( $ \\eta $/G) is called relaxation parameter  $ {}^{(6)} $. Thus, the relaxation parameter is derived by decay times of dynamics of stress waves when the stress waves are affected by transmission through viscoelastic tissue.",
+              "block_bbox": [
+                128,
+                679,
+                1099,
+                731
+              ],
+              "block_id": 9,
+              "block_order": 10,
+              "group_id": 9,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  679.0
+                ],
+                [
+                  1099.0,
+                  679.0
+                ],
+                [
+                  1099.0,
+                  731.0
+                ],
+                [
+                  128.0,
+                  731.0
+                ]
+              ]
+            },
+            {
+              "block_label": "paragraph_title",
+              "block_content": "3. MATERIALS AND METHODS",
+              "block_bbox": [
+                437,
+                790,
+                790,
+                816
+              ],
+              "block_id": 10,
+              "block_order": 11,
+              "group_id": 10,
+              "block_polygon_points": [
+                [
+                  437.0,
+                  790.0
+                ],
+                [
+                  790.0,
+                  790.0
+                ],
+                [
+                  790.0,
+                  816.0
+                ],
+                [
+                  437.0,
+                  816.0
+                ]
+              ]
+            },
+            {
+              "block_label": "image",
+              "block_content": "",
+              "block_bbox": [
+                160,
+                844,
+                980,
+                1291
+              ],
+              "block_id": 11,
+              "block_order": null,
+              "group_id": 11,
+              "block_polygon_points": [
+                [
+                  160.0,
+                  844.0
+                ],
+                [
+                  980.0,
+                  844.0
+                ],
+                [
+                  980.0,
+                  1291.0
+                ],
+                [
+                  160.0,
+                  1291.0
+                ]
+              ]
+            },
+            {
+              "block_label": "figure_title",
+              "block_content": "Fig.1. Experimental arrangement of photoacoustic measurement.",
+              "block_bbox": [
+                364,
+                1313,
+                855,
+                1338
+              ],
+              "block_id": 12,
+              "block_order": null,
+              "group_id": 12,
+              "block_polygon_points": [
+                [
+                  364.0,
+                  1313.0
+                ],
+                [
+                  855.0,
+                  1313.0
+                ],
+                [
+                  855.0,
+                  1338.0
+                ],
+                [
+                  364.0,
+                  1338.0
+                ]
+              ]
+            },
+            {
+              "block_label": "number",
+              "block_content": "222",
+              "block_bbox": [
+                99,
+                1450,
+                131,
+                1467
+              ],
+              "block_id": 13,
+              "block_order": null,
+              "group_id": 13,
+              "block_polygon_points": [
+                [
+                  99.0,
+                  1450.0
+                ],
+                [
+                  130.0,
+                  1450.0
+                ],
+                [
+                  130.0,
+                  1466.0
+                ],
+                [
+                  99.0,
+                  1466.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "Proc. of SPIE Vol. 4961",
+              "block_bbox": [
+                146,
+                1448,
+                322,
+                1469
+              ],
+              "block_id": 14,
+              "block_order": null,
+              "group_id": 14,
+              "block_polygon_points": [
+                [
+                  146.0,
+                  1448.0
+                ],
+                [
+                  321.0,
+                  1448.0
+                ],
+                [
+                  321.0,
+                  1468.0
+                ],
+                [
+                  146.0,
+                  1468.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "Downloaded From: http://proceedings.spiedigitallibrary.org/ on 06/15/2016 Terms of Use: http://spiedigitallibrary.org/ss/TermsOfUse.aspx",
+              "block_bbox": [
+                14,
+                1563,
+                972,
+                1582
+              ],
+              "block_id": 15,
+              "block_order": null,
+              "group_id": 15,
+              "block_polygon_points": [
+                [
+                  21.0,
+                  1563.0
+                ],
+                [
+                  970.9998779296875,
+                  1563.0
+                ],
+                [
+                  970.9998779296875,
+                  1581.0
+                ],
+                [
+                  21.0,
+                  1581.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.8747360110282898,
+                "coordinate": [
+                  130,
+                  169,
+                  1103,
+                  218
+                ],
+                "order": 1,
+                "polygon_points": [
+                  [
+                    130.04885864257812,
+                    162.21640014648438
+                  ],
+                  [
+                    1102.3441162109375,
+                    169.21853637695312
+                  ],
+                  [
+                    1102.0,
+                    217.0
+                  ],
+                  [
+                    129.70474243164062,
+                    209.99786376953125
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9316897988319397,
+                "coordinate": [
+                  128,
+                  235,
+                  1058,
+                  353
+                ],
+                "order": 2,
+                "polygon_points": [
+                  [
+                    128.0,
+                    235.0
+                  ],
+                  [
+                    1058.0,
+                    235.0
+                  ],
+                  [
+                    1058.0,
+                    353.0
+                  ],
+                  [
+                    128.0,
+                    353.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 17,
+                "label": "paragraph_title",
+                "score": 0.8393549919128418,
+                "coordinate": [
+                  470,
+                  394,
+                  762,
+                  419
+                ],
+                "order": 3,
+                "polygon_points": [
+                  [
+                    470.0,
+                    394.0
+                  ],
+                  [
+                    762.0,
+                    394.0
+                  ],
+                  [
+                    762.0,
+                    419.0
+                  ],
+                  [
+                    470.0,
+                    419.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9169677495956421,
+                "coordinate": [
+                  128,
+                  446,
+                  1103,
+                  541
+                ],
+                "order": 4,
+                "polygon_points": [
+                  [
+                    128.0,
+                    446.0
+                  ],
+                  [
+                    1103.0,
+                    446.0
+                  ],
+                  [
+                    1103.0,
+                    541.0
+                  ],
+                  [
+                    128.0,
+                    541.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.7574955224990845,
+                "coordinate": [
+                  668,
+                  449,
+                  802,
+                  471
+                ],
+                "order": 5,
+                "polygon_points": [
+                  [
+                    668,
+                    449
+                  ],
+                  [
+                    668,
+                    470
+                  ],
+                  [
+                    801,
+                    470
+                  ],
+                  [
+                    801,
+                    449
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.5699554085731506,
+                "coordinate": [
+                  202,
+                  473,
+                  223,
+                  494
+                ],
+                "order": 6,
+                "polygon_points": [
+                  [
+                    202.0,
+                    473.0
+                  ],
+                  [
+                    222.0,
+                    473.0
+                  ],
+                  [
+                    222.0,
+                    493.0
+                  ],
+                  [
+                    202.0,
+                    493.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.646087110042572,
+                "coordinate": [
+                  522,
+                  475,
+                  546,
+                  494
+                ],
+                "order": 7,
+                "polygon_points": [
+                  [
+                    522.0,
+                    475.0
+                  ],
+                  [
+                    545.0,
+                    475.0
+                  ],
+                  [
+                    545.0,
+                    493.0
+                  ],
+                  [
+                    522.0,
+                    493.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 5,
+                "label": "display_formula",
+                "score": 0.6545398831367493,
+                "coordinate": [
+                  129,
+                  571,
+                  269,
+                  597
+                ],
+                "order": 8,
+                "polygon_points": [
+                  [
+                    129.0,
+                    571.0
+                  ],
+                  [
+                    269.0,
+                    571.0
+                  ],
+                  [
+                    269.0,
+                    597.0
+                  ],
+                  [
+                    129.0,
+                    597.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 11,
+                "label": "formula_number",
+                "score": 0.5107718706130981,
+                "coordinate": [
+                  417,
+                  572,
+                  477,
+                  597
+                ],
+                "order": 9,
+                "polygon_points": [
+                  [
+                    417.0,
+                    572.0
+                  ],
+                  [
+                    476.0,
+                    572.0
+                  ],
+                  [
+                    476.0,
+                    596.0
+                  ],
+                  [
+                    417.0,
+                    596.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.8029212355613708,
+                "coordinate": [
+                  128,
+                  612,
+                  948,
+                  638
+                ],
+                "order": 10,
+                "polygon_points": [
+                  [
+                    128.0,
+                    612.0
+                  ],
+                  [
+                    948.0,
+                    612.0
+                  ],
+                  [
+                    948.0,
+                    638.0
+                  ],
+                  [
+                    128.0,
+                    638.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 5,
+                "label": "display_formula",
+                "score": 0.4077722728252411,
+                "coordinate": [
+                  128,
+                  651,
+                  318,
+                  676
+                ],
+                "order": 11,
+                "polygon_points": [
+                  [
+                    128.0,
+                    651.0
+                  ],
+                  [
+                    318.0,
+                    651.0
+                  ],
+                  [
+                    318.0,
+                    676.0
+                  ],
+                  [
+                    128.0,
+                    676.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 5,
+                "label": "display_formula",
+                "score": 0.4003859758377075,
+                "coordinate": [
+                  417,
+                  653,
+                  477,
+                  676
+                ],
+                "order": 12,
+                "polygon_points": [
+                  [
+                    417.0,
+                    653.0
+                  ],
+                  [
+                    476.0,
+                    653.0
+                  ],
+                  [
+                    476.0,
+                    675.0
+                  ],
+                  [
+                    417.0,
+                    675.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.8705710172653198,
+                "coordinate": [
+                  128,
+                  679,
+                  1099,
+                  731
+                ],
+                "order": 13,
+                "polygon_points": [
+                  [
+                    128.0,
+                    679.0
+                  ],
+                  [
+                    1099.0,
+                    679.0
+                  ],
+                  [
+                    1099.0,
+                    731.0
+                  ],
+                  [
+                    128.0,
+                    731.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 17,
+                "label": "paragraph_title",
+                "score": 0.8447161912918091,
+                "coordinate": [
+                  437,
+                  790,
+                  790,
+                  816
+                ],
+                "order": 14,
+                "polygon_points": [
+                  [
+                    437.0,
+                    790.0
+                  ],
+                  [
+                    790.0,
+                    790.0
+                  ],
+                  [
+                    790.0,
+                    816.0
+                  ],
+                  [
+                    437.0,
+                    816.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 14,
+                "label": "image",
+                "score": 0.9589599967002869,
+                "coordinate": [
+                  160,
+                  844,
+                  980,
+                  1291
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    160.0,
+                    844.0
+                  ],
+                  [
+                    980.0,
+                    844.0
+                  ],
+                  [
+                    980.0,
+                    1291.0
+                  ],
+                  [
+                    160.0,
+                    1291.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 7,
+                "label": "figure_title",
+                "score": 0.8549652695655823,
+                "coordinate": [
+                  364,
+                  1313,
+                  855,
+                  1338
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    364.0,
+                    1313.0
+                  ],
+                  [
+                    855.0,
+                    1313.0
+                  ],
+                  [
+                    855.0,
+                    1338.0
+                  ],
+                  [
+                    364.0,
+                    1338.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 16,
+                "label": "number",
+                "score": 0.7455538511276245,
+                "coordinate": [
+                  99,
+                  1450,
+                  131,
+                  1467
+                ],
+                "order": 15,
+                "polygon_points": [
+                  [
+                    99.0,
+                    1450.0
+                  ],
+                  [
+                    130.0,
+                    1450.0
+                  ],
+                  [
+                    130.0,
+                    1466.0
+                  ],
+                  [
+                    99.0,
+                    1466.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.8239362835884094,
+                "coordinate": [
+                  146,
+                  1448,
+                  322,
+                  1469
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    146.0,
+                    1448.0
+                  ],
+                  [
+                    321.0,
+                    1448.0
+                  ],
+                  [
+                    321.0,
+                    1468.0
+                  ],
+                  [
+                    146.0,
+                    1468.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.8381305932998657,
+                "coordinate": [
+                  14,
+                  1563,
+                  972,
+                  1582
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    21.0,
+                    1563.0
+                  ],
+                  [
+                    970.9998779296875,
+                    1563.0
+                  ],
+                  [
+                    970.9998779296875,
+                    1581.0
+                  ],
+                  [
+                    21.0,
+                    1581.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "the viscoelasticities of tissue-engineered structural tissues (i.e., evaluation of the major functions of structural tissues) such as cartilage is needed.\n\nIn this study, we propose a novel noninvasive method for viscoelastic characterization of structural tissue by photoacoustic measurement which includes capability of noninvasive and real-time measurement. By pulsed laser irradiation to biological tissue, stress waves (photoacoustic waves) can be induced through a thermoelastic process. The dynamics of stress waves have a possible measurement of viscoelastic properties of the tissue using their characteristics of propagation.\n\n### 2. THEORETICAL STUDY\n\nStress waves can be induced under the following condition:  $ t_p \\ll 1/\\mu_a $ x Vs, where, Vs is sound velocity of the sample,  $ t_p $ is pulse duration of the light and  $ \\mu_a $ is absorption coefficient. Displacements induced by stresses in viscoelastic materials are expressed in terms of a stress-strain relation in the viscoelastic Kelvin-Voigt model in rheology $ ^{(5)} $.\n\n $$ \\mathbf{p=G\\gamma+\\eta d\\gamma/d t}, $$ \n\nwhere p is stress,  $ \\gamma $ is strain, G is elastic modulus and  $ \\eta $ is viscosity. The expression Eq.(1) becomes\n\n $$ \\mathbf{p}=\\mathbf{G}(\\gamma+\\eta/\\mathrm{~G~d}\\gamma/\\mathrm{d t}). $$ \n\n $$ \\mathrm{Eq.}(2) $$ \n\nViscosity-elasticity ratio ( $ \\eta $/G) is called relaxation parameter  $ {}^{(6)} $. Thus, the relaxation parameter is derived by decay times of dynamics of stress waves when the stress waves are affected by transmission through viscoelastic tissue.\n\n### 3. MATERIALS AND METHODS\n\n<div style=\"text-align: center;\"><img src=\"imgs/img_in_image_box_160_844_980_1291.jpg\" alt=\"Image\" width=\"66%\" /></div>\n\n\n<div style=\"text-align: center;\">Fig.1. Experimental arrangement of photoacoustic measurement.</div>\n",
+          "images": {
+            "imgs/img_in_image_box_160_844_980_1291.jpg": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/markdown_1/imgs/img_in_image_box_160_844_980_1291.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A14Z%2F-1%2F%2F8c0d405e2244459692eadabb2531eb0d07acd451d2b48bd2e159fe08e08e3d2d"
+          }
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/layout_det_res_1.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A15Z%2F-1%2F%2Fcb9db76813cb688f40870e4466e90af520331477452aba58f1130987a765448b"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/input_img_1.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A15Z%2F-1%2F%2F268eecb83e706c8e8d8fe3503e53e1126ca797595e183b8de6f81f2271489d63"
+      },
+      {
+        "prunedResult": {
+          "page_count": 5,
+          "width": 1224,
+          "height": 1584,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "text",
+              "block_content": "The experiment set-up is shown in Fig. 1. An optical parametric oscillator (OPO; pulse width, 6 ns (FWHM)) was tuned at 250 nm and used for excitation of stress waves. The light source was operated at a constant repetition rate of 30 Hz. The focused beam was coupled to an optical silica fiber of 600 micrometers in core diameter. The transmitted light energy was kept at approximately 50 micro J/pulse. The stress waves induced by the light irradiation were detected at the backside of the sample by a piezoelectric transducer consisting of a PVDF (TrFE) film of 4 mm in diameter and 55 micrometers in thickness. The signals were acquired with a 5-G samples/s and 1-GHz-bandwidth digital oscilloscope. The scattered light of the OPO at the focal lens was detected by a biplanar phototube and its signal was used as a trigger of the measurement.",
+              "block_bbox": [
+                127,
+                173,
+                1103,
+                359
+              ],
+              "block_id": 0,
+              "block_order": 1,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  127.0,
+                  173.0
+                ],
+                [
+                  1103.0,
+                  173.0
+                ],
+                [
+                  1103.0,
+                  359.0
+                ],
+                [
+                  127.0,
+                  359.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "As samples, gelatin of 1.2 mm in thickness was used as biological tissue phantom. The density of gelatin was prepared in the range of 5-25%. Tissue-engineered cartilage for transplantation was prepared by the same method as that previously reported  $ {}^{(7)} $. The isolated cartilage cells were seeded into our original scaffold which is an atelocollagen honeycomb-shaped scaffold (Fig. 2) and cultured for up to 13 weeks.",
+              "block_bbox": [
+                127,
+                376,
+                1103,
+                471
+              ],
+              "block_id": 1,
+              "block_order": 2,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  127.0,
+                  376.0
+                ],
+                [
+                  1103.0,
+                  376.0
+                ],
+                [
+                  1103.0,
+                  471.0
+                ],
+                [
+                  127.0,
+                  471.0
+                ]
+              ]
+            },
+            {
+              "block_label": "image",
+              "block_content": "",
+              "block_bbox": [
+                423,
+                486,
+                805,
+                791
+              ],
+              "block_id": 2,
+              "block_order": null,
+              "group_id": 2,
+              "block_polygon_points": [
+                [
+                  423.0,
+                  486.0
+                ],
+                [
+                  805.0,
+                  486.0
+                ],
+                [
+                  805.0,
+                  791.0
+                ],
+                [
+                  423.0,
+                  791.0
+                ]
+              ]
+            },
+            {
+              "block_label": "figure_title",
+              "block_content": "Fig.2. SEM (scanning electron microscope) image of ACHMS (atelocollagen honeycomb-shaped) scaffold $ ^{(7)} $.",
+              "block_bbox": [
+                203,
+                810,
+                1018,
+                836
+              ],
+              "block_id": 3,
+              "block_order": null,
+              "group_id": 3,
+              "block_polygon_points": [
+                [
+                  203.0,
+                  810.0
+                ],
+                [
+                  1018.0,
+                  810.0
+                ],
+                [
+                  1018.0,
+                  836.0
+                ],
+                [
+                  203.0,
+                  836.0
+                ]
+              ]
+            },
+            {
+              "block_label": "paragraph_title",
+              "block_content": "4. RESULTS AND DISCUSSION",
+              "block_bbox": [
+                441,
+                896,
+                784,
+                921
+              ],
+              "block_id": 4,
+              "block_order": 3,
+              "group_id": 4,
+              "block_polygon_points": [
+                [
+                  441.0,
+                  896.0
+                ],
+                [
+                  784.0,
+                  896.0
+                ],
+                [
+                  784.0,
+                  921.0
+                ],
+                [
+                  441.0,
+                  921.0
+                ]
+              ]
+            },
+            {
+              "block_label": "chart",
+              "block_content": "",
+              "block_bbox": [
+                272,
+                934,
+                942,
+                1314
+              ],
+              "block_id": 5,
+              "block_order": null,
+              "group_id": 5,
+              "block_polygon_points": [
+                [
+                  272.0,
+                  934.0
+                ],
+                [
+                  942.0,
+                  934.0
+                ],
+                [
+                  942.0,
+                  1314.0
+                ],
+                [
+                  272.0,
+                  1314.0
+                ]
+              ]
+            },
+            {
+              "block_label": "figure_title",
+              "block_content": "Fig.3. Measured photoacoustic signal. Sample was gelatin of 25% in density.",
+              "block_bbox": [
+                313,
+                1350,
+                907,
+                1376
+              ],
+              "block_id": 6,
+              "block_order": null,
+              "group_id": 6,
+              "block_polygon_points": [
+                [
+                  313.0,
+                  1350.0001220703125
+                ],
+                [
+                  906.2125244140625,
+                  1357.0025634765625
+                ],
+                [
+                  905.91845703125,
+                  1381.9163818359375
+                ],
+                [
+                  312.7059326171875,
+                  1374.9139404296875
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "Proc. of SPIE Vol. 4961",
+              "block_bbox": [
+                877,
+                1448,
+                1051,
+                1468
+              ],
+              "block_id": 7,
+              "block_order": null,
+              "group_id": 7,
+              "block_polygon_points": [
+                [
+                  877.0,
+                  1448.0
+                ],
+                [
+                  1050.0,
+                  1448.0
+                ],
+                [
+                  1050.0,
+                  1467.0
+                ],
+                [
+                  877.0,
+                  1467.0
+                ]
+              ]
+            },
+            {
+              "block_label": "number",
+              "block_content": "223",
+              "block_bbox": [
+                1069,
+                1450,
+                1101,
+                1468
+              ],
+              "block_id": 8,
+              "block_order": null,
+              "group_id": 8,
+              "block_polygon_points": [
+                [
+                  1069.0,
+                  1450.0
+                ],
+                [
+                  1100.0,
+                  1450.0
+                ],
+                [
+                  1100.0,
+                  1467.0
+                ],
+                [
+                  1069.0,
+                  1467.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "Downloaded From: http://proceedings.spiedigitallibrary.org/ on 06/15/2016 Terms of Use: http://spiedigitallibrary.org/ss/TermsOfUse.aspx",
+              "block_bbox": [
+                15,
+                1563,
+                973,
+                1582
+              ],
+              "block_id": 9,
+              "block_order": null,
+              "group_id": 9,
+              "block_polygon_points": [
+                [
+                  22.0,
+                  1563.0
+                ],
+                [
+                  971.9998779296875,
+                  1563.0
+                ],
+                [
+                  971.9998779296875,
+                  1581.0
+                ],
+                [
+                  22.0,
+                  1581.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9567830562591553,
+                "coordinate": [
+                  127,
+                  173,
+                  1103,
+                  359
+                ],
+                "order": 1,
+                "polygon_points": [
+                  [
+                    127.0,
+                    173.0
+                  ],
+                  [
+                    1103.0,
+                    173.0
+                  ],
+                  [
+                    1103.0,
+                    359.0
+                  ],
+                  [
+                    127.0,
+                    359.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9395841360092163,
+                "coordinate": [
+                  127,
+                  376,
+                  1103,
+                  471
+                ],
+                "order": 2,
+                "polygon_points": [
+                  [
+                    127.0,
+                    376.0
+                  ],
+                  [
+                    1103.0,
+                    376.0
+                  ],
+                  [
+                    1103.0,
+                    471.0
+                  ],
+                  [
+                    127.0,
+                    471.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 14,
+                "label": "image",
+                "score": 0.9790725111961365,
+                "coordinate": [
+                  423,
+                  486,
+                  805,
+                  791
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    423.0,
+                    486.0
+                  ],
+                  [
+                    805.0,
+                    486.0
+                  ],
+                  [
+                    805.0,
+                    791.0
+                  ],
+                  [
+                    423.0,
+                    791.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 7,
+                "label": "figure_title",
+                "score": 0.8767783045768738,
+                "coordinate": [
+                  203,
+                  810,
+                  1018,
+                  836
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    203.0,
+                    810.0
+                  ],
+                  [
+                    1018.0,
+                    810.0
+                  ],
+                  [
+                    1018.0,
+                    836.0
+                  ],
+                  [
+                    203.0,
+                    836.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 17,
+                "label": "paragraph_title",
+                "score": 0.8465400338172913,
+                "coordinate": [
+                  441,
+                  896,
+                  784,
+                  921
+                ],
+                "order": 3,
+                "polygon_points": [
+                  [
+                    441.0,
+                    896.0
+                  ],
+                  [
+                    784.0,
+                    896.0
+                  ],
+                  [
+                    784.0,
+                    921.0
+                  ],
+                  [
+                    441.0,
+                    921.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 3,
+                "label": "chart",
+                "score": 0.9663885235786438,
+                "coordinate": [
+                  272,
+                  934,
+                  942,
+                  1314
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    272.0,
+                    934.0
+                  ],
+                  [
+                    942.0,
+                    934.0
+                  ],
+                  [
+                    942.0,
+                    1314.0
+                  ],
+                  [
+                    272.0,
+                    1314.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 7,
+                "label": "figure_title",
+                "score": 0.878136157989502,
+                "coordinate": [
+                  313,
+                  1350,
+                  907,
+                  1376
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    313.0,
+                    1350.0001220703125
+                  ],
+                  [
+                    906.2125244140625,
+                    1357.0025634765625
+                  ],
+                  [
+                    905.91845703125,
+                    1381.9163818359375
+                  ],
+                  [
+                    312.7059326171875,
+                    1374.9139404296875
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.8368108868598938,
+                "coordinate": [
+                  877,
+                  1448,
+                  1051,
+                  1468
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    877.0,
+                    1448.0
+                  ],
+                  [
+                    1050.0,
+                    1448.0
+                  ],
+                  [
+                    1050.0,
+                    1467.0
+                  ],
+                  [
+                    877.0,
+                    1467.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 16,
+                "label": "number",
+                "score": 0.7337412238121033,
+                "coordinate": [
+                  1069,
+                  1450,
+                  1101,
+                  1468
+                ],
+                "order": 4,
+                "polygon_points": [
+                  [
+                    1069.0,
+                    1450.0
+                  ],
+                  [
+                    1100.0,
+                    1450.0
+                  ],
+                  [
+                    1100.0,
+                    1467.0
+                  ],
+                  [
+                    1069.0,
+                    1467.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.8539601564407349,
+                "coordinate": [
+                  15,
+                  1563,
+                  973,
+                  1582
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    22.0,
+                    1563.0
+                  ],
+                  [
+                    971.9998779296875,
+                    1563.0
+                  ],
+                  [
+                    971.9998779296875,
+                    1581.0
+                  ],
+                  [
+                    22.0,
+                    1581.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "The experiment set-up is shown in Fig. 1. An optical parametric oscillator (OPO; pulse width, 6 ns (FWHM)) was tuned at 250 nm and used for excitation of stress waves. The light source was operated at a constant repetition rate of 30 Hz. The focused beam was coupled to an optical silica fiber of 600 micrometers in core diameter. The transmitted light energy was kept at approximately 50 micro J/pulse. The stress waves induced by the light irradiation were detected at the backside of the sample by a piezoelectric transducer consisting of a PVDF (TrFE) film of 4 mm in diameter and 55 micrometers in thickness. The signals were acquired with a 5-G samples/s and 1-GHz-bandwidth digital oscilloscope. The scattered light of the OPO at the focal lens was detected by a biplanar phototube and its signal was used as a trigger of the measurement.\n\nAs samples, gelatin of 1.2 mm in thickness was used as biological tissue phantom. The density of gelatin was prepared in the range of 5-25%. Tissue-engineered cartilage for transplantation was prepared by the same method as that previously reported  $ {}^{(7)} $. The isolated cartilage cells were seeded into our original scaffold which is an atelocollagen honeycomb-shaped scaffold (Fig. 2) and cultured for up to 13 weeks.\n\n<div style=\"text-align: center;\"><img src=\"imgs/img_in_image_box_423_486_805_791.jpg\" alt=\"Image\" width=\"31%\" /></div>\n\n\n<div style=\"text-align: center;\">Fig.2. SEM (scanning electron microscope) image of ACHMS (atelocollagen honeycomb-shaped) scaffold $ ^{(7)} $.</div>\n\n\n### 4. RESULTS AND DISCUSSION\n\n<div style=\"text-align: center;\"><img src=\"imgs/img_in_chart_box_272_934_942_1314.jpg\" alt=\"Image\" width=\"54%\" /></div>\n\n\n<div style=\"text-align: center;\">Fig.3. Measured photoacoustic signal. Sample was gelatin of 25% in density.</div>\n",
+          "images": {
+            "imgs/img_in_image_box_423_486_805_791.jpg": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/markdown_2/imgs/img_in_image_box_423_486_805_791.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A16Z%2F-1%2F%2Fdb462e8d212e27c24efb7cfe9484b5ed07c41c18b15e99fd1bf7a4ab99d153c7",
+            "imgs/img_in_chart_box_272_934_942_1314.jpg": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/markdown_2/imgs/img_in_chart_box_272_934_942_1314.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A16Z%2F-1%2F%2Ffee39419ae55385952df2582ddfd3ddca0d76f99097cd66f9f427f58f9765e48"
+          }
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/layout_det_res_2.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A17Z%2F-1%2F%2F052a1767dd544ae4c0d562569244ae446b912967742a89358679b0beb6bb5478"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/input_img_2.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A17Z%2F-1%2F%2F67ac1a09e33d9392e68129d2bdd45e209d3464842b7787928d060f9341a37480"
+      },
+      {
+        "prunedResult": {
+          "page_count": 5,
+          "width": 1224,
+          "height": 1584,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "text",
+              "block_content": "Figure 3 shows the recorded waveform of the photoacoustic signal of the gelatin of 25% in density. The signal shows a pulse sequence that is due to the acoustic multiple reflections at acoustic boundaries and relaxations during transmission through the sample. The start time of the signal coincides with the transmission time of the stress wave that occurred at the front surface of the sample through the sample when the sound velocity of 1550 m/s $ ^{(8)} $ was used. Figure 4 compares the behavior of the photoacoustic wave and recorded waveform. Photoacoustic wave is generated as a bipolar wave which consists of rarefaction wave and compression wave. When the wave is propagating and arriving to the acoustic boundary, the first wave packet is observed. And then reflecting and propagating and reflecting, the second wave packet is observed. In the similar way, the third wave packet is observed.",
+              "block_bbox": [
+                130,
+                169,
+                1107,
+                357
+              ],
+              "block_id": 0,
+              "block_order": 1,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  130.0,
+                  169.0
+                ],
+                [
+                  1107.0,
+                  169.0
+                ],
+                [
+                  1107.0,
+                  357.0
+                ],
+                [
+                  130.0,
+                  357.0
+                ]
+              ]
+            },
+            {
+              "block_label": "image",
+              "block_content": "",
+              "block_bbox": [
+                150,
+                386,
+                995,
+                784
+              ],
+              "block_id": 1,
+              "block_order": null,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  150.0,
+                  386.0
+                ],
+                [
+                  995.0,
+                  386.0
+                ],
+                [
+                  995.0,
+                  784.0
+                ],
+                [
+                  150.0,
+                  784.0
+                ]
+              ]
+            },
+            {
+              "block_label": "figure_title",
+              "block_content": "Fig.4 The scheme of behavior of photoacoustic signal and transient measured signal.",
+              "block_bbox": [
+                298,
+                822,
+                931,
+                848
+              ],
+              "block_id": 2,
+              "block_order": null,
+              "group_id": 2,
+              "block_polygon_points": [
+                [
+                  298.0,
+                  822.0
+                ],
+                [
+                  931.0,
+                  822.0
+                ],
+                [
+                  931.0,
+                  848.0
+                ],
+                [
+                  298.0,
+                  848.0
+                ]
+              ]
+            },
+            {
+              "block_label": "chart",
+              "block_content": "",
+              "block_bbox": [
+                271,
+                887,
+                992,
+                1279
+              ],
+              "block_id": 3,
+              "block_order": null,
+              "group_id": 3,
+              "block_polygon_points": [
+                [
+                  271.0,
+                  887.0
+                ],
+                [
+                  992.0,
+                  887.0
+                ],
+                [
+                  992.0,
+                  1279.0
+                ],
+                [
+                  271.0,
+                  1279.0
+                ]
+              ]
+            },
+            {
+              "block_label": "figure_title",
+              "block_content": "Fig.5 Comparison between decay time of photoacoustic signal and intrinsic relaxation parameter. Decay time of photoacoustic signal is averaged by 32 times. Error bar is standard deviation. Intrinsic relaxation parameter (tan δ) was measured by a rheometer, under conditions of environmental temperature of 20 °C and initial stress of 80 Pa.",
+              "block_bbox": [
+                140,
+                1293,
+                1084,
+                1364
+              ],
+              "block_id": 4,
+              "block_order": null,
+              "group_id": 4,
+              "block_polygon_points": [
+                [
+                  140.0,
+                  1293.0
+                ],
+                [
+                  1084.0,
+                  1293.0
+                ],
+                [
+                  1084.0,
+                  1364.0
+                ],
+                [
+                  140.0,
+                  1364.0
+                ]
+              ]
+            },
+            {
+              "block_label": "number",
+              "block_content": "224",
+              "block_bbox": [
+                99,
+                1450,
+                131,
+                1467
+              ],
+              "block_id": 5,
+              "block_order": null,
+              "group_id": 5,
+              "block_polygon_points": [
+                [
+                  99.0,
+                  1450.0
+                ],
+                [
+                  130.0,
+                  1450.0
+                ],
+                [
+                  130.0,
+                  1466.0
+                ],
+                [
+                  99.0,
+                  1466.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "Proc. of SPIE Vol. 4961",
+              "block_bbox": [
+                147,
+                1448,
+                321,
+                1469
+              ],
+              "block_id": 6,
+              "block_order": null,
+              "group_id": 6,
+              "block_polygon_points": [
+                [
+                  147.0,
+                  1448.0
+                ],
+                [
+                  320.0,
+                  1448.0
+                ],
+                [
+                  320.0,
+                  1468.0
+                ],
+                [
+                  147.0,
+                  1468.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "Downloaded From: http://proceedings.spiedigitallibrary.org/ on 06/15/2016 Terms of Use: http://spiedigitallibrary.org/ss/TermsOfUse.aspx",
+              "block_bbox": [
+                15,
+                1562,
+                972,
+                1581
+              ],
+              "block_id": 7,
+              "block_order": null,
+              "group_id": 7,
+              "block_polygon_points": [
+                [
+                  22.0,
+                  1562.0
+                ],
+                [
+                  970.9998779296875,
+                  1562.0
+                ],
+                [
+                  970.9998779296875,
+                  1580.0
+                ],
+                [
+                  22.0,
+                  1580.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9470106363296509,
+                "coordinate": [
+                  130,
+                  169,
+                  1107,
+                  357
+                ],
+                "order": 1,
+                "polygon_points": [
+                  [
+                    130.0,
+                    169.0
+                  ],
+                  [
+                    1107.0,
+                    169.0
+                  ],
+                  [
+                    1107.0,
+                    357.0
+                  ],
+                  [
+                    130.0,
+                    357.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.5312772989273071,
+                "coordinate": [
+                  966,
+                  238,
+                  1063,
+                  262
+                ],
+                "order": 2,
+                "polygon_points": [
+                  [
+                    966,
+                    238
+                  ],
+                  [
+                    966,
+                    261
+                  ],
+                  [
+                    1062,
+                    261
+                  ],
+                  [
+                    1062,
+                    238
+                  ]
+                ]
+              },
+              {
+                "cls_id": 14,
+                "label": "image",
+                "score": 0.9360242486000061,
+                "coordinate": [
+                  150,
+                  386,
+                  995,
+                  784
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    150.0,
+                    386.0
+                  ],
+                  [
+                    995.0,
+                    386.0
+                  ],
+                  [
+                    995.0,
+                    784.0
+                  ],
+                  [
+                    150.0,
+                    784.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 7,
+                "label": "figure_title",
+                "score": 0.8811995983123779,
+                "coordinate": [
+                  298,
+                  822,
+                  931,
+                  848
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    298.0,
+                    822.0
+                  ],
+                  [
+                    931.0,
+                    822.0
+                  ],
+                  [
+                    931.0,
+                    848.0
+                  ],
+                  [
+                    298.0,
+                    848.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 3,
+                "label": "chart",
+                "score": 0.9438381791114807,
+                "coordinate": [
+                  271,
+                  887,
+                  992,
+                  1279
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    271.0,
+                    887.0
+                  ],
+                  [
+                    992.0,
+                    887.0
+                  ],
+                  [
+                    992.0,
+                    1279.0
+                  ],
+                  [
+                    271.0,
+                    1279.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 7,
+                "label": "figure_title",
+                "score": 0.9061896204948425,
+                "coordinate": [
+                  140,
+                  1293,
+                  1084,
+                  1364
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    140.0,
+                    1293.0
+                  ],
+                  [
+                    1084.0,
+                    1293.0
+                  ],
+                  [
+                    1084.0,
+                    1364.0
+                  ],
+                  [
+                    140.0,
+                    1364.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.6771372556686401,
+                "coordinate": [
+                  717,
+                  1339,
+                  762,
+                  1360
+                ],
+                "order": 3,
+                "polygon_points": [
+                  [
+                    717,
+                    1339
+                  ],
+                  [
+                    717,
+                    1359
+                  ],
+                  [
+                    761,
+                    1359
+                  ],
+                  [
+                    761,
+                    1339
+                  ]
+                ]
+              },
+              {
+                "cls_id": 16,
+                "label": "number",
+                "score": 0.7572584748268127,
+                "coordinate": [
+                  99,
+                  1450,
+                  131,
+                  1467
+                ],
+                "order": 4,
+                "polygon_points": [
+                  [
+                    99.0,
+                    1450.0
+                  ],
+                  [
+                    130.0,
+                    1450.0
+                  ],
+                  [
+                    130.0,
+                    1466.0
+                  ],
+                  [
+                    99.0,
+                    1466.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.8499988317489624,
+                "coordinate": [
+                  147,
+                  1448,
+                  321,
+                  1469
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    147.0,
+                    1448.0
+                  ],
+                  [
+                    320.0,
+                    1448.0
+                  ],
+                  [
+                    320.0,
+                    1468.0
+                  ],
+                  [
+                    147.0,
+                    1468.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.8185689449310303,
+                "coordinate": [
+                  15,
+                  1562,
+                  972,
+                  1581
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    22.0,
+                    1562.0
+                  ],
+                  [
+                    970.9998779296875,
+                    1562.0
+                  ],
+                  [
+                    970.9998779296875,
+                    1580.0
+                  ],
+                  [
+                    22.0,
+                    1580.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "Figure 3 shows the recorded waveform of the photoacoustic signal of the gelatin of 25% in density. The signal shows a pulse sequence that is due to the acoustic multiple reflections at acoustic boundaries and relaxations during transmission through the sample. The start time of the signal coincides with the transmission time of the stress wave that occurred at the front surface of the sample through the sample when the sound velocity of 1550 m/s $ ^{(8)} $ was used. Figure 4 compares the behavior of the photoacoustic wave and recorded waveform. Photoacoustic wave is generated as a bipolar wave which consists of rarefaction wave and compression wave. When the wave is propagating and arriving to the acoustic boundary, the first wave packet is observed. And then reflecting and propagating and reflecting, the second wave packet is observed. In the similar way, the third wave packet is observed.\n\n<div style=\"text-align: center;\"><img src=\"imgs/img_in_image_box_150_386_995_784.jpg\" alt=\"Image\" width=\"69%\" /></div>\n\n\n<div style=\"text-align: center;\">Fig.4 The scheme of behavior of photoacoustic signal and transient measured signal.</div>\n\n\n<div style=\"text-align: center;\"><img src=\"imgs/img_in_chart_box_271_887_992_1279.jpg\" alt=\"Image\" width=\"58%\" /></div>\n\n\n<div style=\"text-align: center;\">Fig.5 Comparison between decay time of photoacoustic signal and intrinsic relaxation parameter. Decay time of photoacoustic signal is averaged by 32 times. Error bar is standard deviation. Intrinsic relaxation parameter (tan δ) was measured by a rheometer, under conditions of environmental temperature of 20 °C and initial stress of 80 Pa.</div>\n",
+          "images": {
+            "imgs/img_in_image_box_150_386_995_784.jpg": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/markdown_3/imgs/img_in_image_box_150_386_995_784.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A17Z%2F-1%2F%2F76264e7ed742773d68475f302be5a7307f857645525f396994bf276725d39efd",
+            "imgs/img_in_chart_box_271_887_992_1279.jpg": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/markdown_3/imgs/img_in_chart_box_271_887_992_1279.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A17Z%2F-1%2F%2F00bbdd27f450fce0a5ee383a657867ed3f6bb50df19e9af980baf395efab58ae"
+          }
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/layout_det_res_3.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A18Z%2F-1%2F%2F6d25c381745bfbac6a511a1f77ab14204ec26b760debbab737d6b3fff65eae18"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/input_img_3.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A18Z%2F-1%2F%2F65857d2792a1741f7f2e9bfb335b93bf0b737dcc4577eb723e9991c9c019f4b9"
+      },
+      {
+        "prunedResult": {
+          "page_count": 5,
+          "width": 1224,
+          "height": 1584,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "display_formula",
+              "block_content": " $$  Eq.(3) $$ ",
+              "block_bbox": [
+                129,
+                169,
+                478,
+                197
+              ],
+              "block_id": 0,
+              "block_order": 1,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  289.0,
+                  169.0
+                ],
+                [
+                  477.0,
+                  169.0
+                ],
+                [
+                  477.0,
+                  196.0
+                ],
+                [
+                  289.0,
+                  196.0
+                ]
+              ]
+            },
+            {
+              "block_label": "display_formula",
+              "block_content": " $$ \\mathbf{I_{p2}}=\\mathbf{k*R*}\\exp(-\\mathbf{t_{p2}}/\\tau), $$ ",
+              "block_bbox": [
+                132,
+                213,
+                310,
+                242
+              ],
+              "block_id": 1,
+              "block_order": 2,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  132.0,
+                  213.0
+                ],
+                [
+                  310.0,
+                  213.0
+                ],
+                [
+                  310.0,
+                  242.0
+                ],
+                [
+                  132.0,
+                  242.0
+                ]
+              ]
+            },
+            {
+              "block_label": "display_formula",
+              "block_content": " $$ \\mathrm{I_{p3}=k*R^{2}*exp(-t_{p3}/\\tau),} $$ ",
+              "block_bbox": [
+                132,
+                257,
+                314,
+                285
+              ],
+              "block_id": 2,
+              "block_order": 3,
+              "group_id": 2,
+              "block_polygon_points": [
+                [
+                  132.0,
+                  257.0
+                ],
+                [
+                  314.0,
+                  257.0
+                ],
+                [
+                  314.0,
+                  285.0
+                ],
+                [
+                  132.0,
+                  285.0
+                ]
+              ]
+            },
+            {
+              "block_label": "formula_number",
+              "block_content": "Eq.(5)",
+              "block_bbox": [
+                421,
+                259,
+                479,
+                284
+              ],
+              "block_id": 3,
+              "block_order": 4,
+              "group_id": 3,
+              "block_polygon_points": [
+                [
+                  421.0,
+                  259.0
+                ],
+                [
+                  478.0,
+                  259.0
+                ],
+                [
+                  478.0,
+                  283.0
+                ],
+                [
+                  421.0,
+                  283.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "where  $ I_{p1}-I_{p3} $ and  $ t_{p1}-t_{p3} $ are the amplitude of each peak and the time after the laser pulse (Fig. 4). R denotes a product of the reflectance at the acoustic boundary. Using the Levenberg-Marquardt algorithm, which is a nonlinear least-squares method, the decay time ( $ \\tau $) could be derived.",
+              "block_bbox": [
+                130,
+                302,
+                1105,
+                377
+              ],
+              "block_id": 4,
+              "block_order": 5,
+              "group_id": 4,
+              "block_polygon_points": [
+                [
+                  130.0,
+                  302.0
+                ],
+                [
+                  1104.0,
+                  302.0
+                ],
+                [
+                  1104.0,
+                  369.0
+                ],
+                [
+                  130.0,
+                  369.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "Figure 5 represents the comparison between decay time of photoacoustic signal and intrinsic relaxation parameter as a function of density of the gelatin. The decay times obtained by the photoacoustic measurement agreed well with the intrinsic relaxation parameters measured using the rheometer, with a correlation coefficient of 0.90. This result demonstrates the validity of photoacoustic measurement for viscoelastic characterization.",
+              "block_bbox": [
+                128,
+                393,
+                1105,
+                489
+              ],
+              "block_id": 5,
+              "block_order": 6,
+              "group_id": 5,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  393.0
+                ],
+                [
+                  1105.0,
+                  393.0
+                ],
+                [
+                  1105.0,
+                  489.0
+                ],
+                [
+                  128.0,
+                  489.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "The recorded photoacoustic signals from tissue engineered cartilages show a pulse sequence similar to that from the gelatin models shown in Fig. 3. Longer culture give larger viscoelasticity, which is equal to smaller photoacoustic decay time. This experiment resulted in the reflection of synthesis process of the extracellular matrix such as collagen and proteoglycan which directly relate cartilage viscoelasticity $ ^{(9)} $, with increased cultured week.",
+              "block_bbox": [
+                128,
+                506,
+                1106,
+                601
+              ],
+              "block_id": 6,
+              "block_order": 7,
+              "group_id": 6,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  506.0
+                ],
+                [
+                  1106.0,
+                  506.0
+                ],
+                [
+                  1106.0,
+                  601.0
+                ],
+                [
+                  128.0,
+                  601.0
+                ]
+              ]
+            },
+            {
+              "block_label": "paragraph_title",
+              "block_content": "5. CONCLUSION",
+              "block_bbox": [
+                518,
+                661,
+                716,
+                684
+              ],
+              "block_id": 7,
+              "block_order": 8,
+              "group_id": 7,
+              "block_polygon_points": [
+                [
+                  518.0,
+                  661.0
+                ],
+                [
+                  716.0,
+                  661.0
+                ],
+                [
+                  716.0,
+                  684.0
+                ],
+                [
+                  518.0,
+                  684.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "We have proposed a method for noninvasive characterization of the viscoelasticity of biological tissue using photoacoustic measurement. Using gelatin models, it was found that the intrinsic viscoelastic properties which was viscosity-elasticity ratio could be acquired by the relaxation time of photoacoustic signal. The usefulness of this measurement method for evaluating the viscoelastic properties of actual tissue-engineered cultured cartilage was demonstrated.",
+              "block_bbox": [
+                128,
+                686,
+                1104,
+                803
+              ],
+              "block_id": 8,
+              "block_order": 9,
+              "group_id": 8,
+              "block_polygon_points": [
+                [
+                  128.0,
+                  686.0
+                ],
+                [
+                  1104.0,
+                  686.0
+                ],
+                [
+                  1104.0,
+                  803.0
+                ],
+                [
+                  128.0,
+                  803.0
+                ]
+              ]
+            },
+            {
+              "block_label": "paragraph_title",
+              "block_content": "6. REFERENCES",
+              "block_bbox": [
+                518,
+                869,
+                713,
+                893
+              ],
+              "block_id": 9,
+              "block_order": 10,
+              "group_id": 9,
+              "block_polygon_points": [
+                [
+                  518.0,
+                  869.0
+                ],
+                [
+                  713.0,
+                  869.0
+                ],
+                [
+                  713.0,
+                  893.0
+                ],
+                [
+                  518.0,
+                  893.0
+                ]
+              ]
+            },
+            {
+              "block_label": "reference_content",
+              "block_content": "1. I. S. Kovach: Biophys. Chem. 59 (1996) 61.",
+              "block_bbox": [
+                131,
+                935,
+                524,
+                958
+              ],
+              "block_id": 10,
+              "block_order": 11,
+              "group_id": 10,
+              "block_polygon_points": [
+                [
+                  131,
+                  935
+                ],
+                [
+                  131,
+                  957
+                ],
+                [
+                  523,
+                  957
+                ],
+                [
+                  523,
+                  935
+                ]
+              ]
+            },
+            {
+              "block_label": "reference_content",
+              "block_content": "2. V. C. Mow, A. Ratcliffe, and A. R. Poole: Biomaterials, 13 (1992) 67.",
+              "block_bbox": [
+                130,
+                959,
+                734,
+                983
+              ],
+              "block_id": 11,
+              "block_order": 12,
+              "group_id": 11,
+              "block_polygon_points": [
+                [
+                  130.0,
+                  959.0
+                ],
+                [
+                  734.0,
+                  959.0
+                ],
+                [
+                  734.0,
+                  983.0
+                ],
+                [
+                  130.0,
+                  983.0
+                ]
+              ]
+            },
+            {
+              "block_label": "reference_content",
+              "block_content": "3. R. P. Lanza, R. Langer and J. Vacanti: Principles of Tissue Engineering, ed. C. A. Vacanti (Academic Press, San Diego, 2000)  $ 2^{nd} $ ed., Chap. 47, P. 671.",
+              "block_bbox": [
+                129,
+                983,
+                1074,
+                1028
+              ],
+              "block_id": 12,
+              "block_order": 13,
+              "group_id": 12,
+              "block_polygon_points": [
+                [
+                  129.0,
+                  983.0
+                ],
+                [
+                  1074.0,
+                  983.0
+                ],
+                [
+                  1074.0,
+                  1028.0
+                ],
+                [
+                  129.0,
+                  1028.0
+                ]
+              ]
+            },
+            {
+              "block_label": "reference_content",
+              "block_content": "4. J. Toyras, T. L. Laitinen, M. Niinimaki, R. Lindgren, M.T. Nieminen, I. Kiviranta, and J. S. Jurvelin: J. Biomech. 34 (2001) 251.",
+              "block_bbox": [
+                130,
+                1029,
+                1077,
+                1074
+              ],
+              "block_id": 13,
+              "block_order": 14,
+              "group_id": 13,
+              "block_polygon_points": [
+                [
+                  130.0,
+                  1029.0
+                ],
+                [
+                  1077.0,
+                  1029.0
+                ],
+                [
+                  1077.0,
+                  1074.0
+                ],
+                [
+                  130.0,
+                  1074.0
+                ]
+              ]
+            },
+            {
+              "block_label": "reference_content",
+              "block_content": "5. A. F. Mak, W. M. Lai, and V. C. Mow: J. Biomech. 20 (1987) 703.",
+              "block_bbox": [
+                130,
+                1074,
+                710,
+                1097
+              ],
+              "block_id": 14,
+              "block_order": 15,
+              "group_id": 14,
+              "block_polygon_points": [
+                [
+                  130.0,
+                  1074.0
+                ],
+                [
+                  710.0,
+                  1074.0
+                ],
+                [
+                  710.0,
+                  1097.0
+                ],
+                [
+                  130.0,
+                  1097.0
+                ]
+              ]
+            },
+            {
+              "block_label": "reference_content",
+              "block_content": "6. K. Ozaki: Rheology, ed. K. Ozaki (Koubunsikankoukai, Kyoto, 2001) 5th ed., p.23.",
+              "block_bbox": [
+                129,
+                1097,
+                836,
+                1121
+              ],
+              "block_id": 15,
+              "block_order": 16,
+              "group_id": 15,
+              "block_polygon_points": [
+                [
+                  129.0,
+                  1097.0
+                ],
+                [
+                  836.0,
+                  1097.0
+                ],
+                [
+                  836.0,
+                  1121.0
+                ],
+                [
+                  129.0,
+                  1121.0
+                ]
+              ]
+            },
+            {
+              "block_label": "reference_content",
+              "block_content": "7. M. Sato, T. Asazuma, M. Ishihara, T. Kikuchi, K. Masuoka, S. Ichimura, M. Kikuchi, A. Kurita, and K. Fujikawa: J. Biomed. Mater. Res. 64A (2003) 248.",
+              "block_bbox": [
+                130,
+                1121,
+                1082,
+                1166
+              ],
+              "block_id": 16,
+              "block_order": 17,
+              "group_id": 16,
+              "block_polygon_points": [
+                [
+                  130.0,
+                  1121.0
+                ],
+                [
+                  1082.0,
+                  1121.0
+                ],
+                [
+                  1082.0,
+                  1166.0
+                ],
+                [
+                  130.0,
+                  1166.0
+                ]
+              ]
+            },
+            {
+              "block_label": "reference_content",
+              "block_content": "8. C. R. Mol and P. A. Breddels: J. Acoust. Soc. Am. 71 (1982) 455.",
+              "block_bbox": [
+                129,
+                1166,
+                701,
+                1189
+              ],
+              "block_id": 17,
+              "block_order": 18,
+              "group_id": 17,
+              "block_polygon_points": [
+                [
+                  129.0,
+                  1166.0
+                ],
+                [
+                  701.0,
+                  1166.0
+                ],
+                [
+                  701.0,
+                  1189.0
+                ],
+                [
+                  129.0,
+                  1189.0
+                ]
+              ]
+            },
+            {
+              "block_label": "reference_content",
+              "block_content": "9. I. Martin, B. Obradovic, S. Treppo, A.J. Grodzinsky, R. Langer, L.E. Freed and G.V. Novakovic: Biorheology 37 (2000) 141.",
+              "block_bbox": [
+                129,
+                1191,
+                1081,
+                1235
+              ],
+              "block_id": 18,
+              "block_order": 19,
+              "group_id": 18,
+              "block_polygon_points": [
+                [
+                  129.0,
+                  1191.0
+                ],
+                [
+                  1081.0,
+                  1191.0
+                ],
+                [
+                  1081.0,
+                  1235.0
+                ],
+                [
+                  129.0,
+                  1235.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "Proc. of SPIE Vol. 4961",
+              "block_bbox": [
+                877,
+                1448,
+                1051,
+                1468
+              ],
+              "block_id": 19,
+              "block_order": null,
+              "group_id": 19,
+              "block_polygon_points": [
+                [
+                  877.0,
+                  1448.0
+                ],
+                [
+                  1050.0,
+                  1448.0
+                ],
+                [
+                  1050.0,
+                  1467.0
+                ],
+                [
+                  877.0,
+                  1467.0
+                ]
+              ]
+            },
+            {
+              "block_label": "number",
+              "block_content": "225",
+              "block_bbox": [
+                1068,
+                1450,
+                1101,
+                1468
+              ],
+              "block_id": 20,
+              "block_order": null,
+              "group_id": 20,
+              "block_polygon_points": [
+                [
+                  1068.0,
+                  1450.0
+                ],
+                [
+                  1100.0,
+                  1450.0
+                ],
+                [
+                  1100.0,
+                  1467.0
+                ],
+                [
+                  1068.0,
+                  1467.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "Downloaded From: http://proceedings.spiedigitallibrary.org/ on 06/15/2016 Terms of Use: http://spiedigitallibrary.org/ss/TermsOfUse.aspx",
+              "block_bbox": [
+                15,
+                1563,
+                973,
+                1583
+              ],
+              "block_id": 21,
+              "block_order": null,
+              "group_id": 21,
+              "block_polygon_points": [
+                [
+                  22.0,
+                  1563.0
+                ],
+                [
+                  971.9998779296875,
+                  1563.0
+                ],
+                [
+                  971.9998779296875,
+                  1582.0
+                ],
+                [
+                  22.0,
+                  1582.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 5,
+                "label": "display_formula",
+                "score": 0.3539177179336548,
+                "coordinate": [
+                  129,
+                  169,
+                  478,
+                  197
+                ],
+                "order": 1,
+                "polygon_points": [
+                  [
+                    289.0,
+                    169.0
+                  ],
+                  [
+                    477.0,
+                    169.0
+                  ],
+                  [
+                    477.0,
+                    196.0
+                  ],
+                  [
+                    289.0,
+                    196.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 5,
+                "label": "display_formula",
+                "score": 0.7806740999221802,
+                "coordinate": [
+                  132,
+                  213,
+                  310,
+                  242
+                ],
+                "order": 2,
+                "polygon_points": [
+                  [
+                    132.0,
+                    213.0
+                  ],
+                  [
+                    310.0,
+                    213.0
+                  ],
+                  [
+                    310.0,
+                    242.0
+                  ],
+                  [
+                    132.0,
+                    242.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 5,
+                "label": "display_formula",
+                "score": 0.821231484413147,
+                "coordinate": [
+                  132,
+                  257,
+                  314,
+                  285
+                ],
+                "order": 3,
+                "polygon_points": [
+                  [
+                    132.0,
+                    257.0
+                  ],
+                  [
+                    314.0,
+                    257.0
+                  ],
+                  [
+                    314.0,
+                    285.0
+                  ],
+                  [
+                    132.0,
+                    285.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 11,
+                "label": "formula_number",
+                "score": 0.39661362767219543,
+                "coordinate": [
+                  421,
+                  259,
+                  479,
+                  284
+                ],
+                "order": 4,
+                "polygon_points": [
+                  [
+                    421.0,
+                    259.0
+                  ],
+                  [
+                    478.0,
+                    259.0
+                  ],
+                  [
+                    478.0,
+                    283.0
+                  ],
+                  [
+                    421.0,
+                    283.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9303066730499268,
+                "coordinate": [
+                  130,
+                  302,
+                  1105,
+                  377
+                ],
+                "order": 5,
+                "polygon_points": [
+                  [
+                    130.0,
+                    302.0
+                  ],
+                  [
+                    1104.0,
+                    302.0
+                  ],
+                  [
+                    1104.0,
+                    369.0
+                  ],
+                  [
+                    130.0,
+                    369.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.7882680296897888,
+                "coordinate": [
+                  189,
+                  303,
+                  236,
+                  326
+                ],
+                "order": 6,
+                "polygon_points": [
+                  [
+                    189,
+                    303
+                  ],
+                  [
+                    189,
+                    325
+                  ],
+                  [
+                    235,
+                    325
+                  ],
+                  [
+                    235,
+                    303
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.805128812789917,
+                "coordinate": [
+                  273,
+                  305,
+                  319,
+                  326
+                ],
+                "order": 7,
+                "polygon_points": [
+                  [
+                    273.0,
+                    305.0
+                  ],
+                  [
+                    318.0,
+                    305.0
+                  ],
+                  [
+                    318.0,
+                    325.0
+                  ],
+                  [
+                    273.0,
+                    325.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9362744688987732,
+                "coordinate": [
+                  128,
+                  393,
+                  1105,
+                  489
+                ],
+                "order": 8,
+                "polygon_points": [
+                  [
+                    128.0,
+                    393.0
+                  ],
+                  [
+                    1105.0,
+                    393.0
+                  ],
+                  [
+                    1105.0,
+                    489.0
+                  ],
+                  [
+                    128.0,
+                    489.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9373985528945923,
+                "coordinate": [
+                  128,
+                  506,
+                  1106,
+                  601
+                ],
+                "order": 9,
+                "polygon_points": [
+                  [
+                    128.0,
+                    506.0
+                  ],
+                  [
+                    1106.0,
+                    506.0
+                  ],
+                  [
+                    1106.0,
+                    601.0
+                  ],
+                  [
+                    128.0,
+                    601.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 17,
+                "label": "paragraph_title",
+                "score": 0.8539919853210449,
+                "coordinate": [
+                  518,
+                  661,
+                  716,
+                  684
+                ],
+                "order": 10,
+                "polygon_points": [
+                  [
+                    518.0,
+                    661.0
+                  ],
+                  [
+                    716.0,
+                    661.0
+                  ],
+                  [
+                    716.0,
+                    684.0
+                  ],
+                  [
+                    518.0,
+                    684.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9367225170135498,
+                "coordinate": [
+                  128,
+                  686,
+                  1104,
+                  803
+                ],
+                "order": 11,
+                "polygon_points": [
+                  [
+                    128.0,
+                    686.0
+                  ],
+                  [
+                    1104.0,
+                    686.0
+                  ],
+                  [
+                    1104.0,
+                    803.0
+                  ],
+                  [
+                    128.0,
+                    803.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 17,
+                "label": "paragraph_title",
+                "score": 0.851739764213562,
+                "coordinate": [
+                  518,
+                  869,
+                  713,
+                  893
+                ],
+                "order": 12,
+                "polygon_points": [
+                  [
+                    518.0,
+                    869.0
+                  ],
+                  [
+                    713.0,
+                    869.0
+                  ],
+                  [
+                    713.0,
+                    893.0
+                  ],
+                  [
+                    518.0,
+                    893.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 18,
+                "label": "reference",
+                "score": 0.9265583157539368,
+                "coordinate": [
+                  130,
+                  936,
+                  1086,
+                  1237
+                ],
+                "order": 13,
+                "polygon_points": [
+                  [
+                    130.0,
+                    936.0
+                  ],
+                  [
+                    1086.0,
+                    936.0
+                  ],
+                  [
+                    1086.0,
+                    1237.0
+                  ],
+                  [
+                    130.0,
+                    1237.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 19,
+                "label": "reference_content",
+                "score": 0.8664426207542419,
+                "coordinate": [
+                  131,
+                  935,
+                  524,
+                  958
+                ],
+                "order": 14,
+                "polygon_points": [
+                  [
+                    131,
+                    935
+                  ],
+                  [
+                    131,
+                    957
+                  ],
+                  [
+                    523,
+                    957
+                  ],
+                  [
+                    523,
+                    935
+                  ]
+                ]
+              },
+              {
+                "cls_id": 19,
+                "label": "reference_content",
+                "score": 0.8766478300094604,
+                "coordinate": [
+                  130,
+                  959,
+                  734,
+                  983
+                ],
+                "order": 15,
+                "polygon_points": [
+                  [
+                    130.0,
+                    959.0
+                  ],
+                  [
+                    734.0,
+                    959.0
+                  ],
+                  [
+                    734.0,
+                    983.0
+                  ],
+                  [
+                    130.0,
+                    983.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 19,
+                "label": "reference_content",
+                "score": 0.929617702960968,
+                "coordinate": [
+                  129,
+                  983,
+                  1074,
+                  1028
+                ],
+                "order": 16,
+                "polygon_points": [
+                  [
+                    129.0,
+                    983.0
+                  ],
+                  [
+                    1074.0,
+                    983.0
+                  ],
+                  [
+                    1074.0,
+                    1028.0
+                  ],
+                  [
+                    129.0,
+                    1028.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 19,
+                "label": "reference_content",
+                "score": 0.9298130869865417,
+                "coordinate": [
+                  130,
+                  1029,
+                  1077,
+                  1074
+                ],
+                "order": 17,
+                "polygon_points": [
+                  [
+                    130.0,
+                    1029.0
+                  ],
+                  [
+                    1077.0,
+                    1029.0
+                  ],
+                  [
+                    1077.0,
+                    1074.0
+                  ],
+                  [
+                    130.0,
+                    1074.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 19,
+                "label": "reference_content",
+                "score": 0.8844676613807678,
+                "coordinate": [
+                  130,
+                  1074,
+                  710,
+                  1097
+                ],
+                "order": 18,
+                "polygon_points": [
+                  [
+                    130.0,
+                    1074.0
+                  ],
+                  [
+                    710.0,
+                    1074.0
+                  ],
+                  [
+                    710.0,
+                    1097.0
+                  ],
+                  [
+                    130.0,
+                    1097.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 19,
+                "label": "reference_content",
+                "score": 0.8748089671134949,
+                "coordinate": [
+                  129,
+                  1097,
+                  836,
+                  1121
+                ],
+                "order": 19,
+                "polygon_points": [
+                  [
+                    129.0,
+                    1097.0
+                  ],
+                  [
+                    836.0,
+                    1097.0
+                  ],
+                  [
+                    836.0,
+                    1121.0
+                  ],
+                  [
+                    129.0,
+                    1121.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 19,
+                "label": "reference_content",
+                "score": 0.9229240417480469,
+                "coordinate": [
+                  130,
+                  1121,
+                  1082,
+                  1166
+                ],
+                "order": 20,
+                "polygon_points": [
+                  [
+                    130.0,
+                    1121.0
+                  ],
+                  [
+                    1082.0,
+                    1121.0
+                  ],
+                  [
+                    1082.0,
+                    1166.0
+                  ],
+                  [
+                    130.0,
+                    1166.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 19,
+                "label": "reference_content",
+                "score": 0.8845552206039429,
+                "coordinate": [
+                  129,
+                  1166,
+                  701,
+                  1189
+                ],
+                "order": 21,
+                "polygon_points": [
+                  [
+                    129.0,
+                    1166.0
+                  ],
+                  [
+                    701.0,
+                    1166.0
+                  ],
+                  [
+                    701.0,
+                    1189.0
+                  ],
+                  [
+                    129.0,
+                    1189.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 19,
+                "label": "reference_content",
+                "score": 0.9119978547096252,
+                "coordinate": [
+                  129,
+                  1191,
+                  1081,
+                  1235
+                ],
+                "order": 22,
+                "polygon_points": [
+                  [
+                    129.0,
+                    1191.0
+                  ],
+                  [
+                    1081.0,
+                    1191.0
+                  ],
+                  [
+                    1081.0,
+                    1235.0
+                  ],
+                  [
+                    129.0,
+                    1235.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.8372156620025635,
+                "coordinate": [
+                  877,
+                  1448,
+                  1051,
+                  1468
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    877.0,
+                    1448.0
+                  ],
+                  [
+                    1050.0,
+                    1448.0
+                  ],
+                  [
+                    1050.0,
+                    1467.0
+                  ],
+                  [
+                    877.0,
+                    1467.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 16,
+                "label": "number",
+                "score": 0.7015793919563293,
+                "coordinate": [
+                  1068,
+                  1450,
+                  1101,
+                  1468
+                ],
+                "order": 23,
+                "polygon_points": [
+                  [
+                    1068.0,
+                    1450.0
+                  ],
+                  [
+                    1100.0,
+                    1450.0
+                  ],
+                  [
+                    1100.0,
+                    1467.0
+                  ],
+                  [
+                    1068.0,
+                    1467.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.8670603632926941,
+                "coordinate": [
+                  15,
+                  1563,
+                  973,
+                  1583
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    22.0,
+                    1563.0
+                  ],
+                  [
+                    971.9998779296875,
+                    1563.0
+                  ],
+                  [
+                    971.9998779296875,
+                    1582.0
+                  ],
+                  [
+                    22.0,
+                    1582.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": " $$  Eq.(3) $$ \n\n $$ \\mathbf{I_{p2}}=\\mathbf{k*R*}\\exp(-\\mathbf{t_{p2}}/\\tau), $$ \n\n $$ \\mathrm{I_{p3}=k*R^{2}*exp(-t_{p3}/\\tau),} $$ \n\nwhere  $ I_{p1}-I_{p3} $ and  $ t_{p1}-t_{p3} $ are the amplitude of each peak and the time after the laser pulse (Fig. 4). R denotes a product of the reflectance at the acoustic boundary. Using the Levenberg-Marquardt algorithm, which is a nonlinear least-squares method, the decay time ( $ \\tau $) could be derived.\n\nFigure 5 represents the comparison between decay time of photoacoustic signal and intrinsic relaxation parameter as a function of density of the gelatin. The decay times obtained by the photoacoustic measurement agreed well with the intrinsic relaxation parameters measured using the rheometer, with a correlation coefficient of 0.90. This result demonstrates the validity of photoacoustic measurement for viscoelastic characterization.\n\nThe recorded photoacoustic signals from tissue engineered cartilages show a pulse sequence similar to that from the gelatin models shown in Fig. 3. Longer culture give larger viscoelasticity, which is equal to smaller photoacoustic decay time. This experiment resulted in the reflection of synthesis process of the extracellular matrix such as collagen and proteoglycan which directly relate cartilage viscoelasticity $ ^{(9)} $, with increased cultured week.\n\n### 5. CONCLUSION\n\nWe have proposed a method for noninvasive characterization of the viscoelasticity of biological tissue using photoacoustic measurement. Using gelatin models, it was found that the intrinsic viscoelastic properties which was viscosity-elasticity ratio could be acquired by the relaxation time of photoacoustic signal. The usefulness of this measurement method for evaluating the viscoelastic properties of actual tissue-engineered cultured cartilage was demonstrated.\n\n### 6. REFERENCES\n\n1. I. S. Kovach: Biophys. Chem. 59 (1996) 61.\n\n2. V. C. Mow, A. Ratcliffe, and A. R. Poole: Biomaterials, 13 (1992) 67.\n\n3. R. P. Lanza, R. Langer and J. Vacanti: Principles of Tissue Engineering, ed. C. A. Vacanti (Academic Press, San Diego, 2000)  $ 2^{nd} $ ed., Chap. 47, P. 671.\n\n4. J. Toyras, T. L. Laitinen, M. Niinimaki, R. Lindgren, M.T. Nieminen, I. Kiviranta, and J. S. Jurvelin: J. Biomech. 34 (2001) 251.\n\n5. A. F. Mak, W. M. Lai, and V. C. Mow: J. Biomech. 20 (1987) 703.\n\n6. K. Ozaki: Rheology, ed. K. Ozaki (Koubunsikankoukai, Kyoto, 2001) 5th ed., p.23.\n\n7. M. Sato, T. Asazuma, M. Ishihara, T. Kikuchi, K. Masuoka, S. Ichimura, M. Kikuchi, A. Kurita, and K. Fujikawa: J. Biomed. Mater. Res. 64A (2003) 248.\n\n8. C. R. Mol and P. A. Breddels: J. Acoust. Soc. Am. 71 (1982) 455.\n\n9. I. Martin, B. Obradovic, S. Treppo, A.J. Grodzinsky, R. Langer, L.E. Freed and G.V. Novakovic: Biorheology 37 (2000) 141.",
+          "images": {}
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/layout_det_res_4.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A19Z%2F-1%2F%2F4f3d4e7c33eeba9e8a4e67ec4b09cd2c8fb02f843830c92a0d66bf889a577d7d"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/input_img_4.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A19Z%2F-1%2F%2Fb5b65ec555eb42035a55ec62c0168c1e04a53f4992c30902e485116689bb7403"
+      }
+    ],
+    "dataInfo": {
+      "numPages": 5,
+      "pages": [
+        {
+          "width": 1224,
+          "height": 1584
+        },
+        {
+          "width": 1224,
+          "height": 1584
+        },
+        {
+          "width": 1224,
+          "height": 1584
+        },
+        {
+          "width": 1224,
+          "height": 1584
+        },
+        {
+          "width": 1224,
+          "height": 1584
+        }
+      ],
+      "type": "pdf"
+    },
+    "preprocessedImages": [
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/preprocessed_img_0.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A14Z%2F-1%2F%2F36852b2f99dc08c5c96025cf5fe11efc8dccf2d954390b1ae5d38c9638a201a9",
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/preprocessed_img_1.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A16Z%2F-1%2F%2F1518946ffd8ed7f7b7e0340e048319978dbbe053571ceba3b7cea73056dc30e8",
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/preprocessed_img_2.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A17Z%2F-1%2F%2Ffdb4d1000122733df4ee3707db33c2658247e1b888bf3f23efa3546934617603",
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/preprocessed_img_3.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A18Z%2F-1%2F%2F46cb29c3b88866df12ca7fd487318144ce2358e837f20d08e35f8bac77553a79",
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-15//0f1e6c5e-be76-40b9-98e1-0662b8a3ce3b/preprocessed_img_4.jpg?authorization=bce-auth-v1%2FALTAKzReLNvew3ySINYJ0fuAMN%2F2026-04-05T05%3A16%3A19Z%2F-1%2F%2Fa1da371ef36321f2ffa519bf2559149bd22dd70c0a4fa6261005b2a5c6802821"
+    ]
+  }
+]

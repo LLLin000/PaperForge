@@ -1,0 +1,144 @@
+{
+  "audit_date": "2026-07-03",
+  "vault_papers": 731,
+  "papers_with_captions": 712,
+  "total_caption_blocks": 5822,
+  "caption_format_distribution": {
+    "standard_numeric": {
+      "count": 4093,
+      "pct": 70.3,
+      "status": "matched OK"
+    },
+    "plain_prefix_missing": {
+      "count": 1343,
+      "pct": 23.1,
+      "status": "PARTIAL — some reserved, some body text mislabeled"
+    },
+    "unclassified_other": {
+      "count": 270,
+      "pct": 4.6,
+      "status": "not matched, needs per-case check"
+    },
+    "scheme_numeric": {
+      "count": 32,
+      "pct": 0.5,
+      "status": "GAP — Scheme prefix not in figure regex"
+    },
+    "numeric_alpha_suffix": {
+      "count": 27,
+      "pct": 0.5,
+      "status": "GAP — suffix letter lost, hyphen variants break"
+    },
+    "chinese_图": {
+      "count": 22,
+      "pct": 0.4,
+      "status": "GAP — Chinese prefix not in figure regex"
+    },
+    "appendix_alpha": {
+      "count": 14,
+      "pct": 0.2,
+      "status": "GAP — alphabetic number prefix not supported"
+    },
+    "fig_nospace": {
+      "count": 10,
+      "pct": 0.2,
+      "status": "actually OK — parsed as fig_nospace→matched"
+    },
+    "suppl_S_numeric": {
+      "count": 8,
+      "pct": 0.1,
+      "status": "OK — S prefix supported"
+    },
+    "suppl_numeric": {
+      "count": 3,
+      "pct": 0.1,
+      "status": "OK — Supplementary prefix supported"
+    }
+  },
+  "vision_verified_gaps": [
+    {
+      "gap_id": "GAP-1",
+      "name": "Scheme N prefix not supported",
+      "affected_papers": 28,
+      "affected_captions": 32,
+      "root_cause": "regex only handles 'Figure'/'Fig.' prefixes",
+      "location": "ocr_figures.py:_FIGURE_NUMBER_PATTERN (line 14)",
+      "vision_verified": [
+        "BL8ABQ2A p2 — Scheme 1 has diagram, reserved with 0 assets"
+      ],
+      "fix": "add 'Scheme' as recognized prefix option"
+    },
+    {
+      "gap_id": "GAP-2",
+      "name": "Alphabetic figure number (Figure A1/A2, Fig. A1)",
+      "affected_papers": 12,
+      "affected_captions": 14,
+      "root_cause": "regex uses \\d+ only for number capture, [A-Z] not recognized",
+      "location": "ocr_figures.py:_FIGURE_NUMBER_PATTERN, _extract_figure_marker (lines 14, 128)",
+      "vision_verified": [
+        "M84CTEM9 p8 — Figure A1 caption→image (block 33) not matched as asset",
+        "M84CTEM9 p9 — Figure A2 caption→nomogram image UNMATCHED",
+        "AH6Q7DLC — expected appendix pattern, no match"
+      ],
+      "fix": "extend regex to optional ([A-Z])\\d* after 'Figure ' prefix"
+    },
+    {
+      "gap_id": "GAP-3",
+      "name": "Subfigure alphabetic suffix with hyphen (Fig. 2-A, Figs. 2-A through 2-D)",
+      "affected_papers": 14,
+      "affected_captions": 27,
+      "root_cause": "hyphen + letter suffix causes partial match or doubles",
+      "location": "ocr_figures.py:_FIGURE_NUMBER_PATTERN",
+      "vision_verified": [
+        "VAMSAZMG p4 — Fig. 2-A through 2-D caption UNMATCHED, Fig. 2-C duplicated"
+      ],
+      "fix": "add hyphen+letter optional suffix as subfigure indicator"
+    },
+    {
+      "gap_id": "GAP-4",
+      "name": "Chinese 图 prefix not supported",
+      "affected_papers": 2,
+      "affected_captions": 22,
+      "root_cause": "regex doesn't include Chinese '图' prefix",
+      "location": "ocr_figures.py:_FIGURE_NUMBER_PATTERN",
+      "fix": "add '图' as recognized prefix"
+    },
+    {
+      "gap_id": "GAP-5",
+      "name": "Descriptive/plain-text captions misclassified as figure_caption",
+      "affected_papers": 374,
+      "affected_captions": 1343,
+      "root_cause": "67% (descriptive paragraphs + short_trash) are NOT figures — role classifier over-assigns figure_caption_candidate",
+      "subtypes": {
+        "descriptive_paragraph_not_figure": {
+          "count": 767,
+          "pct_of_category": 57.1
+        },
+        "very_short_trash": {
+          "count": 418,
+          "pct_of_category": 31.1
+        },
+        "short_alpha_label_subfigure": {
+          "count": 222,
+          "pct_of_category": 16.5
+        },
+        "mislabeled_table": {
+          "count": 67,
+          "pct_of_category": 5.0
+        }
+      }
+    }
+  ],
+  "baseline_performance": {
+    "standard_numeric_papers": {
+      "matched": "~679 papers, ~4093 captions",
+      "verified": "NC66N4Q3 (26 fig, 52 assets) — all correct"
+    },
+    "fig_nospace": {
+      "matched": "all 5 captions in 5MAW65YD OK",
+      "verified": "regex actually handles no-space variant"
+    },
+    "summary": "Standard Figure N / Fig. N format works correctly for all 4093 cases across 679 papers"
+  },
+  "total_impact_estimate": "~50-80 figures with real content (caption + image) not matched across 731 papers, primarily from GAP-1 (Scheme, 28 papers) and GAP-2 (appendix alpha, 12 papers)"
+}

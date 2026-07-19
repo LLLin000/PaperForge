@@ -1,0 +1,84 @@
+{
+  "document": {
+    "expected_reader_figure_count_min": 3,
+    "expected_reference_zone": true,
+    "expected_abstract_span": false,
+    "notes": [
+      "Updated after RC3 (unassigned role) and RC5 (page1 frontmatter boundary) fixes.",
+      "Page 1 body text now correctly in body_zone. Page 1 frontmatter boundary working.",
+      "Title/authors still unknown_structural (RC1: author matching needs J C vs J.C. normalization).",
+      "Page 6 tail still misclassified (RC6: tail veto)."
+    ]
+  },
+  "pages": {
+    "1": {
+      "assertions": [
+        {"text_contains": "Annals of the Rheumatic Diseases", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
+        {"text_equals": "REVIEW", "expected_role": "frontmatter_noise", "notes": "BUG: Real: unknown_structural"},
+        {"text_contains": "Quantitative radiography of osteoarthritis", "expected_role": "paper_title", "notes": "BUG: Real: unknown_structural - author matching needed"},
+        {"text_contains": "J C Buckland-Wright", "expected_role": "authors", "notes": "BUG: Real: unknown_structural - J C vs J.C. format mismatch"},
+        {"text_contains": "Radiography is important", "expected_role": "body_paragraph", "expected_zone": "body_zone"},
+        {"text_contains": "Correspondence to:", "expected_role": "frontmatter_support"}
+      ]
+    },
+    "2": {
+      "assertions": [
+        {"text_equals": "Quantitative radiography of OA", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
+        {"text_equals": "Quantitative standard radiography", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone"}
+      ]
+    },
+    "3": {
+      "assertions": [
+        {"text_equals": "Buckland-Wright", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
+        {"text_equals": "Microfocal radiography", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone"}
+      ]
+    },
+    "4": {
+      "assertions": [
+        {"text_equals": "Quantitative radiography of OA", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
+        {"text_equals": "Standardisation of macroradiographic procedure", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone"}
+      ]
+    },
+    "5": {
+      "assertions": [
+        {"text_equals": "Buckland-Wright", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
+        {"text_equals": "Quantitative microfocal radiography", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone"},
+        {"text_equals": "Joint space width", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone"},
+        {"text_contains": "Relationship between changes in joint space", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone"}
+      ]
+    },
+    "6": {
+      "assertions": [
+        {"text_equals": "Quantitative radiography of OA", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
+        {"text_contains": "cartilage, measured as joint space narrowing", "expected_role": "body_paragraph", "expected_zone": "body_zone", "notes": "BUG: Real: backmatter_body in tail_nonref_hold_zone. RC6 tail veto needed."}
+      ]
+    },
+    "7": {
+      "assertions": [
+        {"text_equals": "Buckland-Wright", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
+        {"text_equals": "Conclusion", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone"},
+        {"text_contains": "I wish to express my gratitude", "expected_role": "body_paragraph", "expected_zone": "body_zone", "notes": "post-ref backmatter body in body_zone per backmatter boundary redesign"}
+      ]
+    },
+    "8": {
+      "assertions": [
+        {"text_equals": "Buckland-Wright", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
+        {"text_contains": "formation and diminishes fibrillation", "expected_role": "reference_item", "expected_zone": "reference_zone"}
+      ]
+    }
+  },
+  "expected_bugs": [
+    {
+      "bug": "title_author_unknown_structural",
+      "pages": [1],
+      "description": "Title and author have seed_role=paper_title/authors but gate HELD them to unknown_structural. CAQ author 'J C Buckland-Wright' (OCR) vs 'J.C. Buckland-Wright' (Zotero) - period formatting mismatch prevents matching.",
+      "fix": "Improve _match_author_block_to_source_authors to normalize period/space formatting"
+    },
+    {
+      "bug": "page6_tail_misclassification",
+      "pages": [6],
+      "description": "Page 6 body text still in tail_nonref_hold_zone instead of body_zone. Tail detection boundary needs adjustment.",
+      "fix": "Tail spread body-continuation veto (RC6) or adjust tail band logic for this paper"
+    }
+  ]
+}

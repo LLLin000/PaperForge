@@ -1,0 +1,188 @@
+{
+  "paper": "7THZ5Y9G",
+  "verdict": "improvement",
+  "diff": {
+    "legacy_matched_count": 6,
+    "vnext_matched_count": 9,
+    "legacy_consumed_block_ids": [
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "2",
+      "20",
+      "21",
+      "23",
+      "24",
+      "26",
+      "29",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "vnext_consumed_block_ids": [
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "2",
+      "20",
+      "21",
+      "23",
+      "24",
+      "26",
+      "29",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "consumed_ids_only_in_legacy": [],
+    "consumed_ids_only_in_vnext": [],
+    "legacy_figure_ids": [
+      "figure_001",
+      "figure_002",
+      "figure_003",
+      "figure_004",
+      "figure_005",
+      "figure_006"
+    ],
+    "vnext_figure_ids": [
+      "figure_001",
+      "figure_001",
+      "figure_001",
+      "figure_002",
+      "figure_003",
+      "figure_004",
+      "figure_005",
+      "figure_006",
+      "figure_reserved_008"
+    ],
+    "legacy_settlement_types": {
+      "composite_parent": 1,
+      "same_page": 5
+    },
+    "vnext_settlement_types": {
+      "same_page": 8,
+      "cross_page_reservation": 1
+    },
+    "legacy_completeness": {
+      "total": 6,
+      "accounted_for": 6,
+      "gap_count": 0,
+      "details": [
+        {
+          "block_id": 16,
+          "figure_number": 1,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 3
+        },
+        {
+          "block_id": 8,
+          "figure_number": 2,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 4
+        },
+        {
+          "block_id": 18,
+          "figure_number": 3,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 5
+        },
+        {
+          "block_id": 14,
+          "figure_number": 4,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 7
+        },
+        {
+          "block_id": 19,
+          "figure_number": 5,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 8
+        },
+        {
+          "block_id": 30,
+          "figure_number": 6,
+          "figure_namespace": "main",
+          "status": "matched",
+          "page": 10
+        }
+      ]
+    },
+    "vnext_completeness": {
+      "total_numbered_legends": 6,
+      "accounted_for": 6,
+      "gap_count": 0,
+      "details": [
+        {
+          "legend_block_id": "16",
+          "figure_number": 1,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "8",
+          "figure_number": 2,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "18",
+          "figure_number": 3,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "14",
+          "figure_number": 4,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "19",
+          "figure_number": 5,
+          "status": "matched"
+        },
+        {
+          "legend_block_id": "30",
+          "figure_number": 6,
+          "status": "matched"
+        }
+      ]
+    },
+    "vnext_pass_names": [
+      "primary_same_page",
+      "composite_parent",
+      "sidecar",
+      "locator_bridge",
+      "cross_page_reservation",
+      "cross_page_settlement",
+      "legend_bundle",
+      "group_sequential",
+      "classic_sequential",
+      "unresolved_cluster",
+      "final_accounting"
+    ]
+  }
+}

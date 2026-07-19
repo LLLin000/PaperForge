@@ -1,0 +1,817 @@
+"""paperforge.cli — PaperForge command-line interface.
+
+Exposes `paperforge paths`, `paperforge status`, `paperforge sync`,
+`paperforge ocr`, `paperforge ocr --diagnose`, `paperforge deep-reading`,
+`paperforge repair`, and `paperforge doctor`.
+
+Backward-compatible aliases (deprecated): `selection-sync`, `index-refresh`,
+`ocr run`, `ocr doctor`.
+
+Loads .env from the vault root and from <system_dir>/PaperForge/.env before
+dispatching to worker functions, matching the legacy pipeline behavior.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+# Config / resolver
+from paperforge.config import (
+    load_simple_env,
+    load_vault_config,
+    paperforge_paths,
+    paths_as_strings,
+    resolve_vault,
+)
+
+# Logging
+from paperforge.logging_config import configure_logging
+
+# Worker function stubs — let tests patch cli.run_* directly
+run_status = None
+run_selection_sync = None
+run_index_refresh = None
+run_deep_reading = None
+run_repair = None
+run_ocr = None
+ensure_base_views = None
+
+PF_LITE_DIR = Path(__file__).resolve().parent
+
+
+def _find_repo_root() -> Path:
+    """Find the actual PaperForge repo root by scanning upward for pipeline/.
+
+    Handles both cases:
+    - Running from repo: cli.py is at <repo>/paperforge/cli.py
+    - Deployed vault:   cli.py is at <vault>/PaperForge/paperforge/cli.py
+                        and the actual repo is found by looking further up.
+    """
+    d = PF_LITE_DIR
+    for _ in range(8):
+        if (d / "pipeline").exists() and (d / "paperforge").exists():
+            return d
+        parent = d.parent
+        if parent == d:
+            break
+    return PF_LITE_DIR.parent
+
+
+REPO_ROOT = _find_repo_root()
+
+
+def _resolve_pipeline():
+    """Add repo root to sys.path so 'pipeline' package resolves."""
+    repo_pipeline = REPO_ROOT / "pipeline"
+    if repo_pipeline.exists():
+        repo_root_str = str(REPO_ROOT)
+        if repo_root_str not in sys.path:
+            sys.path.insert(0, repo_root_str)
+    else:
+        pf_worker_pipeline = PF_LITE_DIR.parent.parent / "PaperForge" / "worker" / "pipeline"
+        if pf_worker_pipeline.exists():
+            pf_worker_str = str(pf_worker_pipeline.parent)
+            if pf_worker_str not in sys.path:
+                sys.path.insert(0, pf_worker_str)
+
+
+def _import_worker_functions() -> None:
+    """Import worker functions into module-level globals, skipping any that are already bound.
+
+    Called after _resolve_pipeline() has added the repo root to sys.path.
+    Idempotent: once a global is bound (by this function or by a test patch), it is
+    not replaced. This allows tests to patch stubs before main() is called.
+    """
+    global run_status, run_selection_sync, run_index_refresh
+    global run_deep_reading, run_repair, run_ocr, ensure_base_views
+
+    from paperforge.worker.base_views import ensure_base_views as _ebu
+    from paperforge.worker.deep_reading import run_deep_reading as _rdr
+    from paperforge.worker.ocr import run_ocr as _ro
+    from paperforge.worker.repair import run_repair as _rr
+    from paperforge.worker.status import run_status as _rs
+    from paperforge.worker.sync import run_index_refresh as _rir
+    from paperforge.worker.sync import run_selection_sync as _rss
+
+    if run_status is None:
+        run_status = _rs
+    if run_selection_sync is None:
+        run_selection_sync = _rss
+    if run_index_refresh is None:
+        run_index_refresh = _rir
+    if run_deep_reading is None:
+        run_deep_reading = _rdr
+    if run_repair is None:
+        run_repair = _rr
+    if run_ocr is None:
+        run_ocr = _ro
+    if ensure_base_views is None:
+        ensure_base_views = _ebu
+
+
+# ---------------------------------------------------------------------------
+# Build parser
+# ---------------------------------------------------------------------------
+def build_parser() -> argparse.ArgumentParser:
+    from paperforge import __version__
+
+    parser = argparse.ArgumentParser(
+        prog="paperforge",
+        description="PaperForge \u2014 Obsidian + Zotero literature pipeline CLI",
+    )
+    parser.add_argument("--version", action="version", version=f"paperforge {__version__}")
+    parser.add_argument(
+        "--vault",
+        metavar="VAULT",
+        help="Path to the Obsidian vault root (default: cwd or PAPERFORGE_VAULT env)",
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Enable DEBUG-level diagnostic output on stderr",
+    )
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable progress bars (tqdm) for all commands",
+    )
+
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    # paths
+    p_paths = sub.add_parser("paths", help="Print resolved vault paths")
+    p_paths.add_argument(
+        "--json",
+        action="store_true",
+        help="Output paths as JSON instead of human-readable text",
+    )
+
+    # status
+    status_p = sub.add_parser("status", help="Run the literature pipeline status check")
+    status_p.add_argument("--json", action="store_true", help="Output JSON")
+
+    # sync (new unified command)
+    p_sync = sub.add_parser("sync", help="Sync Zotero selection and refresh literature index")
+    p_sync.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview changes without executing",
+    )
+    p_sync.add_argument(
+        "--domain",
+        metavar="DOMAIN",
+        help="Filter by domain (future feature)",
+    )
+    p_sync.add_argument(
+        "--selection",
+        action="store_true",
+        help="Run selection-sync only",
+    )
+    p_sync.add_argument(
+        "--index",
+        action="store_true",
+        help="Run index-refresh only",
+    )
+    p_sync.add_argument(
+        "--rebuild-index",
+        action="store_true",
+        help="Force full rebuild of the canonical asset index",
+    )
+    p_sync.add_argument(
+        "--json",
+        action="store_true",
+        help="Output result as JSON (PFResult envelope)",
+    )
+    p_sync.add_argument("--prune", action="store_true", help="Preview orphan cleanup (dry-run)")
+    p_sync.add_argument("--prune-force", action="store_true", help="Execute orphan cleanup")
+
+    # selection-sync (backward compat)
+    sub.add_parser("selection-sync", help="Sync Zotero selection to library records")
+
+    # index-refresh (backward compat)
+    sub.add_parser("index-refresh", help="Refresh formal literature notes from library records")
+
+    # deep-reading
+    p_dr = sub.add_parser("deep-reading", help="Check deep-reading queue status")
+    p_dr.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
+    # deep-finalize
+    p_df = sub.add_parser("deep-finalize", help="Mark deep reading done and notify dashboard")
+    p_df.add_argument("zotero_key", help="Zotero citation key")
+    p_df.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
+    # repair
+    p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
+    p_repair.add_argument("--fix", action="store_true", help="Actually apply repairs instead of dry-run")
+    p_repair.add_argument("--fix-paths", action="store_true", help="Re-resolve PDF paths for items with path_error")
+    p_repair.add_argument("--json", action="store_true", help="Output result as JSON (PFResult envelope)")
+
+    # ocr (unified)
+    p_ocr = sub.add_parser("ocr", help="OCR operations")
+    p_ocr.add_argument(
+        "--diagnose",
+        action="store_true",
+        help="Diagnose OCR configuration without running",
+    )
+    p_ocr.add_argument(
+        "--json",
+        action="store_true",
+        help="Output result as JSON (PFResult envelope)",
+    )
+    p_ocr.add_argument(
+        "--key",
+        metavar="KEY",
+        help="Process specific Zotero key",
+    )
+    ocr_sub = p_ocr.add_subparsers(dest="ocr_action")
+    ocr_sub.add_parser("run", help="Run OCR queue")
+    doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
+    doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
+    redo_parser = ocr_sub.add_parser("redo", help="Re-run OCR for papers marked ocr_redo: true")
+    redo_parser.add_argument("--dry-run", action="store_true", help="List papers that would be reset without making changes")
+    redo_parser.add_argument("keys", nargs="*", metavar="KEY",
+        help="Paper keys to redo (all redoable if empty)")
+    redo_parser.set_defaults(ocr_action="redo")
+    list_parser = ocr_sub.add_parser("list", help="List all papers with OCR maintenance status")
+    list_parser.add_argument("--json", action="store_true", help="Output as JSON")
+    list_parser.add_argument("--output", metavar="PATH", help="Write JSON output to file")
+    list_parser.add_argument("--manifest", action="store_true",
+        help="Output key→sha256 manifest dict instead of full rows")
+    list_parser.add_argument("--keys", nargs="*", metavar="KEY",
+        help="Only output rows for these specific keys (with --json)")
+    rebuild_parser = ocr_sub.add_parser("rebuild", help="Rebuild OCR-derived artifacts from existing raw blocks")
+    rebuild_parser.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys to rebuild")
+    rebuild_parser.add_argument("--all", action="store_true", help="Rebuild all papers with existing OCR raw data")
+    rebuild_parser.add_argument("--status", metavar="STATUS", help="Filter by OCR status (done, done_degraded, failed)")
+    rebuild_parser.add_argument("--dry-run", action="store_true", help="List papers that would be rebuilt without executing")
+    rebuild_parser.add_argument("--resume", action="store_true", help="Skip papers already in checkpoint")
+    parallel_group = rebuild_parser.add_mutually_exclusive_group()
+    parallel_group.add_argument("--parallel", type=int, nargs="?", const=4, default=4, metavar="N",
+        help="Number of parallel workers (default: 4)")
+    parallel_group.add_argument("--no-parallel", dest="parallel", action="store_const", const=0,
+        help="Disable parallel processing (serial)")
+
+    # context (Phase 26: traceable AI context packs)
+    p_context = sub.add_parser("context", help="Generate traceable AI context pack for paper(s)")
+    p_context.add_argument(
+        "key",
+        nargs="?",
+        metavar="KEY",
+        help="Zotero citation key for a single paper (outputs single JSON object)",
+    )
+    p_context.add_argument(
+        "--domain",
+        metavar="DOMAIN",
+        help="Filter by domain (outputs JSON array)",
+    )
+    p_context.add_argument(
+        "--collection",
+        metavar="PATH",
+        help="Filter by collection path (prefix match, outputs JSON array)",
+    )
+    p_context.add_argument(
+        "--all",
+        action="store_true",
+        help="Output all entries in the canonical index (JSON array)",
+    )
+
+    # dashboard
+    p_dash = sub.add_parser("dashboard", help="Aggregated stats and permissions for the plugin dashboard")
+    p_dash.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
+    # Vector DB
+    p_embed = sub.add_parser("embed", help="Vector embedding operations")
+    p_embed_sp = p_embed.add_subparsers(dest="embed_subcommand", required=True)
+    p_embed_build = p_embed_sp.add_parser("build", help="Build vector index from OCR fulltext")
+    p_embed_build.add_argument("--json", action="store_true")
+    p_embed_build.add_argument("--force", action="store_true")
+    p_embed_build.add_argument("--resume", action="store_true", help="Skip papers already in vector index")
+    p_embed_status = p_embed_sp.add_parser("status", help="Check vector DB status")
+    p_embed_status.add_argument("--json", action="store_true")
+    p_embed_stop = p_embed_sp.add_parser("stop", help="Stop running embed build")
+    p_embed_stop.add_argument("--json", action="store_true")
+    p_embed_migrate = p_embed_sp.add_parser("migrate", help="Migrate vectors from ChromaDB to vec0 tables")
+    p_embed_migrate.add_argument("--json", action="store_true")
+
+
+    p_retrieve = sub.add_parser("retrieve", help="Semantic content retrieval across OCR fulltext")
+    p_retrieve.add_argument("query", help="Search query")
+    p_retrieve.add_argument("--json", action="store_true")
+    p_retrieve.add_argument("--limit", type=int, default=5)
+    p_retrieve.add_argument("--deep", action="store_true", help="Enable @ Deep Search mode with query rewrite + hybrid retrieval (BM25 + vec0)")
+    p_retrieve.add_argument("--expand", action="store_true", default=True)
+
+    p_qp = sub.add_parser("query-plan", help="Classify a literature query and recommend the first retrieval command")
+    p_qp.add_argument("query", help="User query to classify")
+    p_qp.add_argument("--intent", choices=["discover", "content", "known-paper"], required=True, help="Retrieval intent")
+    p_qp.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # prune
+    p_prune = sub.add_parser("prune", help="Delete orphan paper artifacts (dry-run by default)")
+    p_prune.add_argument("--force", action="store_true", help="Actually delete (default: dry-run)")
+    p_prune.add_argument("--json", action="store_true", help="Output as JSON")
+    p_prune.add_argument("keys", nargs="*", metavar="KEY", help="Only process these zotero keys")
+
+    # Memory Layer commands
+    p_memory = sub.add_parser("memory", help="Manage the Memory Layer")
+    p_memory_sp = p_memory.add_subparsers(dest="memory_subcommand", required=True)
+    p_memory_build = p_memory_sp.add_parser("build", help="Build the memory database from canonical index")
+    p_memory_build.add_argument("--json", action="store_true", help="Output as JSON")
+    p_memory_status = p_memory_sp.add_parser("status", help="Check memory database status")
+    p_memory_status.add_argument("--json", action="store_true", help="Output as JSON")
+    p_memory_restore = p_memory_sp.add_parser("restore-backup", help="Restore memory database from a verified backup")
+    p_memory_restore.add_argument("--json", action="store_true", help="Output as JSON (PFResult envelope)")
+
+    p_paper_status = sub.add_parser("paper-status", help="Look up a paper's status")
+    p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
+    p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
+
+    p_pc = sub.add_parser("paper-context", help="Get full context for a paper by zotero key, DOI, or citation key")
+    p_pc.add_argument("key", help="Paper identifier (zotero key, DOI, or citation key)")
+    p_pc.add_argument("--json", action="store_true", help="Output as JSON")
+
+    p_rl = sub.add_parser("reading-log", help="Record or export reading notes")
+    p_rl.add_argument("--write", dest="paper_id", help="Write note for this zotero_key")
+    p_rl.add_argument("--section", help="Section (e.g. Discussion P12)")
+    p_rl.add_argument("--excerpt", help="Quoted excerpt")
+    p_rl.add_argument("--usage", help="How this supports the current writing")
+    p_rl.add_argument("--note", help="Optional cross-validation note")
+    p_rl.add_argument("--context", help="Full paragraph containing excerpt")
+    p_rl.add_argument("--tags", help="Comma-separated tags")
+    p_rl.add_argument("--project", help="Associated project name")
+    p_rl.add_argument("--render", action="store_true", help="Render reading-log.md for one or all projects")
+    p_rl.add_argument("--correct", dest="correct_id", help="ID of prior reading note to correct")
+    p_rl.add_argument("--correction", help="Correction text")
+    p_rl.add_argument("--reason", help="Reason for correction (e.g. 'Rechecked figure legend')")
+    p_rl.add_argument("--since", help="Export notes since date (YYYY-MM-DD)")
+    p_rl.add_argument("--limit", type=int, default=50, help="Max notes to export")
+    p_rl.add_argument("--output", help="Write markdown to file")
+    p_rl.add_argument("--validate", help="Validate a reading-log.md file")
+    p_rl.add_argument("--import", dest="import_file", help="Import reading-log.md into paper_events")
+    p_rl.add_argument("--lookup", help="Look up all reading notes for a paper key")
+    p_rl.add_argument("--json", action="store_true", help="Output as JSON")
+
+    p_pl = sub.add_parser("project-log", help="Record or render project work logs")
+    p_pl.add_argument("--write", action="store_true", help="Write a new project log entry")
+    p_pl.add_argument("--payload", help="JSON payload for the entry")
+    p_pl.add_argument("--project", help="Project name (required for write/list/render)")
+    p_pl.add_argument("--list", action="store_true", help="List all entries for a project")
+    p_pl.add_argument("--render", action="store_true", help="Render project-log.md")
+    p_pl.add_argument("--limit", type=int, default=50, help="Max entries to list")
+    p_pl.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
+    p_search = sub.add_parser("search", help="Metadata FTS search across indexed paper fields")
+    p_search.add_argument("query", help="Search query for title/abstract/author/journal/domain/collection metadata")
+    p_search.add_argument("--json", action="store_true", help="Output as JSON")
+    p_search.add_argument("--limit", type=int, default=20, help="Max results")
+    p_search.add_argument("--domain", help="Filter by domain")
+    p_search.add_argument("--year-from", type=int, help="Filter by year (inclusive)")
+    p_search.add_argument("--year-to", type=int, help="Filter by year (inclusive)")
+    p_search.add_argument("--ocr", choices=["done","pending","failed","processing"], help="Filter by OCR status")
+    p_search.add_argument("--deep", choices=["done","pending"], help="Filter by deep reading status")
+    p_search.add_argument("--lifecycle", choices=["indexed","pdf_ready","fulltext_ready","deep_read_done"], help="Filter by lifecycle")
+    p_search.add_argument("--next-step", choices=["sync","ocr","/pf-deep","ready"], help="Filter by next step")
+
+    # agent-context
+    p_ac = sub.add_parser("agent-context", help="Generate agent bootstrap context")
+    p_ac.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # runtime-health
+    p_rh = sub.add_parser("runtime-health", help="Check memory layer runtime health")
+    p_rh.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # base-refresh
+    p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
+    p_base.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        help="Force full regeneration (bypasses incremental merge, replaces all views including user views)",
+    )
+
+    # doctor
+    doctor_p = sub.add_parser("doctor", help="Validate PaperForge setup and configuration")
+    doctor_p.add_argument("--json", action="store_true", help="Output JSON")
+
+    # update
+    sub.add_parser("update", help="Update PaperForge to the latest version")
+
+    # setup wizard
+    p_setup = sub.add_parser("setup", help="Set up PaperForge in a vault (use --headless for non-interactive)")
+    p_setup.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run setup non-interactively (for AI agents or scripts)",
+    )
+    p_setup.add_argument(
+        "--agent",
+        metavar="AGENT",
+        default="opencode",
+        choices=["opencode", "cursor", "claude", "codex", "windsurf", "github_copilot", "gemini", "cline", "augment", "trae"],
+        help="AI Agent platform (default: opencode)",
+    )
+    p_setup.add_argument(
+        "--paddleocr-key",
+        metavar="KEY",
+        help="PaddleOCR API Key",
+    )
+    p_setup.add_argument(
+        "--paddleocr-url",
+        metavar="URL",
+        default="https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+        help="PaddleOCR API URL",
+    )
+    p_setup.add_argument(
+        "--system-dir",
+        metavar="NAME",
+        help="System directory name (default: System)",
+    )
+    p_setup.add_argument(
+        "--resources-dir",
+        metavar="NAME",
+        help="Resources directory name (default: Resources)",
+    )
+    p_setup.add_argument(
+        "--literature-dir",
+        metavar="NAME",
+        help="Literature directory name (default: Literature)",
+    )
+    p_setup.add_argument(
+        "--base-dir",
+        metavar="NAME",
+        help="Base directory name (default: Bases)",
+    )
+    p_setup.add_argument(
+        "--zotero-data",
+        metavar="PATH",
+        help="Zotero data directory (auto-detect if omitted)",
+    )
+    p_setup.add_argument(
+        "--skip-checks",
+        action="store_true",
+        help="Skip environment checks (for testing/CI)",
+    )
+    p_setup.add_argument(
+        "--modular",
+        action="store_true",
+        help="Use modular setup components (v2.1+)",
+    )
+
+    # Layer 4 gateway commands
+    p_paper_lookup = sub.add_parser("paper-lookup", help="Locate a specific paper through the Layer 4 gateway")
+    p_paper_lookup.add_argument("query", help="Paper identifier, title fragment, author+year, DOI, or alias")
+    p_paper_lookup.add_argument("--json", action="store_true", help="Output JSON")
+    p_paper_lookup.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
+
+    p_content_discovery = sub.add_parser("content-discovery", help="Discover content within vault through the Layer 4 gateway")
+    p_content_discovery.add_argument("query", help="Topic, domain, or research question for content discovery")
+    p_content_discovery.add_argument("--json", action="store_true", help="Output JSON")
+    p_content_discovery.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
+
+    p_paper_navigation = sub.add_parser("paper-navigation", help="Navigate paper structure through the Layer 4 gateway")
+    p_paper_navigation.add_argument("query", help="Paper identifier or DOI for structural navigation")
+    p_paper_navigation.add_argument("--json", action="store_true", help="Output JSON")
+
+    p_scoped_fetch = sub.add_parser("scoped-fetch", help="Fetch paper content scoped by query through the Layer 4 gateway")
+    p_scoped_fetch.add_argument("query", help="Paper identifier, title, or scoped query for targeted fetch")
+    p_scoped_fetch.add_argument("--json", action="store_true", help="Output JSON")
+    p_scoped_fetch.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
+
+    # probe
+    p_probe = sub.add_parser("probe", help="Probe a module's capability state")
+    p_probe.add_argument(
+        "probe_module",
+        choices=["installation", "help", "library", "ocr", "memory", "maintenance"],
+        help="Module to probe (installation, library, ocr, memory, help, or maintenance)",
+    )
+    p_probe.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as schema-v1 capability envelope JSON",
+    )
+    p_probe.add_argument(
+        "--last-operation-exit-code",
+        type=int,
+        default=None,
+        metavar="CODE",
+        help="Last operation exit code for library sync failure probe",
+    )
+
+    return parser
+
+
+# ---------------------------------------------------------------------------
+# OCR doctor command (kept for backward compat / test patching)
+# ---------------------------------------------------------------------------
+def _cmd_ocr_doctor(vault: Path, args: argparse.Namespace) -> int:
+    """Handle `paperforge ocr doctor` and `paperforge ocr doctor --live`."""
+    from paperforge.ocr_diagnostics import ocr_doctor
+
+    result = ocr_doctor(config=None, live=args.live)
+    level = result.get("level", 0)
+    passed = result.get("passed", False)
+
+    print(f"OCR Doctor — Level {level} diagnostic")
+    print("-" * 40)
+    if passed:
+        print(f"[PASS] {result.get('message', 'All checks passed')}")
+        return 0
+    else:
+        print(f"[FAIL] Level {level}: {result.get('error', 'Unknown failure')}")
+        print(f"[FIX]  {result.get('fix', 'No fix suggestion available')}")
+        if result.get("raw_response"):
+            print(f"[RAW]  {result['raw_response'][:200]}...")
+        return 1
+
+
+# ---------------------------------------------------------------------------
+# Main entry point
+# ---------------------------------------------------------------------------
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry point. Returns integer exit code (0 = success)."""
+    if argv is None:
+        argv = sys.argv[1:]
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    if args.command is None:
+        parser.print_help()
+        return 1
+
+    # Resolve/import worker modules only for commands that actually need them.
+    lightweight_commands = {
+        "paths", "sync", "ocr", "status", "deep-reading", "deep-finalize",
+        "context", "repair", "dashboard", "memory", "embed", "retrieve",
+        "query-plan", "prune", "paper-status", "paper-context", "reading-log",
+        "project-log", "search", "agent-context", "runtime-health", "doctor",
+        "update", "setup", "selection-sync", "index-refresh", "base-refresh",
+        "paper-lookup", "content-discovery", "paper-navigation", "scoped-fetch",
+        "probe",
+    }
+    if args.command in lightweight_commands:
+        _resolve_pipeline()
+    worker_import_commands = {"status", "deep-reading", "ocr", "selection-sync", "index-refresh", "base-refresh"}
+    if args.command in worker_import_commands:
+        _import_worker_functions()
+
+    # Resolve vault
+    try:
+        vault = resolve_vault(cli_vault=args.vault)
+    except FileNotFoundError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    # Load .env files exactly as legacy pipeline does
+    load_simple_env(vault / ".env")
+    cfg = load_vault_config(vault)
+    pf_env = vault / cfg["system_dir"] / "PaperForge" / ".env"
+    load_simple_env(pf_env)
+
+    # Attach resolved values to args for command modules
+    args.vault_path = vault
+    args.cfg = cfg
+    args.paths = paperforge_paths(vault, cfg)
+
+    # Configure logging before command dispatch
+    configure_logging(verbose=getattr(args, "verbose", False))
+
+    # -----------------------------------------------------------------------
+    # Command dispatch
+    # -----------------------------------------------------------------------
+    if args.command == "paths":
+        return _cmd_paths(vault, args)
+
+    # New unified commands
+    if args.command == "sync":
+        from paperforge.commands import sync
+
+        return sync.run(args)
+
+    # OCR — handle both new unified and old subcommand styles
+    if args.command == "ocr":
+        ocr_action = getattr(args, "ocr_action", None)
+        if ocr_action == "doctor":
+            # Backward compat: old ocr doctor subcommand
+            return _cmd_ocr_doctor(vault, args)
+        # New unified ocr (or ocr run)
+        from paperforge.commands import ocr
+
+        return ocr.run(args)
+
+    # Backward compat: old selection-sync and index-refresh
+    if args.command == "selection-sync":
+        from paperforge.commands import sync
+
+        args.selection = True
+        args.index = False
+        return sync.run(args)
+
+    if args.command == "index-refresh":
+        from paperforge.commands import sync
+
+        args.selection = False
+        args.index = True
+        return sync.run(args)
+
+    # Other commands delegate to their modules
+    if args.command == "status":
+        from paperforge.commands import status
+
+        return status.run(args)
+
+    if args.command == "deep-reading":
+        from paperforge.commands import deep
+
+        return deep.run(args)
+
+    if args.command == "deep-finalize":
+        from paperforge.commands import finalize
+
+        return finalize.run(args)
+
+    if args.command == "context":
+        from paperforge.commands import context
+
+        return context.run(args)
+
+    if args.command == "repair":
+        from paperforge.commands import repair
+
+        return repair.run(args)
+
+    if args.command == "dashboard":
+        from paperforge.commands import dashboard
+
+        return dashboard.run(args)
+
+    if args.command == "memory":
+        from paperforge.commands.memory import run
+
+        return run(args)
+
+    if args.command == "embed":
+        from paperforge.commands.embed import run
+
+        return run(args)
+
+    if args.command == "retrieve":
+        from paperforge.commands.retrieve import run
+
+        return run(args)
+
+    if args.command == "query-plan":
+        from paperforge.commands.query_plan import run
+
+        return run(args)
+
+    if args.command == "prune":
+        from paperforge.commands.prune import run
+
+        return run(args)
+
+    if args.command == "paper-status":
+        from paperforge.commands.paper_status import run
+
+        return run(args)
+
+    if args.command == "paper-context":
+        from paperforge.commands.paper_context import run
+
+        return run(args)
+
+    if args.command == "paper-lookup":
+        from paperforge.commands import paper_lookup
+
+        return paper_lookup.run(args)
+
+    if args.command == "content-discovery":
+        from paperforge.commands import content_discovery
+
+        return content_discovery.run(args)
+
+    if args.command == "paper-navigation":
+        from paperforge.commands import paper_navigation
+
+        return paper_navigation.run(args)
+
+    if args.command == "scoped-fetch":
+        from paperforge.commands import scoped_fetch
+
+        return scoped_fetch.run(args)
+
+    if args.command == "reading-log":
+        from paperforge.commands.reading_log import run
+
+        return run(args)
+
+    if args.command == "project-log":
+        from paperforge.commands.project_log import run
+
+        return run(args)
+
+    if args.command == "search":
+        from paperforge.commands.search import run
+
+        return run(args)
+
+    if args.command == "agent-context":
+        from paperforge.commands.agent_context import run
+
+        return run(args)
+
+    if args.command == "runtime-health":
+        from paperforge.commands.runtime_health import run
+
+        return run(args)
+
+    if args.command == "base-refresh":
+        force = getattr(args, "force", False)
+        paths = args.paths
+        logger = __import__("logging").getLogger("paperforge")
+        logger.info(f"Refreshing Base views in {paths['bases']}")
+        ensure_base_views(vault, paths, cfg, force=force)
+        logger.info("Base refresh complete")
+        return 0
+
+    if args.command == "doctor":
+        from paperforge.worker.status import run_doctor
+
+        kw = {}
+        if getattr(args, "verbose", False):
+            kw["verbose"] = True
+        if getattr(args, "json", False):
+            kw["json_output"] = True
+        return run_doctor(vault, **kw)
+
+    if args.command == "update":
+        from paperforge.worker.update import run_update
+
+        return run_update(vault)
+
+    if args.command == "setup":
+        # Shared config builder
+        _cfg = {
+            "system_dir": getattr(args, "system_dir", None) or "System",
+            "resources_dir": getattr(args, "resources_dir", None) or "Resources",
+            "literature_dir": getattr(args, "literature_dir", None) or "Literature",
+            "base_dir": getattr(args, "base_dir", None) or "Bases",
+            "control_dir": getattr(args, "control_dir", None) or "LiteratureControl",
+            "skill_dir": getattr(args, "skill_dir", None) or ".opencode/skills",
+            "command_dir": getattr(args, "command_dir", None) or ".opencode/command",
+        }
+        _zotero = getattr(args, "zotero_data", None)
+        _agent = getattr(args, "agent", "opencode")
+        _skip = getattr(args, "skip_checks", False)
+
+        if getattr(args, "headless", False):
+            print("DEPRECATED: paperforge setup --headless; use --modular instead.", file=sys.stderr)
+        elif not getattr(args, "modular", False):
+            print("DEPRECATED: bare 'paperforge setup'; use 'paperforge setup --modular' instead.", file=sys.stderr)
+
+        from paperforge.setup.plan import SetupPlan
+
+        plan = SetupPlan(
+            vault=vault,
+            config=_cfg,
+            zotero_path=_zotero,
+            agent_type=_agent,
+            skip_checks=_skip,
+        )
+        return plan.execute(json_output=getattr(args, "json_output", False))
+
+    if args.command == "probe":
+        from paperforge.commands.probe import run as run_probe
+
+        return run_probe(args)
+
+    print(f"Error: unknown command {args.command}", file=sys.stderr)
+    return 1
+
+
+# ---------------------------------------------------------------------------
+# paths command
+# ---------------------------------------------------------------------------
+def _cmd_paths(vault: Path, args: argparse.Namespace) -> int:
+    """Handle `paperforge paths` and `paperforge paths --json`."""
+    cfg = load_vault_config(vault)
+    paths = paperforge_paths(vault, cfg)
+    all_paths = paths_as_strings(paths)
+
+    if args.json:
+        # Output only the keys required by D-Path Output contract
+        output_keys = {"vault", "worker_script", "pf_deep_script"}
+        filtered = {k: v for k, v in all_paths.items() if k in output_keys}
+        filtered["vault"] = str(vault.resolve())
+        filtered["worker_script"] = str(paths["worker_script"].resolve())
+        filtered["pf_deep_script"] = str(paths["pf_deep_script"].resolve())
+        filtered["ld_deep_script"] = filtered["pf_deep_script"]
+        print(json.dumps(filtered, ensure_ascii=False, indent=2))
+    else:
+        for key, path_str in sorted(all_paths.items()):
+            print(f"{key}: {path_str}")
+    return 0
