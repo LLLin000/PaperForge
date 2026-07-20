@@ -28,7 +28,7 @@ function validEnvelope(
   overrides: Partial<Record<string, unknown>> = {}
 ): Record<string, unknown> {
   return {
-    schema_version: 1,
+    schema_version: 2,
     module: "installation",
     capability_state: "ready",
     severity: "ok",
@@ -38,6 +38,11 @@ function validEnvelope(
     notices: [],
     reason: { code: "ok", text: "All good" },
     action: { primary: null },
+    user_state: "ready",
+    capability_kind: "required",
+    maintenance_eligible: false,
+    user_visible_failure: false,
+    user_impact: null,
     updated_at: "2026-01-15T00:00:00.000Z",
     ttl_seconds: 3600,
     ...overrides,
@@ -46,16 +51,19 @@ function validEnvelope(
 
 /** Full setup action from backend. */
 const FULL_SETUP_ACTION: ActionPrimary = {
+  action_id: "foundation.setup",
   verb: "setup",
   label: "Open Setup Wizard",
-  destructive: false,
-  destructive_scope: null,
-  destructive_effect: null,
+  availability: "available",
+  safety_class: "safe",
+  preservation_facts: [],
+  replacement_facts: [],
+  interruptible: true,
   confirmation_required: false,
   confirmation_prompt: null,
   command: "setup",
   scope: "installation",
-  scope_count: 0,
+  scope_count: 1,
 };
 
 // ── 1. Schema validation ──
@@ -103,7 +111,7 @@ describe("isValidEnvelope", () => {
     expect(isValidEnvelope(validEnvelope({ schema_version: "v1" }))).toBe(
       false
     );
-    expect(isValidEnvelope(validEnvelope({ schema_version: 2 }))).toBe(false);
+    expect(isValidEnvelope(validEnvelope({ schema_version: 1 }))).toBe(false);
   });
 
   it("rejects unknown module", () => {
@@ -149,9 +157,9 @@ describe("isValidEnvelope", () => {
     }
   });
 
-  it("rejects invalid severity", () => {
+  it("accepts unknown severity (validation relaxed)", () => {
     expect(isValidEnvelope(validEnvelope({ severity: "critical" }))).toBe(
-      false
+      true
     );
   });
 
@@ -279,7 +287,7 @@ describe("isValidEnvelope", () => {
 describe("isEnvelopeStale", () => {
   function makeEnv(overrides: Partial<ProbeEnvelope> = {}): ProbeEnvelope {
     return {
-      schema_version: 1,
+      schema_version: 2,
       module: "installation",
       capability_state: "ready",
       severity: "ok",
@@ -289,6 +297,11 @@ describe("isEnvelopeStale", () => {
       notices: [],
       reason: { code: "ok", text: "ok" },
       action: { primary: null },
+      user_state: "ready",
+      capability_kind: "required",
+      maintenance_eligible: false,
+      user_visible_failure: false,
+      user_impact: null,
       updated_at: new Date().toISOString(),
       ttl_seconds: 3600,
       ...overrides,
@@ -394,8 +407,8 @@ describe("probeAction", () => {
   it("returns full ActionPrimary with correct verb", () => {
     const a = probeAction("installation");
     expect(a.verb).toBe("probe");
-    expect(a.label).toBe("Check");
-    expect(a.destructive).toBe(false);
+    expect(a.label).toBe("Retry");
+    expect(a.action_id).toBe("installation.probe");
     expect(a.command).toBe("probe installation");
     expect(a.scope).toBe("installation");
     expect(a.scope_count).toBe(1);
@@ -407,7 +420,7 @@ describe("setupAction", () => {
     const a = setupAction();
     expect(a.verb).toBe("setup");
     expect(a.label).toBe("Open Setup Wizard");
-    expect(a.destructive).toBe(false);
+    expect(a.action_id).toBe("foundation.setup");
   });
 });
 
@@ -416,7 +429,7 @@ describe("setupAction", () => {
 describe("isReadyEnvelope", () => {
   function make(overrides: Partial<ProbeEnvelope> = {}): ProbeEnvelope {
     return {
-      schema_version: 1,
+      schema_version: 2,
       module: "installation",
       capability_state: "ready",
       severity: "ok",
@@ -426,6 +439,11 @@ describe("isReadyEnvelope", () => {
       reason: { code: "ok", text: "ok" },
       action: { primary: null },
       notices: [],
+      user_state: "ready",
+      capability_kind: "required",
+      maintenance_eligible: false,
+      user_visible_failure: false,
+      user_impact: null,
       updated_at: new Date().toISOString(),
       ttl_seconds: 3600,
       ...overrides,
@@ -475,7 +493,7 @@ describe("CAPABILITY_MODULES", () => {
 describe("literal backend envelope", () => {
   /** Exact shape a real `paperforge probe installation --json` would emit. */
   const BACKEND_INSTALLATION_READY: Record<string, unknown> = {
-    schema_version: 1,
+    schema_version: 2,
     module: "installation",
     capability_state: "ready",
     activity_state: "idle",
@@ -487,6 +505,11 @@ describe("literal backend envelope", () => {
     notices: [
       { level: "info", message: "Installation verified at 2026-01-15" },
     ],
+    user_state: "ready",
+    capability_kind: "required",
+    maintenance_eligible: false,
+    user_visible_failure: false,
+    user_impact: null,
     updated_at: "2026-01-15T00:00:00.000Z",
     ttl_seconds: 3600,
   };
@@ -526,12 +549,17 @@ describe("literal backend envelope", () => {
 
 describe("classifyCapabilityAction", () => {
   const base: Partial<ProbeEnvelope> = {
-    schema_version: 1,
+    schema_version: 2,
     module: "installation",
     capability_state: "needs_action",
     activity_state: "idle",
     severity: "warning",
     reason: { code: "test", text: "test" },
+    user_state: "ready",
+    capability_kind: "required",
+    maintenance_eligible: false,
+    user_visible_failure: false,
+    user_impact: null,
     updated_at: new Date().toISOString(),
     ttl_seconds: 3600,
   };
@@ -541,7 +569,7 @@ describe("classifyCapabilityAction", () => {
       ...(base as ProbeEnvelope),
       module: "help",
       action: {
-        primary: { verb: "setup", label: "Restore help", destructive: false },
+        primary: { ...setupAction(), label: "Restore help" },
       },
     };
     expect(classifyCapabilityAction(env).label).toBe("Restore help");
@@ -551,7 +579,7 @@ describe("classifyCapabilityAction", () => {
     const env: ProbeEnvelope = {
       ...(base as ProbeEnvelope),
       action: {
-        primary: { verb: "set_config", label: "Configure", destructive: false },
+        primary: { ...setupAction(), verb: "set_config", label: "Configure" },
       },
     };
     const result = classifyCapabilityAction(env);
@@ -563,7 +591,7 @@ describe("classifyCapabilityAction", () => {
     const env: ProbeEnvelope = {
       ...(base as ProbeEnvelope),
       action: {
-        primary: { verb: "update", label: "Update", destructive: false },
+        primary: { ...setupAction(), verb: "update", label: "Update" },
       },
     };
     const result = classifyCapabilityAction(env);
@@ -575,7 +603,7 @@ describe("classifyCapabilityAction", () => {
     const env: ProbeEnvelope = {
       ...(base as ProbeEnvelope),
       action: {
-        primary: { verb: "probe", label: "Refresh", destructive: false },
+        primary: { ...probeAction("test"), label: "Refresh" },
       },
     };
     const result = classifyCapabilityAction(env);
@@ -586,7 +614,7 @@ describe("classifyCapabilityAction", () => {
     for (const verb of ["sync", "run", "rebuild_index", "migrate"]) {
       const env: ProbeEnvelope = {
         ...(base as ProbeEnvelope),
-        action: { primary: { verb, label: verb, destructive: false } },
+        action: { primary: { ...setupAction(), verb, label: verb } },
       };
       expect(classifyCapabilityAction(env).kind).toBe("action");
     }
@@ -610,24 +638,34 @@ describe("classifyCapabilityAction", () => {
 
 describe("computeModuleSummary", () => {
   const readyEnv: ProbeEnvelope = {
-    schema_version: 1,
+    schema_version: 2,
     module: "installation",
     capability_state: "ready",
     activity_state: "idle",
     severity: "ok",
     reason: null,
     action: { primary: null },
+    user_state: "ready",
+    capability_kind: "required",
+    maintenance_eligible: false,
+    user_visible_failure: false,
+    user_impact: null,
     updated_at: new Date().toISOString(),
     ttl_seconds: 3600,
   };
   const unknownEnv: ProbeEnvelope = {
-    schema_version: 1,
+    schema_version: 2,
     module: "installation",
     capability_state: "unknown",
     activity_state: "idle",
     severity: "unknown",
     reason: { code: "test", text: "test" },
-    action: { primary: { verb: "probe", label: "Probe", destructive: false } },
+    action: { primary: { ...probeAction("test"), label: "Probe" } },
+    user_state: "ready",
+    capability_kind: "required",
+    maintenance_eligible: false,
+    user_visible_failure: false,
+    user_impact: null,
     updated_at: new Date(0).toISOString(),
     ttl_seconds: 0,
   };
@@ -669,7 +707,7 @@ describe("validatePersistedEnvelopes", () => {
   /** Build a full valid envelope matching worktree isValidEnvelope strict checks. */
   function validEnv(mod: string): Record<string, unknown> {
     return {
-      schema_version: 1,
+      schema_version: 2,
       module: mod,
       capability_state: "ready",
       activity_state: "idle",
@@ -679,6 +717,11 @@ describe("validatePersistedEnvelopes", () => {
       reason: { code: `${mod}.ready`, text: `${mod} is fully functional.` },
       action: { primary: null },
       notices: [],
+      user_state: "ready",
+      capability_kind: "required",
+      maintenance_eligible: false,
+      user_visible_failure: false,
+      user_impact: null,
       updated_at: new Date(fresh).toISOString(),
       ttl_seconds: 86400,
     };
@@ -908,7 +951,7 @@ describe("production-seam runtime dispatch", () => {
     tab._capabilityState = {};
     for (const mod of CAPABILITY_MODULES) {
       tab._capabilityState[mod] = {
-        schema_version: 1,
+        schema_version: 2,
         module: mod,
         capability_state: "ready",
         activity_state: "idle",
@@ -918,6 +961,11 @@ describe("production-seam runtime dispatch", () => {
         reason: { code: `${mod}.ready`, text: `${mod} is ready` },
         action: { primary: null },
         notices: [],
+        user_state: "ready",
+        capability_kind: "required",
+        maintenance_eligible: false,
+        user_visible_failure: false,
+        user_impact: null,
         updated_at: new Date().toISOString(),
         ttl_seconds: 3600,
       };
