@@ -4941,3 +4941,376 @@
   margin-left: 8px;
   font-size: 13px;
 }
+
+/* ═══════════════════════════ #85: Shared UI Primitives ═══════════════════════════ */
+
+/* ── Status Badge (6 variants) ── */
+.pf-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.pf-badge--checking {
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+}
+.pf-badge--ready {
+  background: color-mix(in srgb, var(--text-success) 12%, transparent);
+  color: var(--text-success);
+}
+.pf-badge--not-enabled {
+  background: var(--background-modifier-border);
+  color: var(--text-faint);
+}
+.pf-badge--setup-required {
+  background: color-mix(in srgb, var(--text-warning) 12%, transparent);
+  color: var(--text-warning);
+}
+.pf-badge--action-required {
+  background: color-mix(in srgb, var(--text-warning) 12%, transparent);
+  color: var(--text-warning);
+}
+.pf-badge--detection-failed {
+  background: color-mix(in srgb, var(--text-error) 12%, transparent);
+  color: var(--text-error);
+}
+
+/* ── Activity Row ── */
+.pf-activity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: var(--font-ui-small);
+}
+.pf-activity-label {
+  flex: 1;
+  color: var(--text-muted);
+}
+.pf-activity-bar {
+  width: 100px;
+  height: 4px;
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pf-activity-bar-fill {
+  height: 100%;
+  background: var(--interactive-accent);
+  transition: width 180ms ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-activity-bar-fill { transition: none; }
+}
+.pf-activity-count {
+  font-size: 11px;
+  color: var(--text-faint);
+  min-width: 40px;
+  text-align: right;
+}
+.pf-activity-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--background-modifier-border);
+  border-top-color: var(--interactive-accent);
+  border-radius: 50%;
+  animation: pf-spin 0.8s linear infinite;
+}
+@keyframes pf-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-activity-spinner { animation: none; display: none; }
+}
+.pf-activity-scope {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.pf-activity-stop {
+  font-size: 12px;
+  padding: 2px 8px;
+  cursor: pointer;
+  background: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+.pf-activity-stop:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--text-error);
+  color: var(--text-error);
+}
+
+/* ── Action Button ── */
+.pf-action-btn {
+  padding: 4px 12px;
+  font-size: var(--font-ui-small);
+  font-weight: 500;
+  border: 1px solid var(--interactive-accent);
+  border-radius: 4px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  transition: opacity 120ms ease-out;
+}
+.pf-action-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.pf-action-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+.pf-action-btn--disabled,
+.pf-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pf-action-btn--loading {
+  cursor: wait;
+}
+
+/* ── Disclosure ── */
+.pf-disclosure {
+  margin-bottom: 12px;
+}
+.pf-disclosure-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  text-align: left;
+}
+.pf-disclosure-header:hover {
+  color: var(--text-accent);
+}
+.pf-disclosure-header:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+.pf-disclosure-icon {
+  font-size: 10px;
+  transition: transform 180ms ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-disclosure-icon { transition: none; }
+}
+.pf-disclosure-header[aria-expanded="true"] .pf-disclosure-icon {
+  transform: rotate(90deg);
+}
+.pf-disclosure-title {
+  flex: 1;
+}
+.pf-disclosure-body {
+  display: none;
+  padding-left: 16px;
+  margin-top: 4px;
+}
+.pf-disclosure-body--open {
+  display: block;
+}
+
+/* ── Error Anatomy (User-visible Problem) ── */
+.pf-error-anatomy {
+  padding: 12px;
+  border: 1px solid var(--text-error);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text-error) 4%, transparent);
+  margin-bottom: 12px;
+}
+.pf-error-title {
+  font-weight: var(--font-semibold);
+  font-size: var(--font-ui-medium);
+  color: var(--text-error);
+  margin-bottom: 8px;
+}
+.pf-error-impact {
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  margin-bottom: 4px;
+}
+.pf-error-impact-label {
+  font-weight: 600;
+}
+.pf-error-code {
+  font-family: var(--font-monospace-theme);
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-bottom: 4px;
+}
+.pf-error-next {
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  margin-bottom: 8px;
+}
+.pf-error-next-label {
+  font-weight: 600;
+}
+.pf-error-copy-diagnostic {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.pf-error-copy-diagnostic:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* ── Configuration Summary ── */
+.pf-config-summary {
+  padding: 8px 0;
+}
+.pf-config-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.pf-config-row:last-child {
+  border-bottom: none;
+}
+.pf-config-label {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+.pf-config-value {
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+.pf-config-value--ok {
+  color: var(--text-success);
+}
+.pf-config-value--muted {
+  color: var(--text-faint);
+}
+.pf-config-change-btn {
+  margin-top: 8px;
+  font-size: 12px;
+  padding: 2px 8px;
+  background: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.pf-config-change-btn:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
+/* ── Impact Confirmation ── */
+.pf-impact-confirm {
+  padding: 12px;
+  border: 1px solid var(--text-warning);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text-warning) 4%, transparent);
+  margin-bottom: 12px;
+}
+.pf-impact-confirm-title {
+  font-weight: var(--font-semibold);
+  font-size: var(--font-ui-medium);
+  margin-bottom: 8px;
+}
+.pf-impact-section {
+  margin-bottom: 6px;
+}
+.pf-impact-label {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.pf-impact-item {
+  font-size: var(--font-ui-small);
+  padding-left: 12px;
+  color: var(--text-normal);
+}
+.pf-impact-interruptible {
+  font-size: 12px;
+  color: var(--text-warning);
+  margin: 8px 0;
+}
+.pf-impact-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.pf-impact-cancel {
+  font-size: var(--font-ui-small);
+  padding: 4px 12px;
+  background: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.pf-impact-cancel:hover {
+  background: var(--background-modifier-hover);
+}
+.pf-impact-cancel:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+.pf-impact-confirm-btn {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  padding: 4px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+}
+.pf-impact-confirm-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Global Refresh ── */
+.pf-global-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-ui-small);
+}
+.pf-global-refresh-btn {
+  padding: 4px 12px;
+  background: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-ui-small);
+}
+.pf-global-refresh-btn:hover {
+  background: var(--background-modifier-hover);
+}
+.pf-global-refresh-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* ── Last Known Status ── */
+.pf-last-known {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+.pf-last-known-timestamp {
+  font-family: var(--font-monospace-theme);
+}
