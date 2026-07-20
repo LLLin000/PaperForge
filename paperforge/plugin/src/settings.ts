@@ -856,7 +856,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: t("agent_integration_section") || "Agent Integration",
     });
     // ── Agent Platform + Skills list (Issue #77) ──
-    this._renderSkillsList(containerEl);
+    // Agent controls moved to Agent Integration module
 
     // Focus heading on render
     try {
@@ -2241,7 +2241,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   _renderVectorSection(containerEl: HTMLElement) {
     // --- Vector Database ---
-    containerEl.createEl("h4", { text: "Vector Database" });
+    containerEl.createEl("h4", { text: "Smart Retrieval" });
 
     if (!this.plugin.settings.features) {
       this.plugin.settings.features = { memory_layer: true, vector_db: false };
@@ -4666,9 +4666,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const wrapper = containerEl.createDiv({ cls: "pf-setup-journey" });
 
     // Header
-    wrapper.createEl("h2", { text: "Welcome to PaperForge" });
+    wrapper.createEl("h2", {
+      text: t("setup_welcome") || "Welcome to PaperForge",
+    });
     wrapper.createEl("p", {
-      text: "Let's set up your research environment in a few steps.",
+      text:
+        t("setup_desc") ||
+        "Let's set up your research environment in a few steps.",
       cls: "pf-setup-desc",
     });
 
@@ -4714,14 +4718,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       createUnknownEnvelope("installation");
     containerEl.createEl("h3", { text: "Step 1: Foundation" });
     containerEl.createEl("p", {
-      text: "PaperForge needs a managed environment on this device.",
+      text:
+        t("setup_foundation_desc") ||
+        "PaperForge needs a managed environment on this device.",
     });
 
     renderStatusBadge(containerEl, env.user_state);
 
     if (env.user_state === "ready") {
       containerEl.createEl("p", {
-        text: "Foundation is ready.",
+        text: t("setup_ready") || "Foundation is ready.",
         cls: "pf-setup-ok",
       });
     } else {
@@ -4760,14 +4766,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._capabilityState?.["library"] ?? createUnknownEnvelope("library");
     containerEl.createEl("h3", { text: "Step 2: Connect Library" });
     containerEl.createEl("p", {
-      text: "Connect your Zotero library to sync your literature.",
+      text:
+        t("setup_library_desc") ||
+        "Connect your Zotero library to sync your literature.",
     });
 
     renderStatusBadge(containerEl, env.user_state);
 
     if (env.user_state === "ready") {
       containerEl.createEl("p", {
-        text: "Library is connected.",
+        text: t("setup_library_ready") || "Library is connected.",
         cls: "pf-setup-ok",
       });
     } else {
@@ -4810,7 +4818,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _renderSetupStageOptionals(containerEl: HTMLElement): void {
     containerEl.createEl("h3", { text: "Step 3: Optional Capabilities" });
     containerEl.createEl("p", {
-      text: "Enable additional features. You can change these later.",
+      text:
+        t("setup_optionals_desc") ||
+        "Enable additional features. You can change these later.",
     });
 
     const optionals = [
@@ -4887,7 +4897,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       containerEl.createEl("p", { text: "Selected: " + selected.join(", ") });
     } else {
       containerEl.createEl("p", {
-        text: "No optional capabilities selected. You can enable them later in Settings.",
+        text:
+          t("setup_no_optionals") ||
+          "No optional capabilities selected. You can enable them later in Settings.",
       });
     }
 
@@ -4913,7 +4925,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         onClick: () => {},
       });
       containerEl.createEl("p", {
-        text: "Complete Foundation and Library setup before finishing.",
+        text:
+          t("setup_incomplete_warn") ||
+          "Complete Foundation and Library setup before finishing.",
         cls: "pf-setup-warn",
       });
     }

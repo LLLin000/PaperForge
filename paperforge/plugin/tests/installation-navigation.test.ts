@@ -157,7 +157,11 @@ vi.mock("child_process", () => {
   };
   return { default: m, ...m };
 });
-import { CAPABILITY_MODULES, createUnknownEnvelope, probeAction } from "../src/constants";
+import {
+  CAPABILITY_MODULES,
+  createUnknownEnvelope,
+  probeAction,
+} from "../src/constants";
 import { t, setLanguage } from "../src/i18n";
 import { PaperForgeSettingTab } from "../src/settings";
 import {
@@ -1652,7 +1656,7 @@ describe("Issue #77: single Agent Platform control under Installation", () => {
 
     // The only <select> should be from the Agent Platform dropdown
     const selects = container.querySelectorAll("select");
-    expect(selects.length).toBe(1);
+    expect(selects.length).toBe(0);
   });
 });
 
@@ -1690,16 +1694,12 @@ describe("Issue #77: single Skills owner under Installation", () => {
     const container = document.createElement("div");
     tab._renderInstallationDetail(container);
 
-    // The only .paperforge-skills-box should be from _renderSkillsList
-    const skillsBoxes = container.querySelectorAll(".paperforge-skills-box");
-    expect(skillsBoxes.length).toBe(1);
-
-    // Verify the Skills heading is present
+    // #87/#90: Skills controls moved to Agent Integration module
     const headings = container.querySelectorAll("h3");
     const skillsHeading = Array.from(headings).find(
       (h) => h.textContent === "Skills"
     );
-    expect(skillsHeading).toBeTruthy();
+    expect(skillsHeading).toBeFalsy();
   });
 });
 
@@ -1858,9 +1858,7 @@ describe("Issue #77: Help→Overview focus restoration in real DOM", () => {
     tab.display();
 
     // Help card no longer exists in overview — focus falls back to first card
-    const firstCardBtn = containerEl.querySelector<HTMLElement>(
-      ".pf-cc-card"
-    );
+    const firstCardBtn = containerEl.querySelector<HTMLElement>(".pf-cc-card");
     expect(firstCardBtn).toBeTruthy();
     expect(globalThis.document.activeElement).toBe(firstCardBtn);
 
@@ -2417,11 +2415,12 @@ describe("Issue #77 RED 2: Installation detail h3 heading order", () => {
     const skillsIdx = textContents.findIndex(
       (t, i) => i > agentIdx && t === "Skills"
     );
-    expect(skillsIdx).toBeGreaterThan(agentIdx);
+    // #87/#90: Skills moved to Agent Integration module — not in Foundation
+    expect(skillsIdx).toBe(-1);
 
-    // There should be a .paperforge-skills-box after the Agent Integration heading
     const skillsBox = container.querySelector(".paperforge-skills-box");
-    expect(skillsBox).toBeTruthy();
+    // #87/#90: Agent controls moved out of Foundation — no skills box here
+    expect(skillsBox).toBeFalsy();
   });
 });
 
