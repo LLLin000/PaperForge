@@ -154,6 +154,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _attemptedProbes: Set<string> = new Set();
   /** Currently active sub-view within the Setup tab. */
   _setupView: "overview" | "module-detail" = "overview";
+  /** #87: Setup Journey current stage (1-4). */
+  _setupStage = 1;
+  /** #87: Selected optional capabilities. */
+  _setupOptionals: Record<string, boolean> = { ocr: false, memory: false, agent: false };
   /** Currently selected module in the detail view. */
   _selectedDetailModule: string = "";
   /** Focus target id after re-render. */
@@ -207,6 +211,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._restoreNavMemory();
     this._initCapabilityState();
     this._applyStaleTolerance();
+
+    // #87: Show Setup Journey on first open (never reverse once complete)
+    // #87: Only show Setup Journey for first-time users (explicitly false).
+    // Existing installations (undefined) skip the journey.
+    if (this.plugin.settings._setup_complete === false) {
+      this._renderSetupJourney(containerEl);
+      this._displayInProgress = false;
+      return;
+    }
 
     // Inject tab CSS once
     if (!document.getElementById("paperforge-tab-styles")) {
@@ -4561,6 +4574,193 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** #85: Restore navigation, never restore drafts/scroll/focus/disclosure. */
+  // ═══════════════════════════════════════════════════════════════
+  // #87: Setup Journey — 4-stage first-use wizard
+  // ═══════════════════════════════════════════════════════════════
+
+  _renderSetupJourney(containerEl: HTMLElement): void {
+    const wrapper = containerEl.createDiv({ cls: "pf-setup-journey" });
+
+    // Header
+    wrapper.createEl("h2", { text: "Welcome to PaperForge" });
+    wrapper.createEl("p", { text: "Let's set up your research environment in a few steps.", cls: "pf-setup-desc" });
+
+    // Stage indicator
+    const stages = ["Foundation", "Connect Library", "Optional Capabilities", "Review & Begin"];
+    const progress = wrapper.createDiv({ cls: "pf-setup-progress" });
+    stages.forEach((label, i) => {
+      const step = progress.createEl("span", {
+        cls: "pf-setup-step" + (i + 1 === this._setupStage ? " pf-setup-step--active" : "") +
+             (i + 1 < this._setupStage ? " pf-setup-step--done" : ""),
+        text: String(i + 1) + ". " + label,
+      });
+    });
+
+    // Stage body
+    const body = wrapper.createDiv({ cls: "pf-setup-body" });
+    switch (this._setupStage) {
+      case 1: this._renderSetupStageFoundation(body); break;
+      case 2: this._renderSetupStageLibrary(body); break;
+      case 3: this._renderSetupStageOptionals(body); break;
+      case 4: this._renderSetupStageReview(body); break;
+    }
+  }
+
+  _renderSetupStageFoundation(containerEl: HTMLElement): void {
+    const env = this._capabilityState?.["installation"] ?? createUnknownEnvelope("installation");
+    containerEl.createEl("h3", { text: "Step 1: Foundation" });
+    containerEl.createEl("p", { text: "PaperForge needs a managed environment on this device." });
+
+    renderStatusBadge(containerEl, env.user_state);
+
+    if (env.user_state === "ready") {
+      containerEl.createEl("p", { text: "Foundation is ready.", cls: "pf-setup-ok" });
+    } else {
+      containerEl.createEl("p", { text: env.reason?.text || "Checking...", cls: "pf-setup-status" });
+      if (env.action?.primary) {
+        renderActionButton(containerEl, {
+          label: env.action.primary.label,
+          onClick: () => {
+            this._runAllowedDispatch("installation", env.action.primary!.verb, env.action.primary!.command, env);
+          },
+        });
+      }
+    }
+
+    // Navigation
+    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
+    renderActionButton(nav, {
+      label: env.user_state === "ready" ? "Continue" : "Skip for now",
+      onClick: () => { this._setupStage = 2; this.display(); },
+    });
+  }
+
+  _renderSetupStageLibrary(containerEl: HTMLElement): void {
+    const env = this._capabilityState?.["library"] ?? createUnknownEnvelope("library");
+    containerEl.createEl("h3", { text: "Step 2: Connect Library" });
+    containerEl.createEl("p", { text: "Connect your Zotero library to sync your literature." });
+
+    renderStatusBadge(containerEl, env.user_state);
+
+    if (env.user_state === "ready") {
+      containerEl.createEl("p", { text: "Library is connected.", cls: "pf-setup-ok" });
+    } else {
+      containerEl.createEl("p", { text: env.reason?.text || "Not connected yet.", cls: "pf-setup-status" });
+      if (env.action?.primary) {
+        renderActionButton(containerEl, {
+          label: env.action.primary.label,
+          onClick: () => {
+            this._runAllowedDispatch("library", env.action.primary!.verb, env.action.primary!.command, env);
+          },
+        });
+      }
+    }
+
+    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
+    renderActionButton(nav, {
+      label: "Back",
+      onClick: () => { this._setupStage = 1; this.display(); },
+    });
+    renderActionButton(nav, {
+      label: "Continue",
+      onClick: () => { this._setupStage = 3; this.display(); },
+    });
+  }
+
+  _renderSetupStageOptionals(containerEl: HTMLElement): void {
+    containerEl.createEl("h3", { text: "Step 3: Optional Capabilities" });
+    containerEl.createEl("p", { text: "Enable additional features. You can change these later." });
+
+    const optionals = [
+      { id: "ocr", label: "OCR", desc: "Extract text and figures from PDFs" },
+      { id: "memory", label: "Smart Retrieval", desc: "Search and navigate your papers" },
+      { id: "agent", label: "Agent Integration", desc: "Deploy skills to your AI agent" },
+    ];
+
+    for (const opt of optionals) {
+      const row = containerEl.createDiv({ cls: "pf-setup-optional" });
+      const checkbox = row.createEl("input", {
+        attr: { type: "checkbox", id: "pf-setup-opt-" + opt.id },
+      }) as HTMLInputElement;
+      checkbox.checked = this._setupOptionals[opt.id];
+      checkbox.addEventListener("change", () => {
+        this._setupOptionals[opt.id] = checkbox.checked;
+      });
+      row.createEl("label", {
+        attr: { for: "pf-setup-opt-" + opt.id },
+        text: opt.label,
+        cls: "pf-setup-optional-label",
+      });
+      row.createEl("div", { text: opt.desc, cls: "pf-setup-optional-desc" });
+    }
+
+    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
+    renderActionButton(nav, {
+      label: "Back",
+      onClick: () => { this._setupStage = 2; this.display(); },
+    });
+    renderActionButton(nav, {
+      label: "Continue",
+      onClick: () => { this._setupStage = 4; this.display(); },
+    });
+  }
+
+  _renderSetupStageReview(containerEl: HTMLElement): void {
+    containerEl.createEl("h3", { text: "Step 4: Review & Begin" });
+
+    const foundationEnv = this._capabilityState?.["installation"];
+    const libraryEnv = this._capabilityState?.["library"];
+    const foundationReady = foundationEnv?.user_state === "ready";
+    const libraryReady = libraryEnv?.user_state === "ready";
+
+    containerEl.createEl("p", {
+      text: foundationReady ? "Foundation is ready." : "Foundation needs setup.",
+      cls: foundationReady ? "pf-setup-ok" : "pf-setup-warn",
+    });
+    containerEl.createEl("p", {
+      text: libraryReady ? "Library is connected." : "Library needs setup.",
+      cls: libraryReady ? "pf-setup-ok" : "pf-setup-warn",
+    });
+
+    const selected = Object.entries(this._setupOptionals).filter(([_, v]) => v).map(([k]) => k);
+    if (selected.length > 0) {
+      containerEl.createEl("p", { text: "Selected: " + selected.join(", ") });
+    } else {
+      containerEl.createEl("p", { text: "No optional capabilities selected. You can enable them later in Settings." });
+    }
+
+    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
+    renderActionButton(nav, {
+      label: "Back",
+      onClick: () => { this._setupStage = 3; this.display(); },
+    });
+    if (foundationReady && libraryReady) {
+      renderActionButton(nav, {
+        label: "Complete Setup",
+        onClick: () => { this._completeSetup(); },
+      });
+    } else {
+      renderActionButton(nav, {
+        label: "Complete Setup",
+        disabled: true,
+        onClick: () => {},
+      });
+      containerEl.createEl("p", {
+        text: "Complete Foundation and Library setup before finishing.",
+        cls: "pf-setup-warn",
+      });
+    }
+  }
+
+  /** #87: Complete setup — persist and transition to normal operation. */
+  _completeSetup(): void {
+    this.plugin.settings._setup_complete = true;
+    this.plugin.saveSettings();
+    this.activeTab = "overview";
+    this.display();
+  }
+
+  
   _restoreNavMemory(): void {
     const saved = this.plugin.settings._navMemory as { destination?: string; module?: string } | undefined;
     if (saved?.destination && ["overview", "maintenance", "help"].includes(saved.destination)) {
