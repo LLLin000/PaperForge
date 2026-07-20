@@ -1857,12 +1857,12 @@ describe("Issue #77: Help→Overview focus restoration in real DOM", () => {
     tab.activeTab = "overview";
     tab.display();
 
-    // The Help card button should now be focused
-    const helpCardBtn = containerEl.querySelector<HTMLElement>(
-      "button.pf-open-module-btn[data-module=help]"
+    // Help card no longer exists in overview — focus falls back to first card
+    const firstCardBtn = containerEl.querySelector<HTMLElement>(
+      ".pf-cc-card"
     );
-    expect(helpCardBtn).toBeTruthy();
-    expect(globalThis.document.activeElement).toBe(helpCardBtn);
+    expect(firstCardBtn).toBeTruthy();
+    expect(globalThis.document.activeElement).toBe(firstCardBtn);
 
     globalThis.document.body.removeChild(containerEl);
   });
