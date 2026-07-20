@@ -317,7 +317,7 @@ describe("Library module detail (Issue #78)", () => {
       updated_at: "2026-01-15T12:00:00Z",
       ttl_seconds: 300,
       notices: [{ level: "warning", message: "Test notice" }],
-      action: { primary: { verb: "sync", label: "Sync", command: "paperforge sync", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+      action: { primary: { action_id: "library.sync", verb: "sync", label: "Sync", command: "paperforge sync", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
     } as any;
     const tab = makeTab({ capabilityState: { library: env } });
     const el = dom.window.document.createElement("div");
@@ -336,7 +336,7 @@ describe("Library module detail (Issue #78)", () => {
         capability_state: "needs_action",
         severity: "warning",
         reason: { code: "library.index_stale", text: "stale" },
-        action: { primary: { verb: "sync", label: "Sync", command: "paperforge sync", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+        action: { primary: { action_id: "library.sync", verb: "sync", label: "Sync", command: "paperforge sync", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
       },
     };
     const el = dom.window.document.createElement("div");
@@ -360,7 +360,7 @@ describe("OCR module detail (Issue #78)", () => {
       capability_state: "needs_action",
       severity: "warning",
       reason: { code: "ocr.artifacts_stale", text: "Stale" },
-      action: { primary: { verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+      action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
     } as any;
     (tab as any)._capabilityState = { ocr: ocrEnv };
     const el = dom.window.document.createElement("div");
@@ -381,7 +381,7 @@ describe("OCR module detail (Issue #78)", () => {
       _ocrProcess: { stdin: { write: (s: string) => { written = s; return true; } }, kill: () => {} },
     });
     (tab as any)._capabilityState = {
-      ocr: { ...createUnknownEnvelope("ocr"), capability_state: "needs_action", severity: "warning", reason: { code: "x", text: "x" }, action: { primary: { verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } },
+      ocr: { ...createUnknownEnvelope("ocr"), capability_state: "needs_action", severity: "warning", reason: { code: "x", text: "x" }, action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } },
     };
     const el = dom.window.document.createElement("div");
     (tab as any)._renderOcrDetail(el);
@@ -394,7 +394,7 @@ describe("OCR module detail (Issue #78)", () => {
     let killed = "";
     const tab = makeTab({ _ocrProcess: { kill: (sig: string) => { killed = sig; } } });
     (tab as any)._capabilityState = {
-      ocr: { ...createUnknownEnvelope("ocr"), capability_state: "needs_action", severity: "warning", reason: { code: "x", text: "x" }, action: { primary: { verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } },
+      ocr: { ...createUnknownEnvelope("ocr"), capability_state: "needs_action", severity: "warning", reason: { code: "x", text: "x" }, action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } },
     };
     const el = dom.window.document.createElement("div");
     (tab as any)._renderOcrDetail(el);
@@ -408,7 +408,7 @@ describe("Memory module detail (Issue #78)", () => {
   it("renders envelope shell without duplicate CTA", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = {
-      memory: { ...createUnknownEnvelope("memory"), capability_state: "needs_action", severity: "warning", reason: { code: "x", text: "x" }, action: { primary: { verb: "run", label: "Build", command: "paperforge memory build", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } },
+      memory: { ...createUnknownEnvelope("memory"), capability_state: "needs_action", severity: "warning", reason: { code: "x", text: "x" }, action: { primary: { action_id: "module.run", verb: "run", label: "Build", command: "paperforge memory build", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } },
     };
     const el = dom.window.document.createElement("div");
     (tab as any)._renderMemoryDetail(el);
@@ -423,7 +423,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { library: createUnknownEnvelope("library") };
     (tab as any)._probing = new Set<string>();
-    const env = { ...createUnknownEnvelope("library"), action: { primary: { verb: "bogus", label: "X", command: "x", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = { ...createUnknownEnvelope("library"), action: { primary: { action_id: "module.bogus", verb: "bogus", label: "X", command: "x", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
     noticeCalls.length = 0;
     (tab as any)._dispatchModuleAction("library", env);
     // Should emit a Notice with "Unknown"
@@ -435,7 +435,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("run + paperforge ocr run -> spawns ['ocr', 'run']", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "run", label: "Run", command: "paperforge ocr run", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { action_id: "module.run", verb: "run", label: "Run", command: "paperforge ocr run", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
     (tab as any)._dispatchModuleAction("ocr", env);
     const last = spawnedProcesses[spawnedProcesses.length - 1];
     expect(last.args).toContain("run");
@@ -445,7 +445,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("rebuild_derived -> spawns rebuild --all", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
     (tab as any)._dispatchModuleAction("ocr", env);
     const last = spawnedProcesses[spawnedProcesses.length - 1];
     expect(last.args).toContain("rebuild");
@@ -455,13 +455,13 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("redo -> spawns redo args", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "redo", label: "Redo", command: "paperforge ocr redo", destructive: true, destructive_scope: "selection", destructive_effect: "Deletes.", confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } } } as any;
+    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { action_id: "ocr.redo", verb: "redo", label: "Redo", command: "paperforge ocr redo", availability: "available", safety_class: "destructive", preservation_facts: [], replacement_facts: ["OCR artifacts"], interruptible: true, confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } } } as any;
     modalOpens.length = 0;
     spawnedProcesses.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
     // Modal opens, no process spawned yet
     expect(modalOpens.length).toBe(1);
-    expect(modalOpens[0].effectLabel).toBe("Deletes.");
+    expect(modalOpens[0].effectLabel).toBe("OCR artifacts");
     expect(spawnedProcesses.length).toBe(0);
     // Simulate confirm callback
     if (modalOpens[0].onConfirm) modalOpens[0].onConfirm();
@@ -471,7 +471,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("memory build -> uses execFile", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
-    const env = { ...createUnknownEnvelope("memory"), action: { primary: { verb: "run", label: "Build", command: "paperforge memory build", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = { ...createUnknownEnvelope("memory"), action: { primary: { action_id: "module.run", verb: "run", label: "Build", command: "paperforge memory build", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
     execFileCalls.length = 0;
     (tab as any)._dispatchModuleAction("memory", env);
     expect(execFileCalls.some((c: { args: string[] }) => c.args.includes("build"))).toBe(true);
@@ -480,7 +480,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("embed build --force -> spawns embed", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
-    const env = { ...createUnknownEnvelope("memory"), action: { primary: { verb: "rebuild_index", label: "Embed", command: "paperforge embed build --force", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = { ...createUnknownEnvelope("memory"), action: { primary: { action_id: "memory.rebuild_vector", verb: "rebuild_index", label: "Embed", command: "paperforge embed build --force", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
     (tab as any)._dispatchModuleAction("memory", env);
     const es = spawnedProcesses.find((p: { args: string[] }) => p.args.includes("embed"));
     expect(es?.args).toContain("--force");
@@ -488,19 +488,19 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
 
   it("destructive opens modal with correct effect label", () => {
     const tab = makeTab();
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "redo", label: "Redo", command: "paperforge ocr redo", destructive: true, destructive_scope: "selection", destructive_effect: "Deletes.", confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } } } as any;
+    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { action_id: "ocr.redo", verb: "redo", label: "Redo", command: "paperforge ocr redo", availability: "available", safety_class: "destructive", preservation_facts: [], replacement_facts: ["OCR artifacts"], interruptible: true, confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } } } as any;
     modalOpens.length = 0;
     spawnedProcesses.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
     expect(modalOpens.length).toBe(1);
     expect(modalOpens[0].title).toBe("Redo");
-    expect(modalOpens[0].effectLabel).toBe("Deletes.");
+    expect(modalOpens[0].effectLabel).toBe("OCR artifacts");
     expect(spawnedProcesses.length).toBe(0);
   });
   it("investigate+issue-draft opens PaperForgeIssueDraftModal with scope_count", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "investigate", label: "Report OCR issue", command: "paperforge ocr issue-draft", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "all", scope_count: 5 } }, reason: { code: "ocr.quality_unacceptable", text: "OCR output unacceptable for 5 papers" } } as any;
+    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "investigate", label: "Report OCR issue", command: "paperforge ocr issue-draft", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "all", scope_count: 5 } }, reason: { code: "ocr.quality_unacceptable", text: "OCR output unacceptable for 5 papers" } } as any;
     modalOpens.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
     const draftOpens = modalOpens.filter(o => o.kind === "PaperForgeIssueDraftModal");
@@ -517,7 +517,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("setup verb with wrong command falls through to Notice", () => {
     const tab = makeTab();
     noticeCalls.length = 0;
-    const env = { ...createUnknownEnvelope("library"), action: { primary: { verb: "setup", label: "Setup", command: "paperforge sync", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = { ...createUnknownEnvelope("library"), action: { primary: { verb: "setup", label: "Setup", command: "paperforge sync", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
     (tab as any)._dispatchModuleAction("library", env);
     const msgs = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
     expect(msgs.toLowerCase()).toMatch(/unknown|setup/);
@@ -526,7 +526,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("probe verb with wrong command falls through to Notice", () => {
     const tab = makeTab();
     noticeCalls.length = 0;
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "probe", label: "Probe", command: "probe installation", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "probe", label: "Probe", command: "probe installation", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
     (tab as any)._dispatchModuleAction("ocr", env);
     const msgs = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
     expect(msgs.toLowerCase()).toMatch(/unknown|probe/);
@@ -662,7 +662,7 @@ describe("destructive metadata and disabled-while-running (Issue #78)", () => {
   it("renders destructive_effect notice", () => {
     const ocrEnv = {
       ...createUnknownEnvelope("ocr"),
-      action: { primary: { verb: "redo", label: "Redo", command: "paperforge ocr redo", destructive: true, destructive_scope: "selection", destructive_effect: "Deletes derived OCR artifacts.", confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } },
+      action: { primary: { action_id: "ocr.redo", verb: "redo", label: "Redo", command: "paperforge ocr redo", safety_class: "destructive", availability: "available", preservation_facts: [], replacement_facts: ["Deletes derived OCR artifacts"], interruptible: true, confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } },
     } as any;
     const tab = makeTab({ capabilityState: { ocr: ocrEnv } });
     const el = dom.window.document.createElement("div");
@@ -676,7 +676,7 @@ describe("destructive metadata and disabled-while-running (Issue #78)", () => {
     const ocrEnv = {
       ...createUnknownEnvelope("ocr"),
       activity_state: "running",
-      action: { primary: { verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+      action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
     } as any;
     const tab = makeTab({ capabilityState: { ocr: ocrEnv } });
     const el = dom.window.document.createElement("div");
@@ -773,7 +773,7 @@ describe("Library sync failure probe (Issue #78)", () => {
       activity_progress: null,
       severity: "error",
       reason: { code: "library.sync_failed", text: "Library sync failed (exit code 1)" },
-      action: { primary: { verb: "sync", label: "Sync library", command: "paperforge sync", destructive: false, destructive_scope: null, destructive_effect: null, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+      action: { primary: { action_id: "library.sync", verb: "sync", label: "Sync library", command: "paperforge sync", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
       notices: [],
       updated_at: new Date().toISOString(),
       ttl_seconds: 300,

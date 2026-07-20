@@ -1155,14 +1155,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const cmd = primary.command ?? "";
 
     // Destructive confirmation -> accessible modal (Issue #80)
-    if (primary.destructive && primary.confirmation_required) {
+    if (primary.safety_class !== 'safe' && primary.confirmation_required) {
       new PaperForgeConfirmModal(
         this.app,
         {
           title: primary.label,
           effectLabel:
-            primary.destructive_effect ??
-            primary.confirmation_prompt ??
+            ((primary.replacement_facts || []).join('; ') ||
+              primary.confirmation_prompt) ??
             "Proceed?",
         },
         () => {
@@ -1650,12 +1650,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // Destructive metadata before action
     const primary = env.action?.primary;
     if (primary && !isReady) {
-      if (primary.destructive && primary.confirmation_required) {
+      if (primary.safety_class !== 'safe' && primary.confirmation_required) {
         const destructiveRow = summaryRow.createEl("div", {
           cls: "pf-destructive-notice",
         });
         destructiveRow.createEl("span", {
-          text: primary.destructive_effect ?? "",
+          text: (primary.replacement_facts || []).join('; '),
         });
       }
 
@@ -3068,6 +3068,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       reason: { code: item.reason_code, text: item.reason_text },
       action: { primary: item.action },
       notices: [],
+      user_state: item.user_state ?? (item.capability_state === 'ready' ? 'ready' : 'action_required'),
+      capability_kind: 'installation' === item.module || 'library' === item.module ? 'required' : 'optional',
+      maintenance_eligible: item.maintenance_eligible ?? false,
+      user_visible_failure: false,
+      user_impact: item.user_impact ?? null,
       updated_at: item.module + "-item",
       ttl_seconds: 60,
     };
@@ -3887,7 +3892,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // Show probing state immediately
     const current = this._capabilityState?.[mod];
     const probing: ProbeEnvelope = {
-      schema_version: 1,
+      schema_version: 2,
       module: mod,
       capability_state: current?.capability_state ?? "unknown",
       activity_state: "running",
@@ -3897,6 +3902,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       reason: { code: `${mod}.probing`, text: `Checking ${mod} status...` },
       action: { primary: mod === "maintenance" ? null : probeAction(mod) },
       notices: current?.notices ?? [],
+      user_state: 'checking',
+      capability_kind: mod === 'installation' || mod === 'library' ? 'required' : 'optional',
+      maintenance_eligible: false,
+      user_visible_failure: false,
+      user_impact: null,
       updated_at: new Date().toISOString(),
       ttl_seconds: current?.ttl_seconds ?? 0,
     };
@@ -3910,7 +3920,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // show a concrete Setup CTA, not a generic "Check" button.
       if (mod === "installation") {
         const setupEnvelope: ProbeEnvelope = {
-          schema_version: 1,
+          schema_version: 2,
           module: "installation",
           capability_state: "unknown",
           activity_state: "idle",
@@ -3923,6 +3933,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
           action: { primary: setupAction() },
           notices: [],
+          user_state: 'setup_required',
+          capability_kind: 'required',
+          maintenance_eligible: false,
+          user_visible_failure: false,
+          user_impact: null,
           updated_at: new Date().toISOString(),
           ttl_seconds: 60,
         };

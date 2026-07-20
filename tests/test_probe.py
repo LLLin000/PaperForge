@@ -28,19 +28,28 @@ from paperforge.commands.probe import MAINTENANCE_CONSTITUENT_MODULES
 REQUIRED_ENVELOPE_FIELDS = {
     "schema_version", "module", "capability_state",
     "activity_state", "activity_label", "activity_progress",
-    "severity", "reason", "action", "notices", "updated_at", "ttl_seconds",
+    "severity", "reason", "action", "notices",
+    "user_state", "capability_kind", "maintenance_eligible",
+    "user_visible_failure", "user_impact",
+    "updated_at", "ttl_seconds",
 }
 
 REQUIRED_REASON_FIELDS = {"code", "text"}
 
 REQUIRED_ACTION_PRIMARY_FIELDS = {
-    "verb", "label", "destructive", "destructive_scope",
-    "destructive_effect", "confirmation_required", "confirmation_prompt",
+    "action_id", "verb", "label",
+    "availability", "safety_class",
+    "preservation_facts", "replacement_facts",
+    "interruptible",
+    "confirmation_required", "confirmation_prompt",
     "command", "scope", "scope_count",
 }
 
 VALID_STATES = {"unknown", "unavailable", "missing_input", "needs_action", "limited", "ready"}
 VALID_SEVERITIES = {"ok", "warning", "error", "unknown"}
+
+VALID_USER_STATES = {"checking", "ready", "not_enabled", "setup_required", "action_required", "detection_failed"}
+VALID_SAFETY_CLASSES = {"safe", "destructive", "irreversible"}
 
 
 def _run_probe(module: str, vault: Path, extra_args: list[str] | None = None, env: dict[str, str] | None = None) -> dict:
@@ -74,11 +83,16 @@ def _assert_envelope_shape(data: dict) -> None:
     assert not missing, f"Missing envelope fields: {missing}"
 
     assert isinstance(data["schema_version"], int), f"schema_version must be int, got {type(data['schema_version']).__name__}"
-    assert data["schema_version"] == 1, f"schema_version must be 1, got {data['schema_version']}"
+    assert data["schema_version"] == 2, f"schema_version must be 2, got {data['schema_version']}"
     assert isinstance(data["module"], str), "module must be str"
     assert data["capability_state"] in VALID_STATES, f"invalid capability_state: {data['capability_state']}"
     assert data["activity_state"] in ("idle", "running"), f"invalid activity_state: {data['activity_state']}"
     assert data["activity_label"] is None or isinstance(data["activity_label"], str)
+    assert data["user_state"] in VALID_USER_STATES, f"invalid user_state: {data['user_state']}"
+    assert data["capability_kind"] in ("required", "optional"), f"invalid capability_kind: {data['capability_kind']}"
+    assert isinstance(data["maintenance_eligible"], bool), f"maintenance_eligible must be bool"
+    assert isinstance(data["user_visible_failure"], bool), f"user_visible_failure must be bool"
+    assert data["user_impact"] is None or isinstance(data["user_impact"], str)
     assert data["activity_progress"] is None or isinstance(data["activity_progress"], (int, float))
     assert data["severity"] in VALID_SEVERITIES, f"invalid severity: {data['severity']}"
     assert isinstance(data["reason"], dict), "reason must be dict"
@@ -101,9 +115,12 @@ def _assert_action_primary_shape(action_primary: dict | None) -> None:
     assert not missing, f"Missing action.primary fields: {missing}"
     assert isinstance(action_primary["verb"], str)
     assert isinstance(action_primary["label"], str)
-    assert isinstance(action_primary["destructive"], bool)
-    assert action_primary["destructive_scope"] is None or isinstance(action_primary["destructive_scope"], str)
-    assert action_primary["destructive_effect"] is None or isinstance(action_primary["destructive_effect"], str)
+    assert isinstance(action_primary["action_id"], str) and len(action_primary["action_id"]) > 0
+    assert isinstance(action_primary["availability"], str)
+    assert action_primary["safety_class"] in VALID_SAFETY_CLASSES, f"invalid safety_class: {action_primary['safety_class']}"
+    assert isinstance(action_primary["preservation_facts"], list)
+    assert isinstance(action_primary["replacement_facts"], list)
+    assert isinstance(action_primary["interruptible"], bool)
     assert isinstance(action_primary["confirmation_required"], bool)
     assert isinstance(action_primary["scope"], str), f"scope must be str, got {type(action_primary['scope']).__name__}"
     assert isinstance(action_primary["scope_count"], int), f"scope_count must be int, got {type(action_primary['scope_count']).__name__}"
@@ -136,13 +153,13 @@ class TestEnvelopeContract:
         assert "module" in data
         assert "capability_state" in data
 
-    def test_schema_version_is_integer_1(self, tmp_path: Path) -> None:
-        """schema_version must be the integer 1, never a string."""
+    def test_schema_version_is_integer_2(self, tmp_path: Path) -> None:
+        """schema_version must be the integer 2, never a string."""
         (tmp_path / "paperforge.json").write_text(
             json.dumps({"system_dir": "99_System"}), encoding="utf-8",
         )
         data = _run_probe("installation", tmp_path)
-        assert data["schema_version"] == 1
+        assert data["schema_version"] == 2
         assert isinstance(data["schema_version"], int)
         assert data["schema_version"] is not True  # not a bool masquerading
 
@@ -197,8 +214,8 @@ class TestInstallationProbe:
         assert data["reason"]["code"] == "installation.config_missing"
         assert data["action"]["primary"] is not None
         _assert_action_primary_shape(data["action"]["primary"])
-        assert data["action"]["primary"]["verb"] == "set_config"
-        assert data["action"]["primary"]["label"] == "Set config"
+        assert data["action"]["primary"]["verb"] == "setup"
+        assert data["action"]["primary"]["label"] == "Install PaperForge"
 
     def test_corrupt_paperforge_json(self, tmp_path: Path) -> None:
         """Invalid JSON in paperforge.json -> unavailable + setup action."""
@@ -865,7 +882,7 @@ class TestOcrRebuildResultNonDestructive:
         assert data["capability_state"] == "needs_action"
         assert data["reason"]["code"] == "ocr.artifacts_stale"
         assert data["action"]["primary"]["verb"] == "rebuild_derived"
-        assert data["action"]["primary"]["destructive"] == False
+        assert data["action"]["primary"]["safety_class"] == "safe"
 
 
 class TestOcrActivityProgress:
@@ -955,7 +972,7 @@ class TestOcrQualityUnacceptable:
         assert data["action"]["primary"]["verb"] == "investigate"
         assert data["action"]["primary"]["label"] == "Report OCR issue"
         assert data["action"]["primary"]["command"] == "paperforge ocr issue-draft"
-        assert data["action"]["primary"]["destructive"] == False
+        assert data["action"]["primary"]["safety_class"] == "safe"
 
     def test_dead_end_does_not_override_redo(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """redo still takes priority over dead-end."""
@@ -991,47 +1008,56 @@ class TestOcrQualityUnacceptable:
 # ---------------------------------------------------------------------------
 
 def _ready_env(mod: str) -> dict:
-    from paperforge.commands.probe import build_envelope, TTL_MAINTENANCE
+    from paperforge.commands.probe import build_envelope, TTL_MAINTENANCE, USER_STATE_READY
     return build_envelope(
         module=mod, capability_state="ready", severity="ok",
         reason_code=f"{mod}.ready", reason_text=f"{mod} ready",
+        user_state=USER_STATE_READY,
         action_primary=None, ttl_seconds=TTL_MAINTENANCE,
     )
 
 def _needs_action_env(mod: str, verb: str = "rebuild_derived", label: str = "Rebuild") -> dict:
-    from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE
+    from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE, USER_STATE_ACTION_REQUIRED
     return build_envelope(
         module=mod, capability_state="needs_action", severity="warning",
         reason_code=f"{mod}.artifacts_stale", reason_text=f"{mod} needs action",
-        action_primary=build_action_primary(verb=verb, label=label, command=f"paperforge {mod} {verb}"),
+        user_state=USER_STATE_ACTION_REQUIRED,
+        maintenance_eligible=True,
+        action_primary=build_action_primary(action_id=f"{mod}.rebuild", verb=verb, label=label, command=f"paperforge {mod} {verb}"),
         ttl_seconds=TTL_MAINTENANCE,
     )
 
 def _error_env(mod: str, code: str = "unavailable") -> dict:
-    from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE
+    from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE, USER_STATE_ACTION_REQUIRED
     return build_envelope(
         module=mod, capability_state="unavailable", severity="error",
         reason_code=f"{mod}.{code}", reason_text=f"{mod} broken",
-        action_primary=build_action_primary(verb="restore_backup", label="Restore", command=f"paperforge {mod} restore-backup"),
+        user_state=USER_STATE_ACTION_REQUIRED,
+        maintenance_eligible=True,
+        action_primary=build_action_primary(action_id=f"{mod}.restore", verb="restore_backup", label="Restore", command=f"paperforge {mod} restore-backup"),
         ttl_seconds=TTL_MAINTENANCE,
     )
 
 def _running_env(mod: str, state: str = "ready") -> dict:
-    from paperforge.commands.probe import build_envelope, TTL_MAINTENANCE
+    from paperforge.commands.probe import build_envelope, TTL_MAINTENANCE, USER_STATE_ACTION_REQUIRED, USER_STATE_READY
     return build_envelope(
         module=mod, capability_state=state, severity="ok" if state == "ready" else "warning",
         reason_code=f"{mod}.running", reason_text=f"{mod} in progress",
+        user_state=USER_STATE_ACTION_REQUIRED if state != "ready" else USER_STATE_READY,
+        maintenance_eligible=(state != "ready"),
         activity_state="running", activity_label=f"Processing {mod}...",
         activity_progress={"current": 3, "total": 10}, action_primary=None,
         ttl_seconds=TTL_MAINTENANCE,
     )
 
 def _unknown_env(mod: str) -> dict:
-    from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE
+    from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE, USER_STATE_DETECTION_FAILED
     return build_envelope(
         module=mod, capability_state="unknown", severity="unknown",
         reason_code=f"{mod}.probe_failed", reason_text=f"{mod} probe failed",
-        action_primary=build_action_primary(verb="probe", label="Re-check", command=f"probe {mod}"),
+        user_state=USER_STATE_DETECTION_FAILED,
+        maintenance_eligible=False,
+        action_primary=build_action_primary(action_id=f"{mod}.probe", verb="probe", label="Retry", command=f"probe {mod}"),
         ttl_seconds=TTL_MAINTENANCE,
     )
 
@@ -1059,8 +1085,8 @@ class TestMaintenanceProjection:
 
     # ── Ready + running included ──
 
-    def test_ready_running_included(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Ready BUT running → included in items."""
+    def test_ready_running_not_maintenance_eligible(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Ready BUT running → excluded when not maintenance_eligible (#84)."""
         for mod in MAINT_MODS:
             if mod == "ocr":
                 monkeypatch.setattr(
@@ -1074,16 +1100,13 @@ class TestMaintenanceProjection:
                 )
         from paperforge.commands.probe import probe_maintenance
         data = probe_maintenance(Path("."))
-        assert data["capability_state"] == "needs_action"
-        assert len(data["items"]) == 1
-        assert data["items"][0]["module"] == "ocr"
-        assert data["items"][0]["activity_state"] == "running"
-        assert data["items"][0]["capability_state"] == "ready"
+        assert data["capability_state"] == "ready"
+        assert data["items"] == []
 
     # ── Stale/unknown ──
 
-    def test_unknown_included(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Unknown probe results → included with severity=unknown."""
+    def test_unknown_not_maintenance_eligible(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Unknown probe results → excluded when not maintenance_eligible (#84)."""
         for mod in MAINT_MODS:
             monkeypatch.setattr(
                 f"paperforge.commands.probe.probe_{mod}",
@@ -1091,10 +1114,8 @@ class TestMaintenanceProjection:
             )
         from paperforge.commands.probe import probe_maintenance
         data = probe_maintenance(Path("."))
-        assert data["capability_state"] == "needs_action"
-        assert len(data["items"]) == len(MAINT_MODS)
-        for item in data["items"]:
-            assert item["severity"] == "unknown"
+        assert data["capability_state"] == "ready"
+        assert data["items"] == []
 
     # ── Failure/corrupt (error) ──
 
@@ -1200,9 +1221,13 @@ class TestMaintenanceProjection:
                     module="ocr", capability_state="needs_action", severity="warning",
                     reason_code="ocr.quality_unacceptable",
                     reason_text="OCR output unacceptable for 3 papers",
+                    user_state="action_required",
+                    maintenance_eligible=True,
+                    user_visible_failure=True,
                     action_primary=build_action_primary(
+                        action_id="ocr.report_issue",
                         verb="investigate", label="Report OCR issue",
-                        command="paperforge ocr issue-draft", destructive=False),
+                        command="paperforge ocr issue-draft", safety_class='safe'),
                     ttl_seconds=TTL_MAINTENANCE,
                 )
                 monkeypatch.setattr(
