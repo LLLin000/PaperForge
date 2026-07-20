@@ -184,11 +184,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** #86: Five operational modules in display order with user-facing names. */
   private static readonly OVERVIEW_MODULES = [
-    { id: "installation", label: "Foundation" },
-    { id: "library", label: "Library" },
-    { id: "ocr", label: "OCR" },
-    { id: "memory", label: "Smart Retrieval" },
-    { id: "agent", label: "Agent Integration" },
+    { id: "installation", label: t("cc_module_foundation") || "Foundation" },
+    { id: "library", label: t("cc_module_library") || "Library" },
+    { id: "ocr", label: t("cc_module_ocr") || "OCR" },
+    { id: "memory", label: t("cc_module_memory") || "Smart Retrieval" },
+    { id: "agent", label: t("cc_module_agent") || "Agent Integration" },
   ] as const;
 
   private static readonly USER_MODULE_NAME: Record<string, string> = {
@@ -301,7 +301,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
       const keyNames = warnings
         .map((k: string) =>
-          k === "paddleocr_api_key" ? "OCR (PaddleOCR)" : "Memory (Vector DB)"
+          k === "paddleocr_api_key" ? "OCR" : "Smart Retrieval"
         )
         .join(", ");
       banner.createEl("strong", { text: "Credential Migration Notice" });
@@ -3044,7 +3044,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
         /* Python */
         results.push({
-          label: "Python",
+          label: "environment",
           ok: !pyErr,
           detail: pyErr ? t("check_python_fail") : pyOut.trim(),
         });
@@ -4533,7 +4533,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       attr: { "data-module": mod, role: "listitem" },
     });
 
-    renderStatusBadge(card, env.user_state);
+    renderStatusBadge(
+      card,
+      env.user_state,
+      this._getUserStateLabel(env.user_state)
+    );
 
     card.createEl("div", {
       cls: "pf-cc-card-title",
@@ -4577,6 +4581,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** #86: Plain-language consequence based on module state. */
+  _getUserStateLabel(state: string): string {
+    const key = "cc_badge_" + state;
+    return (
+      t(key) ||
+      state.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())
+    );
+  }
+
   _getModuleConsequence(mod: string, env: ProbeEnvelope): string {
     if (env.user_state === "ready") {
       if (mod === "installation")
