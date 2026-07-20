@@ -1165,10 +1165,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
 
-  /** Render the Library detail view (Issue #78). */
+  /** #88: Library module workbench. */
   _renderLibraryDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "library");
-    // Library detail surface consumes the shared envelope shell — no duplicate CTA.
+    const env = this._capabilityState?.["library"] ?? createUnknownEnvelope("library");
+    const body = containerEl.createDiv({ cls: "pf-module-body" });
+    body.createEl("h3", { text: "Zotero Connection" });
+    if (env.user_state === "ready") {
+      body.createEl("p", { text: "Zotero is connected and literature is up to date.", cls: "pf-status-ok" });
+    } else if (env.user_state === "action_required") {
+      renderErrorAnatomy(body, {
+        whatHappened: "Library needs attention",
+        impact: env.user_impact || "Literature may be out of date.",
+        nextStep: env.action?.primary?.label || "Check configuration.",
+        reasonCode: env.reason?.code,
+        onCopyDiagnostic: () => this._buildAndCopyDiagnostic(),
+      });
+    }
+    if (env.activity_state === "running" && env.activity_label) {
+      body.createEl("h4", { text: "Current Activity" });
+      renderActivityRow(body, { label: env.activity_label, progress: env.activity_progress });
+    }
+    if (env.updated_at && env.updated_at !== new Date(0).toISOString()) {
+      body.createEl("p", { cls: "pf-last-known", text: "Last checked: " + new Date(env.updated_at).toLocaleString() });
+    }
+    body.createEl("h4", { text: "Configuration" });
+    renderConfigurationSummary(body, {
+      items: [{ label: "Zotero data directory", value: this.plugin.settings.zotero_data_dir || "Not configured" }],
+      onChangeLabel: "Change",
+      onChange: () => { new PaperForgeSetupModal(this.app, this.plugin, () => { this._probeModule("library"); }).open(); },
+    });
   }
 
   /** Render the OCR detail view (Issue #78). */
