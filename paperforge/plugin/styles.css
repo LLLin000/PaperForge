@@ -114,7 +114,7 @@
   color: var(--text-normal);
 }
 .pf-disclosure-body {
-  padding: 6px 0 2px 0;
+  padding: 8px 0 4px 0;
 }
 
 /* ── Buttons ── */
@@ -128,9 +128,9 @@
   border-radius: var(--button-radius, 4px);
   font-size: 12px;
   font-weight: 400;
-  padding: 3px 8px;
+  padding: 4px 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 120ms;
   white-space: nowrap;
 }
 .pf-btn-secondary:hover {
@@ -144,10 +144,10 @@
   border-radius: var(--button-radius, 4px);
   font-size: 12px;
   font-weight: 500;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border: none;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 120ms;
 }
 .pf-btn-primary:hover {
   opacity: 0.85;
@@ -238,8 +238,8 @@
   justify-content: center;
   font-size: 16px;
   transition:
-    background 0.15s,
-    color 0.15s,
+    background 120ms,
+    color 120ms,
     transform 0.3s;
 }
 
@@ -270,7 +270,7 @@
   position: relative;
   overflow: hidden;
   transition:
-    border-color 0.15s,
+    border-color 120ms,
     opacity 0.3s;
 }
 
@@ -500,8 +500,8 @@
   padding: 14px;
   cursor: pointer;
   transition:
-    background 0.15s,
-    border-color 0.15s,
+    background 120ms,
+    border-color 120ms,
     transform 0.1s;
   display: flex;
   flex-direction: column;
@@ -797,7 +797,7 @@
   border: 1px solid var(--background-modifier-border);
   background: var(--background-secondary);
   color: var(--text-normal);
-  transition: background 0.15s;
+  transition: background 120ms;
 }
 
 .paperforge-step-btn:hover {
@@ -931,7 +931,7 @@
   padding: 10px 0;
   user-select: none;
   border-radius: 6px;
-  transition: background 0.15s;
+  transition: background 120ms;
 }
 .paperforge-collapsible-header:hover {
   background: var(--background-modifier-hover);
@@ -959,7 +959,7 @@
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
-  transition: border-color 0.15s;
+  transition: border-color 120ms;
 }
 .paperforge-memory-status:hover {
   border-color: var(--background-modifier-border-hover);
@@ -982,13 +982,13 @@
   background: var(--background-secondary);
   cursor: pointer;
   font-size: 11px;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: 6px;
   margin-right: 6px;
   color: var(--text-normal);
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background 120ms,
+    border-color 120ms;
 }
 .paperforge-rebuild-btn:hover {
   background: var(--background-modifier-hover);
@@ -1001,7 +1001,7 @@
   font-size: 16px;
   padding: 0 4px;
   color: var(--text-muted);
-  transition: color 0.15s;
+  transition: color 120ms;
   border-radius: 4px;
 }
 .paperforge-refresh-btn:hover {
@@ -1017,7 +1017,7 @@
   padding: 6px 6px 4px;
   margin: 0;
   border-radius: 6px;
-  transition: background 0.15s;
+  transition: background 120ms;
 }
 .paperforge-vec-header:hover {
   background: var(--background-modifier-hover);
@@ -1087,7 +1087,7 @@
 }
 
 .paperforge-dir-node.folder {
-  padding: 4px 10px;
+  padding: 4px 12px;
   color: var(--text-normal);
 }
 .paperforge-dir-node.file {
@@ -1332,7 +1332,7 @@
   align-items: center;
   gap: 8px;
   cursor: help;
-  transition: border-color 0.15s;
+  transition: border-color 120ms;
   position: relative;
 }
 
@@ -1388,7 +1388,7 @@
   background: var(--background-modifier-hover);
   color: var(--text-normal);
   font-size: 11px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: var(--radius-s);
   white-space: nowrap;
   pointer-events: none;
@@ -1754,7 +1754,7 @@
   border: none;
   border-radius: var(--radius-m);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 120ms;
   align-self: flex-start;
   user-select: none;
 }
@@ -2104,9 +2104,9 @@
   font-weight: 500;
   cursor: pointer;
   transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s;
+    background 120ms,
+    border-color 120ms,
+    color 120ms;
   white-space: nowrap;
   user-select: none;
 }
@@ -2145,7 +2145,7 @@
   cursor: copy;
   padding: 0 2px;
   border-radius: 2px;
-  transition: background 0.15s;
+  transition: background 120ms;
 }
 .pf-copy:hover {
   background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
@@ -2169,8 +2169,8 @@
   border-radius: 8px;
   min-width: 64px;
   transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+    border-color 120ms,
+    box-shadow 120ms;
   border: 1px solid transparent;
 }
 .paperforge-snapshot-pill:hover {
@@ -2205,7 +2205,7 @@
   gap: 8px;
   padding: 6px 10px;
   border-radius: 6px;
-  transition: background 0.15s;
+  transition: background 120ms;
 }
 .paperforge-status-row:hover {
   background: var(--background-modifier-hover);
@@ -2293,8 +2293,8 @@
   cursor: pointer;
   color: var(--text-muted);
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background 120ms,
+    border-color 120ms;
 }
 .paperforge-technical-details-toggle:hover {
   background: var(--background-modifier-hover);
@@ -2364,7 +2364,7 @@
   background: var(--background-secondary);
   border-radius: 8px;
   min-width: 60px;
-  transition: border-color 0.15s;
+  transition: border-color 120ms;
   border: 1px solid transparent;
 }
 .paperforge-workflow-stage:hover {
@@ -2468,8 +2468,8 @@
   padding: 14px 16px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
   transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+    border-color 120ms,
+    box-shadow 120ms;
 }
 .pf-maint-card:hover {
   border-color: var(--background-modifier-border-hover);
@@ -2496,7 +2496,7 @@
   background: var(--interactive-accent);
   color: var(--text-on-accent);
   border: none;
-  transition: opacity 0.15s;
+  transition: opacity 120ms;
 }
 .pf-maint-card button:hover {
   opacity: 0.85;
@@ -2579,7 +2579,7 @@
   outline: none;
 }
 .pf-maint-toolbar button {
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
@@ -2587,8 +2587,8 @@
   border: 1px solid var(--background-modifier-border);
   color: var(--text-normal);
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background 120ms,
+    border-color 120ms;
 }
 .pf-maint-toolbar button:hover {
   background: var(--background-modifier-hover);
@@ -2604,7 +2604,7 @@
   color: var(--text-on-accent);
   border: none;
   margin-left: auto;
-  transition: opacity 0.15s;
+  transition: opacity 120ms;
 }
 .pf-maint-toolbar .mod-cta:hover {
   opacity: 0.85;
@@ -2676,8 +2676,8 @@
   border: 1px solid var(--background-modifier-border);
   color: var(--text-normal);
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background 120ms,
+    border-color 120ms;
 }
 .pf-maint-global button:hover {
   background: var(--background-modifier-hover);
@@ -2704,8 +2704,8 @@
   border-radius: 4px;
   cursor: pointer;
   transition:
-    background 0.15s,
-    color 0.15s;
+    background 120ms,
+    color 120ms;
 }
 .pf-maint-filter:hover {
   color: var(--text-normal);
@@ -2756,7 +2756,7 @@
   font-weight: 500;
   border-radius: 6px;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 120ms;
 }
 .pf-maint-batch-bar button.mod-cta {
   background: var(--interactive-accent);
@@ -2796,7 +2796,7 @@
   background: var(--background-secondary);
   color: var(--text-normal);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 120ms;
 }
 .pf-maint-action-btn:hover:not(:disabled) {
   background: var(--background-modifier-hover);
@@ -2858,8 +2858,8 @@
   font-size: 13px !important;
   font-weight: 500;
   transition:
-    color 0.15s,
-    border-color 0.15s;
+    color 120ms,
+    border-color 120ms;
 }
 .paperforge-settings-tab:hover {
   color: var(--text-normal);
@@ -2869,8 +2869,8 @@
 .paperforge-nextstep-item {
   border-radius: 6px !important;
   transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+    border-color 120ms,
+    box-shadow 120ms;
 }
 .paperforge-guide-item:hover,
 .paperforge-nextstep-item:hover {
@@ -2879,7 +2879,7 @@
 }
 
 .paperforge-summary-row {
-  transition: background 0.15s;
+  transition: background 120ms;
 }
 .paperforge-summary-row:hover {
   background: var(--background-secondary) !important;
@@ -2888,8 +2888,8 @@
 .paperforge-release-card {
   border-radius: 8px !important;
   transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+    border-color 120ms,
+    box-shadow 120ms;
 }
 .paperforge-release-card:hover {
   border-color: var(--background-modifier-border-hover);
@@ -2903,7 +2903,7 @@
 .paperforge-skills-collapse-header {
   border-radius: 6px;
   padding: 8px 10px !important;
-  transition: background 0.15s;
+  transition: background 120ms;
   margin: 0 !important;
 }
 .paperforge-collapsible-header:hover,
@@ -3236,7 +3236,7 @@
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
-  transition: color 0.15s;
+  transition: color 120ms;
 }
 
 .paperforge-discussion-viewall:hover {
@@ -3292,7 +3292,7 @@
   cursor: pointer;
   text-align: left;
   letter-spacing: 0.02em;
-  transition: color 0.15s;
+  transition: color 120ms;
 }
 
 .paperforge-technical-details-toggle:hover {
@@ -3793,7 +3793,7 @@
   border-radius: 6px;
   gap: 12px;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 120ms;
 }
 .paperforge-orphan-row:hover {
   background: var(--background-modifier-hover);
@@ -4066,8 +4066,8 @@
   padding: 10px 12px;
   cursor: pointer;
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    border-color 120ms,
+    background 120ms;
 }
 .paperforge-search-result-card:hover {
   border-color: var(--background-modifier-border-hover);
@@ -4502,7 +4502,7 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  transition: border-color 0.15s;
+  transition: border-color 120ms;
 }
 .pf-control-center .pf-cc-card:hover {
   border-color: var(--background-modifier-border-hover);
@@ -4620,7 +4620,7 @@
   font-weight: 500;
   padding: 3px 10px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 120ms;
   white-space: nowrap;
 }
 
@@ -5462,4 +5462,23 @@
   color: var(--text-muted);
   width: 100%;
   padding-left: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-cc-card,
+  .pf-cc-card:hover,
+  .pf-cc-card-retry,
+  .pf-cc-card-retry:hover,
+  .pf-config-change-btn,
+  .pf-config-change-btn:hover,
+  .pf-impact-cancel,
+  .pf-impact-cancel:hover,
+  .pf-impact-confirm-btn,
+  .pf-impact-confirm-btn:hover,
+  .pf-error-copy-diagnostic,
+  .pf-error-copy-diagnostic:hover,
+  .pf-global-refresh-btn,
+  .pf-global-refresh-btn:hover {
+    transition: none;
+  }
 }
