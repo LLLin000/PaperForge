@@ -23,6 +23,22 @@ import {
 } from "./constants";
 import releaseNotesData from "./release-notes.json";
 import {
+  renderStatusBadge,
+  renderActivityRow,
+  renderActionButton,
+  renderDisclosure,
+  renderErrorAnatomy,
+  renderConfigurationSummary,
+  renderImpactConfirmation,
+  buildSupportDiagnostic,
+  copySupportDiagnostic,
+  captureLastKnown,
+  shouldUpdateLastKnown,
+  collectDiagnosticModules,
+  type LastKnownState,
+  type DiagnosticInput,
+} from "./primitives";
+import {
   paperforgeEnrichedEnv,
   buildTargetedEnv,
   scanBbtUnderProfiles,
@@ -128,6 +144,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   };
   /** Cached capability probe envelopes, keyed by module name. */
   private _capabilityState: Record<string, ProbeEnvelope> | null = null;
+  /** #85: Last Known State — preserved across probe runs, never cleared on stale/fail. */
+  private _lastKnownState: Map<string, LastKnownState> = new Map();
+  /** #85: Navigation memory — persisted across reopen. */
+  private _navMemory: { destination: string; module?: string } = { destination: "overview" };
   /** Tracks which modules are currently being probed. */
   private _probing: Set<string> = new Set();
   /** Modules that have already been auto-probed (prevents endless re-probe). */
@@ -167,6 +187,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     this._refreshPfConfig();
+    this._restoreNavMemory();
     this._initCapabilityState();
     this._applyStaleTolerance();
 
@@ -281,6 +302,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this._detailReturn = null;
         }
         this.activeTab = tab.id;
+        this._navMemory = { destination: tab.id };
+        this._persistNavMemory();
         this.display();
       });
     });
@@ -4000,10 +4023,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
   }
 
-  /** Update a single module envelope and refresh the display. */
+  /** Update a single module envelope and refresh the display (#85: Last Known State). */
   _updateCapabilityEnvelope(mod: string, envelope: ProbeEnvelope): void {
     if (!this._capabilityState) this._capabilityState = {};
     const prev = this._capabilityState[envelope.module];
+
+    // #85: Capture Last Known State on successful Ready
+    if (shouldUpdateLastKnown(prev, envelope)) {
+      this._lastKnownState.set(mod, captureLastKnown(envelope));
+    }
+
     this._capabilityState[envelope.module] = envelope;
     this._persistCapabilityState();
     if (
@@ -4386,5 +4415,51 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     }
     if (changed) this._persistCapabilityState();
+  }
+
+  /** #85: Refresh all operational modules. */
+  _refreshAllModules(): void {
+    const operationalModules: CapabilityModule[] = [
+      "installation", "library", "ocr", "memory",
+    ];
+    for (const mod of operationalModules) {
+      this._probeModule(mod);
+    }
+  }
+
+  /** #85: Build and copy privacy-safe Support Diagnostic. */
+  _buildAndCopyDiagnostic(): void {
+    const pluginVersion = this.plugin.manifest?.version ?? "unknown";
+    const modules = collectDiagnosticModules(
+      this._capabilityState ?? {},
+      this._lastKnownState
+    );
+    const diag: DiagnosticInput = {
+      pluginVersion,
+      modules,
+    };
+    const text = buildSupportDiagnostic(diag);
+    copySupportDiagnostic(text, () => {
+      new Notice("Diagnostic copied to clipboard", 3000);
+    });
+  }
+
+  /** #85: Persist navigation destination/module only. */
+  _persistNavMemory(): void {
+    this.plugin.settings._navMemory = { ...this._navMemory };
+    this.plugin.saveSettings();
+  }
+
+  /** #85: Restore navigation, never restore drafts/scroll/focus/disclosure. */
+  _restoreNavMemory(): void {
+    const saved = this.plugin.settings._navMemory as { destination?: string; module?: string } | undefined;
+    if (saved?.destination && ["overview", "maintenance", "help"].includes(saved.destination)) {
+      this.activeTab = saved.destination;
+      this._navMemory = { destination: saved.destination };
+      // Only clear transient state on fresh open, not on re-renders
+      this._focusTargetId = null;
+      this._detailReturn = null;
+      this._setupView = "overview";
+    }
   }
 }
