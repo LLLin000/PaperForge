@@ -183,21 +183,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _detailReturn: { tab: string; selector: string } | null = null;
 
   /** #86: Five operational modules in display order with user-facing names. */
-  private static readonly OVERVIEW_MODULES = [
-    { id: "installation", label: t("cc_module_foundation") || "Foundation" },
-    { id: "library", label: t("cc_module_library") || "Library" },
-    { id: "ocr", label: t("cc_module_ocr") || "OCR" },
-    { id: "memory", label: t("cc_module_memory") || "Smart Retrieval" },
-    { id: "agent", label: t("cc_module_agent") || "Agent Integration" },
-  ] as const;
+  private _getOverviewModules(): { id: string; label: string }[] {
+    return [
+      { id: "installation", label: t("cc_module_foundation") || "Foundation" },
+      { id: "library", label: t("cc_module_library") || "Library" },
+      { id: "ocr", label: t("cc_module_ocr") || "OCR" },
+      { id: "memory", label: t("cc_module_memory") || "Smart Retrieval" },
+      { id: "agent", label: t("cc_module_agent") || "Agent Integration" },
+    ];
+  }
 
-  private static readonly USER_MODULE_NAME: Record<string, string> = {
-    installation: "Foundation",
-    library: "Library",
-    ocr: "OCR",
-    memory: "Smart Retrieval",
-    agent: "Agent Integration",
-  } as const;
+  private _getUserModuleName(mod: string): string {
+    const key =
+      "cc_module_" +
+      (mod === "installation"
+        ? "foundation"
+        : mod === "memory"
+          ? "memory"
+          : mod);
+    return t(key) || mod.charAt(0).toUpperCase() + mod.slice(1);
+  }
 
   constructor(app: App, plugin: ISettingPlugin) {
     super(app, plugin as any);
@@ -304,7 +309,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           k === "paddleocr_api_key" ? "OCR" : "Smart Retrieval"
         )
         .join(", ");
-      banner.createEl("strong", { text: "Credential Migration Notice" });
+      banner.createEl("strong", {
+        text: t("migration_banner_title") || "Credential Migration Notice",
+      });
       banner.createEl("p", {
         text: `One or more credentials could not be automatically migrated (${keyNames}). Your existing keys are preserved in plaintext and remain functional. To complete the migration, re-enter the affected keys in the Settings fields below.`,
       });
@@ -1142,7 +1149,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (env.updated_at && env.updated_at !== new Date(0).toISOString()) {
       body.createEl("p", {
         cls: "pf-last-known",
-        text: "Last checked: " + new Date(env.updated_at).toLocaleString(),
+        text:
+          (t("cc_last_checked") || "Last checked: ") +
+          new Date(env.updated_at).toLocaleString(),
       });
     }
     body.createEl("h4", { text: t("md_configuration") || "Configuration" });
@@ -1836,7 +1845,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const sevLabel = t("cc_severity_" + env.severity) || env.severity;
     const activityLabel =
       t("cc_activity_" + env.activity_state) || env.activity_state;
-    body.createEl("div", { text: t("cc_diag_module") + ": " + env.module });
+    body.createEl("div", {
+      text:
+        t("cc_diag_module") +
+        ": " +
+        (t("cc_module_" + env.module) || env.module),
+    });
     body.createEl("div", { text: t("cc_diag_state") + ": " + stateLabel });
     body.createEl("div", { text: t("cc_diag_severity") + ": " + sevLabel });
     body.createEl("div", {
@@ -4432,8 +4446,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ── Summary ──
     const summaryEl = cc.createEl("div", { cls: "pf-cc-summary" });
     const baselineText = baselineReady
-      ? "PaperForge is ready"
-      : "Setup incomplete";
+      ? t("cc_summary_ready") || "PaperForge is ready"
+      : t("cc_summary_incomplete") || "Setup incomplete";
     summaryEl.createEl("div", {
       cls: "pf-cc-summary-title",
       text: baselineText,
@@ -4441,8 +4455,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     summaryEl.createEl("div", {
       cls: "pf-cc-summary-body",
       text: baselineReady
-        ? "Foundation and Library are operational."
-        : "Complete Foundation and Library setup to use PaperForge.",
+        ? t("cc_summary_ready_body") ||
+          "Foundation and Library are operational."
+        : t("cc_summary_incomplete_body") ||
+          "Complete Foundation and Library setup to use PaperForge.",
     });
 
     // Maintenance count + refresh
@@ -4459,7 +4475,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     const refreshBtn = metaRow.createEl("button", {
       cls: "pf-global-refresh-btn",
-      text: "Refresh Status",
+      text: t("cc_refresh_btn") || "Refresh Status",
     });
     refreshBtn.addEventListener("click", () => {
       this._refreshAllModules();
@@ -4476,7 +4492,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (latest) {
       metaRow.createEl("span", {
         cls: "pf-last-known",
-        text: "Last checked: " + new Date(latest).toLocaleString(),
+        text:
+          (t("cc_last_checked") || "Last checked: ") +
+          new Date(latest).toLocaleString(),
       });
     }
 
@@ -4485,7 +4503,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "pf-cc-grid",
       attr: { role: "list", "aria-label": "Operational Modules" },
     });
-    for (const mod of PaperForgeSettingTab.OVERVIEW_MODULES) {
+    for (const mod of this._getOverviewModules()) {
       const env =
         mod.id === "agent"
           ? this._getAgentPlaceholderEnvelope()
@@ -4560,14 +4578,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (env.updated_at && env.updated_at !== new Date(0).toISOString()) {
       card.createEl("div", {
         cls: "pf-last-known",
-        text: "Last checked: " + new Date(env.updated_at).toLocaleString(),
+        text:
+          (t("cc_last_checked") || "Last checked: ") +
+          new Date(env.updated_at).toLocaleString(),
       });
     }
 
     if (env.user_state === "detection_failed") {
       const retry = card.createEl("button", {
         cls: "pf-cc-card-retry",
-        text: "Retry",
+        text: t("cc_card_retry") || "Retry",
       });
       retry.addEventListener("click", (e: Event) => {
         e.stopPropagation();
@@ -4590,33 +4610,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _getModuleConsequence(mod: string, env: ProbeEnvelope): string {
-    if (env.user_state === "ready") {
-      if (mod === "installation")
-        return "PaperForge is fully operational on this device.";
-      if (mod === "library")
-        return "Zotero is connected and literature is up to date.";
-      if (mod === "ocr") return "OCR pipeline is functional and ready.";
-      if (mod === "memory") return "All papers are indexed and searchable.";
-      if (mod === "agent") return "Agent platform is configured.";
-    }
-    if (env.user_state === "not_enabled") {
-      if (mod === "ocr") return "OCR is not enabled.";
-      if (mod === "memory") return "Smart Retrieval is not enabled.";
-      if (mod === "agent") return "Agent Integration is not available yet.";
-    }
-    if (env.user_state === "setup_required") {
-      return "Needs configuration.";
-    }
-    if (env.user_state === "action_required") {
-      return "Needs attention.";
-    }
-    if (env.user_state === "detection_failed") {
-      return "Cannot determine status.";
-    }
-    if (env.user_state === "checking") {
-      return "Checking...";
-    }
-    return env.reason?.text || "Status unknown.";
+    const state = env.user_state;
+    const key = "cc_consequence_" + mod + "_" + state;
+    const translated = t(key);
+    if (translated && translated !== key) return translated;
+    const fallbackKey = "cc_consequence_" + state;
+    const fallback = t(fallbackKey);
+    if (fallback && fallback !== fallbackKey) return fallback;
+    return env.reason?.text || t("cc_consequence_default") || "Status unknown.";
   }
 
   /** Apply stale-tolerance: if an envelope is stale, replace with unknown+probe. */
@@ -4836,7 +4837,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
 
     const optionals = [
-      { id: "ocr", label: "OCR", desc: "Extract text and figures from PDFs" },
+      {
+        id: "ocr",
+        label: t("cc_module_ocr") || "OCR",
+        desc: t("setup_opt_ocr_desc") || "Extract text and figures from PDFs",
+      },
       {
         id: "memory",
         label: "Smart Retrieval",
@@ -4906,7 +4911,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       .filter(([_, v]) => v)
       .map(([k]) => k);
     if (selected.length > 0) {
-      containerEl.createEl("p", { text: "Selected: " + selected.join(", ") });
+      containerEl.createEl("p", {
+        text:
+          (t("setup_review_selected") || "Selected: ") + selected.join(", "),
+      });
     } else {
       containerEl.createEl("p", {
         text:

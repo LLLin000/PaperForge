@@ -284,6 +284,8 @@ export interface ConfigSummaryConfig {
   items: ConfigSummaryItem[];
   onChangeLabel: string;
   onChange: () => void;
+  configuredLabel?: string;
+  notConfiguredLabel?: string;
 }
 
 /** Render a read-only configuration summary with a Change action. */
@@ -301,8 +303,8 @@ export function renderConfigurationSummary(
     });
     const displayValue = item.isCredential
       ? item.value
-        ? "Configured"
-        : "Not configured"
+        ? config.configuredLabel || "Configured"
+        : config.notConfiguredLabel || "Not configured"
       : item.value;
     row.createEl("span", {
       cls: `pf-config-value${item.isCredential ? (item.value ? " pf-config-value--ok" : " pf-config-value--muted") : ""}`,
@@ -333,6 +335,7 @@ export interface ImpactConfirmationConfig {
   cancelLabel: string;
   replacedLabel?: string;
   preservedLabel?: string;
+  uninterruptibleLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -377,7 +380,9 @@ export function renderImpactConfirmation(
   if (!config.interruptible) {
     container.createEl("div", {
       cls: "pf-impact-interruptible",
-      text: "This action cannot be stopped once started.",
+      text:
+        config.uninterruptibleLabel ||
+        "This action cannot be stopped once started.",
     });
   }
 
