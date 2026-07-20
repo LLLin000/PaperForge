@@ -9078,7 +9078,6 @@ class PaperForgeReadingCanvasView extends ItemView {
                 if (display.color) {
                     cardEl.style.borderLeft = '4px solid ' + display.color;
                 }
-                this._bindAnnotationPanelCard(cardEl, row);
 
                 var metaEl = document.createElement('div');
                 metaEl.className = 'paperforge-annotation-panel-meta';
@@ -9107,6 +9106,11 @@ class PaperForgeReadingCanvasView extends ItemView {
                     commentEl.textContent = display.comment;
                     cardEl.appendChild(commentEl);
                 }
+                var statusEl = document.createElement('div');
+                statusEl.className = 'paperforge-annotation-panel-jump-status';
+                statusEl.setAttribute('aria-live', 'polite');
+                cardEl.appendChild(statusEl);
+                this._bindAnnotationPanelCard(cardEl, row, statusEl);
                 listEl.appendChild(cardEl);
             }
             panelEl.appendChild(listEl);
@@ -9115,7 +9119,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         contentEl.appendChild(panelEl);
     }
 
-    _bindAnnotationPanelCard(cardEl, row) {
+    _bindAnnotationPanelCard(cardEl, row, statusEl) {
         var self = this;
         function activate(evt) {
             if (evt) {
@@ -9124,21 +9128,28 @@ class PaperForgeReadingCanvasView extends ItemView {
             }
             cardEl.setAttribute('aria-selected', 'true');
             cardEl.setAttribute('data-jump-state', 'pending');
-            var result = self._jumpToActiveFulltextAnnotation(row);
-            if (result && result.ok) {
-                cardEl.setAttribute('data-jump-state', 'resolved');
-                cardEl.removeAttribute('data-anchor-status');
-                cardEl.removeAttribute('data-jump-reason');
-            } else {
-                cardEl.setAttribute('data-anchor-status', 'unresolved');
-                cardEl.setAttribute('data-jump-state', 'unresolved');
-                cardEl.setAttribute('data-jump-reason', (result && result.reason) || 'not-found');
-            }
-            if (cardEl._paperforgeJumpTimer) clearTimeout(cardEl._paperforgeJumpTimer);
-            cardEl._paperforgeJumpTimer = setTimeout(function () {
-                cardEl.setAttribute('aria-selected', 'false');
-                cardEl.removeAttribute('data-jump-state');
-            }, 700);
+            if (statusEl) statusEl.textContent = 'Locating annotation...';
+            Promise.resolve(self._jumpToActiveFulltextAnnotation(row)).then(function (result) {
+                if (result && result.ok) {
+                    cardEl.setAttribute('data-jump-state', result.opened ? 'opened' : 'resolved');
+                    cardEl.removeAttribute('data-anchor-status');
+                    cardEl.removeAttribute('data-jump-reason');
+                    if (statusEl) statusEl.textContent = result.opened
+                        ? 'Opened fulltext and matched annotation.'
+                        : 'Matched in fulltext.';
+                } else {
+                    var reason = (result && result.reason) || 'not-found';
+                    cardEl.setAttribute('data-anchor-status', 'unresolved');
+                    cardEl.setAttribute('data-jump-state', 'unresolved');
+                    cardEl.setAttribute('data-jump-reason', reason);
+                    if (statusEl) statusEl.textContent = 'Not matched: ' + reason;
+                }
+                if (cardEl._paperforgeJumpTimer) clearTimeout(cardEl._paperforgeJumpTimer);
+                cardEl._paperforgeJumpTimer = setTimeout(function () {
+                    cardEl.setAttribute('aria-selected', 'false');
+                    cardEl.removeAttribute('data-jump-state');
+                }, 900);
+            });
         }
         cardEl.addEventListener('click', activate);
         cardEl.addEventListener('keydown', function (evt) {
@@ -9157,12 +9168,27 @@ class PaperForgeReadingCanvasView extends ItemView {
         return color;
     }
 
-    _jumpToActiveFulltextAnnotation(row) {
+    async _jumpToActiveFulltextAnnotation(row) {
         var display = (row && row.display) || {};
         var selectedText = display.selectedText ? String(display.selectedText) : '';
         if (!selectedText.trim()) {
             return { ok: false, reason: 'missing-selected-text' };
         }
+        var domJump = this._jumpToRenderedFulltextDom(selectedText, display.color);
+        if (domJump && domJump.ok) {
+            return domJump;
+        }
+        var editorJump = this._jumpToMarkdownEditorBuffer(selectedText);
+        if (editorJump && editorJump.ok) {
+            this._scheduleRenderedFulltextMark(selectedText, display.color);
+            return editorJump;
+        }
+        var openedJump = await this._openFulltextAndJump(selectedText, display.color);
+        if (openedJump && openedJump.ok) return openedJump;
+        return openedJump || { ok: false, reason: 'text-not-found' };
+    }
+
+    _jumpToRenderedFulltextDom(selectedText, color) {
         var roots = this._getActiveFulltextRoots();
         if (!roots.length) {
             return { ok: false, reason: 'missing-active-fulltext-root' };
@@ -9170,7 +9196,7 @@ class PaperForgeReadingCanvasView extends ItemView {
         for (var i = 0; i < roots.length; i++) {
             var root = roots[i];
             this._clearActiveFulltextAnnotationMarks(root);
-            var mark = this._highlightFirstTextMatchInRoot(root, selectedText, display.color);
+            var mark = this._highlightFirstTextMatchInRoot(root, selectedText, color);
             if (mark) {
                 if (typeof mark.scrollIntoView === 'function') {
                     mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -9178,11 +9204,48 @@ class PaperForgeReadingCanvasView extends ItemView {
                 return { ok: true, mark: mark };
             }
         }
-        var editorJump = this._jumpToMarkdownEditorBuffer(selectedText);
-        if (editorJump && editorJump.ok) {
-            return editorJump;
+        return { ok: false, reason: 'dom-text-not-found' };
+    }
+
+    _delay(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
+    async _openFulltextAndJump(selectedText, color) {
+        var entry = this._paperEntry || {};
+        var pathValue = entry.fulltext_path || entry.fulltext_md_path || '';
+        if (!pathValue || !this.app || !this.app.workspace || typeof this.app.workspace.openLinkText !== 'function') {
+            return { ok: false, reason: 'fulltext-not-open-and-no-path' };
         }
-        return { ok: false, reason: 'text-not-found' };
+        try {
+            await this.app.workspace.openLinkText(pathValue, '', false);
+        } catch (err) {
+            return { ok: false, reason: 'open-fulltext-failed', error: (err && err.message) || String(err) };
+        }
+        for (var i = 0; i < 5; i++) {
+            await this._delay(i === 0 ? 60 : 160);
+            var domJump = this._jumpToRenderedFulltextDom(selectedText, color);
+            if (domJump && domJump.ok) {
+                domJump.opened = true;
+                return domJump;
+            }
+            var editorJump = this._jumpToMarkdownEditorBuffer(selectedText);
+            if (editorJump && editorJump.ok) {
+                this._scheduleRenderedFulltextMark(selectedText, color);
+                editorJump.opened = true;
+                return editorJump;
+            }
+        }
+        return { ok: false, reason: 'opened-fulltext-text-not-found' };
+    }
+
+    _scheduleRenderedFulltextMark(selectedText, color) {
+        var self = this;
+        [80, 220, 520, 900].forEach(function (delay) {
+            setTimeout(function () {
+                self._jumpToRenderedFulltextDom(selectedText, color);
+            }, delay);
+        });
     }
 
     _getMarkdownCandidateLeaves() {

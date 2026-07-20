@@ -327,38 +327,42 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(view.contentEl.querySelector('[data-anchor-status="unresolved"]')).toBeFalsy();
     });
 
-    it('clicking an annotation card rebounds after successful jump feedback', () => {
+    it('clicking an annotation card rebounds after successful jump feedback', async () => {
         vi.useFakeTimers();
-        const view = makeCanvasView();
-        const activeContainer = document.createElement('div');
-        const preview = document.createElement('div');
-        preview.className = 'markdown-preview-view';
-        preview.textContent = 'The text contains a rebound target.';
-        activeContainer.appendChild(preview);
-        document.body.appendChild(activeContainer);
-        Element.prototype.scrollIntoView = vi.fn();
-        view.app = { workspace: { activeLeaf: { view: { containerEl: activeContainer } } } };
+        try {
+            const view = makeCanvasView();
+            const activeContainer = document.createElement('div');
+            const preview = document.createElement('div');
+            preview.className = 'markdown-preview-view';
+            preview.textContent = 'The text contains a rebound target.';
+            activeContainer.appendChild(preview);
+            document.body.appendChild(activeContainer);
+            Element.prototype.scrollIntoView = vi.fn();
+            view.app = { workspace: { activeLeaf: { view: { containerEl: activeContainer } } } };
 
-        view._renderNativeAnnotationPanel('PAPER_REBOUND', { key: 'PAPER_REBOUND' }, {
-            state: 'ready',
-            paperKey: 'PAPER_REBOUND',
-            annotations: [{
-                display: { selectedText: 'rebound target', type: 'highlight', color: '#ffd54f' },
-                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
-                provenance: { sourceAnnotationKey: 'ann-rebound-1' },
-            }],
-            message: '1 annotation(s) loaded.',
-        });
+            view._renderNativeAnnotationPanel('PAPER_REBOUND', { key: 'PAPER_REBOUND' }, {
+                state: 'ready',
+                paperKey: 'PAPER_REBOUND',
+                annotations: [{
+                    display: { selectedText: 'rebound target', type: 'highlight', color: '#ffd54f' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: { sourceAnnotationKey: 'ann-rebound-1' },
+                }],
+                message: '1 annotation(s) loaded.',
+            });
 
-        const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
-        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+            card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await Promise.resolve();
 
-        expect(card.getAttribute('aria-selected')).toBe('true');
-        expect(card.getAttribute('data-jump-state')).toBe('resolved');
-        vi.advanceTimersByTime(701);
-        expect(card.getAttribute('aria-selected')).toBe('false');
-        expect(card.hasAttribute('data-jump-state')).toBe(false);
-        vi.useRealTimers();
+            expect(card.getAttribute('aria-selected')).toBe('true');
+            expect(card.getAttribute('data-jump-state')).toBe('resolved');
+            vi.advanceTimersByTime(901);
+            expect(card.getAttribute('aria-selected')).toBe('false');
+            expect(card.hasAttribute('data-jump-state')).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('clicking an annotation card uses loose matching when punctuation differs from fulltext', () => {
@@ -530,6 +534,94 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(editor.scrollIntoView).toHaveBeenCalled();
         expect(editor.focus).toHaveBeenCalled();
         expect(view.app.workspace.revealLeaf).toHaveBeenCalled();
+    });
+
+    it('clicking an annotation card opens the paper fulltext when another page is active', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            view._paperEntry = { key: 'PAPER_OPEN', fulltext_path: 'Literature/PAPER_OPEN/fulltext.md' };
+            const canvasContainer = document.createElement('div');
+            canvasContainer.appendChild(view.contentEl);
+            document.body.appendChild(canvasContainer);
+            const openedContainer = document.createElement('div');
+            const preview = document.createElement('div');
+            preview.className = 'markdown-preview-view';
+            preview.textContent = 'The opened fulltext contains the target after opening.';
+            openedContainer.appendChild(preview);
+            const openedLeaf = { view: { containerEl: openedContainer } };
+            const scrollIntoView = vi.fn();
+            Element.prototype.scrollIntoView = scrollIntoView;
+            const workspace = {
+                activeLeaf: { view: { containerEl: canvasContainer } },
+                openLinkText: vi.fn(async () => {
+                    document.body.appendChild(openedContainer);
+                    workspace.activeLeaf = openedLeaf;
+                }),
+                getLeavesOfType: vi.fn((type) => {
+                    if (type !== 'markdown') return [];
+                    return workspace.activeLeaf === openedLeaf ? [openedLeaf] : [];
+                }),
+            };
+            view.app = { workspace };
+
+            const jump = view._jumpToActiveFulltextAnnotation({
+                display: { selectedText: 'target after opening', color: '#ffd54f' },
+            });
+            await Promise.resolve();
+            await vi.advanceTimersByTimeAsync(61);
+            const result = await jump;
+
+            expect(result.ok).toBe(true);
+            expect(result.opened).toBe(true);
+            expect(workspace.openLinkText).toHaveBeenCalledWith('Literature/PAPER_OPEN/fulltext.md', '', false);
+            expect(preview.querySelector('mark.paperforge-active-annotation-match')).toBeTruthy();
+            expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('editor fallback schedules a same-color rendered fulltext mark after scroll', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            const fulltextContainer = document.createElement('div');
+            const preview = document.createElement('div');
+            preview.className = 'markdown-preview-view';
+            preview.textContent = 'Only the viewport is visible for now.';
+            fulltextContainer.appendChild(preview);
+            document.body.appendChild(fulltextContainer);
+            const editor = {
+                getValue: vi.fn(() => 'The editor has delayed color target text.'),
+                offsetToPos: vi.fn((offset) => ({ line: 0, ch: offset })),
+                setSelection: vi.fn(),
+                scrollIntoView: vi.fn(),
+                focus: vi.fn(),
+            };
+            view.app = {
+                workspace: {
+                    activeLeaf: { view: { containerEl: fulltextContainer, editor } },
+                    getLeavesOfType: vi.fn((type) => type === 'markdown' ? [{ view: { containerEl: fulltextContainer, editor } }] : []),
+                },
+            };
+
+            const result = await view._jumpToActiveFulltextAnnotation({
+                display: { selectedText: 'delayed color target', color: '#4caf50' },
+            });
+            expect(result.ok).toBe(true);
+            expect(preview.querySelector('mark.paperforge-active-annotation-match')).toBeFalsy();
+
+            preview.textContent = 'The rendered DOM now contains delayed color target text.';
+            await vi.advanceTimersByTimeAsync(81);
+
+            const mark = preview.querySelector('mark.paperforge-active-annotation-match');
+            expect(mark).toBeTruthy();
+            expect(mark.textContent).toBe('delayed color target');
+            expect(mark.style.backgroundColor).toContain('rgba(76, 175, 80');
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('renders missing-paper state when setPaperContext gets null entry', () => {
