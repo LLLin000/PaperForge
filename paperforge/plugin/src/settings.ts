@@ -170,7 +170,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _displayInProgress: boolean = false;
   _pendingMaintenanceRefresh: boolean = false;
   _maintenanceNoticeShown: boolean = false;
-  _detailReturn: { tab: string; selector: string } | null = null;
+    _detailReturn: { tab: string; selector: string } | null = null;
+
+  /** #86: Five operational modules in display order with user-facing names. */
+  private static readonly OVERVIEW_MODULES = [
+    { id: "installation", label: "Foundation" },
+    { id: "library", label: "Library" },
+    { id: "ocr", label: "OCR" },
+    { id: "memory", label: "Smart Retrieval" },
+    { id: "agent", label: "Agent Integration" },
+  ] as const;
+
+  private static readonly USER_MODULE_NAME: Record<string, string> = {
+    installation: "Foundation",
+    library: "Library",
+    ocr: "OCR",
+    memory: "Smart Retrieval",
+    agent: "Agent Integration",
+  } as const;
 
   constructor(app: App, plugin: ISettingPlugin) {
     super(app, plugin as any);
@@ -281,7 +298,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const tabBar = containerEl.createDiv({ cls: "paperforge-settings-tabs" });
     const tabs = [
       { id: "overview", label: t("tab_overview") || "Overview" },
-      { id: "module-detail", label: t("tab_modules") || "Module Detail" },
       { id: "maintenance", label: t("tab_maintenance") || "Maintenance" },
       { id: "help", label: t("tab_help") || "Help" },
     ];
@@ -317,6 +333,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     });
 
+    // Module Detail is contextual (not a top-level tab), always create its container
+    tabContents["module-detail"] = containerEl.createDiv({
+      cls:
+        "paperforge-tab-content" +
+        (this.activeTab === "module-detail" ? " paperforge-tab-content--active" : ""),
+    });
+
     // --- Render active tab ---
     if (this.activeTab === "overview") {
       this._renderOverviewTab(tabContents.overview);
@@ -332,9 +355,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // Do NOT consume _focusTargetId while Help tab is active —
     // focus targets for Overview must survive until Overview renders again.
     if (this._focusTargetId && this.activeTab !== "help") {
-      const target = containerEl.querySelector<HTMLElement>(
+      let target = containerEl.querySelector<HTMLElement>(
         this._focusTargetId
       );
+      // #86: If target not found (e.g., help card removed from overview),
+      // fall back to first overview card
+      if (!target && this.activeTab === "overview") {
+        target = containerEl.querySelector(".pf-cc-card");
+      }
       if (target) {
         try {
           target.focus();
@@ -542,7 +570,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // Minimal envelope summary row
     const summaryRow = containerEl.createEl("div", {
-      cls: "pf-cc-card",
+      cls: "pf-cc-card pf-open-module-btn",
       attr: { style: "margin-bottom: 12px;" },
     });
     const summaryHeader = summaryRow.createEl("div", {
@@ -1771,7 +1799,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // Envelope summary card
     const summaryRow = containerEl.createEl("div", {
-      cls: "pf-cc-card",
+      cls: "pf-cc-card pf-open-module-btn",
       attr: { style: "margin-bottom: 12px;" },
     });
     const summaryHeader = summaryRow.createEl("div", {
@@ -4122,7 +4150,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const isReal = PaperForgeSettingTab._REAL_PROBE.has(mod);
     const isNavigable = PaperForgeSettingTab._NAVIGABLE.has(mod);
     const card = container.createEl("div", {
-      cls: "pf-cc-card",
+      cls: "pf-cc-card pf-open-module-btn",
       attr: {
         role: "listitem",
         tabindex: "0",
@@ -4276,24 +4304,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Navigate from overview card to module detail or another tab. */
+  /** Navigate from a card to its detail/maintenance/help destination. */
   _handleCardNavigation(mod: string): void {
-    if (mod === "installation") {
-      this.activeTab = "module-detail";
-      this._selectedDetailModule = "installation";
-      this._focusTargetId = "#pf-installation-detail-heading";
-    } else if (mod === "library") {
-      this.activeTab = "module-detail";
-      this._selectedDetailModule = "library";
-      this._focusTargetId = "#pf-library-detail-heading";
-    } else if (mod === "ocr") {
-      this.activeTab = "module-detail";
-      this._selectedDetailModule = "ocr";
-      this._focusTargetId = "#pf-ocr-detail-heading";
-    } else if (mod === "memory") {
-      this.activeTab = "module-detail";
-      this._selectedDetailModule = "memory";
-      this._focusTargetId = "#pf-memory-detail-heading";
-    } else if (mod === "help") {
+    if (mod === "help") {
       this.activeTab = "help";
       this._selectedDetailModule = "";
       this._focusTargetId = "button.pf-open-module-btn[data-module=help]";
@@ -4302,107 +4315,204 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._selectedDetailModule = "";
       this._focusTargetId = "#pf-maintenance-heading";
       this._maintenanceNoticeShown = false;
+    } else if (mod === "agent") {
+      this.activeTab = "module-detail";
+      this._selectedDetailModule = "agent";
+      this._focusTargetId = "#pf-agent-detail-heading";
+    } else {
+      this.activeTab = "module-detail";
+      this._selectedDetailModule = mod;
+      this._focusTargetId = "#pf-" + mod + "-detail-heading";
     }
     this.display();
   }
 
-  /** Render Vercel-inspired control center: summary card + six-card responsive grid. */
+  /** #86: Overview — operational baseline + five navigation-only module cards. */
   _renderControlCenter(containerEl: HTMLElement): void {
     const cc = containerEl.createEl("div", { cls: "pf-control-center" });
+    const envelopes: Record<string, ProbeEnvelope> = this._capabilityState ?? {};
 
-    // Compute summary counts from envelopes
-    const modules = CAPABILITY_MODULES;
-    const envelopes: Record<string, ProbeEnvelope> =
-      this._capabilityState ?? {};
-    let realReady = 0;
-    let realAttention = 0;
-    let placeholderCount = 0;
+    // ── Operational Baseline (#86 §2.1) ──
+    const foundationEnv = envelopes["installation"] ?? createUnknownEnvelope("installation");
+    const libraryEnv = envelopes["library"] ?? createUnknownEnvelope("library");
+    const foundationReady = foundationEnv.capability_state === "ready" && foundationEnv.action.primary === null;
+    const libraryReady = libraryEnv.capability_state === "ready" && libraryEnv.action.primary === null;
+    const baselineReady = foundationReady && libraryReady;
 
-    for (const mod of modules) {
-      const env = envelopes[mod] ?? createUnknownEnvelope(mod);
-      if (
-        env.severity === "ok" &&
-        env.capability_state === "ready" &&
-        env.action.primary === null
-      ) {
-        // Backend-confirmed ready, no pending action
-        realReady++;
-      } else if (PaperForgeSettingTab._REAL_PROBE.has(mod)) {
-        // Real module that has been probed but isn't ready
-        if (
-          env.severity === "error" ||
-          env.severity === "warning" ||
-          env.severity === "unknown"
-        ) {
-          realAttention++;
-        }
-      } else {
-        // Placeholder module (library, ocr, memory, maintenance) — not yet connected
-        placeholderCount++;
-      }
+    // Count maintenance items
+    let maintenanceCount = 0;
+    const maintEnv = envelopes["maintenance"];
+    if (maintEnv?.items && Array.isArray(maintEnv.items)) {
+      maintenanceCount = maintEnv.items.length;
     }
 
-    // ── Summary Card ──
+    // ── Summary ──
     const summaryEl = cc.createEl("div", { cls: "pf-cc-summary" });
-    summaryEl.createEl("div", {
-      cls: "pf-cc-summary-eyebrow",
-      text: t("cc_title"),
-    });
-
-    // Decisive title based on state
-    let summaryTitle: string;
-    let summaryBodyText: string;
-    if (realAttention > 0) {
-      summaryTitle = t("cc_summary_attention");
-      summaryBodyText = t("cc_summary_attention_body");
-    } else if (realReady === modules.length) {
-      summaryTitle = t("cc_summary_ok");
-      summaryBodyText = t("cc_summary_ok_body");
-    } else if (realReady > 0 && placeholderCount > 0 && realAttention === 0) {
-      summaryTitle = t("cc_summary_core_ok").replace(
-        "{n}",
-        String(placeholderCount)
-      );
-      summaryBodyText = t("cc_summary_core_ok_body");
-    } else {
-      summaryTitle = t("cc_summary_core_ok").replace(
-        "{n}",
-        String(modules.length - realReady)
-      );
-      summaryBodyText = t("cc_desc");
-    }
+    const baselineText = baselineReady
+      ? "PaperForge is ready"
+      : "Setup incomplete";
     summaryEl.createEl("div", {
       cls: "pf-cc-summary-title",
-      text: summaryTitle,
+      text: baselineText,
     });
     summaryEl.createEl("div", {
       cls: "pf-cc-summary-body",
-      text: summaryBodyText,
+      text: baselineReady
+        ? "Foundation and Library are operational."
+        : "Complete Foundation and Library setup to use PaperForge.",
     });
 
-    // Summary counts row
-    const countsEl = summaryEl.createEl("div", { cls: "pf-cc-summary-counts" });
-    countsEl.createEl("div", {
-      cls: "pf-cc-summary-count",
-      text: t("cc_n_ready").replace("{n}", String(realReady)),
+    // Maintenance count + refresh
+    const metaRow = summaryEl.createEl("div", { cls: "pf-cc-summary-meta" });
+    if (maintenanceCount > 0) {
+      metaRow.createEl("span", {
+        cls: "pf-cc-summary-maintenance",
+        text: maintenanceCount + " item" + (maintenanceCount !== 1 ? "s" : "") + " need attention",
+      });
+    }
+    const refreshBtn = metaRow.createEl("button", {
+      cls: "pf-global-refresh-btn",
+      text: "Refresh Status",
     });
-    if (placeholderCount > 0) {
-      countsEl.createEl("div", {
-        cls: "pf-cc-summary-count",
-        text: t("cc_n_pending").replace("{n}", String(placeholderCount)),
+    refreshBtn.addEventListener("click", () => {
+      this._refreshAllModules();
+      const probeMaintenance = () => this._probeModule("maintenance");
+      probeMaintenance();
+    });
+
+    // Last updated
+    const latest = Object.values(envelopes)
+      .map(e => e.updated_at)
+      .filter(Boolean)
+      .sort()
+      .pop();
+    if (latest) {
+      metaRow.createEl("span", {
+        cls: "pf-last-known",
+        text: "Last checked: " + new Date(latest).toLocaleString(),
       });
     }
 
-    // ── Module Grid ──
+    // ── Module Grid (#86: 5 cards, navigation-only) ──
     const grid = cc.createEl("div", {
       cls: "pf-cc-grid",
-      attr: { role: "list", "aria-label": t("cc_zone_modules") },
+      attr: { role: "list", "aria-label": "Operational Modules" },
     });
-    for (const mod of modules) {
-      const env = envelopes[mod] ?? createUnknownEnvelope(mod);
-      this._renderCard(grid, mod, env);
+    for (const mod of PaperForgeSettingTab.OVERVIEW_MODULES) {
+      const env = mod.id === "agent"
+        ? this._getAgentPlaceholderEnvelope()
+        : (envelopes[mod.id] ?? createUnknownEnvelope(mod.id as CapabilityModule));
+      this._renderOverviewCard(grid, mod.id, mod.label, env);
     }
   }
+
+  /** #86: Agent Integration placeholder — not yet a backend probe. */
+  _getAgentPlaceholderEnvelope(): ProbeEnvelope {
+    return {
+      schema_version: 2,
+      module: "agent",
+      capability_state: "unknown",
+      activity_state: "idle",
+      activity_label: null,
+      activity_progress: null,
+      severity: "unknown",
+      reason: { code: "agent.not_implemented", text: "Agent Integration will be available in a future update." },
+      action: { primary: null },
+      notices: [],
+      user_state: "not_enabled",
+      capability_kind: "optional",
+      maintenance_eligible: false,
+      user_visible_failure: false,
+      user_impact: null,
+      updated_at: new Date(0).toISOString(),
+      ttl_seconds: 0,
+    };
+  }
+
+  /** #86: Render a navigation-only overview card for one operational module. */
+  _renderOverviewCard(
+    grid: HTMLElement,
+    mod: string,
+    label: string,
+    env: ProbeEnvelope
+  ): void {
+    const card = grid.createEl("button", {
+      cls: "pf-cc-card pf-open-module-btn",
+      attr: { "data-module": mod, role: "listitem" },
+    });
+
+    renderStatusBadge(card, env.user_state);
+
+    card.createEl("div", {
+      cls: "pf-cc-card-title",
+      text: label,
+    });
+
+    const consequence = this._getModuleConsequence(mod, env);
+    card.createEl("div", {
+      cls: "pf-cc-card-consequence",
+      text: consequence,
+    });
+
+    if (env.activity_state === "running" && env.activity_label) {
+      renderActivityRow(card, {
+        label: env.activity_label,
+        progress: env.activity_progress,
+      });
+    }
+
+    if (env.updated_at && env.updated_at !== new Date(0).toISOString()) {
+      card.createEl("div", {
+        cls: "pf-last-known",
+        text: "Last checked: " + new Date(env.updated_at).toLocaleString(),
+      });
+    }
+
+    if (env.user_state === "detection_failed") {
+      const retry = card.createEl("button", {
+        cls: "pf-cc-card-retry",
+        text: "Retry",
+      });
+      retry.addEventListener("click", (e: Event) => {
+        e.stopPropagation();
+        this._probeModule(mod as CapabilityModule);
+      });
+    }
+
+    card.addEventListener("click", () => {
+      this._handleCardNavigation(mod);
+    });
+  }
+
+  /** #86: Plain-language consequence based on module state. */
+  _getModuleConsequence(mod: string, env: ProbeEnvelope): string {
+    if (env.user_state === "ready") {
+      if (mod === "installation") return "PaperForge is fully operational on this device.";
+      if (mod === "library") return "Zotero is connected and literature is up to date.";
+      if (mod === "ocr") return "OCR pipeline is functional and ready.";
+      if (mod === "memory") return "All papers are indexed and searchable.";
+      if (mod === "agent") return "Agent platform is configured.";
+    }
+    if (env.user_state === "not_enabled") {
+      if (mod === "ocr") return "OCR is not enabled.";
+      if (mod === "memory") return "Smart Retrieval is not enabled.";
+      if (mod === "agent") return "Agent Integration is not available yet.";
+    }
+    if (env.user_state === "setup_required") {
+      return "Needs configuration.";
+    }
+    if (env.user_state === "action_required") {
+      return "Needs attention.";
+    }
+    if (env.user_state === "detection_failed") {
+      return "Cannot determine status.";
+    }
+    if (env.user_state === "checking") {
+      return "Checking...";
+    }
+    return env.reason?.text || "Status unknown.";
+  }
+
   /** Apply stale-tolerance: if an envelope is stale, replace with unknown+probe. */
   _applyStaleTolerance(): void {
     if (!this._capabilityState) return;
