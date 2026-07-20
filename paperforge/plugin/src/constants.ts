@@ -118,6 +118,7 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   _migration_warnings: [],
   _paddleocr_configured: false,
   _vector_db_configured: false,
+  _setup_complete: false,
 };
 
 // ── Workflow state helpers ──
@@ -157,8 +158,6 @@ export function patchEntryWorkflowState(
 
 export const SCHEMA_VERSION = 2;
 declare function __omp_shell(expr: string): boolean;
-
-
 
 export type CapabilityModule =
   | "installation"
@@ -296,7 +295,11 @@ const _VALID_SEVERITIES = new Set<string>([
   "error",
 ]);
 const _VALID_ACTIVITY_STATES = new Set<string>(["idle", "running"]);
-const _VALID_SAFETY_CLASSES = new Set<string>(["safe", "destructive", "irreversible"]);
+const _VALID_SAFETY_CLASSES = new Set<string>([
+  "safe",
+  "destructive",
+  "irreversible",
+]);
 
 function isValidActionPrimary(p: unknown): p is ActionPrimary {
   if (!p || typeof p !== "object" || Array.isArray(p)) return false;
@@ -305,7 +308,10 @@ function isValidActionPrimary(p: unknown): p is ActionPrimary {
   if (typeof a.verb !== "string") return false;
   if (typeof a.label !== "string") return false;
   if (typeof a.availability !== "string") return false;
-  if (typeof a.safety_class !== "string" || !_VALID_SAFETY_CLASSES.has(a.safety_class as string))
+  if (
+    typeof a.safety_class !== "string" ||
+    !_VALID_SAFETY_CLASSES.has(a.safety_class as string)
+  )
     return false;
   if (!Array.isArray(a.preservation_facts)) return false;
   if (!Array.isArray(a.replacement_facts)) return false;

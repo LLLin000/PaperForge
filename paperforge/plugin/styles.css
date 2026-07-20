@@ -92,7 +92,7 @@
 .pf-complete-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--text-success);
   font-size: 12px;
   font-weight: 400;
@@ -217,7 +217,7 @@
   font-size: 11px;
   font-weight: var(--font-medium);
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--background-secondary);
   color: var(--text-muted);
   border: 1px solid var(--background-modifier-border);
@@ -356,7 +356,7 @@
   font-size: 11px;
   font-weight: var(--font-semibold);
   padding: 3px 10px;
-  border-radius: 10px;
+  border-radius: 8px;
   line-height: 1.4;
 }
 
@@ -505,7 +505,7 @@
     transform 0.1s;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   position: relative;
 }
 
@@ -1330,7 +1330,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: help;
   transition: border-color 0.15s;
   position: relative;
@@ -1586,7 +1586,7 @@
   font-size: 10px;
   font-weight: var(--font-semibold);
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid transparent;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1745,7 +1745,7 @@
 .paperforge-next-step-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 6px 14px;
   font-size: var(--font-ui-small);
   font-weight: var(--font-semibold);
@@ -1802,7 +1802,7 @@
   padding: 14px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   position: relative;
 }
 
@@ -2551,7 +2551,7 @@
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 6px 0;
+  padding: 8px 0;
   user-select: none;
 }
 .pf-maint-advanced summary:hover {
@@ -2703,7 +2703,9 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .pf-maint-filter:hover {
   color: var(--text-normal);
@@ -3032,7 +3034,7 @@
 .paperforge-status-strip-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -3312,7 +3314,7 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 6px 0;
+  padding: 8px 0;
   border-bottom: 1px solid color-mix(in srgb, var(--pf-border) 72%, transparent);
 }
 
@@ -3350,7 +3352,7 @@
 .paperforge-workflow-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-height: 34px;
   padding: 6px 10px;
   background: color-mix(
@@ -3540,7 +3542,7 @@
   margin: 8px 0 12px 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .paperforge-issue-item {
@@ -3625,7 +3627,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 0;
+  padding: 8px 0;
 }
 
 .paperforge-status-dot {
@@ -3818,7 +3820,7 @@
 .paperforge-orphan-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -4085,7 +4087,7 @@
 .paperforge-search-result-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   font-size: 12px;
   color: var(--text-muted);
@@ -4317,7 +4319,7 @@
 .paperforge-version-label-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .paperforge-version-label {
@@ -4337,7 +4339,7 @@
 
 .paperforge-version-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-top: 4px;
 }
 
@@ -4370,7 +4372,7 @@
 .paperforge-version-diff-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .paperforge-version-diff-row {
@@ -4689,7 +4691,7 @@
 .pf-control-center .pf-cc-card-name-area {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .pf-open-module-btn {
@@ -4747,7 +4749,7 @@
 .pf-back-btn {
   background: none;
   border: none;
-  padding: 6px 0;
+  padding: 8px 0;
   color: var(--text-muted);
   font-size: 13px;
   cursor: pointer;
@@ -4860,7 +4862,7 @@
 
 .pf-runtime-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   margin-top: 8px;
 }
@@ -4921,7 +4923,6 @@
   font-style: italic;
 }
 
-
 /* ── Module Detail heading responsive wrap ── */
 .pf-module-detail-heading {
   font-size: 18px;
@@ -4950,7 +4951,7 @@
   font-size: 11px;
   font-weight: 500;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 8px;
   line-height: 1.4;
   white-space: nowrap;
 }
@@ -5004,7 +5005,9 @@
   transition: width 180ms ease-in-out;
 }
 @media (prefers-reduced-motion: reduce) {
-  .pf-activity-bar-fill { transition: none; }
+  .pf-activity-bar-fill {
+    transition: none;
+  }
 }
 .pf-activity-count {
   font-size: 11px;
@@ -5022,10 +5025,15 @@
   animation: pf-spin 0.8s linear infinite;
 }
 @keyframes pf-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pf-activity-spinner { animation: none; display: none; }
+  .pf-activity-spinner {
+    animation: none;
+    display: none;
+  }
 }
 .pf-activity-scope {
   font-size: 11px;
@@ -5059,6 +5067,11 @@
   transition: opacity 120ms ease-out;
 }
 .pf-action-btn:hover:not(:disabled) {
+  @media (prefers-reduced-motion: reduce) {
+    .pf-action-btn {
+      transition: none;
+    }
+  }
   opacity: 0.85;
 }
 .pf-action-btn:focus-visible {
@@ -5073,6 +5086,14 @@
 .pf-action-btn--loading {
   cursor: wait;
 }
+@media (prefers-reduced-motion: reduce) {
+  .pf-action-btn {
+    transition: none;
+  }
+  .pf-action-btn:hover {
+    transition: none;
+  }
+}
 
 /* ── Disclosure ── */
 .pf-disclosure {
@@ -5081,9 +5102,9 @@
 .pf-disclosure-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  padding: 6px 0;
+  padding: 8px 0;
   background: none;
   border: none;
   cursor: pointer;
@@ -5104,7 +5125,9 @@
   transition: transform 180ms ease-in-out;
 }
 @media (prefers-reduced-motion: reduce) {
-  .pf-disclosure-icon { transition: none; }
+  .pf-disclosure-icon {
+    transition: none;
+  }
 }
 .pf-disclosure-header[aria-expanded="true"] .pf-disclosure-icon {
   transform: rotate(90deg);
@@ -5178,7 +5201,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 .pf-config-row:last-child {
@@ -5315,12 +5338,11 @@
   font-family: var(--font-monospace-theme);
 }
 
-
 /* ═══════════════ #86: Overview Cards ═══════════════ */
 .pf-cc-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 16px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
@@ -5374,7 +5396,6 @@
   color: var(--text-warning);
 }
 
-
 /* ═══════════════ #87: Setup Journey ═══════════════ */
 .pf-setup-journey {
   max-width: 620px;
@@ -5413,9 +5434,18 @@
   margin-top: 24px;
   justify-content: flex-end;
 }
-.pf-setup-ok { color: var(--text-success); font-weight: 500; }
-.pf-setup-warn { color: var(--text-warning); font-size: 13px; }
-.pf-setup-status { color: var(--text-muted); font-size: 13px; }
+.pf-setup-ok {
+  color: var(--text-success);
+  font-weight: 500;
+}
+.pf-setup-warn {
+  color: var(--text-warning);
+  font-size: 13px;
+}
+.pf-setup-status {
+  color: var(--text-muted);
+  font-size: 13px;
+}
 .pf-setup-optional {
   display: flex;
   align-items: center;

@@ -6,7 +6,12 @@
  * No framework, no global store, no generic component library.
  */
 
-import { type ActionPrimary, type UserState, type ProbeEnvelope, type MaintenanceItem } from "./constants";
+import {
+  type ActionPrimary,
+  type UserState,
+  type ProbeEnvelope,
+  type MaintenanceItem,
+} from "./constants";
 
 // ██████████████████████████████████████████████████████████████████████
 // 1. Status Badge — 6 user-state variants (DESIGN.md §5)
@@ -212,10 +217,12 @@ export interface ErrorAnatomyConfig {
   whatHappened: string;
   impact: string;
   nextStep: string;
-  /** Optional error code for support reference. */
   reasonCode?: string;
-  /** Callback to copy diagnostic information. */
   onCopyDiagnostic?: () => void;
+  /** Override default labels (for i18n). */
+  impactLabel?: string;
+  nextLabel?: string;
+  copyLabel?: string;
 }
 
 /** Render a structured user-visible problem. */
@@ -245,13 +252,16 @@ export function renderErrorAnatomy(
   }
 
   const next = container.createEl("div", { cls: "pf-error-next" });
-  next.createEl("span", { cls: "pf-error-next-label", text: "Next: " });
+  next.createEl("span", {
+    cls: "pf-error-next-label",
+    text: (config.nextLabel || "Next:") + " ",
+  });
   next.createEl("span", { text: config.nextStep });
 
   if (config.onCopyDiagnostic) {
     const btn = container.createEl("button", {
       cls: "pf-error-copy-diagnostic",
-      text: "Copy Diagnostic Information",
+      text: config.copyLabel || "Copy Diagnostic Information",
     });
     btn.addEventListener("click", config.onCopyDiagnostic);
   }
@@ -321,6 +331,8 @@ export interface ImpactConfirmationConfig {
   interruptible: boolean;
   confirmLabel: string;
   cancelLabel: string;
+  replacedLabel?: string;
+  preservedLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -344,7 +356,7 @@ export function renderImpactConfirmation(
     const section = container.createEl("div", { cls: "pf-impact-section" });
     section.createEl("div", {
       cls: "pf-impact-label",
-      text: "Will be replaced:",
+      text: config.replacedLabel || "Will be replaced:",
     });
     for (const item of config.replacedOutputs) {
       section.createEl("div", { cls: "pf-impact-item", text: item });
@@ -355,7 +367,7 @@ export function renderImpactConfirmation(
     const section = container.createEl("div", { cls: "pf-impact-section" });
     section.createEl("div", {
       cls: "pf-impact-label",
-      text: "Will be preserved:",
+      text: config.preservedLabel || "Will be preserved:",
     });
     for (const item of config.preservedData) {
       section.createEl("div", { cls: "pf-impact-item", text: item });
@@ -431,11 +443,14 @@ export function copySupportDiagnostic(
   diagnostic: string,
   onSuccess?: () => void
 ): void {
-  navigator.clipboard.writeText(diagnostic).then(() => {
-    onSuccess?.();
-  }).catch((err: unknown) => {
-    console.warn("[PaperForge] Failed to copy diagnostic:", err);
-  });
+  navigator.clipboard
+    .writeText(diagnostic)
+    .then(() => {
+      onSuccess?.();
+    })
+    .catch((err: unknown) => {
+      console.warn("[PaperForge] Failed to copy diagnostic:", err);
+    });
 }
 
 // ██████████████████████████████████████████████████████████████████████
@@ -454,9 +469,7 @@ export interface LastKnownState {
  * Returns the input with a captured_at timestamp (stored in user_impact
  * won't persist across calls — caller must store externally).
  */
-export function captureLastKnown(
-  envelope: ProbeEnvelope
-): LastKnownState {
+export function captureLastKnown(envelope: ProbeEnvelope): LastKnownState {
   return {
     envelope,
     capturedAt: new Date().toISOString(),
