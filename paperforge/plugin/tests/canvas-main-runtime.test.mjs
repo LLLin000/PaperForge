@@ -397,6 +397,49 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
     });
 
+    it('clicking a long annotation card can jump by a stable fragment when the full quote differs', async () => {
+        const view = makeCanvasView();
+        const activeContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        preview.textContent = [
+            'The OCR paragraph describes progression from benign models.',
+            'Later it mentions invasive adenocarcinoma models and highly metastatic adenocarcinoma models.',
+            'The visible OCR omits several mouse genotype details.'
+        ].join(' ');
+        activeContainer.appendChild(preview);
+        document.body.appendChild(activeContainer);
+        const scrollIntoView = vi.fn();
+        Element.prototype.scrollIntoView = scrollIntoView;
+        view.app = { workspace: { activeLeaf: { view: { containerEl: activeContainer } } } };
+
+        view._renderNativeAnnotationPanel('PAPER_FRAGMENT', { key: 'PAPER_FRAGMENT' }, {
+            state: 'ready',
+            paperKey: 'PAPER_FRAGMENT',
+            annotations: [{
+                display: {
+                    selectedText: 'from benign models (Villin1-CreER Apcfl/fl, Villin1-CreER Apcfl/fl Trp53fl/fl, Villin1-CreER Apcfl/fl KrasG12D/+) to invasive adenocarcinoma models (VAKP) to highly metastatic adenocarcinoma models (VAKPS, VKPN)',
+                    type: 'highlight',
+                    color: '#ffd54f',
+                },
+                pdfLocation: { pageIndex: 2, pageLabel: '3', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-fragment-1' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await Promise.resolve();
+
+        const mark = preview.querySelector('mark.paperforge-active-annotation-match');
+        expect(mark).toBeTruthy();
+        expect(mark.getAttribute('data-match-kind')).toBe('fragment');
+        expect(mark.textContent).toContain('invasive adenocarcinoma models');
+        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+        expect(card.querySelector('.paperforge-annotation-panel-jump-status').textContent).toContain('nearby fragment');
+    });
+
     it('clicking an annotation card finds fulltext in another markdown leaf when the canvas leaf is active', () => {
         const view = makeCanvasView();
         const canvasContainer = document.createElement('div');

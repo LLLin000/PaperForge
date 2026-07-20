@@ -9134,9 +9134,12 @@ class PaperForgeReadingCanvasView extends ItemView {
                     cardEl.setAttribute('data-jump-state', result.opened ? 'opened' : 'resolved');
                     cardEl.removeAttribute('data-anchor-status');
                     cardEl.removeAttribute('data-jump-reason');
-                    if (statusEl) statusEl.textContent = result.opened
-                        ? 'Opened fulltext and matched annotation.'
-                        : 'Matched in fulltext.';
+                    if (statusEl) {
+                        var partialText = result.partial ? ' nearby fragment' : '';
+                        statusEl.textContent = result.opened
+                            ? 'Opened fulltext and matched' + partialText + '.'
+                            : 'Matched' + partialText + ' in fulltext.';
+                    }
                 } else {
                     var reason = (result && result.reason) || 'not-found';
                     cardEl.setAttribute('data-anchor-status', 'unresolved');
@@ -9201,7 +9204,7 @@ class PaperForgeReadingCanvasView extends ItemView {
                 if (typeof mark.scrollIntoView === 'function') {
                     mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-                return { ok: true, mark: mark };
+                return { ok: true, mark: mark, partial: !!mark._paperforgePartialMatch };
             }
         }
         return { ok: false, reason: 'dom-text-not-found' };
@@ -9266,9 +9269,8 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     _jumpToMarkdownEditorBuffer(selectedText) {
-        var needleInfo = this._normalizeTextWithMap(selectedText, false);
-        var looseNeedleInfo = this._normalizeTextWithMap(selectedText, true);
-        if (!needleInfo.text && !looseNeedleInfo.text) return { ok: false, reason: 'missing-selected-text' };
+        var candidates = this._buildSelectedTextMatchCandidates(selectedText);
+        if (!candidates.length) return { ok: false, reason: 'missing-selected-text' };
         var leaves = this._getMarkdownCandidateLeaves();
         for (var i = 0; i < leaves.length; i++) {
             var leaf = leaves[i];
@@ -9280,18 +9282,10 @@ class PaperForgeReadingCanvasView extends ItemView {
             var editor = view.editor;
             if (typeof editor.getValue !== 'function') continue;
             var value = editor.getValue();
-            var hay = this._normalizeTextWithMap(value, false);
-            var needle = needleInfo.text;
-            var idx = needle ? hay.text.indexOf(needle) : -1;
-            if (idx === -1) {
-                hay = this._normalizeTextWithMap(value, true);
-                needle = looseNeedleInfo.text;
-                idx = needle ? hay.text.indexOf(needle) : -1;
-            }
-            if (idx === -1 || !needle) continue;
-            var endIdx = idx + needle.length - 1;
-            var startMap = hay.map[idx];
-            var endMap = hay.map[endIdx];
+            var match = this._findMatchInPlainText(value, candidates);
+            if (!match || !match.startMap || !match.endMap) continue;
+            var startMap = match.startMap;
+            var endMap = match.endMap;
             if (!startMap || !endMap) continue;
             if (this.app && this.app.workspace && typeof this.app.workspace.revealLeaf === 'function') {
                 this.app.workspace.revealLeaf(leaf);
@@ -9313,7 +9307,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             if (typeof editor.focus === 'function') {
                 editor.focus();
             }
-            return { ok: true, editor: editor, from: from, to: to };
+            return { ok: true, editor: editor, from: from, to: to, partial: match.partial };
         }
         return { ok: false, reason: 'editor-text-not-found' };
     }
@@ -9396,6 +9390,76 @@ class PaperForgeReadingCanvasView extends ItemView {
         return { text: normalized.trim(), map: map };
     }
 
+    _addMatchCandidate(candidates, seen, text, partial) {
+        var raw = String(text || '').replace(/\s+/g, ' ').trim();
+        if (!raw) return;
+        var exact = this._normalizeTextWithMap(raw, false).text;
+        var loose = this._normalizeTextWithMap(raw, true).text;
+        if (!exact && !loose) return;
+        var scoreText = loose || exact;
+        if (partial && scoreText.length < 24) return;
+        var key = loose + '|' + exact;
+        if (seen[key]) return;
+        seen[key] = true;
+        candidates.push({ raw: raw, exact: exact, loose: loose, partial: !!partial });
+    }
+
+    _buildSelectedTextMatchCandidates(selectedText) {
+        var raw = String(selectedText || '').replace(/\s+/g, ' ').trim();
+        var candidates = [];
+        var seen = {};
+        this._addMatchCandidate(candidates, seen, raw, false);
+        this._addMatchCandidate(candidates, seen, raw.replace(/\([^)]*\)/g, ' '), true);
+
+        var parts = raw.split(/[,;，；。.!?！？、]+|\s+\b(?:and|or|to)\b\s+/i);
+        for (var i = 0; i < parts.length; i++) {
+            this._addMatchCandidate(candidates, seen, parts[i], true);
+            this._addMatchCandidate(candidates, seen, parts[i].replace(/\([^)]*\)/g, ' '), true);
+        }
+
+        var words = raw.split(/\s+/).filter(Boolean);
+        for (var win = 10; win >= 5; win--) {
+            if (words.length < win) continue;
+            for (var start = 0; start <= words.length - win; start += Math.max(1, Math.floor(win / 2))) {
+                this._addMatchCandidate(candidates, seen, words.slice(start, start + win).join(' '), true);
+            }
+        }
+
+        candidates.sort(function (a, b) {
+            if (a.partial !== b.partial) return a.partial ? 1 : -1;
+            return Math.max(b.loose.length, b.exact.length) - Math.max(a.loose.length, a.exact.length);
+        });
+        return candidates;
+    }
+
+    _findMatchInNormalizedIndex(hay, candidates) {
+        for (var ci = 0; ci < candidates.length; ci++) {
+            var c = candidates[ci];
+            var needle = c.exact;
+            var idx = needle ? hay.exact.text.indexOf(needle) : -1;
+            var source = hay.exact;
+            if (idx === -1) {
+                needle = c.loose;
+                source = hay.loose;
+                idx = needle ? source.text.indexOf(needle) : -1;
+            }
+            if (idx === -1 || !needle) continue;
+            var endIdx = idx + needle.length - 1;
+            var startMap = source.map[idx];
+            var endMap = source.map[endIdx];
+            if (!startMap || !endMap) continue;
+            return { startMap: startMap, endMap: endMap, candidate: c, partial: c.partial };
+        }
+        return null;
+    }
+
+    _findMatchInPlainText(text, candidates) {
+        return this._findMatchInNormalizedIndex({
+            exact: this._normalizeTextWithMap(text, false),
+            loose: this._normalizeTextWithMap(text, true),
+        }, candidates);
+    }
+
     _collectSearchableTextIndex(root, loose) {
         var doc = root.ownerDocument || document;
         var self = this;
@@ -9438,29 +9502,28 @@ class PaperForgeReadingCanvasView extends ItemView {
 
     _highlightFirstTextMatchInRoot(root, selectedText, color) {
         var doc = root.ownerDocument || document;
-        var needle = this._normalizeTextWithMap(selectedText, false).text;
-        var hay = this._collectSearchableTextIndex(root, false);
-        var idx = needle ? hay.text.indexOf(needle) : -1;
-        if (idx === -1) {
-            needle = this._normalizeTextWithMap(selectedText, true).text;
-            hay = this._collectSearchableTextIndex(root, true);
-            idx = needle ? hay.text.indexOf(needle) : -1;
-        }
-        if (idx === -1) return null;
-        var endIdx = idx + needle.length - 1;
-        var startMap = hay.map[idx];
-        var endMap = hay.map[endIdx];
+        var candidates = this._buildSelectedTextMatchCandidates(selectedText);
+        if (!candidates.length) return null;
+        var match = this._findMatchInNormalizedIndex({
+            exact: this._collectSearchableTextIndex(root, false),
+            loose: this._collectSearchableTextIndex(root, true),
+        }, candidates);
+        if (!match) return null;
+        var startMap = match.startMap;
+        var endMap = match.endMap;
         if (!startMap || !endMap) return null;
         var range = doc.createRange();
         range.setStart(startMap.node, startMap.start);
         range.setEnd(endMap.node, endMap.end);
         var mark = doc.createElement('mark');
         mark.className = 'paperforge-active-annotation-match';
+        if (match.partial) mark.setAttribute('data-match-kind', 'fragment');
         mark.style.backgroundColor = this._annotationTint(color || '#ffd54f');
         mark.style.boxShadow = '0 0 0 2px rgba(35, 131, 226, 0.35)';
         var fragment = range.extractContents();
         mark.appendChild(fragment);
         range.insertNode(mark);
+        mark._paperforgePartialMatch = !!match.partial;
         return mark;
     }
 
