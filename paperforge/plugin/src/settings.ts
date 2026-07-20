@@ -1158,6 +1158,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._renderOcrDetail(containerEl);
     } else if (this._selectedDetailModule === "memory") {
       this._renderMemoryDetail(containerEl);
+    } else if (this._selectedDetailModule === "agent") {
+      this._renderAgentDetail(containerEl);
     } else {
       // Fallback to installation
       this._selectedDetailModule = "installation";
@@ -1200,6 +1202,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Render the OCR detail view (Issue #78). */
   _renderOcrDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "ocr");
+    const ocrEnv = this._capabilityState?.["ocr"] ?? createUnknownEnvelope("ocr");
+    const ocrBody = containerEl.createDiv({ cls: "pf-module-body" });
+    ocrBody.createEl("h3", { text: "OCR Status" });
+    if (ocrEnv.user_state === "ready") { ocrBody.createEl("p", { text: "OCR pipeline is functional.", cls: "pf-status-ok" }); }
+    else if (ocrEnv.user_state === "action_required") { renderErrorAnatomy(ocrBody, { whatHappened: "OCR needs attention", impact: ocrEnv.user_impact || "Some papers may have issues.", nextStep: ocrEnv.action?.primary?.label || "Check.", reasonCode: ocrEnv.reason?.code, onCopyDiagnostic: () => this._buildAndCopyDiagnostic() }); }
+    if (ocrEnv.activity_state === "running" && ocrEnv.activity_label) { renderActivityRow(ocrBody, { label: ocrEnv.activity_label, progress: ocrEnv.activity_progress }); }
     // ── Owner controls: cooperative stop only when _ocrProcess exists ──
     const isRunning = this.plugin._ocrProcess != null;
     if (isRunning) {
@@ -1230,8 +1238,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
   /** Render the Memory detail view (Issue #78). */
+  _renderAgentDetail(containerEl: HTMLElement): void {
+    containerEl.createEl("h2", { text: "Agent Integration" });
+    renderStatusBadge(containerEl, "not_enabled");
+    containerEl.createEl("p", { text: "Agent Integration will be available in a future update." });
+    renderActionButton(containerEl, { label: "Copy Diagnostic", onClick: () => this._buildAndCopyDiagnostic() });
+  }
+
   _renderMemoryDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "memory");
+     this._renderModuleDetailShell(containerEl, "memory");
+    const env = this._capabilityState?.["memory"] ?? createUnknownEnvelope("memory");
+    const body = containerEl.createDiv({ cls: "pf-module-body" });
+    body.createEl("h3", { text: "Retrieval Coverage" });
+    if (env.user_state === "ready") {
+      body.createEl("p", { text: "All papers are indexed and searchable.", cls: "pf-status-ok" });
+    } else if (env.user_state === "action_required") {
+      renderErrorAnatomy(body, { whatHappened: "Smart Retrieval needs attention", impact: env.user_impact || "Search may not work.", nextStep: env.action?.primary?.label || "Rebuild index.", reasonCode: env.reason?.code, onCopyDiagnostic: () => this._buildAndCopyDiagnostic() });
+    }
+    if (env.activity_state === "running" && env.activity_label) { renderActivityRow(body, { label: env.activity_label, progress: env.activity_progress }); }
     // Memory detail surface consumes the shared envelope shell — no duplicate CTA.
   }
   /** Dispatch a backend action command through exact (verb, command) allowlist (Issue #78). */
