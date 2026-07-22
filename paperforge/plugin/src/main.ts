@@ -68,7 +68,7 @@ export default class PaperForgePlugin extends Plugin {
     } catch {
       // Runtime UI exposes repair/install actions; plugin loading must continue.
     }
-    setLanguage(this.app);
+    setLanguage(this.app, this.settings.language);
 
     this.registerView(
       VIEW_TYPE_PAPERFORGE,
@@ -281,6 +281,7 @@ export default class PaperForgePlugin extends Plugin {
       resources_dir: "Resources",
       literature_dir: "Literature",
       base_dir: "Bases",
+      zotero_data_dir: "",
     };
 
     try {
@@ -298,6 +299,7 @@ export default class PaperForgePlugin extends Plugin {
         literature_dir:
           vc.literature_dir || data.literature_dir || DEFAULTS.literature_dir,
         base_dir: vc.base_dir || data.base_dir || DEFAULTS.base_dir,
+        zotero_data_dir: data.zotero_data_dir || DEFAULTS.zotero_data_dir,
       };
     } catch (e) {
       console.warn(
@@ -337,6 +339,10 @@ export default class PaperForgePlugin extends Plugin {
       }
     }
 
+    if (pathConfig.zotero_data_dir !== undefined) {
+      data.zotero_data_dir = pathConfig.zotero_data_dir;
+    }
+
     if (!data.schema_version) {
       data.schema_version = "2";
     }
@@ -366,7 +372,8 @@ export default class PaperForgePlugin extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const saved = ((await this.loadData()) ?? {}) as Record<string, unknown>;
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
     if (this.settings.features && DEFAULT_SETTINGS.features) {
       this.settings.features = Object.assign(
         {},
@@ -377,22 +384,38 @@ export default class PaperForgePlugin extends Plugin {
     if (!this.settings.frozen_skills) {
       this.settings.frozen_skills = {};
     }
+
+    // Existing installations predate the Setup Journey. The previous rollout
+    // wrote the new default false into their data, so migrate only profiles
+    // that already carried durable pre-redesign state and never started the journey.
+    const establishedInstall =
+      !!saved.capabilityState ||
+      !!saved.last_seen_version ||
+      !!saved.vault_path;
+    if (
+      saved._setup_complete === false &&
+      establishedInstall &&
+      saved._setup_journey_started !== true
+    ) {
+      this.settings._setup_complete = true;
+    }
+
     const pfConfig = this.readPaperforgeJson();
     this.settings.system_dir = pfConfig.system_dir;
     this.settings.resources_dir = pfConfig.resources_dir;
     this.settings.literature_dir = pfConfig.literature_dir;
     this.settings.base_dir = pfConfig.base_dir;
+    if (pfConfig.zotero_data_dir) {
+      this.settings.zotero_data_dir = pfConfig.zotero_data_dir;
+    } else if (this.settings.zotero_data_dir?.trim()) {
+      this.savePaperforgeJson({
+        zotero_data_dir: this.settings.zotero_data_dir.trim(),
+      });
+    }
 
     if (this.settings.python_path && this.settings.python_path.trim()) {
       const pp = this.settings.python_path.trim();
-      if (!fs.existsSync(pp)) {
-        console.warn(
-          `PaperForge: Saved python_path "${pp}" no longer exists - showing stale warning`
-        );
-        this.settings._python_path_stale = true;
-      } else {
-        this.settings._python_path_stale = false;
-      }
+      this.settings._python_path_stale = !fs.existsSync(pp);
     }
   }
 

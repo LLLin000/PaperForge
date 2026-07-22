@@ -1,13 +1,13 @@
-> **Branch:** `master` | **Last Updated:** 2026-07-19
-> **Active work:** Redesign PRD #83 and agent-ready issues #84–#93 are published; #84 capability presentation contract is the next Ask Matt implementation.
+> **Branch:** `master` | **Last Updated:** 2026-07-20
+> **Active work:** Control Center redesign #83–#93 is implemented, browser-audited, and deployed to Literature-hub; release remains owner-controlled and deferred.
 >
 > ---
 >
-> **Current state:** Release N+1 implementation is verified on `master` through `b41b4c88`; #81 remains open only for an explicit release decision, #82 remains blocked on the N+1 support window, and no release was performed.
+> **Current state:** The production plugin now uses the approved five-module / three-destination model, localized schema-v2 capability presentation, progressive Setup Journey, actionable-only Maintenance, contextual module details, and Obsidian-native responsive styling. Live Obsidian 1.12.7 verification exercised every English and Chinese page with no untranslated keys or horizontal overflow.
 >
-> Live diagnosis confirmed duplicated runtime actions, stale-as-“待接入” presentation, and an asymmetric Module Detail implementation: Installation renders a one-item legacy selector while Library/OCR/Memory use the shared selector. A user grilling session approved a five-module model (Foundation, Library, OCR, Smart Retrieval, Agent Integration), three top-level destinations (Overview, Maintenance, Help), a four-stage dynamic setup journey, user-problem-only Maintenance, and Obsidian-native progressive disclosure.
+> The final repair pass fixed persisted setup migration, stale state handling, backend action localization, Chinese host-locale detection, card grid min-content overflow, ordinary DOM compatibility, duplicate legacy surfaces, and user-facing OCR notices. Plugin verification is 420/420 with clean TypeScript and production build; the corrected bundle is deployed to `D:/L/OB/Literature-hub/.obsidian/plugins/paperforge`.
 >
-> Next: implement #84 through Ask Matt. Package/tag publication is deferred by owner direction and must not be performed without renewed approval.
+> Next: owner acceptance of the deployed Control Center. Package/tag publication and #82 N+2 deletion remain deferred until explicitly authorized.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -55,7 +55,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 86-paper pre-merge corpus diff | **86/86 no diff** ✅ |
 | 6 fixture-backed v3 parity gates | **6/6 pass** ✅ |
 | Focused OCR rebuild/redo/maintenance paths | **99 passed, 1 Windows signal test skipped, 1 unrelated empty-result regression deselected** ✅ |
-| Plugin tests + TypeScript + production build | **390/390 passed; typecheck/build clean; production bundle 259.3KB** ✅ |
+| Plugin tests + TypeScript + production build | **420/420 passed; typecheck/build clean; production bundle 280.1KB** ✅ |
 | Live Literature-hub maintenance UI | **734 All / 700 Recommended; no captured errors** ✅ |
 | Maintenance regression action model | **19/19 passed** ✅ (per-row canonical action routing, redo confirmation gate, cache manifest preservation) |
 | Canonical setup/config migration (#75) | **61 passed, 0 failed** ✅ (fresh/v1/v2 config, CLI routing, path forwarding, failure exit, idempotent rerun) |
@@ -65,6 +65,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Library/OCR/Memory capability tracers (#78) | **65 backend tests + 178 focused plugin tests, 324 full plugin tests passed across 11 files; typecheck/build clean; backup restore end-to-end** ✅ |
 | SecretStorage capability secrets (#79) | **Backend-focused gate, plugin full suite passes; typecheck/build clean** ✅ |
 | Maintenance probe — actionable rows, draft, destructive confirmation (#80) | **Backend focused gate 77/77; plugin full suite 381/382** (only pre-existing capability-state test expecting help.stale but receiving help.invalid_response) ✅ **; typecheck/build clean; production bundle 264.4KB; real Obsidian 1.12.7 smoke at 730 and 768 confirmed Maintenance entry focus, actionable-only rows, keyboard Enter, accessible destructive confirmation with exact backend effect, focus trap/restoration, owned inert cleanup, redacted editable issue draft, no token input/auto-open, explicit GitHub open only, URL re-redaction, no horizontal overflow**
+| Control Center redesign (#83–#93) | **420/420 plugin tests; typecheck/build clean; every Overview, five Module Detail, Maintenance, Help, and four Setup Journey pages exercised in English and Chinese; no untranslated keys or horizontal overflow; deployed to Literature-hub** ✅ |
 
 </br>
 </br>
@@ -135,6 +136,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 
 | 36 | — | Maintenance probe: backend-derived rows, privacy-safe local draft, accessible destructive confirmation (#80) | Feature | Implementation in Issue #80 worktree. Backend-focused gate 77/77; plugin full suite 381/382 (pre-existing capability-state test expecting help.stale but receiving help.invalid_response); typecheck/build clean; production bundle 264.4KB; Obsidian 1.12.7 smoke 730/768 with actionable-only rows, keyboard Enter, accessible destructive confirmation with exact backend effect, focus trap/restoration, owned inert cleanup, redacted editable issue draft, no token input/auto-open, explicit GitHub open only, URL re-redaction, no horizontal overflow. | — |
 | 37 | — | Literature-hub loaded duplicate `.obsidian/plugins/paperforge.bak`, while the correct bundle used an unwarmed Managed Runtime and the published 1.5.15 backend lacked `probe` | Deployment/runtime fix | Moved the duplicate outside the plugin scan path, migrated both credentials with readback verification, installed the current backend into the canonical managed venv, restored idempotent migration on startup, shared and warmed the runtime before dispatch, synchronized manifest `minAppVersion` 1.11.4, rebuilt and redeployed. Live cold-start verification: #78 overview/detail, #79 configured secret state, #80 three-row Maintenance inbox; no captured Obsidian errors. | — |
+| 38 | — | Control Center cutover left raw i18n keys, legacy settings surfaces, stale setup state, non-localized actions/notices, Chinese UI falling back to English, and a two-column card grid wider than its host pane | UI/state repair | Completed the five-module / three-destination cutover, removed duplicate surfaces, normalized persisted state, localized backend action IDs and notices, added host document-language fallback, changed card columns to `minmax(0, 1fr)`, and verified every English/Chinese page in real Obsidian without overflow. | — |
 ## 3. Remaining Issues — Release-Readiness Layers
 
 ### Layer 1: OCR Truth Coverage — Layout-Category Audit
@@ -162,7 +164,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) completed and the resulting retrieval fixes are merged to `master`. The live Literature-hub vault has a healthy 2560-dimensional vec0 index; M and @ search paths are operational.
 
 ### Layer 3: Plugin UI
-The OCR maintenance slice has a canonical All/Recommended state model, selected batch actions, streaming progress, cooperative stop, and canonical per-row action routing with confirmation gates for destructive operations. Issues #76–#80 now provide production capability envelopes, the four-destination navigation shell, the machine-local Managed Runtime lifecycle, real Library/OCR/Memory detail probes, and the Maintenance probe with actionable-only backend-derived rows, privacy-safe local issue drafts, and accessible destructive confirmation. All six modules are real probes. Stale or malformed persisted evidence fails closed.
+The #83–#93 redesign is implemented and deployed: five operational modules (Foundation, Library, OCR, Smart Retrieval, Agent Integration), three top-level destinations (Overview, Maintenance, Help), contextual Module Detail, four-stage Setup Journey, schema-v2 capability presentation, actionable-only Maintenance, module-owned configuration, and localized privacy-safe diagnostics. Live Obsidian exercised every English and Chinese page without untranslated keys or horizontal overflow. OCR workspace remains separate from Settings.
 
 ### Layer 4: Downstream Tools
 `chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
@@ -170,7 +172,7 @@ The OCR maintenance slice has a canonical All/Recommended state model, selected 
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. 🟡 **[Control-center redesign PRD #83](https://github.com/LLLin000/PaperForge/issues/83)** — approved source of truth; ten dependency-ordered agent-ready issues (#84–#93) are published. Start with #84 only.
+1. ✅ **[Control-center redesign PRD #83](https://github.com/LLLin000/PaperForge/issues/83)** — #84–#93 implementation is merged to `master`, browser-audited page by page in English and Chinese, and deployed to Literature-hub for owner acceptance.
 2. 🟡 **Release cutover #81/#82** — N+1 code is verified on `master`, but #81 stays open for the owner-controlled release gate; N+2 deletion #82 stays open until an N+1 package and support window exist. No release is authorized.
 3. ✅ **[Capability-state vocabulary](https://github.com/LLLin000/PaperForge/issues/69)** — resolved at `issuecomment-4971161072`. Orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
 4. ✅ **[Managed runtime](https://github.com/LLLin000/PaperForge/issues/70)** — resolved at `issuecomment-4971239398`. Plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
@@ -203,7 +205,7 @@ Remaining legacy OCR issues (carried forward):
 - [x] Implement Maintenance probe with backend-derived rows, privacy-safe local draft, and accessible destructive confirmation ([#80](https://github.com/LLLin000/PaperForge/issues/80)) — backend focused gate 77/77; plugin full suite 381/382 (only pre-existing capability-state test expecting help.stale but receiving help.invalid_response); typecheck/build clean; production bundle 264.4KB; real Obsidian 1.12.7 smoke at 730 and 768 confirmed actionable-only rows, keyboard Enter, accessible destructive confirmation with exact backend effect, focus trap/restoration, owned inert cleanup, redacted editable issue draft, no token input/auto-open, explicit GitHub open only, URL re-redaction, no horizontal overflow
 - [x] Complete and verify Release N+1 implementation code ([#81](https://github.com/LLLin000/PaperForge/issues/81)) — 390/390 plugin tests, typecheck/build clean, live managed dispatch verified; issue remains open for the release gate.
 - [ ] Complete Release N+2 deletion ([#82](https://github.com/LLLin000/PaperForge/issues/82)) only after an N+1 package and support window; publication is currently deferred by owner direction.
-- [x] Publish redesign PRD [#83](https://github.com/LLLin000/PaperForge/issues/83) and ten dependency-ordered issues [#84–#93](https://github.com/LLLin000/PaperForge/issues/84); begin with #84 through Ask Matt.
+- [x] Implement redesign PRD [#83](https://github.com/LLLin000/PaperForge/issues/83) and issues #84–#93; verify every Overview, Module Detail, Maintenance, Help, and Setup Journey page in English and Chinese; deploy the corrected bundle to Literature-hub.
 
 ## 5. Key File Map
 
@@ -369,6 +371,8 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-19 | Backend owns action semantics; plugin owns localized presentation | Stable action IDs, exact commands, scope, and safety facts remain backend-authorized, while the plugin supplies user language and visual priority. This prevents frontend action guessing without leaking English CLI labels. |
 | 2026-07-19 | PaperForge UI is Obsidian-native with progressive disclosure | Default surfaces show outcomes, impact, and one next step. Technical detail becomes a one-click privacy-safe Support Diagnostic rather than ordinary UI content. |
 | 2026-07-19 | Release remains owner-controlled and deferred | N+1 implementation can be verified without publishing. Do not create a tag, package release, or support-window transition until the owner explicitly reauthorizes release. |
+| 2026-07-20 | Resolve host locale from the rendered Obsidian document when vault config is unavailable | Obsidian 1.12.7 exposes Chinese through `document.documentElement.lang` while the previous vault/localStorage-only resolver returned English. Following the host document keeps plugin language aligned without adding a setting or dependency. |
+| 2026-07-20 | Use zero-minimum grid tracks for overview cards | CSS Grid `1fr` tracks preserve min-content width and overflow narrow Obsidian settings panes. `minmax(0, 1fr)` plus normal wrapping preserves the two-column layout without clipping or horizontal scroll. |
 
 ---
 
@@ -479,6 +483,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-19 | Literature-hub #78–#80 deployment recovery | Found Obsidian loading duplicate `.obsidian/plugins/paperforge.bak`; moved it outside plugin discovery, migrated OCR/Vector secrets with readback verification, synchronized manifest 1.11.4, installed the current backend into the canonical managed venv, restored startup migration, and warmed the shared Managed Runtime before dispatch. Live cold-restart checks showed real Library/OCR/Memory actions, four-button detail selector, three actionable Maintenance rows, configured secrets with no plaintext, and no captured errors. Verification: 384/384 plugin tests, typecheck/build clean, 259.3KB bundle. | §2-6 |
 | 2026-07-19 | Control-center UX domain redesign | Live diagnosis proved that the current six-module vocabulary and navigation were not understandable despite passing earlier implementation gates. Completed a user grilling/domain-modeling session; approved five operational modules, three top-level destinations, dynamic setup, six user statuses, navigation-only cards, module-owned configuration, actionable-problem-only Maintenance, separate OCR workspace, and one-click redacted diagnostics. Added plugin domain language, ADR, Obsidian-native `DESIGN.md`, full UX specification, acceptance matrix, and ten dependency-ordered implementation slices. No production code changed. | `paperforge/plugin/CONTEXT.md`, `paperforge/plugin/DESIGN.md`, `project/current/control-center-ux-redesign.md`, `docs/adr/0001-capability-action-semantics.md` |
 | 2026-07-19 | N+1 cutover repair + redesign issue map | Completed the final ManagedRuntime/SecretStorage repair (`b41b4c88`), verified 390/390 plugin tests, clean typecheck/build, and live managed dispatch. Kept #81 open for the owner-controlled release gate and #82 open for the future N+2 window. Closed superseded PRD #74; published replacement PRD #83 and dependency-ordered implementation issues #84–#93. No release performed. | §2–4 |
+| 2026-07-20 | Control Center implementation, repair, and live page-by-page acceptance | Completed #84–#93, then repaired setup migration, stale state adaptation, duplicated legacy surfaces, action/notice localization, Chinese locale detection, primitive DOM compatibility, card-grid overflow, and transient baseline summary state. Real Obsidian 1.12.7 exercised Overview, all five Module Details, Maintenance, Help, and all four Setup Journey stages in English and Chinese; no untranslated keys or horizontal overflow. Verification: 420/420 plugin tests, clean typecheck/build, 280.1KB production bundle deployed to Literature-hub. | §2–6 |
 
 ## 9. Historical Detail Archive
 

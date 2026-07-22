@@ -4482,8 +4482,11 @@
 /* ── Module Grid ── */
 .pf-control-center .pf-cc-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+.pf-control-center .pf-cc-card-item {
+  min-width: 0;
 }
 
 @container pfcc (max-width: 620px) {
@@ -5067,11 +5070,6 @@
   transition: opacity 120ms ease-out;
 }
 .pf-action-btn:hover:not(:disabled) {
-  @media (prefers-reduced-motion: reduce) {
-    .pf-action-btn {
-      transition: none;
-    }
-  }
   opacity: 0.85;
 }
 .pf-action-btn:focus-visible {
@@ -5480,5 +5478,194 @@
   .pf-global-refresh-btn,
   .pf-global-refresh-btn:hover {
     transition: none;
+  }
+}
+
+/* Control Center cutover: Obsidian-native page composition. */
+.pf-control-center .pf-cc-card {
+  width: 100%;
+  min-height: 140px;
+  box-sizing: border-box;
+  appearance: none;
+  box-shadow: none;
+  text-align: left;
+  color: var(--text-normal);
+  cursor: pointer;
+  align-items: stretch;
+  overflow: hidden;
+  white-space: normal;
+}
+.pf-control-center .pf-cc-card:hover {
+  background: var(--background-modifier-hover);
+}
+.pf-cc-card-title,
+.pf-module-summary-header,
+.pf-maintenance-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pf-cc-card-title {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+}
+.pf-cc-card-title {
+  width: 100%;
+}
+.pf-cc-card-consequence,
+.pf-module-summary-consequence,
+.pf-maintenance-inbox-item-reason,
+.pf-maintenance-inbox-item-impact {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.pf-cc-card-activity,
+.pf-cc-card-last-known {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+.pf-cc-card-arrow {
+  align-self: flex-end;
+  margin-top: auto;
+  color: var(--text-faint);
+}
+.pf-module-detail-shell,
+.pf-module-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pf-module-summary {
+  padding: 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+}
+.pf-module-summary .pf-action-btn {
+  margin-top: 12px;
+}
+.pf-module-diagnostics {
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+.pf-module-diagnostics-body {
+  padding-top: 8px;
+  color: var(--text-faint);
+  font-family: var(--font-monospace);
+  overflow-wrap: anywhere;
+}
+.pf-module-facts {
+  border-top: 1px solid var(--background-modifier-border);
+}
+.pf-module-fact {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-small);
+}
+.pf-module-fact > :first-child {
+  color: var(--text-muted);
+}
+.pf-module-switcher {
+  display: none;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.pf-help-section {
+  padding: 16px 0;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.pf-help-section:first-of-type {
+  border-top: 0;
+}
+.pf-help-task {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
+  padding: 8px 12px;
+  text-align: left;
+}
+.pf-help-problem,
+.pf-maintenance-inbox-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  padding: 16px 0;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.pf-help-problem {
+  grid-template-columns: minmax(120px, auto) 1fr;
+}
+.pf-maintenance-inbox-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pf-maintenance-empty-state {
+  padding: 24px 0;
+  text-align: center;
+}
+.pf-maintenance-empty-state h3,
+.pf-maintenance-empty-state p {
+  margin: 4px 0;
+}
+.pf-maintenance-empty-state p {
+  color: var(--text-muted);
+}
+.pf-setup-progress {
+  counter-reset: pf-setup-step;
+}
+.pf-setup-step {
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+.pf-setup-step--active {
+  border-bottom-color: var(--interactive-accent);
+}
+.pf-setup-step--done {
+  border-bottom-color: var(--text-success);
+}
+
+.pf-agent-config-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+}
+.pf-agent-config-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 730px) {
+  .pf-module-detail-selector {
+    display: none;
+  }
+  .pf-module-switcher {
+    display: block;
+  }
+  .pf-help-problem,
+  .pf-maintenance-inbox-item {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-control-center *,
+  .pf-module-detail-shell *,
+  .pf-setup-journey * {
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
   }
 }

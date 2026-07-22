@@ -240,7 +240,7 @@ export function renderErrorAnatomy(
   const impact = container.createEl("div", { cls: "pf-error-impact" });
   impact.createEl("span", {
     cls: "pf-error-impact-label",
-    text: "Impact: ",
+    text: (config.impactLabel || "Impact:") + " ",
   });
   impact.createEl("span", { text: config.impact });
 

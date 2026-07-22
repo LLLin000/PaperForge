@@ -8,18 +8,29 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { JSDOM } from "jsdom";
 
 // ── Hoisted mutable state ──
-const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens } = vi.hoisted(() => {
-  const modalOpens: Array<{ kind: string; title: string; effectLabel: string; onConfirm?: () => void; draft: unknown }> = [];
-  const noticeCalls: string[] = [];
-  const spawnedProcesses: Array<{
-    args: string[];
-    onData?: (data: unknown) => void;
-    onError?: (err: Error) => void;
-    onClose?: (code: number | null) => void;
-  }> = [];
-  const execFileCalls: Array<{ args: string[]; cb?: (err: Error | null, stdout: string, stderr: string) => void }> = [];
-  return { noticeCalls, spawnedProcesses, execFileCalls, modalOpens };
-});
+const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens } = vi.hoisted(
+  () => {
+    const modalOpens: Array<{
+      kind: string;
+      title: string;
+      effectLabel: string;
+      onConfirm?: () => void;
+      draft: unknown;
+    }> = [];
+    const noticeCalls: string[] = [];
+    const spawnedProcesses: Array<{
+      args: string[];
+      onData?: (data: unknown) => void;
+      onError?: (err: Error) => void;
+      onClose?: (code: number | null) => void;
+    }> = [];
+    const execFileCalls: Array<{
+      args: string[];
+      cb?: (err: Error | null, stdout: string, stderr: string) => void;
+    }> = [];
+    return { noticeCalls, spawnedProcesses, execFileCalls, modalOpens };
+  }
+);
 
 // ── Mocks ──
 vi.mock("../src/release-notes.json", () => ({ default: { versions: [] } }));
@@ -29,7 +40,10 @@ vi.mock("obsidian", () => {
     PluginSettingTab: class {
       containerEl: HTMLDivElement;
       app: Record<string, unknown>;
-      constructor(app: Record<string, unknown>, _plugin: Record<string, unknown>) {
+      constructor(
+        app: Record<string, unknown>,
+        _plugin: Record<string, unknown>
+      ) {
         this.app = app;
         this.containerEl = document.createElement("div");
       }
@@ -47,7 +61,9 @@ vi.mock("obsidian", () => {
         this.nameEl.className = "setting-item-name";
         this.descEl = Object.assign(document.createElement("div"), {
           className: "setting-item-description",
-          setText: (t: string) => { this.descEl.textContent = t; },
+          setText: (t: string) => {
+            this.descEl.textContent = t;
+          },
         });
         this.controlEl = document.createElement("div");
         this.controlEl.className = "setting-item-control";
@@ -56,38 +72,71 @@ vi.mock("obsidian", () => {
         this.settingEl.appendChild(this.controlEl);
         containerEl.appendChild(this.settingEl);
       }
-      setName(text: string) { this.nameEl.textContent = text; return this; }
-      setDesc(text: string) { this.descEl.textContent = text; return this; }
-      addText(cb: (text: Record<string, unknown>) => void) { return this; }
-      addToggle(cb: (toggle: Record<string, unknown>) => void) { return this; }
+      setName(text: string) {
+        this.nameEl.textContent = text;
+        return this;
+      }
+      setDesc(text: string) {
+        this.descEl.textContent = text;
+        return this;
+      }
+      addText(cb: (text: Record<string, unknown>) => void) {
+        return this;
+      }
+      addToggle(cb: (toggle: Record<string, unknown>) => void) {
+        return this;
+      }
       addDropdown(cb: (dropdown: Record<string, unknown>) => void) {
         const select = document.createElement("select");
         this.controlEl.appendChild(select);
         const dropdown = {
           addOption: () => {},
-          setValue: function () { return this; },
-          onChange: function () { return this; },
+          setValue: function () {
+            return this;
+          },
+          onChange: function () {
+            return this;
+          },
         };
         cb(dropdown);
         return this;
       }
-      addButton(cb: (button: Record<string, unknown>) => void) { return this; }
-      addExtraButton(cb: (btn: Record<string, unknown>) => void) { return this; }
+      addButton(cb: (button: Record<string, unknown>) => void) {
+        return this;
+      }
+      addExtraButton(cb: (btn: Record<string, unknown>) => void) {
+        return this;
+      }
     },
     Modal: class {
       app: Record<string, unknown>;
       contentEl: HTMLDivElement;
-      constructor(app: Record<string, unknown>) { this.app = app; this.contentEl = document.createElement("div"); }
+      constructor(app: Record<string, unknown>) {
+        this.app = app;
+        this.contentEl = document.createElement("div");
+      }
       open() {
         const self = this as Record<string, unknown>;
         const kind = this.constructor.name;
         const cfg = self["_config"];
-        const title = cfg && typeof cfg === "object" ? String(Reflect.get(cfg, "title") ?? "") : "";
-        const effectLabel = cfg && typeof cfg === "object" ? String(Reflect.get(cfg, "effectLabel") ?? "") : "";
-        const cfgDraft = cfg && typeof cfg === "object" ? Reflect.get(cfg, "_draft") : undefined;
+        const title =
+          cfg && typeof cfg === "object"
+            ? String(Reflect.get(cfg, "title") ?? "")
+            : "";
+        const effectLabel =
+          cfg && typeof cfg === "object"
+            ? String(Reflect.get(cfg, "effectLabel") ?? "")
+            : "";
+        const cfgDraft =
+          cfg && typeof cfg === "object"
+            ? Reflect.get(cfg, "_draft")
+            : undefined;
         const draft = cfgDraft ?? self["_draft"] ?? null;
         const rawOnConfirm = self["_onConfirm"];
-        const onConfirm = typeof rawOnConfirm === "function" ? (rawOnConfirm as () => void) : undefined;
+        const onConfirm =
+          typeof rawOnConfirm === "function"
+            ? (rawOnConfirm as () => void)
+            : undefined;
         modalOpens.push({ kind, title, effectLabel, onConfirm, draft });
       }
       close() {}
@@ -103,12 +152,35 @@ vi.mock("obsidian", () => {
 });
 
 // Mock node built-ins used by settings.ts
-vi.mock("fs", () => ({ default: {}, existsSync: () => false, readFileSync: () => "{}", writeFileSync: () => {}, readdirSync: () => [], statSync: () => ({}), accessSync: () => {}, constants: { X_OK: 1 } }));
-vi.mock("path", () => ({ default: {}, join: (...args: string[]) => args.join("/"), dirname: (p: string) => p.split("/").slice(0, -1).join("/"), resolve: (...args: string[]) => args.join("/") }));
-vi.mock("os", () => ({ default: {}, homedir: () => "/home/user", platform: () => "win32" }));
+vi.mock("fs", () => ({
+  default: {},
+  existsSync: () => false,
+  readFileSync: () => "{}",
+  writeFileSync: () => {},
+  readdirSync: () => [],
+  statSync: () => ({}),
+  accessSync: () => {},
+  constants: { X_OK: 1 },
+}));
+vi.mock("path", () => ({
+  default: {},
+  join: (...args: string[]) => args.join("/"),
+  dirname: (p: string) => p.split("/").slice(0, -1).join("/"),
+  resolve: (...args: string[]) => args.join("/"),
+}));
+vi.mock("os", () => ({
+  default: {},
+  homedir: () => "/home/user",
+  platform: () => "win32",
+}));
 vi.mock("child_process", () => {
   const mod = {
-    execFile: (_path: string, args: string[], _opts: Record<string, unknown>, cb?: (err: Error | null, stdout: string, stderr: string) => void) => {
+    execFile: (
+      _path: string,
+      args: string[],
+      _opts: Record<string, unknown>,
+      cb?: (err: Error | null, stdout: string, stderr: string) => void
+    ) => {
       execFileCalls.push({ args: [...args], cb });
       // Defer callback so tests can inspect state before terminal cleanup
       if (cb) setTimeout(() => cb(null, "{}", ""), 0);
@@ -118,7 +190,11 @@ vi.mock("child_process", () => {
     spawn: (_path: string, args: string[], _opts: Record<string, unknown>) => {
       const self = {
         args: [...args],
-        stdout: { on: (_ev: string, cb: (data: unknown) => void) => { self.onData = cb; } },
+        stdout: {
+          on: (_ev: string, cb: (data: unknown) => void) => {
+            self.onData = cb;
+          },
+        },
         stderr: { on: () => {} },
         stdin: { write: (_s: string) => true },
         kill: (_sig: string) => {},
@@ -129,20 +205,24 @@ vi.mock("child_process", () => {
       spawnedProcesses.push(self);
       return {
         args: [...args],
-        stdout: { on: (_ev: string, cb: (data: unknown) => void) => { self.onData = cb; } },
+        stdout: {
+          on: (_ev: string, cb: (data: unknown) => void) => {
+            self.onData = cb;
+          },
+        },
         stderr: { on: () => {} },
         stdin: { write: (_s: string) => true },
         kill: (_sig: string) => {},
         on: (ev: string, cb: (arg: unknown) => void) => {
           if (ev === "error") self.onError = cb as (err: Error) => void;
-          if (ev === "close") self.onClose = cb as (code: number | null) => void;
+          if (ev === "close")
+            self.onClose = cb as (code: number | null) => void;
         },
       };
     },
   };
   return { ...mod, default: mod };
 });
-
 
 vi.mock("../src/services/python-bridge", () => ({
   resolvePythonExecutable: () => ({ path: "/usr/bin/python3", extraArgs: [] }),
@@ -177,7 +257,10 @@ vi.mock("../src/services/ocr-maintenance-ui", () => ({
 vi.mock("../src/services/managed-runtime", () => ({
   ManagedRuntime: class {},
   runtimeActionsForHealth: () => [],
-  resolveRuntimeCommand: (run: unknown) => ({ command: "/usr/bin/python3", args: [] }),
+  resolveRuntimeCommand: (run: unknown) => ({
+    command: "/usr/bin/python3",
+    args: [],
+  }),
 }));
 
 vi.mock("../src/utils/disclosure", () => ({
@@ -187,12 +270,28 @@ vi.mock("../src/utils/disclosure", () => ({
 
 vi.mock("../src/services/progress-parser", () => ({
   processProgressChunk: (chunk: string, _buffer: string) => {
-    const events: Array<{ event: string; current?: number; total?: number; key?: string }> = [];
+    const events: Array<{
+      event: string;
+      current?: number;
+      total?: number;
+      key?: string;
+    }> = [];
     for (const line of chunk.split("\n")) {
       const m = line.match(/^(\S+)\s+START\s+(\d+)/);
-      if (m) { events.push({ event: "START", total: parseInt(m[2]) }); continue; }
+      if (m) {
+        events.push({ event: "START", total: parseInt(m[2]) });
+        continue;
+      }
       const m2 = line.match(/^(\S+)\s+PROGRESS\s+(\d+)\s+(\d+)(?:\s+(\S+))?/);
-      if (m2) { events.push({ event: "PROGRESS", current: parseInt(m2[2]), total: parseInt(m2[3]), key: m2[4] || "" }); continue; }
+      if (m2) {
+        events.push({
+          event: "PROGRESS",
+          current: parseInt(m2[2]),
+          total: parseInt(m2[3]),
+          key: m2[4] || "",
+        });
+        continue;
+      }
     }
     return { events, buffer: "" };
   },
@@ -206,7 +305,10 @@ import { setLanguage } from "../src/i18n";
 function fakeApp() {
   return {
     vault: { adapter: { basePath: "/vault" }, getConfig: () => "en" },
-    workspace: { getLeavesOfType: () => [], onLayoutReady: (cb: () => void) => cb?.() },
+    workspace: {
+      getLeavesOfType: () => [],
+      onLayoutReady: (cb: () => void) => cb?.(),
+    },
   };
 }
 
@@ -219,7 +321,11 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
     loadSettings: vi.fn(),
     readPaperforgeJson: () => ({}),
     _ocrProcess: null as unknown,
-    _ocrProgress: null as { current: number; total: number; key: string } | null,
+    _ocrProgress: null as {
+      current: number;
+      total: number;
+      key: string;
+    } | null,
     _ocrBuffer: "",
     _ocrWasStopped: false,
     _embedProcess: null as unknown,
@@ -234,9 +340,19 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
 function makeTab(data: Record<string, unknown> = {}) {
   const tab = new PaperForgeSettingTab(fakeApp() as any, fakePlugin(data));
   // wire managed runtime mock
-  const rt = { current: () => ({ path: "/usr/bin/python3", version: "3.11", state: "ready" }), status: () => Promise.resolve({ state: "ready" }) };
+  const rt = {
+    current: () => ({
+      path: "/usr/bin/python3",
+      version: "3.11",
+      state: "ready",
+    }),
+    status: () => Promise.resolve({ state: "ready" }),
+  };
   (tab as any)._ensureManagedRuntime = () => rt;
-  (tab as any)._resolveRuntimeCommand = () => ({ path: "/usr/bin/python3", args: [] });
+  (tab as any)._resolveRuntimeCommand = () => ({
+    path: "/usr/bin/python3",
+    args: [],
+  });
   (tab as any)._capabilityState = data.capabilityState || {};
   (tab as any)._selectedDetailModule = "";
   (tab as any)._probing = new Set<string>();
@@ -246,7 +362,6 @@ function makeTab(data: Record<string, unknown> = {}) {
 }
 
 let dom: JSDOM;
-
 
 // ── Obsidian DOM polyfills ──
 function polyfillObsidianDom(doc: Document) {
@@ -259,44 +374,75 @@ function polyfillObsidianDom(doc: Document) {
   const origCreate = doc.createElement.bind(doc);
 
   if (!ht.createEl) {
-    ht.createEl = function(tag: string, opts?: { cls?: string; text?: string; attr?: Record<string, string>; title?: string }, cb?: (el: HTMLElement) => void) {
+    ht.createEl = function (
+      tag: string,
+      opts?: {
+        cls?: string;
+        text?: string;
+        attr?: Record<string, string>;
+        title?: string;
+      },
+      cb?: (el: HTMLElement) => void
+    ) {
       const el = origCreate(tag);
       if (opts?.cls) el.className = opts.cls;
       if (opts?.text) el.textContent = opts.text;
-      if (opts?.attr) { for (const [k, v] of Object.entries(opts.attr)) { el.setAttribute(k, v); } }
+      if (opts?.attr) {
+        for (const [k, v] of Object.entries(opts.attr)) {
+          el.setAttribute(k, v);
+        }
+      }
       if (opts?.title) el.title = opts.title;
       this.appendChild(el);
       if (cb) cb(el);
       return el;
     };
-    ht.createDiv = function(opts?: { cls?: string; text?: string; attr?: Record<string, string> }, cb?: (el: HTMLElement) => void) {
+    ht.createDiv = function (
+      opts?: { cls?: string; text?: string; attr?: Record<string, string> },
+      cb?: (el: HTMLElement) => void
+    ) {
       return (this as any).createEl("div", opts, cb);
     };
-    ht.createSpan = function(opts?: { cls?: string; text?: string; attr?: Record<string, string> }, cb?: (el: HTMLElement) => void) {
+    ht.createSpan = function (
+      opts?: { cls?: string; text?: string; attr?: Record<string, string> },
+      cb?: (el: HTMLElement) => void
+    ) {
       return (this as any).createEl("span", opts, cb);
     };
-    ht.empty = function() { while (this.firstChild) this.removeChild(this.firstChild); };
-    ht.setText = function(text: string) { this.textContent = text; };
-    ht.setAttr = function(name: string, value: string) { this.setAttribute(name, value); };
-    ht.appendText = function(text: string) { this.appendChild(doc.createTextNode(text)); };
+    ht.empty = function () {
+      while (this.firstChild) this.removeChild(this.firstChild);
+    };
+    ht.setText = function (text: string) {
+      this.textContent = text;
+    };
+    ht.setAttr = function (name: string, value: string) {
+      this.setAttribute(name, value);
+    };
+    ht.appendText = function (text: string) {
+      this.appendChild(doc.createTextNode(text));
+    };
   }
 }
 
-
 beforeEach(() => {
-  dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", { url: "http://localhost", pretendToBeVisual: true });
+  dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
+    url: "http://localhost",
+    pretendToBeVisual: true,
+  });
   polyfillObsidianDom(dom.window.document);
   (globalThis as any).window = dom.window;
   (globalThis as any).document = dom.window.document;
   (globalThis as any).confirm = () => true;
-  
+
   noticeCalls.length = 0;
   spawnedProcesses.length = 0;
   execFileCalls.length = 0;
   setLanguage(fakeApp() as any);
 });
 
-afterEach(() => { dom.window.close(); });
+afterEach(() => {
+  dom.window.close();
+});
 
 // ════════════════════════════════ 1. Library Detail ════════════════════
 describe("Library module detail (Issue #78)", () => {
@@ -317,7 +463,23 @@ describe("Library module detail (Issue #78)", () => {
       updated_at: "2026-01-15T12:00:00Z",
       ttl_seconds: 300,
       notices: [{ level: "warning", message: "Test notice" }],
-      action: { primary: { action_id: "library.sync", verb: "sync", label: "Sync", command: "paperforge sync", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+      action: {
+        primary: {
+          action_id: "library.sync",
+          verb: "sync",
+          label: "Sync",
+          command: "paperforge sync",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
     } as any;
     const tab = makeTab({ capabilityState: { library: env } });
     const el = dom.window.document.createElement("div");
@@ -325,7 +487,7 @@ describe("Library module detail (Issue #78)", () => {
     expect(el.textContent).toContain("stale");
     expect(el.textContent).toContain("300s");
     expect(el.textContent).toContain("Test notice");
-    expect(el.querySelector(".pf-cc-card-diagnostic")).not.toBeNull();
+    expect(el.querySelector(".pf-module-diagnostics")).not.toBeNull();
   });
 
   it("primary action click overlays envelope running", () => {
@@ -336,12 +498,30 @@ describe("Library module detail (Issue #78)", () => {
         capability_state: "needs_action",
         severity: "warning",
         reason: { code: "library.index_stale", text: "stale" },
-        action: { primary: { action_id: "library.sync", verb: "sync", label: "Sync", command: "paperforge sync", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+        action: {
+          primary: {
+            action_id: "library.sync",
+            verb: "sync",
+            label: "Sync",
+            command: "paperforge sync",
+            availability: "available",
+            safety_class: "safe",
+            preservation_facts: [],
+            replacement_facts: [],
+            interruptible: true,
+            confirmation_required: false,
+            confirmation_prompt: null,
+            scope: "module",
+            scope_count: 1,
+          },
+        },
       },
     };
     const el = dom.window.document.createElement("div");
     (tab as any)._renderLibraryDetail(el);
-    (el.querySelector(".pf-cc-card-action") as HTMLButtonElement)?.click();
+    (
+      el.querySelector(".pf-module-summary .pf-action-btn") as HTMLButtonElement
+    )?.click();
     const envelopes = (tab as any)._capabilityState as any;
     expect(envelopes?.library?.activity_state).toBe("running");
     expect(envelopes?.library?.activity_label).toContain("Syncing");
@@ -360,7 +540,23 @@ describe("OCR module detail (Issue #78)", () => {
       capability_state: "needs_action",
       severity: "warning",
       reason: { code: "ocr.artifacts_stale", text: "Stale" },
-      action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+      action: {
+        primary: {
+          action_id: "ocr.rebuild_derived",
+          verb: "rebuild_derived",
+          label: "Rebuild",
+          command: "paperforge ocr rebuild --all",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
     } as any;
     (tab as any)._capabilityState = { ocr: ocrEnv };
     const el = dom.window.document.createElement("div");
@@ -378,10 +574,40 @@ describe("OCR module detail (Issue #78)", () => {
   it("stop sends PAPERFORGE_STOP\n via stdin", () => {
     let written = "";
     const tab = makeTab({
-      _ocrProcess: { stdin: { write: (s: string) => { written = s; return true; } }, kill: () => {} },
+      _ocrProcess: {
+        stdin: {
+          write: (s: string) => {
+            written = s;
+            return true;
+          },
+        },
+        kill: () => {},
+      },
     });
     (tab as any)._capabilityState = {
-      ocr: { ...createUnknownEnvelope("ocr"), capability_state: "needs_action", severity: "warning", reason: { code: "x", text: "x" }, action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } },
+      ocr: {
+        ...createUnknownEnvelope("ocr"),
+        capability_state: "needs_action",
+        severity: "warning",
+        reason: { code: "x", text: "x" },
+        action: {
+          primary: {
+            action_id: "ocr.rebuild_derived",
+            verb: "rebuild_derived",
+            label: "Rebuild",
+            command: "paperforge ocr rebuild --all",
+            availability: "available",
+            safety_class: "safe",
+            preservation_facts: [],
+            replacement_facts: [],
+            interruptible: true,
+            confirmation_required: false,
+            confirmation_prompt: null,
+            scope: "module",
+            scope_count: 1,
+          },
+        },
+      },
     };
     const el = dom.window.document.createElement("div");
     (tab as any)._renderOcrDetail(el);
@@ -392,9 +618,37 @@ describe("OCR module detail (Issue #78)", () => {
 
   it("stop falls back to SIGINT when stdin unavailable", () => {
     let killed = "";
-    const tab = makeTab({ _ocrProcess: { kill: (sig: string) => { killed = sig; } } });
+    const tab = makeTab({
+      _ocrProcess: {
+        kill: (sig: string) => {
+          killed = sig;
+        },
+      },
+    });
     (tab as any)._capabilityState = {
-      ocr: { ...createUnknownEnvelope("ocr"), capability_state: "needs_action", severity: "warning", reason: { code: "x", text: "x" }, action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } },
+      ocr: {
+        ...createUnknownEnvelope("ocr"),
+        capability_state: "needs_action",
+        severity: "warning",
+        reason: { code: "x", text: "x" },
+        action: {
+          primary: {
+            action_id: "ocr.rebuild_derived",
+            verb: "rebuild_derived",
+            label: "Rebuild",
+            command: "paperforge ocr rebuild --all",
+            availability: "available",
+            safety_class: "safe",
+            preservation_facts: [],
+            replacement_facts: [],
+            interruptible: true,
+            confirmation_required: false,
+            confirmation_prompt: null,
+            scope: "module",
+            scope_count: 1,
+          },
+        },
+      },
     };
     const el = dom.window.document.createElement("div");
     (tab as any)._renderOcrDetail(el);
@@ -408,7 +662,29 @@ describe("Memory module detail (Issue #78)", () => {
   it("renders envelope shell without duplicate CTA", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = {
-      memory: { ...createUnknownEnvelope("memory"), capability_state: "needs_action", severity: "warning", reason: { code: "x", text: "x" }, action: { primary: { action_id: "module.run", verb: "run", label: "Build", command: "paperforge memory build", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } },
+      memory: {
+        ...createUnknownEnvelope("memory"),
+        capability_state: "needs_action",
+        severity: "warning",
+        reason: { code: "x", text: "x" },
+        action: {
+          primary: {
+            action_id: "module.run",
+            verb: "run",
+            label: "Build",
+            command: "paperforge memory build",
+            availability: "available",
+            safety_class: "safe",
+            preservation_facts: [],
+            replacement_facts: [],
+            interruptible: true,
+            confirmation_required: false,
+            confirmation_prompt: null,
+            scope: "module",
+            scope_count: 1,
+          },
+        },
+      },
     };
     const el = dom.window.document.createElement("div");
     (tab as any)._renderMemoryDetail(el);
@@ -421,9 +697,30 @@ describe("Memory module detail (Issue #78)", () => {
 describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("unknown pair -> Notice + re-probe", () => {
     const tab = makeTab();
-    (tab as any)._capabilityState = { library: createUnknownEnvelope("library") };
+    (tab as any)._capabilityState = {
+      library: createUnknownEnvelope("library"),
+    };
     (tab as any)._probing = new Set<string>();
-    const env = { ...createUnknownEnvelope("library"), action: { primary: { action_id: "module.bogus", verb: "bogus", label: "X", command: "x", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = {
+      ...createUnknownEnvelope("library"),
+      action: {
+        primary: {
+          action_id: "module.bogus",
+          verb: "bogus",
+          label: "X",
+          command: "x",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
     noticeCalls.length = 0;
     (tab as any)._dispatchModuleAction("library", env);
     // Should emit a Notice with "Unknown"
@@ -435,7 +732,26 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("run + paperforge ocr run -> spawns ['ocr', 'run']", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { action_id: "module.run", verb: "run", label: "Run", command: "paperforge ocr run", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = {
+      ...createUnknownEnvelope("ocr"),
+      action: {
+        primary: {
+          action_id: "module.run",
+          verb: "run",
+          label: "Run",
+          command: "paperforge ocr run",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
     (tab as any)._dispatchModuleAction("ocr", env);
     const last = spawnedProcesses[spawnedProcesses.length - 1];
     expect(last.args).toContain("run");
@@ -445,7 +761,26 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("rebuild_derived -> spawns rebuild --all", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = {
+      ...createUnknownEnvelope("ocr"),
+      action: {
+        primary: {
+          action_id: "ocr.rebuild_derived",
+          verb: "rebuild_derived",
+          label: "Rebuild",
+          command: "paperforge ocr rebuild --all",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
     (tab as any)._dispatchModuleAction("ocr", env);
     const last = spawnedProcesses[spawnedProcesses.length - 1];
     expect(last.args).toContain("rebuild");
@@ -455,7 +790,26 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("redo -> spawns redo args", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { action_id: "ocr.redo", verb: "redo", label: "Redo", command: "paperforge ocr redo", availability: "available", safety_class: "destructive", preservation_facts: [], replacement_facts: ["OCR artifacts"], interruptible: true, confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } } } as any;
+    const env = {
+      ...createUnknownEnvelope("ocr"),
+      action: {
+        primary: {
+          action_id: "ocr.redo",
+          verb: "redo",
+          label: "Redo",
+          command: "paperforge ocr redo",
+          availability: "available",
+          safety_class: "destructive",
+          preservation_facts: [],
+          replacement_facts: ["OCR artifacts"],
+          interruptible: true,
+          confirmation_required: true,
+          confirmation_prompt: "Proceed?",
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
     modalOpens.length = 0;
     spawnedProcesses.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
@@ -465,30 +819,93 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(spawnedProcesses.length).toBe(0);
     // Simulate confirm callback
     if (modalOpens[0].onConfirm) modalOpens[0].onConfirm();
-    expect(spawnedProcesses[spawnedProcesses.length - 1].args).toContain("redo");
+    expect(spawnedProcesses[spawnedProcesses.length - 1].args).toContain(
+      "redo"
+    );
   });
 
   it("memory build -> uses execFile", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
-    const env = { ...createUnknownEnvelope("memory"), action: { primary: { action_id: "module.run", verb: "run", label: "Build", command: "paperforge memory build", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = {
+      ...createUnknownEnvelope("memory"),
+      action: {
+        primary: {
+          action_id: "module.run",
+          verb: "run",
+          label: "Build",
+          command: "paperforge memory build",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
     execFileCalls.length = 0;
     (tab as any)._dispatchModuleAction("memory", env);
-    expect(execFileCalls.some((c: { args: string[] }) => c.args.includes("build"))).toBe(true);
+    expect(
+      execFileCalls.some((c: { args: string[] }) => c.args.includes("build"))
+    ).toBe(true);
   });
 
   it("embed build --force -> spawns embed", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
-    const env = { ...createUnknownEnvelope("memory"), action: { primary: { action_id: "memory.rebuild_vector", verb: "rebuild_index", label: "Embed", command: "paperforge embed build --force", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = {
+      ...createUnknownEnvelope("memory"),
+      action: {
+        primary: {
+          action_id: "memory.rebuild_vector",
+          verb: "rebuild_index",
+          label: "Embed",
+          command: "paperforge embed build --force",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
     (tab as any)._dispatchModuleAction("memory", env);
-    const es = spawnedProcesses.find((p: { args: string[] }) => p.args.includes("embed"));
+    const es = spawnedProcesses.find((p: { args: string[] }) =>
+      p.args.includes("embed")
+    );
     expect(es?.args).toContain("--force");
   });
 
   it("destructive opens modal with correct effect label", () => {
     const tab = makeTab();
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { action_id: "ocr.redo", verb: "redo", label: "Redo", command: "paperforge ocr redo", availability: "available", safety_class: "destructive", preservation_facts: [], replacement_facts: ["OCR artifacts"], interruptible: true, confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } } } as any;
+    const env = {
+      ...createUnknownEnvelope("ocr"),
+      action: {
+        primary: {
+          action_id: "ocr.redo",
+          verb: "redo",
+          label: "Redo",
+          command: "paperforge ocr redo",
+          availability: "available",
+          safety_class: "destructive",
+          preservation_facts: [],
+          replacement_facts: ["OCR artifacts"],
+          interruptible: true,
+          confirmation_required: true,
+          confirmation_prompt: "Proceed?",
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
     modalOpens.length = 0;
     spawnedProcesses.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
@@ -500,15 +917,43 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("investigate+issue-draft opens PaperForgeIssueDraftModal with scope_count", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "investigate", label: "Report OCR issue", command: "paperforge ocr issue-draft", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "all", scope_count: 5 } }, reason: { code: "ocr.quality_unacceptable", text: "OCR output unacceptable for 5 papers" } } as any;
+    const env = {
+      ...createUnknownEnvelope("ocr"),
+      action: {
+        primary: {
+          verb: "investigate",
+          label: "Report OCR issue",
+          command: "paperforge ocr issue-draft",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "all",
+          scope_count: 5,
+        },
+      },
+      reason: {
+        code: "ocr.quality_unacceptable",
+        text: "OCR output unacceptable for 5 papers",
+      },
+    } as any;
     modalOpens.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
-    const draftOpens = modalOpens.filter(o => o.kind === "PaperForgeIssueDraftModal");
+    const draftOpens = modalOpens.filter(
+      (o) => o.kind === "PaperForgeIssueDraftModal"
+    );
     expect(draftOpens.length).toBe(1);
     const draft = draftOpens[0].draft;
     expect(draft && typeof draft === "object" && "labels" in draft).toBe(true);
     if (draft && typeof draft === "object" && "labels" in draft) {
-      expect(Reflect.get(draft, "labels")).toEqual(["ocr", "quality", "auto-generated"]);
+      expect(Reflect.get(draft, "labels")).toEqual([
+        "ocr",
+        "quality",
+        "auto-generated",
+      ]);
       expect(String(Reflect.get(draft, "title") ?? "")).toContain("5");
       expect(String(Reflect.get(draft, "body") ?? "")).toContain("5");
     }
@@ -517,7 +962,25 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("setup verb with wrong command falls through to Notice", () => {
     const tab = makeTab();
     noticeCalls.length = 0;
-    const env = { ...createUnknownEnvelope("library"), action: { primary: { verb: "setup", label: "Setup", command: "paperforge sync", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = {
+      ...createUnknownEnvelope("library"),
+      action: {
+        primary: {
+          verb: "setup",
+          label: "Setup",
+          command: "paperforge sync",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
     (tab as any)._dispatchModuleAction("library", env);
     const msgs = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
     expect(msgs.toLowerCase()).toMatch(/unknown|setup/);
@@ -526,7 +989,25 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
   it("probe verb with wrong command falls through to Notice", () => {
     const tab = makeTab();
     noticeCalls.length = 0;
-    const env = { ...createUnknownEnvelope("ocr"), action: { primary: { verb: "probe", label: "Probe", command: "probe installation", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } } } as any;
+    const env = {
+      ...createUnknownEnvelope("ocr"),
+      action: {
+        primary: {
+          verb: "probe",
+          label: "Probe",
+          command: "probe installation",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
     (tab as any)._dispatchModuleAction("ocr", env);
     const msgs = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
     expect(msgs.toLowerCase()).toMatch(/unknown|probe/);
@@ -556,38 +1037,51 @@ describe("_dispatchOcrAction lifecycle (Issue #78)", () => {
     (tab as any)._dispatchOcrAction("rebuild");
     const proc = spawnedProcesses[spawnedProcesses.length - 1];
     proc?.onData?.("OCR_REBUILD START 20\n");
-    expect(((tab.plugin as any)._ocrProgress).total).toBe(20);
+    expect((tab.plugin as any)._ocrProgress.total).toBe(20);
     proc?.onData?.("OCR_REBUILD PROGRESS 5 20 KEY1\n");
-    expect(((tab.plugin as any)._ocrProgress).current).toBe(5);
+    expect((tab.plugin as any)._ocrProgress.current).toBe(5);
   });
 
   it("clears activity and re-probes on close/error/stop", () => {
     const probes: string[] = [];
     const tab = makeTab();
-    (tab as any)._probeModule = (mod: string) => { probes.push(mod); };
+    (tab as any)._probeModule = (mod: string) => {
+      probes.push(mod);
+    };
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
     (tab as any)._dispatchOcrAction("run");
     spawnedProcesses[spawnedProcesses.length - 1]?.onClose?.(0);
     expect((tab.plugin as any)._ocrProcess).toBeNull();
     expect(probes).toContain("ocr");
-    expect(((tab as any)._capabilityState as any)?.ocr?.activity_state).toBe("idle");
+    expect(((tab as any)._capabilityState as any)?.ocr?.activity_state).toBe(
+      "idle"
+    );
   });
 
   it("exact CLI args: run/rebuild/redo", () => {
-    for (const [mode, expected] of [["run", "run"], ["rebuild", "rebuild"], ["redo", "redo"]] as const) {
+    for (const [mode, expected] of [
+      ["run", "run"],
+      ["rebuild", "rebuild"],
+      ["redo", "redo"],
+    ] as const) {
       const tab = makeTab();
       (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
       spawnedProcesses.length = 0;
       (tab as any)._dispatchOcrAction(mode);
       expect(spawnedProcesses[0].args).toContain(expected);
-      if (mode === "rebuild") expect(spawnedProcesses[0].args).toContain("--all");
+      if (mode === "rebuild")
+        expect(spawnedProcesses[0].args).toContain("--all");
     }
   });
 
   it("does not change capability_state/severity during activity", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = {
-      ocr: { ...createUnknownEnvelope("ocr"), capability_state: "needs_action", severity: "warning" },
+      ocr: {
+        ...createUnknownEnvelope("ocr"),
+        capability_state: "needs_action",
+        severity: "warning",
+      },
     };
     (tab as any)._dispatchOcrAction("run");
     const e = (tab as any)._capabilityState as any;
@@ -609,7 +1103,9 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     expect(e?.memory?.activity_state).toBe("running");
     expect(e?.memory?.activity_label).toContain("Building memory");
     // execFile should have been called with args containing "build"
-    const buildCalls = execFileCalls.filter((c: { args: string[] }) => c.args.some(a => a === "build"));
+    const buildCalls = execFileCalls.filter((c: { args: string[] }) =>
+      c.args.some((a) => a === "build")
+    );
     expect(buildCalls.length).toBeGreaterThan(0);
   });
 
@@ -617,8 +1113,12 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     (tab as any)._dispatchMemoryBuild("embed");
-    expect(((tab as any)._capabilityState as any)?.memory?.activity_label).toContain("vector");
-    const es = spawnedProcesses.find((p: { args: string[] }) => p.args.includes("embed"));
+    expect(
+      ((tab as any)._capabilityState as any)?.memory?.activity_label
+    ).toContain("vector");
+    const es = spawnedProcesses.find((p: { args: string[] }) =>
+      p.args.includes("embed")
+    );
     expect(es?.args).toContain("--force");
   });
 
@@ -626,8 +1126,10 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     (tab as any)._dispatchMemoryBuild("embed");
-    spawnedProcesses.find((p: { args: string[] }) => p.args.includes("embed"))?.onData?.("MEMORY_EMBED PROGRESS 100 500\n");
-    expect(((tab.plugin as any)._embedProgress).current).toBe(100);
+    spawnedProcesses
+      .find((p: { args: string[] }) => p.args.includes("embed"))
+      ?.onData?.("MEMORY_EMBED PROGRESS 100 500\n");
+    expect((tab.plugin as any)._embedProgress.current).toBe(100);
   });
 });
 
@@ -637,7 +1139,9 @@ describe("focus and back navigation (Issue #78)", () => {
     const tab = makeTab();
     const el = dom.window.document.createElement("div");
     (tab as any)._renderLibraryDetail(el);
-    expect(el.querySelector("#pf-library-detail-heading")?.getAttribute("tabindex")).toBe("-1");
+    expect(
+      el.querySelector("#pf-library-detail-heading")?.getAttribute("tabindex")
+    ).toBe("-1");
     (el.querySelector(".pf-back-btn") as HTMLButtonElement)?.click();
     expect((tab as any)._focusTargetId).toContain("library");
   });
@@ -645,46 +1149,90 @@ describe("focus and back navigation (Issue #78)", () => {
 
 // ════════════════════════════════ 8. Module selector ═════════════════
 describe("module detail selector (Issue #78)", () => {
-  it("4 buttons, active class, click navigation", () => {
+  it("shows five modules, active state, and Smart Retrieval navigation", () => {
     const tab = makeTab();
     const el = dom.window.document.createElement("div");
     (tab as any)._renderOcrDetail(el);
-    expect(el.querySelectorAll(".pf-module-detail-btn").length).toBe(4);
-    expect(el.querySelector(".pf-module-detail-btn--active")?.textContent).toContain("OCR");
-    const memBtn = Array.from(el.querySelectorAll(".pf-module-detail-btn")).find(b => b.textContent?.includes("Memory"));
-    (memBtn as HTMLButtonElement)?.click();
+    expect(el.querySelectorAll(".pf-module-detail-btn").length).toBe(5);
+    expect(
+      el.querySelector(".pf-module-detail-btn--active")?.textContent
+    ).toContain("OCR");
+    const retrievalBtn = Array.from(
+      el.querySelectorAll(".pf-module-detail-btn")
+    ).find((button) => button.textContent?.includes("Smart Retrieval"));
+    (retrievalBtn as HTMLButtonElement)?.click();
     expect((tab as any)._selectedDetailModule).toBe("memory");
   });
 });
 
 // ════════════════════════════════ 9. Destructive + disabled ══════════
 describe("destructive metadata and disabled-while-running (Issue #78)", () => {
-  it("renders destructive_effect notice", () => {
+  it("opens impact confirmation for destructive actions", () => {
     const ocrEnv = {
       ...createUnknownEnvelope("ocr"),
-      action: { primary: { action_id: "ocr.redo", verb: "redo", label: "Redo", command: "paperforge ocr redo", safety_class: "destructive", availability: "available", preservation_facts: [], replacement_facts: ["Deletes derived OCR artifacts"], interruptible: true, confirmation_required: true, confirmation_prompt: "Proceed?", scope: "module", scope_count: 1 } },
+      user_state: "action_required",
+      action: {
+        primary: {
+          action_id: "ocr.redo",
+          verb: "redo",
+          label: "Redo",
+          command: "paperforge ocr redo",
+          safety_class: "destructive",
+          availability: "available",
+          preservation_facts: [],
+          replacement_facts: ["Deletes derived OCR artifacts"],
+          interruptible: true,
+          confirmation_required: true,
+          confirmation_prompt: "Proceed?",
+          scope: "module",
+          scope_count: 1,
+        },
+      },
     } as any;
     const tab = makeTab({ capabilityState: { ocr: ocrEnv } });
     const el = dom.window.document.createElement("div");
     (tab as any)._renderOcrDetail(el);
-    const notice = el.querySelector(".pf-destructive-notice");
-    expect(notice).not.toBeNull();
-    expect(notice?.textContent).toContain("Deletes derived OCR");
+    (
+      el.querySelector(".pf-module-summary .pf-action-btn") as HTMLButtonElement
+    ).click();
+    expect(modalOpens.at(-1)?.kind).toBe("PaperForgeConfirmModal");
+    expect(modalOpens.at(-1)?.effectLabel).toContain("Deletes derived OCR");
   });
 
   it("action button disabled when running", () => {
     const ocrEnv = {
       ...createUnknownEnvelope("ocr"),
       activity_state: "running",
-      action: { primary: { action_id: "ocr.rebuild_derived", verb: "rebuild_derived", label: "Rebuild", command: "paperforge ocr rebuild --all", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+      action: {
+        primary: {
+          action_id: "ocr.rebuild_derived",
+          verb: "rebuild_derived",
+          label: "Rebuild",
+          command: "paperforge ocr rebuild --all",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
     } as any;
     const tab = makeTab({ capabilityState: { ocr: ocrEnv } });
     const el = dom.window.document.createElement("div");
     (tab as any)._renderOcrDetail(el);
-    expect((el.querySelector(".pf-cc-card-action") as HTMLButtonElement)?.hasAttribute("disabled")).toBe(true);
+    expect(
+      (
+        el.querySelector(
+          ".pf-module-summary .pf-action-btn"
+        ) as HTMLButtonElement
+      )?.hasAttribute("disabled")
+    ).toBe(true);
   });
 });
-
 
 // ════════════════════════════════ 10. Library sync failure probe ═══════
 describe("Library sync failure probe (Issue #78)", () => {
@@ -695,7 +1243,9 @@ describe("Library sync failure probe (Issue #78)", () => {
     (tab as any)._probeModule("library", 1);
 
     // Probe execFile call must include --last-operation-exit-code 1
-    const probeCall = execFileCalls.find(c => c.args.includes("probe") && c.args.includes("library"));
+    const probeCall = execFileCalls.find(
+      (c) => c.args.includes("probe") && c.args.includes("library")
+    );
     expect(probeCall).toBeDefined();
     const lastOpIdx = probeCall!.args.indexOf("--last-operation-exit-code");
     expect(lastOpIdx).toBeGreaterThan(-1);
@@ -708,7 +1258,9 @@ describe("Library sync failure probe (Issue #78)", () => {
 
     (tab as any)._probeModule("library");
 
-    const probeCall = execFileCalls.find(c => c.args.includes("probe") && c.args.includes("library"));
+    const probeCall = execFileCalls.find(
+      (c) => c.args.includes("probe") && c.args.includes("library")
+    );
     expect(probeCall).toBeDefined();
     expect(probeCall!.args.indexOf("--last-operation-exit-code")).toBe(-1);
   });
@@ -720,7 +1272,9 @@ describe("Library sync failure probe (Issue #78)", () => {
     (tab as any)._probeModule("ocr", 1);
 
     // OCR must NOT get --last-operation-exit-code
-    const probeCall = execFileCalls.find(c => c.args.includes("probe") && c.args.includes("ocr"));
+    const probeCall = execFileCalls.find(
+      (c) => c.args.includes("probe") && c.args.includes("ocr")
+    );
     expect(probeCall).toBeDefined();
     expect(probeCall!.args.indexOf("--last-operation-exit-code")).toBe(-1);
   });
@@ -732,14 +1286,21 @@ describe("Library sync failure probe (Issue #78)", () => {
     (tab as any)._runManualSync();
 
     // First call is sync, second (after onClose) is probe
-    const syncCall = execFileCalls.find(c => c.args.includes("sync") && !c.args.includes("probe"));
+    const syncCall = execFileCalls.find(
+      (c) => c.args.includes("sync") && !c.args.includes("probe")
+    );
     expect(syncCall).toBeDefined();
 
     // Simulate sync failure by invoking the onClose directly
     if (syncCall!.cb) syncCall!.cb(new Error("sync failed"), "", "error");
 
     // After sync failure, _probeModule should append --last-operation-exit-code 1
-    const probeCall = execFileCalls.find(c => c.args.includes("probe") && c.args.includes("library") && c.args.includes("--last-operation-exit-code"));
+    const probeCall = execFileCalls.find(
+      (c) =>
+        c.args.includes("probe") &&
+        c.args.includes("library") &&
+        c.args.includes("--last-operation-exit-code")
+    );
     expect(probeCall).toBeDefined();
     const lastOpIdx = probeCall!.args.indexOf("--last-operation-exit-code");
     expect(probeCall!.args[lastOpIdx + 1]).toBe("1");
@@ -751,15 +1312,21 @@ describe("Library sync failure probe (Issue #78)", () => {
 
     (tab as any)._runManualSync();
 
-    const syncCall = execFileCalls.find(c => c.args.includes("sync") && !c.args.includes("probe"));
+    const syncCall = execFileCalls.find(
+      (c) => c.args.includes("sync") && !c.args.includes("probe")
+    );
     expect(syncCall).toBeDefined();
 
     // Simulate sync success: code=0
     if (syncCall!.cb) syncCall!.cb(null, "success", "");
 
     // After success (code=0), probe should NOT have --last-operation-exit-code
-    const probeCalls = execFileCalls.filter(c => c.args.includes("probe") && c.args.includes("library"));
-    const failureProbe = probeCalls.find(c => c.args.includes("--last-operation-exit-code"));
+    const probeCalls = execFileCalls.filter(
+      (c) => c.args.includes("probe") && c.args.includes("library")
+    );
+    const failureProbe = probeCalls.find((c) =>
+      c.args.includes("--last-operation-exit-code")
+    );
     expect(failureProbe).toBeUndefined();
   });
 
@@ -772,8 +1339,27 @@ describe("Library sync failure probe (Issue #78)", () => {
       activity_label: null,
       activity_progress: null,
       severity: "error",
-      reason: { code: "library.sync_failed", text: "Library sync failed (exit code 1)" },
-      action: { primary: { action_id: "library.sync", verb: "sync", label: "Sync library", command: "paperforge sync", availability: "available", safety_class: "safe", preservation_facts: [], replacement_facts: [], interruptible: true, confirmation_required: false, confirmation_prompt: null, scope: "module", scope_count: 1 } },
+      reason: {
+        code: "library.sync_failed",
+        text: "Library sync failed (exit code 1)",
+      },
+      action: {
+        primary: {
+          action_id: "library.sync",
+          verb: "sync",
+          label: "Sync library",
+          command: "paperforge sync",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
       notices: [],
       updated_at: new Date().toISOString(),
       ttl_seconds: 300,
@@ -782,12 +1368,11 @@ describe("Library sync failure probe (Issue #78)", () => {
     const el = dom.window.document.createElement("div");
     (tab as any)._renderLibraryDetail(el);
 
-    // Must show failure reason
-    expect(el.textContent).toContain("sync failed");
-    expect(el.textContent).toContain("exit code 1");
-    // Must have actionable sync button
-    expect(el.querySelector(".pf-cc-card-action")).not.toBeNull();
-    expect((el.querySelector(".pf-cc-card-action") as HTMLButtonElement)?.textContent).toContain("Sync");
+    expect(el.textContent).toContain("Last library sync failed");
+    expect(el.textContent).not.toContain("exit code 1");
+    expect(
+      el.querySelector(".pf-module-summary .pf-action-btn")
+    ).not.toBeNull();
   });
 
   it("null _runManualSync onClose forwards sentinel 1 via code ?? 1", () => {
@@ -810,11 +1395,14 @@ describe("Library sync failure probe (Issue #78)", () => {
     (tab as any)._runManualSync();
 
     // After _runManualSync triggers onClose(null), probe should have --last-operation-exit-code 1
-    const probeCall = execFileCalls.find(c => c.args.includes("probe") && c.args.includes("library") && c.args.includes("--last-operation-exit-code"));
+    const probeCall = execFileCalls.find(
+      (c) =>
+        c.args.includes("probe") &&
+        c.args.includes("library") &&
+        c.args.includes("--last-operation-exit-code")
+    );
     expect(probeCall).toBeDefined();
     const lastOpIdx = probeCall!.args.indexOf("--last-operation-exit-code");
     expect(probeCall!.args[lastOpIdx + 1]).toBe("1");
   });
-
 });
-

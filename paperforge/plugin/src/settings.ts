@@ -181,6 +181,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _pendingMaintenanceRefresh: boolean = false;
   _maintenanceNoticeShown: boolean = false;
   _detailReturn: { tab: string; selector: string } | null = null;
+  private _agentPlatformDraft: string | null = null;
 
   /** #86: Five operational modules in display order with user-facing names. */
   private _getOverviewModules(): { id: string; label: string }[] {
@@ -310,13 +311,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         )
         .join(", ");
       banner.createEl("strong", {
-        text: t("migration_banner_title") || "Credential Migration Notice",
+        text: t("migration_banner_title"),
       });
       banner.createEl("p", {
-        text: `One or more credentials could not be automatically migrated (${keyNames}). Your existing keys are preserved in plaintext and remain functional. To complete the migration, re-enter the affected keys in the Settings fields below.`,
+        text: t("migration_banner_body").replace("{modules}", keyNames),
       });
       banner.createEl("p", {
-        text: "After re-entering, save settings. The plugin will retry migration on next restart.",
+        text: t("migration_banner_next"),
         cls: "paperforge-manual-links",
       });
     }
@@ -468,422 +469,38 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** Render the Installation detail view (Issue #77). */
+  /** Render Foundation with the shared module-detail shell. */
   _renderInstallationDetail(containerEl: HTMLElement): void {
-    // ── Back button ──
-    const backBtn = containerEl.createEl("button", {
-      cls: "pf-back-btn",
-      text: t("btn_back_to_overview"),
+    this._renderModuleDetailShell(containerEl, "installation");
+    const env =
+      this._capabilityState?.installation ??
+      createUnknownEnvelope("installation");
+    const body = containerEl.createDiv({ cls: "pf-module-body" });
+    body.createEl("h3", { text: t("md_foundation_overview") });
+    body.createEl("p", {
+      text:
+        env.user_state === "ready"
+          ? t("md_foundation_ready")
+          : this._getModuleConsequence("installation", env),
+      cls:
+        env.user_state === "ready"
+          ? "pf-status-ok"
+          : "setting-item-description",
     });
-    backBtn.addEventListener("click", () => {
-      if (this._detailReturn?.tab === "maintenance") {
-        this.activeTab = this._detailReturn.tab;
-        this._focusTargetId = this._detailReturn.selector;
-        this._detailReturn = null;
-      } else {
-        this.activeTab = "overview";
-        this._focusTargetId =
-          "button.pf-open-module-btn[data-module=installation]";
-      }
-      this._selectedDetailModule = "";
-      this.display();
+    const facts = body.createDiv({ cls: "pf-module-facts" });
+    const version = facts.createDiv({ cls: "pf-module-fact" });
+    version.createEl("span", { text: t("foundation_version") });
+    version.createEl("span", { text: this.plugin.manifest.version });
+    const skills = facts.createDiv({ cls: "pf-module-fact" });
+    skills.createEl("span", { text: t("foundation_skills") });
+    skills.createEl("span", {
+      text: t("foundation_skills_ready"),
+      cls: "pf-status-ok",
     });
-
-    // ── Heading ──
-    const heading = containerEl.createEl("h2", {
-      cls: "pf-installation-detail-heading",
-      text: t("installation_detail_heading") || "Installation Details",
-      attr: { id: "pf-installation-detail-heading", tabindex: "-1" },
-    });
-
-    // ── Module detail selector (only Installation until #78) ──
-    const detailModules: { id: string; labelKey: string; disabled: boolean }[] =
-      [
-        {
-          id: "installation",
-          labelKey: "md_select_installation",
-          disabled: false,
-        },
-      ];
-    const selector = containerEl.createEl("div", {
-      cls: "pf-module-detail-selector",
-    });
-    for (const dm of detailModules) {
-      const btn = selector.createEl("button", {
-        cls:
-          "pf-module-detail-btn" +
-          (dm.id === "installation" ? " pf-module-detail-btn--active" : "") +
-          (dm.disabled ? " pf-module-detail-btn--disabled" : ""),
-        text: t(dm.labelKey),
-      });
-      if (dm.disabled) btn.disabled = true;
-    }
-
-    // ── Backend envelope display (same envelope as overview card) ──
-    const envelopes: Record<string, ProbeEnvelope> =
-      this._capabilityState ?? {};
-    const mod: CapabilityModule = "installation";
-    const env: ProbeEnvelope = envelopes[mod] ?? createUnknownEnvelope(mod);
-    const sevClass: string = this._sevClass(env.severity);
-    const isReady: boolean = isReadyEnvelope(env);
-
-    // Minimal envelope summary row
-    const summaryRow = containerEl.createEl("div", {
-      cls: "pf-cc-card pf-open-module-btn",
-      attr: { style: "margin-bottom: 12px;" },
-    });
-    const summaryHeader = summaryRow.createEl("div", {
-      cls: "pf-cc-card-header",
-    });
-    summaryHeader.createEl("span", {
-      cls: "pf-cc-card-name",
-      text: t("cc_module_installation"),
-    });
-    summaryHeader.createEl("span", {
-      cls: `pf-cc-card-badge pf-cc-card-badge--${sevClass}`,
-      text: t(this._ccBadgeKey(env, mod)),
-    });
-    const l10nReason = this._localizeReason(env.reason.code, "installation");
-    summaryRow.createEl("div", {
-      cls: "pf-cc-card-reason",
-      text: l10nReason ?? env.reason.text,
-    });
-
-    // Action button (same logic as overview card — setup opens wizard, else probe)
-    if (env.action.primary && !isReady) {
-      const action = classifyCapabilityAction(env);
-      const isCta = action.kind === "setup";
-      const btnCls = isCta
-        ? "pf-cc-card-action pf-cc-card-action--primary"
-        : "pf-cc-card-action";
-      const actionBtn = summaryRow.createEl("button", {
-        cls: btnCls,
-        text: action.label,
-      });
-      actionBtn.addEventListener("click", () => {
-        if (action.kind === "setup") {
-          new PaperForgeSetupModal(this.app, this.plugin, () => {
-            this._probeModule("installation");
-            this._probeModule("help");
-          }).open();
-        } else {
-          this._probeModule(mod);
-        }
-      });
-    }
-
-    // ── ManagedRuntime section ──
-    containerEl.createEl("h3", { text: t("managed_runtime_status") });
-    const healthCard = containerEl.createEl("div", {
-      cls: "pf-runtime-status-card",
-    });
-
-    // Helper to render runtime actions as buttons
-    const renderRuntimeActions = (
-      actions: readonly RuntimeUiAction[],
-      health: RuntimeHealth,
-      busy: boolean
-    ) => {
-      const actionRow = healthCard.createEl("div", {
-        cls: "pf-runtime-actions",
-      });
-      for (const act of actions) {
-        const btn = actionRow.createEl("button", {
-          cls: "pf-runtime-action-btn",
-          text: act.label,
-        });
-        // Never disable the Stop button — must be reachable when busy
-        if (busy && act.verb !== "stop") btn.disabled = true;
-        btn.addEventListener("click", async () => {
-          // Stop verb: abort the in-flight operation immediately
-          if (act.verb === "stop") {
-            const controller = this._runtimeAbortController;
-            // Guard: already aborted or already cleaned up → no-op
-            if (!controller || controller.signal.aborted) return;
-            controller.abort();
-            new Notice(t("managed_runtime_action_cancelled"));
-            // Do NOT null _runtimeAbortController here — leave it for the
-            // original handler's finally block so the AbortSignal is still
-            // accessible and unwinding completes normally.
-            this.display();
-            this._probeModule("installation");
-            this._probeModule("help");
-            return;
-          }
-
-          const rt = this._ensureManagedRuntime();
-          const ac = new AbortController();
-          this._runtimeAbortController = ac;
-          this._runtimeBusy = true;
-          new Notice(t("managed_runtime_running"));
-
-          try {
-            if (
-              act.verb === "install" ||
-              act.verb === "repair" ||
-              act.verb === "update"
-            ) {
-              await rt.ensure({
-                signal: ac.signal,
-                force: act.verb === "update" || act.verb === "repair",
-              });
-            } else if (act.verb === "rollback") {
-              await rt.ensure({
-                signal: ac.signal,
-                version: health.previousVersion ?? undefined,
-              });
-            } else {
-              // retry/status → just re-probe
-              await rt.status();
-            }
-            if (!ac.signal.aborted)
-              new Notice(t("managed_runtime_action_complete"));
-          } catch (err: unknown) {
-            // Cooperative Stop: AbortError means the operation was cancelled — skip "failed" notice
-            if ((err as Error)?.name !== "AbortError") {
-              const msg: string =
-                err instanceof Error ? err.message : String(err);
-              new Notice(
-                t("managed_runtime_action_failed").replace("{error}", msg),
-                8000
-              );
-            }
-          } finally {
-            this._runtimeAbortController = null;
-            this._runtimeBusy = false;
-            // Re-probe and re-render
-            this._probeModule("installation");
-            this._probeModule("help");
-            this.display();
-          }
-        });
-      }
-    };
-
-    // Sync display with runtime health
-    const renderRuntimeHealth = () => {
-      healthCard.empty();
-      const rt: ManagedRuntime = this._ensureManagedRuntime();
-      const health: RuntimeHealth = rt.current();
-
-      // Header row
-      const headerRow = healthCard.createEl("div", {
-        cls: "pf-runtime-status-header",
-      });
-      headerRow.createEl("div", {
-        cls: "pf-runtime-status-label",
-        text: t("managed_runtime_status"),
-      });
-
-      let stateClass: string;
-      let stateLabel: string;
-      switch (health.state) {
-        case "ready":
-          stateClass = "ok";
-          stateLabel = t("managed_runtime_ok_state");
-          break;
-        case "not_installed":
-          stateClass = "warn";
-          stateLabel = t("managed_runtime_not_installed");
-          break;
-        case "needs_repair":
-          stateClass = "warn";
-          stateLabel = t("managed_runtime_needs_repair");
-          break;
-        case "unavailable":
-          stateClass = "error";
-          stateLabel = t("managed_runtime_unavailable");
-          break;
-        default:
-          stateClass = "unknown";
-          stateLabel = t("managed_runtime_unknown_state");
-      }
-      headerRow.createEl("span", {
-        cls: `pf-runtime-status-state pf-runtime-status-state--${stateClass}`,
-        text: stateLabel,
-      });
-
-      // Version info
-      if (health.version) {
-        healthCard.createEl("div", {
-          cls: "pf-meta",
-          text: `Python ${health.version}`,
-        });
-      }
-      if (health.pythonPath) {
-        healthCard.createEl("div", {
-          cls: "pf-meta",
-          text: health.pythonPath,
-          attr: { style: "word-break: break-all;" },
-        });
-      }
-      if (health.lastVerifiedAt) {
-        healthCard.createEl("div", {
-          cls: "pf-meta",
-          text: t("managed_runtime_last_verified").replace(
-            "{time}",
-            new Date(health.lastVerifiedAt).toLocaleString()
-          ),
-        });
-      }
-
-      // Error info
-      if (health.error) {
-        healthCard.createEl("div", {
-          cls: "pf-runtime-error",
-          text: `${health.error.code}: ${health.error.message}`,
-        });
-      }
-      // Warnings (e.g. Python 3.11+ required, probe failure)
-      if (health.warnings && health.warnings.length > 0) {
-        for (const w of health.warnings) {
-          const warnEl = healthCard.createEl("div", {
-            cls: "pf-runtime-warning",
-            text: `\u26A0 ${w.message}`,
-          });
-          if (w.platformAction) {
-            warnEl.createEl("div", {
-              cls: "pf-runtime-warning-action",
-              text: w.platformAction,
-            });
-          }
-        }
-      }
-
-      // Error platformAction guidance (e.g. unsupported platform manual setup)
-      if (health.error?.platformAction) {
-        healthCard.createEl("div", {
-          cls: "pf-runtime-error-action",
-          text: health.error.platformAction,
-        });
-      }
-
-      // Derived canonical actions
-      const actions: readonly RuntimeUiAction[] = runtimeActionsForHealth(
-        health,
-        this.plugin.manifest.version,
-        this._runtimeBusy
-      );
-      renderRuntimeActions(actions, health, this._runtimeBusy);
-    };
-
-    renderRuntimeHealth();
-
-    // On first visit, status() refreshes health from disk and re-renders
-    // canonical actions (Install/Update) without requiring manual Retry.
-    // Guard: mock status() may return undefined in test environments.
-    const statusPromise = this._ensureManagedRuntime().status();
-    if (statusPromise) {
-      statusPromise
-        .then(() => {
-          if (!containerEl.isConnected) return; // guard detached DOM
-          renderRuntimeHealth();
-        })
-        .catch(() => {
-          /* best-effort; sync render already shown */
-        });
-    }
-
-    // ── Current Configuration section (Python, path, Zotero controls) ──
-    containerEl.createEl("h3", {
-      text: t("section_config") || "Current Configuration",
-    });
-
-    // Copy of setup/runtime/path controls from original setup tab
-    const vaultPath: string = this._getVaultBasePath();
-    const resolved = this._resolveRuntimeCommand(vaultPath);
-    const pyPathDesc: string = resolved
-      ? this._getPythonDesc(resolved.path, "managed")
-      : "Python runtime not ready — install via Managed Runtime above";
-
-    new Setting(containerEl)
-      .setName(t("field_python_interp") || "Python Interpreter")
-      .setDesc(pyPathDesc)
-      .addExtraButton((btn) => {
-        btn
-          .setIcon("reset")
-          .setTooltip("Re-detect")
-          .onClick(() => {
-            this._pythonInterpDescEl = null;
-            this._managedRuntime = null;
-            this.display();
-          });
-      })
-      .addButton((button) => {
-        button
-          .setButtonText(t("runtime_health_sync") || "Sync Runtime")
-          .onClick(async () => {
-            button.setDisabled(true);
-            button.setButtonText(t("runtime_health_syncing"));
-            await this._ensureManagedRuntime().ensure();
-            this.display();
-          });
-      });
-
-    // Custom Python path (override)
-    const customPathDescEl: HTMLDivElement = containerEl.createEl("div", {
-      cls: "setting-item-description",
-    });
-    this._customPathDescEl = customPathDescEl;
-
-    new Setting(containerEl)
-      .setName(t("field_python_custom") || "Custom Python Path")
-      .setDesc(t("optional_later"))
-      .addText((text) => {
-        text
-          .setPlaceholder("e.g. C:\\Python311\\python.exe")
-          .setValue(this.plugin.settings.python_path || "")
-          .onChange((value) => {
-            this.plugin.settings.python_path = value.trim();
-            this._debouncedSave();
-            this._managedRuntime = null;
-          });
-      })
-      .addButton((button) => {
-        button.setButtonText(t("feat_verify") || "Validate").onClick(() => {
-          this._validatePythonOverride();
-        });
-      });
-
-    // Zotero data dir
-    new Setting(containerEl)
-      .setName(t("field_zotero_data") || "Zotero Data Dir")
-      .setDesc(t("field_zotero_placeholder"))
-      .addText((text) => {
-        text
-          .setPlaceholder("C:\\Users\\...\\Zotero")
-          .setValue(this.plugin.settings.zotero_data_dir || "")
-          .onChange((value) => {
-            this.plugin.settings.zotero_data_dir = value.trim();
-            this._debouncedSave();
-          });
-      });
-
-    // ── Agent Integration section ──
-    containerEl.createEl("h3", {
-      text: t("agent_integration_section") || "Agent Integration",
-    });
-    // ── Agent Platform + Skills list (Issue #77) ──
-    // Agent controls moved to Agent Integration module
-
-    // Focus heading on render
-    try {
-      heading.focus();
-    } catch {
-      // ignore focus failure
-    }
   }
 
-  /** Render Agent Platform selector and skills list (Issue #77). */
+  /** Render the Skills inventory for the selected agent platform. */
   private _renderSkillsList(containerEl: HTMLElement): void {
-    const agentPlatforms: Record<string, string> = {
-      opencode: "OpenCode",
-      claude: "Claude Code",
-      codex: "Codex",
-      cursor: "Cursor",
-      windsurf: "Windsurf",
-      github_copilot: "GitHub Copilot",
-      gemini: "Gemini CLI",
-    };
     const agentDirs: Record<string, string> = {
       opencode: ".opencode/skills",
       claude: ".claude/skills",
@@ -897,37 +514,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const selectedPlatform: string =
       this.plugin.settings.agent_platform || "opencode";
 
-    new Setting(containerEl)
-      .setName(t("label_agent") || "Agent Platform")
-      .setDesc(t("feat_agent_platform_desc"))
-      .addDropdown((dropdown) => {
-        Object.entries(agentPlatforms).forEach(([key, label]) =>
-          dropdown.addOption(key, label)
-        );
-        dropdown.setValue(selectedPlatform).onChange((value) => {
-          this.plugin.settings.agent_platform = value;
-          this.plugin.saveSettings();
-          this.display();
-        });
-      })
-      .addExtraButton((btn) => {
-        btn
-          .setIcon("folder")
-          .setTooltip("Open skills folder")
-          .onClick(() => {
-            const dir: string =
-              agentDirs[selectedPlatform] || ".opencode/skills";
-            const fullPath: string = path.join(vaultPath, dir);
-            if (fs.existsSync(fullPath)) {
-              exec(`start "" "${fullPath}"`);
-            } else {
-              new Notice(`Skills folder not found: ${dir}`);
-            }
-          });
-      });
-
     // Skills section
-    containerEl.createEl("h3", { text: "Skills" });
+    containerEl.createEl("h3", { text: t("md_agent_skills") });
     const skillsDescEl = containerEl.createEl("div", {
       cls: "paperforge-desc-box",
     });
@@ -1031,7 +619,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
       skills.forEach((s: SkillEntry) => {
         const nameText = s.name + (s.version ? " v" + s.version : "");
-        const sourceLabel = isSystem ? " [system]" : " [user]";
+        const sourceLabel = isSystem
+          ? " [" + t("skills_system") + "]"
+          : " [" + t("skills_user") + "]";
         const descText = s.desc || "";
         const setting = new Setting(content)
           .setName(nameText + sourceLabel)
@@ -1078,12 +668,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     };
 
-    renderCollapsibleSkills("System Skills", systemSkills, true);
-    renderCollapsibleSkills("User Skills", userSkills, false);
+    renderCollapsibleSkills(t("skills_system"), systemSkills, true);
+    renderCollapsibleSkills(t("skills_user"), userSkills, false);
 
     if (systemSkills.length === 0 && userSkills.length === 0) {
       skillsBox.createEl("p", {
-        text: `No skills found in ${agentDirs[selectedPlatform]}. Run setup to deploy skills.`,
+        text: t("skills_empty"),
         cls: "setting-item-description",
       });
     }
@@ -1116,55 +706,59 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _renderLibraryDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "library");
     const env =
-      this._capabilityState?.["library"] ?? createUnknownEnvelope("library");
+      this._capabilityState?.library ?? createUnknownEnvelope("library");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
-    body.createEl("h3", {
-      text: t("md_library_connection") || "Zotero Connection",
-    });
+    body.createEl("h3", { text: t("md_library_connection") });
     if (env.user_state === "ready") {
       body.createEl("p", {
-        text:
-          t("md_library_ready") ||
-          "Zotero is connected and literature is up to date.",
+        text: t("md_library_ready"),
         cls: "pf-status-ok",
       });
-    } else if (env.user_state === "action_required") {
+    } else if (
+      env.user_state !== "checking" &&
+      env.user_state !== "not_enabled"
+    ) {
       renderErrorAnatomy(body, {
-        whatHappened: "Library needs attention",
-        impact: env.user_impact || "Literature may be out of date.",
-        nextStep: env.action?.primary?.label || "Check configuration.",
-        reasonCode: env.reason?.code,
+        whatHappened:
+          t("cc_module_library") +
+          " — " +
+          this._getUserStateLabel(env.user_state),
+        impact: t("library_problem_impact"),
+        nextStep: t("problem_use_action"),
+        impactLabel: t("problem_impact"),
+        nextLabel: t("problem_next"),
+        copyLabel: t("problem_copy"),
         onCopyDiagnostic: () => this._buildAndCopyDiagnostic(),
       });
     }
-    if (env.activity_state === "running" && env.activity_label) {
-      body.createEl("h4", {
-        text: t("md_current_activity") || "Current Activity",
-      });
-      renderActivityRow(body, {
-        label: env.activity_label,
-        progress: env.activity_progress,
-      });
-    }
-    if (env.updated_at && env.updated_at !== new Date(0).toISOString()) {
-      body.createEl("p", {
-        cls: "pf-last-known",
-        text:
-          (t("cc_last_checked") || "Last checked: ") +
-          new Date(env.updated_at).toLocaleString(),
-      });
-    }
-    body.createEl("h4", { text: t("md_configuration") || "Configuration" });
+
+    const facts = body.createDiv({ cls: "pf-module-facts" });
+    const corpus = facts.createDiv({ cls: "pf-module-fact" });
+    corpus.createEl("span", { text: t("md_library_corpus") });
+    corpus.createEl("span", { text: t("metric_after_sync") });
+    const lastSync = facts.createDiv({ cls: "pf-module-fact" });
+    lastSync.createEl("span", { text: t("md_library_last_sync") });
+    lastSync.createEl("span", {
+      text: this.plugin._lastSyncTime || t("metric_not_available"),
+    });
+
+    body.createEl("h3", { text: t("md_configuration") });
     renderConfigurationSummary(body, {
       items: [
         {
-          label: "Zotero data directory",
-          value: this.plugin.settings.zotero_data_dir || "Not configured",
+          label: t("config_zotero_dir"),
+          value:
+            this.plugin.settings.zotero_data_dir || t("config_not_configured"),
         },
       ],
-      onChangeLabel: "Change",
+      configuredLabel: t("config_configured"),
+      notConfiguredLabel: t("config_not_configured"),
+      onChangeLabel: t("config_change"),
       onChange: () => {
         new PaperForgeSetupModal(this.app, this.plugin, () => {
+          this.plugin.savePaperforgeJson({
+            zotero_data_dir: this.plugin.settings.zotero_data_dir,
+          });
           this._probeModule("library");
         }).open();
       },
@@ -1174,106 +768,219 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Render the OCR detail view (Issue #78). */
   _renderOcrDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "ocr");
-    const ocrEnv =
-      this._capabilityState?.["ocr"] ?? createUnknownEnvelope("ocr");
-    const ocrBody = containerEl.createDiv({ cls: "pf-module-body" });
-    ocrBody.createEl("h3", { text: t("md_ocr_status") || "OCR Status" });
-    if (ocrEnv.user_state === "ready") {
-      ocrBody.createEl("p", {
-        text: t("md_ocr_ready") || "OCR pipeline is functional.",
+    const env = this._capabilityState?.ocr ?? createUnknownEnvelope("ocr");
+    const body = containerEl.createDiv({ cls: "pf-module-body" });
+    body.createEl("h3", { text: t("md_ocr_status") });
+    if (env.user_state === "ready") {
+      body.createEl("p", {
+        text: t("md_ocr_ready"),
         cls: "pf-status-ok",
       });
-    } else if (ocrEnv.user_state === "action_required") {
-      renderErrorAnatomy(ocrBody, {
-        whatHappened: "OCR needs attention",
-        impact: ocrEnv.user_impact || "Some papers may have issues.",
-        nextStep: ocrEnv.action?.primary?.label || "Check.",
-        reasonCode: ocrEnv.reason?.code,
+    } else if (
+      env.user_state !== "checking" &&
+      env.user_state !== "not_enabled"
+    ) {
+      renderErrorAnatomy(body, {
+        whatHappened:
+          t("cc_module_ocr") + " — " + this._getUserStateLabel(env.user_state),
+        impact: t("ocr_problem_impact"),
+        nextStep: t("problem_use_action"),
+        impactLabel: t("problem_impact"),
+        nextLabel: t("problem_next"),
+        copyLabel: t("problem_copy"),
         onCopyDiagnostic: () => this._buildAndCopyDiagnostic(),
       });
     }
-    if (ocrEnv.activity_state === "running" && ocrEnv.activity_label) {
-      renderActivityRow(ocrBody, {
-        label: ocrEnv.activity_label,
-        progress: ocrEnv.activity_progress,
+
+    renderActionButton(body, {
+      label: t("md_ocr_workspace"),
+      onClick: () =>
+        (this.app as any).commands.executeCommandById(
+          "paperforge:paperforge-status-panel"
+        ),
+    });
+
+    const process = this.plugin._ocrProcess as {
+      stdin?: { write: (_: string) => boolean };
+      kill?: (_: string) => void;
+    } | null;
+    if (process) {
+      const controls = body.createDiv({ cls: "pf-detail-controls" });
+      const stop = controls.createEl("button", {
+        cls: "pf-action-btn mod-warning",
+        text: t("ocr_stop_batch"),
       });
-    }
-    // ── Owner controls: cooperative stop only when _ocrProcess exists ──
-    const isRunning = this.plugin._ocrProcess != null;
-    if (isRunning) {
-      const ctrl = containerEl.createEl("div", { cls: "pf-detail-controls" });
-      const stopBtn = ctrl.createEl("button", {
-        cls: "mod-warning",
-        text: t("ocr_stop_batch") || "Stop OCR batch",
-      });
-      stopBtn.addEventListener("click", () => {
-        const child = this.plugin._ocrProcess as unknown as {
-          stdin?: { write: (_: string) => boolean };
-          kill?: (_: string) => void;
-        };
-        if (child?.stdin?.write) {
-          child.stdin.write("PAPERFORGE_STOP\n");
+      stop.addEventListener("click", () => {
+        if (process.stdin?.write) {
+          process.stdin.write("PAPERFORGE_STOP\n");
           this.plugin._ocrWasStopped = true;
-        } else if (child?.kill) {
-          child.kill("SIGINT");
+        } else {
+          process.kill?.("SIGINT");
         }
       });
-      const prog = this.plugin._ocrProgress;
-      if (prog && prog.total > 0) {
-        ctrl.createEl("span", {
+      const progress = this.plugin._ocrProgress;
+      if (progress?.total) {
+        controls.createEl("span", {
           cls: "pf-detail-progress",
-          text: `${prog.current}/${prog.total} papers`,
+          text: t("ocr_progress")
+            .replace("{current}", String(progress.current))
+            .replace("{total}", String(progress.total)),
         });
       }
     }
   }
   /** Render the Memory detail view (Issue #78). */
   _renderAgentDetail(containerEl: HTMLElement): void {
-    containerEl.createEl("h2", {
-      text: t("md_agent_integration") || "Agent Integration",
+    this._renderModuleDetailShell(containerEl, "agent");
+    const body = containerEl.createDiv({ cls: "pf-module-body" });
+    body.createEl("h3", { text: t("md_agent_integration") });
+    body.createEl("p", {
+      text: t("md_agent_placeholder"),
+      cls: "setting-item-description",
     });
-    renderStatusBadge(containerEl, "not_enabled");
-    containerEl.createEl("p", {
-      text:
-        t("md_agent_placeholder") ||
-        "Agent Integration will be available in a future update.",
+
+    const platforms: Record<string, string> = {
+      opencode: "OpenCode",
+      claude: "Claude Code",
+      codex: "Codex",
+      cursor: "Cursor",
+      windsurf: "Windsurf",
+      github_copilot: "GitHub Copilot",
+      gemini: "Gemini CLI",
+    };
+    const directories: Record<string, string> = {
+      opencode: ".opencode/skills",
+      claude: ".claude/skills",
+      codex: ".codex/skills",
+      cursor: ".cursor/skills",
+      windsurf: ".windsurf/skills",
+      github_copilot: ".github/skills",
+      gemini: ".gemini/skills",
+    };
+    const current = this.plugin.settings.agent_platform || "opencode";
+    const skillDirectory = path.join(
+      this._getVaultBasePath(),
+      directories[current]
+    );
+    const deployed = fs.existsSync(skillDirectory);
+
+    const facts = body.createDiv({ cls: "pf-module-facts" });
+    const platform = facts.createDiv({ cls: "pf-module-fact" });
+    platform.createEl("span", { text: t("md_agent_platform") });
+    platform.createEl("span", { text: platforms[current] ?? current });
+    const deployment = facts.createDiv({ cls: "pf-module-fact" });
+    deployment.createEl("span", { text: t("md_agent_deployment") });
+    deployment.createEl("span", {
+      text: deployed ? t("agent_deployed") : t("agent_not_deployed"),
     });
-    renderActionButton(containerEl, {
-      label: t("md_copy_diagnostic") || "Copy Diagnostic",
-      onClick: () => this._buildAndCopyDiagnostic(),
-    });
+    const connection = facts.createDiv({ cls: "pf-module-fact" });
+    connection.createEl("span", { text: t("agent_live_connection") });
+    connection.createEl("span", { text: t("md_agent_connection_unknown") });
+
+    if (this._agentPlatformDraft === null) {
+      renderActionButton(body, {
+        label: t("config_change"),
+        onClick: () => {
+          this._agentPlatformDraft = current;
+          this.display();
+        },
+      });
+    } else {
+      const editor = body.createDiv({ cls: "pf-agent-config-editor" });
+      const select = editor.createEl("select", {
+        attr: { "aria-label": t("md_agent_platform") },
+      });
+      for (const [value, label] of Object.entries(platforms)) {
+        const option = select.createEl("option", {
+          text: label,
+          attr: { value },
+        }) as HTMLOptionElement;
+        option.selected = value === this._agentPlatformDraft;
+      }
+      select.addEventListener("change", () => {
+        this._agentPlatformDraft = select.value;
+      });
+      const actions = editor.createDiv({ cls: "pf-agent-config-actions" });
+      renderActionButton(actions, {
+        label: t("config_save"),
+        onClick: () => {
+          const value = this._agentPlatformDraft ?? current;
+          this.plugin.settings.agent_platform = value;
+          this.plugin.savePaperforgeJson({ agent_platform: value });
+          this.plugin.saveSettings();
+          this._agentPlatformDraft = null;
+          this.display();
+        },
+      });
+      renderActionButton(actions, {
+        label: t("config_cancel"),
+        onClick: () => {
+          this._agentPlatformDraft = null;
+          this.display();
+        },
+      });
+      renderActionButton(actions, {
+        label: t("config_verify"),
+        onClick: () => {
+          const value = this._agentPlatformDraft ?? current;
+          const found = fs.existsSync(
+            path.join(this._getVaultBasePath(), directories[value])
+          );
+          new Notice(
+            found ? t("agent_verify_found") : t("agent_verify_missing")
+          );
+        },
+      });
+    }
+
+    this._renderSkillsList(body);
   }
 
   _renderMemoryDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "memory");
     const env =
-      this._capabilityState?.["memory"] ?? createUnknownEnvelope("memory");
+      this._capabilityState?.memory ?? createUnknownEnvelope("memory");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
-    body.createEl("h3", {
-      text: t("md_retrieval_coverage") || "Retrieval Coverage",
-    });
+    body.createEl("h3", { text: t("md_retrieval_coverage") });
     if (env.user_state === "ready") {
       body.createEl("p", {
-        text:
-          t("md_retrieval_ready") || "All papers are indexed and searchable.",
+        text: t("md_retrieval_ready"),
         cls: "pf-status-ok",
       });
-    } else if (env.user_state === "action_required") {
+    } else if (
+      env.user_state !== "checking" &&
+      env.user_state !== "not_enabled"
+    ) {
       renderErrorAnatomy(body, {
-        whatHappened: "Smart Retrieval needs attention",
-        impact: env.user_impact || "Search may not work.",
-        nextStep: env.action?.primary?.label || "Rebuild index.",
-        reasonCode: env.reason?.code,
+        whatHappened:
+          t("cc_module_memory") +
+          " — " +
+          this._getUserStateLabel(env.user_state),
+        impact: t("retrieval_problem_impact"),
+        nextStep: t("problem_use_action"),
+        impactLabel: t("problem_impact"),
+        nextLabel: t("problem_next"),
+        copyLabel: t("problem_copy"),
         onCopyDiagnostic: () => this._buildAndCopyDiagnostic(),
       });
     }
-    if (env.activity_state === "running" && env.activity_label) {
-      renderActivityRow(body, {
-        label: env.activity_label,
-        progress: env.activity_progress,
-      });
-    }
-    // Memory detail surface consumes the shared envelope shell — no duplicate CTA.
+    const facts = body.createDiv({ cls: "pf-module-facts" });
+    const coverage = facts.createDiv({ cls: "pf-module-fact" });
+    coverage.createEl("span", { text: t("md_retrieval_coverage") });
+    coverage.createEl("span", {
+      text:
+        env.user_state === "ready"
+          ? t("coverage_complete")
+          : t("metric_not_available"),
+    });
+    const freshness = facts.createDiv({ cls: "pf-module-fact" });
+    freshness.createEl("span", { text: t("retrieval_freshness") });
+    freshness.createEl("span", {
+      text:
+        env.updated_at && env.updated_at !== new Date(0).toISOString()
+          ? new Date(env.updated_at).toLocaleString()
+          : t("metric_not_available"),
+    });
   }
   /** Dispatch a backend action command through exact (verb, command) allowlist (Issue #78). */
   _dispatchModuleAction(mod: CapabilityModule, env: ProbeEnvelope): void {
@@ -1524,7 +1231,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           envelopes["ocr"].activity_label = null;
           envelopes["ocr"].activity_progress = null;
         }
-        new Notice("OCR error: " + (err.message || err), 8000);
+        new Notice(t("ocr_error_notice"), 8000);
         this._probeModule("ocr");
         this.display();
       },
@@ -1538,19 +1245,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (code === 0) {
           new Notice(
             mode === "run"
-              ? "OCR run complete."
+              ? t("ocr_run_complete")
               : mode === "rebuild"
-                ? "OCR rebuild complete."
-                : "OCR redo complete."
+                ? t("ocr_rebuild_complete")
+                : t("ocr_redo_complete")
           );
         } else if (code === 130 || this.plugin._ocrWasStopped) {
           this.plugin._ocrWasStopped = false;
-          new Notice("OCR batch stopped by user.");
+          new Notice(t("ocr_stopped_notice"));
         } else {
-          new Notice(
-            "OCR operation failed with exit code " + (code ?? "?"),
-            8000
-          );
+          new Notice(t("ocr_failed_notice"), 8000);
         }
         // Terminal re-probe
         this._probeModule("ocr");
@@ -1665,313 +1369,255 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
   } /** Shared module detail shell for Library, OCR, and Memory (Issue #78). */
+  /** Shared module detail shell for all five operational modules. */
   _renderModuleDetailShell(
     containerEl: HTMLElement,
-    mod: CapabilityModule
+    mod: CapabilityModule | "agent"
   ): void {
-    const headingKey = mod + "_detail_heading";
+    containerEl.classList.add("pf-module-detail");
+    const headingKey =
+      mod === "agent" ? "agent_detail_heading" : mod + "_detail_heading";
     const headingId = "pf-" + mod + "-detail-heading";
 
-    // ── Back button ──
     const backBtn = containerEl.createEl("button", {
       cls: "pf-back-btn",
       text: t("btn_back_to_overview"),
     });
     backBtn.addEventListener("click", () => {
-      if (this._detailReturn?.tab === "maintenance") {
+      if (this._detailReturn) {
         this.activeTab = this._detailReturn.tab;
         this._focusTargetId = this._detailReturn.selector;
         this._detailReturn = null;
       } else {
         this.activeTab = "overview";
-        this._focusTargetId =
-          "button.pf-open-module-btn[data-module=" + mod + "]";
+        this._focusTargetId = `button.pf-cc-card[data-module="${mod}"]`;
       }
       this._selectedDetailModule = "";
       this.display();
     });
 
-    // ── Heading ──
-    const heading = containerEl.createEl("h2", {
-      cls: "pf-module-detail-heading",
-      text: t(headingKey) || t("cc_module_" + mod),
-      attr: { id: headingId, tabindex: "-1" },
-    });
-
-    // ── Module detail selector (all implemented modules) ──
-    const detailModules: { id: string; labelKey: string }[] = [
-      { id: "installation", labelKey: "md_select_installation" },
-      { id: "library", labelKey: "md_select_library" },
-      { id: "ocr", labelKey: "md_select_ocr" },
-      { id: "memory", labelKey: "md_select_memory" },
-    ];
-    const selector = containerEl.createEl("div", {
+    const detailModules = this._getOverviewModules();
+    const selector = containerEl.createDiv({
       cls: "pf-module-detail-selector",
+      attr: { role: "tablist", "aria-label": t("md_module_switcher") },
     });
     for (const dm of detailModules) {
       const btn = selector.createEl("button", {
         cls:
           "pf-module-detail-btn" +
           (dm.id === mod ? " pf-module-detail-btn--active" : ""),
-        text: t(dm.labelKey),
+        text: dm.label,
+        attr: {
+          role: "tab",
+          "aria-selected": String(dm.id === mod),
+        },
       });
       btn.addEventListener("click", () => {
         this._selectedDetailModule = dm.id;
-        this._focusTargetId =
-          dm.id === "installation"
-            ? "#pf-installation-detail-heading"
-            : "#pf-" + dm.id + "-detail-heading";
+        this._focusTargetId = "#pf-" + dm.id + "-detail-heading";
         this.display();
       });
     }
 
-    // ── Backend envelope summary card ──
-    const envelopes: Record<string, ProbeEnvelope> =
-      this._capabilityState ?? {};
-    const env: ProbeEnvelope = envelopes[mod] ?? createUnknownEnvelope(mod);
-    const sevClass: string = this._sevClass(env.severity);
-    const isReady: boolean = isReadyEnvelope(env);
-
-    const summaryRow = containerEl.createEl("div", {
-      cls: "pf-cc-card pf-module-detail-card",
+    const nativeSelect = containerEl.createEl("select", {
+      cls: "pf-module-switcher",
+      attr: { "aria-label": t("md_module_switcher") },
     });
-    const summaryHeader = summaryRow.createEl("div", {
-      cls: "pf-cc-card-header",
-    });
-    summaryHeader.createEl("span", {
-      cls: "pf-cc-card-name",
-      text: t("cc_module_" + mod),
-    });
-    summaryHeader.createEl("span", {
-      cls: "pf-cc-card-badge pf-cc-card-badge--" + sevClass,
-      text: t(this._ccBadgeKey(env, mod)),
+    for (const dm of detailModules) {
+      const option = nativeSelect.createEl("option", {
+        text: dm.label,
+        attr: { value: dm.id },
+      }) as HTMLOptionElement;
+      option.selected = dm.id === mod;
+    }
+    nativeSelect.addEventListener("change", () => {
+      this._selectedDetailModule = nativeSelect.value;
+      this._focusTargetId = "#pf-" + nativeSelect.value + "-detail-heading";
+      this.display();
     });
 
-    // Activity label
-    if (env.activity_state === "running" && env.activity_label) {
-      const activityRow = summaryRow.createEl("div", {
-        cls: "pf-cc-card-activity",
-        attr: { "aria-live": "polite" },
+    containerEl.createEl("h2", {
+      cls: "pf-module-detail-heading",
+      text: t(headingKey),
+      attr: { id: headingId, tabindex: "-1" },
+    });
+
+    const env =
+      mod === "agent"
+        ? this._getAgentPlaceholderEnvelope()
+        : (this._capabilityState?.[mod] ?? createUnknownEnvelope(mod));
+    const userState =
+      env.user_state ??
+      (env.capability_state === "ready" ? "ready" : "action_required");
+    const summary = containerEl.createDiv({
+      cls: "pf-module-summary",
+      attr: { "aria-live": "polite" },
+    });
+    const header = summary.createDiv({ cls: "pf-module-summary-header" });
+    header.createEl("span", {
+      cls: "pf-module-summary-name",
+      text: this._getUserModuleName(mod),
+    });
+    renderStatusBadge(header, userState, this._getUserStateLabel(userState));
+    summary.createEl("p", {
+      cls: "pf-module-summary-consequence",
+      text: this._getModuleConsequence(mod, env),
+    });
+
+    if (env.activity_state === "running") {
+      renderActivityRow(summary, {
+        label: t("cc_activity_running"),
+        progress: env.activity_progress,
       });
-      activityRow.createEl("span", { text: env.activity_label });
-      if (env.activity_progress && env.activity_progress.total > 0) {
-        const pct = Math.round(
-          (env.activity_progress.current / env.activity_progress.total) * 100
-        );
-        const bar = activityRow.createEl("div", {
-          cls: "pf-cc-card-progress",
-          attr: {
-            role: "progressbar",
-            "aria-valuenow": String(env.activity_progress.current),
-            "aria-valuemin": "0",
-            "aria-valuemax": String(env.activity_progress.total),
-          },
-        });
-        const fill = bar.createEl("div", { cls: "pf-cc-card-progress-fill" });
-        fill.style.width = pct + "%";
-      }
     }
 
-    const l10nReason = this._localizeReason(env.reason.code, mod);
-    summaryRow.createEl("div", {
-      cls: "pf-cc-card-reason",
-      text: l10nReason ?? env.reason.text,
-    });
-
-    // Destructive metadata before action
     const primary = env.action?.primary;
-    if (primary && !isReady) {
-      if (primary.safety_class !== "safe" && primary.confirmation_required) {
-        const destructiveRow = summaryRow.createEl("div", {
-          cls: "pf-destructive-notice",
-        });
-        destructiveRow.createEl("span", {
-          text: (primary.replacement_facts || []).join("; "),
-        });
-      }
-
-      // Action button — disabled while this module's activity is running
-      const isModuleRunning = env.activity_state === "running";
-      const action = classifyCapabilityAction(env);
-      const actionBtn = summaryRow.createEl("button", {
-        cls: "pf-cc-card-action pf-cc-card-action--primary",
-        text: action.label,
-      });
-      if (isModuleRunning) {
-        actionBtn.setAttr("disabled", "disabled");
-      }
-      actionBtn.addEventListener("click", () => {
-        if (isModuleRunning) return;
-        this._dispatchModuleAction(mod, env);
+    if (primary && userState !== "ready" && mod !== "agent") {
+      const actionKey =
+        "action_" + (primary.action_id ?? primary.verb).replace(/[.-]/g, "_");
+      const translated = t(actionKey);
+      const label =
+        translated !== actionKey
+          ? translated
+          : t("cc_action_" + primary.verb) !== "cc_action_" + primary.verb
+            ? t("cc_action_" + primary.verb)
+            : t("cc_action_probe");
+      renderActionButton(summary, {
+        label,
+        loading: env.activity_state === "running",
+        onClick: () => this._dispatchModuleAction(mod, env),
       });
     }
 
-    // Timestamp and TTL
-    const metaRow = summaryRow.createEl("div", { cls: "pf-meta" });
-    let dateLabel: string;
-    try {
-      dateLabel = new Date(env.updated_at).toLocaleString();
-    } catch {
-      dateLabel = env.updated_at;
+    const details = summary.createEl("details", {
+      cls: "pf-module-diagnostics",
+    });
+    details.createEl("summary", { text: t("advanced_diagnostics") });
+    const diagnostics = details.createDiv({
+      cls: "pf-module-diagnostics-body",
+    });
+    diagnostics.createEl("div", {
+      text: t("cc_diag_module") + ": " + env.module,
+    });
+    diagnostics.createEl("div", {
+      text: t("cc_diag_state") + ": " + this._getUserStateLabel(userState),
+    });
+    diagnostics.createEl("div", {
+      text: t("cc_diag_severity") + ": " + env.severity,
+    });
+    diagnostics.createEl("div", {
+      text: t("cc_diag_activity") + ": " + env.activity_state,
+    });
+    diagnostics.createEl("div", {
+      text: t("cc_diag_reason") + ": " + env.reason.code,
+    });
+    diagnostics.createEl("div", {
+      text: t("cc_diag_ttl") + ": " + env.ttl_seconds + "s",
+    });
+    for (const notice of env.notices ?? []) {
+      diagnostics.createEl("div", { text: notice.message });
     }
-    metaRow.createEl("span", {
+    diagnostics.createEl("div", {
       text:
-        t("cc_diag_updated") +
-        ": " +
-        dateLabel +
-        " | TTL: " +
-        String(env.ttl_seconds) +
-        "s",
+        t("cc_diag_updated") + ": " + new Date(env.updated_at).toLocaleString(),
     });
-
-    // Notices
-    if (env.notices && env.notices.length > 0) {
-      for (const notice of env.notices) {
-        containerEl.createEl("div", {
-          cls: "pf-notice pf-notice--" + (notice.level || "info"),
-          text: notice.message,
-        });
-      }
-    }
-
-    // Diagnostics disclosure
-    const details = summaryRow.createEl("details", {
-      cls: "pf-cc-card-diagnostic",
-    });
-    details.createEl("summary", { text: t("cc_diagnostic_toggle") });
-    const body = details.createEl("div", { cls: "pf-cc-card-diagnostic-body" });
-    const stateLabel =
-      t("cc_state_" + env.capability_state) || env.capability_state;
-    const sevLabel = t("cc_severity_" + env.severity) || env.severity;
-    const activityLabel =
-      t("cc_activity_" + env.activity_state) || env.activity_state;
-    body.createEl("div", {
-      text:
-        t("cc_diag_module") +
-        ": " +
-        (t("cc_module_" + env.module) || env.module),
-    });
-    body.createEl("div", { text: t("cc_diag_state") + ": " + stateLabel });
-    body.createEl("div", { text: t("cc_diag_severity") + ": " + sevLabel });
-    body.createEl("div", {
-      text: t("cc_diag_activity") + ": " + activityLabel,
-    });
-    const reasonRow = body.createEl("div");
-    reasonRow.appendText(
-      t("cc_diag_reason") + ": " + (l10nReason ?? env.reason.text) + " "
-    );
-    reasonRow.createEl("code", { text: env.reason.code });
-
-    // Focus heading on render
-    try {
-      heading.focus();
-    } catch {
-      // ignore focus failure
-    }
   }
 
   /** Render the Help tab (top-level destination with docs + release notes). */
+  /** Help is task support and privacy-safe diagnostics, never a health module. */
   _renderHelpTab(containerEl: HTMLElement): void {
-    const envelopes: Record<string, ProbeEnvelope> =
-      this._capabilityState ?? {};
-    const mod: CapabilityModule = "help";
-    const env: ProbeEnvelope = envelopes[mod] ?? createUnknownEnvelope(mod);
-    const sevClass: string = this._sevClass(env.severity);
-    const isReal: boolean = PaperForgeSettingTab._REAL_PROBE.has(mod);
-
-    // Heading
-    containerEl.createEl("h2", { text: t("cc_module_help") || "Help & Docs" });
-
-    // Envelope summary card
-    const summaryRow = containerEl.createEl("div", {
-      cls: "pf-cc-card pf-open-module-btn",
-      attr: { style: "margin-bottom: 12px;" },
-    });
-    const summaryHeader = summaryRow.createEl("div", {
-      cls: "pf-cc-card-header",
-    });
-    summaryHeader.createEl("span", {
-      cls: "pf-cc-card-name",
-      text: t("cc_module_help"),
-    });
-    summaryHeader.createEl("span", {
-      cls: `pf-cc-card-badge pf-cc-card-badge--${sevClass}`,
-      text: t(this._ccBadgeKey(env, mod)),
+    containerEl.createEl("h2", { text: t("help_title") });
+    containerEl.createEl("p", {
+      text: t("help_intro"),
+      cls: "paperforge-settings-desc",
     });
 
-    // Reason text — localized via code map, fallback to backend text
-    let reasonText: string;
-    if (!isReal) {
-      reasonText = t("cc_reason_placeholder").replace(
-        "{module}",
-        t("cc_module_" + mod)
-      );
+    const tasks = containerEl.createDiv({ cls: "pf-help-section" });
+    tasks.createEl("h3", { text: t("help_getting_started") });
+    for (const item of [
+      ["library", "help_library_task"],
+      ["ocr", "help_ocr_task"],
+      ["memory", "help_retrieval_task"],
+      ["agent", "help_agent_task"],
+    ]) {
+      const button = tasks.createEl("button", {
+        cls: "pf-help-task",
+        text: t(item[1]),
+        attr: { "data-module": item[0] },
+      });
+      button.addEventListener("click", () => {
+        this._detailReturn = {
+          tab: "help",
+          selector: `.pf-help-task[data-module="${item[0]}"]`,
+        };
+        this._handleCardNavigation(item[0]);
+      });
+    }
+
+    const problems = Object.values(this._capabilityState ?? {}).filter(
+      (env) =>
+        env.user_visible_failure ||
+        env.user_state === "action_required" ||
+        env.user_state === "detection_failed"
+    );
+    const guidance = containerEl.createDiv({ cls: "pf-help-section" });
+    guidance.createEl("h3", { text: t("help_current_problem") });
+    if (problems.length === 0) {
+      guidance.createEl("p", {
+        text: t("help_no_problem"),
+        cls: "setting-item-description",
+      });
     } else {
-      const l10nReason = this._localizeReason(env.reason.code, mod);
-      reasonText = l10nReason ?? env.reason.text;
-    }
-    summaryRow.createEl("div", { cls: "pf-cc-card-reason", text: reasonText });
-
-    // Action button (same logic as overview card — setup opens wizard, else probe)
-    if (env.action.primary && !isReadyEnvelope(env)) {
-      const action = classifyCapabilityAction(env);
-      const isCta = action.kind === "setup";
-      const btnCls = isCta
-        ? "pf-cc-card-action pf-cc-card-action--primary"
-        : "pf-cc-card-action";
-      const actionBtn = summaryRow.createEl("button", {
-        cls: btnCls,
-        text: action.label,
-        attr: { "aria-label": action.label },
-      });
-      actionBtn.addEventListener("click", () => {
-        if (action.kind === "setup") {
-          new PaperForgeSetupModal(this.app, this.plugin, () => {
-            this._probeModule("installation");
-            this._probeModule("help");
-          }).open();
-        } else {
-          this._probeModule(mod);
-        }
-      });
+      for (const env of problems) {
+        const row = guidance.createDiv({ cls: "pf-help-problem" });
+        row.createEl("strong", {
+          text: this._getUserModuleName(env.module),
+        });
+        row.createEl("span", {
+          text: this._getModuleConsequence(env.module, env),
+        });
+      }
     }
 
-    // Diagnostics — native <details><summary> with localized field labels and values
-    const details = summaryRow.createEl("details", {
-      cls: "pf-cc-card-diagnostic",
+    const support = containerEl.createDiv({ cls: "pf-help-section" });
+    support.createEl("h3", { text: t("help_support") });
+    support.createEl("p", {
+      text: t("help_support_desc"),
+      cls: "setting-item-description",
     });
-    details.createEl("summary", { text: t("cc_diagnostic_toggle") });
-    const body = details.createEl("div", { cls: "pf-cc-card-diagnostic-body" });
-
-    const stateLabel =
-      t("cc_state_" + env.capability_state) || env.capability_state;
-    const sevLabel = t("cc_severity_" + env.severity) || env.severity;
-    const activityLabel =
-      t("cc_activity_" + env.activity_state) || env.activity_state;
-
-    let dateLabel: string;
-    try {
-      dateLabel = new Date(env.updated_at).toLocaleString();
-    } catch {
-      dateLabel = env.updated_at;
-    }
-
-    body.createEl("div", { text: `${t("cc_diag_module")}: ${env.module}` });
-    body.createEl("div", { text: `${t("cc_diag_state")}: ${stateLabel}` });
-    body.createEl("div", { text: `${t("cc_diag_severity")}: ${sevLabel}` });
-    body.createEl("div", {
-      text: `${t("cc_diag_activity")}: ${activityLabel}`,
+    renderActionButton(support, {
+      label: t("help_copy"),
+      onClick: () => this._buildAndCopyDiagnostic(),
     });
-    const reasonRow = body.createEl("div");
-    reasonRow.appendText(t("cc_diag_reason") + ": " + reasonText + " ");
-    const codeEl = reasonRow.createEl("code", { text: env.reason.code });
-    body.createEl("div", {
-      text: `${t("cc_diag_ttl")}: ${String(env.ttl_seconds)}s`,
-    });
-    body.createEl("div", { text: `${t("cc_diag_updated")}: ${dateLabel}` });
 
-    // Release notes from old release-notes tab
-    this._renderReleaseNotesTab(containerEl);
+    const docs = containerEl.createDiv({ cls: "pf-help-section" });
+    docs.createEl("h3", { text: t("help_documentation") });
+    docs.createEl("p", {
+      text: t("help_documentation_desc"),
+      cls: "setting-item-description",
+    });
+    const docsLink = docs.createEl("a", {
+      text: t("help_open_documentation"),
+      href: "https://github.com/LLLin000/PaperForge#readme",
+      cls: "pf-help-link",
+    });
+    docsLink.setAttr("target", "_blank");
+
+    const releases = containerEl.createDiv({ cls: "pf-help-section" });
+    releases.createEl("h3", { text: t("help_release_notes") });
+    releases.createEl("p", {
+      text: t("help_release_notes_desc").replace(
+        "{version}",
+        this.plugin.manifest?.version ?? "—"
+      ),
+      cls: "setting-item-description",
+    });
+    const releaseLink = releases.createEl("a", {
+      text: t("help_open_release_notes"),
+      href: "https://github.com/LLLin000/PaperForge/releases",
+      cls: "pf-help-link",
+    });
+    releaseLink.setAttr("target", "_blank");
   }
 
   _execMemoryStatus(
@@ -3230,90 +2876,52 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _renderMaintenanceInbox(containerEl: HTMLElement): void {
-    const inboxSection = containerEl.createEl("div", {
-      cls: "pf-maintenance-inbox",
-    });
-    const maintEnv: ProbeEnvelope | undefined =
-      this._capabilityState?.["maintenance"];
-    if (!maintEnv) {
-      inboxSection.createEl("div", {
+    const inbox = containerEl.createDiv({ cls: "pf-maintenance-inbox" });
+    const env = this._capabilityState?.maintenance;
+    const isChecking =
+      !env ||
+      (env.activity_state === "running" &&
+        env.reason?.code === "maintenance.probing") ||
+      env.user_state === "checking" ||
+      env.capability_state === "unknown" ||
+      (env.capability_state !== "ready" &&
+        env.capability_state !== "needs_action");
+    if (isChecking) {
+      inbox.createEl("p", {
         cls: "pf-maintenance-inbox-empty",
-        text: t("maintenance_checking") || "Checking maintenance status\u2026",
+        text: t("maintenance_checking"),
       });
-      this._probeModule("maintenance");
+      if (!env || env.capability_state === "unknown") {
+        if (!this._probing.has("maintenance")) {
+          this._probeModule("maintenance");
+        }
+      } else if (env.activity_state !== "running") {
+        this._requestMaintenanceProjection();
+      }
       return;
     }
-    if (
-      maintEnv.activity_state === "running" &&
-      maintEnv.reason?.code === "maintenance.probing"
-    ) {
-      inboxSection.createEl("div", {
-        cls: "pf-maintenance-inbox-empty",
-        text: t("maintenance_checking") || "Checking maintenance status\u2026",
-      });
+
+    const items = (env.items ?? []).filter(
+      (item) =>
+        item.activity_state !== "running" && item.maintenance_eligible !== false
+    );
+    if (items.length === 0) {
+      const empty = inbox.createDiv({ cls: "pf-maintenance-empty-state" });
+      empty.createEl("h3", { text: t("maintenance_empty_title") });
+      empty.createEl("p", { text: t("maintenance_empty_body") });
       return;
     }
-    if (
-      maintEnv.capability_state === "ready" &&
-      maintEnv.reason?.code === "maintenance.no_items" &&
-      Array.isArray(maintEnv.items) &&
-      maintEnv.items.length === 0
-    ) {
-      inboxSection.createEl("div", {
-        cls: "pf-maintenance-inbox-empty",
-        text:
-          t("maintenance_all_clear") ||
-          "All modules are ready \u2014 no maintenance needed.",
-      });
-      return;
-    }
-    if (maintEnv.capability_state === "unknown") {
-      inboxSection.createEl("div", {
-        cls: "pf-maintenance-inbox-empty",
-        text: t("maintenance_checking") || "Checking maintenance status\u2026",
-      });
-      if (!this._probing.has("maintenance")) this._probeModule("maintenance");
-      return;
-    }
-    if (
-      maintEnv.capability_state !== "ready" &&
-      maintEnv.capability_state !== "needs_action"
-    ) {
-      inboxSection.createEl("div", {
-        cls: "pf-maintenance-inbox-empty",
-        text: t("maintenance_checking") || "Checking maintenance status\u2026",
-      });
-      this._requestMaintenanceProjection();
-      return;
-    }
-    const items = maintEnv.items;
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      inboxSection.createEl("div", {
-        cls: "pf-maintenance-inbox-empty",
-        text: t("maintenance_checking") || "Checking maintenance status\u2026",
-      });
-      this._requestMaintenanceProjection();
-      return;
-    }
-    if (!this._maintenanceNoticeShown) {
-      this._maintenanceNoticeShown = true;
-      new Notice(
-        t("maintenance_n_pending").replace("{n}", String(items.length)),
-        5000
-      );
-    }
-    const summaryEl = inboxSection.createEl("div", {
+
+    inbox.createEl("p", {
       cls: "pf-maintenance-inbox-summary",
-    });
-    summaryEl.createEl("span", {
       text: t("maintenance_n_pending").replace("{n}", String(items.length)),
     });
-    const listEl = inboxSection.createEl("div", {
+    const list = inbox.createDiv({
       cls: "pf-maintenance-inbox-list",
       attr: { role: "list" },
     });
     for (const item of items) {
-      this._renderMaintenanceInboxItem(listEl, item);
+      this._renderMaintenanceInboxItem(list, item);
     }
   }
 
@@ -3321,587 +2929,74 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     container: HTMLElement,
     item: MaintenanceItem
   ): void {
-    const isDismissed = this._dismissedMaintenanceItems.has(item.module);
-    const sevClass = this._sevClass(item.severity);
-    const row = container.createEl("div", {
-      cls:
-        "pf-maintenance-inbox-item" +
-        (isDismissed ? " pf-maintenance-inbox-item--dismissed" : ""),
+    const row = container.createDiv({
+      cls: "pf-maintenance-inbox-item",
       attr: { role: "listitem", "data-module": item.module },
     });
-    const infoCol = row.createEl("div", {
-      cls: "pf-maintenance-inbox-item-info",
+    const info = row.createDiv({ cls: "pf-maintenance-inbox-item-info" });
+    const header = info.createDiv({ cls: "pf-maintenance-item-header" });
+    header.createEl("strong", {
+      text: this._getUserModuleName(item.module),
     });
-    const modLabel = t("cc_module_" + item.module) || item.module;
-    const navBtn = infoCol.createEl("button", {
-      cls: "pf-maintenance-inbox-item-module",
-      text: modLabel,
-      attr: { "data-module": item.module },
-    });
-    navBtn.addEventListener("click", () => {
-      this._detailReturn = {
-        tab: "maintenance",
-        selector:
-          'button.pf-maintenance-inbox-item-module[data-module="' +
-          item.module +
-          '"]',
-      };
-      this._handleCardNavigation(item.module);
-    });
-    const reasonL10n = this._localizeReason(item.reason_code, item.module);
-    infoCol.createEl("div", {
+    const userState =
+      item.user_state ??
+      (item.severity === "error" || item.severity === "warning"
+        ? "action_required"
+        : "detection_failed");
+    renderStatusBadge(header, userState, this._getUserStateLabel(userState));
+    info.createEl("p", {
       cls: "pf-maintenance-inbox-item-reason",
-      text: reasonL10n ?? item.reason_text,
+      text:
+        this._localizeReason(item.reason_code, item.module) ??
+        t("cc_consequence_action_required"),
     });
-    if (item.activity_state === "running" && item.activity_label) {
-      infoCol.createEl("div", {
-        cls: "pf-maintenance-inbox-item-activity",
-        text: item.activity_label,
-      });
-    }
-    const actionCol = row.createEl("div", {
-      cls: "pf-maintenance-inbox-item-actions",
+    info.createEl("p", {
+      cls: "pf-maintenance-inbox-item-impact",
+      text:
+        item.module === "library"
+          ? t("library_problem_impact")
+          : item.module === "ocr"
+            ? t("ocr_problem_impact")
+            : item.module === "memory"
+              ? t("retrieval_problem_impact")
+              : t("maintenance_default_impact"),
     });
-    actionCol.createEl("span", {
-      cls:
-        "pf-maintenance-inbox-item-badge pf-maintenance-inbox-item-badge--" +
-        sevClass,
-      text: t("cc_badge_" + (sevClass === "ok" ? "ok" : "attention")),
+
+    const action = item.action;
+    const actionKey = action
+      ? "action_" + (action.action_id ?? action.verb).replace(/[.-]/g, "_")
+      : "";
+    const translatedAction = actionKey ? t(actionKey) : "";
+    const actionLabel = action
+      ? translatedAction !== actionKey
+        ? translatedAction
+        : t("cc_action_" + action.verb) !== "cc_action_" + action.verb
+          ? t("cc_action_" + action.verb)
+          : t("maintenance_open_module")
+      : t("maintenance_open_module");
+    const button = row.createEl("button", {
+      cls: "pf-maintenance-inbox-item-action",
+      text: actionLabel,
     });
-    if (item.action) {
-      const actionBtn = actionCol.createEl("button", {
-        cls: "pf-maintenance-inbox-item-action",
-        text: item.action.label,
-      });
-      actionBtn.addEventListener("click", () => {
-        this._dispatchItemAction(item);
-      });
-    }
-    const dismissBtn = actionCol.createEl("button", {
-      cls: "pf-maintenance-inbox-item-dismiss",
-      text: isDismissed
-        ? t("maintenance_undismiss") || "Show"
-        : t("maintenance_dismiss") || "Dismiss",
-    });
-    dismissBtn.addEventListener("click", () => {
-      if (isDismissed) this._dismissedMaintenanceItems.delete(item.module);
-      else this._dismissedMaintenanceItems.add(item.module);
-      this.display();
+    button.addEventListener("click", () => {
+      if (action) this._dispatchItemAction(item);
+      else {
+        this._detailReturn = {
+          tab: "maintenance",
+          selector:
+            '.pf-maintenance-inbox-item[data-module="' + item.module + '"]',
+        };
+        this._handleCardNavigation(item.module);
+      }
     });
   }
 
   _renderMaintenanceTab(containerEl: HTMLElement) {
     containerEl.createEl("h2", {
-      text: t("tab_maintenance") || "维护",
+      text: t("tab_maintenance"),
       attr: { id: "pf-maintenance-heading", tabindex: "-1" },
     });
     this._renderMaintenanceInbox(containerEl);
-    containerEl.createEl("h3", {
-      text: t("maintenance_ocr_section") || "OCR Maintenance",
-    });
-
-    // vault path — DataAdapter.basePath is undocumented but stable
-    const adapter = this.app.vault.adapter as unknown as { basePath?: string };
-    const vaultPath = adapter.basePath ?? "";
-    const statusEl = containerEl.createEl("div");
-
-    // Filter state
-    const filterState = { active: "all" as "all" | "recommended" };
-
-    // ── Phase 1: Read cache ──
-    let cache: MaintenanceCache | null = null;
-    try {
-      cache = readMaintenanceCache(vaultPath);
-    } catch {}
-
-    const resolved = this._resolveRuntimeCommand(vaultPath);
-    if (!resolved) {
-      statusEl.createEl("p", {
-        text: "⚠ Python runtime not ready — install via Installation tab.",
-        cls: "setting-item-description",
-      });
-      return;
-    }
-
-    const isBatchRunning = () => !!this.plugin._ocrProcess;
-
-    const renderTable = (papers: MaintenanceDisplayRow[]) => {
-      statusEl.empty();
-      const allVisible = papers;
-
-      // Filter tabs — render before empty check so user can always switch back
-      const filterRow = statusEl.createEl("div", {
-        cls: "pf-maint-filters",
-      });
-
-      const allTab = filterRow.createEl("button", {
-        cls:
-          "pf-maint-filter" + (filterState.active === "all" ? " active" : ""),
-        text: t("maintenance_filter_all") || "All",
-      });
-      allTab.addEventListener("click", () => {
-        filterState.active = "all";
-        renderTable(papers);
-      });
-
-      const recTab = filterRow.createEl("button", {
-        cls:
-          "pf-maint-filter" +
-          (filterState.active === "recommended" ? " active" : ""),
-        text: t("maintenance_filter_recommended") || "Recommended",
-      });
-      recTab.addEventListener("click", () => {
-        filterState.active = "recommended";
-        renderTable(papers);
-      });
-
-      // Recommended = papers whose derived results need rebuilding (excludes retry/failed)
-      const visible =
-        filterState.active === "recommended"
-          ? allVisible.filter((p) => p.needs_derived_rebuild === true)
-          : allVisible;
-
-      // If the active filter yields nothing, show a message and skip the table/progress
-      if (visible.length === 0) {
-        statusEl.createEl("p", {
-          text: "当前筛选条件下无数据",
-          cls: "setting-item-description",
-        });
-      } else {
-        const pyPath = resolved.path;
-        const pyExtra = resolved.args;
-
-        // ── Progress bar (if batch running) — mutable DOM refs, no full re-render ──
-        const progressContainer = statusEl.createEl("div", {
-          cls: "pf-maint-progress",
-        });
-        progressContainer.style.display = "none";
-
-        const track = progressContainer.createEl("div", {
-          cls: "paperforge-progress-track",
-        });
-        track.style.cssText = "flex:1;";
-        const doneSeg = track.createEl("div", {
-          cls: "paperforge-progress-seg done",
-        });
-        const pendingSeg = track.createEl("div", {
-          cls: "paperforge-progress-seg pending",
-        });
-        const label = progressContainer.createEl("span", {
-          cls: "pf-maint-progress-text",
-        });
-        const keyLabel = progressContainer.createEl("span", {
-          cls: "pf-maint-progress-key",
-        });
-
-        // Stop button — cooperative: stdin control line, fallback to SIGINT
-        const stopBtn = progressContainer.createEl("button", {
-          text: t("maintenance_stop") || "Stop",
-        });
-        stopBtn.className = "mod-warning";
-        stopBtn.addEventListener("click", () => {
-          const child = this.plugin._ocrProcess as unknown as {
-            stdin?: { write: (_: string) => boolean };
-            kill?: (_: string) => void;
-          };
-          if (child) {
-            // Prefer stdin control line (cooperative — backend finishes current paper)
-            if (child.stdin && typeof child.stdin.write === "function") {
-              child.stdin.write("PAPERFORGE_STOP\n");
-            } else if (typeof child.kill === "function") {
-              child.kill("SIGINT");
-            }
-          }
-          // Flag, don't null — onClose handles cleanup
-          this.plugin._ocrWasStopped = true;
-          stopBtn.disabled = true;
-          stopBtn.textContent = (t("maintenance_stop") || "Stop") + "…";
-        });
-
-        // In-place DOM update — called from runBatch start + onData events
-        const updateProgress = () => {
-          const prog = this.plugin._ocrProgress;
-          if (!prog || prog.total === 0 || !this.plugin._ocrProcess) {
-            progressContainer.style.display = "none";
-            return;
-          }
-          progressContainer.style.display = "flex";
-
-          const pct =
-            prog.total > 0
-              ? ((prog.current / prog.total) * 100).toFixed(1)
-              : "0";
-
-          doneSeg.style.width = `${pct}%`;
-          doneSeg.style.minWidth = prog.current > 0 ? "2px" : "0";
-
-          if (prog.current < prog.total) {
-            pendingSeg.style.display = "";
-            pendingSeg.style.flex = "1";
-          } else {
-            pendingSeg.style.display = "none";
-          }
-
-          label.textContent = (
-            t("maintenance_progress_label") || "{current}/{total} papers"
-          )
-            .replace("{current}", String(prog.current))
-            .replace("{total}", String(prog.total));
-
-          keyLabel.textContent = prog.key ? ` (${prog.key})` : "";
-        };
-
-        updateProgress();
-
-        // Selection state
-        const selState = new Map<string, boolean>();
-        for (const p of visible) selState.set(p.key, false);
-
-        // ── Table ──
-        const wrapper = statusEl.createEl("div", {
-          cls: "pf-maint-table-wrap",
-        });
-        const table = wrapper.createEl("table", { cls: "pf-maint-table" });
-        const thead = table.createEl("thead");
-        const tbody = table.createEl("tbody");
-        const headerRow = thead.insertRow();
-        ["", "Paper", "Status Reason", "Actions"].forEach((h) => {
-          const th = document.createElement("th");
-          th.textContent = h;
-          headerRow.appendChild(th);
-        });
-
-        const isBusy = isBatchRunning();
-
-        for (const p of visible) {
-          const tr = tbody.insertRow();
-
-          // Checkbox
-          const selTd = tr.insertCell();
-          selTd.style.cssText = "padding:3px 4px;text-align:center;width:24px;";
-          const cb = document.createElement("input");
-          cb.type = "checkbox";
-          cb.className = "pf-maint-sel";
-          cb.checked = selState.get(p.key) || false;
-          cb.addEventListener("change", () => {
-            selState.set(p.key, cb.checked);
-            updateBatchLabel();
-          });
-          selTd.appendChild(cb);
-
-          // Paper info (title + key)
-          const infoTd = tr.insertCell();
-          infoTd.style.cssText = "padding:3px 4px;";
-          const infoDiv = infoTd.createEl("div", {
-            cls: "pf-maint-paper-info",
-          });
-          infoDiv.createEl("div", {
-            cls: "pf-maint-paper-title",
-            text: p.title || p.key,
-          });
-          infoDiv.createEl("div", {
-            cls: "pf-maint-paper-key",
-            text: p.key,
-          });
-
-          // Status reason
-          const reasonTd = tr.insertCell();
-          reasonTd.style.cssText = "padding:3px 4px;";
-          reasonTd.createEl("div", {
-            cls: "pf-maint-reason",
-            text: p.display_reason || "",
-          });
-
-          // Action buttons — [Rebuild] [Redo]
-          const actionTd = tr.insertCell();
-          actionTd.style.cssText = "padding:3px 4px;white-space:nowrap;";
-          const actionDiv = actionTd.createEl("div", {
-            cls: "pf-maint-actions",
-          });
-
-          const primaryAction = maintenanceActionForRow(p);
-          if (primaryAction === "rebuild") {
-            const rebuildBtn = actionDiv.createEl("button", {
-              cls: "pf-maint-action-btn rebuild",
-              text: t("maintenance_btn_rebuild") || "Rebuild",
-            });
-            if (isBusy) rebuildBtn.disabled = true;
-            rebuildBtn.addEventListener("click", async () => {
-              const _credEnv = await resolveCredentialEnv(
-                asPluginForSecrets((this as any).app),
-                "ocr"
-              );
-              const _baseEnv = paperforgeEnrichedEnv();
-              execFile(
-                pyPath,
-                [...pyExtra, "-m", "paperforge", "ocr", "rebuild", p.key],
-                {
-                  cwd: vaultPath,
-                  timeout: 120000,
-                  windowsHide: true,
-                  env: Object.assign({}, _baseEnv, _credEnv),
-                },
-                () => {
-                  new Notice(
-                    (t("maintenance_btn_rebuild") || "Rebuild") + " — " + p.key
-                  );
-                }
-              );
-            });
-          } else if (primaryAction === "redo") {
-            const redoBtn = actionDiv.createEl("button", {
-              cls: "pf-maint-action-btn redo",
-              text: t("ocr_maint_redo_btn") || "Redo",
-            });
-            if (isBusy) redoBtn.disabled = true;
-            redoBtn.addEventListener("click", async () => {
-              if (
-                maintenanceActionRequiresConfirmation("redo") &&
-                !confirm(
-                  (
-                    t("ocr_maint_redo_confirm") ||
-                    "Rerun OCR for {n} paper(s)? Existing derived OCR artifacts will be replaced."
-                  ).replace("{n}", "1")
-                )
-              ) {
-                return;
-              }
-              const _credEnvR = await resolveCredentialEnv(
-                asPluginForSecrets((this as any).app),
-                "ocr"
-              );
-              const _baseEnvR = paperforgeEnrichedEnv();
-              execFile(
-                pyPath,
-                [...pyExtra, "-m", "paperforge", "ocr", "redo", p.key],
-                {
-                  cwd: vaultPath,
-                  timeout: 300000,
-                  windowsHide: true,
-                  env: Object.assign({}, _baseEnvR, _credEnvR),
-                },
-                () => {
-                  new Notice(
-                    (t("ocr_maint_redo_btn") || "Redo OCR") + " — " + p.key
-                  );
-                }
-              );
-            });
-          }
-        }
-
-        // ── Batch action bar ──
-        const batchBar = statusEl.createEl("div", {
-          cls: "pf-maint-batch-bar",
-        });
-        const batchLabel = batchBar.createEl("span", {
-          cls: "pf-maint-batch-label",
-          text: "0 selected",
-        });
-
-        const updateBatchLabel = () => {
-          const n = visible.filter((p) => selState.get(p.key)).length;
-          batchLabel.textContent = n + " selected";
-        };
-
-        const rebuildBatchBtn = batchBar.createEl("button", {
-          cls: "mod-cta",
-          text: t("maintenance_batch_rebuild") || "▶ Rebuild selected",
-        });
-        rebuildBatchBtn.disabled = isBusy;
-
-        const redoBatchBtn = batchBar.createEl("button", {
-          cls: "mod-cta",
-          text: t("maintenance_batch_redo") || "▶ Full OCR redo selected",
-        });
-        redoBatchBtn.disabled = isBusy;
-
-        const runBatch = async (action: "rebuild" | "redo") => {
-          // Filter selected by eligibility for the chosen action (matches per-row canonical action)
-          const selected = visible.filter(
-            (p) => selState.get(p.key) && maintenanceActionForRow(p) === action
-          );
-          if (selected.length === 0) {
-            const label =
-              action === "rebuild"
-                ? t("maintenance_btn_rebuild") || "Rebuild"
-                : t("ocr_maint_redo_btn") || "Redo";
-            new Notice(
-              "Selected papers are not eligible for " +
-                label +
-                ". Uncheck ineligible rows and try again.",
-              6000
-            );
-            return;
-          }
-          if (
-            maintenanceActionRequiresConfirmation(action) &&
-            !confirm(
-              (
-                t("ocr_maint_redo_confirm") ||
-                "Rerun OCR for {n} paper(s)? Existing derived OCR artifacts will be replaced."
-              ).replace("{n}", String(selected.length))
-            )
-          ) {
-            return;
-          }
-          const keys = selected.map((p) => p.key);
-          this.plugin._ocrProgress = {
-            current: 0,
-            total: keys.length,
-            key: "",
-          };
-          this.plugin._ocrBuffer = "";
-          this.plugin._ocrWasStopped = false;
-
-          const prefix = action === "rebuild" ? "OCR_REBUILD" : "OCR_REDO";
-
-          // Disable batch + per-row action buttons during the batch
-          rebuildBatchBtn.disabled = true;
-          redoBatchBtn.disabled = true;
-          Array.from(
-            wrapper.querySelectorAll<HTMLButtonElement>(".pf-maint-action-btn")
-          ).forEach((btn) => {
-            btn.disabled = true;
-          });
-          // Also disable checkboxes to prevent selection changes during batch
-          Array.from(
-            wrapper.querySelectorAll<HTMLInputElement>(".pf-maint-sel")
-          ).forEach((cb) => {
-            cb.disabled = true;
-          });
-          // Disable filter tabs to prevent filter switch mid-batch
-          allTab.disabled = true;
-          recTab.disabled = true;
-          stopBtn.disabled = false;
-          stopBtn.textContent = t("maintenance_stop") || "Stop";
-
-          // Issue #79: resolve OCR credentials immediately before batch launch
-          const batchEnv = await buildTargetedEnv(
-            asPluginForSecrets((this as any).app),
-            "ocr"
-          );
-          const child = this._callPython(["ocr", action, ...keys], {
-            env: batchEnv,
-            onData: (data: unknown) => {
-              const text =
-                typeof data === "string"
-                  ? data
-                  : Buffer.isBuffer(data)
-                    ? data.toString("utf-8")
-                    : String(data);
-              // Shared parser with chunk buffer
-              const { events, buffer } = processProgressChunk(
-                text,
-                this.plugin._ocrBuffer ?? ""
-              );
-              this.plugin._ocrBuffer = buffer;
-              for (const ev of events) {
-                if (ev.event === "START") {
-                  if (this.plugin._ocrProgress) {
-                    this.plugin._ocrProgress.total = ev.total || keys.length;
-                  }
-                } else if (ev.event === "PROGRESS") {
-                  this.plugin._ocrProgress = {
-                    current: ev.current || 0,
-                    total: ev.total || keys.length,
-                    key: ev.key || "",
-                  };
-                }
-                // DONE handled in onClose
-              }
-              // In-place DOM update — no full re-render
-              updateProgress();
-            },
-            onError: (err: Error) => {
-              this.plugin._ocrProcess = null;
-              new Notice("Batch error: " + (err.message || err));
-              renderTable(papers);
-            },
-            onClose: (code: number | null) => {
-              // code 130 = SIGINT caught cooperatively by the backend
-              if (this.plugin._ocrWasStopped || code === 130) {
-                this.plugin._ocrWasStopped = false;
-                // Leave progress as-is; no finalize
-                this.plugin._ocrProcess = null;
-                updateProgress();
-                new Notice("OCR batch stopped by user.");
-              } else if (code === 0) {
-                // Finalize progress to show completion even if no tokens came through
-                if (this.plugin._ocrProgress) {
-                  this.plugin._ocrProgress.current =
-                    this.plugin._ocrProgress.total;
-                }
-                this.plugin._ocrProcess = null;
-                updateProgress();
-                new Notice(
-                  (
-                    t("maintenance_batch_complete") ||
-                    "Batch operation complete — {n} papers processed."
-                  ).replace("{n}", String(keys.length))
-                );
-              } else {
-                this.plugin._ocrProcess = null;
-                updateProgress();
-                new Notice(
-                  "Batch operation finished with exit code " + code + ".",
-                  8000
-                );
-              }
-              // Full refresh
-              refreshMaintenanceData(vaultPath, pyPath, pyExtra, cache)
-                .then((result) => {
-                  cache = readMaintenanceCache(vaultPath);
-                  renderTable(result.data);
-                })
-                .catch(() => {
-                  renderTable(allVisible);
-                });
-            },
-          });
-          this.plugin._ocrProcess = child;
-          updateProgress();
-        };
-
-        rebuildBatchBtn.addEventListener("click", () => runBatch("rebuild"));
-        redoBatchBtn.addEventListener("click", () => runBatch("redo"));
-
-        updateBatchLabel();
-      } // end else (visible non-empty)
-    };
-
-    // ── Phase 1: Show cache immediately ──
-    if (cache) {
-      const papers = Object.values(cache.papers) as MaintenanceDisplayRow[];
-      renderTable(papers);
-    } else {
-      statusEl.createEl("p", {
-        text: "正在加载 OCR 维护数据…",
-      });
-    }
-
-    // ── Phase 2: Background refresh ──
-    refreshMaintenanceData(
-      vaultPath,
-      resolved.path,
-      resolved.args,
-      cache || null
-    )
-      .then((result) => {
-        cache = readMaintenanceCache(vaultPath);
-        if (result.changed || !cache) {
-          renderTable(result.data);
-        }
-      })
-      .catch(() => {
-        if (!cache) {
-          statusEl.empty();
-          statusEl.createEl("p", {
-            text: "无法加载 OCR 数据。请确保已安装 paperforge 并运行过 OCR。",
-            cls: "setting-item-description",
-          });
-        }
-      });
   }
 
   _renderReleaseNotesTab(containerEl: HTMLElement) {
@@ -4405,11 +3500,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.activeTab = "maintenance";
       this._selectedDetailModule = "";
       this._focusTargetId = "#pf-maintenance-heading";
-      this._maintenanceNoticeShown = false;
-    } else if (mod === "agent") {
-      this.activeTab = "module-detail";
-      this._selectedDetailModule = "agent";
-      this._focusTargetId = "#pf-agent-detail-heading";
     } else {
       this.activeTab = "module-detail";
       this._selectedDetailModule = mod;
@@ -4428,13 +3518,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const foundationEnv =
       envelopes["installation"] ?? createUnknownEnvelope("installation");
     const libraryEnv = envelopes["library"] ?? createUnknownEnvelope("library");
-    const foundationReady =
-      foundationEnv.capability_state === "ready" &&
-      foundationEnv.action.primary === null;
-    const libraryReady =
-      libraryEnv.capability_state === "ready" &&
-      libraryEnv.action.primary === null;
+    const foundationReady = foundationEnv.user_state === "ready";
+    const libraryReady = libraryEnv.user_state === "ready";
     const baselineReady = foundationReady && libraryReady;
+    const baselineChecking = [foundationEnv, libraryEnv].some(
+      (env) => env.user_state === "checking"
+    );
 
     // Count maintenance items
     let maintenanceCount = 0;
@@ -4445,20 +3534,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // ── Summary ──
     const summaryEl = cc.createEl("div", { cls: "pf-cc-summary" });
-    const baselineText = baselineReady
-      ? t("cc_summary_ready") || "PaperForge is ready"
-      : t("cc_summary_incomplete") || "Setup incomplete";
+    const summaryTitle = baselineReady
+      ? t("cc_summary_ready")
+      : baselineChecking
+        ? t("cc_summary_checking")
+        : this.plugin.settings._setup_complete === false
+          ? t("cc_summary_incomplete")
+          : t("cc_summary_attention");
+    const summaryBody = baselineReady
+      ? t("cc_summary_ready_body")
+      : baselineChecking
+        ? t("cc_summary_checking_body")
+        : this.plugin.settings._setup_complete === false
+          ? t("cc_summary_incomplete_body")
+          : t("cc_summary_attention_body");
     summaryEl.createEl("div", {
       cls: "pf-cc-summary-title",
-      text: baselineText,
+      text: summaryTitle,
     });
     summaryEl.createEl("div", {
       cls: "pf-cc-summary-body",
-      text: baselineReady
-        ? t("cc_summary_ready_body") ||
-          "Foundation and Library are operational."
-        : t("cc_summary_incomplete_body") ||
-          "Complete Foundation and Library setup to use PaperForge.",
+      text: summaryBody,
     });
 
     // Maintenance count + refresh
@@ -4466,11 +3562,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (maintenanceCount > 0) {
       metaRow.createEl("span", {
         cls: "pf-cc-summary-maintenance",
-        text:
-          maintenanceCount +
-          " item" +
-          (maintenanceCount !== 1 ? "s" : "") +
-          " need attention",
+        text: t("cc_maintenance_count").replace(
+          "{n}",
+          String(maintenanceCount)
+        ),
       });
     }
     const refreshBtn = metaRow.createEl("button", {
@@ -4479,8 +3574,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     refreshBtn.addEventListener("click", () => {
       this._refreshAllModules();
-      const probeMaintenance = () => this._probeModule("maintenance");
-      probeMaintenance();
     });
 
     // Last updated
@@ -4501,7 +3594,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ── Module Grid (#86: 5 cards, navigation-only) ──
     const grid = cc.createEl("div", {
       cls: "pf-cc-grid",
-      attr: { role: "list", "aria-label": "Operational Modules" },
+      attr: { role: "list", "aria-label": t("cc_operational_modules") },
     });
     for (const mod of this._getOverviewModules()) {
       const env =
@@ -4546,78 +3639,77 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     label: string,
     env: ProbeEnvelope
   ): void {
-    const card = grid.createEl("button", {
-      cls: "pf-cc-card pf-open-module-btn",
-      attr: { "data-module": mod, role: "listitem" },
+    const item = grid.createDiv({
+      cls: "pf-cc-card-item",
+      attr: { role: "listitem" },
     });
-
+    const card = item.createEl("button", {
+      cls: "pf-cc-card pf-open-module-btn",
+      attr: {
+        "data-module": mod,
+        "aria-label": label + " — " + this._getUserStateLabel(env.user_state),
+      },
+    });
+    const header = card.createDiv({ cls: "pf-cc-card-header" });
+    header.createEl("span", {
+      cls: "pf-cc-card-title",
+      text: label,
+    });
     renderStatusBadge(
-      card,
+      header,
       env.user_state,
       this._getUserStateLabel(env.user_state)
     );
 
     card.createEl("div", {
-      cls: "pf-cc-card-title",
-      text: label,
-    });
-
-    const consequence = this._getModuleConsequence(mod, env);
-    card.createEl("div", {
       cls: "pf-cc-card-consequence",
-      text: consequence,
+      text: this._getModuleConsequence(mod, env),
     });
-
-    if (env.activity_state === "running" && env.activity_label) {
+    if (env.activity_state === "running") {
       renderActivityRow(card, {
-        label: env.activity_label,
+        label: t("cc_activity_running"),
         progress: env.activity_progress,
       });
     }
-
     if (env.updated_at && env.updated_at !== new Date(0).toISOString()) {
       card.createEl("div", {
-        cls: "pf-last-known",
-        text:
-          (t("cc_last_checked") || "Last checked: ") +
-          new Date(env.updated_at).toLocaleString(),
+        cls: "pf-cc-card-last-known",
+        text: t("cc_last_checked") + new Date(env.updated_at).toLocaleString(),
       });
     }
+    card.addEventListener("click", () => this._handleCardNavigation(mod));
 
-    if (env.user_state === "detection_failed") {
-      const retry = card.createEl("button", {
+    if (env.user_state === "detection_failed" && mod !== "agent") {
+      const retry = item.createEl("button", {
         cls: "pf-cc-card-retry",
-        text: t("cc_card_retry") || "Retry",
+        text: t("cc_card_retry"),
       });
-      retry.addEventListener("click", (e: Event) => {
-        e.stopPropagation();
-        this._probeModule(mod as CapabilityModule);
-      });
+      retry.addEventListener("click", () =>
+        this._probeModule(mod as CapabilityModule)
+      );
     }
-
-    card.addEventListener("click", () => {
-      this._handleCardNavigation(mod);
-    });
   }
 
   /** #86: Plain-language consequence based on module state. */
   _getUserStateLabel(state: string): string {
-    const key = "cc_badge_" + state;
-    return (
-      t(key) ||
-      state.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())
-    );
+    return t("cc_badge_" + state);
   }
 
   _getModuleConsequence(mod: string, env: ProbeEnvelope): string {
-    const state = env.user_state;
+    const state =
+      env.user_state ??
+      (env.capability_state === "ready" ? "ready" : "action_required");
     const key = "cc_consequence_" + mod + "_" + state;
     const translated = t(key);
     if (translated && translated !== key) return translated;
+    const reason = this._localizeReason(
+      env.reason?.code ?? "",
+      this._getUserModuleName(mod)
+    );
+    if (reason) return reason;
     const fallbackKey = "cc_consequence_" + state;
     const fallback = t(fallbackKey);
-    if (fallback && fallback !== fallbackKey) return fallback;
-    return env.reason?.text || t("cc_consequence_default") || "Status unknown.";
+    return fallback !== fallbackKey ? fallback : t("cc_consequence_default");
   }
 
   /** Apply stale-tolerance: if an envelope is stale, replace with unknown+probe. */
@@ -4660,7 +3752,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     };
     const text = buildSupportDiagnostic(diag);
     copySupportDiagnostic(text, () => {
-      new Notice("Diagnostic copied to clipboard", 3000);
+      new Notice(t("support_diagnostic_copied"), 3000);
     });
   }
 
@@ -4676,97 +3768,82 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   // ═══════════════════════════════════════════════════════════════
 
   _renderSetupJourney(containerEl: HTMLElement): void {
+    if (this.plugin.settings._setup_journey_started !== true) {
+      this.plugin.settings._setup_journey_started = true;
+      this.plugin.saveSettings();
+    }
     const wrapper = containerEl.createDiv({ cls: "pf-setup-journey" });
-
-    // Header
-    wrapper.createEl("h2", {
-      text: t("setup_welcome") || "Welcome to PaperForge",
-    });
+    wrapper.createEl("h2", { text: t("setup_welcome") });
     wrapper.createEl("p", {
-      text:
-        t("setup_desc") ||
-        "Let's set up your research environment in a few steps.",
+      text: t("setup_desc"),
       cls: "pf-setup-desc",
     });
 
-    // Stage indicator
     const stages = [
-      "Foundation",
-      "Connect Library",
-      "Optional Capabilities",
-      "Review & Begin",
+      t("setup_stage_1"),
+      t("setup_stage_2"),
+      t("setup_stage_3"),
+      t("setup_stage_4"),
     ];
-    const progress = wrapper.createDiv({ cls: "pf-setup-progress" });
+    const progress = wrapper.createDiv({
+      cls: "pf-setup-progress",
+      attr: { "aria-label": t("setup_progress") },
+    });
     stages.forEach((label, i) => {
-      const step = progress.createEl("span", {
+      progress.createEl("span", {
         cls:
           "pf-setup-step" +
           (i + 1 === this._setupStage ? " pf-setup-step--active" : "") +
           (i + 1 < this._setupStage ? " pf-setup-step--done" : ""),
         text: String(i + 1) + ". " + label,
+        attr: {
+          "aria-current": i + 1 === this._setupStage ? "step" : "false",
+        },
       });
     });
 
-    // Stage body
     const body = wrapper.createDiv({ cls: "pf-setup-body" });
-    switch (this._setupStage) {
-      case 1:
-        this._renderSetupStageFoundation(body);
-        break;
-      case 2:
-        this._renderSetupStageLibrary(body);
-        break;
-      case 3:
-        this._renderSetupStageOptionals(body);
-        break;
-      case 4:
-        this._renderSetupStageReview(body);
-        break;
-    }
+    if (this._setupStage === 1) this._renderSetupStageFoundation(body);
+    else if (this._setupStage === 2) this._renderSetupStageLibrary(body);
+    else if (this._setupStage === 3) this._renderSetupStageOptionals(body);
+    else this._renderSetupStageReview(body);
   }
 
   _renderSetupStageFoundation(containerEl: HTMLElement): void {
     const env =
-      this._capabilityState?.["installation"] ??
+      this._capabilityState?.installation ??
       createUnknownEnvelope("installation");
-    containerEl.createEl("h3", { text: "Step 1: Foundation" });
+    containerEl.createEl("h3", { text: t("setup_foundation_title") });
+    containerEl.createEl("p", { text: t("setup_foundation_desc") });
+    renderStatusBadge(
+      containerEl,
+      env.user_state,
+      this._getUserStateLabel(env.user_state)
+    );
     containerEl.createEl("p", {
       text:
-        t("setup_foundation_desc") ||
-        "PaperForge needs a managed environment on this device.",
+        env.user_state === "ready"
+          ? t("setup_ready")
+          : this._getModuleConsequence("installation", env),
+      cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
     });
-
-    renderStatusBadge(containerEl, env.user_state);
-
-    if (env.user_state === "ready") {
-      containerEl.createEl("p", {
-        text: t("setup_ready") || "Foundation is ready.",
-        cls: "pf-setup-ok",
+    if (env.action?.primary && env.user_state !== "ready") {
+      const verbKey = "cc_action_" + env.action.primary.verb;
+      renderActionButton(containerEl, {
+        label: t(verbKey) === verbKey ? t("cc_action_setup") : t(verbKey),
+        onClick: () =>
+          this._runAllowedDispatch(
+            "installation",
+            env.action.primary!.verb,
+            env.action.primary!.command,
+            env
+          ),
       });
-    } else {
-      containerEl.createEl("p", {
-        text: env.reason?.text || "Checking...",
-        cls: "pf-setup-status",
-      });
-      if (env.action?.primary) {
-        renderActionButton(containerEl, {
-          label: env.action.primary.label,
-          onClick: () => {
-            this._runAllowedDispatch(
-              "installation",
-              env.action.primary!.verb,
-              env.action.primary!.command,
-              env
-            );
-          },
-        });
-      }
     }
-
-    // Navigation
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
-      label: env.user_state === "ready" ? "Continue" : "Skip for now",
+      label: t("setup_nav_continue"),
+      disabled: env.user_state !== "ready",
       onClick: () => {
         this._setupStage = 2;
         this.display();
@@ -4776,51 +3853,45 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   _renderSetupStageLibrary(containerEl: HTMLElement): void {
     const env =
-      this._capabilityState?.["library"] ?? createUnknownEnvelope("library");
-    containerEl.createEl("h3", { text: "Step 2: Connect Library" });
+      this._capabilityState?.library ?? createUnknownEnvelope("library");
+    containerEl.createEl("h3", { text: t("setup_library_title") });
+    containerEl.createEl("p", { text: t("setup_library_desc") });
+    renderStatusBadge(
+      containerEl,
+      env.user_state,
+      this._getUserStateLabel(env.user_state)
+    );
     containerEl.createEl("p", {
       text:
-        t("setup_library_desc") ||
-        "Connect your Zotero library to sync your literature.",
+        env.user_state === "ready"
+          ? t("setup_library_ready")
+          : this._getModuleConsequence("library", env),
+      cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
     });
-
-    renderStatusBadge(containerEl, env.user_state);
-
-    if (env.user_state === "ready") {
-      containerEl.createEl("p", {
-        text: t("setup_library_ready") || "Library is connected.",
-        cls: "pf-setup-ok",
+    if (env.action?.primary && env.user_state !== "ready") {
+      const verbKey = "cc_action_" + env.action.primary.verb;
+      renderActionButton(containerEl, {
+        label: t(verbKey) === verbKey ? t("cc_action_set_config") : t(verbKey),
+        onClick: () =>
+          this._runAllowedDispatch(
+            "library",
+            env.action.primary!.verb,
+            env.action.primary!.command,
+            env
+          ),
       });
-    } else {
-      containerEl.createEl("p", {
-        text: env.reason?.text || "Not connected yet.",
-        cls: "pf-setup-status",
-      });
-      if (env.action?.primary) {
-        renderActionButton(containerEl, {
-          label: env.action.primary.label,
-          onClick: () => {
-            this._runAllowedDispatch(
-              "library",
-              env.action.primary!.verb,
-              env.action.primary!.command,
-              env
-            );
-          },
-        });
-      }
     }
-
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
-      label: "Back",
+      label: t("setup_nav_back"),
       onClick: () => {
         this._setupStage = 1;
         this.display();
       },
     });
     renderActionButton(nav, {
-      label: "Continue",
+      label: t("setup_nav_continue"),
+      disabled: env.user_state !== "ready",
       onClick: () => {
         this._setupStage = 3;
         this.display();
@@ -4829,31 +3900,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _renderSetupStageOptionals(containerEl: HTMLElement): void {
-    containerEl.createEl("h3", { text: "Step 3: Optional Capabilities" });
-    containerEl.createEl("p", {
-      text:
-        t("setup_optionals_desc") ||
-        "Enable additional features. You can change these later.",
-    });
-
+    containerEl.createEl("h3", { text: t("setup_optionals_title") });
+    containerEl.createEl("p", { text: t("setup_optionals_desc") });
     const optionals = [
       {
         id: "ocr",
-        label: t("cc_module_ocr") || "OCR",
-        desc: t("setup_opt_ocr_desc") || "Extract text and figures from PDFs",
+        label: t("cc_module_ocr"),
+        desc: t("setup_opt_ocr_desc"),
       },
       {
         id: "memory",
-        label: "Smart Retrieval",
-        desc: "Search and navigate your papers",
+        label: t("cc_module_memory"),
+        desc: t("setup_opt_memory_desc"),
       },
       {
         id: "agent",
-        label: "Agent Integration",
-        desc: "Deploy skills to your AI agent",
+        label: t("cc_module_agent"),
+        desc: t("setup_opt_agent_desc"),
       },
     ];
-
     for (const opt of optionals) {
       const row = containerEl.createDiv({ cls: "pf-setup-optional" });
       const checkbox = row.createEl("input", {
@@ -4863,24 +3928,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       checkbox.addEventListener("change", () => {
         this._setupOptionals[opt.id] = checkbox.checked;
       });
-      row.createEl("label", {
+      const copy = row.createDiv({ cls: "pf-setup-optional-copy" });
+      copy.createEl("label", {
         attr: { for: "pf-setup-opt-" + opt.id },
         text: opt.label,
         cls: "pf-setup-optional-label",
       });
-      row.createEl("div", { text: opt.desc, cls: "pf-setup-optional-desc" });
+      copy.createEl("div", {
+        text: opt.desc,
+        cls: "pf-setup-optional-desc",
+      });
     }
-
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
-      label: "Back",
+      label: t("setup_nav_back"),
       onClick: () => {
         this._setupStage = 2;
         this.display();
       },
     });
     renderActionButton(nav, {
-      label: "Continue",
+      label: t("setup_nav_continue"),
       onClick: () => {
         this._setupStage = 4;
         this.display();
@@ -4889,65 +3957,47 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _renderSetupStageReview(containerEl: HTMLElement): void {
-    containerEl.createEl("h3", { text: "Step 4: Review & Begin" });
-
-    const foundationEnv = this._capabilityState?.["installation"];
-    const libraryEnv = this._capabilityState?.["library"];
-    const foundationReady = foundationEnv?.user_state === "ready";
-    const libraryReady = libraryEnv?.user_state === "ready";
-
+    containerEl.createEl("h3", { text: t("setup_review_title") });
+    const foundationReady =
+      this._capabilityState?.installation?.user_state === "ready";
+    const libraryReady = this._capabilityState?.library?.user_state === "ready";
     containerEl.createEl("p", {
       text: foundationReady
-        ? "Foundation is ready."
-        : "Foundation needs setup.",
+        ? t("setup_ready")
+        : t("cc_consequence_setup_required"),
       cls: foundationReady ? "pf-setup-ok" : "pf-setup-warn",
     });
     containerEl.createEl("p", {
-      text: libraryReady ? "Library is connected." : "Library needs setup.",
+      text: libraryReady
+        ? t("setup_library_ready")
+        : t("cc_consequence_setup_required"),
       cls: libraryReady ? "pf-setup-ok" : "pf-setup-warn",
     });
-
     const selected = Object.entries(this._setupOptionals)
-      .filter(([_, v]) => v)
-      .map(([k]) => k);
-    if (selected.length > 0) {
-      containerEl.createEl("p", {
-        text:
-          (t("setup_review_selected") || "Selected: ") + selected.join(", "),
-      });
-    } else {
-      containerEl.createEl("p", {
-        text:
-          t("setup_no_optionals") ||
-          "No optional capabilities selected. You can enable them later in Settings.",
-      });
-    }
-
+      .filter(([, enabled]) => enabled)
+      .map(([module]) => this._getUserModuleName(module));
+    containerEl.createEl("p", {
+      text:
+        selected.length > 0
+          ? t("setup_review_selected") + selected.join(", ")
+          : t("setup_no_optionals"),
+    });
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
-      label: "Back",
+      label: t("setup_nav_back"),
       onClick: () => {
         this._setupStage = 3;
         this.display();
       },
     });
-    if (foundationReady && libraryReady) {
-      renderActionButton(nav, {
-        label: "Complete Setup",
-        onClick: () => {
-          this._completeSetup();
-        },
-      });
-    } else {
-      renderActionButton(nav, {
-        label: "Complete Setup",
-        disabled: true,
-        onClick: () => {},
-      });
+    renderActionButton(nav, {
+      label: t("setup_nav_complete"),
+      disabled: !foundationReady || !libraryReady,
+      onClick: () => this._completeSetup(),
+    });
+    if (!foundationReady || !libraryReady) {
       containerEl.createEl("p", {
-        text:
-          t("setup_incomplete_warn") ||
-          "Complete Foundation and Library setup before finishing.",
+        text: t("setup_incomplete_warn"),
         cls: "pf-setup-warn",
       });
     }

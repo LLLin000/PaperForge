@@ -1,6 +1,6 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; superseded PRD #74 is closed, redesign PRD #83 and issues #84–#93 are published, and #84 is the next Ask Matt implementation. Release is explicitly deferred.
-> Last updated: 2026-07-19
+> Status: OCR-v2 is stable; Control Center redesign #83–#93 is implemented, live-audited, and deployed to Literature-hub. Release remains explicitly deferred pending owner approval.
+> Last updated: 2026-07-20
 
 ## Current checkpoint
 
@@ -13,9 +13,9 @@
 - Cache refresh preserves the backend manifest (was overwriting it with empty on each refresh).
 - Source Corpus data remains authoritative and was not modified during verification. Only the deployed plugin bundle and disposable maintenance cache were refreshed.
 - [Current-contract audit](https://github.com/LLLin000/PaperForge/issues/66#issuecomment-4968837257) identified the migration boundary: preserve durable OCR/SQLite truth and recovery actions; replace global setup state, duplicate runtime/config resolution, and freshness-free snapshots.
-- The approved replacement is `control-center-ux-redesign.md`: five operational modules, three top-level destinations, contextual Module Detail, progressive setup, user-problem-only Maintenance, and Obsidian-native presentation.
-- The plugin design system is now explicit in `paperforge/plugin/DESIGN.md`; product language is defined in `paperforge/plugin/CONTEXT.md`.
-- **[#83](https://github.com/LLLin000/PaperForge/issues/83) published**: approved redesign PRD with dependency-ordered implementation issues #84–#93. Start with #84 capability presentation contract; each issue gets one Ask Matt implementation session and one review.
+- The approved `control-center-ux-redesign.md` is implemented: five operational modules, three top-level destinations, contextual Module Detail, progressive setup, user-problem-only Maintenance, and Obsidian-native presentation.
+- `paperforge/plugin/DESIGN.md` and `paperforge/plugin/CONTEXT.md` now govern the production surface.
+- **[#83–#93](https://github.com/LLLin000/PaperForge/issues/83) implemented**: schema-v2 presentation, shared primitives, five-card Overview, four-stage Setup Journey, Library/OCR/Smart Retrieval/Agent details, Maintenance/Help, and cutover cleanup are merged to `master`.
 - **[#69](https://github.com/LLLin000/PaperForge/issues/69) resolved** at `issuecomment-4971161072`: orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
 - **[#70](https://github.com/LLLin000/PaperForge/issues/70) resolved** at `issuecomment-4971239398`: plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
 
@@ -25,7 +25,7 @@
 - **[#74](https://github.com/LLLin000/PaperForge/issues/74) closed as superseded**: completed #75–#80 remain the control-plane baseline; the product model and remaining work moved to #83.
 - **[#75](https://github.com/LLLin000/PaperForge/issues/75) implemented and reviewed**: bare/headless/modular setup share `SetupPlan`; schema-v2 `vault_config` wins; v1 path keys are warned read fallback; all configured directories are forwarded; required failures return non-zero.
 - **[#76](https://github.com/LLLin000/PaperForge/issues/76) implemented**: schema-v1 Installation/Help probes flow through the six-module Overview; persisted malformed/stale envelopes fail closed; backend set_config/update actions route to setup.
-- **Current navigation is superseded**: the live `概览 / 模块详情 / 维护 / 帮助` shell and Installation-owned Agent/Skills are retained only until the redesign issues land. The approved target removes top-level Module Detail, makes Foundation the persistent environment module, and makes Agent Integration a fifth operational module.
+- **Current navigation is cut over**: Overview / Maintenance / Help are the only top-level destinations; Foundation, Library, OCR, Smart Retrieval, and Agent Integration open as contextual Module Details.
 - **[#77](https://github.com/LLLin000/PaperForge/issues/77) implemented**: Managed Runtime lifecycle with immutable slots, synchronous fail-closed `current`, probed `status`, install/repair/update/rollback/cancel/retention, managed-first dispatch, Release-N fallback, four-destination navigation shell. Verification: 192 focused + 289 full tests; typecheck/build clean. Merged to `master`.
 - **[#78](https://github.com/LLLin000/PaperForge/issues/78) implemented**: real Library/OCR/Memory capability probes with module-detail-navigation, installation-navigation, and capability-state views. Python owns capability facts; TypeScript exact allowlist/fail-closed rendering. Verification: 58 backend + 171 plugin tests; typecheck/build clean; Obsidian smoke verified.
 - **[#79](https://github.com/LLLin000/PaperForge/issues/79) implemented**: SecretStorage for capability secrets. Backend-focused gate passes; plugin full suite passes; typecheck/build clean.
@@ -35,7 +35,7 @@
 ## Verification status
 
 - Focused Python OCR paths: **99 passed, 1 Windows SIGINT test skipped, 1 unrelated empty-result regression deselected**.
-- Plugin: **390/390 passed**; TypeScript check and production build passed (**259.3KB**).
+- Plugin: **420/420 passed**; TypeScript check and production build passed (**280.1KB**).
 - Maintenance regression tests: **19/19 passed** (canonical action routing, confirmation gate, cache manifest preservation).
 - Live Obsidian verification: PaperForge 1.5.15 loaded without captured errors; maintenance rendered **734 All** rows and **700 Recommended** rows from the canonical backend flag.
 - Live progress-state harness showed the floating progress bar, current key, Stop control, and disabled row actions.
@@ -49,6 +49,7 @@
 - Issue #75 verification: **61/61 focused tests passed**; independent review returned **Spec PASS / Quality APPROVED**.
 - Issue #76 verification: **21/21 backend probe tests and 169/169 plugin tests passed**; TypeScript check and production build passed; live Obsidian stale-cache/action-label smoke test and independent review passed.
 - Live rollback verification: active Runtime is `windows-x64\\v1.5.15\\venv\\Scripts\\python.exe`; Installation and Help are ready, Library/OCR/Memory return real probe envelopes, Maintenance returns three backend-derived items, and Obsidian captured no errors.
+- Control Center live acceptance: Obsidian 1.12.7 exercised Overview, all five Module Details, Maintenance, Help, and all four Setup Journey stages in English and Chinese; no untranslated keys or horizontal overflow. Corrected bundle deployed to Literature-hub.
 - No production plugin code was modified during prototype work.
 - The repository-wide Python suite remains blocked during collection by the pre-existing `test_pr9a_resume_rebuild.py` import of removed `_assert_collections_healthy`.
 ## Frontier
@@ -64,8 +65,8 @@
 - [x] Implement Maintenance probe with backend-derived rows, privacy-safe draft, destructive confirmation ([#80](https://github.com/LLLin000/PaperForge/issues/80)).
 - [x] Complete and verify Release N+1 implementation code ([#81](https://github.com/LLLin000/PaperForge/issues/81)); keep the issue open for the owner-controlled release gate.
 - [ ] Complete Release N+2 deletion ([#82](https://github.com/LLLin000/PaperForge/issues/82)) only after an N+1 package and support window.
-- [x] Publish replacement PRD [#83](https://github.com/LLLin000/PaperForge/issues/83) and dependency-ordered implementation issues #84–#93.
-- [ ] Implement #84 capability presentation contract through Ask Matt. Package/tag publication remains deferred by owner direction.
+- [x] Implement replacement PRD [#83](https://github.com/LLLin000/PaperForge/issues/83) and dependency-ordered issues #84–#93.
+- [x] Browser-audit every English and Chinese Control Center page and deploy the corrected bundle to Literature-hub.
 
 ## Deferred
 
