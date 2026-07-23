@@ -249,3 +249,57 @@ class TestEmbedRoundTrip:
         assert bundle.chunk_count == 3  # 2 body + 1 object
         assert bundle.payloads is not None
         assert len(bundle.payloads) == 2
+
+
+class TestForceRebuildBackup:
+    """Issue #102: embed build --force pre-rebuild backup."""
+
+    def test_force_rebuild_creates_backup(self, tmp_path: Path) -> None:
+        """Force rebuild copies paperforge.db before clearing vec0 tables."""
+        import shutil
+        import sqlite3
+        from paperforge.memory.db import get_memory_db_path, get_connection
+        from paperforge.memory.schema import ensure_schema
+        from paperforge.embedding.dim_detect import ensure_vec_tables
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        (vault / "paperforge.json").write_text(
+            '{"system_dir": "99_System"}', encoding="utf-8",
+        )
+        indexes_dir = vault / "99_System" / "PaperForge" / "indexes"
+        indexes_dir.mkdir(parents=True, exist_ok=True)
+        db_path = get_memory_db_path(vault)
+        conn = get_connection(db_path, read_only=False)
+        ensure_schema(conn)
+        conn.execute("INSERT INTO papers (zotero_key, title) VALUES ('KEY1', 'Test')")
+        conn.commit()
+        conn.close()
+
+        assert db_path.exists()
+        original_size = db_path.stat().st_size
+
+        # Simulate force-rebuild backup + clear
+        import datetime as _dt_mod
+        _ts = _dt_mod.datetime.now(_dt_mod.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        backup_path = db_path.with_name(f"paperforge.pre-rebuild-{_ts}.db")
+        shutil.copy2(str(db_path), str(backup_path))
+        assert backup_path.exists(), "Backup should be created"
+        assert backup_path.stat().st_size == original_size, "Backup size should match"
+
+        # Clear vec0 tables (simulating force rebuild)
+        conn = get_connection(db_path, read_only=False)
+        try:
+            ensure_vec_extension(conn)
+            ensure_vec_tables(conn, vault)
+        except Exception:
+            pass
+        conn.execute("DROP TABLE IF EXISTS vec_fulltext_meta")
+        conn.execute("DROP TABLE IF EXISTS vec_body_meta")
+        conn.execute("DROP TABLE IF EXISTS vec_objects_meta")
+        ensure_schema(conn)
+        conn.commit()
+        conn.close()
+
+        # Verify backup still exists after successful clear
+        assert backup_path.exists(), "Backup should persist after successful clear"

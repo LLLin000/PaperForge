@@ -40,8 +40,8 @@ def write_vector_runtime(vault: Path, *, enabled: bool, mode: str, model: str,
                          build_state: dict | None, healthy: bool = True,
                          error: str = "", corrupted: bool = False,
                          body_chunk_count: int = 0,
-                         object_chunk_count: int = 0,
-                         total_chunks: int | None = None) -> None:
+                         total_chunks: int | None = None,
+                         backend: str = "") -> None:
     snap = {
         "schema_version": 1,
         "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -60,7 +60,7 @@ def write_vector_runtime(vault: Path, *, enabled: bool, mode: str, model: str,
         "healthy": healthy,
         "corrupted": corrupted,
         "error": error,
-        "build_state": build_state or {},
+        "backend": backend,
     }
     path = _snapshot_dir(vault) / "vector-runtime-state.json"
     write_json_atomic(path, snap)

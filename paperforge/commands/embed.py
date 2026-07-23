@@ -4,6 +4,7 @@ import argparse
 import contextlib
 import logging
 import os
+import shutil
 import sys
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
@@ -102,24 +103,21 @@ def run(args: argparse.Namespace) -> int:
             import openai  # noqa: F401
         except ImportError:
             _dep_missing.append("openai")
-        write_vector_runtime(
-            vault,
-            enabled=bool(status.get("mode", "")),
-            mode=status.get("mode", ""),
-            model=status.get("model", ""),
-            deps_installed=len(_dep_missing) == 0,
-            deps_missing=_dep_missing if _dep_missing else None,
-            py_version=sys.version.split()[0],
-            db_exists=status.get("db_exists", False),
-            chunk_count=status.get("chunk_count", 0),
-            body_chunk_count=status.get("body_chunk_count", 0),
-            object_chunk_count=status.get("object_chunk_count", 0),
-            total_chunks=status.get("total_chunks", 0),
-            build_state=status.get("build_state"),
-            healthy=status.get("healthy", True),
-            corrupted=status.get("corrupted", False),
-            error=status.get("error", ""),
-        )
+        write_vector_runtime(vault,
+        enabled=bool(status.get("mode", "")),
+        mode=status.get("mode", ""),
+        model=status.get("model", ""),
+        deps_installed=len(_dep_missing) == 0,
+        deps_missing=_dep_missing if _dep_missing else None,
+        py_version=sys.version.split()[0],
+        db_exists=status.get("db_exists", False),
+        chunk_count=status.get("chunk_count", 0),
+        body_chunk_count=status.get("body_chunk_count", 0),
+        object_chunk_count=status.get("object_chunk_count", 0),
+        total_chunks=status.get("total_chunks", 0),
+        build_state=status.get("build_state"),
+        healthy=status.get("healthy", True),
+        corrupted=status.get("corrupted", False), error=status.get("error", ""), backend="vec0")
 
         result = PFResult(ok=True, command="embed status", version=PF_VERSION, data=status)
         if args.json:
@@ -298,7 +296,13 @@ def run(args: argparse.Namespace) -> int:
     if _force_rebuild:
         _gc.collect()
         _db_path = get_memory_db_path(vault)
+        _backup_path: Path | None = None
         if _db_path.exists():
+            # Pre-rebuild backup (Decision #10, Issue #102)
+            import datetime as _dt_mod
+            _ts = _dt_mod.datetime.now(_dt_mod.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            _backup_path = _db_path.with_name(f"paperforge.pre-rebuild-{_ts}.db")
+            shutil.copy2(str(_db_path), str(_backup_path))
             _conn = get_connection(_db_path)
             try:
                 ensure_vec_extension(_conn)
@@ -310,9 +314,14 @@ def run(args: argparse.Namespace) -> int:
                 ensure_schema(_conn)
                 _conn.commit()
             except Exception:
-                pass
+                # Clear failed — restore backup atomically
+                _conn.close()
+                if _backup_path and _backup_path.exists():
+                    os.replace(str(_backup_path), str(_db_path))
+                raise
             finally:
                 _conn.close()
+        # Successful clear: backup stays for user-managed recovery
 
     mark_vector_build_state(
         vault,
@@ -538,23 +547,20 @@ def run(args: argparse.Namespace) -> int:
             message=str(e),
             pid=0,
         )
-        write_vector_runtime(
-            vault,
-            enabled=bool(_mode),
-            mode=_mode,
-            model=_model,
-            deps_installed=True,
-            deps_missing=None,
-            py_version=sys.version.split()[0],
-            db_exists=get_memory_db_path(vault).exists(),
-            chunk_count=_actual,
-            body_chunk_count=0,
-            object_chunk_count=0,
-            total_chunks=_actual,
-            build_state=read_vector_build_state(vault),
-            healthy=False,
-            error=str(e),
-        )
+        write_vector_runtime(vault,
+        enabled=bool(_mode),
+        mode=_mode,
+        model=_model,
+        deps_installed=True,
+        deps_missing=None,
+        py_version=sys.version.split()[0],
+        db_exists=get_memory_db_path(vault).exists(),
+        chunk_count=_actual,
+        body_chunk_count=0,
+        object_chunk_count=0,
+        total_chunks=_actual,
+        build_state=read_vector_build_state(vault),
+        healthy=False, error=str(e), backend="vec0")
         result = PFResult(
             ok=False,
             command="embed build",
@@ -596,23 +602,20 @@ def run(args: argparse.Namespace) -> int:
         _object_chunks = 0
         _total_chunks = 0
 
-    write_vector_runtime(
-        vault,
-        enabled=bool(_mode),
-        mode=_mode,
-        model=_model,
-        deps_installed=True,
-        deps_missing=None,
-        py_version=sys.version.split()[0],
-        db_exists=True,
-        chunk_count=_real_chunks,
-        body_chunk_count=_body_chunks,
-        object_chunk_count=_object_chunks,
-        total_chunks=_total_chunks,
-        build_state=read_vector_build_state(vault),
-        healthy=True,
-        error="",
-    )
+    write_vector_runtime(vault,
+    enabled=bool(_mode),
+    mode=_mode,
+    model=_model,
+    deps_installed=True,
+    deps_missing=None,
+    py_version=sys.version.split()[0],
+    db_exists=True,
+    chunk_count=_real_chunks,
+    body_chunk_count=_body_chunks,
+    object_chunk_count=_object_chunks,
+    total_chunks=_total_chunks,
+    build_state=read_vector_build_state(vault),
+    healthy=True, error="", backend="vec0")
 
     print("EMBED_DONE", flush=True)
 

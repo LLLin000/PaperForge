@@ -2224,11 +2224,19 @@ def redo_papers_for_keys(
                 progress_callback(key)
             continue
 
-        # ── Phase 1: delete artifacts ──
-        for wf in _workspace_fulltext_candidates(lit_root, key):
-            wf.unlink(missing_ok=True)
+        # ── Phase 1: backup key artifacts before deletion ──
+        import tempfile as _tempfile
+        _backup_dir: Path | None = None
         ocr_dir = ocr_root / key if ocr_root else None
         if ocr_dir and ocr_dir.exists():
+            # Create temp backup of the entire ocr_dir
+            _backup_dir = Path(_tempfile.mkdtemp(prefix=f"paperforge-redo-{key}-"))
+            _backup_target = _backup_dir / key
+            shutil.copytree(str(ocr_dir), str(_backup_target), symlinks=True)
+
+            # Delete workspace fulltext references and ocr artifacts
+            for wf in _workspace_fulltext_candidates(lit_root, key):
+                wf.unlink(missing_ok=True)
             shutil.rmtree(ocr_dir)
 
         # ── Phase 2: rewrite note as pending ──
@@ -2253,15 +2261,26 @@ def redo_papers_for_keys(
         if status == "done":
             current_text = _rewrite_note_fields(current_text, ocr_redo=False)
             success_keys.append(key)
+            # Clean up backup on success
+            if _backup_dir is not None and _backup_dir.exists():
+                shutil.rmtree(_backup_dir)
         else:
             current_text = _rewrite_note_fields(current_text, ocr_redo=True)
             failed_keys.append(key)
             _ocr_exit_code = _ocr_exit_code or 1
+            # Restore backup on failure
+            if _backup_dir is not None and _backup_dir.exists():
+                _backup_target = _backup_dir / key
+                if _backup_target.exists() and ocr_root:
+                    # Remove the failed ocr output
+                    if ocr_dir.exists():
+                        shutil.rmtree(ocr_dir)
+                    # Restore original
+                    shutil.copytree(str(_backup_target), str(ocr_dir), symlinks=True)
+                # Clean up backup
+                shutil.rmtree(_backup_dir)
         note_file.write_text(current_text, encoding="utf-8")
         refresh_index_entry(vault, key)
-
-        if progress_callback is not None:
-            progress_callback(key)
 
     return {
         "success_keys": success_keys,
