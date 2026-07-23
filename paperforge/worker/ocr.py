@@ -2178,6 +2178,7 @@ def redo_papers_for_keys(
     Returns:
         dict with success_keys, failed_keys, exit_code.
     """
+    import tempfile as _tempfile
     from paperforge.worker._utils import pipeline_paths
 
     paths = pipeline_paths(vault)
@@ -2225,7 +2226,6 @@ def redo_papers_for_keys(
             continue
 
         # ── Phase 1: backup key artifacts before deletion ──
-        import tempfile as _tempfile
         _backup_dir: Path | None = None
         ocr_dir = ocr_root / key if ocr_root else None
         if ocr_dir and ocr_dir.exists():
