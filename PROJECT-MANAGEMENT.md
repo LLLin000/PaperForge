@@ -1,13 +1,13 @@
-> **Branch:** `master` | **Last Updated:** 2026-07-20
-> **Active work:** Control Center redesign #83–#93 is implemented, browser-audited, and deployed to Literature-hub; release remains owner-controlled and deferred.
+> **Branch:** `master` | **Last Updated:** 2026-07-23
+> **Active work:** Map #94 target-state UX is prototype-complete and reviewed; Wave 1 backend safety/version work and the production kami CSS rewrite have not started.
 >
 > ---
 >
-> **Current state:** The production plugin now uses the approved five-module / three-destination model, localized schema-v2 capability presentation, progressive Setup Journey, actionable-only Maintenance, contextual module details, and Obsidian-native responsive styling. Live Obsidian 1.12.7 verification exercised every English and Chinese page with no untranslated keys or horizontal overflow.
+> **Current state:** The deployed plugin remains the verified #83–#93 implementation. The next target is now specified by four interactive prototypes: a two-destination Control Center, four-stage Setup Journey, standalone OCR Workspace, and Overview design variants. The reconciled `DESIGN.md` and FE/BE mapping distinguish current backend facts from explicit `[GAP]` contracts.
 >
-> The final repair pass fixed persisted setup migration, stale state handling, backend action localization, Chinese host-locale detection, card grid min-content overflow, ordinary DOM compatibility, duplicate legacy surfaces, and user-facing OCR notices. Plugin verification is 420/420 with clean TypeScript and production build; the corrected bundle is deployed to `D:/L/OB/Literature-hub/.obsidian/plugins/paperforge`.
+> The prototype repair pass added module consequence copy, OCR cost/safety language, batch-selection guidance, honest next-release gating for single-paper replacement, consistent paper states, keyboard tab movement, focus restoration, and responsive 375/768/1280 layouts. Browser execution found no script errors or horizontal overflow; screenshot review found no confirmed visual defects. Production tests and deployment were not rerun because no production code changed.
 >
-> Next: owner acceptance of the deployed Control Center. Package/tag publication and #82 N+2 deletion remain deferred until explicitly authorized.
+> Next: implement Wave 1 issues #97, #99, and #100. Release/package/tag work remains owner-controlled and deferred.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -66,6 +66,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | SecretStorage capability secrets (#79) | **Backend-focused gate, plugin full suite passes; typecheck/build clean** ✅ |
 | Maintenance probe — actionable rows, draft, destructive confirmation (#80) | **Backend focused gate 77/77; plugin full suite 381/382** (only pre-existing capability-state test expecting help.stale but receiving help.invalid_response) ✅ **; typecheck/build clean; production bundle 264.4KB; real Obsidian 1.12.7 smoke at 730 and 768 confirmed Maintenance entry focus, actionable-only rows, keyboard Enter, accessible destructive confirmation with exact backend effect, focus trap/restoration, owned inert cleanup, redacted editable issue draft, no token input/auto-open, explicit GitHub open only, URL re-redaction, no horizontal overflow**
 | Control Center redesign (#83–#93) | **420/420 plugin tests; typecheck/build clean; every Overview, five Module Detail, Maintenance, Help, and four Setup Journey pages exercised in English and Chinese; no untranslated keys or horizontal overflow; deployed to Literature-hub** ✅ |
+| Map #94 target-state prototypes | **4 interactive prototypes exercised at 375/768/1280; no script errors or horizontal overflow; screenshot QA found no confirmed visual defects; Standards/Spec re-review findings repaired and browser-confirmed** ✅ |
 
 </br>
 </br>
@@ -164,7 +165,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 [Wayfinder: Restore PaperForge retrieval end to end](https://github.com/LLLin000/PaperForge/issues/45) completed and the resulting retrieval fixes are merged to `master`. The live Literature-hub vault has a healthy 2560-dimensional vec0 index; M and @ search paths are operational.
 
 ### Layer 3: Plugin UI
-The #83–#93 redesign is implemented and deployed: five operational modules (Foundation, Library, OCR, Smart Retrieval, Agent Integration), three top-level destinations (Overview, Maintenance, Help), contextual Module Detail, four-stage Setup Journey, schema-v2 capability presentation, actionable-only Maintenance, module-owned configuration, and localized privacy-safe diagnostics. Live Obsidian exercised every English and Chinese page without untranslated keys or horizontal overflow. OCR workspace remains separate from Settings.
+The deployed #83–#93 plugin remains verified. Map #94 now defines the next target: five operational modules, two top-level destinations (Overview and Help), contextual Module Detail, a four-stage Setup Journey, and a standalone OCR Workspace. Four interactive prototypes plus `control-center-fe-be-mapping.md` and `kami-to-obsidian-css-mapping.md` are the implementation contract. The mapping explicitly flags missing backend fields for OCR action safety/activity, Library last-sync, retrieval backup availability, agent deployment state, and typed diagnostics. Wave 1 implementation has not started.
 
 ### Layer 4: Downstream Tools
 `chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
@@ -172,15 +173,17 @@ The #83–#93 redesign is implemented and deployed: five operational modules (Fo
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-1. ✅ **[Control-center redesign PRD #83](https://github.com/LLLin000/PaperForge/issues/83)** — #84–#93 implementation is merged to `master`, browser-audited page by page in English and Chinese, and deployed to Literature-hub for owner acceptance.
-2. 🟡 **Release cutover #81/#82** — N+1 code is verified on `master`, but #81 stays open for the owner-controlled release gate; N+2 deletion #82 stays open until an N+1 package and support window exist. No release is authorized.
-3. ✅ **[Capability-state vocabulary](https://github.com/LLLin000/PaperForge/issues/69)** — resolved at `issuecomment-4971161072`. Orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
-4. ✅ **[Managed runtime](https://github.com/LLLin000/PaperForge/issues/70)** — resolved at `issuecomment-4971239398`. Plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
-5. ✅ **[Control-center prototype](https://github.com/LLLin000/PaperForge/issues/71)** — resolved with independent Critical/Important PASS review and browser verification at 768px. Six-module control-center HTML prototype covers 5 scenarios with plain-button switcher, primary attention zone, responsive layout, and capability-gated actions. Design decisions recorded in `docs/prototypes/2026-07-14-six-module-control-center.html/.md`. No production implementation before #73.
-6. ✅ **[Maintenance prototype](https://github.com/LLLin000/PaperForge/issues/72)** — resolved with independent Critical/Important PASS review and browser verification at 768px. Actionable-only inbox with single-action rows, inline issue-draft review, local redacted export, and confirmation-first report flow. Design decisions recorded in `docs/prototypes/2026-07-14-maintenance-issue-reporting.html/.md`.
-7. ✅ **[Migration and acceptance contract #73](https://github.com/LLLin000/PaperForge/issues/73)** — closed after five-domain code audit, user grilling, and independent acceptance reviews. The implementation frontier moved to PRD #74 and child issues #75–#82.
-8. 🟡 **Downstream tooling** — section-aware chunking and separate figure/table handling.
-9. ⏳ **Compatibility naming cleanup** — deferred post-release.
+1. ✅ **[Control Center target-state Map #94](https://github.com/LLLin000/PaperForge/issues/94)** — four prototypes, current `DESIGN.md`, and complete FE/BE mapping are reconciled, independently reviewed, repaired, and browser-verified.
+2. ⏳ **Wave 1 #97/#99/#100** — add OCR aggregate/per-paper version contracts, repair redo backup/atomic replacement, and rewrite production CSS to the kami/Obsidian mapping.
+3. ✅ **[Control-center redesign PRD #83](https://github.com/LLLin000/PaperForge/issues/83)** — #84–#93 implementation is merged to `master`, browser-audited page by page in English and Chinese, and deployed to Literature-hub for owner acceptance.
+4. 🟡 **Release cutover #81/#82** — N+1 code is verified on `master`, but #81 stays open for the owner-controlled release gate; N+2 deletion #82 stays open until an N+1 package and support window exist. No release is authorized.
+5. ✅ **[Capability-state vocabulary](https://github.com/LLLin000/PaperForge/issues/69)** — resolved at `issuecomment-4971161072`. Orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
+6. ✅ **[Managed runtime](https://github.com/LLLin000/PaperForge/issues/70)** — resolved at `issuecomment-4971239398`. Plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
+7. ✅ **[Control-center prototype](https://github.com/LLLin000/PaperForge/issues/71)** — resolved with independent Critical/Important PASS review and browser verification at 768px. Six-module control-center HTML prototype covers 5 scenarios with plain-button switcher, primary attention zone, responsive layout, and capability-gated actions. Design decisions recorded in `docs/prototypes/2026-07-14-six-module-control-center.html/.md`. No production implementation before #73.
+8. ✅ **[Maintenance prototype](https://github.com/LLLin000/PaperForge/issues/72)** — resolved with independent Critical/Important PASS review and browser verification at 768px. Actionable-only inbox with single-action rows, inline issue-draft review, local redacted export, and confirmation-first report flow. Design decisions recorded in `docs/prototypes/2026-07-14-maintenance-issue-reporting.html/.md`.
+9. ✅ **[Migration and acceptance contract #73](https://github.com/LLLin000/PaperForge/issues/73)** — closed after five-domain code audit, user grilling, and independent acceptance reviews. The implementation frontier moved to PRD #74 and child issues #75–#82.
+10. 🟡 **Downstream tooling** — section-aware chunking and separate figure/table handling.
+11. ⏳ **Compatibility naming cleanup** — deferred post-release.
 ### 4.1 Immediate Next Steps
 
 - [x] OCR rebuild streaming protocol
@@ -206,6 +209,8 @@ Remaining legacy OCR issues (carried forward):
 - [x] Complete and verify Release N+1 implementation code ([#81](https://github.com/LLLin000/PaperForge/issues/81)) — 390/390 plugin tests, typecheck/build clean, live managed dispatch verified; issue remains open for the release gate.
 - [ ] Complete Release N+2 deletion ([#82](https://github.com/LLLin000/PaperForge/issues/82)) only after an N+1 package and support window; publication is currently deferred by owner direction.
 - [x] Implement redesign PRD [#83](https://github.com/LLLin000/PaperForge/issues/83) and issues #84–#93; verify every Overview, Module Detail, Maintenance, Help, and Setup Journey page in English and Chinese; deploy the corrected bundle to Literature-hub.
+- [x] Reconcile Map #94 prototypes, `DESIGN.md`, responsive behavior, and FE/BE field/action mapping; verify interactions and visuals at 375/768/1280.
+- [ ] Implement Wave 1 issues #97, #99, and #100; run issue-specific backend/plugin gates and real Obsidian smoke before any deployment.
 
 ## 5. Key File Map
 
@@ -373,6 +378,8 @@ Remaining legacy OCR issues (carried forward):
 | 2026-07-19 | Release remains owner-controlled and deferred | N+1 implementation can be verified without publishing. Do not create a tag, package release, or support-window transition until the owner explicitly reauthorizes release. |
 | 2026-07-20 | Resolve host locale from the rendered Obsidian document when vault config is unavailable | Obsidian 1.12.7 exposes Chinese through `document.documentElement.lang` while the previous vault/localStorage-only resolver returned English. Following the host document keeps plugin language aligned without adding a setting or dependency. |
 | 2026-07-20 | Use zero-minimum grid tracks for overview cards | CSS Grid `1fr` tracks preserve min-content width and overflow narrow Obsidian settings panes. `minmax(0, 1fr)` plus normal wrapping preserves the two-column layout without clipping or horizontal scroll. |
+| 2026-07-23 | Make the repaired prototypes the Map #94 implementation contract | The prototypes incorporate later user testing and therefore supersede earlier map text where they differ. Production must follow the reconciled `DESIGN.md` and FE/BE mapping, not preserve stale sidebar, Maintenance-tab, or two-column Overview decisions. |
+| 2026-07-23 | Keep backend gaps explicit instead of simulating authority in frontend copy | OCR safety/activity, Library last-sync, retrieval backup availability, agent deployment, and diagnostics need typed backend fields. `[GAP]` markers prevent prototypes from becoming accidental promises or encouraging frontend inference. |
 
 ---
 
@@ -484,6 +491,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-07-19 | Control-center UX domain redesign | Live diagnosis proved that the current six-module vocabulary and navigation were not understandable despite passing earlier implementation gates. Completed a user grilling/domain-modeling session; approved five operational modules, three top-level destinations, dynamic setup, six user statuses, navigation-only cards, module-owned configuration, actionable-problem-only Maintenance, separate OCR workspace, and one-click redacted diagnostics. Added plugin domain language, ADR, Obsidian-native `DESIGN.md`, full UX specification, acceptance matrix, and ten dependency-ordered implementation slices. No production code changed. | `paperforge/plugin/CONTEXT.md`, `paperforge/plugin/DESIGN.md`, `project/current/control-center-ux-redesign.md`, `docs/adr/0001-capability-action-semantics.md` |
 | 2026-07-19 | N+1 cutover repair + redesign issue map | Completed the final ManagedRuntime/SecretStorage repair (`b41b4c88`), verified 390/390 plugin tests, clean typecheck/build, and live managed dispatch. Kept #81 open for the owner-controlled release gate and #82 open for the future N+2 window. Closed superseded PRD #74; published replacement PRD #83 and dependency-ordered implementation issues #84–#93. No release performed. | §2–4 |
 | 2026-07-20 | Control Center implementation, repair, and live page-by-page acceptance | Completed #84–#93, then repaired setup migration, stale state adaptation, duplicated legacy surfaces, action/notice localization, Chinese locale detection, primitive DOM compatibility, card-grid overflow, and transient baseline summary state. Real Obsidian 1.12.7 exercised Overview, all five Module Details, Maintenance, Help, and all four Setup Journey stages in English and Chinese; no untranslated keys or horizontal overflow. Verification: 420/420 plugin tests, clean typecheck/build, 280.1KB production bundle deployed to Literature-hub. | §2–6 |
+| 2026-07-23 | Map #94 prototype reconciliation and UX contract audit | Repaired four target-state prototypes and aligned `DESIGN.md` plus FE/BE/CSS mappings: two top-level destinations, single-column Overview, module consequences, OCR cost/safety and next-release gating, three paper states, keyboard tab movement, focus restoration, and responsive controls. Browser checks at 375/768/1280 found no script errors or overflow; screenshot QA found no confirmed visual defects. Production code and deployment were unchanged. | §2–6 |
 
 ## 9. Historical Detail Archive
 

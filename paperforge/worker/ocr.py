@@ -2079,6 +2079,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     )
     meta["raw_version"] = version_payload["raw_version"]
     meta["derived_version"] = version_payload["derived_version"]
+    meta["ocr_pipeline_version"] = version_payload["ocr_pipeline_version"]
 
     from paperforge.worker.ocr_versions import classify_version_state, expected_derived_payload, expected_raw_payload
 

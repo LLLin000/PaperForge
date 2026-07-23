@@ -6,15 +6,18 @@ from pathlib import Path
 
 from paperforge.core.io import read_json, write_json
 
+# Pipeline aggregate version — bumped whenever pipeline output meaningfully changes
+OCR_PIPELINE_VERSION = "2.0.0"
+
 # Version constants - single source of truth
 EXPECTED_OCR_PROVIDER = "PaddleOCR"
-EXPECTED_OCR_RAW_SCHEMA_VERSION = "1.0.0"
-EXPECTED_CANONICAL_BLOCK_VERSION = "1.0.0"
-EXPECTED_STRUCTURE_VERSION = "1.0.0"
-EXPECTED_METADATA_RESOLVER_VERSION = "1.0.0"
-EXPECTED_ASSET_EXTRACTOR_VERSION = "1.0.0"
-EXPECTED_RENDERER_VERSION = "2.1.0"
-EXPECTED_DOCTOR_VERSION = "1.0.0"
+EXPECTED_OCR_RAW_SCHEMA_VERSION = "2.0.0"
+EXPECTED_CANONICAL_BLOCK_VERSION = "2.0.0"
+EXPECTED_STRUCTURE_VERSION = "2.0.0"
+EXPECTED_METADATA_RESOLVER_VERSION = "2.0.0"
+EXPECTED_ASSET_EXTRACTOR_VERSION = "2.0.0"
+EXPECTED_RENDERER_VERSION = "2.0.0"
+EXPECTED_DOCTOR_VERSION = "2.0.0"
 
 
 def expected_raw_payload(*, ocr_model: str) -> dict:
