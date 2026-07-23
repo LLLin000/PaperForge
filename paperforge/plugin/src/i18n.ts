@@ -82,6 +82,7 @@ const LANG: Record<string, Record<string, string>> = {
     feat_memory_rebuild_done: "Memory DB rebuilt.",
     feat_memory_rebuild_failed: "Rebuild failed.",
     feat_memory_rebuilding: "Rebuilding...",
+    feat_model: "Model",
     feat_model_changed_warn:
       "Model changed ({0} -> {1}). Existing vectors are incompatible — rebuild required.",
     feat_network_error: "Network error: ",
@@ -145,6 +146,7 @@ const LANG: Record<string, Record<string, string>> = {
     label_agent: "Agent Platform",
     nav_close: "Close",
     nav_next: "Next",
+    no_pending_ocr: "All OCR tasks complete",
     nav_prev: "Back",
     not_set: "Not entered",
     notice_check_fail: "Missing: ",
@@ -710,6 +712,28 @@ const LANG: Record<string, Record<string, string>> = {
       "Your existing ChromaDB data is preserved. This process requires an active API key and may incur API charges.",
     sr_api_key_notice:
       "API key not configured \u2014 search and retrieval are unavailable",
+    // ── OCR Workspace (Issue #95) ──
+    ocr_ws_title: "OCR Workspace",
+    ocr_ws_filter_all: "All",
+    ocr_ws_filter_unprocessed: "Not processed",
+    ocr_ws_filter_review: "Needs review",
+    ocr_ws_filter_processed: "Processed",
+    ocr_ws_col_title: "Title",
+    ocr_ws_col_status: "Status",
+    ocr_ws_col_version: "Version",
+    ocr_ws_col_lastrun: "Last run",
+    ocr_ws_btn_preview: "Preview",
+    ocr_ws_btn_process_all: "Process All Unprocessed ({count})",
+    ocr_ws_detail_view_fulltext: "View Fulltext",
+    ocr_ws_detail_restore_backup: "Restore Backup",
+    ocr_ws_detail_re_extract: "Re-extract This Paper",
+    ocr_ws_re_extract_disabled_title: "Re-extraction not available",
+    ocr_ws_re_extract_disabled_body:
+      "Single-paper re-extraction currently deletes all OCR data without creating a backup. Use Re-extract All Papers from OCR Settings \u2014 that path has built-in backup.",
+    ocr_ws_what_happens: "What happens when I re-extract?",
+    ocr_ws_disclosure_text:
+      "Re-extraction re-runs OCR on the selected paper. The current version is backed up first. PDFs are never modified.",
+    ocr_ws_no_papers: "No papers found with OCR data",
   },
   zh: {
     action_running: "正在执行 ",
@@ -726,6 +750,7 @@ const LANG: Record<string, Record<string, string>> = {
     check_python_ok: "已就绪",
     check_zotero_fail: "未检测到",
     check_zotero_ok: "已安装",
+    complete_export_path: "将 Better BibTeX JSON 导出保存到：",
     complete_next: "下一步操作",
     complete_step1: "打开 PaperForge Dashboard",
     complete_step1_desc:
@@ -736,6 +761,8 @@ const LANG: Record<string, Record<string, string>> = {
     complete_step3: "运行 OCR",
     complete_step3_desc: "Dashboard 中点 Run OCR，提取 PDF 全文与图表",
     complete_step4: "配置 BBT 自动导出",
+    complete_step4_desc:
+      '在 Zotero 中，右键要同步的文献库/分类 → 导出 → Better BibTeX JSON → 启用"保持更新"。',
     complete_summary: "当前完整配置",
     complete_title: "✓ PaperForge 安装完成",
     copied: "已复制！",
@@ -842,6 +869,7 @@ const LANG: Record<string, Record<string, string>> = {
     nav_prev: "← 上一步",
     no_pending_ocr: "所有 OCR 任务已完成",
     not_set: "未设置",
+    notice_check_fail: "缺失：",
     notice_python_missing: "Python 未检测到，请先安装 Python 3.11+ 并加入 PATH",
     ocr_privacy_title: "OCR 隐私提示",
     ocr_privacy_warning:
@@ -868,7 +896,9 @@ const LANG: Record<string, Record<string, string>> = {
     prep_export: "BBT 自动导出",
     prep_export_desc:
       "右键文献子分类 → 导出分类 → BetterBibTeX JSON → 勾选保持更新 → 导出到（JSON 文件名即为 Base 名）：",
+    prep_export_path_label: "将导出的 JSON 文件保存到此文件夹：",
     prep_key: "PaddleOCR Key",
+    prep_key_desc: "从 https://aistudio.baidu.com/paddleocr 获取 API 密钥",
     prep_python: "Python 3.11+",
     prep_python_desc: "确保 Python 可命令行调用。点击下方按钮自动检测。",
     prep_zotero: "Zotero 桌面版",
@@ -1350,6 +1380,28 @@ const LANG: Record<string, Record<string, string>> = {
     sr_upgrade_modal_safety:
       "现有 ChromaDB 数据会得到保留。此过程需要有效的 API Key 并可能产生 API 费用。",
     sr_api_key_notice: "API Key 未配置 \u2014 搜索和检索不可用",
+    // ── OCR 工作区 (Issue #95) ──
+    ocr_ws_title: "OCR 工作区",
+    ocr_ws_filter_all: "全部",
+    ocr_ws_filter_unprocessed: "未处理",
+    ocr_ws_filter_review: "需审核",
+    ocr_ws_filter_processed: "已处理",
+    ocr_ws_col_title: "标题",
+    ocr_ws_col_status: "状态",
+    ocr_ws_col_version: "版本",
+    ocr_ws_col_lastrun: "最后运行",
+    ocr_ws_btn_preview: "预览",
+    ocr_ws_btn_process_all: "处理所有未处理 ({count})",
+    ocr_ws_detail_view_fulltext: "查看全文",
+    ocr_ws_detail_restore_backup: "恢复备份",
+    ocr_ws_detail_re_extract: "重新提取此论文",
+    ocr_ws_re_extract_disabled_title: "重新提取不可用",
+    ocr_ws_re_extract_disabled_body:
+      "单篇论文重新提取目前会删除所有OCR数据而不创建备份。请使用OCR设置中的\u2018重新提取所有论文\u2019\u2014\u2014该路径具有内置备份。",
+    ocr_ws_what_happens: "重新提取时会发生什么？",
+    ocr_ws_disclosure_text:
+      "重新提取会对所选论文重新运行OCR。当前版本会先备份。PDF永远不会被修改。",
+    ocr_ws_no_papers: "未找到具有OCR数据的论文",
   },
 };
 

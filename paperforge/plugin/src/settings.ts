@@ -872,9 +872,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       renderActionButton(body, {
         label: t("md_ocr_workspace"),
         onClick: () =>
-          (this.app as any).commands.executeCommandById(
-            "paperforge:paperforge-status-panel"
-          ),
+          (this.app as any).workspace.getLeaf().setViewState({
+            type: "paperforge-ocr-workspace",
+          } as any),
       });
       // Update banner (secondary notice when a newer pipeline is available)
       if (

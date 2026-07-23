@@ -1,0 +1,1067 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PaperForge OCR Workspace</title>
+    <style>
+      :root {
+        --page: #f5f4ed;
+        --ivory: #faf9f5;
+        --sand: #e8e6dc;
+        --ink: #1b365d;
+        --near-black: #141413;
+        --dark-warm: #3d3d3a;
+        --olive: #504e49;
+        --stone: #6b6a64;
+        --border: #e8e6dc;
+        --border-soft: #e5e3d8;
+        --tag-bg: #e4ecf5;
+        --warn-bg: #fdf0e6;
+        --warn-text: #a84f18;
+        --error-bg: #fef0f0;
+        --error: #a92f2f;
+        --serif: Charter, Georgia, serif;
+        --mono: "JetBrains Mono", Consolas, monospace;
+        --radius: 8px;
+        --focus: 0 0 0 2px var(--page), 0 0 0 4px var(--ink);
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--near-black);
+        font-family: var(--serif);
+        min-height: 100vh;
+        padding: 32px 28px 72px;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible {
+        outline: none;
+        box-shadow: var(--focus);
+      }
+      .workspace {
+        width: min(100%, 1120px);
+        margin: 0 auto;
+      }
+      .header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+      h1 {
+        font: 500 30px/1.2 var(--serif);
+        letter-spacing: -0.3px;
+        margin: 0 0 8px;
+      }
+      .lede {
+        max-width: 680px;
+        color: var(--olive);
+        font: 400 14px/1.55 var(--serif);
+        margin: 0;
+      }
+      .caption {
+        color: var(--stone);
+        font: 400 12px/1.45 var(--serif);
+      }
+      .header-facts {
+        display: flex;
+        gap: 16px;
+        color: var(--stone);
+        font: 400 12px/1.4 var(--serif);
+        white-space: nowrap;
+      }
+      .header-facts strong {
+        display: block;
+        color: var(--near-black);
+        font: 500 14px/1.2 var(--serif);
+      }
+      .toolbar {
+        display: grid;
+        grid-template-columns: auto minmax(160px, 220px) minmax(0, 1fr);
+        gap: 16px;
+        align-items: end;
+        padding: 16px 0;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .field label,
+      .filter-label {
+        display: block;
+        color: var(--stone);
+        font: 500 10px/1 var(--serif);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      select {
+        width: 100%;
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--ivory);
+        color: var(--near-black);
+        font: 400 12px/1 var(--serif);
+      }
+      .version-filter {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        min-height: 32px;
+        border: 1px solid var(--border);
+        border-radius: 9999px;
+        background: var(--ivory);
+        color: var(--stone);
+        padding: 7px 12px;
+        cursor: pointer;
+        font: 500 11px/1 var(--serif);
+        transition:
+          background 120ms ease-out,
+          color 120ms ease-out,
+          transform 120ms ease-out;
+      }
+      .chip:hover {
+        border-color: var(--ink);
+      }
+      .chip:active {
+        transform: translateY(1px);
+      }
+      .chip[aria-pressed="true"] {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--ivory);
+      }
+      .activity {
+        display: none;
+        margin: 20px 0;
+        padding: 16px;
+        background: var(--ivory);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+      .activity.active {
+        display: block;
+      }
+      .activity-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+      .activity-title {
+        font: 500 13px/1.4 var(--serif);
+      }
+      .activity-title span {
+        display: block;
+        color: var(--stone);
+        font-weight: 400;
+      }
+      .progress-track {
+        height: 4px;
+        overflow: hidden;
+        border-radius: 2px;
+        background: var(--sand);
+      }
+      .progress-fill {
+        width: 100%;
+        height: 100%;
+        background: var(--ink);
+        transform: scaleX(0.25);
+        transform-origin: left;
+        transition: transform 180ms ease-in-out;
+      }
+      .progress-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        color: var(--stone);
+        font: 400 11px/1.4 var(--serif);
+        margin-top: 8px;
+      }
+      .table-viewport {
+        min-height: 420px;
+        max-height: calc(100vh - 340px);
+        overflow: auto;
+        overscroll-behavior: contain;
+        border-bottom: 1px solid var(--border);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        font: 400 13px/1.45 var(--serif);
+      }
+      th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: var(--page);
+        color: var(--stone);
+        font: 500 10px/1 var(--serif);
+        letter-spacing: 0.5px;
+        text-align: left;
+        text-transform: uppercase;
+        padding: 12px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      td {
+        height: 64px;
+        padding: 10px;
+        border-bottom: 1px solid var(--border-soft);
+        vertical-align: middle;
+      }
+      tr:hover td {
+        background: var(--ivory);
+      }
+      tr.update td {
+        background: color-mix(in srgb, var(--warn-bg) 45%, transparent);
+      }
+      .col-check {
+        width: 40px;
+        text-align: center;
+      }
+      .col-paper {
+        width: auto;
+      }
+      .col-status {
+        width: 144px;
+      }
+      .col-version {
+        width: 92px;
+      }
+      .col-date {
+        width: 104px;
+      }
+      .col-action {
+        width: 96px;
+        text-align: right;
+      }
+      .paper-title {
+        font: 500 13px/1.35 var(--serif);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .paper-meta {
+        color: var(--stone);
+        font: 400 11px/1.35 var(--serif);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 3px;
+      }
+      .mobile-version {
+        display: none;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 20px;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font: 500 11px/1 var(--serif);
+        white-space: nowrap;
+      }
+      .status.processed {
+        background: var(--tag-bg);
+        color: var(--ink);
+      }
+      .status.update {
+        background: var(--warn-bg);
+        color: var(--warn-text);
+      }
+      .status.pending {
+        background: var(--sand);
+        color: var(--stone);
+      }
+      .version {
+        font: 400 12px/1 var(--mono);
+        color: var(--olive);
+      }
+      .btn {
+        min-height: 32px;
+        padding: 8px 14px;
+        border: 0;
+        border-radius: var(--radius);
+        cursor: pointer;
+        font: 500 12px/1 var(--serif);
+        transition:
+          opacity 120ms ease-out,
+          transform 120ms ease-out;
+      }
+      .btn:hover {
+        opacity: 0.88;
+      }
+      .btn:active {
+        transform: translateY(1px);
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .btn-primary {
+        background: var(--ink);
+        color: var(--ivory);
+        box-shadow: 0 0 0 1px var(--ink);
+      }
+      .btn-secondary {
+        background: var(--sand);
+        color: var(--dark-warm);
+        box-shadow: 0 0 0 1px var(--border);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--ink);
+        box-shadow: 0 0 0 1px var(--ink);
+      }
+      .btn-warning {
+        background: var(--warn-bg);
+        color: var(--warn-text);
+        box-shadow: 0 0 0 1px var(--warn-text);
+      }
+      .btn-small {
+        min-height: 28px;
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+      .batchbar {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        background: color-mix(in srgb, var(--page) 94%, transparent);
+        backdrop-filter: blur(8px);
+        padding: 16px 0;
+        border-top: 1px solid var(--border);
+      }
+      .selection strong {
+        display: block;
+        font: 500 13px/1.3 var(--serif);
+      }
+      .selection span {
+        display: block;
+        color: var(--stone);
+        font: 400 11px/1.4 var(--serif);
+        margin-top: 3px;
+      }
+      .batch-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .empty {
+        display: none;
+        padding: 48px 16px;
+        text-align: center;
+        color: var(--stone);
+      }
+      .detail {
+        display: none;
+        margin-top: 24px;
+      }
+      .detail.open {
+        display: block;
+      }
+      .detail-card {
+        background: var(--ivory);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+      }
+      .detail-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .detail h2 {
+        font: 500 20px/1.3 var(--serif);
+        margin: 0 0 6px;
+      }
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 24px;
+        margin: 16px 0;
+      }
+      .fact {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .fact dt {
+        color: var(--stone);
+        font: 500 10px/1 var(--serif);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+      }
+      .fact dd {
+        margin: 0;
+        font: 400 12px/1.4 var(--mono);
+        overflow-wrap: anywhere;
+      }
+      .impact,
+      .info {
+        border-left: 2px solid var(--warn-text);
+        background: var(--warn-bg);
+        border-radius: 0 4px 4px 0;
+        padding: 12px 16px;
+        margin: 16px 0;
+      }
+      .info {
+        border-left-color: var(--ink);
+        background: var(--tag-bg);
+      }
+      .impact strong,
+      .info strong {
+        display: block;
+        color: var(--warn-text);
+        font: 500 11px/1 var(--serif);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 4px;
+      }
+      .info strong {
+        color: var(--ink);
+      }
+      .impact p,
+      .info p {
+        margin: 0;
+        color: var(--dark-warm);
+        font: 400 12px/1.5 var(--serif);
+      }
+      .detail-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      details {
+        margin-top: 16px;
+      }
+      summary {
+        color: var(--ink);
+        cursor: pointer;
+        font: 500 12px/1.4 var(--serif);
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      @media (max-width: 720px) {
+        body {
+          padding: 24px 12px 64px;
+        }
+        .header {
+          display: block;
+        }
+        .header-facts {
+          margin-top: 16px;
+        }
+        .toolbar {
+          grid-template-columns: 1fr auto;
+        }
+        .toolbar-count {
+          grid-column: 1 / -1;
+        }
+        .version-field {
+          grid-column: 1 / -1;
+        }
+        .version-filter {
+          justify-content: flex-start;
+        }
+        .table-viewport {
+          max-height: none;
+          overflow: visible;
+          min-height: 0;
+        }
+        table,
+        tbody {
+          display: block;
+        }
+        thead {
+          display: none;
+        }
+        tr {
+          display: grid;
+          grid-template-columns: 32px minmax(0, 1fr) auto;
+          align-items: center;
+          border-bottom: 1px solid var(--border-soft);
+        }
+        td {
+          display: block;
+          height: auto;
+          border: 0;
+          padding: 12px 6px;
+        }
+        .col-check {
+          grid-row: 1 / 3;
+          width: auto;
+        }
+        .col-paper {
+          grid-column: 2;
+        }
+        .col-status {
+          grid-column: 2;
+          width: auto;
+          padding-top: 0;
+          display: flex !important;
+          align-items: center;
+          gap: 8px;
+        }
+        .col-version,
+        .col-date {
+          display: none;
+        }
+        .col-action {
+          grid-column: 3;
+          grid-row: 1 / 3;
+          width: auto;
+        }
+        .paper-title {
+          white-space: normal;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+        .paper-meta {
+          max-width: 100%;
+        }
+        .mobile-version {
+          display: inline;
+        }
+        .batchbar {
+          grid-template-columns: 1fr;
+          padding-bottom: 8px;
+        }
+        .batch-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+        .batch-actions .btn {
+          width: 100%;
+        }
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
+        .detail-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+        .detail-actions .btn {
+          width: 100%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="workspace">
+      <header class="header">
+        <div>
+          <h1>OCR Workspace</h1>
+          <p class="lede">
+            See which papers have readable text, which can be updated, and what
+            PaperForge is doing now.
+          </p>
+        </div>
+        <div class="header-facts">
+          <span><strong>12</strong>papers</span
+          ><span><strong>v2.4</strong>current OCR</span>
+        </div>
+      </header>
+
+      <section class="activity" id="activity" aria-live="polite">
+        <div class="activity-head">
+          <div class="activity-title">
+            Processing paper 1 of 2<span
+              >Spatial Transcriptomics Integration with Single-Cell
+              Atlases</span
+            >
+          </div>
+          <button
+            class="btn btn-ghost btn-small"
+            type="button"
+            id="stop-processing"
+          >
+            Stop
+          </button>
+        </div>
+        <div
+          class="progress-track"
+          role="progressbar"
+          aria-label="OCR processing progress"
+          aria-valuemin="0"
+          aria-valuemax="2"
+          aria-valuenow="1"
+        >
+          <div class="progress-fill"></div>
+        </div>
+        <div class="progress-meta">
+          <span>1 of 2 papers</span><span>50%</span>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="Paper filters">
+        <div class="toolbar-count">
+          <span class="filter-label">library</span
+          ><strong id="result-count">12 papers</strong>
+        </div>
+        <div class="field">
+          <label for="filter-status">OCR state</label
+          ><select id="filter-status">
+            <option value="all">All papers</option>
+            <option value="not_processed">Not processed</option>
+            <option value="update_available">Update available</option>
+            <option value="processed">Processed</option>
+          </select>
+        </div>
+        <div class="version-field">
+          <span class="filter-label">OCR version</span>
+          <div
+            class="version-filter"
+            role="group"
+            aria-label="Filter by OCR version"
+          >
+            <button
+              class="chip"
+              type="button"
+              data-version="all"
+              aria-pressed="true"
+            >
+              All versions</button
+            ><button
+              class="chip"
+              type="button"
+              data-version="2.3"
+              aria-pressed="false"
+            >
+              v2.3 · 4</button
+            ><button
+              class="chip"
+              type="button"
+              data-version="2.4"
+              aria-pressed="false"
+            >
+              v2.4 · 6
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div
+        class="table-viewport"
+        id="table-viewport"
+        aria-label="OCR papers; fixed row height for virtual scrolling in production"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th class="col-check">
+                <label class="sr-only" for="select-all"
+                  >Select all visible papers</label
+                ><input type="checkbox" id="select-all" />
+              </th>
+              <th class="col-paper">Paper</th>
+              <th class="col-status">OCR state</th>
+              <th class="col-version">Version</th>
+              <th class="col-date">Last processed</th>
+              <th class="col-action"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="paper-body"></tbody>
+        </table>
+        <div class="empty" id="empty-state">
+          <strong>No papers match these filters.</strong>
+          <p class="caption">Clear a filter to see the full library.</p>
+        </div>
+      </div>
+
+      <div class="batchbar">
+        <div class="selection" aria-live="polite">
+          <strong id="selection-title">No papers selected</strong
+          ><span id="selection-hint"
+            >Select papers that are not processed or have an update
+            available.</span
+          >
+        </div>
+        <div class="batch-actions">
+          <button
+            class="btn btn-primary"
+            type="button"
+            id="process-selected"
+            disabled
+          >
+            Process selected</button
+          ><button
+            class="btn btn-warning"
+            type="button"
+            id="update-selected"
+            disabled
+          >
+            Update selected
+          </button>
+        </div>
+      </div>
+
+      <section class="detail" id="detail" aria-labelledby="detail-title">
+        <div class="detail-card">
+          <div class="detail-head">
+            <div>
+              <h2 id="detail-title"></h2>
+              <span id="detail-status"></span>
+            </div>
+            <button
+              class="btn btn-ghost btn-small"
+              type="button"
+              id="close-detail"
+            >
+              Close
+            </button>
+          </div>
+          <div id="detail-content"></div>
+        </div>
+      </section>
+    </main>
+    <script>
+      const currentVersion = "2.4";
+      const papers = [
+        {
+          key: "1",
+          title:
+            "Understanding Metric-Related Pitfalls in Image Analysis Validation",
+          authors: "Reinke, A. · Tizabi, M. · Baumgartner, C.",
+          year: 2023,
+          state: "processed",
+          version: "2.4",
+          last: "Jul 12",
+          pages: 24,
+          backups: 2,
+        },
+        {
+          key: "2",
+          title: "Large Language Models for Biomedical Text Mining",
+          authors: "Zhang, Y. · Liu, H.",
+          year: 2024,
+          state: "processed",
+          version: "2.4",
+          last: "Jul 12",
+          pages: 18,
+          backups: 1,
+        },
+        {
+          key: "3",
+          title:
+            "Deep Learning Approaches to Histopathology Image Segmentation",
+          authors: "Wang, X. · Chen, L. · Park, S. · Liu, M.",
+          year: 2025,
+          state: "update_available",
+          version: "2.3",
+          last: "Jul 11",
+          pages: 31,
+          backups: 3,
+        },
+        {
+          key: "4",
+          title: "Spatial Transcriptomics Integration with Single-Cell Atlases",
+          authors: "Chen, R. · Wang, J. · Li, T.",
+          year: 2022,
+          state: "not_processed",
+          version: null,
+          last: null,
+          pages: 19,
+          backups: 0,
+        },
+        {
+          key: "5",
+          title: "Transformer-Based Protein Structure Prediction",
+          authors: "Li, S. · Kim, J.",
+          year: 2024,
+          state: "update_available",
+          version: "2.3",
+          last: "Jul 10",
+          pages: 22,
+          backups: 2,
+        },
+        {
+          key: "6",
+          title: "Multimodal Learning for Radiology Report Generation",
+          authors: "Park, H. · Lee, D. · Choi, Y.",
+          year: 2025,
+          state: "processed",
+          version: "2.4",
+          last: "Jul 12",
+          pages: 16,
+          backups: 1,
+        },
+        {
+          key: "7",
+          title: "Causal Inference Methods in Observational Health Data",
+          authors: "Yamamoto, K.",
+          year: 2023,
+          state: "update_available",
+          version: "2.3",
+          last: "Jul 9",
+          pages: 28,
+          backups: 2,
+        },
+        {
+          key: "8",
+          title: "Federated Learning for Privacy-Preserving Clinical AI",
+          authors: "Brown, T. · Smith, A. · Davis, R.",
+          year: 2024,
+          state: "processed",
+          version: "2.4",
+          last: "Jul 12",
+          pages: 20,
+          backups: 1,
+        },
+        {
+          key: "9",
+          title: "Single-Cell RNA-Seq Clustering via Graph Neural Networks",
+          authors: "Garcia, M. · Torres, L.",
+          year: 2022,
+          state: "processed",
+          version: "2.4",
+          last: "Jul 12",
+          pages: 15,
+          backups: 1,
+        },
+        {
+          key: "10",
+          title: "Foundation Models for Computational Pathology",
+          authors: "Kim, D. · Lee, S. · Park, J. · Jung, H.",
+          year: 2026,
+          state: "not_processed",
+          version: null,
+          last: null,
+          pages: 27,
+          backups: 0,
+        },
+        {
+          key: "11",
+          title: "Benchmarking Robustness of Medical Image Segmentation Models",
+          authors: "Singh, R. · Patel, N.",
+          year: 2023,
+          state: "update_available",
+          version: "2.3",
+          last: "Jul 8",
+          pages: 19,
+          backups: 3,
+        },
+        {
+          key: "12",
+          title: "Interpretable Machine Learning for Clinical Decision Support",
+          authors: "Müller, F.",
+          year: 2025,
+          state: "processed",
+          version: "2.4",
+          last: "Jul 12",
+          pages: 26,
+          backups: 1,
+        },
+      ];
+      const stateLabels = {
+        processed: "Processed",
+        update_available: "Update available",
+        not_processed: "Not processed",
+      };
+      let stateFilter = "all",
+        versionFilter = "all",
+        detailInvoker = null;
+      function visiblePapers() {
+        return papers.filter(
+          (p) =>
+            (stateFilter === "all" || p.state === stateFilter) &&
+            (versionFilter === "all" || p.version === versionFilter)
+        );
+      }
+      function statusMarkup(p) {
+        const cls =
+          p.state === "update_available"
+            ? "update"
+            : p.state === "not_processed"
+              ? "pending"
+              : "processed";
+        return `<span class="status ${cls}">${stateLabels[p.state]}</span>`;
+      }
+      function render() {
+        const visible = visiblePapers(),
+          body = document.getElementById("paper-body");
+        body.innerHTML = visible
+          .map(
+            (p) =>
+              `<tr class="${p.state === "update_available" ? "update" : ""}" data-key="${p.key}"><td class="col-check"><label class="sr-only" for="paper-${p.key}">Select ${p.title}</label><input type="checkbox" class="paper-check" id="paper-${p.key}" data-key="${p.key}"></td><td class="col-paper"><div class="paper-title">${p.title}</div><div class="paper-meta">${p.authors} · ${p.year}<span class="mobile-version"> · ${p.version ? `OCR v${p.version}` : "No OCR yet"}</span></div></td><td class="col-status">${statusMarkup(p)}</td><td class="col-version"><span class="version">${p.version ? `v${p.version}` : "—"}</span></td><td class="col-date"><span class="caption">${p.last || "—"}</span></td><td class="col-action"><button class="btn btn-ghost btn-small preview" type="button" data-key="${p.key}">Details</button></td></tr>`
+          )
+          .join("");
+        document.getElementById("empty-state").style.display = visible.length
+          ? "none"
+          : "block";
+        document.getElementById("result-count").textContent =
+          `${visible.length} ${visible.length === 1 ? "paper" : "papers"}`;
+        document.getElementById("select-all").checked = false;
+        updateSelection();
+      }
+      function selectedPapers() {
+        return [...document.querySelectorAll(".paper-check:checked")].map(
+          (cb) => papers.find((p) => p.key === cb.dataset.key)
+        );
+      }
+      function updateSelection() {
+        const selected = selectedPapers(),
+          pending = selected.filter((p) => p.state === "not_processed"),
+          outdated = selected.filter((p) => p.state === "update_available");
+        document.getElementById("selection-title").textContent = selected.length
+          ? `${selected.length} ${selected.length === 1 ? "paper" : "papers"} selected`
+          : "No papers selected";
+        const hint =
+          selected.length === 0
+            ? "Select papers that are not processed or have an update available."
+            : pending.length && outdated.length
+              ? "Selection contains both first-time processing and available updates."
+              : pending.length
+                ? `${pending.length} can be processed for the first time.`
+                : outdated.length
+                  ? `${outdated.length} can be updated after safety ticket #99 lands.`
+                  : "These papers already use the current OCR version.";
+        document.getElementById("selection-hint").textContent = hint;
+        document.getElementById("process-selected").disabled =
+          pending.length === 0;
+        document.getElementById("process-selected").textContent = pending.length
+          ? `Process ${pending.length} selected`
+          : "Process selected";
+        document.getElementById("update-selected").disabled = true;
+        document.getElementById("update-selected").textContent = outdated.length
+          ? `Update ${outdated.length} · next release`
+          : "Update selected";
+      }
+      function showDetail(key, invoker) {
+        const p = papers.find((x) => x.key === key),
+          detail = document.getElementById("detail");
+        detailInvoker = invoker || null;
+        document.getElementById("detail-title").textContent = p.title;
+        document.getElementById("detail-status").innerHTML = statusMarkup(p);
+        const update =
+          p.state === "update_available"
+            ? `<div class="impact"><strong>Update available</strong><p>This paper remains readable with OCR v${p.version}. Updating will replace derived text after PaperForge saves a backup; the action becomes available after backup support lands. API charges may apply.</p></div>`
+            : "";
+        const pending =
+          p.state === "not_processed"
+            ? `<div class="info"><strong>Next</strong><p>Process this paper to create readable fulltext. The original PDF is never changed.</p></div>`
+            : "";
+        const updateAction =
+          p.state === "update_available"
+            ? '<button class="btn btn-warning" type="button" disabled>Update paper · next release</button>'
+            : "";
+        document.getElementById("detail-content").innerHTML =
+          `${update}${pending}<dl class="detail-grid"><div class="fact"><dt>Authors</dt><dd>${p.authors}</dd></div><div class="fact"><dt>Year</dt><dd>${p.year}</dd></div><div class="fact"><dt>OCR version</dt><dd>${p.version ? `v${p.version}` : "Not processed"}</dd></div><div class="fact"><dt>Last processed</dt><dd>${p.last || "—"}</dd></div><div class="fact"><dt>Pages</dt><dd>${p.pages}</dd></div><div class="fact"><dt>Backups</dt><dd>${p.backups}</dd></div></dl><div class="detail-actions">${p.state === "not_processed" ? '<button class="btn btn-primary start-one" type="button">Process paper</button>' : ""}${updateAction}<button class="btn btn-secondary" type="button" ${p.state === "not_processed" ? "disabled" : ""}>View fulltext</button><button class="btn btn-ghost" type="button" ${p.backups ? "" : "disabled"}>Restore backup</button></div>${p.state === "processed" ? '<details><summary>Re-extract this paper</summary><div class="impact"><strong>Available in next release</strong><p>This rare action stays unavailable until single-paper backup safety is implemented.</p></div></details>' : ""}`;
+        detail.classList.add("open");
+        detail.scrollIntoView({
+          behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "start",
+        });
+        document.getElementById("close-detail").focus();
+      }
+      function startProcessing() {
+        const activity = document.getElementById("activity"),
+          title = activity.querySelector(".activity-title"),
+          stop = document.getElementById("stop-processing");
+        activity.classList.add("active");
+        title.innerHTML =
+          "Processing paper 1 of 2<span>Spatial Transcriptomics Integration with Single-Cell Atlases</span>";
+        stop.disabled = false;
+        stop.textContent = "Stop";
+        activity.scrollIntoView({ block: "start" });
+      }
+      document.addEventListener("click", (e) => {
+        const chip = e.target.closest(".chip");
+        if (chip) {
+          versionFilter = chip.dataset.version;
+          document
+            .querySelectorAll(".chip")
+            .forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
+          render();
+          return;
+        }
+        const preview = e.target.closest(".preview");
+        if (preview) {
+          showDetail(preview.dataset.key, preview);
+          return;
+        }
+        if (e.target.closest("#close-detail")) {
+          document.getElementById("detail").classList.remove("open");
+          detailInvoker?.focus();
+          return;
+        }
+        if (
+          e.target.closest("#process-selected") ||
+          e.target.closest(".start-one")
+        ) {
+          startProcessing();
+          return;
+        }
+        if (e.target.closest("#stop-processing")) {
+          const activity = document.getElementById("activity");
+          activity.querySelector(".activity-title").innerHTML =
+            "Processing stopped<span>1 of 2 papers completed. The remaining paper kept its previous output.</span>";
+          const stop = document.getElementById("stop-processing");
+          stop.disabled = true;
+          stop.textContent = "Stopped";
+          return;
+        }
+      });
+      document
+        .getElementById("filter-status")
+        .addEventListener("change", (e) => {
+          stateFilter = e.target.value;
+          render();
+        });
+      document.getElementById("select-all").addEventListener("change", (e) => {
+        document
+          .querySelectorAll(".paper-check")
+          .forEach((cb) => (cb.checked = e.target.checked));
+        updateSelection();
+      });
+      document.addEventListener("change", (e) => {
+        if (e.target.matches(".paper-check")) updateSelection();
+      });
+      render();
+    </script>
+  </body>
+</html>
