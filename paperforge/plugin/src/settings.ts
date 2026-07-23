@@ -765,70 +765,129 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
   }
 
-  /** Render the OCR detail view (Issue #78). */
+  /** Render the OCR detail view (Issue #96: 3-state UX). */
   _renderOcrDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "ocr");
     const env = this._capabilityState?.ocr ?? createUnknownEnvelope("ocr");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     body.createEl("h3", { text: t("md_ocr_status") });
-    if (env.user_state === "ready") {
-      body.createEl("p", {
-        text: t("md_ocr_ready"),
-        cls: "pf-status-ok",
-      });
-    } else if (
-      env.user_state !== "checking" &&
-      env.user_state !== "not_enabled"
-    ) {
-      renderErrorAnatomy(body, {
-        whatHappened:
-          t("cc_module_ocr") + " — " + this._getUserStateLabel(env.user_state),
-        impact: t("ocr_problem_impact"),
-        nextStep: t("problem_use_action"),
-        impactLabel: t("problem_impact"),
-        nextLabel: t("problem_next"),
-        copyLabel: t("problem_copy"),
-        onCopyDiagnostic: () => this._buildAndCopyDiagnostic(),
-      });
-    }
 
-    renderActionButton(body, {
-      label: t("md_ocr_workspace"),
-      onClick: () =>
-        (this.app as any).commands.executeCommandById(
-          "paperforge:paperforge-status-panel"
-        ),
-    });
+    const pipelineVersion = env.pipeline_version;
+    const lastPipelineVersion = env.last_pipeline_version;
+    const staleCount = env.pipeline_version_summary?.stale ?? 0;
+    const updateAvailable = staleCount > 0;
+    const isRunning = env.activity_state === "running";
 
-    const process = this.plugin._ocrProcess as {
-      stdin?: { write: (_: string) => boolean };
-      kill?: (_: string) => void;
-    } | null;
-    if (process) {
-      const controls = body.createDiv({ cls: "pf-detail-controls" });
-      const stop = controls.createEl("button", {
-        cls: "pf-action-btn mod-warning",
-        text: t("ocr_stop_batch"),
-      });
-      stop.addEventListener("click", () => {
-        if (process.stdin?.write) {
-          process.stdin.write("PAPERFORGE_STOP\n");
-          this.plugin._ocrWasStopped = true;
-        } else {
-          process.kill?.("SIGINT");
-        }
-      });
+    if (isRunning) {
+      // ── State: Running ──
+      renderStatusBadge(body, "checking", t("ocr_state_running"));
       const progress = this.plugin._ocrProgress;
+      const card = body.createDiv({ cls: "pf-ocr-progress-card" });
       if (progress?.total) {
-        let text = t("ocr_progress")
+        const label = t("ocr_progress")
           .replace("{current}", String(progress.current))
           .replace("{total}", String(progress.total));
-        if (progress.key) {
-          text += " — " + progress.key;
-        }
-        controls.createEl("span", {
+        const scope = progress.key ? " \u2014 " + progress.key : "";
+        card.createEl("span", {
           cls: "pf-detail-progress",
-          text,
+          text: t("ocr_state_running") + " " + label + scope,
+        });
+        const bar = card.createDiv({ cls: "pf-activity-bar" });
+        const pct = Math.round((progress.current / progress.total) * 100);
+        bar.createDiv({
+          cls: "pf-activity-bar-fill",
+          attr: {
+            style: `width: ${pct}%`,
+            role: "progressbar",
+            "aria-valuenow": String(progress.current),
+            "aria-valuemin": "1",
+            "aria-valuemax": String(progress.total),
+          },
+        });
+      }
+      // Stop button (ghost style)
+      const process = this.plugin._ocrProcess as {
+        stdin?: { write: (_: string) => boolean };
+        kill?: (_: string) => void;
+      } | null;
+      if (process) {
+        const stop = card.createEl("button", {
+          cls: "pf-action-btn mod-warning",
+          text: t("ocr_stop_batch"),
+        });
+        stop.addEventListener("click", () => {
+          if (process.stdin?.write) {
+            process.stdin.write("PAPERFORGE_STOP\n");
+            this.plugin._ocrWasStopped = true;
+          } else {
+            process.kill?.("SIGINT");
+          }
+        });
+      }
+    } else if (updateAvailable) {
+      // ── State: Update Available ──
+      const versionLabel = pipelineVersion
+        ? t("ocr_state_update_available").replace("{version}", pipelineVersion)
+        : t("ocr_state_update_available").replace("{version}", "");
+      renderStatusBadge(body, "action_required", versionLabel);
+      body.createEl("p", {
+        text: t("ocr_state_update_description"),
+        cls: "setting-item-description",
+      });
+      body.createEl("p", {
+        text: t("ocr_state_update_safety"),
+        cls: "setting-item-description",
+      });
+      // Primary action with confirmation modal
+      const reExtractBtn = body.createEl("button", {
+        cls: "pf-action-btn mod-warning",
+        text: t("ocr_action_re_extract"),
+      });
+      reExtractBtn.addEventListener("click", () => {
+        new PaperForgeConfirmModal(
+          this.app,
+          {
+            title: t("ocr_modal_title"),
+            effectLabel:
+              t("ocr_modal_description") + " " + t("ocr_state_update_safety"),
+            confirmLabel: t("ocr_action_re_extract"),
+            cancelLabel: t("maintenance_confirm_cancel"),
+          },
+          () => this._dispatchOcrAction("rebuild")
+        ).open();
+      });
+    } else if (env.user_state === "ready") {
+      // ── State: Ready ──
+      renderStatusBadge(body, "ready");
+      const readyText = pipelineVersion
+        ? t("ocr_state_ready")
+            .replace("{count}", String(env.action?.primary?.scope_count ?? ""))
+            .replace("{version}", pipelineVersion)
+        : t("ocr_state_ready_no_version").replace(
+            "{count}",
+            String(env.action?.primary?.scope_count ?? "")
+          );
+      body.createEl("p", { text: readyText, cls: "pf-status-ok" });
+      // Open OCR Workspace (secondary action)
+      renderActionButton(body, {
+        label: t("md_ocr_workspace"),
+        onClick: () =>
+          (this.app as any).commands.executeCommandById(
+            "paperforge:paperforge-status-panel"
+          ),
+      });
+      // Update banner (secondary notice when a newer pipeline is available)
+      if (
+        pipelineVersion &&
+        lastPipelineVersion &&
+        pipelineVersion !== lastPipelineVersion
+      ) {
+        const banner = body.createDiv({ cls: "pf-ocr-update-banner" });
+        banner.createEl("span", {
+          text: t("ocr_state_update_available").replace(
+            "{version}",
+            pipelineVersion
+          ),
         });
       }
     }
@@ -940,34 +999,102 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._renderSkillsList(body);
   }
 
+  /** Render the Memory detail view (Issue #104: reason-code states). */
   _renderMemoryDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "memory");
     const env =
       this._capabilityState?.memory ?? createUnknownEnvelope("memory");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     body.createEl("h3", { text: t("md_retrieval_coverage") });
-    if (env.user_state === "ready") {
+
+    const reasonCode = env.reason?.code ?? "";
+    const isRunning = env.activity_state === "running";
+    const hasApiKeyNotice = env.notices?.some(
+      (n) =>
+        n.level === "warning" &&
+        (n.message.toLowerCase().includes("api key") ||
+          n.message.toLowerCase().includes("api_key"))
+    );
+
+    if (isRunning && env.user_state === "ready") {
+      // ── memory.ready + running ──
+      renderStatusBadge(body, "ready");
+      const activityLabel = env.activity_label ?? t("cc_activity_running");
+      body.createEl("p", {
+        text: activityLabel,
+        cls: "pf-status-ok",
+      });
+    } else if (reasonCode === "memory.disabled") {
+      // ── memory.disabled → not_enabled ──
+      renderStatusBadge(body, "not_enabled");
+      body.createEl("p", {
+        text: t("sr_state_disabled"),
+        cls: "setting-item-description",
+      });
+    } else if (reasonCode === "memory.db_missing") {
+      // ── memory.db_missing → action_required ──
+      renderStatusBadge(body, "action_required");
+      body.createEl("p", {
+        text: t("sr_state_db_missing"),
+        cls: "setting-item-description",
+      });
+      renderActionButton(body, {
+        label: t("sr_action_build"),
+        onClick: () => this._dispatchMemoryBuild("build"),
+      });
+    } else if (reasonCode === "memory.backend_upgrade_available") {
+      // ── memory.backend_upgrade_available → action_required ──
+      renderStatusBadge(body, "action_required");
+      body.createEl("p", {
+        text: t("sr_state_upgrade_available"),
+        cls: "setting-item-description",
+      });
+      // Upgrade button triggers the shell's dispatch (handles confirmation modal)
+      const upgradeAction = env.action?.primary;
+      if (upgradeAction) {
+        renderActionButton(body, {
+          label: t("sr_action_upgrade"),
+          onClick: () => this._dispatchModuleAction("memory", env),
+        });
+      }
+    } else if (reasonCode === "memory.vector_build_failed") {
+      // ── memory.vector_build_failed → action_required ──
+      renderStatusBadge(body, "action_required");
+      body.createEl("p", {
+        text: t("sr_state_build_failed"),
+        cls: "setting-item-description",
+      });
+      renderActionButton(body, {
+        label: t("cc_action_rebuild_derived"),
+        onClick: () => this._dispatchMemoryBuild("embed"),
+      });
+    } else if (reasonCode === "memory.schema_stale") {
+      // ── memory.schema_stale → action_required ──
+      renderStatusBadge(body, "action_required");
+      body.createEl("p", {
+        text: env.reason.text,
+        cls: "setting-item-description",
+      });
+      renderActionButton(body, {
+        label: t("sr_action_rebuild"),
+        onClick: () => this._dispatchMemoryBuild("build"),
+      });
+    } else if (env.user_state === "ready") {
+      // ── memory.ready ──
+      renderStatusBadge(body, "ready");
       body.createEl("p", {
         text: t("md_retrieval_ready"),
         cls: "pf-status-ok",
       });
-    } else if (
-      env.user_state !== "checking" &&
-      env.user_state !== "not_enabled"
-    ) {
-      renderErrorAnatomy(body, {
-        whatHappened:
-          t("cc_module_memory") +
-          " — " +
-          this._getUserStateLabel(env.user_state),
-        impact: t("retrieval_problem_impact"),
-        nextStep: t("problem_use_action"),
-        impactLabel: t("problem_impact"),
-        nextLabel: t("problem_next"),
-        copyLabel: t("problem_copy"),
-        onCopyDiagnostic: () => this._buildAndCopyDiagnostic(),
-      });
     }
+
+    // ── API key notice (shown in any state, at bottom of body) ──
+    if (hasApiKeyNotice) {
+      const warn = body.createDiv({ cls: "pf-notice-warning" });
+      warn.createEl("span", { text: t("sr_api_key_notice") });
+    }
+
+    // ── Facts: coverage + freshness ──
     const facts = body.createDiv({ cls: "pf-module-facts" });
     const coverage = facts.createDiv({ cls: "pf-module-fact" });
     coverage.createEl("span", { text: t("md_retrieval_coverage") });

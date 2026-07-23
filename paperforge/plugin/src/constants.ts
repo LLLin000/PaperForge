@@ -277,6 +277,10 @@ export interface ProbeEnvelope {
   user_impact: string | null;
   updated_at: string;
   ttl_seconds: number;
+  /* #97: OCR pipeline version fields (from Python backend) */
+  pipeline_version?: string;
+  last_pipeline_version?: string;
+  pipeline_version_summary?: { stale?: number };
   items?: MaintenanceItem[];
 }
 

@@ -681,6 +681,35 @@ const LANG: Record<string, Record<string, string>> = {
     maintenance_issue_draft_redacted: "Redacted",
     maintenance_issue_draft_open_github: "Open GitHub Issue",
     maintenance_issue_draft_edit: "Edit Draft",
+    // ── OCR 3-state UX (Issue #96) ──
+    ocr_state_ready: "{count} papers processed with OCR version {version}",
+    ocr_state_ready_no_version: "{count} papers processed",
+    ocr_state_update_available: "OCR v{version} is available",
+    ocr_state_update_description:
+      "The new pipeline improves structure detection, figure extraction accuracy, and fulltext formatting.",
+    ocr_state_update_safety:
+      "Your PDFs and existing OCR data are preserved. Backups are created before changes.",
+    ocr_action_re_extract: "Re-extract All Papers",
+    ocr_modal_title: "Re-extract All OCR",
+    ocr_modal_description:
+      "This will re-run OCR on all papers using the latest pipeline version.",
+    ocr_state_running: "Re-extracting\u2026",
+    // ── Smart Retrieval new state UX (Issue #104) ──
+    sr_state_disabled: "Smart Retrieval is not enabled",
+    sr_state_db_missing: "Memory database has not been built yet",
+    sr_state_upgrade_available:
+      "Your vector index uses the old ChromaDB backend",
+    sr_state_build_failed: "The last vector build failed",
+    sr_action_build: "Build Memory",
+    sr_action_rebuild: "Rebuild Index",
+    sr_action_upgrade: "Upgrade to vec0",
+    sr_upgrade_modal_title: "Upgrade Vector Index",
+    sr_upgrade_modal_description:
+      "This will rebuild your entire vector index using the new vec0 backend.",
+    sr_upgrade_modal_safety:
+      "Your existing ChromaDB data is preserved. This process requires an active API key and may incur API charges.",
+    sr_api_key_notice:
+      "API key not configured \u2014 search and retrieval are unavailable",
   },
   zh: {
     action_running: "正在执行 ",
@@ -1296,6 +1325,31 @@ const LANG: Record<string, Record<string, string>> = {
     maintenance_issue_draft_redacted: "已脱敏",
     maintenance_issue_draft_open_github: "打开 GitHub Issue",
     maintenance_issue_draft_edit: "编辑草稿",
+    // ── OCR 三态 UX (Issue #96) ──
+    ocr_state_ready: "已处理 {count} 篇论文，OCR 版本 {version}",
+    ocr_state_ready_no_version: "已处理 {count} 篇论文",
+    ocr_state_update_available: "OCR v{version} 可用",
+    ocr_state_update_description:
+      "新版流水线改进了结构检测、图表提取精度和全文格式。",
+    ocr_state_update_safety:
+      "您的 PDF 和现有 OCR 数据会得到保留。操作前会自动创建备份。",
+    ocr_action_re_extract: "全部重新提取",
+    ocr_modal_title: "全部重新 OCR",
+    ocr_modal_description: "这将使用最新流水线版本对所有论文重新运行 OCR。",
+    ocr_state_running: "正在重新提取\u2026",
+    // ── 智能检索新状态 UX (Issue #104) ──
+    sr_state_disabled: "智能检索未启用",
+    sr_state_db_missing: "记忆数据库尚未构建",
+    sr_state_upgrade_available: "向量索引使用旧版 ChromaDB 后端",
+    sr_state_build_failed: "上次向量构建失败",
+    sr_action_build: "构建记忆库",
+    sr_action_rebuild: "重建索引",
+    sr_action_upgrade: "升级到 vec0",
+    sr_upgrade_modal_title: "升级向量索引",
+    sr_upgrade_modal_description: "这将使用新的 vec0 后端重建整个向量索引。",
+    sr_upgrade_modal_safety:
+      "现有 ChromaDB 数据会得到保留。此过程需要有效的 API Key 并可能产生 API 费用。",
+    sr_api_key_notice: "API Key 未配置 \u2014 搜索和检索不可用",
   },
 };
 
