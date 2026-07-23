@@ -44,8 +44,9 @@ def build_version_payload(
     result_json_hash: str,
     ocr_model: str,
 ) -> dict:
-    from paperforge.worker.ocr_versions import expected_derived_payload, expected_raw_payload
+    from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION, expected_derived_payload, expected_raw_payload
     return {
+        "ocr_pipeline_version": OCR_PIPELINE_VERSION,
         "raw_version": {
             **expected_raw_payload(ocr_model=ocr_model),
             "pdf_fingerprint": pdf_fingerprint,

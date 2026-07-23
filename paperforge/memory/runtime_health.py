@@ -118,7 +118,9 @@ def _check_index(vault: Path) -> dict:
 
 
 def _check_vector(vault: Path) -> dict:
-    from paperforge.embedding import get_vector_db_path, read_vector_build_state
+    from paperforge.embedding.build_state import read_vector_build_state
+    from paperforge.embedding._chroma import get_vector_db_path as _get_chroma_path
+    from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
 
     settings_path = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
     vector_enabled = False
@@ -134,23 +136,46 @@ def _check_vector(vault: Path) -> dict:
         return _layer("ok", ["Vector DB disabled by user"])
 
     build_state = read_vector_build_state(vault)
-    job_status = build_state.get("status", "idle")
-    if job_status == "running":
-        return _layer("degraded", ["Vector build in progress"],
+    bs_status = build_state.get("status", "idle")
+
+    if bs_status == "running":
+        cur = build_state.get("current", 0)
+        tot = build_state.get("total", 0)
+        return _layer("degraded", [f"Vector build in progress ({cur}/{tot})"],
                       "Wait for build to complete",
                       "paperforge embed status --json")
-    if job_status == "failed":
+
+    if bs_status == "failed":
         return _layer("degraded", [f"Last build failed: {build_state.get('message', '')}"],
                       "Check error and rebuild",
                       "paperforge embed build --resume")
 
-    db_path = get_vector_db_path(vault)
-    if not db_path.exists():
-        return _layer("degraded", ["Vector DB not built yet"],
-                      "Run embed build",
-                      "paperforge embed build --resume")
+    if bs_status == "completed":
+        return _layer("ok", ["Vector DB ready"])
 
-    return _layer("ok", ["Vector DB exists"])
+    # Not completed, not running, not failed — determine backend state
+    # Check vec0 first (build_state may have been lost)
+    db_path = get_memory_db_path(vault)
+    if db_path.exists():
+        conn = get_connection(db_path, read_only=True)
+        try:
+            ensure_vec_extension(conn)
+            row = conn.execute("SELECT COUNT(*) AS cnt FROM vec_body_meta LIMIT 1").fetchone()
+            if row and row["cnt"] > 0:
+                return _layer("ok", ["Vector DB ready (vec0)"])
+        except Exception:
+            pass
+        finally:
+            conn.close()
+
+    # Fallback: check old ChromaDB
+    chroma_path = _get_chroma_path(vault) / "chroma.sqlite3"
+    if chroma_path.exists():
+        return _layer("ok", ["Vector DB available (ChromaDB — upgrade recommended)"])
+
+    return _layer("degraded", ["Vector DB not built yet"],
+                  "Run embed build",
+                  "paperforge embed build --resume")
 
 
 def _derive_summary(layers: dict) -> dict:

@@ -38,7 +38,7 @@ PaperForge inherits Obsidian font families and UI scale.
 
 | Level              | Token / value                      | Weight            | Usage                                           |
 | ------------------ | ---------------------------------- | ----------------- | ----------------------------------------------- |
-| Page heading       | `--font-ui-large`                  | `--font-semibold` | Overview, Maintenance, Help                     |
+| Page heading       | `--font-ui-large`                  | `--font-semibold` | Overview, Help, Setup Journey, OCR Workspace    |
 | Module heading     | `18px`                             | `--font-semibold` | Module Detail title                             |
 | Section heading    | `--font-ui-medium`                 | `--font-semibold` | Module body sections                            |
 | Body               | `--font-ui-small`                  | normal            | Explanations and configuration summaries        |
@@ -50,7 +50,7 @@ Rules:
 
 - User-facing content uses Obsidian’s interface font; technical excerpts alone use monospace.
 - Body copy is never smaller than Obsidian’s configured small UI font.
-- Headings use sentence case. Uppercase eyebrow labels are removed.
+- Headings use sentence case. Short lowercase eyebrow labels (e.g. "status", "modules") are permitted for visual hierarchy.
 - Error codes and raw commands never serve as headings or explanatory copy.
 
 ## 4. Spacing & Layout
@@ -71,20 +71,20 @@ All PaperForge spacing is a multiple of 4px.
 
 ### Layout
 
+- Overview modules use one full-width editorial list; two-column card grids are prohibited.
 - Settings content uses the host-provided width; PaperForge does not impose a competing page width.
-- Overview module cards use two columns above a 620px container width and one column at or below 620px.
 - Module Detail uses five visible module tabs above 620px and one native module select at or below 620px.
-- Forms and maintenance items become one column at or below 620px.
-- Nested vertical scrolling inside Settings is prohibited; long operational tables open in a full-width PaperForge workspace.
+- Forms become one column at or below 620px.
+- Nested vertical scrolling inside Settings is prohibited; long operational tables open in the standalone OCR Workspace.
 
 ## 5. Components
 
 ### Control Center Navigation
 
-- **Structure**: three top-level tabs — Overview, Maintenance, Help.
+- **Structure**: two top-level tabs — Overview, Help.
 - **States**: default, hover, active, focus-visible.
 - **Accessibility**: tab semantics, arrow-key movement, Enter/Space activation, visible focus.
-- **Rule**: Module Detail is contextual and never appears as a top-level tab.
+- **Rule**: Module detail is accessed by clicking an Overview module card; it is never a top-level tab.
 
 ### Control Center Summary
 
@@ -104,6 +104,13 @@ All PaperForge spacing is a multiple of 4px.
 - **Variants**: Checking, Ready, Not Enabled, Setup Required, Action Required, Detection Failed.
 - **Rule**: badge wording is identical across modules; reason-specific detail belongs in body copy.
 - **Accessibility**: text label is mandatory; status changes use polite live announcements.
+
+### OCR Paper State
+
+- **Variants**: Processed, Update Available, Not Processed.
+- **Scope**: these labels describe individual papers inside OCR Workspace; they do not replace the six-state Module Status Badge.
+- **Contract**: backend probe data supplies the paper state and allowed actions; the frontend does not infer action safety from version strings alone.
+- **Accessibility**: state text remains visible when columns collapse into the mobile paper list.
 
 ### Module Detail Shell
 

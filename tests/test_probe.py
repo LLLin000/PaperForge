@@ -1003,6 +1003,55 @@ class TestOcrQualityUnacceptable:
         assert data['action']['primary']['scope'] == 'selection'
         assert data['action']['primary']['scope_count'] == 2
 
+    def test_ocr_ready_includes_pipeline_version(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Ready OCR probe includes current_pipeline_version and per-paper versions."""
+        from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
+
+        (tmp_path / "paperforge.json").write_text(
+            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
+        )
+        monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
+
+        # Set up OCR output with meta.json containing pipeline_version
+        ocr_root = tmp_path / "99_System" / "PaperForge" / "ocr" / "KEY1"
+        ocr_root.mkdir(parents=True, exist_ok=True)
+        (ocr_root / "meta.json").write_text(json.dumps({
+            "zotero_key": "KEY1", "ocr_pipeline_version": OCR_PIPELINE_VERSION,
+        }), encoding="utf-8")
+
+        class FakeRow:
+            key = "KEY1"
+            title = "Test Paper"
+            status = "done"
+            health = "green"
+            display_action = "none"
+        monkeypatch.setattr("paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda v: [FakeRow()])
+        monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
+            lambda config=None, live=False: {"passed": True})
+
+        from paperforge.commands.probe import probe_ocr
+        data = probe_ocr(tmp_path)
+        assert data["capability_state"] == "ready"
+        assert data["pipeline_version"] == OCR_PIPELINE_VERSION
+        assert data["pipeline_version_summary"]["total"] == 1
+        assert data["pipeline_version_summary"]["on_current"] == 1
+        assert data["pipeline_version_summary"]["stale"] == 0
+        assert len(data["per_paper_pipeline_version"]) == 1
+        assert data["per_paper_pipeline_version"][0]["key"] == "KEY1"
+        assert data["per_paper_pipeline_version"][0]["last_pipeline_version"] == OCR_PIPELINE_VERSION
+
+    def test_ocr_pipeline_version_in_all_states(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """pipeline_version field is present even in non-ready states (config_missing)."""
+        from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
+        monkeypatch.delenv("PADDLEOCR_API_TOKEN", raising=False)
+
+        from paperforge.commands.probe import probe_ocr
+        data = probe_ocr(tmp_path)
+        # Even the config_missing path carries the pipeline version
+        assert "pipeline_version" in data
+        assert data["pipeline_version"] == OCR_PIPELINE_VERSION
+
 # ---------------------------------------------------------------------------
 # Maintenance projection (Issue #80)
 # ---------------------------------------------------------------------------

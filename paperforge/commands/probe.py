@@ -17,6 +17,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -111,6 +112,7 @@ def build_envelope(
     activity_state: str = "idle", activity_label: str | None = None,
     activity_progress: dict[str, int] | None = None, ttl_seconds: int = 3600,
     notices: list[dict[str, Any]] | None = None,
+    pipeline_version: str | None = None,
 ) -> dict[str, Any]:
     """Build a capability envelope (#84).
 
@@ -119,6 +121,7 @@ def build_envelope(
     maintenance_eligible: true only for blocking/failed/corrupt/risky issues.
     user_visible_failure: true only when a policy-defined unusable result exists.
     user_impact: plain-language impact for the user, separate from reason_text.
+    pipeline_version: aggregate pipeline version for update detection.
     """
     return {
         "schema_version": SCHEMA_VERSION, "module": module,
@@ -131,6 +134,7 @@ def build_envelope(
         "user_visible_failure": user_visible_failure,
         "user_impact": user_impact,
         "updated_at": _utcnow_z(), "ttl_seconds": ttl_seconds,
+        "pipeline_version": pipeline_version,
     }
 
 
@@ -450,44 +454,35 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
     data, err = _load_pf_config(vault)
     if data is None:
         if err == "corrupt":
-            return build_envelope(
-                module="ocr", capability_state="unavailable", severity="error",
-                reason_code="ocr.config_corrupt",
-                reason_text="paperforge.json is corrupt — OCR cannot proceed",
-                user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-                maintenance_eligible=True,
-                action_primary=build_action_primary(
-                    action_id="ocr.setup", verb="setup", label="Setup", command="paperforge setup",
-                ),
-                ttl_seconds=TTL_OCR,
-            )
-        return build_envelope(
-            module="ocr", capability_state="missing_input", severity="warning",
-            reason_code="ocr.config_missing",
-            reason_text="paperforge.json not found — cannot check OCR configuration",
-            user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
+            return build_envelope(module="ocr", capability_state="unavailable", severity="error",
+            reason_code="ocr.config_corrupt",
+            reason_text="paperforge.json is corrupt — OCR cannot proceed",
+            user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+            maintenance_eligible=True,
             action_primary=build_action_primary(
-                action_id="ocr.enable", verb="set_config", label="Enable OCR", command="paperforge setup",
-            ),
-            ttl_seconds=TTL_OCR,
-        )
+                action_id="ocr.setup", verb="setup", label="Setup", command="paperforge setup",
+            ), ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+        return build_envelope(module="ocr", capability_state="missing_input", severity="warning",
+        reason_code="ocr.config_missing",
+        reason_text="paperforge.json not found — cannot check OCR configuration",
+        user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.enable", verb="set_config", label="Enable OCR", command="paperforge setup",
+        ), ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # ── API key / env check — canonical _resolve_paddleocr_token ──
     from paperforge.worker.ocr import _resolve_paddleocr_token
     token = _resolve_paddleocr_token(vault)
 
     if not token:
-        return build_envelope(
-            module="ocr", capability_state="missing_input", severity="warning",
-            reason_code="ocr.api_key_missing",
-            reason_text="PADDLEOCR_API_TOKEN not found in environment — configure API key",
-            user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
-            action_primary=build_action_primary(
-                action_id="ocr.configure", verb="set_config", label="Configure API key",
-                command="paperforge setup",
-            ),
-            ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="missing_input", severity="warning",
+        reason_code="ocr.api_key_missing",
+        reason_text="PADDLEOCR_API_TOKEN not found in environment — configure API key",
+        user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.configure", verb="set_config", label="Configure API key",
+            command="paperforge setup",
+        ), ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # ── Provider reachability via ocr_doctor(config=None, live=False) ──
     notices: list[dict[str, Any]] = []
@@ -508,27 +503,23 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         from paperforge.worker.ocr_maintenance import collect_maintenance_rows
         rows = collect_maintenance_rows(vault)
     except Exception:
-        return build_envelope(
-            module="ocr", capability_state="unknown", severity="unknown",
-            reason_code="ocr.probe_failed", reason_text="OCR maintenance check failed — probe to retry",
-            user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_OPTIONAL,
-            action_primary=build_action_primary(
-                action_id="ocr.probe", verb="probe", label="Retry", command="probe ocr",
-            ),
-            notices=notices, ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="unknown", severity="unknown",
+        reason_code="ocr.probe_failed", reason_text="OCR maintenance check failed — probe to retry",
+        user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.probe", verb="probe", label="Retry", command="probe ocr",
+        ),
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     if not rows:
-        return build_envelope(
-            module="ocr", capability_state="needs_action", severity="warning",
-            reason_code="ocr.artifacts_missing",
-            reason_text="No OCR output found — run OCR to process papers",
-            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-            action_primary=build_action_primary(
-                action_id="ocr.run", verb="run", label="Run OCR", command="paperforge ocr run",
-            ),
-            notices=notices, ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.artifacts_missing",
+        reason_text="No OCR output found — run OCR to process papers",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.run", verb="run", label="Run OCR", command="paperforge ocr run",
+        ),
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # ── Running/active rows → activity overlay (Issue #78 fix) ──
     TERMINAL_STATUSES = frozenset({'done', 'done_degraded'})
@@ -575,50 +566,46 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
 
     # Failures → needs_action with redo (user-visible failure + maintenance eligible)
     if has_failed:
-        return build_envelope(
-            module="ocr", capability_state="needs_action", severity="warning",
-            reason_code="ocr.quality_failures",
-            reason_text="Some OCR outputs have failed — redo required",
-            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-            maintenance_eligible=True, user_visible_failure=True,
-            user_impact="Failed OCR papers cannot be read or searched until reprocessed",
-            action_primary=build_action_primary(
-                action_id="ocr.redo",
-                verb="redo", label="Redo OCR", command="paperforge ocr redo",
-                safety_class=SAFETY_DESTRUCTIVE,
-                replacement_facts=["Existing OCR derived artifacts for failed papers"],
-                preservation_facts=["Raw images and PDFs"],
-                interruptible=True,
-                confirmation_required=True,
-                confirmation_prompt="This will delete existing OCR output for failed papers and re-run OCR. This cannot be undone. Proceed?",
-                scope="selection",
-            ),
-            activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-            notices=notices, ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.quality_failures",
+        reason_text="Some OCR outputs have failed — redo required",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        maintenance_eligible=True, user_visible_failure=True,
+        user_impact="Failed OCR papers cannot be read or searched until reprocessed",
+        action_primary=build_action_primary(
+            action_id="ocr.redo",
+            verb="redo", label="Redo OCR", command="paperforge ocr redo",
+            safety_class=SAFETY_DESTRUCTIVE,
+            replacement_facts=["Existing OCR derived artifacts for failed papers"],
+            preservation_facts=["Raw images and PDFs"],
+            interruptible=True,
+            confirmation_required=True,
+            confirmation_prompt="This will delete existing OCR output for failed papers and re-run OCR. This cannot be undone. Proceed?",
+            scope="selection",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # Redo candidates → needs_action
     if has_redo:
-        return build_envelope(
-            module="ocr", capability_state="needs_action", severity="warning",
-            reason_code="ocr.redo_needed",
-            reason_text="Some OCR outputs need redo — re-run from raw images",
-            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-            maintenance_eligible=True,
-            action_primary=build_action_primary(
-                action_id="ocr.redo",
-                verb="redo", label="Redo OCR", command="paperforge ocr redo",
-                safety_class=SAFETY_DESTRUCTIVE,
-                replacement_facts=["Existing OCR derived artifacts for selected papers"],
-                preservation_facts=["Raw images and PDFs"],
-                interruptible=True,
-                confirmation_required=True,
-                confirmation_prompt="This will delete existing OCR output for selected papers and re-run OCR. This cannot be undone. Proceed?",
-                scope="selection",
-            ),
-            activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-            notices=notices, ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.redo_needed",
+        reason_text="Some OCR outputs need redo — re-run from raw images",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        maintenance_eligible=True,
+        action_primary=build_action_primary(
+            action_id="ocr.redo",
+            verb="redo", label="Redo OCR", command="paperforge ocr redo",
+            safety_class=SAFETY_DESTRUCTIVE,
+            replacement_facts=["Existing OCR derived artifacts for selected papers"],
+            preservation_facts=["Raw images and PDFs"],
+            interruptible=True,
+            confirmation_required=True,
+            confirmation_prompt="This will delete existing OCR output for selected papers and re-run OCR. This cannot be undone. Proceed?",
+            scope="selection",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # Pending rows → run action (run before rebuild/investigate)
     has_pending = any(
@@ -626,49 +613,43 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         for r in rows
     )
     if has_pending:
-        return build_envelope(
-            module="ocr", capability_state="needs_action", severity="warning",
-            reason_code="ocr.pending",
-            reason_text=f"OCR is pending for {total} papers — run to process",
-            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-            action_primary=build_action_primary(
-                action_id="ocr.run",
-                verb="run", label="Run OCR", command="paperforge ocr run",
-            ),
-            activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-            notices=notices, ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.pending",
+        reason_text=f"OCR is pending for {total} papers — run to process",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.run",
+            verb="run", label="Run OCR", command="paperforge ocr run",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # Degraded → rebuild (safe, no maintenance eligibility)
     if has_degraded:
-        return build_envelope(
-            module="ocr", capability_state="needs_action", severity="warning",
-            reason_code="ocr.artifacts_stale",
-            reason_text="Derived OCR artifacts are degraded — rebuild to refresh",
-            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-            action_primary=build_action_primary(
-                action_id="ocr.rebuild_derived",
-                verb="rebuild_derived", label="Rebuild derived artifacts",
-                command="paperforge ocr rebuild --all",
-            ),
-            activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-            notices=notices, ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.artifacts_stale",
+        reason_text="Derived OCR artifacts are degraded — rebuild to refresh",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.rebuild_derived",
+            verb="rebuild_derived", label="Rebuild derived artifacts",
+            command="paperforge ocr rebuild --all",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # Unexpected actionable → investigate (lowest priority before provider)
     if has_unexpected:
-        return build_envelope(
-            module="ocr", capability_state="limited", severity="warning",
-            reason_code="ocr.unexpected_action",
-            reason_text="OCR maintenance reports unexpected actions — run diagnostics",
-            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-            action_primary=build_action_primary(
-                action_id="ocr.diagnose",
-                verb="investigate", label="Run diagnostics", command="paperforge ocr doctor",
-            ),
-            activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-            notices=notices, ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="limited", severity="warning",
+        reason_code="ocr.unexpected_action",
+        reason_text="OCR maintenance reports unexpected actions — run diagnostics",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.diagnose",
+            verb="investigate", label="Run diagnostics", command="paperforge ocr doctor",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # Dead-end red rows with no retry/rebuild path → quality_unacceptable
     has_dead_end = any(
@@ -681,48 +662,106 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         dead_count = sum(1 for r in rows if (r.status == "failed" or r.health == "red")
                          and getattr(r, 'display_action', 'none') in ('none', None, '')
                          and not getattr(r, 'can_redo', False))
-        return build_envelope(
-            module="ocr", capability_state="needs_action", severity="warning",
-            reason_code="ocr.quality_unacceptable",
-            reason_text=f"OCR output is unacceptable for {dead_count} paper(s) — no automated repair available",
-            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-            maintenance_eligible=True, user_visible_failure=True,
-            user_impact=f"{dead_count} paper(s) have unusable OCR output with no automated recovery",
-            action_primary=build_action_primary(
-                action_id="ocr.report_issue",
-                verb="investigate", label="Report OCR issue", command="paperforge ocr issue-draft",
-                safety_class=SAFETY_SAFE, scope="selection", scope_count=dead_count,
-            ),
-            activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-            notices=notices, ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.quality_unacceptable",
+        reason_text=f"OCR output is unacceptable for {dead_count} paper(s) — no automated repair available",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        maintenance_eligible=True, user_visible_failure=True,
+        user_impact=f"{dead_count} paper(s) have unusable OCR output with no automated recovery",
+        action_primary=build_action_primary(
+            action_id="ocr.report_issue",
+            verb="investigate", label="Report OCR issue", command="paperforge ocr issue-draft",
+            safety_class=SAFETY_SAFE, scope="selection", scope_count=dead_count,
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     if not provider_reachable:
-        return build_envelope(
-            module="ocr", capability_state="limited", severity="warning",
-            reason_code="ocr.api_unreachable",
-            reason_text="PaddleOCR API is unreachable — OCR jobs may fail. Local output remains available.",
-            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-            action_primary=build_action_primary(
-                action_id="ocr.diagnose",
-                verb="investigate", label="Run diagnostics", command="paperforge ocr doctor",
-            ),
-            activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-            notices=notices, ttl_seconds=TTL_OCR,
-        )
+        return build_envelope(module="ocr", capability_state="limited", severity="warning",
+        reason_code="ocr.api_unreachable",
+        reason_text="PaddleOCR API is unreachable — OCR jobs may fail. Local output remains available.",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.diagnose",
+            verb="investigate", label="Run diagnostics", command="paperforge ocr doctor",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+
+    # ── Per-paper pipeline version comparison ──
+    from paperforge.worker._utils import pipeline_paths
+    from paperforge.core.io import read_json
+
+    ocr_root = pipeline_paths(vault).get("ocr")
+    papers_on_current = 0
+    papers_stale = 0
+    per_paper_versions: list[dict[str, Any]] = []
+    if ocr_root and ocr_root.exists():
+        for r in rows:
+            meta_path = ocr_root / r.key / "meta.json"
+            if meta_path.exists():
+                try:
+                    meta = read_json(meta_path)
+                    paper_version = meta.get("ocr_pipeline_version")
+                    if paper_version == OCR_PIPELINE_VERSION:
+                        papers_on_current += 1
+                    else:
+                        papers_stale += 1
+                    per_paper_versions.append({
+                        "key": r.key, "title": getattr(r, "title", ""),
+                        "last_pipeline_version": paper_version,
+                    })
+                except Exception:
+                    pass
 
     # All good
-    return build_envelope(
-        module="ocr", capability_state="ready", severity="ok",
-        reason_code="ocr.ready", reason_text=f"OCR pipeline functional ({total} papers processed)",
-        user_state=USER_STATE_READY, capability_kind=CAPABILITY_OPTIONAL,
-        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-        notices=notices, action_primary=None, ttl_seconds=TTL_OCR,
-    )
+    envelope = build_envelope(module="ocr", capability_state="ready", severity="ok",
+    reason_code="ocr.ready", reason_text=f"OCR pipeline functional ({total} papers processed)",
+    user_state=USER_STATE_READY, capability_kind=CAPABILITY_OPTIONAL,
+    activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+    notices=notices, action_primary=None, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+    envelope["pipeline_version_summary"] = {
+        "total": len(rows), "on_current": papers_on_current, "stale": papers_stale,
+    }
+    envelope["per_paper_pipeline_version"] = per_paper_versions
+    return envelope
 
 
 def probe_memory(vault: Path) -> dict[str, Any]:
-    """Probe the Memory module using canonical get_memory_status."""
+    """Probe the Memory module.
+
+    Decision tree (resolved by grilling 2026-07-23):
+    1. Module disabled → not_enabled
+    2. No paperforge.db → build memory
+    3. Schema mismatch → rebuild / restore
+    4. Index stale → rebuild index
+    5. build_state routes the vector backend:
+       a. completed → ready (+ API key notice if missing)
+       b. running  → ready + activity
+       c. failed   → rebuild vector
+       d. absent   → check ChromaDB → upgrade, or build vector
+    """
+    # ── Gate 0: disabled module ──────────────────────────────────────────
+    settings_path = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
+    if settings_path.exists():
+        try:
+            import json
+            settings = json.loads(settings_path.read_text(encoding="utf-8"))
+            if not settings.get("features", {}).get("vector_db", False):
+                return build_envelope(
+                    module="memory", capability_state="not_configured", severity="ok",
+                    reason_code="memory.disabled", reason_text="Smart Retrieval is not enabled",
+                    user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
+                    action_primary=build_action_primary(
+                        action_id="memory.enable", verb="set_config",
+                        label="Enable Smart Retrieval", command="paperforge setup",
+                    ),
+                    ttl_seconds=TTL_MEMORY,
+                )
+        except Exception:
+            pass  # fall through to DB-based probe
+
+    # ── Gates 1-4: DB-based checks ────────────────────────────────────
     try:
         from paperforge.memory.query import get_memory_status
         from paperforge.memory.schema import CURRENT_SCHEMA_VERSION as _CURRENT_SCHEMA
@@ -825,25 +864,143 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             ttl_seconds=TTL_MEMORY,
         )
 
-    # ── Vector index health via get_embed_status ──
+    # ── Vector backend health via build_state ────────────────────────────
     notices: list[dict[str, Any]] = []
     try:
-        from paperforge.embedding.status import get_embed_status
-        embed_status = get_embed_status(vault)
-        vector_healthy = embed_status.get("healthy", False) and embed_status.get("total_chunks", 0) > 0
-        if not vector_healthy and paper_count_db > 0:
+        from paperforge.embedding.build_state import read_vector_build_state
+
+        build_state = read_vector_build_state(vault)
+        bs_status = build_state.get("status", "idle")
+
+        # Gate 5a: completed → ready
+        if bs_status == "completed":
+            # Quick API key presence check (no API call, just config)
+            from paperforge.embedding._config import get_api_key
+
+            if not get_api_key(vault):
+                notices.append({
+                    "kind": "warning",
+                    "text": "API key not configured — search works, but the next rebuild needs one",
+                })
+            return build_envelope(
+                module="memory", capability_state="ready", severity="ok",
+                reason_code="memory.ready",
+                reason_text=f"Memory database healthy ({paper_count_db} papers, {paper_count_index} indexed)",
+                user_state=USER_STATE_READY, capability_kind=CAPABILITY_OPTIONAL,
+                notices=notices, action_primary=None, ttl_seconds=TTL_MEMORY,
+            )
+
+        # Gate 5b: running → ready + activity
+        if bs_status == "running":
+            act_label = f"Building vector index ({build_state.get('current', 0)}/{build_state.get('total', 0)})"
+            act_progress = {
+                "current": build_state.get("current", 0),
+                "total": build_state.get("total", 0),
+            }
+            return build_envelope(
+                module="memory", capability_state="ready", severity="ok",
+                reason_code="memory.ready",
+                reason_text=f"Memory database healthy ({paper_count_db} papers, {paper_count_index} indexed)",
+                user_state=USER_STATE_READY, capability_kind=CAPABILITY_OPTIONAL,
+                activity_state="running", activity_label=act_label,
+                activity_progress=act_progress,
+                notices=notices, action_primary=None, ttl_seconds=TTL_MEMORY,
+            )
+
+        # Gate 5c: failed → rebuild
+        if bs_status == "failed":
+            msg = build_state.get("message", "unknown error")
             return build_envelope(
                 module="memory", capability_state="needs_action", severity="warning",
-                reason_code="memory.index_stale",
-                reason_text="Vector index is missing or corrupted — rebuild to enable semantic search",
+                reason_code="memory.vector_build_failed",
+                reason_text=f"Last vector build failed: {msg}. Existing vectors are still usable.",
                 user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                 action_primary=build_action_primary(
                     action_id="memory.rebuild_vector",
-                    verb="rebuild_index", label="Build vector index",
+                    verb="rebuild_index", label="Rebuild vector index",
                     command="paperforge embed build --force",
                 ),
                 notices=notices, ttl_seconds=TTL_MEMORY,
             )
+
+        # Gate 5d: build_state absent (idle / never built / 1.5.15)
+        # Check if vec0 already has data (build_state may have been lost)
+        from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+
+        db_path = get_memory_db_path(vault)
+        vec0_has_data = False
+        if db_path.exists():
+            conn = get_connection(db_path, read_only=True)
+            try:
+                ensure_vec_extension(conn)
+                row = conn.execute("SELECT COUNT(*) AS cnt FROM vec_body_meta LIMIT 1").fetchone()
+                vec0_has_data = bool(row and row["cnt"] > 0)
+            except Exception:
+                pass
+            finally:
+                conn.close()
+
+        if vec0_has_data:
+            # vec0 has data — build_state was lost, treat as ready
+            return build_envelope(
+                module="memory", capability_state="ready", severity="ok",
+                reason_code="memory.ready",
+                reason_text=f"Memory database healthy ({paper_count_db} papers, {paper_count_index} indexed)",
+                user_state=USER_STATE_READY, capability_kind=CAPABILITY_OPTIONAL,
+                notices=notices, action_primary=None, ttl_seconds=TTL_MEMORY,
+            )
+
+        # Check ChromaDB presence for 1.5.15 upgrade path
+        from paperforge.embedding._chroma import get_vector_db_path as _get_chroma_path
+
+        chroma_path = _get_chroma_path(vault) / "chroma.sqlite3"
+        if chroma_path.exists():
+            return build_envelope(
+                module="memory", capability_state="needs_action", severity="warning",
+                reason_code="memory.backend_upgrade_available",
+                reason_text="Smart Retrieval uses the ChromaDB backend. A newer sqlite-vec backend is available — rebuild to switch.",
+                user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+                action_primary=build_action_primary(
+                    action_id="memory.upgrade_backend",
+                    verb="rebuild_index", label="Rebuild index",
+                    command="paperforge embed build --force",
+                    safety_class=SAFETY_DESTRUCTIVE,
+                    confirmation_required=True,
+                    confirmation_prompt=(
+                        "Smart Retrieval backend upgrade\n\n"
+                        "What will happen\n"
+                        "• The current ChromaDB index is backed up to paperforge.pre-rebuild-{timestamp}.db\n"
+                        "• A fresh sqlite-vec index is built from your existing paper data\n"
+                        "• Your embedding API is called once per paper to create new vectors\n"
+                        "• After completion, PaperForge switches to the new backend automatically\n\n"
+                        "What is at risk\n"
+                        "• Embedding API charges: papers × your provider's rate\n"
+                        "• Search will not work while the rebuild runs\n"
+                        "• If the rebuild fails, PaperForge restores the backup automatically "
+                        "and your current ChromaDB index remains usable\n\n"
+                        "What stays untouched\n"
+                        "• Your notes, PDFs, and OCR fulltext\n"
+                        "• Your existing ChromaDB data (preserved in the vectors/ directory)\n"
+                        "• Your memory database structure and paper metadata"
+                    ),
+                ),
+                notices=notices, ttl_seconds=TTL_MEMORY,
+            )
+
+        # No vec0 data, no ChromaDB — never built vectors
+        return build_envelope(
+            module="memory", capability_state="needs_action", severity="warning",
+            reason_code="memory.index_stale",
+            reason_text="Vector index has not been built — rebuild to enable semantic search",
+            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+            action_primary=build_action_primary(
+                action_id="memory.rebuild_vector",
+                verb="rebuild_index", label="Build vector index",
+                command="paperforge embed build --force",
+            ),
+            notices=notices, ttl_seconds=TTL_MEMORY,
+        )
+
     except Exception:
         return build_envelope(
             module="memory", capability_state="unknown", severity="unknown",
@@ -855,15 +1012,6 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             ),
             notices=notices, ttl_seconds=TTL_MEMORY,
         )
-
-    # DB healthy and vector index present → ready
-    return build_envelope(
-        module="memory", capability_state="ready", severity="ok",
-        reason_code="memory.ready",
-        reason_text=f"Memory database healthy ({paper_count_db} papers, {paper_count_index} indexed)",
-        user_state=USER_STATE_READY, capability_kind=CAPABILITY_OPTIONAL,
-        notices=notices, action_primary=None, ttl_seconds=TTL_MEMORY,
-    )
 
 # ---------------------------------------------------------------------------
 # Maintenance projection (Issue #80)
