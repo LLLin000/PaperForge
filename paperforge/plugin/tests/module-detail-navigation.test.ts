@@ -538,6 +538,7 @@ describe("OCR module detail (Issue #78)", () => {
     const ocrEnv = {
       ...createUnknownEnvelope("ocr"),
       capability_state: "needs_action",
+      activity_state: "running",
       severity: "warning",
       reason: { code: "ocr.artifacts_stale", text: "Stale" },
       action: {
@@ -587,6 +588,7 @@ describe("OCR module detail (Issue #78)", () => {
     (tab as any)._capabilityState = {
       ocr: {
         ...createUnknownEnvelope("ocr"),
+        activity_state: "running",
         capability_state: "needs_action",
         severity: "warning",
         reason: { code: "x", text: "x" },
@@ -628,6 +630,7 @@ describe("OCR module detail (Issue #78)", () => {
     (tab as any)._capabilityState = {
       ocr: {
         ...createUnknownEnvelope("ocr"),
+        activity_state: "running",
         capability_state: "needs_action",
         severity: "warning",
         reason: { code: "x", text: "x" },

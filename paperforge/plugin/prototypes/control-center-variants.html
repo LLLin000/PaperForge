@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PaperForge Control Center — UI Prototype</title>
+    <style>
+      /* ═══════════════════════════════════════════════════════════════
+   PROTOTYPE: Three structurally different Control Center variants
+   Switchable via ?variant= URL param + floating bottom bar.
+   Data fixture: live PaperForge capability state snapshot.
+   
+   Variant A — kami / 紙: Single-column editorial, serif-led,
+              warm parchment, ink-blue accent, section numbers.
+   Variant B — claude: Alternating light/dark zones, terracotta
+              accent, ring shadows, warm neutral palette.
+   Variant C — notion: Clean card grid, whisper borders, pill
+              badges, multi-layer soft shadows, blue accent.
+   ═══════════════════════════════════════════════════════════════ */
+
+      /* ── Shared reset & prototype bar ── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* ── Floating variant bar ── */
+      #prototype-bar {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: #1a1a2e;
+        color: #e0e0e0;
+        border-radius: 9999px;
+        font:
+          500 12px/1.4 system-ui,
+          sans-serif;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 9999;
+        user-select: none;
+      }
+      #prototype-bar button {
+        background: transparent;
+        border: none;
+        color: inherit;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        line-height: 1;
+      }
+      #prototype-bar button:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      #prototype-bar button:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+      }
+      #prototype-bar .label {
+        min-width: 180px;
+        text-align: center;
+        letter-spacing: 0.4px;
+      }
+
+      /* ── Variant A: kami (紙) ── */
+      .var-a {
+        --page: #f5f4ed;
+        --ivory: #faf9f5;
+        --sand: #e8e6dc;
+        --ink: #1b365d;
+        --ink-light: #2d5a8a;
+        --near-black: #141413;
+        --dark-warm: #3d3d3a;
+        --olive: #504e49;
+        --stone: #6b6a64;
+        --border: #e8e6dc;
+        --border-soft: #e5e3d8;
+        --tag-bg: #e4ecf5;
+        --serif: Charter, Georgia, "Times New Roman", serif;
+        --sans: var(--serif);
+        background: var(--page);
+        color: var(--near-black);
+        font-family: var(--serif);
+        font-weight: 400;
+        min-height: 100vh;
+      }
+      .var-a .cc-wrap {
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 64px 32px 120px;
+      }
+      .var-a .cc-hero {
+        margin-bottom: 72px;
+      }
+      .var-a .cc-hero .eyebrow {
+        font: 500 12px/1 var(--sans);
+        color: var(--stone);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+      .var-a .cc-hero h1 {
+        font: 500 40px/1.15 var(--serif);
+        color: var(--near-black);
+        letter-spacing: -0.5px;
+        margin-bottom: 10px;
+      }
+      .var-a .cc-hero .desc {
+        font: 400 15px/1.55 var(--serif);
+        color: var(--olive);
+        max-width: 540px;
+      }
+      .var-a .cc-baseline {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 48px;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .var-a .cc-baseline .status {
+        font: 500 14px/1 var(--sans);
+        color: var(--ink);
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+      }
+      .var-a .cc-baseline .meta {
+        font: 400 12px/1 var(--serif);
+        color: var(--stone);
+        margin-left: auto;
+      }
+      .var-a .cc-modules {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .var-a .cc-module {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border-soft);
+        transition: box-shadow 0.2s;
+        cursor: default;
+      }
+      .var-a .cc-module:hover {
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+        background: var(--ivory);
+        margin: 0 -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+        border-radius: 8px;
+        border-bottom-color: transparent;
+      }
+      .var-a .cc-module .num {
+        flex: 0 0 32px;
+        font: 500 13px/1 var(--serif);
+        color: var(--ink);
+        text-align: right;
+        padding-top: 2px;
+      }
+      .var-a .cc-module .body {
+        flex: 1;
+        min-width: 0;
+      }
+      .var-a .cc-module .title {
+        font: 500 16px/1.3 var(--serif);
+        color: var(--near-black);
+        margin-bottom: 2px;
+      }
+      .var-a .cc-module .state {
+        font: 500 11px/1 var(--sans);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+      }
+      .var-a .cc-module .state.ready {
+        color: var(--ink);
+      }
+      .var-a .cc-module .state.needs_action {
+        color: #b85c1a;
+      }
+      .var-a .cc-module .state.not_enabled {
+        color: var(--stone);
+      }
+      .var-a .cc-module .hint {
+        font: 400 13px/1.5 var(--serif);
+        color: var(--olive);
+      }
+      .var-a .cc-module .tag {
+        display: inline-block;
+        font: 500 11px/1 var(--sans);
+        padding: 2px 8px;
+        border-radius: 4px;
+        color: var(--ink);
+        background: var(--tag-bg);
+        letter-spacing: 0.4px;
+        margin-top: 8px;
+      }
+
+      /* ── Variant B: claude ── */
+      .var-b {
+        --parchment: #f5f4ed;
+        --ivory: #faf9f5;
+        --sand: #e8e6dc;
+        --terra: #c96442;
+        --coral: #d97757;
+        --near-black: #141413;
+        --charcoal: #4d4c48;
+        --olive-gray: #5e5d59;
+        --stone: #87867f;
+        --border-cream: #f0eee6;
+        --dark-surface: #30302e;
+        --serif: Georgia, Charter, "Times New Roman", serif;
+        --sans: system-ui, -apple-system, Arial, sans-serif;
+        background: var(--parchment);
+        color: var(--near-black);
+        font-family: var(--sans);
+        min-height: 100vh;
+      }
+      .var-b .cc-wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 72px 32px 120px;
+      }
+      .var-b .cc-hero {
+        text-align: center;
+        margin-bottom: 64px;
+      }
+      .var-b .cc-hero h1 {
+        font: 500 48px/1.1 var(--serif);
+        color: var(--near-black);
+        margin-bottom: 12px;
+      }
+      .var-b .cc-hero .desc {
+        font: 400 17px/1.6 var(--sans);
+        color: var(--olive-gray);
+        max-width: 520px;
+        margin: 0 auto;
+      }
+      .var-b .cc-baseline {
+        text-align: center;
+        margin-bottom: 48px;
+        padding: 16px;
+        background: var(--ivory);
+        border-radius: 8px;
+        box-shadow: 0 0 0 1px var(--border-cream);
+      }
+      .var-b .cc-baseline .status {
+        font: 600 13px/1 var(--sans);
+        color: var(--charcoal);
+        letter-spacing: 0.3px;
+      }
+      .var-b .cc-baseline .meta {
+        font: 400 12px/1 var(--sans);
+        color: var(--stone);
+        margin-top: 4px;
+      }
+      .var-b .cc-modules {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .var-b .cc-module {
+        padding: 28px 24px;
+        border-radius: 12px;
+        margin-bottom: 4px;
+      }
+      .var-b .cc-module.light {
+        background: var(--ivory);
+        box-shadow: 0 0 0 1px var(--border-cream);
+      }
+      .var-b .cc-module.dark {
+        background: var(--near-black);
+        color: #b0aea5;
+        box-shadow: 0 0 0 1px var(--dark-surface);
+      }
+      .var-b .cc-module .title {
+        font: 500 16px/1.3 var(--sans);
+        margin-bottom: 4px;
+      }
+      .var-b .cc-module.dark .title {
+        color: var(--ivory);
+      }
+      .var-b .cc-module.light .title {
+        color: var(--near-black);
+      }
+      .var-b .cc-module .state {
+        font: 600 11px/1 var(--sans);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-bottom: 8px;
+      }
+      .var-b .cc-module .state.ready {
+        color: #6b8e6b;
+      }
+      .var-b .cc-module .state.needs_action {
+        color: var(--terra);
+      }
+      .var-b .cc-module .state.not_enabled {
+        color: var(--stone);
+      }
+      .var-b .cc-module .hint {
+        font: 400 13px/1.5 var(--sans);
+      }
+      .var-b .cc-module.light .hint {
+        color: var(--olive-gray);
+      }
+      .var-b .cc-module.dark .hint {
+        color: #87867f;
+      }
+      .var-b .cc-module .action {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font: 500 12px/1 var(--sans);
+        cursor: default;
+        box-shadow: 0 0 0 1px var(--terra);
+        color: var(--terra);
+        background: transparent;
+        letter-spacing: 0.3px;
+      }
+
+      /* ── Variant C: notion ── */
+      .var-c {
+        --white: #ffffff;
+        --warm-white: #f6f5f4;
+        --near-black: rgba(0, 0, 0, 0.95);
+        --gray-500: #615d59;
+        --gray-300: #a39e98;
+        --blue: #0075de;
+        --focus-blue: #097fe8;
+        --badge-bg: #f2f9ff;
+        --badge-text: #097fe8;
+        --teal: #2a9d99;
+        --orange: #dd5b00;
+        --green: #1aae39;
+        --whisper: 1px solid rgba(0, 0, 0, 0.1);
+        --shadow-card:
+          0 4px 18px rgba(0, 0, 0, 0.04), 0 2.025px 7.85px rgba(0, 0, 0, 0.027),
+          0 0.8px 2.93px rgba(0, 0, 0, 0.02),
+          0 0.175px 1.04px rgba(0, 0, 0, 0.01);
+        --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--white);
+        color: var(--near-black);
+        font-family: var(--font);
+        min-height: 100vh;
+      }
+      .var-c .cc-wrap {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 56px 32px 120px;
+      }
+      .var-c .cc-hero {
+        margin-bottom: 48px;
+      }
+      .var-c .cc-hero h1 {
+        font: 700 32px/1.1 var(--font);
+        color: var(--near-black);
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+      }
+      .var-c .cc-hero .desc {
+        font: 400 15px/1.5 var(--font);
+        color: var(--gray-500);
+      }
+      .var-c .cc-baseline {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 32px;
+        padding: 14px 18px;
+        background: var(--warm-white);
+        border-radius: 8px;
+        font: 500 13px/1 var(--font);
+      }
+      .var-c .cc-baseline .status {
+        color: var(--near-black);
+      }
+      .var-c .cc-baseline .badge {
+        font: 600 11px/1 var(--font);
+        padding: 3px 8px;
+        border-radius: 9999px;
+        letter-spacing: 0.12px;
+      }
+      .var-c .cc-baseline .badge.ready {
+        background: #e8f5e9;
+        color: var(--green);
+      }
+      .var-c .cc-baseline .badge.warn {
+        background: #fff3e0;
+        color: var(--orange);
+      }
+      .var-c .cc-baseline .meta {
+        font: 400 12px/1 var(--font);
+        color: var(--gray-300);
+        margin-left: auto;
+      }
+      .var-c .cc-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .var-c .cc-card {
+        background: var(--white);
+        border: var(--whisper);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: var(--shadow-card);
+        cursor: default;
+        transition: box-shadow 0.15s;
+      }
+      .var-c .cc-card:hover {
+        box-shadow:
+          0 4px 18px rgba(0, 0, 0, 0.06),
+          0 2.025px 7.85px rgba(0, 0, 0, 0.04);
+      }
+      .var-c .cc-card .title {
+        font: 700 15px/1.3 var(--font);
+        color: var(--near-black);
+        margin-bottom: 4px;
+      }
+      .var-c .cc-card .badge {
+        display: inline-block;
+        font: 600 11px/1.3 var(--font);
+        padding: 2px 8px;
+        border-radius: 9999px;
+        letter-spacing: 0.12px;
+        margin-bottom: 8px;
+      }
+      .var-c .cc-card .badge.ready {
+        background: #e8f5e9;
+        color: var(--green);
+      }
+      .var-c .cc-card .badge.needs_action {
+        background: #fff3e0;
+        color: var(--orange);
+      }
+      .var-c .cc-card .badge.not_enabled {
+        background: var(--warm-white);
+        color: var(--gray-500);
+      }
+      .var-c .cc-card .badge.checking {
+        background: var(--badge-bg);
+        color: var(--badge-text);
+      }
+      .var-c .cc-card .hint {
+        font: 400 13px/1.5 var(--font);
+        color: var(--gray-500);
+      }
+      .var-c .cc-card .action {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 5px 12px;
+        border-radius: 4px;
+        font: 600 12px/1 var(--font);
+        background: var(--blue);
+        color: white;
+        letter-spacing: 0.2px;
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 767px) {
+        .var-a .cc-wrap,
+        .var-b .cc-wrap,
+        .var-c .cc-wrap {
+          padding: 96px 16px 80px;
+        }
+        .var-a .cc-hero h1 {
+          font-size: 28px;
+        }
+        .var-b .cc-hero h1 {
+          font-size: 32px;
+        }
+        .var-c .cc-grid {
+          grid-template-columns: 1fr;
+        }
+        .var-a .cc-module:hover {
+          margin: 0 -12px;
+          padding-left: 12px;
+          padding-right: 12px;
+        }
+        #prototype-bar {
+          left: 50%;
+          right: auto;
+          transform: translateX(-50%);
+          width: calc(100% - 32px);
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body class="var-a" id="root">
+    <div id="variant-a">
+      <div class="cc-wrap">
+        <div class="cc-hero">
+          <p class="eyebrow">PaperForge Control Center</p>
+          <h1>Literature Pipeline</h1>
+          <p class="desc">
+            Obsidian + Zotero literature pipeline. Sync papers, generate notes,
+            process scanned PDFs, and read deeply — all from one place.
+          </p>
+        </div>
+        <div class="cc-baseline">
+          <span class="status">PaperForge is ready</span>
+          <span class="meta">Last checked: just now</span>
+        </div>
+        <div class="cc-modules" id="modules-a"></div>
+      </div>
+    </div>
+
+    <div id="variant-b" style="display: none">
+      <div class="cc-wrap">
+        <div class="cc-hero">
+          <h1>PaperForge</h1>
+          <p class="desc">
+            Obsidian + Zotero literature pipeline. Sync, OCR, retrieve, and read
+            deeply — in one place.
+          </p>
+        </div>
+        <div class="cc-baseline">
+          <div class="status">PaperForge is ready</div>
+          <div class="meta">Last checked: just now</div>
+        </div>
+        <div class="cc-modules" id="modules-b"></div>
+      </div>
+    </div>
+
+    <div id="variant-c" style="display: none">
+      <div class="cc-wrap">
+        <div class="cc-hero">
+          <h1>PaperForge</h1>
+          <p class="desc">
+            Obsidian + Zotero literature pipeline. Sync papers, generate notes,
+            process scanned PDFs, and read deeply — all in one place.
+          </p>
+        </div>
+        <div class="cc-baseline">
+          <span class="status">Status</span>
+          <span class="badge ready">Ready</span>
+          <span class="meta">Last checked: just now</span>
+        </div>
+        <div class="cc-grid" id="modules-c"></div>
+      </div>
+    </div>
+
+    <nav id="prototype-bar">
+      <button id="prev-btn" title="Previous variant (←)">◀</button>
+      <span class="label" id="variant-label">A — kami · approved</span>
+      <button id="next-btn" title="Next variant (→)">▶</button>
+    </nav>
+
+    <script>
+      /* ═══════════════════════════════════════════════════════════════
+   Fixture: live PaperForge capability state (from Literatre-hub)
+   ═══════════════════════════════════════════════════════════════ */
+      const STATE = {
+        baselineReady: true,
+        lastChecked: "just now",
+        modules: [
+          {
+            id: "installation",
+            label: "Foundation",
+            state: "ready",
+            hint_en: "PaperForge is installed and ready on this device.",
+            hint_zh: "PaperForge 已安装并在此设备上就绪。",
+          },
+          {
+            id: "library",
+            label: "Library",
+            state: "ready",
+            hint_en: "Zotero library is connected and current.",
+            hint_zh: "Zotero 文献库已连接并保持最新。",
+          },
+          {
+            id: "ocr",
+            label: "OCR Engine",
+            state: "needs_action",
+            hint_en:
+              "Some papers do not have readable text. Process them with OCR.",
+            hint_zh: "部分论文没有可读文本，请使用 OCR 处理。",
+          },
+          {
+            id: "memory",
+            label: "Smart Retrieval",
+            state: "needs_action",
+            hint_en: "Retrieval index damaged — restore from backup.",
+            hint_zh: "检索索引已损坏，请从备份恢复。",
+          },
+          {
+            id: "agent",
+            label: "Agent Integration",
+            state: "not_enabled",
+            hint_en: "Choose an agent platform to deploy PaperForge Skills.",
+            hint_zh: "选择 Agent 平台以部署 PaperForge Skills。",
+          },
+        ],
+      };
+
+      /* ═══ Variant A: kami single-column editorial ═══ */
+      function renderVariantA() {
+        const el = document.getElementById("modules-a");
+        el.innerHTML = STATE.modules
+          .map((m, i) => {
+            const stateClass =
+              m.state === "ready"
+                ? "ready"
+                : m.state === "needs_action"
+                  ? "needs_action"
+                  : "not_enabled";
+            const stateLabel =
+              m.state === "ready"
+                ? "Ready"
+                : m.state === "needs_action"
+                  ? "Action Required"
+                  : "Not Enabled";
+            const tagHTML =
+              m.state === "needs_action"
+                ? `<span class="tag">Action Required</span>`
+                : "";
+            return `<div class="cc-module">
+      <div class="num">0${i + 1}</div>
+      <div class="body">
+        <div class="title">${m.label}</div>
+        <div class="state ${stateClass}">${stateLabel}</div>
+        <div class="hint">${m.hint_en}</div>
+        ${tagHTML}
+      </div>
+    </div>`;
+          })
+          .join("");
+      }
+
+      /* ═══ Variant B: claude alternating light/dark zones ═══ */
+      function renderVariantB() {
+        const el = document.getElementById("modules-b");
+        el.innerHTML = STATE.modules
+          .map((m, i) => {
+            const zone = i % 2 === 0 ? "light" : "dark";
+            const stateClass =
+              m.state === "ready"
+                ? "ready"
+                : m.state === "needs_action"
+                  ? "needs_action"
+                  : "not_enabled";
+            const stateLabel =
+              m.state === "ready"
+                ? "Ready"
+                : m.state === "needs_action"
+                  ? "Action Required"
+                  : "Not Enabled";
+            const actionHTML =
+              m.state === "needs_action"
+                ? `<span class="action">Check</span>`
+                : "";
+            return `<div class="cc-module ${zone}">
+      <div class="title">${m.label}</div>
+      <div class="state ${stateClass}">${stateLabel}</div>
+      <div class="hint">${m.hint_en}</div>
+      ${actionHTML}
+    </div>`;
+          })
+          .join("");
+      }
+
+      /* ═══ Variant C: notion card grid ═══ */
+      function renderVariantC() {
+        const el = document.getElementById("modules-c");
+        el.innerHTML = STATE.modules
+          .map((m) => {
+            const stateClass =
+              m.state === "ready"
+                ? "ready"
+                : m.state === "needs_action"
+                  ? "needs_action"
+                  : "not_enabled";
+            const stateLabel =
+              m.state === "ready"
+                ? "Ready"
+                : m.state === "needs_action"
+                  ? "Action Required"
+                  : "Not Enabled";
+            const actionHTML =
+              m.state === "needs_action"
+                ? `<span class="action">Check</span>`
+                : "";
+            return `<div class="cc-card">
+      <div class="title">${m.label}</div>
+      <span class="badge ${stateClass}">${stateLabel}</span>
+      <div class="hint">${m.hint_en}</div>
+      ${actionHTML}
+    </div>`;
+          })
+          .join("");
+      }
+
+      /* ═══ Variant switcher ═══ */
+      const VARIANTS = [
+        {
+          id: "a",
+          name: "A — kami · approved",
+          cls: "var-a",
+          render: renderVariantA,
+        },
+        {
+          id: "b",
+          name: "B — claude · historical",
+          cls: "var-b",
+          render: renderVariantB,
+        },
+        {
+          id: "c",
+          name: "C — notion · historical",
+          cls: "var-c",
+          render: renderVariantC,
+        },
+      ];
+
+      let currentIdx = 0;
+
+      function applyVariant(idx) {
+        currentIdx =
+          ((idx % VARIANTS.length) + VARIANTS.length) % VARIANTS.length;
+        const v = VARIANTS[currentIdx];
+
+        // Update body class
+        document.getElementById("root").className = v.cls;
+
+        // Show/hide containers
+        VARIANTS.forEach((_, i) => {
+          const el = document.getElementById("variant-" + VARIANTS[i].id);
+          if (el) el.style.display = i === currentIdx ? "" : "none";
+        });
+
+        // Render if first time
+        v.render();
+
+        // Update bar
+        document.getElementById("variant-label").textContent = v.name;
+
+        // Update URL
+        const url = new URL(window.location);
+        url.searchParams.set("variant", v.id);
+        window.history.replaceState({}, "", url);
+
+        // Persist
+        localStorage.setItem("pf-prototype-variant", v.id);
+      }
+
+      document.getElementById("prev-btn").onclick = () =>
+        applyVariant(currentIdx - 1);
+      document.getElementById("next-btn").onclick = () =>
+        applyVariant(currentIdx + 1);
+
+      // Keyboard navigation
+      document.addEventListener("keydown", (e) => {
+        if (
+          e.target.tagName === "INPUT" ||
+          e.target.tagName === "TEXTAREA" ||
+          e.target.isContentEditable
+        )
+          return;
+        if (e.key === "ArrowLeft") applyVariant(currentIdx - 1);
+        if (e.key === "ArrowRight") applyVariant(currentIdx + 1);
+      });
+
+      // Init from URL or local storage
+      const params = new URLSearchParams(window.location.search);
+      const initVariant =
+        params.get("variant") ||
+        localStorage.getItem("pf-prototype-variant") ||
+        "a";
+      const startIdx = VARIANTS.findIndex((v) => v.id === initVariant);
+      applyVariant(startIdx >= 0 ? startIdx : 0);
+    </script>
+  </body>
+</html>
+
+<!--
+═══════════════════════════════════════════════════════════════
+ DESIGN DECISION — PaperForge Control Center Overview
+ Date: 2026-07-20
+ Question: "How should the Control Center Overview look?"
+ Status: APPROVED — Variant A / kami. Variants B and C are retained as non-contract historical exploration only.
+═══════════════════════════════════════════════════════════════
+
+Three variants tested at 1280px and 768px:
+
+┌───────┬─────────────────┬──────────────────────────────────┐
+│ Label │ Design System   │ Structure                        │
+├───────┼─────────────────┼──────────────────────────────────┤
+│ A ★   │ kami (紙)       │ Single-column editorial, serif-  │
+│       │                 │ led, ink-blue section numbers,   │
+│       │                 │ warm parchment background        │
+├───────┼─────────────────┼──────────────────────────────────┤
+│ B     │ claude          │ Alternating light/dark zones,    │
+│       │                 │ terracotta accent, ring shadows  │
+├───────┼─────────────────┼──────────────────────────────────┤
+│ C     │ notion          │ 2-column card grid, whisper      │
+│       │                 │ borders, pill badges, blue CTA   │
+└───────┴─────────────────┴──────────────────────────────────┘
+
+RECOMMENDATION: Variant A (kami)
+- Best fit for "literature pipeline" identity
+- Editorial warmth differentiates from generic plugin UIs
+- Single-column avoids cramped card grids in Obsidian's
+  settings panel (solves current overflow problems)
+- Ink-blue single-accent works in both light and dark themes
+  when mapped to Obsidian CSS variables
+
+RISKS per variant:
+- A: serif fonts may not be available on all systems →
+  fall back to Georgia / system serif stack
+- B: dark/light alternation breaks in Obsidian dark themes →
+  zones need per-theme color mapping
+- C: too close to current design → won't solve the
+  "UX and UI are very mediocre" problem
+
+Open: file:///D:/.../prototypes/control-center-variants.html
+Switch: ← → keys | click arrows | ?variant=a|b|c
+-->

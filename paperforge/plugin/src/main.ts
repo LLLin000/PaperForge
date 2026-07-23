@@ -4,6 +4,7 @@ import * as path from "path";
 import { execFile, exec, spawn } from "child_process";
 import {
   VIEW_TYPE_PAPERFORGE,
+  VIEW_TYPE_OCR_WORKSPACE,
   PF_ICON_ID,
   PF_RIBBON_SVG,
   ACTIONS,
@@ -13,6 +14,7 @@ import {
 import { t, setLanguage } from "./i18n";
 import { PaperForgeSettingTab } from "./settings";
 import { PaperForgeStatusView } from "./views/dashboard";
+import { OcrWorkspaceView } from "./views/ocr-workspace";
 import {
   paperforgeEnrichedEnv,
   buildTargetedEnv,
@@ -73,6 +75,11 @@ export default class PaperForgePlugin extends Plugin {
     this.registerView(
       VIEW_TYPE_PAPERFORGE,
       (leaf) => new PaperForgeStatusView(leaf)
+    );
+
+    this.registerView(
+      VIEW_TYPE_OCR_WORKSPACE,
+      (leaf) => new OcrWorkspaceView(leaf, this)
     );
 
     try {

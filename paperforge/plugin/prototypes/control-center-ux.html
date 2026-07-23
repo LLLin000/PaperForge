@@ -1,0 +1,1258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PaperForge Control Center — UX Prototype</title>
+    <style>
+      :root {
+        --page: #f5f4ed;
+        --ivory: #faf9f5;
+        --sand: #e8e6dc;
+        --ink: #1b365d;
+        --near-black: #141413;
+        --dark-warm: #3d3d3a;
+        --olive: #504e49;
+        --stone: #6b6a64;
+        --stone-light: #87867f;
+        --border: #e8e6dc;
+        --border-soft: #e5e3d8;
+        --tag-bg: #e4ecf5;
+        --warn-bg: #fdf0e6;
+        --warn-text: #a84f18;
+        --danger-bg: #fef0f0;
+        --danger-text: #a92f2f;
+        --success: #4f7654;
+        --serif: Charter, Georgia, serif;
+        --mono: "JetBrains Mono", Consolas, monospace;
+        --radius: 8px;
+        --ring: 0 0 0 1px var(--border);
+        --focus: 0 0 0 2px var(--page), 0 0 0 4px var(--ink);
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        background: var(--page);
+      }
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--near-black);
+        font-family: var(--serif);
+        font-weight: 400;
+        min-height: 100vh;
+      }
+      button,
+      select {
+        font: inherit;
+      }
+      button {
+        color: inherit;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      select:focus-visible,
+      summary:focus-visible {
+        outline: none;
+        box-shadow: var(--focus);
+      }
+      .shell {
+        width: min(100% - 32px, 880px);
+        margin: 0 auto;
+        padding: 32px 0 80px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 0 0 20px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 40px;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        min-width: max-content;
+      }
+      .top-tabs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .brand strong {
+        font: 500 15px/1.2 var(--serif);
+      }
+      .brand span {
+        font: 400 11px/1 var(--mono);
+        color: var(--stone);
+      }
+      .topnav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+      }
+      .topnav button,
+      .topnav a {
+        border: 0;
+        background: transparent;
+        border-radius: 4px;
+        padding: 8px 12px;
+        color: var(--stone);
+        font: 500 12px/1 var(--serif);
+        text-decoration: none;
+        cursor: pointer;
+        transition:
+          background 120ms ease-out,
+          color 120ms ease-out,
+          transform 120ms ease-out;
+      }
+      .topnav button:hover,
+      .topnav a:hover {
+        background: var(--ivory);
+        color: var(--near-black);
+      }
+      .topnav button:active,
+      .topnav a:active {
+        transform: translateY(1px);
+      }
+      .topnav button[aria-selected="true"] {
+        background: var(--sand);
+        color: var(--ink);
+      }
+      .workspace-link {
+        margin-left: 8px !important;
+        border-left: 1px solid var(--border) !important;
+        padding-left: 16px !important;
+        color: var(--ink) !important;
+      }
+      .page {
+        display: none;
+        max-width: 760px;
+      }
+      .page.active {
+        display: block;
+      }
+      h1 {
+        font: 500 32px/1.15 var(--serif);
+        letter-spacing: -0.3px;
+        margin: 0 0 12px;
+      }
+      h2 {
+        font: 500 22px/1.25 var(--serif);
+        margin: 0 0 8px;
+      }
+      h3 {
+        font: 500 16px/1.3 var(--serif);
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 0;
+      }
+      .lede {
+        max-width: 620px;
+        color: var(--olive);
+        font: 400 15px/1.55 var(--serif);
+        margin-bottom: 28px;
+      }
+      .eyebrow {
+        color: var(--stone);
+        font: 500 11px/1 var(--serif);
+        letter-spacing: 0.8px;
+        text-transform: lowercase;
+        margin-bottom: 8px;
+      }
+      .caption {
+        color: var(--stone);
+        font: 400 12px/1.45 var(--serif);
+      }
+      .mono {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 20px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font: 500 11px/1 var(--serif);
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .badge.ready {
+        background: var(--tag-bg);
+        color: var(--ink);
+      }
+      .badge.action {
+        background: var(--warn-bg);
+        color: var(--warn-text);
+      }
+      .badge.neutral {
+        background: var(--sand);
+        color: var(--stone);
+      }
+      .badge.checking {
+        background: var(--tag-bg);
+        color: var(--ink);
+      }
+      .summary {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        background: var(--ivory);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 32px;
+        box-shadow: var(--ring);
+      }
+      .summary-main {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .summary-copy strong {
+        display: block;
+        font: 500 15px/1.3 var(--serif);
+        margin-bottom: 4px;
+      }
+      .summary-meta {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: var(--stone);
+        font: 400 12px/1.4 var(--serif);
+      }
+      .summary-meta strong {
+        color: var(--near-black);
+        font-weight: 500;
+      }
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 4px;
+      }
+      .module-list {
+        border-top: 1px solid var(--border-soft);
+      }
+      .module-card {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: start;
+        border: 0;
+        border-bottom: 1px solid var(--border-soft);
+        background: transparent;
+        text-align: left;
+        padding: 16px 0;
+        cursor: pointer;
+        transition:
+          background 120ms ease-out,
+          transform 120ms ease-out;
+      }
+      .module-card:hover {
+        background: var(--ivory);
+      }
+      .module-card:active {
+        transform: translateY(1px);
+      }
+      .module-card .num {
+        padding-top: 2px;
+        color: var(--ink);
+        font: 500 12px/1 var(--mono);
+      }
+      .module-card .name {
+        display: block;
+        font: 500 15px/1.3 var(--serif);
+        margin-bottom: 4px;
+      }
+      .module-card .sentence {
+        display: block;
+        color: var(--stone);
+        font: 400 12px/1.45 var(--serif);
+      }
+      .module-card .consequence {
+        display: block;
+        color: var(--warn-text);
+        font: 500 12px/1.45 var(--serif);
+        margin-top: 4px;
+      }
+      .module-card .metric {
+        display: block;
+        color: var(--stone);
+        font: 400 11px/1.35 var(--mono);
+        margin-top: 8px;
+      }
+      .module-card .meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-top: 2px;
+      }
+      .module-card .arrow {
+        color: var(--stone);
+        font-size: 16px;
+      }
+      .btn {
+        min-height: 32px;
+        padding: 8px 16px;
+        border: 0;
+        border-radius: var(--radius);
+        cursor: pointer;
+        font: 500 12px/1 var(--serif);
+        letter-spacing: 0.2px;
+        text-decoration: none;
+        transition:
+          opacity 120ms ease-out,
+          transform 120ms ease-out,
+          background 120ms ease-out;
+      }
+      .btn:hover {
+        opacity: 0.88;
+      }
+      .btn:active {
+        transform: translateY(1px);
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .btn-primary {
+        background: var(--ink);
+        color: var(--ivory);
+        box-shadow: 0 0 0 1px var(--ink);
+      }
+      .btn-secondary {
+        background: var(--sand);
+        color: var(--dark-warm);
+        box-shadow: var(--ring);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--ink);
+        box-shadow: 0 0 0 1px var(--ink);
+      }
+      .btn-warning {
+        background: var(--warn-bg);
+        color: var(--warn-text);
+        box-shadow: 0 0 0 1px var(--warn-text);
+      }
+      .back {
+        border: 0;
+        background: transparent;
+        color: var(--ink);
+        padding: 0;
+        margin: 0 0 20px;
+        cursor: pointer;
+        font: 500 12px/1 var(--serif);
+      }
+      .module-switcher {
+        display: flex;
+        gap: 4px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 28px;
+      }
+      .module-switcher button {
+        flex: 1;
+        border: 0;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--stone);
+        padding: 8px 6px;
+        cursor: pointer;
+        font: 500 11px/1.2 var(--serif);
+        transition:
+          background 120ms ease-out,
+          color 120ms ease-out;
+      }
+      .module-switcher button:hover {
+        background: var(--ivory);
+        color: var(--near-black);
+      }
+      .module-switcher button[aria-selected="true"] {
+        background: var(--sand);
+        color: var(--ink);
+      }
+      .module-select {
+        display: none;
+        width: 100%;
+        min-height: 36px;
+        margin-bottom: 24px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--ivory);
+        color: var(--near-black);
+      }
+      .module-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .module-heading .summary-line {
+        color: var(--olive);
+        font: 400 14px/1.5 var(--serif);
+        margin-top: 6px;
+        max-width: 560px;
+      }
+      .module-body {
+        margin-top: 20px;
+      }
+      .config {
+        background: var(--ivory);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 4px 20px;
+        margin: 20px 0;
+        box-shadow: var(--ring);
+      }
+      .config-row {
+        display: grid;
+        grid-template-columns: 160px minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .config-row:last-child {
+        border-bottom: 0;
+      }
+      .config-row .key {
+        font: 500 13px/1.3 var(--serif);
+        color: var(--dark-warm);
+      }
+      .config-row .value {
+        font: 400 12px/1.45 var(--mono);
+        overflow-wrap: anywhere;
+      }
+      .config-row .explain {
+        grid-column: 2 / -1;
+        color: var(--stone);
+        font: 400 12px/1.45 var(--serif);
+        margin-top: -8px;
+      }
+      .info,
+      .impact {
+        border-left: 2px solid var(--ink);
+        background: var(--tag-bg);
+        border-radius: 0 4px 4px 0;
+        padding: 12px 16px;
+        margin: 16px 0;
+      }
+      .impact {
+        border-left-color: var(--warn-text);
+        background: var(--warn-bg);
+      }
+      .info strong,
+      .impact strong {
+        display: block;
+        color: var(--ink);
+        font: 500 11px/1 var(--serif);
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .impact strong {
+        color: var(--warn-text);
+      }
+      .info p,
+      .impact p {
+        color: var(--dark-warm);
+        font: 400 13px/1.5 var(--serif);
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+      .support {
+        margin-top: 32px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-soft);
+      }
+      .progress-shell {
+        margin: 20px 0;
+      }
+      .progress-track {
+        height: 4px;
+        overflow: hidden;
+        border-radius: 2px;
+        background: var(--sand);
+      }
+      .progress-fill {
+        width: 100%;
+        height: 100%;
+        background: var(--ink);
+        transform: scaleX(0.25);
+        transform-origin: left;
+        transition: transform 180ms ease-in-out;
+      }
+      .progress-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 8px;
+        color: var(--stone);
+        font: 400 12px/1.4 var(--serif);
+      }
+      .task-list {
+        border-top: 1px solid var(--border-soft);
+        margin: 20px 0 28px;
+      }
+      .task-link {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        width: 100%;
+        padding: 16px 0;
+        border: 0;
+        border-bottom: 1px solid var(--border-soft);
+        background: transparent;
+        text-align: left;
+        cursor: pointer;
+      }
+      .task-link strong {
+        font: 500 14px/1.3 var(--serif);
+      }
+      .task-link span {
+        display: block;
+        color: var(--stone);
+        font: 400 12px/1.45 var(--serif);
+        margin-top: 4px;
+      }
+      details {
+        margin-top: 16px;
+      }
+      summary {
+        color: var(--ink);
+        cursor: pointer;
+        font: 500 12px/1.4 var(--serif);
+      }
+      dialog {
+        width: min(100% - 32px, 520px);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--ivory);
+        color: var(--near-black);
+        padding: 28px;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.34);
+      }
+      dialog h2 {
+        font-size: 20px;
+      }
+      dialog .scope {
+        color: var(--olive);
+        font: 400 13px/1.5 var(--serif);
+        margin-top: 8px;
+      }
+      .prototype-panel {
+        max-width: 760px;
+        margin-top: 48px;
+        padding-top: 20px;
+        border-top: 1px dashed var(--border);
+        color: var(--stone);
+      }
+      .prototype-panel summary {
+        color: var(--stone);
+      }
+      .prototype-panel .state-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .prototype-panel button {
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--ivory);
+        padding: 6px 8px;
+        color: var(--stone);
+        cursor: pointer;
+        font: 500 11px/1 var(--serif);
+      }
+      @media (max-width: 620px) {
+        .shell {
+          width: min(100% - 24px, 880px);
+          padding-top: 20px;
+        }
+        .topbar {
+          align-items: flex-start;
+          gap: 16px;
+          margin-bottom: 28px;
+          padding-bottom: 16px;
+        }
+        .topnav {
+          gap: 0;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        .workspace-link {
+          width: 100%;
+          text-align: right;
+          border-left: 0 !important;
+          margin-left: 0 !important;
+          padding-left: 12px !important;
+        }
+        h1 {
+          font-size: 28px;
+        }
+        .summary {
+          grid-template-columns: 1fr;
+        }
+        .summary-meta {
+          justify-content: space-between;
+          flex-wrap: wrap;
+        }
+        .section-head {
+          display: block;
+        }
+        .section-head > .caption {
+          display: block;
+          margin-top: 8px;
+        }
+        .module-card {
+          grid-template-columns: 28px minmax(0, 1fr);
+        }
+        .module-card .meta {
+          grid-column: 2;
+          justify-content: space-between;
+          padding-top: 8px;
+        }
+        .module-switcher {
+          display: none;
+        }
+        .module-select {
+          display: block;
+        }
+        .module-heading {
+          display: block;
+        }
+        .module-heading .badge {
+          margin-top: 12px;
+        }
+        .config-row {
+          grid-template-columns: 1fr auto;
+        }
+        .config-row .value {
+          grid-column: 1 / -1;
+        }
+        .config-row .explain {
+          grid-column: 1 / -1;
+          margin-top: -4px;
+        }
+        .actions .btn {
+          flex: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand"><strong>PaperForge</strong><span>v1.5.15</span></div>
+        <nav class="topnav" aria-label="Control Center">
+          <div
+            class="top-tabs"
+            role="tablist"
+            aria-label="Control Center pages"
+          >
+            <button
+              id="tab-overview"
+              type="button"
+              role="tab"
+              data-page="overview"
+              aria-controls="page-overview"
+              aria-selected="true"
+              tabindex="0"
+            >
+              Overview
+            </button>
+            <button
+              id="tab-help"
+              type="button"
+              role="tab"
+              data-page="help"
+              aria-controls="page-help"
+              aria-selected="false"
+              tabindex="-1"
+            >
+              Help
+            </button>
+          </div>
+          <a class="workspace-link" href="ocr-workspace.html"
+            >OCR Workspace ↗</a
+          >
+        </nav>
+      </header>
+
+      <main>
+        <section
+          class="page active"
+          id="page-overview"
+          role="tabpanel"
+          aria-labelledby="tab-overview"
+        >
+          <div class="eyebrow">control center</div>
+          <h1 id="overview-title">Your literature pipeline</h1>
+          <p class="lede">
+            See what is working, what needs you, and the single next action for
+            every PaperForge capability.
+          </p>
+
+          <div
+            class="summary"
+            id="global-summary"
+            role="status"
+            aria-live="polite"
+          >
+            <div class="summary-main">
+              <span class="badge ready" id="global-badge">Ready</span>
+              <div class="summary-copy">
+                <strong id="global-title">Core pipeline is operational</strong>
+                <span class="caption" id="global-copy"
+                  >Foundation and Library are ready. One enabled optional module
+                  needs attention.</span
+                >
+              </div>
+            </div>
+            <div class="summary-meta">
+              <span><strong>1</strong> item needs attention</span>
+              <span>Checked just now</span>
+              <button
+                class="btn btn-secondary"
+                type="button"
+                id="refresh-status"
+              >
+                Refresh status
+              </button>
+            </div>
+          </div>
+
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">modules</div>
+              <h2>Five capabilities</h2>
+            </div>
+            <span class="caption"
+              >Optional modules do not affect core readiness.</span
+            >
+          </div>
+          <div class="module-list" id="module-list"></div>
+        </section>
+
+        <section class="page" id="page-module" aria-labelledby="module-title">
+          <button class="back" type="button" id="back-overview">
+            ← Overview
+          </button>
+          <div
+            class="module-switcher"
+            role="tablist"
+            aria-label="PaperForge modules"
+            id="module-switcher"
+          ></div>
+          <label class="eyebrow" for="module-select">module</label>
+          <select
+            class="module-select"
+            id="module-select"
+            aria-label="Select module"
+          ></select>
+          <div id="module-content" role="tabpanel"></div>
+        </section>
+
+        <section
+          class="page"
+          id="page-help"
+          role="tabpanel"
+          aria-labelledby="tab-help"
+        >
+          <div class="eyebrow">help</div>
+          <h1 id="help-title">Start with the task</h1>
+          <p class="lede">
+            Open the relevant module, or copy a privacy-safe diagnostic when
+            support asks for one.
+          </p>
+          <div class="task-list">
+            <button class="task-link" type="button" data-module="library">
+              <span
+                ><strong>Connect Zotero and sync papers</strong
+                ><span
+                  >Library connection, vault folders, and the latest sync
+                  result.</span
+                ></span
+              ><b>→</b>
+            </button>
+            <button class="task-link" type="button" data-module="ocr">
+              <span
+                ><strong>Process PDFs with OCR</strong
+                ><span
+                  >See processed papers, available updates, and active
+                  progress.</span
+                ></span
+              ><b>→</b>
+            </button>
+            <button class="task-link" type="button" data-module="memory">
+              <span
+                ><strong>Restore Smart Retrieval</strong
+                ><span
+                  >Recover an unavailable search index without exposing backend
+                  terms.</span
+                ></span
+              ><b>→</b>
+            </button>
+            <button class="task-link" type="button" data-module="agent">
+              <span
+                ><strong>Connect an agent platform</strong
+                ><span
+                  >Choose a supported platform and deploy PaperForge
+                  Skills.</span
+                ></span
+              ><b>→</b>
+            </button>
+          </div>
+          <h2>Support diagnostic</h2>
+          <p class="caption">
+            Includes module states and version identifiers. It never includes
+            secrets, paper text, or PDF content.
+          </p>
+          <div class="actions">
+            <button
+              class="btn btn-secondary"
+              type="button"
+              id="copy-diagnostic-help"
+            >
+              Copy diagnostic information
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <details class="prototype-panel">
+        <summary>Prototype states</summary>
+        <p class="caption">
+          Preview target states. Production values come from probe envelopes and
+          progress events.
+        </p>
+        <div class="state-buttons">
+          <button type="button" data-ocr-state="ready">OCR ready</button>
+          <button type="button" data-ocr-state="update">
+            OCR update available
+          </button>
+          <button type="button" data-ocr-state="running">OCR processing</button>
+          <button type="button" data-global-state="refreshing">
+            Global refreshing
+          </button>
+          <button type="button" data-global-state="failed">
+            Global refresh failed
+          </button>
+        </div>
+      </details>
+    </div>
+
+    <dialog id="update-dialog" aria-labelledby="update-title">
+      <h2 id="update-title">Update OCR for 12 papers?</h2>
+      <p class="scope">
+        PaperForge will replace derived OCR text with pipeline v2.4 output.
+        PaddleOCR API charges may apply.
+      </p>
+      <div class="info">
+        <strong>Preserved</strong>
+        <p>
+          Original PDFs stay untouched. A snapshot of each current fulltext is
+          saved before replacement.
+        </p>
+      </div>
+      <div class="impact">
+        <strong>Interruptible</strong>
+        <p>
+          You may stop safely. Completed papers remain updated; unfinished
+          papers keep their previous output.
+        </p>
+      </div>
+      <div class="actions" style="justify-content: flex-end">
+        <button class="btn btn-secondary" type="button" id="cancel-update">
+          Cancel
+        </button>
+        <button class="btn btn-warning" type="button" id="confirm-update">
+          Update 12 papers
+        </button>
+      </div>
+    </dialog>
+
+    <script>
+      const modules = [
+        {
+          id: "foundation",
+          number: "01",
+          name: "Foundation",
+          status: "ready",
+          badge: "Ready",
+          sentence: "PaperForge can run on this device.",
+          metric: "v1.5.15 · Python 3.12",
+          summary: "The managed runtime is installed and verified.",
+          rows: [
+            ["Version", "1.5.15"],
+            ["Runtime", "Python 3.12"],
+            ["Environment", "Managed by PaperForge"],
+            ["Last verified", "Just now"],
+          ],
+        },
+        {
+          id: "library",
+          number: "02",
+          name: "Library",
+          status: "ready",
+          badge: "Ready",
+          sentence: "Your Zotero library is connected and current.",
+          metric: "12 papers · 4 vault folders",
+          summary:
+            "PaperForge can read Zotero and write to the configured vault folders.",
+          rows: [
+            ["Zotero directory", "D:\\L\\Med\\Research\\99_System\\Zotero"],
+            ["Vault folders", "System, Literature, Resources, Bases"],
+            ["Last sync", "Jul 22, 14:06"],
+          ],
+          action: "Sync library",
+        },
+        {
+          id: "ocr",
+          number: "03",
+          name: "OCR Engine",
+          status: "action",
+          badge: "Action Required",
+          sentence: "OCR v2.4 is available for processed papers.",
+          consequence:
+            "12 papers can be updated; existing text is backed up first.",
+          metric: "12 processed · current pipeline v2.4",
+          summary: "All papers have text. A newer OCR pipeline is available.",
+          action: "Update all papers",
+        },
+        {
+          id: "memory",
+          number: "04",
+          name: "Smart Retrieval",
+          status: "action",
+          badge: "Action Required",
+          sentence: "The retrieval index is unavailable.",
+          consequence:
+            "Search may miss papers until the latest backup is restored.",
+          metric: "Last healthy backup · Jul 21",
+          summary:
+            "Paper text is safe, but semantic retrieval cannot be trusted until recovery completes.",
+          action: "Restore from backup",
+        },
+        {
+          id: "agent",
+          number: "05",
+          name: "Agent Integration",
+          status: "neutral",
+          badge: "Not Enabled",
+          sentence: "No agent platform has been configured.",
+          metric: "Optional · core pipeline unaffected",
+          summary:
+            "Agent Skills are optional and do not affect reading, OCR, or Library sync.",
+          action: "Configure agent integration",
+        },
+      ];
+      const badgeClass = {
+        ready: "ready",
+        action: "action",
+        neutral: "neutral",
+        checking: "checking",
+      };
+      let selectedModule = "foundation";
+      let ocrState = "update";
+      let lastInvoker = null;
+      const moduleList = document.getElementById("module-list");
+      const switcher = document.getElementById("module-switcher");
+      const select = document.getElementById("module-select");
+      const dialog = document.getElementById("update-dialog");
+
+      function badge(m) {
+        return `<span class="badge ${badgeClass[m.status]}">${m.badge}</span>`;
+      }
+      function renderOverview() {
+        moduleList.innerHTML = modules
+          .map(
+            (m) =>
+              `<button type="button" class="module-card" data-module="${m.id}" aria-label="${m.name}, ${m.badge}"><span class="num">${m.number}</span><span><span class="name">${m.name}</span><span class="sentence">${m.sentence}</span>${m.consequence ? `<span class="consequence">${m.consequence}</span>` : ""}<span class="metric">${m.metric}</span></span><span class="meta">${badge(m)}<span class="arrow" aria-hidden="true">→</span></span></button>`
+          )
+          .join("");
+      }
+      function renderSwitcher() {
+        switcher.innerHTML = modules
+          .map(
+            (m) =>
+              `<button type="button" role="tab" data-module="${m.id}" aria-controls="module-content" aria-selected="${m.id === selectedModule}" tabindex="${m.id === selectedModule ? "0" : "-1"}">${m.name}</button>`
+          )
+          .join("");
+        select.innerHTML = modules
+          .map(
+            (m) =>
+              `<option value="${m.id}" ${m.id === selectedModule ? "selected" : ""}>${m.name}</option>`
+          )
+          .join("");
+      }
+      function configRows(rows, change) {
+        return `<div class="config">${rows.map((r, i) => `<div class="config-row"><span class="key">${r[0]}</span><span class="value">${r[1]}</span>${change && i === 0 ? '<button class="btn btn-secondary" type="button">Change</button>' : ""}</div>`).join("")}</div>`;
+      }
+      function renderOcr(m) {
+        if (ocrState === "ready")
+          return `<div class="module-heading"><div><div class="eyebrow">module status</div><h1 id="module-title">OCR Engine</h1><p class="summary-line">12 papers have processed text with OCR v2.4.</p></div><span class="badge ready">Ready</span></div>${configRows(
+            [
+              ["Processed papers", "12 of 12"],
+              ["OCR pipeline", "v2.4"],
+              ["Last completed", "Jul 22, 14:08"],
+            ]
+          )}<div class="actions"><a class="btn btn-secondary" href="ocr-workspace.html">Open OCR Workspace</a></div>${supportBlock()}`;
+        if (ocrState === "running")
+          return `<div class="module-heading"><div><div class="eyebrow">module activity</div><h1 id="module-title">Updating OCR</h1><p class="summary-line">Paper 3 of 12 · Deep Learning Approaches to Histopathology Image Segmentation</p></div><span class="badge checking">Checking</span></div><div class="progress-shell" role="progressbar" aria-label="OCR update progress" aria-valuemin="0" aria-valuemax="12" aria-valuenow="3"><div class="progress-track"><div class="progress-fill"></div></div><div class="progress-meta"><span>3 of 12 papers</span><span>25%</span></div></div><div class="info"><strong>Safe to stop</strong><p>Completed papers remain updated. Unfinished papers keep their previous output.</p></div><div class="actions"><button class="btn btn-ghost" type="button" id="stop-ocr">Stop</button></div>${supportBlock()}`;
+        if (ocrState === "stopped")
+          return `<div class="module-heading"><div><div class="eyebrow">module activity</div><h1 id="module-title">Processing stopped</h1><p class="summary-line">Stopped at 3 of 12 papers. Completed papers use OCR v2.4; the remaining 9 keep their previous text.</p></div><span class="badge action">Action Required</span></div><div class="info"><strong>Nothing was discarded</strong><p>You can continue updating the remaining papers when ready.</p></div><div class="actions"><button class="btn btn-warning" type="button" id="open-update">Continue updating</button><a class="btn btn-secondary" href="ocr-workspace.html">Open OCR Workspace</a></div>${supportBlock()}`;
+        return `<div class="module-heading"><div><div class="eyebrow">module status</div><h1 id="module-title">OCR Engine</h1><p class="summary-line">OCR v2.4 is available for 12 papers processed with v2.3.</p></div><span class="badge action">Action Required</span></div><div class="impact"><strong>What changes</strong><p>Derived OCR text is replaced using the latest pipeline. Notes and original PDFs are not changed.</p></div><div class="info"><strong>Safety and cost</strong><p>Current fulltext is backed up before replacement. PaddleOCR API charges may apply.</p></div>${configRows(
+          [
+            ["Current pipeline", "v2.4"],
+            ["Papers on v2.3", "12"],
+            ["Estimated scope", "12 papers"],
+          ]
+        )}<div class="actions"><button class="btn btn-warning" type="button" id="open-update">Update all papers</button><a class="btn btn-secondary" href="ocr-workspace.html">Open OCR Workspace</a></div>${supportBlock()}`;
+      }
+      function supportBlock() {
+        return `<div class="support"><div class="eyebrow">support</div><button class="btn btn-secondary copy-diagnostic" type="button">Copy diagnostic information</button></div>`;
+      }
+      function renderModule() {
+        const m = modules.find((x) => x.id === selectedModule);
+        renderSwitcher();
+        if (m.id === "ocr") {
+          document.getElementById("module-content").innerHTML = renderOcr(m);
+          return;
+        }
+        let custom = "";
+        if (m.id === "memory")
+          custom = `<div class="impact"><strong>What is affected</strong><p>Semantic search and agent retrieval may omit papers. Your notes, PDFs, and OCR text are safe.</p></div><div class="info"><strong>Next</strong><p>Restore the last healthy index backup from Jul 21.</p></div><details><summary>Other recovery option</summary><p class="caption" style="margin-top:8px">Rebuild the index only if no usable backup exists. Rebuilding may use your embedding API.</p></details>`;
+        if (m.id === "agent")
+          custom = `<div class="info"><strong>Optional capability</strong><p>Choose a supported agent platform only if you want PaperForge Skills deployed there.</p></div>`;
+        document.getElementById("module-content").innerHTML =
+          `<div class="module-heading"><div><div class="eyebrow">module status</div><h1 id="module-title">${m.name}</h1><p class="summary-line">${m.summary}</p></div>${badge(m)}</div>${custom}${configRows(
+            m.rows || [
+              ["Platform", "Not configured"],
+              ["Skills directory", "Managed by PaperForge"],
+            ],
+            m.id === "library"
+          )}${m.action ? `<div class="actions"><button class="btn ${m.status === "action" ? "btn-warning" : "btn-primary"}" type="button" data-action="${m.id}">${m.action}</button></div>` : ""}${supportBlock()}`;
+      }
+      function showPage(page) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById(`page-${page}`).classList.add("active");
+        document.querySelectorAll(".topnav button[data-page]").forEach((b) => {
+          const active = b.dataset.page === page;
+          b.setAttribute("aria-selected", String(active));
+          b.tabIndex = active ? 0 : -1;
+        });
+        history.replaceState(
+          null,
+          "",
+          `#${page === "module" ? selectedModule : page}`
+        );
+      }
+      function openModule(id, invoker) {
+        selectedModule = id;
+        lastInvoker = invoker || null;
+        renderModule();
+        showPage("module");
+        const title = document.getElementById("module-title");
+        title.tabIndex = -1;
+        title.focus();
+      }
+      function setOcrState(state) {
+        ocrState = state;
+        const m = modules.find((x) => x.id === "ocr");
+        if (state === "ready")
+          Object.assign(m, {
+            status: "ready",
+            badge: "Ready",
+            sentence: "All 12 papers have current processed text.",
+            consequence: "",
+            metric: "12 processed · OCR v2.4",
+          });
+        else if (state === "running")
+          Object.assign(m, {
+            status: "checking",
+            badge: "Checking",
+            sentence: "Updating paper 3 of 12.",
+            consequence: "",
+            metric: "25% complete",
+          });
+        else if (state === "stopped")
+          Object.assign(m, {
+            status: "action",
+            badge: "Action Required",
+            sentence: "Processing stopped at 3 of 12 papers.",
+            consequence:
+              "9 papers can still be updated; their previous text remains available.",
+            metric: "3 updated · 9 remaining",
+          });
+        else
+          Object.assign(m, {
+            status: "action",
+            badge: "Action Required",
+            sentence: "OCR v2.4 is available for processed papers.",
+            consequence:
+              "12 papers can be updated; existing text is backed up first.",
+            metric: "12 processed · current pipeline v2.4",
+          });
+        renderOverview();
+        if (
+          selectedModule === "ocr" &&
+          document.getElementById("page-module").classList.contains("active")
+        )
+          renderModule();
+      }
+      function setGlobalState(state) {
+        const badge = document.getElementById("global-badge"),
+          title = document.getElementById("global-title"),
+          copy = document.getElementById("global-copy"),
+          refresh = document.getElementById("refresh-status");
+        if (state === "refreshing") {
+          badge.className = "badge checking";
+          badge.textContent = "Checking";
+          title.textContent = "Refreshing module status";
+          copy.textContent =
+            "The last known result remains visible while PaperForge checks each module.";
+          refresh.disabled = true;
+          setTimeout(() => setGlobalState("ready"), 900);
+        } else if (state === "failed") {
+          badge.className = "badge action";
+          badge.textContent = "Detection Failed";
+          title.textContent = "Status could not be refreshed";
+          copy.textContent =
+            "Last known result: core pipeline operational. Try again or copy diagnostic information.";
+          refresh.disabled = false;
+        } else {
+          badge.className = "badge ready";
+          badge.textContent = "Ready";
+          title.textContent = "Core pipeline is operational";
+          copy.textContent =
+            "Foundation and Library are ready. One enabled optional module needs attention.";
+          refresh.disabled = false;
+        }
+      }
+
+      document.addEventListener("click", (e) => {
+        const top = e.target.closest("[data-page]");
+        if (top) {
+          showPage(top.dataset.page);
+          return;
+        }
+        const moduleButton = e.target.closest("[data-module]");
+        if (moduleButton) {
+          openModule(moduleButton.dataset.module, moduleButton);
+          return;
+        }
+        if (e.target.closest("#back-overview")) {
+          showPage("overview");
+          lastInvoker?.focus();
+          return;
+        }
+        if (e.target.closest("#refresh-status")) {
+          setGlobalState("refreshing");
+          return;
+        }
+        if (e.target.closest("#open-update")) {
+          lastInvoker = e.target.closest("#open-update");
+          dialog.showModal();
+          document.getElementById("cancel-update").focus();
+          return;
+        }
+        if (e.target.closest("#cancel-update")) {
+          dialog.close();
+          lastInvoker?.focus();
+          return;
+        }
+        if (e.target.closest("#confirm-update")) {
+          dialog.close();
+          setOcrState("running");
+          renderModule();
+          return;
+        }
+        if (e.target.closest("#stop-ocr")) {
+          setOcrState("stopped");
+          return;
+        }
+        if (e.target.closest("[data-ocr-state]")) {
+          setOcrState(e.target.closest("[data-ocr-state]").dataset.ocrState);
+          return;
+        }
+        if (e.target.closest("[data-global-state]")) {
+          setGlobalState(
+            e.target.closest("[data-global-state]").dataset.globalState
+          );
+          return;
+        }
+        if (
+          e.target.closest(".copy-diagnostic") ||
+          e.target.closest("#copy-diagnostic-help")
+        ) {
+          e.target.textContent = "Copied";
+          setTimeout(
+            () => (e.target.textContent = "Copy diagnostic information"),
+            900
+          );
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        const current = e.target.closest('[role="tab"]');
+        if (!current) return;
+        const tabs = [
+          ...current
+            .closest('[role="tablist"]')
+            .querySelectorAll('[role="tab"]'),
+        ];
+        let index = tabs.indexOf(current);
+        if (e.key === "ArrowRight") index = (index + 1) % tabs.length;
+        else if (e.key === "ArrowLeft")
+          index = (index - 1 + tabs.length) % tabs.length;
+        else if (e.key === "Home") index = 0;
+        else if (e.key === "End") index = tabs.length - 1;
+        else return;
+        e.preventDefault();
+        tabs[index].focus();
+        tabs[index].click();
+      });
+      select.addEventListener("change", () => openModule(select.value, select));
+      dialog.addEventListener("close", () => lastInvoker?.focus());
+      renderOverview();
+      const initial = location.hash.slice(1);
+      if (modules.some((m) => m.id === initial)) openModule(initial);
+      else showPage(initial === "help" ? "help" : "overview");
+    </script>
+  </body>
+</html>
