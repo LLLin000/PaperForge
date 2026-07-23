@@ -220,3 +220,45 @@ def test_redo_does_not_call_derived_rebuild() -> None:
     from paperforge.worker.ocr_rebuild import select_papers_for_derived_rebuild
 
     assert select_papers_for_derived_rebuild is not None
+
+
+# ---------------------------------------------------------------------------
+# Issue #99: redo backup safety
+# ---------------------------------------------------------------------------
+
+class TestRedoBackupSafety:
+    """Verify redo creates backup before deletion and restores on failure."""
+
+    def test_redo_backup_preserves_artifacts_on_failure(self, tmp_path: Path) -> None:
+        """Redo failure restores original OCR output instead of leaving nothing."""
+        vault, ocr_root, exports, lit_dir = _make_vault(tmp_path)
+
+        key = "BACKUP01"
+        meta = _make_ocr_meta(ocr_root, key, status="done")
+        note_path = _make_library_note(lit_dir, key, ocr_redo=True, ocr_status="done")
+
+        # Create some artifacts that would exist in a real OCR output
+        paper_dir = ocr_root / key
+        (paper_dir / "fulltext.md").write_text("# Original Fulltext\n\nOld content.", encoding="utf-8")
+        render_dir = paper_dir / "render"
+        render_dir.mkdir()
+        (render_dir / "fulltext.md").write_text("# Original Render", encoding="utf-8")
+        images_dir = paper_dir / "images"
+        # images/ may already exist from _make_ocr_meta
+
+        from paperforge.worker.ocr import redo_papers_for_keys
+        # Simulate failed redo: OCR runs but produces no valid output (no done status)
+        # rmtree happens first, then run_ocr "fails", and we should restore backup
+        from unittest.mock import patch
+        with patch("paperforge.worker.ocr.run_ocr", return_value=1):  # failure
+            result = redo_papers_for_keys(
+                vault, keys=[key], verbose=False,
+            )
+
+        assert result["exit_code"] == 1
+        assert key in result["failed_keys"]
+
+        # After failure, backup should be restored — original artifacts should exist
+        assert (paper_dir / "fulltext.md").exists(), "fulltext.md should be restored from backup"
+        assert (paper_dir / "images").exists(), "images/ should be restored from backup"
+

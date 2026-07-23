@@ -9,7 +9,6 @@ from paperforge.embedding._chroma import (
 from paperforge.embedding.backends import (
     ChromaBackend,
     VectorBackend,
-    get_vector_backend,
 )
 from paperforge.embedding.build_state import (
     mark_vector_build_state,
@@ -32,8 +31,6 @@ __all__ = [
     "get_collection",
     "get_embed_status",
     "get_object_units_for_embedding",
-    "get_vector_backend",
-    "get_vector_db_path",
     "mark_vector_build_state",
     "hybrid_search",
     "merge_retrieve",
