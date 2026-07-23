@@ -23,10 +23,6 @@
   --pf-border-hover: var(--background-modifier-border-hover);
   --pf-accent: var(--interactive-accent);
   --pf-radius: var(--radius-m);
-  --pf-paper-accent: #6f8780;
-  --pf-collection-accent: #9a6b52;
-  --pf-global-accent: #5f7180;
-  --pf-warm-line: #a28a5d;
 }
 
 /* ── Typography tokens ── */
@@ -366,7 +362,7 @@
 }
 
 .paperforge-ocr-badge.active {
-  background: var(--color-blue);
+  background: var(--interactive-accent);
   color: var(--text-on-accent);
 }
 
@@ -396,26 +392,25 @@
 .paperforge-progress-seg:only-child {
   border-radius: 5px;
 }
-
 .paperforge-progress-seg.pending {
-  background: #e2d9c8;
+  background: var(--background-modifier-border);
 }
 
 .theme-dark .paperforge-progress-seg.pending {
-  background: #4a4135;
+  background: var(--background-modifier-border);
 }
 
 .paperforge-progress-seg.active {
-  background: var(--color-blue);
+  background: var(--interactive-accent);
   animation: paperforge-pulse 1.5s ease-in-out infinite;
 }
 
 .paperforge-progress-seg.done {
-  background: #3e5a47;
+  background: var(--interactive-accent);
 }
 
 .theme-dark .paperforge-progress-seg.done {
-  background: #4f735b;
+  background: var(--interactive-accent);
 }
 
 .paperforge-progress-seg.failed {
@@ -565,19 +560,19 @@
 .paperforge-message.msg-running {
   display: block;
   background: var(--background-secondary);
-  border: 1px solid var(--color-blue);
-  color: var(--color-blue);
+  border: 1px solid var(--interactive-accent);
+  color: var(--interactive-accent);
 }
 
 .paperforge-message.msg-ok {
   display: block;
   background: color-mix(
     in srgb,
-    var(--color-green) 8%,
+    var(--text-success) 8%,
     var(--background-secondary)
   );
-  border: 1px solid var(--color-green);
-  color: var(--color-green);
+  border: 1px solid var(--text-success);
+  color: var(--text-success);
 }
 
 .paperforge-message.msg-error {
@@ -648,7 +643,7 @@
   font-weight: var(--font-semibold);
 }
 .paperforge-setup-done {
-  color: var(--color-green);
+  color: var(--text-success);
 }
 .paperforge-setup-pending {
   color: var(--text-muted);
@@ -754,8 +749,8 @@
   color: var(--text-on-accent);
 }
 .paperforge-step-dot.done .paperforge-step-num {
-  background: var(--color-green);
-  border-color: var(--color-green);
+  background: var(--text-success);
+  border-color: var(--text-success);
   color: var(--text-on-accent);
 }
 
@@ -768,7 +763,7 @@
   font-weight: var(--font-semibold);
 }
 .paperforge-step-dot.done .paperforge-step-label {
-  color: var(--color-green);
+  color: var(--text-success);
 }
 
 .paperforge-step-content {
@@ -817,10 +812,10 @@
   font-size: var(--font-ui-smaller);
 }
 .paperforge-apikey-status.ok {
-  color: var(--color-green);
+  color: var(--text-success);
 }
 .paperforge-apikey-status.error {
-  color: var(--color-red);
+  color: var(--text-error);
 }
 
 .paperforge-modal-hint {
@@ -1063,10 +1058,11 @@
   flex: 1;
 }
 .paperforge-progress-track .paperforge-progress-seg.done {
-  background: #3e5a47;
+  background: var(--interactive-accent);
 }
+
 .theme-dark .paperforge-progress-track .paperforge-progress-seg.done {
-  background: #4f735b;
+  background: var(--interactive-accent);
 }
 
 /* ── Step 1: Directory Tree ── */
@@ -1102,8 +1098,8 @@
 .paperforge-install-log {
   margin: 12px 0;
   padding: 14px;
-  background: #1e1e1e;
-  color: #d4d4d4;
+  background: var(--background-secondary);
+  color: var(--text-muted);
   border-radius: var(--radius-m);
   font-family: var(--font-monospace);
   font-size: 12px;
@@ -1264,8 +1260,8 @@
 
 /* -- State: completed (D-10) -- */
 .paperforge-lifecycle-stepper .step.completed .step-indicator {
-  background: var(--color-green);
-  border-color: var(--color-green);
+  background: var(--text-success);
+  border-color: var(--text-success);
   color: var(--text-on-accent);
 }
 
@@ -1278,7 +1274,7 @@
 }
 
 .paperforge-lifecycle-stepper .step.completed::before {
-  background: var(--color-green);
+  background: var(--text-success);
 }
 
 /* -- State: current (D-10) -- */
@@ -1355,27 +1351,27 @@
 
 /* Status coloring (D-14) */
 .paperforge-health-cell.ok {
-  border-left: 3px solid var(--color-green);
+  border-left: 3px solid var(--text-success);
 }
 
 .paperforge-health-cell.ok .paperforge-health-cell-icon {
-  color: var(--color-green);
+  color: var(--text-success);
 }
 
 .paperforge-health-cell.warn {
-  border-left: 3px solid var(--color-yellow);
+  border-left: 3px solid var(--text-warning);
 }
 
 .paperforge-health-cell.warn .paperforge-health-cell-icon {
-  color: var(--color-yellow);
+  color: var(--text-warning);
 }
 
 .paperforge-health-cell.fail {
-  border-left: 3px solid var(--color-red);
+  border-left: 3px solid var(--text-error);
 }
 
 .paperforge-health-cell.fail .paperforge-health-cell-icon {
-  color: var(--color-red);
+  color: var(--text-error);
 }
 
 /* Tooltip on hover (D-16) */
@@ -1441,22 +1437,22 @@
 
 /* Gradient variant: each filled segment gets progressively richer color */
 .paperforge-maturity-gauge .gauge-segment.filled.level-1 {
-  background: var(--color-cyan);
+  background: var(--text-accent);
 }
 .paperforge-maturity-gauge .gauge-segment.filled.level-2 {
-  background: var(--color-blue);
+  background: var(--interactive-accent);
 }
 .paperforge-maturity-gauge .gauge-segment.filled.level-3 {
-  background: var(--color-purple);
+  background: var(--text-accent);
 }
 .paperforge-maturity-gauge .gauge-segment.filled.level-4 {
-  background: var(--color-green);
+  background: var(--text-success);
 }
 .paperforge-maturity-gauge .gauge-segment.filled.level-5 {
-  background: var(--color-yellow);
+  background: var(--text-warning);
 }
 .paperforge-maturity-gauge .gauge-segment.filled.level-6 {
-  background: var(--color-red);
+  background: var(--text-error);
 }
 
 .paperforge-maturity-gauge .gauge-level {
@@ -1533,16 +1529,16 @@
 
 /* Color variants for bar fills based on lifecycle stage */
 .paperforge-bar-chart .bar-fill.stage-indexed {
-  background: var(--color-blue);
+  background: var(--interactive-accent);
 }
 .paperforge-bar-chart .bar-fill.stage-pdf-ready {
-  background: var(--color-purple);
+  background: var(--text-accent);
 }
 .paperforge-bar-chart .bar-fill.stage-fulltext-ready {
-  background: var(--color-green);
+  background: var(--text-success);
 }
 .paperforge-bar-chart .bar-fill.stage-deep-read {
-  background: var(--color-yellow);
+  background: var(--text-warning);
 }
 
 /* ==========================================================================
@@ -1597,43 +1593,43 @@
 .paperforge-mode-badge.global {
   background: color-mix(
     in srgb,
-    var(--pf-global-accent) 12%,
+    var(--interactive-accent) 12%,
     var(--background-secondary)
   );
   border-color: color-mix(
     in srgb,
-    var(--pf-global-accent) 28%,
+    var(--interactive-accent) 28%,
     var(--pf-border)
   );
-  color: var(--pf-global-accent);
+  color: var(--interactive-accent);
 }
 
 .paperforge-mode-badge.paper {
   background: color-mix(
     in srgb,
-    var(--pf-paper-accent) 12%,
+    var(--interactive-accent) 12%,
     var(--background-secondary)
   );
   border-color: color-mix(
     in srgb,
-    var(--pf-paper-accent) 28%,
+    var(--interactive-accent) 28%,
     var(--pf-border)
   );
-  color: var(--pf-paper-accent);
+  color: var(--interactive-accent);
 }
 
 .paperforge-mode-badge.collection {
   background: color-mix(
     in srgb,
-    var(--pf-collection-accent) 12%,
+    var(--interactive-accent) 12%,
     var(--background-secondary)
   );
   border-color: color-mix(
     in srgb,
-    var(--pf-collection-accent) 28%,
+    var(--interactive-accent) 28%,
     var(--pf-border)
   );
-  color: var(--pf-collection-accent);
+  color: var(--interactive-accent);
 }
 
 .paperforge-mode-name {
@@ -1720,10 +1716,10 @@
 }
 
 .paperforge-next-step-card.ready {
-  border-color: var(--color-green);
+  border-color: var(--text-success);
   background: color-mix(
     in srgb,
-    var(--color-green) 8%,
+    var(--text-success) 8%,
     var(--background-secondary)
   );
 }
@@ -1821,15 +1817,15 @@
 }
 
 .paperforge-collection-health-counts .ok {
-  color: var(--color-green);
+  color: var(--text-success);
 }
 
 .paperforge-collection-health-counts .warn {
-  color: var(--color-yellow);
+  color: var(--text-warning);
 }
 
 .paperforge-collection-health-counts .fail {
-  color: var(--color-red);
+  color: var(--text-error);
 }
 
 /* ==========================================================================
@@ -1980,24 +1976,24 @@
   margin-left: 8px;
 }
 .paperforge-runtime-badge.match {
-  background: var(--color-green, #4caf50);
-  color: #ffffff;
+  background: var(--text-success);
+  color: var(--text-on-accent);
 }
 .paperforge-runtime-badge.mismatch {
-  background: var(--color-red, #f44336);
-  color: #ffffff;
+  background: var(--text-error);
+  color: var(--text-on-accent);
 }
 .paperforge-runtime-badge.missing {
-  background: var(--color-orange, #ff9800);
-  color: #ffffff;
+  background: var(--text-warning);
+  color: var(--text-on-accent);
 }
 
 /* ==========================================================================
    SECTION 35 — Dashboard Drift Banner
    ========================================================================== */
 .paperforge-drift-banner {
-  background: var(--color-yellow, #ffc107);
-  color: var(--background-primary, #000000);
+  background: var(--text-warning);
+  color: var(--background-primary);
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 0.9em;
@@ -2015,14 +2011,14 @@
   margin-top: 8px;
   padding: 4px 12px;
   font-size: 0.85em;
-  background: var(--interactive-normal, #e0e0e0);
-  color: var(--text-normal, #000000);
-  border: 1px solid var(--background-modifier-border, #cccccc);
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
   cursor: pointer;
 }
 .paperforge-copy-diag-btn:hover {
-  background: var(--interactive-hover, #d0d0d0);
+  background: var(--interactive-hover);
 }
 
 /* ==========================================================================
@@ -2085,7 +2081,7 @@
   color: var(--text-muted);
   margin: 0 0 10px 0;
   padding-left: 10px;
-  border-left: 3px solid var(--pf-warm-line);
+  border-left: 3px solid var(--interactive-accent);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   line-height: 1.3;
@@ -2115,7 +2111,7 @@
   background: var(--background-modifier-hover);
   border-color: color-mix(
     in srgb,
-    var(--pf-warm-line) 52%,
+    var(--interactive-accent) 52%,
     var(--pf-border-hover)
   );
   color: var(--text-normal);
@@ -2217,10 +2213,10 @@
   flex-shrink: 0;
 }
 .paperforge-status-dot.ok {
-  background: var(--color-green, #4caf50);
+  background: var(--text-success);
 }
 .paperforge-status-dot.fail {
-  background: var(--color-red, #f44336);
+  background: var(--text-error);
 }
 .paperforge-status-label {
   font-size: 13px;
@@ -2238,13 +2234,13 @@
   padding: 16px;
   background: color-mix(
     in srgb,
-    var(--color-orange, #ff9800) 6%,
+    var(--text-warning) 6%,
     var(--background-primary)
   );
   border: 1px solid
     color-mix(
       in srgb,
-      var(--color-orange, #ff9800) 18%,
+      var(--text-warning) 18%,
       var(--background-modifier-border)
     );
   border-radius: 8px;
@@ -2262,7 +2258,7 @@
   padding: 4px 8px;
   background: var(--background-primary);
   border-radius: 4px;
-  border-left: 3px solid var(--color-orange, #ff9800);
+  border-left: 3px solid var(--text-warning);
 }
 .paperforge-issue-actions {
   display: flex;
@@ -2515,32 +2511,29 @@
 .pf-maint-chip--rebuild {
   background: color-mix(
     in srgb,
-    var(--color-orange, #ff9800) 14%,
+    var(--text-warning) 14%,
     var(--background-primary)
   );
-  color: var(--color-orange, #ff9800);
-  border: 1px solid
-    color-mix(in srgb, var(--color-orange, #ff9800) 25%, transparent);
+  color: var(--text-warning);
+  border: 1px solid color-mix(in srgb, var(--text-warning) 25%, transparent);
 }
 .pf-maint-chip--failed {
   background: color-mix(
     in srgb,
-    var(--color-red, #f44336) 10%,
+    var(--text-error) 10%,
     var(--background-primary)
   );
-  color: var(--color-red, #f44336);
-  border: 1px solid
-    color-mix(in srgb, var(--color-red, #f44336) 22%, transparent);
+  color: var(--text-error);
+  border: 1px solid color-mix(in srgb, var(--text-error) 22%, transparent);
 }
 .pf-maint-chip--limited {
   background: color-mix(
     in srgb,
-    var(--color-yellow, #ffc107) 10%,
+    var(--text-warning) 10%,
     var(--background-primary)
   );
-  color: var(--color-yellow, #ffc107);
-  border: 1px solid
-    color-mix(in srgb, var(--color-yellow, #ffc107) 22%, transparent);
+  color: var(--text-warning);
+  border: 1px solid color-mix(in srgb, var(--text-warning) 22%, transparent);
 }
 
 .pf-maint-advanced {
@@ -2961,21 +2954,21 @@
 .paperforge-status-pill.pending {
   background: color-mix(
     in srgb,
-    var(--pf-paper-accent) 9%,
+    var(--interactive-accent) 9%,
     var(--background-primary)
   );
   border-color: color-mix(
     in srgb,
-    var(--pf-paper-accent) 20%,
+    var(--interactive-accent) 20%,
     var(--pf-border)
   );
-  color: var(--pf-paper-accent);
+  color: var(--interactive-accent);
 }
 
 .paperforge-status-pill.ok {
   background: rgba(var(--background-modifier-success-rgb, 0, 200, 100), 0.12);
   border-color: rgba(var(--background-modifier-success-rgb, 0, 200, 100), 0.2);
-  color: var(--text-success, var(--color-green));
+  color: var(--text-success);
 }
 
 .paperforge-status-pill.fail {
@@ -2999,7 +2992,7 @@
     var(--background-secondary) 8%
   );
   border: 1px solid
-    color-mix(in srgb, var(--pf-warm-line) 20%, var(--pf-border));
+    color-mix(in srgb, var(--interactive-accent) 20%, var(--pf-border));
   border-radius: calc(var(--pf-radius) + 2px);
   box-shadow:
     0 1px 2px rgba(20, 18, 14, 0.04),
@@ -3013,7 +3006,11 @@
 .paperforge-library-snapshot:hover,
 .paperforge-system-status:hover,
 .paperforge-global-actions:hover {
-  border-color: color-mix(in srgb, var(--pf-warm-line) 42%, var(--pf-border));
+  border-color: color-mix(
+    in srgb,
+    var(--interactive-accent) 42%,
+    var(--pf-border)
+  );
   box-shadow:
     0 2px 10px rgba(20, 18, 14, 0.08),
     0 14px 28px rgba(20, 18, 14, 0.06);
@@ -3043,19 +3040,23 @@
   padding: 18px;
   background: var(--background-primary);
   border: 1px solid
-    color-mix(in srgb, var(--pf-warm-line) 18%, var(--pf-border));
+    color-mix(in srgb, var(--interactive-accent) 18%, var(--pf-border));
   border-radius: calc(var(--pf-radius) + 2px);
   box-shadow: inset 3px 0 0
-    color-mix(in srgb, var(--pf-paper-accent) 16%, transparent);
+    color-mix(in srgb, var(--interactive-accent) 16%, transparent);
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
 }
 
 .paperforge-paper-overview:hover {
-  border-color: color-mix(in srgb, var(--pf-warm-line) 34%, var(--pf-border));
+  border-color: color-mix(
+    in srgb,
+    var(--interactive-accent) 34%,
+    var(--pf-border)
+  );
   box-shadow:
-    inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 22%, transparent),
+    inset 3px 0 0 color-mix(in srgb, var(--interactive-accent) 22%, transparent),
     0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -3067,7 +3068,7 @@
 .paperforge-discussion-title {
   font-size: 12px;
   font-weight: 700;
-  color: var(--pf-paper-accent);
+  color: var(--interactive-accent);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -3085,7 +3086,7 @@
 
 .paperforge-expand-container,
 .paperforge-discussion-viewall {
-  color: var(--pf-paper-accent);
+  color: var(--interactive-accent);
 }
 
 .paperforge-expand-container {
@@ -3143,19 +3144,23 @@
   padding: 18px;
   background: var(--background-primary);
   border: 1px solid
-    color-mix(in srgb, var(--pf-warm-line) 18%, var(--pf-border));
+    color-mix(in srgb, var(--interactive-accent) 18%, var(--pf-border));
   border-radius: calc(var(--pf-radius) + 2px);
   box-shadow: inset 3px 0 0
-    color-mix(in srgb, var(--pf-paper-accent) 11%, transparent);
+    color-mix(in srgb, var(--interactive-accent) 11%, transparent);
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
 }
 
 .paperforge-discussion-card:hover {
-  border-color: color-mix(in srgb, var(--pf-warm-line) 34%, var(--pf-border));
+  border-color: color-mix(
+    in srgb,
+    var(--interactive-accent) 34%,
+    var(--pf-border)
+  );
   box-shadow:
-    inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 16%, transparent),
+    inset 3px 0 0 color-mix(in srgb, var(--interactive-accent) 16%, transparent),
     0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -3175,7 +3180,7 @@
   padding: 8px 10px;
   margin-bottom: 8px;
   border-radius: 6px;
-  background: color-mix(in srgb, #3e5a47 15%, transparent);
+  background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
   line-height: 1.5;
 }
 
@@ -3257,7 +3262,11 @@
     var(--background-secondary) 78%,
     var(--background-primary)
   );
-  border-color: color-mix(in srgb, var(--pf-border) 88%, var(--pf-warm-line));
+  border-color: color-mix(
+    in srgb,
+    var(--pf-border) 88%,
+    var(--interactive-accent)
+  );
   color: var(--text-muted);
 }
 
@@ -3270,7 +3279,7 @@
   border-color: color-mix(
     in srgb,
     var(--pf-border-hover) 82%,
-    var(--pf-warm-line)
+    var(--interactive-accent)
   );
   color: var(--text-normal);
 }
@@ -3361,7 +3370,7 @@
     var(--background-primary)
   );
   border: 1px solid
-    color-mix(in srgb, var(--pf-border) 82%, var(--pf-paper-accent));
+    color-mix(in srgb, var(--pf-border) 82%, var(--interactive-accent));
   border-radius: 999px;
   cursor: pointer;
   font-size: 13px;
@@ -3422,7 +3431,7 @@
     var(--background-secondary) 8%
   );
   border: 1px solid
-    color-mix(in srgb, var(--pf-warm-line) 20%, var(--pf-border));
+    color-mix(in srgb, var(--interactive-accent) 20%, var(--pf-border));
   border-radius: calc(var(--pf-radius) + 2px);
   box-shadow:
     0 1px 2px rgba(20, 18, 14, 0.04),
@@ -3433,7 +3442,11 @@
 }
 
 .paperforge-workflow-overview:hover {
-  border-color: color-mix(in srgb, var(--pf-warm-line) 42%, var(--pf-border));
+  border-color: color-mix(
+    in srgb,
+    var(--interactive-accent) 42%,
+    var(--pf-border)
+  );
   box-shadow:
     0 2px 10px rgba(20, 18, 14, 0.08),
     0 14px 28px rgba(20, 18, 14, 0.06);
@@ -3484,7 +3497,7 @@
     var(--background-primary) 14%
   );
   border: 1px solid
-    color-mix(in srgb, var(--pf-collection-accent) 22%, var(--pf-border));
+    color-mix(in srgb, var(--interactive-accent) 22%, var(--pf-border));
   border-radius: 8px;
   min-width: 0;
   width: 100%;
@@ -3495,7 +3508,7 @@
 .paperforge-workflow-stage-value {
   font-size: 26px;
   font-weight: 700;
-  color: var(--pf-collection-accent);
+  color: var(--interactive-accent);
   line-height: 1.2;
   letter-spacing: -0.5px;
 }
@@ -3529,12 +3542,12 @@
   padding: 12px 14px;
   background: var(--background-primary);
   border: 1px solid var(--pf-border);
-  border-left: 3px solid var(--pf-warm-line);
+  border-left: 3px solid var(--interactive-accent);
   border-radius: var(--pf-radius);
 }
 
 .paperforge-issue-summary .paperforge-section-label {
-  border-left-color: var(--pf-warm-line);
+  border-left-color: var(--interactive-accent);
   color: var(--text-normal);
 }
 
@@ -3572,7 +3585,7 @@
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid
-    color-mix(in srgb, var(--pf-border) 82%, var(--pf-warm-line));
+    color-mix(in srgb, var(--pf-border) 82%, var(--interactive-accent));
 }
 
 /* Global mode */
@@ -3594,7 +3607,7 @@
     var(--background-primary) 14%
   );
   border: 1px solid
-    color-mix(in srgb, var(--pf-global-accent) 22%, var(--pf-border));
+    color-mix(in srgb, var(--interactive-accent) 22%, var(--pf-border));
   border-radius: 8px;
   min-width: 72px;
   flex: 1;
@@ -3603,7 +3616,7 @@
 .paperforge-snapshot-value {
   font-size: 26px;
   font-weight: 700;
-  color: var(--pf-global-accent);
+  color: var(--interactive-accent);
   line-height: 1.2;
   letter-spacing: -0.5px;
 }
@@ -3676,25 +3689,25 @@
 }
 
 .paperforge-global-actions-row .paperforge-contextual-btn.primary {
-  background: color-mix(in srgb, var(--pf-global-accent) 86%, black 14%);
-  border-color: color-mix(in srgb, var(--pf-global-accent) 90%, black 10%);
+  background: color-mix(in srgb, var(--interactive-accent) 86%, black 14%);
+  border-color: color-mix(in srgb, var(--interactive-accent) 90%, black 10%);
   color: var(--text-on-accent);
 }
 
 .paperforge-collection-actions .paperforge-contextual-btn.primary {
-  background: color-mix(in srgb, var(--pf-collection-accent) 84%, black 16%);
-  border-color: color-mix(in srgb, var(--pf-collection-accent) 88%, black 12%);
+  background: color-mix(in srgb, var(--interactive-accent) 84%, black 16%);
+  border-color: color-mix(in srgb, var(--interactive-accent) 88%, black 12%);
   color: var(--text-on-accent);
 }
 
 .paperforge-global-actions-row .paperforge-contextual-btn.primary:hover {
-  background: color-mix(in srgb, var(--pf-global-accent) 78%, black 22%);
-  border-color: color-mix(in srgb, var(--pf-global-accent) 82%, black 18%);
+  background: color-mix(in srgb, var(--interactive-accent) 78%, black 22%);
+  border-color: color-mix(in srgb, var(--interactive-accent) 82%, black 18%);
 }
 
 .paperforge-collection-actions .paperforge-contextual-btn.primary:hover {
-  background: color-mix(in srgb, var(--pf-collection-accent) 76%, black 24%);
-  border-color: color-mix(in srgb, var(--pf-collection-accent) 80%, black 20%);
+  background: color-mix(in srgb, var(--interactive-accent) 76%, black 24%);
+  border-color: color-mix(in srgb, var(--interactive-accent) 80%, black 20%);
 }
 
 .paperforge-collection-view .paperforge-ocr-section {
@@ -3706,7 +3719,7 @@
   );
   border-color: color-mix(
     in srgb,
-    var(--pf-warm-line) 20%,
+    var(--interactive-accent) 20%,
     var(--background-modifier-border)
   );
   box-shadow:
@@ -3728,11 +3741,11 @@
 
 /* Dark theme overrides */
 .theme-dark .paperforge-status-pill.ok {
-  background: rgba(100, 200, 120, 0.15);
+  background: color-mix(in srgb, var(--text-success) 15%, transparent);
 }
 
 .theme-dark .paperforge-status-pill.fail {
-  background: rgba(255, 100, 100, 0.15);
+  background: color-mix(in srgb, var(--text-error) 15%, transparent);
 }
 
 .theme-dark .paperforge-library-snapshot:hover,
@@ -3745,13 +3758,13 @@
 
 .theme-dark .paperforge-paper-overview:hover {
   box-shadow:
-    inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 22%, transparent),
+    inset 3px 0 0 color-mix(in srgb, var(--interactive-accent) 22%, transparent),
     0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .theme-dark .paperforge-discussion-card:hover {
   box-shadow:
-    inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 16%, transparent),
+    inset 3px 0 0 color-mix(in srgb, var(--interactive-accent) 16%, transparent),
     0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -3865,8 +3878,8 @@
 }
 
 .tag-pdf {
-  background: rgba(76, 175, 80, 0.15);
-  color: #4caf50;
+  background: color-mix(in srgb, var(--text-success) 15%, transparent);
+  color: var(--text-success);
 }
 
 .tag-nopdf {
@@ -3875,8 +3888,8 @@
 }
 
 .tag-collection {
-  background: rgba(33, 150, 243, 0.12);
-  color: #2196f3;
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--interactive-accent);
 }
 
 .paperforge-modal-actions {
@@ -4022,7 +4035,7 @@
   flex-shrink: 0;
 }
 .paperforge-search-mode.deep {
-  background: var(--color-orange);
+  background: var(--text-warning);
 }
 
 .paperforge-search-input {
