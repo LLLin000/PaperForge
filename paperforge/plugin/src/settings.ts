@@ -820,11 +820,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
       const progress = this.plugin._ocrProgress;
       if (progress?.total) {
+        let text = t("ocr_progress")
+          .replace("{current}", String(progress.current))
+          .replace("{total}", String(progress.total));
+        if (progress.key) {
+          text += " — " + progress.key;
+        }
         controls.createEl("span", {
           cls: "pf-detail-progress",
-          text: t("ocr_progress")
-            .replace("{current}", String(progress.current))
-            .replace("{total}", String(progress.total)),
+          text,
         });
       }
     }

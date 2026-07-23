@@ -1,5 +1,5 @@
 /**
- * Shared progress token parser — handles EMBED, OCR_REBUILD, and OCR_REDO
+ * Shared progress token parser — handles EMBED, OCR_REBUILD, OCR_REDO, OCR_RUN
  * tokens across arbitrary stdout chunks.
  *
  * Token formats:
@@ -7,7 +7,7 @@
  *   {PREFIX}_PROGRESS:{current}:{total}:{key}
  *   {PREFIX}_DONE
  *
- * PREFIX in: EMBED, OCR_REBUILD, OCR_REDO
+ * PREFIX in: EMBED, OCR_REBUILD, OCR_REDO, OCR_RUN
  *
  * This is the stable plugin boundary contract from the CLI backend.
  */
@@ -22,7 +22,7 @@ export interface ProgressEvent {
   key?: string;
 }
 
-const KNOWN_PREFIXES = ["EMBED", "OCR_REBUILD", "OCR_REDO"];
+const KNOWN_PREFIXES = ["EMBED", "OCR_REBUILD", "OCR_REDO", "OCR_RUN"];
 
 /**
  * Parse an arbitrarily chunked stdout stream for progress tokens.
@@ -33,7 +33,7 @@ const KNOWN_PREFIXES = ["EMBED", "OCR_REBUILD", "OCR_REDO"];
  */
 export function processProgressChunk(
   chunk: string,
-  buffer: string,
+  buffer: string
 ): { events: ProgressEvent[]; buffer: string } {
   const full = buffer + chunk;
   const lines = full.split("\n");
@@ -47,7 +47,8 @@ export function processProgressChunk(
       const pLen = prefix.length;
 
       if (line.startsWith(prefix + "_START:")) {
-        const total = parseInt(line.slice(pLen + 7) /* "_START:".length */, 10) || 0;
+        const total =
+          parseInt(line.slice(pLen + 7) /* "_START:".length */, 10) || 0;
         events.push({ prefix, event: "START", total });
         break;
       }
