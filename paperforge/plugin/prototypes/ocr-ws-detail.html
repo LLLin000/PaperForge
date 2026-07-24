@@ -1,0 +1,404 @@
+<!doctype html>
+<html class="theme-light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>OCR Workspace with Detail Panel</title>
+    <style>
+      :root {
+        --background-primary: #fff;
+        --background-secondary: #f7f7f5;
+        --background-modifier-border: #e3e3e0;
+        --background-modifier-border-hover: #cfcfc9;
+        --background-modifier-hover: #efefec;
+        --text-normal: #262626;
+        --text-muted: #7a7a76;
+        --text-faint: #9e9e9a;
+        --interactive-accent: #7f6df2;
+        --text-on-accent: #fff;
+        --interactive-normal: #f1f1ef;
+        --interactive-hover: #e5e5e2;
+        --text-success: #4a9e5a;
+        --text-warning: #c26e1a;
+        --text-error: #c23c3c;
+        --font-ui-large: 20px;
+        --font-ui-medium: 16px;
+        --font-ui-small: 13px;
+        --font-ui-smaller: 11px;
+        --font-monospace-theme: "Cascadia Code", Consolas, monospace;
+        --radius-m: 6px;
+        --radius-s: 4px;
+        --size-4-1: 4px;
+        --size-4-2: 8px;
+        --size-4-3: 12px;
+        --size-4-4: 16px;
+        --font-semibold: 600;
+      }
+      body {
+        margin: 0;
+        background: var(--background-primary);
+        color: var(--text-normal);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .modal-content {
+        padding: 20px;
+        overflow-y: auto;
+        height: 100%;
+      }
+      button {
+        background: var(--interactive-normal);
+        border: 1px solid var(--background-modifier-border);
+        border-radius: var(--radius-s);
+        color: var(--text-normal);
+        font-family: inherit;
+        font-size: var(--font-ui-small);
+        padding: 6px 12px;
+        cursor: pointer;
+        min-height: 30px;
+      }
+    </style>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div
+      class="modal-content pf-ocr-workspace"
+      style="max-width: 960px; margin: 0 auto"
+    >
+      <div class="pf-ocr-ws-header">
+        <h1>OCR 工作区</h1>
+        <p class="pf-ocr-ws-lede">查看和管理文献集合的 OCR 提取。</p>
+      </div>
+
+      <div class="pf-ocr-ws-toolbar">
+        <div class="pf-ocr-ws-toolbar-count"><strong>8</strong> / 12 篇</div>
+        <div class="pf-ocr-ws-field">
+          <label>按状态筛选</label>
+          <select>
+            <option>全部</option>
+            <option>未处理</option>
+            <option>需审核</option>
+            <option>已处理</option>
+          </select>
+        </div>
+        <div class="pf-ocr-ws-version-field">
+          <button class="pf-ocr-ws-chip pf-active">全部版本</button>
+          <button class="pf-ocr-ws-chip">v2.3 · 4</button>
+          <button class="pf-ocr-ws-chip">v2.4 · 6</button>
+        </div>
+      </div>
+
+      <div class="pf-ocr-ws-viewport">
+        <table class="pf-ocr-ws-table">
+          <thead>
+            <tr>
+              <th class="pf-ocr-ws-col-check"><input type="checkbox" /></th>
+              <th class="pf-ocr-ws-col-paper">论文</th>
+              <th class="pf-ocr-ws-col-status">OCR 状态</th>
+              <th class="pf-ocr-ws-col-version">版本</th>
+              <th class="pf-ocr-ws-col-date">最后处理</th>
+              <th class="pf-ocr-ws-col-action"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background: var(--background-secondary)">
+              <td class="pf-ocr-ws-col-check">
+                <input type="checkbox" checked />
+              </td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Understanding Metric-Related Pitfalls in Image Analysis
+                  Validation
+                </div>
+                <div class="pf-ocr-ws-paper-meta">
+                  Reinke, A. · Tizabi, M. · 2023
+                </div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-done">已处理</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">
+                <span class="pf-ocr-ws-version">v2.4</span>
+              </td>
+              <td class="pf-ocr-ws-col-date">Jul 12</td>
+              <td class="pf-ocr-ws-col-action"><button>详情</button></td>
+            </tr>
+            <tr>
+              <td class="pf-ocr-ws-col-check"><input type="checkbox" /></td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Deep Learning Approaches to Histopathology
+                </div>
+                <div class="pf-ocr-ws-paper-meta">Wang, X. · 2025</div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-update">有更新</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">
+                <span class="pf-ocr-ws-version">v2.3</span>
+              </td>
+              <td class="pf-ocr-ws-col-date">Jul 11</td>
+              <td class="pf-ocr-ws-col-action"><button>详情</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Detail Panel -->
+      <div
+        style="
+          margin-top: 20px;
+          background: var(--background-secondary);
+          border: 1px solid var(--background-modifier-border);
+          border-radius: var(--radius-m);
+          padding: 18px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 14px;
+          "
+        >
+          <div>
+            <h2
+              style="
+                font-size: 18px;
+                font-weight: var(--font-semibold);
+                margin: 0 0 4px;
+              "
+            >
+              Understanding Metric-Related Pitfalls
+            </h2>
+            <span
+              style="
+                display: inline-flex;
+                padding: 2px 8px;
+                border-radius: var(--radius-s);
+                font-size: 10px;
+                font-weight: 500;
+                background: color-mix(
+                  in srgb,
+                  var(--text-success) 10%,
+                  transparent
+                );
+                color: var(--text-success);
+              "
+              >已处理</span
+            >
+          </div>
+          <button
+            style="
+              background: none;
+              border: none;
+              color: var(--interactive-accent);
+              padding: 0;
+              cursor: pointer;
+              font-size: var(--font-ui-small);
+            "
+          >
+            关闭
+          </button>
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0 20px;
+            margin: 14px 0;
+          "
+        >
+          <div
+            style="
+              padding: 10px 0;
+              border-bottom: 1px solid var(--background-modifier-border);
+            "
+          >
+            <dt
+              style="
+                color: var(--text-faint);
+                font-size: 10px;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 3px;
+              "
+            >
+              OCR 版本
+            </dt>
+            <dd
+              style="
+                margin: 0;
+                font-size: 12px;
+                font-family: var(--font-monospace-theme);
+              "
+            >
+              v2.4
+            </dd>
+          </div>
+          <div
+            style="
+              padding: 10px 0;
+              border-bottom: 1px solid var(--background-modifier-border);
+            "
+          >
+            <dt
+              style="
+                color: var(--text-faint);
+                font-size: 10px;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 3px;
+              "
+            >
+              最后处理
+            </dt>
+            <dd
+              style="
+                margin: 0;
+                font-size: 12px;
+                font-family: var(--font-monospace-theme);
+              "
+            >
+              2026-07-12
+            </dd>
+          </div>
+          <div
+            style="
+              padding: 10px 0;
+              border-bottom: 1px solid var(--background-modifier-border);
+            "
+          >
+            <dt
+              style="
+                color: var(--text-faint);
+                font-size: 10px;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 3px;
+              "
+            >
+              作者
+            </dt>
+            <dd style="margin: 0; font-size: 12px">Reinke, A. et al.</dd>
+          </div>
+          <div
+            style="
+              padding: 10px 0;
+              border-bottom: 1px solid var(--background-modifier-border);
+            "
+          >
+            <dt
+              style="
+                color: var(--text-faint);
+                font-size: 10px;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 3px;
+              "
+            >
+              备份
+            </dt>
+            <dd style="margin: 0; font-size: 12px">2 个</dd>
+          </div>
+        </div>
+
+        <div
+          style="
+            border-left: 2px solid var(--text-warning);
+            background: color-mix(in srgb, var(--text-warning) 6%, transparent);
+            border-radius: 0 var(--radius-s) var(--radius-s) 0;
+            padding: 10px 14px;
+            margin: 12px 0;
+          "
+        >
+          <strong
+            style="
+              display: block;
+              font-size: var(--font-ui-smaller);
+              font-weight: var(--font-semibold);
+              text-transform: uppercase;
+              letter-spacing: 0.4px;
+              margin-bottom: 3px;
+              color: var(--text-warning);
+            "
+            >重新提取不可用</strong
+          >
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: var(--font-ui-small);
+              line-height: 1.5;
+              margin: 0;
+            "
+          >
+            单篇论文重新提取目前会删除所有 OCR
+            数据而不创建备份。请使用"重新提取所有论文"。
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 14px">
+          <button
+            style="
+              background: var(--background-secondary);
+              color: var(--text-normal);
+              border: 1px solid var(--background-modifier-border);
+              border-radius: var(--radius-s);
+              padding: 6px 12px;
+              font-size: var(--font-ui-small);
+              cursor: pointer;
+            "
+          >
+            查看全文
+          </button>
+          <button
+            style="
+              background: var(--background-secondary);
+              color: var(--text-normal);
+              border: 1px solid var(--background-modifier-border);
+              border-radius: var(--radius-s);
+              padding: 6px 12px;
+              font-size: var(--font-ui-small);
+              cursor: pointer;
+            "
+          >
+            恢复备份
+          </button>
+          <button
+            style="
+              background: color-mix(
+                in srgb,
+                var(--text-warning) 10%,
+                transparent
+              );
+              color: var(--text-warning);
+              border: 1px solid var(--text-warning);
+              border-radius: var(--radius-s);
+              padding: 6px 12px;
+              font-size: var(--font-ui-small);
+              cursor: pointer;
+            "
+            disabled
+          >
+            重新提取
+          </button>
+        </div>
+      </div>
+
+      <div class="pf-ocr-ws-batchbar">
+        <div class="pf-ocr-ws-selection"><strong>已选择 1 篇</strong></div>
+        <div class="pf-ocr-ws-batch-actions">
+          <button>处理所选</button>
+          <button>更新所选</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

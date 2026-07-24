@@ -959,6 +959,8 @@ var pt = {
       setup_nav_back: "Back",
       setup_nav_complete: "Complete Setup",
       help_title: "Help",
+      help_eyebrow: "help",
+      help_lede: "Open the relevant module, or copy a diagnostic for support.",
       help_intro:
         "Choose a task or copy a privacy-safe diagnostic for support.",
       help_getting_started: "Getting started",
@@ -1763,6 +1765,8 @@ var pt = {
       setup_nav_back: "\u8FD4\u56DE",
       setup_nav_complete: "\u5B8C\u6210\u8BBE\u7F6E",
       help_title: "\u5E2E\u52A9",
+      help_lede:
+        "\u6253\u5F00\u76F8\u5173\u6A21\u5757\uFF0C\u6216\u590D\u5236\u8BCA\u65AD\u4FE1\u606F\u5BFB\u6C42\u652F\u6301\u3002",
       help_intro:
         "\u9009\u62E9\u4E00\u4E2A\u4EFB\u52A1\uFF0C\u6216\u590D\u5236\u9690\u79C1\u5B89\u5168\u7684\u652F\u6301\u8BCA\u65AD\u3002",
       help_getting_started: "\u5F00\u59CB\u4F7F\u7528",
