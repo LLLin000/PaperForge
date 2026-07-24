@@ -6,7 +6,8 @@ import { VIEW_TYPE_OCR_WORKSPACE } from "../constants";
 import { t } from "../i18n";
 import { resolveVaultPaths } from "../services/memory-state";
 import { resolveRuntimeCommand } from "../services/managed-runtime";
-// ── OcrPaper interface ──
+
+/* ── OcrPaper interface ── */
 
 interface OcrPaper {
   key: string;
@@ -15,34 +16,22 @@ interface OcrPaper {
   pipelineVersion: string;
   lastRun: string;
   hasBackup: boolean;
+  authors: string;
+  year: string;
+  pages: string;
+  backupCount: number;
 }
 
-// ── Status helpers ──
-
-function statusLabel(s: string): string {
-  const map: Record<string, string> = {
-    done: "Processed",
-    pending: "Pending",
-    failed: "Failed",
-    nopdf: "No PDF",
-    processing: "Processing\u2026",
-  };
-  return map[s] ?? s;
-}
-
-function statusClass(s: string): string {
-  return (
-    "pf-ocr-ws-badge--" +
-    (s === "done" ? "ok" : s === "failed" ? "err" : "warn")
-  );
-}
-
-// ── View ──
+/* ── View ── */
 
 export class OcrWorkspaceView extends ItemView {
   private papers: OcrPaper[] = [];
   private filter: "all" | "unprocessed" | "review" | "processed" = "all";
+  private versionFilter: string | null = null;
   private selectedKey: string | null = null;
+  private checkedKeys: Set<string> = new Set();
+  private running: boolean = false;
+  private progress = { current: 0, total: 0, paperKey: "" };
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -54,11 +43,9 @@ export class OcrWorkspaceView extends ItemView {
   getViewType(): string {
     return VIEW_TYPE_OCR_WORKSPACE;
   }
-
   getDisplayText(): string {
-    return t("ocr_ws_title");
+    return "OCR Workspace";
   }
-
   getIcon(): string {
     return "scan-text";
   }
@@ -68,75 +55,73 @@ export class OcrWorkspaceView extends ItemView {
     this._render();
   }
 
-  async onClose(): Promise<void> {
-    // cleanup
-  }
-
   /* ── Data loading ── */
 
   private async _loadPapers(): Promise<void> {
     const vp = (this.app.vault.adapter as any).basePath as string;
     const paths = resolveVaultPaths(vp);
-
-    // 1. Read formal-library.json
-    const indexPath = path.join(paths.indexesDir, "formal-library.json");
-    let indexItems: any[] = [];
+    const indexPath = path.join(
+      vp,
+      paths.systemDir,
+      "PaperForge",
+      "indexes",
+      "formal-library.json"
+    );
+    if (!fs.existsSync(indexPath)) {
+      this.papers = [];
+      return;
+    }
     try {
-      const raw = fs.readFileSync(indexPath, "utf-8");
-      const index = JSON.parse(raw);
-      indexItems = index.items || [];
+      const index = JSON.parse(fs.readFileSync(indexPath, "utf-8"));
+      const items: any[] = index?.items ?? [];
+      this.papers = [];
+      for (const item of items) {
+        const key = item.zotero_key;
+        if (!key) continue;
+        const metaPath = path.join(
+          vp,
+          paths.systemDir,
+          "PaperForge",
+          "ocr",
+          key,
+          "meta.json"
+        );
+        let meta: any = {};
+        if (fs.existsSync(metaPath)) {
+          try {
+            meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
+          } catch {}
+        }
+        const backupsDir = path.join(
+          vp,
+          paths.systemDir,
+          "PaperForge",
+          "ocr",
+          key,
+          "backups"
+        );
+        let backupCount = 0;
+        if (fs.existsSync(backupsDir)) {
+          backupCount = fs
+            .readdirSync(backupsDir)
+            .filter((f: string) => f.startsWith("fulltext.pre-rebuild")).length;
+        }
+        this.papers.push({
+          key,
+          title: item.title ?? key,
+          status: meta.ocr_status ?? meta.ocrStatus ?? "pending",
+          pipelineVersion: meta.ocr_pipeline_version ?? "",
+          lastRun: meta.ocr_finished_at ?? meta.ocrFinishedAt ?? "",
+          hasBackup: backupCount > 0,
+          authors: item.authors?.join?.(", ") ?? "",
+          year: item.year ?? "",
+          pages: meta.page_count ? String(meta.page_count) : "",
+          backupCount,
+        });
+      }
     } catch {
-      indexItems = [];
+      this.papers = [];
     }
-
-    // 2. Build paper list
-    const papers: OcrPaper[] = [];
-    for (const item of indexItems) {
-      const key = item.key;
-      if (!key) continue;
-      const title = item.title || key;
-
-      // Read meta.json
-      const metaPath = path.join(paths.ocrDir, key, "meta.json");
-      let meta: any = null;
-      try {
-        meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
-      } catch {
-        // no meta.json = no OCR data for this paper
-        continue;
-      }
-
-      // Determine status from meta
-      let status = "pending";
-      const ocrStatus = meta.ocr_status;
-      if (ocrStatus === "done" || ocrStatus === "completed") {
-        status = "done";
-      } else if (ocrStatus === "failed" || ocrStatus === "error") {
-        status = "failed";
-      } else if (
-        ocrStatus === "processing" ||
-        (meta.ocr_started_at && !meta.ocr_finished_at)
-      ) {
-        status = "processing";
-      } else if (meta.ocr_no_pdf) {
-        status = "nopdf";
-      } else if (meta.ocr_finished_at) {
-        status = "done";
-      }
-
-      papers.push({
-        key,
-        title,
-        status,
-        pipelineVersion: meta.ocr_pipeline_version || "",
-        lastRun: meta.ocr_finished_at || meta.ocr_started_at || "",
-        hasBackup:
-          (meta.backups && meta.backups.length > 0) ||
-          (meta.backup_count && meta.backup_count > 0),
-      });
-    }
-
-    this.papers = papers;
   }
 
   /* ── Render ── */
@@ -146,106 +131,237 @@ export class OcrWorkspaceView extends ItemView {
     container.empty();
     container.addClass("pf-ocr-workspace");
 
-    this._renderSidebar(container);
+    this._renderHeader(container);
+    this._renderActivity(container);
+    this._renderToolbar(container);
     this._renderTable(container);
-    this._renderBottomBar(container);
-
+    this._renderBatchBar(container);
     if (this.selectedKey) {
       this._renderDetail(container);
     }
   }
 
-  /* ── Sidebar filters ── */
+  private _renderHeader(container: HTMLElement): void {
+    const header = container.createDiv({ cls: "pf-ocr-ws-header" });
+    header.createEl("h1", { text: t("ocr_ws_title") });
+    header.createEl("p", { cls: "pf-ocr-ws-lede", text: t("ocr_ws_lede") });
+  }
 
-  private _renderSidebar(container: HTMLElement): void {
-    type FilterId = "all" | "unprocessed" | "review" | "processed";
-    const filters: Array<{ id: FilterId; label: string }> = [
-      { id: "all", label: t("ocr_ws_filter_all") },
-      { id: "unprocessed", label: t("ocr_ws_filter_unprocessed") },
-      { id: "review", label: t("ocr_ws_filter_review") },
-      { id: "processed", label: t("ocr_ws_filter_processed") },
-    ];
+  private _renderActivity(container: HTMLElement): void {
+    const act = container.createDiv({
+      cls: `pf-ocr-ws-activity${this.running ? " pf-active" : ""}`,
+      attr: { "aria-live": "polite" },
+    });
+    const head = act.createDiv({ cls: "pf-ocr-ws-activity-head" });
+    const title = head.createDiv({ cls: "pf-ocr-ws-activity-title" });
+    title.setText(t("ocr_ws_processing"));
+    const key = this.progress.paperKey;
+    if (key) {
+      const paper = this.papers.find((p) => p.key === key);
+      title.createEl("span", { text: paper?.title ?? key });
+    }
+    const stopBtn = head.createEl("button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: t("ocr_ws_stop"),
+    });
+    stopBtn.addEventListener("click", () => this._stopBuild());
 
-    const bar = container.createDiv({ cls: "pf-ocr-ws-filters" });
-    for (const f of filters) {
-      const btn = bar.createEl("button", {
-        cls: `pf-ocr-ws-filter${f.id === this.filter ? " pf-active" : ""}`,
-        text: f.label,
+    const track = act.createDiv({ cls: "pf-ocr-ws-progress-track" });
+    const fill = track.createDiv({ cls: "pf-ocr-ws-progress-fill" });
+    const pct =
+      this.progress.total > 0
+        ? Math.round((this.progress.current / this.progress.total) * 100)
+        : 0;
+    fill.style.transform = `scaleX(${pct / 100})`;
+
+    const meta = act.createDiv({ cls: "pf-ocr-ws-progress-meta" });
+    meta.createEl("span", {
+      text: `${this.progress.current} / ${this.progress.total} papers`,
+    });
+    meta.createEl("span", { text: `${pct}%` });
+  }
+
+  private _renderToolbar(container: HTMLElement): void {
+    const filtered = this._filteredPapers();
+    const versions = [
+      ...new Set(this.papers.map((p) => p.pipelineVersion).filter(Boolean)),
+    ]
+      .sort()
+      .reverse();
+
+    const tb = container.createDiv({ cls: "pf-ocr-ws-toolbar" });
+    const count = tb.createDiv({ cls: "pf-ocr-ws-toolbar-count" });
+    count.innerHTML = t("ocr_ws_showing")
+      .replace("{count}", String(filtered.length))
+      .replace("{total}", String(this.papers.length));
+
+    const field = tb.createDiv({ cls: "pf-ocr-ws-field" });
+    field.createEl("label", { text: t("ocr_ws_filter_status") });
+    const select = field.createEl("select");
+    for (const [val, label] of [
+      ["all", t("ocr_ws_filter_all")],
+      ["unprocessed", t("ocr_ws_filter_unprocessed")],
+      ["review", t("ocr_ws_filter_review")],
+      ["processed", t("ocr_ws_filter_processed")],
+    ]) {
+      const opt = select.createEl("option", {
+        text: String(label),
+        attr: { value: String(val) },
       });
-      btn.addEventListener("click", () => {
-        this.filter = f.id;
-        this.selectedKey = null;
-        this._render();
-      });
+      if (val === this.filter) opt.selected = true;
+    }
+    select.addEventListener("change", () => {
+      this.filter = select.value as any;
+      this.selectedKey = null;
+      this.checkedKeys.clear();
+      this._render();
+    });
+
+    if (versions.length > 0) {
+      const vf = tb.createDiv({ cls: "pf-ocr-ws-version-field" });
+      for (const v of versions) {
+        const chip = vf.createEl("button", {
+          cls: `pf-ocr-ws-chip${this.versionFilter === v ? " pf-active" : ""}`,
+          text: `v${v}`,
+        });
+        chip.addEventListener("click", () => {
+          this.versionFilter = this.versionFilter === v ? null : v;
+          this._render();
+        });
+      }
     }
   }
 
-  /* ── Paper table ── */
-
   private _filteredPapers(): OcrPaper[] {
-    const f = this.filter;
-    if (f === "all") return this.papers;
-    if (f === "unprocessed")
-      return this.papers.filter(
-        (p) => p.status === "pending" || p.status === "nopdf"
-      );
-    if (f === "review")
-      return this.papers.filter(
+    let list = this.papers;
+    if (this.filter === "unprocessed")
+      list = list.filter((p) => p.status === "pending" || p.status === "nopdf");
+    else if (this.filter === "review")
+      list = list.filter(
         (p) => p.status === "failed" || p.status === "processing"
       );
-    if (f === "processed")
-      return this.papers.filter((p) => p.status === "done");
-    return this.papers;
+    else if (this.filter === "processed")
+      list = list.filter((p) => p.status === "done");
+    if (this.versionFilter)
+      list = list.filter((p) => p.pipelineVersion === this.versionFilter);
+    return list;
   }
 
   private _renderTable(container: HTMLElement): void {
     const filtered = this._filteredPapers();
+    const vp = container.createDiv({ cls: "pf-ocr-ws-viewport" });
 
     if (filtered.length === 0) {
-      container.createDiv({
-        cls: "pf-ocr-ws-empty",
+      vp.createDiv({
+        cls: "pf-ocr-ws-empty pf-visible",
         text: t("ocr_ws_no_papers"),
       });
       return;
     }
 
-    const table = container.createDiv({ cls: "pf-ocr-ws-table" });
+    const table = vp.createEl("table", { cls: "pf-ocr-ws-table" });
+    const thead = table.createEl("thead");
+    const hr = thead.createEl("tr");
+    hr.createEl("th", { cls: "pf-ocr-ws-col-check" }).createEl(
+      "input",
+      { attr: { type: "checkbox" } },
+      (cb: HTMLInputElement) => {
+        cb.addEventListener("change", () => {
+          if (cb.checked) {
+            filtered.forEach((p) => this.checkedKeys.add(p.key));
+          } else {
+            this.checkedKeys.clear();
+          }
+          this._render();
+        });
+      }
+    );
+    hr.createEl("th", {
+      cls: "pf-ocr-ws-col-paper",
+      text: t("ocr_ws_col_title"),
+    });
+    hr.createEl("th", {
+      cls: "pf-ocr-ws-col-status",
+      text: t("ocr_ws_col_status"),
+    });
+    hr.createEl("th", {
+      cls: "pf-ocr-ws-col-version",
+      text: t("ocr_ws_col_version"),
+    });
+    hr.createEl("th", {
+      cls: "pf-ocr-ws-col-date",
+      text: t("ocr_ws_col_lastrun"),
+    });
+    hr.createEl("th", { cls: "pf-ocr-ws-col-action" });
 
+    const tbody = table.createEl("tbody");
     for (const paper of filtered) {
-      const row = table.createDiv({
-        cls: `pf-ocr-ws-row${this.selectedKey === paper.key ? " pf-selected" : ""}`,
+      const versionBehind = Boolean(
+        this.papers.find(
+          (p) =>
+            p.pipelineVersion &&
+            paper.pipelineVersion &&
+            p.pipelineVersion > paper.pipelineVersion
+        )
+      );
+      const tr = tbody.createEl("tr", {
+        cls: versionBehind ? "pf-update" : "",
       });
-      row.addEventListener("click", () => {
+      tr.addEventListener("click", (e) => {
+        if ((e.target as HTMLElement).tagName === "INPUT") return;
         this.selectedKey = paper.key === this.selectedKey ? null : paper.key;
         this._render();
       });
 
-      // Title column
-      const titleCol = row.createDiv({ cls: "pf-ocr-ws-col-title" });
-      titleCol.setText(paper.title);
+      // Checkbox
+      const tdCheck = tr.createEl("td", { cls: "pf-ocr-ws-col-check" });
+      tdCheck.createEl(
+        "input",
+        { attr: { type: "checkbox" } },
+        (cb: HTMLInputElement) => {
+          cb.checked = this.checkedKeys.has(paper.key);
+          cb.addEventListener("change", () => {
+            if (cb.checked) this.checkedKeys.add(paper.key);
+            else this.checkedKeys.delete(paper.key);
+            this._render();
+          });
+        }
+      );
 
-      // Status badge column
-      const statusCol = row.createDiv({ cls: "pf-ocr-ws-col-status" });
-      const badge = statusCol.createEl("span", {
-        cls: `pf-ocr-ws-badge ${statusClass(paper.status)}`,
+      // Paper title
+      const tdPaper = tr.createEl("td", { cls: "pf-ocr-ws-col-paper" });
+      tdPaper.createDiv({ cls: "pf-ocr-ws-paper-title", text: paper.title });
+      if (paper.authors || paper.year) {
+        tdPaper.createDiv({
+          cls: "pf-ocr-ws-paper-meta",
+          text: [paper.authors, paper.year].filter(Boolean).join(", "),
+        });
+      }
+
+      // Status badge
+      const tdStatus = tr.createEl("td", { cls: "pf-ocr-ws-col-status" });
+      tdStatus.createEl("span", {
+        cls: `pf-ocr-ws-status pf-${statusClass(paper.status)}`,
         text: statusLabel(paper.status),
       });
 
-      // Version column
-      const verCol = row.createDiv({ cls: "pf-ocr-ws-col-version" });
-      verCol.setText(paper.pipelineVersion || "\u2014");
+      // Version
+      const tdVer = tr.createEl("td", { cls: "pf-ocr-ws-col-version" });
+      tdVer.createEl("span", {
+        cls: "pf-ocr-ws-version",
+        text: paper.pipelineVersion || "\u2014",
+      });
 
-      // Last run column
-      const lrCol = row.createDiv({ cls: "pf-ocr-ws-col-lastrun" });
-      lrCol.setText(paper.lastRun ? paper.lastRun.slice(0, 10) : "\u2014");
+      // Date
+      const tdDate = tr.createEl("td", { cls: "pf-ocr-ws-col-date" });
+      tdDate.setText(paper.lastRun ? paper.lastRun.slice(0, 10) : "\u2014");
 
-      // Preview button column
-      const previewCol = row.createDiv({ cls: "pf-ocr-ws-col-preview" });
-      const previewBtn = previewCol.createEl("button", {
-        cls: "pf-action-btn",
+      // Preview
+      const tdAction = tr.createEl("td", { cls: "pf-ocr-ws-col-action" });
+      const previewBtn = tdAction.createEl("button", {
+        cls: "pf-btn pf-btn-secondary",
         text: t("ocr_ws_btn_preview"),
       });
-      // Stop event from propagating to row click
       previewBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         this._openFulltext(paper.key);
@@ -253,47 +369,126 @@ export class OcrWorkspaceView extends ItemView {
     }
   }
 
-  /* ── Bottom bar ── */
+  private _renderBatchBar(container: HTMLElement): void {
+    const selected = this.papers.filter((p) => this.checkedKeys.has(p.key));
+    const bar = container.createDiv({ cls: "pf-ocr-ws-batchbar" });
 
-  private _renderBottomBar(container: HTMLElement): void {
-    const unprocessedCount = this.papers.filter(
-      (p) => p.status === "pending" || p.status === "nopdf"
-    ).length;
+    const sel = bar.createDiv({ cls: "pf-ocr-ws-selection" });
+    if (selected.length === 0) {
+      sel.createEl("strong", { text: t("ocr_ws_none_selected") });
+      sel.createEl("span", { text: t("ocr_ws_select_hint") });
+    } else {
+      sel.createEl("strong", {
+        text: t("ocr_ws_selected").replace("{count}", String(selected.length)),
+      });
+    }
 
-    const bar = container.createDiv({ cls: "pf-ocr-ws-bottombar" });
-    const btn = bar.createEl("button", {
-      cls: "pf-action-btn",
-      text: t("ocr_ws_btn_process_all").replace(
-        "{count}",
-        String(unprocessedCount)
-      ),
+    const actions = bar.createDiv({ cls: "pf-ocr-ws-batch-actions" });
+    const processBtn = actions.createEl("button", {
+      cls: "pf-btn pf-btn-primary",
+      text: t("ocr_ws_btn_process_selected"),
     });
-    btn.addEventListener("click", () => {
-      const vp = (this.app.vault.adapter as any).basePath as string;
-      new Notice("Starting OCR for all unprocessed papers\u2026");
-      const pyCmd = this._resolvePython();
-      if (!pyCmd) {
-        new Notice("Runtime not ready");
-        return;
-      }
-      const env = { ...process.env };
-      execFile(
-        pyCmd.path,
-        [...pyCmd.args, "-m", "paperforge", "ocr", "rebuild", "--all"],
-        { cwd: vp, timeout: 600000, env },
-        (err: any) => {
-          if (err) {
-            new Notice(
-              "OCR rebuild failed: " + (err.message || "").slice(0, 120)
-            );
-          } else {
-            new Notice("OCR rebuild completed");
-            this._loadPapers().then(() => this._render());
-          }
-        }
-      );
+    processBtn.disabled = selected.length === 0;
+    processBtn.addEventListener("click", () =>
+      this._runOcr(selected.map((p) => p.key))
+    );
+
+    const updateBtn = actions.createEl("button", {
+      cls: "pf-btn pf-btn-warning",
+      text: t("ocr_ws_btn_update_selected"),
     });
+    updateBtn.disabled = selected.length === 0;
+    updateBtn.addEventListener("click", () =>
+      this._runRebuild(selected.map((p) => p.key))
+    );
   }
+
+  private _renderDetail(container: HTMLElement): void {
+    const paper = this.papers.find((p) => p.key === this.selectedKey);
+    if (!paper) return;
+
+    const detail = container.createDiv({ cls: "pf-ocr-ws-detail pf-open" });
+    const card = detail.createDiv({ cls: "pf-ocr-ws-detail-card" });
+
+    const head = card.createDiv({ cls: "pf-ocr-ws-detail-head" });
+    const left = head.createDiv({});
+    left.createEl("h2", { text: paper.title });
+    left.createEl("span", {
+      cls: `pf-ocr-ws-status pf-${statusClass(paper.status)}`,
+      text: statusLabel(paper.status),
+    });
+
+    const closeBtn = head.createEl("button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: t("ocr_ws_close"),
+    });
+    closeBtn.addEventListener("click", () => {
+      this.selectedKey = null;
+      this._render();
+    });
+
+    // Fact grid
+    const grid = card.createDiv({ cls: "pf-ocr-ws-detail-grid" });
+    this._addFact(
+      grid,
+      t("ocr_ws_fact_version"),
+      paper.pipelineVersion || "\u2014"
+    );
+    this._addFact(
+      grid,
+      t("ocr_ws_fact_last_run"),
+      paper.lastRun ? paper.lastRun.slice(0, 10) : "\u2014"
+    );
+    this._addFact(grid, t("ocr_ws_fact_authors"), paper.authors || "\u2014");
+    this._addFact(grid, t("ocr_ws_fact_year"), paper.year || "\u2014");
+    this._addFact(grid, t("ocr_ws_fact_pages"), paper.pages || "\u2014");
+    this._addFact(
+      grid,
+      t("ocr_ws_fact_backups"),
+      paper.backupCount > 0 ? String(paper.backupCount) : "\u2014"
+    );
+
+    // Re-extract disabled warning
+    const warning = card.createDiv({ cls: "pf-impact-box" });
+    warning.createEl("strong", { text: t("ocr_ws_re_extract_disabled_title") });
+    warning.createEl("p", { text: t("ocr_ws_re_extract_disabled_body") });
+
+    // Action buttons
+    const actions = card.createDiv({ cls: "pf-ocr-ws-detail-actions" });
+    const fulltextBtn = actions.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: t("ocr_ws_detail_view_fulltext"),
+    });
+    fulltextBtn.addEventListener("click", () => this._openFulltext(paper.key));
+
+    const restoreBtn = actions.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: t("ocr_ws_detail_restore_backup"),
+    });
+    restoreBtn.disabled = !paper.hasBackup;
+    restoreBtn.addEventListener("click", () => {
+      new Notice("Version history panel not yet integrated");
+    });
+
+    const reExtractBtn = actions.createEl("button", {
+      cls: "pf-btn pf-btn-warning",
+      text: t("ocr_ws_detail_re_extract"),
+    });
+    reExtractBtn.disabled = true;
+
+    // Disclosure: "What happens when I re-extract?"
+    const details = card.createEl("details");
+    details.createEl("summary", { text: t("ocr_ws_what_happens") });
+    details.createEl("p", { text: t("ocr_ws_disclosure_text") });
+  }
+
+  private _addFact(grid: HTMLElement, label: string, value: string): void {
+    const fact = grid.createDiv({ cls: "pf-ocr-ws-fact" });
+    fact.createEl("dt", { text: label });
+    fact.createEl("dd", { text: value });
+  }
+
+  /* ── Actions ── */
 
   private _resolvePython(): { path: string; args: string[] } | null {
     const plugin = ((this.app as any).plugins.plugins as any)["paperforge"];
@@ -305,144 +500,98 @@ export class OcrWorkspaceView extends ItemView {
     return { path: run.command, args: [...run.args] };
   }
 
-  /* ── Per-paper detail panel ── */
-
-  private _renderDetail(container: HTMLElement): void {
-    const paper = this.papers.find((p) => p.key === this.selectedKey);
-    if (!paper) return;
-
-    const panel = container.createDiv({ cls: "pf-ocr-ws-detail" });
-
-    // Title + status
-    const heading = panel.createDiv({ cls: "pf-ocr-ws-detail-heading" });
-    heading.createEl("h3", { text: paper.title });
-    heading.createEl("span", {
-      cls: `pf-ocr-ws-badge ${statusClass(paper.status)}`,
-      text: statusLabel(paper.status),
-    });
-
-    // Status info box
-    const infoBox = panel.createDiv({ cls: "pf-ocr-ws-infobox" });
-    infoBox.createEl("p", {
-      text: this._statusDescription(paper.status),
-    });
-
-    // Config rows
-    const facts = panel.createDiv({ cls: "pf-module-facts" });
-
-    const verFact = facts.createDiv({ cls: "pf-module-fact" });
-    verFact.createEl("span", { text: t("ocr_ws_col_version") });
-    verFact.createEl("span", { text: paper.pipelineVersion || "\u2014" });
-
-    const lrFact = facts.createDiv({ cls: "pf-module-fact" });
-    lrFact.createEl("span", { text: t("ocr_ws_col_lastrun") });
-    lrFact.createEl("span", { text: paper.lastRun || "\u2014" });
-
-    const bkFact = facts.createDiv({ cls: "pf-module-fact" });
-    bkFact.createEl("span", { text: "Backups" });
-    bkFact.createEl("span", { text: paper.hasBackup ? "Available" : "None" });
-
-    // Action buttons row
-    const actions = panel.createDiv({ cls: "pf-ocr-ws-actions" });
-
-    // View Fulltext
-    const viewBtn = actions.createEl("button", {
-      cls: "pf-action-btn",
-      text: t("ocr_ws_detail_view_fulltext"),
-    });
-    viewBtn.addEventListener("click", () => this._openFulltext(paper.key));
-
-    // Restore Backup
-    const restoreBtn = actions.createEl("button", {
-      cls: "pf-action-btn",
-      text: t("ocr_ws_detail_restore_backup"),
-    });
-    if (!paper.hasBackup) restoreBtn.setAttr("disabled", "true");
-    restoreBtn.addEventListener("click", () => {
-      if (paper.hasBackup) this._openBackupHistory(paper.key);
-    });
-
-    // Re-extract This Paper — DISABLED with warning
-    const reBtn = actions.createEl("button", {
-      cls: "pf-action-btn",
-      text: t("ocr_ws_detail_re_extract"),
-    });
-    reBtn.setAttr("disabled", "true");
-    reBtn.classList.add("pf-action-btn--disabled");
-
-    // Warning box for disabled re-extract
-    const warnBox = actions.createDiv({ cls: "pf-ocr-ws-warning" });
-    warnBox.createEl("strong", { text: t("ocr_ws_re_extract_disabled_title") });
-    warnBox.createEl("p", { text: t("ocr_ws_re_extract_disabled_body") });
-
-    // Expandable disclosure
-    const disclosureId = "pf-ocr-ws-re-extract-disclosure";
-    const disclosureContainer = panel.createDiv({ cls: "pf-disclosure" });
-    const disclosureHeader = disclosureContainer.createEl("button", {
-      cls: "pf-disclosure-header",
-      attr: { "aria-expanded": "false", type: "button" },
-    });
-    disclosureHeader.createEl("span", {
-      cls: "pf-disclosure-icon",
-      text: "\u25b6",
-    });
-    disclosureHeader.createEl("span", {
-      cls: "pf-disclosure-title",
-      text: t("ocr_ws_what_happens"),
-    });
-    const disclosureBody = disclosureContainer.createDiv({
-      cls: "pf-disclosure-body",
-    });
-    disclosureBody.createEl("p", { text: t("ocr_ws_disclosure_text") });
-    disclosureHeader.addEventListener("click", () => {
-      const isOpen = disclosureHeader.getAttribute("aria-expanded") === "true";
-      disclosureHeader.setAttribute("aria-expanded", String(!isOpen));
-      disclosureBody.classList.toggle("pf-disclosure-body--open", !isOpen);
-      const icon = disclosureHeader.querySelector(".pf-disclosure-icon");
-      if (icon) icon.textContent = isOpen ? "\u25b6" : "\u25bc";
-    });
+  private _runOcr(keys: string[]): void {
+    const pyCmd = this._resolvePython();
+    if (!pyCmd) {
+      new Notice("Runtime not ready");
+      return;
+    }
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    this.running = true;
+    this.progress = { current: 0, total: keys.length, paperKey: "" };
+    this._render();
+    execFile(
+      pyCmd.path,
+      [...pyCmd.args, "-m", "paperforge", "ocr", "run", ...keys],
+      { cwd: vp, timeout: 600000 },
+      (err: any) => {
+        this.running = false;
+        if (err) new Notice("OCR failed: " + (err.message || err));
+        else new Notice("OCR completed");
+        this._loadPapers().then(() => this._render());
+      }
+    );
   }
 
-  /* ── Helpers ── */
+  private _runRebuild(keys: string[]): void {
+    const pyCmd = this._resolvePython();
+    if (!pyCmd) {
+      new Notice("Runtime not ready");
+      return;
+    }
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    this.running = true;
+    this.progress = { current: 0, total: keys.length, paperKey: "" };
+    this._render();
+    execFile(
+      pyCmd.path,
+      [...pyCmd.args, "-m", "paperforge", "ocr", "rebuild", ...keys],
+      { cwd: vp, timeout: 600000 },
+      (err: any) => {
+        this.running = false;
+        if (err) new Notice("Rebuild failed: " + (err.message || err));
+        else new Notice("Rebuild completed");
+        this._loadPapers().then(() => this._render());
+      }
+    );
+  }
 
-  private _statusDescription(status: string): string {
-    const map: Record<string, string> = {
-      done: "OCR extraction completed successfully.",
-      pending: "Paper is queued for OCR extraction.",
-      failed: "OCR extraction encountered an error.",
-      nopdf: "No PDF attachment found for this paper.",
-      processing: "OCR extraction is currently running.",
-    };
-    return map[status] ?? "";
+  private _stopBuild(): void {
+    this.running = false;
+    this._render();
   }
 
   private _openFulltext(key: string): void {
     const vp = (this.app.vault.adapter as any).basePath as string;
     const paths = resolveVaultPaths(vp);
-    const fulltextPath = path.join(paths.ocrDir, key, "fulltext.md");
+    const fulltextPath = path.join(
+      vp,
+      paths.systemDir,
+      "PaperForge",
+      "ocr",
+      key,
+      "fulltext.md"
+    );
     if (!fs.existsSync(fulltextPath)) {
-      new Notice("Fulltext not found for this paper");
+      new Notice("Fulltext not found");
       return;
     }
-    // Open in Obsidian
     const file = this.app.vault.getAbstractFileByPath(
       path.relative(vp, fulltextPath).replace(/\\/g, "/")
     );
     if (file) {
-      (this.app as any).workspace.getLeaf().openFile(file);
+      (this.app.workspace as any).getLeaf().openFile(file);
     } else {
-      new Notice("Could not open fulltext file");
+      new Notice("Fulltext not found in vault");
     }
   }
+}
 
-  private _openBackupHistory(key: string): void {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const paths = resolveVaultPaths(vp);
-    const backupDir = path.join(paths.ocrDir, key, "backups");
-    if (!fs.existsSync(backupDir)) {
-      new Notice("No backups found for this paper");
-      return;
-    }
-    new Notice("Backup directory: " + backupDir);
-  }
+/* ── Helpers ── */
+
+function statusClass(status: string): string {
+  if (status === "done") return "pf-done";
+  if (status === "failed" || status === "error") return "pf-failed";
+  if (status === "processing" || status === "running") return "pf-pending";
+  return "pf-pending";
+}
+
+function statusLabel(status: string): string {
+  if (status === "done") return t("ocr_ws_status_done") || "Processed";
+  if (status === "failed" || status === "error")
+    return t("ocr_ws_status_failed") || "Failed";
+  if (status === "processing" || status === "running")
+    return t("ocr_ws_status_processing") || "Processing";
+  if (status === "nopdf") return t("ocr_ws_status_nopdf") || "No PDF";
+  return t("ocr_ws_status_pending") || "Pending";
 }

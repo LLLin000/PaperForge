@@ -3727,13 +3727,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "pf-cc-grid",
       attr: { role: "list", "aria-label": t("cc_operational_modules") },
     });
-    for (const mod of this._getOverviewModules()) {
+    for (const [idx, mod] of this._getOverviewModules().entries()) {
       const env =
         mod.id === "agent"
           ? this._getAgentPlaceholderEnvelope()
           : (envelopes[mod.id] ??
             createUnknownEnvelope(mod.id as CapabilityModule));
-      this._renderOverviewCard(grid, mod.id, mod.label, env);
+      this._renderOverviewCard(grid, mod.id, mod.label, env, idx + 1);
     }
   }
 
@@ -3768,7 +3768,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     grid: HTMLElement,
     mod: string,
     label: string,
-    env: ProbeEnvelope
+    env: ProbeEnvelope,
+    num: number
   ): void {
     const item = grid.createDiv({
       cls: "pf-cc-card-item",
@@ -3782,6 +3783,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       },
     });
     const header = card.createDiv({ cls: "pf-cc-card-header" });
+    header.createEl("span", {
+      cls: "pf-cc-num",
+      text: String(num).padStart(2, "0"),
+    });
     header.createEl("span", {
       cls: "pf-cc-card-title",
       text: label,
