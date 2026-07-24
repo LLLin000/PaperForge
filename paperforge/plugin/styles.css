@@ -6370,14 +6370,16 @@
 }
 
 /* ── Topbar ── */
+.modal-content .pf-cc-topbar,
 .pf-cc-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--size-4-4);
-  padding-bottom: var(--size-4-4);
-  border-bottom: 1px solid var(--background-modifier-border);
-  margin-bottom: var(--size-4-6);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: var(--size-4-4) !important;
+  padding-bottom: var(--size-4-4) !important;
+  border-bottom: 1px solid var(--background-modifier-border) !important;
+  margin-bottom: var(--size-4-6) !important;
+  flex-wrap: wrap !important;
 }
 .pf-cc-topbar-brand {
   display: flex;
@@ -6559,6 +6561,26 @@
 }
 
 /* ── Module Card — DESIGN.md: full-width editorial row ── */
+/* Override Obsidian button defaults */
+.modal-content button.pf-cc-module-card,
+.modal-content .pf-cc-module-card {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: var(--size-4-3) !important;
+  width: 100% !important;
+  padding: var(--size-4-4) 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--background-modifier-border) !important;
+  background: transparent !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  transition: background 120ms ease-out !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  font: inherit !important;
+  color: inherit !important;
+  line-height: inherit !important;
+}
 .pf-cc-module-card {
   display: flex;
   align-items: flex-start;

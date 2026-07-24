@@ -398,6 +398,15 @@ const LANG: Record<string, Record<string, string>> = {
     cc_summary_checking_body: "Checking Foundation and Library status…",
     cc_refresh_btn: "Refresh Status",
     cc_last_checked: "Last checked: ",
+    cc_needs_attention: "item needs attention",
+    cc_checked_pending: "Not checked yet",
+    cc_eyebrow: "control center",
+    cc_title: "Your literature pipeline",
+    cc_lede:
+      "See what is working, what needs you, and the single next action for every PaperForge capability.",
+    cc_modules_label: "modules",
+    cc_modules_title: "Five capabilities",
+    cc_modules_caption: "Optional modules do not affect core readiness.",
     cc_maintenance_count: "{n} items need attention",
     cc_card_retry: "Retry",
     cc_action_rebuild_derived: "Rebuild",
@@ -570,7 +579,6 @@ const LANG: Record<string, Record<string, string>> = {
     migration_banner_next:
       "Save the new value; PaperForge will retry secure migration on restart.",
     cc_n_pending: "{n} pending",
-    cc_title: "System Status",
     cc_desc:
       "Real-time status of PaperForge core modules. Modules with a pending action need your attention.",
     cc_zone_attention: "Needs Attention",
@@ -1119,6 +1127,9 @@ const LANG: Record<string, Record<string, string>> = {
     cc_summary_checking_body: "正在检查基础环境和文献库状态…",
     cc_refresh_btn: "刷新状态",
     cc_last_checked: "上次检查：",
+    cc_needs_attention: "项需要关注",
+    cc_checked_pending: "尚未检查",
+    cc_eyebrow: "控制中心",
     cc_maintenance_count: "{n} 项需要关注",
     cc_card_retry: "重试",
     cc_consequence_default: "当前状态暂不可用。",
@@ -1284,7 +1295,6 @@ const LANG: Record<string, Record<string, string>> = {
     cc_n_ready: "{n} 已就绪",
     cc_n_pending: "{n} 待接入",
     // ── Control Center (Issue #76) ──
-    cc_title: "系统状态",
     cc_desc: "PaperForge 核心模块的实时状态。有待处理操作的模块需要您的关注。",
     cc_zone_attention: "需要关注",
     cc_zone_modules: "所有模块",

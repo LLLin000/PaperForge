@@ -827,6 +827,15 @@ var pt = {
       cc_summary_checking_body: "Checking Foundation and Library status\u2026",
       cc_refresh_btn: "Refresh Status",
       cc_last_checked: "Last checked: ",
+      cc_needs_attention: "item needs attention",
+      cc_checked_pending: "Not checked yet",
+      cc_eyebrow: "control center",
+      cc_title: "Your literature pipeline",
+      cc_lede:
+        "See what is working, what needs you, and the single next action for every PaperForge capability.",
+      cc_modules_label: "modules",
+      cc_modules_title: "Five capabilities",
+      cc_modules_caption: "Optional modules do not affect core readiness.",
       cc_maintenance_count: "{n} items need attention",
       cc_card_retry: "Retry",
       cc_action_rebuild_derived: "Rebuild",
@@ -1000,7 +1009,6 @@ var pt = {
       migration_banner_next:
         "Save the new value; PaperForge will retry secure migration on restart.",
       cc_n_pending: "{n} pending",
-      cc_title: "System Status",
       cc_desc:
         "Real-time status of PaperForge core modules. Modules with a pending action need your attention.",
       cc_zone_attention: "Needs Attention",
@@ -1609,6 +1617,9 @@ var pt = {
         "\u6B63\u5728\u68C0\u67E5\u57FA\u7840\u73AF\u5883\u548C\u6587\u732E\u5E93\u72B6\u6001\u2026",
       cc_refresh_btn: "\u5237\u65B0\u72B6\u6001",
       cc_last_checked: "\u4E0A\u6B21\u68C0\u67E5\uFF1A",
+      cc_needs_attention: "\u9879\u9700\u8981\u5173\u6CE8",
+      cc_checked_pending: "\u5C1A\u672A\u68C0\u67E5",
+      cc_eyebrow: "\u63A7\u5236\u4E2D\u5FC3",
       cc_maintenance_count: "{n} \u9879\u9700\u8981\u5173\u6CE8",
       cc_card_retry: "\u91CD\u8BD5",
       cc_consequence_default:
@@ -1822,7 +1833,6 @@ var pt = {
       cc_diagnostic_toggle: "\u8BE6\u60C5",
       cc_n_ready: "{n} \u5DF2\u5C31\u7EEA",
       cc_n_pending: "{n} \u5F85\u63A5\u5165",
-      cc_title: "\u7CFB\u7EDF\u72B6\u6001",
       cc_desc:
         "PaperForge \u6838\u5FC3\u6A21\u5757\u7684\u5B9E\u65F6\u72B6\u6001\u3002\u6709\u5F85\u5904\u7406\u64CD\u4F5C\u7684\u6A21\u5757\u9700\u8981\u60A8\u7684\u5173\u6CE8\u3002",
       cc_zone_attention: "\u9700\u8981\u5173\u6CE8",
