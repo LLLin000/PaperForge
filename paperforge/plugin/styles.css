@@ -6675,3 +6675,438 @@
 .pf-help-diagnostic-btn:hover {
   background: var(--interactive-hover);
 }
+
+/* ==========================================================================
+   Prototype-fidelity overrides — ring shadows, serif, numbered cards,
+   info-box / impact-box patterns, button hierarchy
+   ========================================================================== */
+
+/* ── Ring shadow token ── */
+:root {
+  --pf-ring: 0 0 0 1px var(--background-modifier-border);
+  --pf-ring-hover: 0 0 0 1px var(--background-modifier-border-hover);
+}
+
+/* ── Override: Control Center shell ── */
+.pf-control-center {
+  font-family: var(--font-text);
+  color: var(--text-normal);
+  padding: 24px 20px 80px;
+}
+
+/* ── Eyebrow ── */
+.pf-cc-eyebrow {
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  text-transform: lowercase;
+  margin-bottom: 6px;
+  font-family: var(--font-monospace);
+}
+
+/* ── Title ── */
+.pf-cc-title {
+  font-size: 26px;
+  font-weight: 500;
+  margin: 0 0 8px;
+  letter-spacing: -0.3px;
+  line-height: 1.15;
+}
+
+/* ── Lede ── */
+.pf-cc-lede {
+  max-width: 560px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+
+/* ── Summary Card — ring shadow ── */
+.pf-cc-summary {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 28px;
+  box-shadow: var(--pf-ring);
+}
+.pf-cc-summary-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.pf-cc-summary-copy strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+.pf-cc-summary-copy .caption {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.pf-cc-summary-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.pf-cc-summary-meta strong {
+  color: var(--text-normal);
+  font-weight: 500;
+}
+.pf-cc-summary-refresh {
+  min-height: 30px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  box-shadow: var(--pf-ring);
+  transition: opacity 120ms;
+}
+.pf-cc-summary-refresh:hover {
+  opacity: 0.88;
+}
+
+/* ── Badge (summary + module cards) ── */
+.pf-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pf-badge--ready {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--interactive-accent);
+}
+.pf-badge--action {
+  background: color-mix(in srgb, var(--text-warning) 12%, transparent);
+  color: var(--text-warning);
+}
+.pf-badge--neutral {
+  background: var(--background-secondary);
+  color: var(--text-muted);
+}
+.pf-badge--checking {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--interactive-accent);
+}
+
+/* ── Section Head ── */
+.pf-cc-section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+.pf-cc-section-head h2 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+.pf-cc-section-head .caption {
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ── Module List — vertical stack ── */
+.pf-cc-module-list {
+  border-top: 1px solid var(--background-modifier-border-hover);
+}
+
+/* ── Module Card — numbered grid row ── */
+.pf-cc-module-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  border: 0;
+  border-bottom: 1px solid var(--background-modifier-border-hover);
+  background: transparent;
+  text-align: left;
+  padding: 14px 0;
+  cursor: pointer;
+  transition:
+    background 120ms ease-out,
+    transform 120ms ease-out;
+}
+.pf-cc-module-card:hover {
+  background: var(--background-secondary);
+}
+.pf-cc-module-card:active {
+  transform: translateY(1px);
+}
+.pf-cc-module-card .pf-cc-num {
+  padding-top: 2px;
+  color: var(--interactive-accent);
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  font-weight: 500;
+}
+.pf-cc-module-card .pf-cc-card-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 3px;
+  color: var(--text-normal);
+}
+.pf-cc-module-card .pf-cc-card-sentence {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.pf-cc-module-card .pf-cc-card-consequence {
+  display: block;
+  color: var(--text-warning);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+.pf-cc-module-card .pf-cc-card-metric {
+  display: block;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-family: var(--font-monospace);
+  margin-top: 6px;
+}
+.pf-cc-module-card .pf-cc-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+.pf-cc-module-card .pf-cc-card-arrow {
+  color: var(--text-faint);
+  font-size: 16px;
+}
+
+/* ── info-box / impact-box ── */
+.pf-info-box,
+.pf-impact-box {
+  border-left: 2px solid var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+  border-radius: 0 4px 4px 0;
+  padding: 12px 16px;
+  margin: 14px 0;
+}
+.pf-impact-box {
+  border-left-color: var(--text-warning);
+  background: color-mix(in srgb, var(--text-warning) 8%, transparent);
+}
+.pf-info-box strong,
+.pf-impact-box strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  color: var(--interactive-accent);
+}
+.pf-impact-box strong {
+  color: var(--text-warning);
+}
+.pf-info-box p,
+.pf-impact-box p {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Button hierarchy ── */
+.pf-btn {
+  min-height: 30px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+.pf-btn:hover {
+  opacity: 0.88;
+}
+.pf-btn:active {
+  transform: translateY(1px);
+}
+.pf-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+.pf-btn-primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+.pf-btn-secondary {
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  box-shadow: var(--pf-ring);
+}
+.pf-btn-ghost {
+  background: transparent;
+  color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+.pf-btn-warning {
+  background: color-mix(in srgb, var(--text-warning) 8%, transparent);
+  color: var(--text-warning);
+  box-shadow: 0 0 0 1px var(--text-warning);
+}
+.pf-btn-small {
+  min-height: 26px;
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
+/* ── Help task-list ── */
+.pf-help-task-list {
+  border-top: 1px solid var(--background-modifier-border-hover);
+  margin: 18px 0 24px;
+}
+.pf-help-task-btn {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 1px solid var(--background-modifier-border-hover);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.pf-help-task-btn strong {
+  font-size: 13px;
+  font-weight: 500;
+  display: block;
+}
+.pf-help-task-btn span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+.pf-help-task-btn .pf-help-task-arrow {
+  color: var(--text-faint);
+  font-size: 16px;
+}
+
+/* ── Config rows (module detail) ── */
+.pf-config {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 4px 18px;
+  margin: 18px 0;
+  box-shadow: var(--pf-ring);
+}
+.pf-config-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--background-modifier-border-hover);
+}
+.pf-config-row:last-child {
+  border-bottom: 0;
+}
+.pf-config-row .pf-config-key {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+.pf-config-row .pf-config-value {
+  font-size: 12px;
+  font-family: var(--font-monospace);
+  overflow-wrap: anywhere;
+}
+.pf-config-row .pf-config-explain {
+  grid-column: 2 / -1;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: -6px;
+}
+
+/* ── Progress shell (module detail) ── */
+.pf-progress-shell {
+  margin: 18px 0;
+}
+.pf-progress-track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+}
+.pf-progress-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--interactive-accent);
+  transform-origin: left;
+  transition: transform 180ms ease-in-out;
+}
+.pf-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 620px) {
+  .pf-control-center {
+    padding: 16px 12px 64px;
+  }
+  .pf-cc-summary {
+    padding: 14px;
+  }
+  .pf-cc-module-card {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    padding: 12px 0;
+  }
+  .pf-config-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .pf-config-row .pf-config-value {
+    grid-column: 1;
+  }
+  .pf-config-row .pf-config-explain {
+    grid-column: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-progress-fill {
+    transition-duration: 0.01ms !important;
+  }
+}
