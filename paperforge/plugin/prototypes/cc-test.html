@@ -1,0 +1,177 @@
+<!doctype html>
+<html class="theme-light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PaperForge CC — Obsidian Sim</title>
+    <style>
+      :root {
+        --background-primary: #ffffff;
+        --background-secondary: #f7f7f5;
+        --background-modifier-border: #e3e3e0;
+        --background-modifier-border-hover: #cfcfc9;
+        --background-modifier-hover: #efefec;
+        --text-normal: #262626;
+        --text-muted: #7a7a76;
+        --text-faint: #9e9e9a;
+        --interactive-accent: #7f6df2;
+        --text-on-accent: #ffffff;
+        --interactive-normal: #f1f1ef;
+        --interactive-hover: #e5e5e2;
+        --text-success: #4a9e5a;
+        --text-warning: #c26e1a;
+        --text-error: #c23c3c;
+        --font-ui-large: 20px;
+        --font-ui-medium: 16px;
+        --font-ui-small: 13px;
+        --font-ui-smaller: 11px;
+        --font-monospace-theme: "Cascadia Code", Consolas, monospace;
+        --radius-m: 6px;
+        --radius-s: 4px;
+        --size-4-1: 4px;
+        --size-4-2: 8px;
+        --size-4-3: 12px;
+        --size-4-4: 16px;
+        --size-4-5: 20px;
+        --size-4-6: 24px;
+        --size-4-8: 32px;
+      }
+      body {
+        margin: 0;
+        background: var(--background-primary);
+        color: var(--text-normal);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .shell {
+        max-width: 660px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+      }
+    </style>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="shell pf-control-center">
+      <div class="pf-cc-topbar">
+        <div class="pf-cc-topbar-brand">
+          <strong>PaperForge</strong
+          ><span class="pf-cc-topbar-version">v1.5.15</span>
+        </div>
+        <div class="pf-cc-topbar-tabs">
+          <button class="pf-cc-topbar-tab" aria-selected="true">
+            Overview
+          </button>
+          <button class="pf-cc-topbar-tab">Help</button>
+        </div>
+        <a class="pf-cc-topbar-link">OCR Workspace ↗</a>
+      </div>
+
+      <div class="pf-cc-eyebrow">control center</div>
+      <h1 class="pf-cc-title">Your literature pipeline</h1>
+      <p class="pf-cc-lede">
+        See what is working, what needs you, and the single next action for
+        every PaperForge capability.
+      </p>
+
+      <div class="pf-cc-summary">
+        <div class="pf-cc-summary-main">
+          <span class="pf-cc-summary-badge pf-cc-summary-badge--ready"
+            >READY</span
+          >
+          <div class="pf-cc-summary-copy">
+            <strong>Core pipeline is operational</strong>
+            <span class="pf-cc-summary-desc"
+              >Foundation and Library are ready. One enabled optional module
+              needs attention.</span
+            >
+          </div>
+        </div>
+        <div class="pf-cc-summary-meta">
+          <span><strong>1</strong> item needs attention</span>
+          <span>Checked just now</span>
+          <button class="pf-cc-summary-refresh">Refresh status</button>
+        </div>
+      </div>
+
+      <div class="pf-cc-section-head">
+        <div>
+          <div class="pf-cc-eyebrow">modules</div>
+          <h2>Five capabilities</h2>
+        </div>
+        <span class="pf-cc-section-subtitle"
+          >Optional modules do not affect core readiness.</span
+        >
+      </div>
+
+      <div class="pf-cc-module-list">
+        <button class="pf-cc-module-card">
+          <span class="pf-cc-module-num">01</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">Foundation</span>
+            <span class="pf-cc-module-sentence"
+              >PaperForge can run on this device.</span
+            >
+            <span class="pf-cc-module-metric">v1.5.15 · Python 3.12</span>
+          </div>
+          <span class="pf-badge pf-badge--ready">READY</span>
+          <span class="pf-cc-module-arrow">→</span>
+        </button>
+        <button class="pf-cc-module-card">
+          <span class="pf-cc-module-num">02</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">Library</span>
+            <span class="pf-cc-module-sentence"
+              >Your Zotero library is connected and current.</span
+            >
+            <span class="pf-cc-module-metric">12 papers · 4 vault folders</span>
+          </div>
+          <span class="pf-badge pf-badge--ready">READY</span>
+          <span class="pf-cc-module-arrow">→</span>
+        </button>
+        <button class="pf-cc-module-card">
+          <span class="pf-cc-module-num">03</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">OCR Engine</span>
+            <span class="pf-cc-module-sentence"
+              >OCR v2.4 is available for processed papers.</span
+            >
+            <span class="pf-cc-module-consequence"
+              >12 papers can be updated; existing text is backed up first.</span
+            >
+            <span class="pf-cc-module-metric"
+              >12 processed · current pipeline v2.4</span
+            >
+          </div>
+          <span class="pf-badge pf-badge--action-required"
+            >ACTION REQUIRED</span
+          >
+          <span class="pf-cc-module-arrow">→</span>
+        </button>
+        <button class="pf-cc-module-card">
+          <span class="pf-cc-module-num">04</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">Smart Retrieval</span>
+            <span class="pf-cc-module-sentence"
+              >Semantic search is not enabled.</span
+            >
+          </div>
+          <span class="pf-badge pf-badge--not-enabled">NOT ENABLED</span>
+          <span class="pf-cc-module-arrow">→</span>
+        </button>
+        <button class="pf-cc-module-card">
+          <span class="pf-cc-module-num">05</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">Agent Integration</span>
+            <span class="pf-cc-module-sentence"
+              >Agent Integration will be available in a future update.</span
+            >
+          </div>
+          <span class="pf-badge pf-badge--neutral">NOT AVAILABLE</span>
+          <span class="pf-cc-module-arrow">→</span>
+        </button>
+      </div>
+    </div>
+  </body>
+</html>

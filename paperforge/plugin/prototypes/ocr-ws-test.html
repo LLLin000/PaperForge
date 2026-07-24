@@ -1,0 +1,236 @@
+<!doctype html>
+<html class="theme-light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PaperForge OCR Workspace — Obsidian Sim</title>
+    <style>
+      :root {
+        --background-primary: #ffffff;
+        --background-secondary: #f7f7f5;
+        --background-modifier-border: #e3e3e0;
+        --background-modifier-border-hover: #cfcfc9;
+        --background-modifier-hover: #efefec;
+        --text-normal: #262626;
+        --text-muted: #7a7a76;
+        --text-faint: #9e9e9a;
+        --interactive-accent: #7f6df2;
+        --text-on-accent: #ffffff;
+        --interactive-normal: #f1f1ef;
+        --interactive-hover: #e5e5e2;
+        --text-success: #4a9e5a;
+        --text-warning: #c26e1a;
+        --text-error: #c23c3c;
+        --font-ui-large: 20px;
+        --font-ui-medium: 16px;
+        --font-ui-small: 13px;
+        --font-ui-smaller: 11px;
+        --font-monospace-theme: "Cascadia Code", Consolas, monospace;
+        --radius-m: 6px;
+        --radius-s: 4px;
+        --size-4-1: 4px;
+        --size-4-2: 8px;
+        --size-4-3: 12px;
+        --size-4-4: 16px;
+        --size-4-5: 20px;
+        --size-4-6: 24px;
+        --size-4-8: 32px;
+      }
+      body {
+        margin: 0;
+        background: var(--background-primary);
+        color: var(--text-normal);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .shell {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+      }
+    </style>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="shell pf-ocr-workspace">
+      <!-- Header -->
+      <div class="pf-ocr-ws-header">
+        <h1>OCR Workspace</h1>
+        <p class="pf-ocr-ws-lede">
+          View and manage OCR extraction for your literature collection.
+        </p>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="pf-ocr-ws-toolbar">
+        <div class="pf-ocr-ws-toolbar-count">
+          <strong>8</strong> of 12 papers
+        </div>
+        <div class="pf-ocr-ws-field">
+          <label>Filter by status</label>
+          <select>
+            <option>All</option>
+            <option>Not processed</option>
+            <option>Needs review</option>
+            <option>Processed</option>
+          </select>
+        </div>
+        <div class="pf-ocr-ws-version-field">
+          <button class="pf-ocr-ws-chip pf-active">All versions</button>
+          <button class="pf-ocr-ws-chip">v2.3 · 4</button>
+          <button class="pf-ocr-ws-chip">v2.4 · 6</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="pf-ocr-ws-viewport">
+        <table class="pf-ocr-ws-table">
+          <thead>
+            <tr>
+              <th class="pf-ocr-ws-col-check"><input type="checkbox" /></th>
+              <th class="pf-ocr-ws-col-paper">PAPER</th>
+              <th class="pf-ocr-ws-col-status">OCR STATE</th>
+              <th class="pf-ocr-ws-col-version">VERSION</th>
+              <th class="pf-ocr-ws-col-date">LAST PROCESSED</th>
+              <th class="pf-ocr-ws-col-action"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="pf-ocr-ws-col-check"><input type="checkbox" /></td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Understanding Metric-Related Pitfalls in Image Analysis
+                  Validation
+                </div>
+                <div class="pf-ocr-ws-paper-meta">
+                  Reinke, A. · Tizabi, M. · Baumgartner, C. · 2023
+                </div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-done">Processed</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">
+                <span class="pf-ocr-ws-version">v2.4</span>
+              </td>
+              <td class="pf-ocr-ws-col-date">Jul 12</td>
+              <td class="pf-ocr-ws-col-action">
+                <button class="pf-btn pf-btn-secondary pf-btn-small">
+                  Details
+                </button>
+              </td>
+            </tr>
+            <tr class="pf-update">
+              <td class="pf-ocr-ws-col-check"><input type="checkbox" /></td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Deep Learning Approaches to Histopathology Image Segmentation
+                </div>
+                <div class="pf-ocr-ws-paper-meta">
+                  Wang, X. · Chen, L. · Park, S. · Liu, M. · 2025
+                </div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-update">Update available</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">
+                <span class="pf-ocr-ws-version">v2.3</span>
+              </td>
+              <td class="pf-ocr-ws-col-date">Jul 11</td>
+              <td class="pf-ocr-ws-col-action">
+                <button class="pf-btn pf-btn-secondary pf-btn-small">
+                  Details
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td class="pf-ocr-ws-col-check"><input type="checkbox" /></td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Spatial Transcriptomics Integration with Single-Cell Atlases
+                </div>
+                <div class="pf-ocr-ws-paper-meta">
+                  Chen, R. · Wang, J. · Li, T. · 2022
+                </div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-pending">Not processed</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">—</td>
+              <td class="pf-ocr-ws-col-date">—</td>
+              <td class="pf-ocr-ws-col-action">
+                <button class="pf-btn pf-btn-secondary pf-btn-small">
+                  Details
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td class="pf-ocr-ws-col-check"><input type="checkbox" /></td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Transformer-Based Protein Structure Prediction
+                </div>
+                <div class="pf-ocr-ws-paper-meta">Li, S. · Kim, J. · 2024</div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-done">Processed</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">
+                <span class="pf-ocr-ws-version">v2.4</span>
+              </td>
+              <td class="pf-ocr-ws-col-date">Jul 10</td>
+              <td class="pf-ocr-ws-col-action">
+                <button class="pf-btn pf-btn-secondary pf-btn-small">
+                  Details
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td class="pf-ocr-ws-col-check"><input type="checkbox" /></td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Multimodal Learning for Radiology Report Generation
+                </div>
+                <div class="pf-ocr-ws-paper-meta">
+                  Park, H. · Lee, D. · Choi, Y. · 2025
+                </div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-done">Processed</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">
+                <span class="pf-ocr-ws-version">v2.4</span>
+              </td>
+              <td class="pf-ocr-ws-col-date">Jul 12</td>
+              <td class="pf-ocr-ws-col-action">
+                <button class="pf-btn pf-btn-secondary pf-btn-small">
+                  Details
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Batch bar -->
+      <div class="pf-ocr-ws-batchbar">
+        <div class="pf-ocr-ws-selection">
+          <strong>No papers selected</strong>
+          <span
+            >Select papers that are not processed or have an update
+            available.</span
+          >
+        </div>
+        <div class="pf-ocr-ws-batch-actions">
+          <button class="pf-btn pf-btn-primary" disabled>
+            Process selected
+          </button>
+          <button class="pf-btn pf-btn-warning" disabled>
+            Update selected
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
