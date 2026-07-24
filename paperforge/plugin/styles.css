@@ -6560,48 +6560,30 @@
   border-top: 1px solid var(--background-modifier-border);
 }
 
-/* ── Module Card — DESIGN.md: full-width editorial row ── */
+/* ── Module Card — full-width row ── */
 /* Override Obsidian button defaults */
-.modal-content button.pf-cc-module-card,
 .modal-content .pf-cc-module-card {
   display: flex !important;
   align-items: flex-start !important;
-  gap: var(--size-4-3) !important;
+  gap: 12px !important;
   width: 100% !important;
-  padding: var(--size-4-4) 0 !important;
+  padding: 12px 0 !important;
   border: 0 !important;
   border-bottom: 1px solid var(--background-modifier-border) !important;
   background: transparent !important;
   text-align: left !important;
   cursor: pointer !important;
-  transition: background 120ms ease-out !important;
   box-sizing: border-box !important;
   margin: 0 !important;
   font: inherit !important;
   color: inherit !important;
   line-height: inherit !important;
+  min-height: auto !important;
 }
-.pf-cc-module-card {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--size-4-3);
-  width: 100%;
-  padding: var(--size-4-4) 0;
-  border: 0;
-  border-bottom: 1px solid var(--background-modifier-border);
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  transition: background 120ms ease-out;
+.modal-content .pf-cc-module-card:hover {
+  background: var(--background-modifier-hover) !important;
 }
-.pf-cc-module-card:hover {
-  background: var(--background-modifier-hover);
-}
-.pf-cc-module-card:focus-visible {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 2px;
-}
-.pf-cc-module-num {
+.pf-cc-num {
   flex-shrink: 0;
   width: 24px;
   padding-top: 2px;
@@ -6610,33 +6592,21 @@
   font-size: var(--font-ui-smaller);
   font-weight: 500;
 }
-.pf-cc-module-body {
-  flex: 1;
-  min-width: 0;
-}
-.pf-cc-module-name {
-  display: block;
+.pf-cc-card-name {
   font-size: var(--font-ui-small);
   font-weight: var(--font-semibold);
   color: var(--text-normal);
-  margin-bottom: var(--size-4-1);
 }
-.pf-cc-module-sentence {
-  display: block;
+.pf-cc-card-sentence {
   color: var(--text-muted);
-  font-size: var(--font-ui-small);
-  line-height: 1.45;
+  font-size: var(--font-ui-smaller);
 }
-.pf-cc-module-metric {
-  display: block;
+.pf-cc-card-metric {
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
   font-family: var(--font-monospace-theme);
-  margin-top: var(--size-4-2);
 }
-.pf-cc-module-arrow {
-  flex-shrink: 0;
-  align-self: center;
+.pf-cc-card-arrow {
   color: var(--text-faint);
   font-size: 14px;
 }
