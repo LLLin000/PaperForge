@@ -1,0 +1,173 @@
+<!doctype html>
+<html class="theme-light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>OCR Workspace — Actual Rendering</title>
+    <style>
+      :root {
+        --background-primary: #ffffff;
+        --background-secondary: #f7f7f5;
+        --background-modifier-border: #e3e3e0;
+        --background-modifier-border-hover: #cfcfc9;
+        --background-modifier-hover: #efefec;
+        --text-normal: #262626;
+        --text-muted: #7a7a76;
+        --text-faint: #9e9e9a;
+        --interactive-accent: #7f6df2;
+        --text-on-accent: #ffffff;
+        --interactive-normal: #f1f1ef;
+        --interactive-hover: #e5e5e2;
+        --text-success: #4a9e5a;
+        --text-warning: #c26e1a;
+        --text-error: #c23c3c;
+        --font-ui-large: 20px;
+        --font-ui-medium: 16px;
+        --font-ui-small: 13px;
+        --font-ui-smaller: 11px;
+        --font-monospace-theme: "Cascadia Code", Consolas, monospace;
+        --radius-m: 6px;
+        --radius-s: 4px;
+        --size-4-1: 4px;
+        --size-4-2: 8px;
+        --size-4-3: 12px;
+        --size-4-4: 16px;
+        --size-4-5: 20px;
+        --size-4-6: 24px;
+        --size-4-8: 32px;
+        --font-semibold: 600;
+      }
+      body {
+        margin: 0;
+        background: var(--background-primary);
+        color: var(--text-normal);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .modal-content {
+        padding: 20px;
+        overflow-y: auto;
+        height: 100%;
+      }
+      button {
+        background: var(--interactive-normal);
+        border: 1px solid var(--background-modifier-border);
+        border-radius: var(--radius-s);
+        color: var(--text-normal);
+        font-family: inherit;
+        font-size: var(--font-ui-small);
+        padding: 6px 12px;
+        cursor: pointer;
+        min-height: 30px;
+      }
+    </style>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div
+      class="modal-content pf-ocr-workspace"
+      style="max-width: 960px; margin: 0 auto"
+    >
+      <div class="pf-ocr-ws-header">
+        <h1>OCR 工作区</h1>
+        <p class="pf-ocr-ws-lede">查看和管理文献集合的 OCR 提取。</p>
+      </div>
+
+      <div class="pf-ocr-ws-toolbar">
+        <div class="pf-ocr-ws-toolbar-count"><strong>8</strong> / 12 篇</div>
+        <div class="pf-ocr-ws-field">
+          <label>按状态筛选</label>
+          <select>
+            <option>全部</option>
+            <option>未处理</option>
+            <option>需审核</option>
+            <option>已处理</option>
+          </select>
+        </div>
+        <div class="pf-ocr-ws-version-field">
+          <button class="pf-ocr-ws-chip pf-active">全部版本</button>
+          <button class="pf-ocr-ws-chip">v2.3 · 4</button>
+          <button class="pf-ocr-ws-chip">v2.4 · 6</button>
+        </div>
+      </div>
+
+      <div class="pf-ocr-ws-viewport">
+        <table class="pf-ocr-ws-table">
+          <thead>
+            <tr>
+              <th class="pf-ocr-ws-col-check"><input type="checkbox" /></th>
+              <th class="pf-ocr-ws-col-paper">论文</th>
+              <th class="pf-ocr-ws-col-status">OCR 状态</th>
+              <th class="pf-ocr-ws-col-version">版本</th>
+              <th class="pf-ocr-ws-col-date">最后处理</th>
+              <th class="pf-ocr-ws-col-action"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="pf-ocr-ws-col-check"><input type="checkbox" /></td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Understanding Metric-Related Pitfalls in Image Analysis
+                  Validation
+                </div>
+                <div class="pf-ocr-ws-paper-meta">Reinke, A. · 2023</div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-done">已处理</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">
+                <span class="pf-ocr-ws-version">v2.4</span>
+              </td>
+              <td class="pf-ocr-ws-col-date">Jul 12</td>
+              <td class="pf-ocr-ws-col-action"><button>详情</button></td>
+            </tr>
+            <tr class="pf-update">
+              <td class="pf-ocr-ws-col-check"><input type="checkbox" /></td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Deep Learning Approaches to Histopathology
+                </div>
+                <div class="pf-ocr-ws-paper-meta">Wang, X. · 2025</div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-update">有更新</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">
+                <span class="pf-ocr-ws-version">v2.3</span>
+              </td>
+              <td class="pf-ocr-ws-col-date">Jul 11</td>
+              <td class="pf-ocr-ws-col-action"><button>详情</button></td>
+            </tr>
+            <tr>
+              <td class="pf-ocr-ws-col-check"><input type="checkbox" /></td>
+              <td class="pf-ocr-ws-col-paper">
+                <div class="pf-ocr-ws-paper-title">
+                  Spatial Transcriptomics Integration
+                </div>
+                <div class="pf-ocr-ws-paper-meta">Chen, R. · 2022</div>
+              </td>
+              <td class="pf-ocr-ws-col-status">
+                <span class="pf-ocr-ws-status pf-pending">待处理</span>
+              </td>
+              <td class="pf-ocr-ws-col-version">—</td>
+              <td class="pf-ocr-ws-col-date">—</td>
+              <td class="pf-ocr-ws-col-action"><button>详情</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pf-ocr-ws-batchbar">
+        <div class="pf-ocr-ws-selection">
+          <strong>未选择论文</strong><span>选择未处理或有更新的论文。</span>
+        </div>
+        <div class="pf-ocr-ws-batch-actions">
+          <button disabled>处理所选</button>
+          <button disabled>更新所选</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

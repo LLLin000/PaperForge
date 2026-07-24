@@ -1,0 +1,205 @@
+<!doctype html>
+<html class="theme-light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PaperForge Plugin — Actual Rendering</title>
+    <style>
+      /* Simulate Obsidian's actual CSS that applies to plugins */
+      :root {
+        --background-primary: #ffffff;
+        --background-secondary: #f7f7f5;
+        --background-modifier-border: #e3e3e0;
+        --background-modifier-border-hover: #cfcfc9;
+        --background-modifier-hover: #efefec;
+        --text-normal: #262626;
+        --text-muted: #7a7a76;
+        --text-faint: #9e9e9a;
+        --interactive-accent: #7f6df2;
+        --text-on-accent: #ffffff;
+        --interactive-normal: #f1f1ef;
+        --interactive-hover: #e5e5e2;
+        --text-success: #4a9e5a;
+        --text-warning: #c26e1a;
+        --text-error: #c23c3c;
+        --font-ui-large: 20px;
+        --font-ui-medium: 16px;
+        --font-ui-small: 13px;
+        --font-ui-smaller: 11px;
+        --font-monospace-theme: "Cascadia Code", Consolas, monospace;
+        --radius-m: 6px;
+        --radius-s: 4px;
+        --size-4-1: 4px;
+        --size-4-2: 8px;
+        --size-4-3: 12px;
+        --size-4-4: 16px;
+        --size-4-5: 20px;
+        --size-4-6: 24px;
+        --size-4-8: 32px;
+        --font-semibold: 600;
+      }
+
+      /* Obsidian's actual button styles that override everything */
+      button {
+        background: var(--interactive-normal);
+        border: 1px solid var(--background-modifier-border);
+        border-radius: var(--radius-s);
+        color: var(--text-normal);
+        font-family: inherit;
+        font-size: var(--font-ui-small);
+        padding: 6px 12px;
+        cursor: pointer;
+        min-height: 30px;
+      }
+      button:hover {
+        background: var(--interactive-hover);
+        border-color: var(--background-modifier-border-hover);
+      }
+      button.mod-cta {
+        background: var(--interactive-accent);
+        color: var(--text-on-accent);
+        border-color: var(--interactive-accent);
+      }
+
+      /* Obsidian modal content */
+      .modal-content {
+        padding: 20px;
+        overflow-y: auto;
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--background-primary);
+        color: var(--text-normal);
+      }
+    </style>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div
+      class="modal-content pf-control-center"
+      style="max-width: 660px; margin: 0 auto"
+    >
+      <!-- Topbar -->
+      <div class="pf-cc-topbar">
+        <div class="pf-cc-topbar-brand">
+          <strong>PaperForge</strong
+          ><span class="pf-cc-topbar-version">v1.5.15</span>
+        </div>
+        <div class="pf-cc-topbar-tabs">
+          <button class="pf-cc-topbar-tab" aria-selected="true">
+            Overview
+          </button>
+          <button class="pf-cc-topbar-tab">Help</button>
+        </div>
+        <a class="pf-cc-topbar-link">打开 OCR 工作区 ↗</a>
+      </div>
+
+      <!-- Eyebrow + Title + Lede -->
+      <div class="pf-cc-eyebrow">控制中心</div>
+      <h1 class="pf-cc-title">文献管理流水线</h1>
+      <p class="pf-cc-lede">
+        查看每个模块的运行状态，发现需要关注的问题，以及下一步操作。
+      </p>
+
+      <!-- Summary Card -->
+      <div class="pf-cc-summary">
+        <div class="pf-cc-summary-main">
+          <span class="pf-cc-summary-badge pf-cc-summary-badge--ready"
+            >已就绪</span
+          >
+          <div class="pf-cc-summary-copy">
+            <strong>PaperForge 已就绪</strong>
+            <span class="pf-cc-summary-desc"
+              >基础环境和文献库均已正常运行。</span
+            >
+          </div>
+        </div>
+        <div class="pf-cc-summary-meta">
+          <span><strong>3</strong> 项需要关注</span>
+          <span>上次检查：2026/7/24 14:41:12</span>
+          <button class="pf-cc-summary-refresh">刷新状态</button>
+        </div>
+      </div>
+
+      <!-- Section Head -->
+      <div class="pf-cc-section-head">
+        <div>
+          <div class="pf-cc-eyebrow">模块</div>
+          <h2>五大能力</h2>
+        </div>
+        <span class="pf-cc-section-subtitle">可选模块不影响核心运行。</span>
+      </div>
+
+      <!-- Module List -->
+      <div class="pf-cc-module-list">
+        <!-- 01 Foundation -->
+        <div class="pf-cc-module-card" style="cursor: pointer">
+          <span class="pf-cc-num">01</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">基础环境</span>
+            <span class="pf-cc-module-sentence"
+              >PaperForge 已在此设备上就绪。</span
+            >
+            <span class="pf-cc-module-metric"
+              >上次检查：2026/7/24 14:41:12</span
+            >
+          </div>
+          <span class="pf-badge pf-badge--ready">已就绪</span>
+          <span class="pf-cc-module-arrow">→</span>
+        </div>
+        <!-- 02 Library -->
+        <div class="pf-cc-module-card" style="cursor: pointer">
+          <span class="pf-cc-num">02</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">文献库</span>
+            <span class="pf-cc-module-sentence"
+              >Zotero 文献库已连接并保持最新。</span
+            >
+            <span class="pf-cc-module-metric"
+              >上次检查：2026/7/24 14:41:12</span
+            >
+          </div>
+          <span class="pf-badge pf-badge--ready">已就绪</span>
+          <span class="pf-cc-module-arrow">→</span>
+        </div>
+        <!-- 03 OCR -->
+        <div class="pf-cc-module-card" style="cursor: pointer">
+          <span class="pf-cc-num">03</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">OCR 引擎</span>
+            <span class="pf-cc-module-sentence"
+              >OCR 引擎的检测数据已过期。</span
+            >
+          </div>
+          <span class="pf-badge pf-badge--detection-failed">检测失败</span>
+          <span class="pf-cc-module-arrow">→</span>
+        </div>
+        <!-- 04 Smart Retrieval -->
+        <div class="pf-cc-module-card" style="cursor: pointer">
+          <span class="pf-cc-num">04</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">智能检索</span>
+            <span class="pf-cc-module-sentence"
+              >尚未建立检索索引，请先构建以启用搜索。</span
+            >
+          </div>
+          <span class="pf-badge pf-badge--action-required">需要操作</span>
+          <span class="pf-cc-module-arrow">→</span>
+        </div>
+        <!-- 05 Agent -->
+        <div class="pf-cc-module-card" style="cursor: pointer">
+          <span class="pf-cc-num">05</span>
+          <div class="pf-cc-module-body">
+            <span class="pf-cc-module-name">Agent 集成</span>
+            <span class="pf-cc-module-sentence"
+              >需要部署 PaperForge Skills 时再选择 Agent 平台。</span
+            >
+          </div>
+          <span class="pf-badge pf-badge--not-enabled">未启用</span>
+          <span class="pf-cc-module-arrow">→</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

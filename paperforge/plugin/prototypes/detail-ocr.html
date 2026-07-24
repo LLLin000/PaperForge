@@ -1,0 +1,424 @@
+<!doctype html>
+<html class="theme-light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>OCR Detail — Actual Rendering</title>
+    <style>
+      :root {
+        --background-primary: #fff;
+        --background-secondary: #f7f7f5;
+        --background-modifier-border: #e3e3e0;
+        --background-modifier-border-hover: #cfcfc9;
+        --background-modifier-hover: #efefec;
+        --text-normal: #262626;
+        --text-muted: #7a7a76;
+        --text-faint: #9e9e9a;
+        --interactive-accent: #7f6df2;
+        --text-on-accent: #fff;
+        --interactive-normal: #f1f1ef;
+        --interactive-hover: #e5e5e2;
+        --text-success: #4a9e5a;
+        --text-warning: #c26e1a;
+        --text-error: #c23c3c;
+        --font-ui-large: 20px;
+        --font-ui-medium: 16px;
+        --font-ui-small: 13px;
+        --font-ui-smaller: 11px;
+        --font-monospace-theme: "Cascadia Code", Consolas, monospace;
+        --radius-m: 6px;
+        --radius-s: 4px;
+        --size-4-1: 4px;
+        --size-4-2: 8px;
+        --size-4-3: 12px;
+        --size-4-4: 16px;
+        --size-4-5: 20px;
+        --size-4-6: 24px;
+        --font-semibold: 600;
+      }
+      body {
+        margin: 0;
+        background: var(--background-primary);
+        color: var(--text-normal);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .modal-content {
+        padding: 20px;
+        overflow-y: auto;
+        height: 100%;
+      }
+      button {
+        background: var(--interactive-normal);
+        border: 1px solid var(--background-modifier-border);
+        border-radius: var(--radius-s);
+        color: var(--text-normal);
+        font-family: inherit;
+        font-size: var(--font-ui-small);
+        padding: 6px 12px;
+        cursor: pointer;
+        min-height: 30px;
+      }
+    </style>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div
+      class="modal-content pf-control-center"
+      style="max-width: 660px; margin: 0 auto"
+    >
+      <!-- Back button -->
+      <button
+        style="
+          background: none;
+          border: none;
+          color: var(--interactive-accent);
+          padding: 0;
+          margin-bottom: 16px;
+          cursor: pointer;
+        "
+      >
+        ← 返回总览
+      </button>
+
+      <!-- Module switcher tabs -->
+      <div
+        style="
+          display: flex;
+          gap: 4px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid var(--background-modifier-border);
+          margin-bottom: 20px;
+        "
+      >
+        <button
+          style="
+            flex: 1;
+            background: var(--background-secondary);
+            color: var(--text-normal);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+            font-weight: 500;
+          "
+        >
+          基础环境
+        </button>
+        <button
+          style="
+            flex: 1;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+            font-weight: 500;
+          "
+        >
+          文献库
+        </button>
+        <button
+          style="
+            flex: 1;
+            background: var(--interactive-accent);
+            color: var(--text-on-accent);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+            font-weight: 500;
+          "
+        >
+          OCR 引擎
+        </button>
+        <button
+          style="
+            flex: 1;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+            font-weight: 500;
+          "
+        >
+          智能检索
+        </button>
+        <button
+          style="
+            flex: 1;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+            font-weight: 500;
+          "
+        >
+          Agent
+        </button>
+      </div>
+
+      <!-- OCR Module Detail -->
+      <div style="margin-bottom: 16px">
+        <h2
+          style="
+            font-size: var(--font-ui-medium);
+            font-weight: var(--font-semibold);
+            margin: 0 0 4px;
+          "
+        >
+          OCR 引擎
+        </h2>
+        <span
+          style="
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: var(--radius-s);
+            font-size: 11px;
+            font-weight: 500;
+            background: color-mix(
+              in srgb,
+              var(--text-success) 10%,
+              transparent
+            );
+            color: var(--text-success);
+          "
+          >已就绪</span
+        >
+        <p
+          style="
+            color: var(--text-muted);
+            font-size: var(--font-ui-small);
+            margin: 8px 0 0;
+          "
+        >
+          OCR 管道运行正常，可处理论文全文提取。
+        </p>
+      </div>
+
+      <!-- Primary Action -->
+      <button
+        style="
+          background: var(--interactive-accent);
+          color: var(--text-on-accent);
+          border: none;
+          border-radius: var(--radius-s);
+          padding: 8px 16px;
+          font-size: var(--font-ui-small);
+          font-weight: 500;
+          cursor: pointer;
+        "
+      >
+        打开 OCR 工作区
+      </button>
+
+      <!-- Config rows -->
+      <div
+        style="
+          background: var(--background-secondary);
+          border: 1px solid var(--background-modifier-border);
+          border-radius: var(--radius-m);
+          padding: 4px 16px;
+          margin: 20px 0;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--background-modifier-border);
+          "
+        >
+          <span
+            style="
+              font-size: var(--font-ui-small);
+              font-weight: var(--font-semibold);
+            "
+            >OCR 版本</span
+          >
+          <span
+            style="
+              font-size: var(--font-ui-smaller);
+              font-family: var(--font-monospace-theme);
+              color: var(--text-muted);
+            "
+            >v2.0.0</span
+          >
+        </div>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--background-modifier-border);
+          "
+        >
+          <span
+            style="
+              font-size: var(--font-ui-small);
+              font-weight: var(--font-semibold);
+            "
+            >已处理论文</span
+          >
+          <span
+            style="
+              font-size: var(--font-ui-smaller);
+              font-family: var(--font-monospace-theme);
+              color: var(--text-muted);
+            "
+            >12 篇</span
+          >
+        </div>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--background-modifier-border);
+          "
+        >
+          <span
+            style="
+              font-size: var(--font-ui-small);
+              font-weight: var(--font-semibold);
+            "
+            >待处理</span
+          >
+          <span
+            style="
+              font-size: var(--font-ui-smaller);
+              font-family: var(--font-monospace-theme);
+              color: var(--text-muted);
+            "
+            >3 篇</span
+          >
+        </div>
+        <div
+          style="display: flex; justify-content: space-between; padding: 10px 0"
+        >
+          <span
+            style="
+              font-size: var(--font-ui-small);
+              font-weight: var(--font-semibold);
+            "
+            >上次检查</span
+          >
+          <span
+            style="
+              font-size: var(--font-ui-smaller);
+              font-family: var(--font-monospace-theme);
+              color: var(--text-muted);
+            "
+            >2026/7/24 14:41:12</span
+          >
+        </div>
+      </div>
+
+      <!-- Info box -->
+      <div
+        style="
+          border-left: 2px solid var(--interactive-accent);
+          background: color-mix(
+            in srgb,
+            var(--interactive-accent) 6%,
+            transparent
+          );
+          border-radius: 0 var(--radius-s) var(--radius-s) 0;
+          padding: 12px 16px;
+          margin: 16px 0;
+        "
+      >
+        <strong
+          style="
+            display: block;
+            font-size: var(--font-ui-smaller);
+            font-weight: var(--font-semibold);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+            color: var(--interactive-accent);
+          "
+          >已备份</strong
+        >
+        <p
+          style="
+            color: var(--text-muted);
+            font-size: var(--font-ui-small);
+            line-height: 1.5;
+            margin: 0;
+          "
+        >
+          每次重建前，当前全文会通过 SHA-256 验证后备份到 versions/ 目录。
+        </p>
+      </div>
+
+      <!-- Impact box -->
+      <div
+        style="
+          border-left: 2px solid var(--text-warning);
+          background: color-mix(in srgb, var(--text-warning) 6%, transparent);
+          border-radius: 0 var(--radius-s) var(--radius-s) 0;
+          padding: 12px 16px;
+          margin: 16px 0;
+        "
+      >
+        <strong
+          style="
+            display: block;
+            font-size: var(--font-ui-smaller);
+            font-weight: var(--font-semibold);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+            color: var(--text-warning);
+          "
+          >可中断</strong
+        >
+        <p
+          style="
+            color: var(--text-muted);
+            font-size: var(--font-ui-small);
+            line-height: 1.5;
+            margin: 0;
+          "
+        >
+          你可以安全停止。已完成的论文保持更新，未完成的论文保留之前的输出。
+        </p>
+      </div>
+
+      <!-- Diagnostic -->
+      <details style="margin-top: 16px">
+        <summary
+          style="
+            color: var(--text-faint);
+            font-size: var(--font-ui-smaller);
+            cursor: pointer;
+          "
+        >
+          诊断详情
+        </summary>
+        <div
+          style="
+            margin-top: 8px;
+            padding: 8px;
+            background: var(--background-secondary);
+            border-radius: var(--radius-s);
+            font-size: 11px;
+            font-family: var(--font-monospace-theme);
+            color: var(--text-faint);
+          "
+        >
+          module: ocr | state: ready | severity: ok | ttl: 60s
+        </div>
+      </details>
+    </div>
+  </body>
+</html>

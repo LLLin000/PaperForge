@@ -1,0 +1,151 @@
+<!doctype html>
+<html class="theme-light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Help Page</title>
+    <style>
+      :root {
+        --background-primary: #fff;
+        --background-secondary: #f7f7f5;
+        --background-modifier-border: #e3e3e0;
+        --background-modifier-border-hover: #cfcfc9;
+        --background-modifier-hover: #efefec;
+        --text-normal: #262626;
+        --text-muted: #7a7a76;
+        --text-faint: #9e9e9a;
+        --interactive-accent: #7f6df2;
+        --text-on-accent: #fff;
+        --interactive-normal: #f1f1ef;
+        --interactive-hover: #e5e5e2;
+        --text-success: #4a9e5a;
+        --text-warning: #c26e1a;
+        --text-error: #c23c3c;
+        --font-ui-large: 20px;
+        --font-ui-medium: 16px;
+        --font-ui-small: 13px;
+        --font-ui-smaller: 11px;
+        --font-monospace-theme: "Cascadia Code", Consolas, monospace;
+        --radius-m: 6px;
+        --radius-s: 4px;
+        --size-4-1: 4px;
+        --size-4-2: 8px;
+        --size-4-3: 12px;
+        --size-4-4: 16px;
+        --font-semibold: 600;
+      }
+      body {
+        margin: 0;
+        background: var(--background-primary);
+        color: var(--text-normal);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .modal-content {
+        padding: 20px;
+        overflow-y: auto;
+        height: 100%;
+      }
+      button {
+        background: var(--interactive-normal);
+        border: 1px solid var(--background-modifier-border);
+        border-radius: var(--radius-s);
+        color: var(--text-normal);
+        font-family: inherit;
+        font-size: var(--font-ui-small);
+        padding: 6px 12px;
+        cursor: pointer;
+        min-height: 30px;
+      }
+    </style>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div
+      class="modal-content pf-control-center"
+      style="max-width: 660px; margin: 0 auto"
+    >
+      <div class="pf-cc-topbar">
+        <div class="pf-cc-topbar-brand">
+          <strong>PaperForge</strong
+          ><span class="pf-cc-topbar-version">v1.5.15</span>
+        </div>
+        <div class="pf-cc-topbar-tabs">
+          <button class="pf-cc-topbar-tab">概览</button>
+          <button class="pf-cc-topbar-tab" aria-selected="true">帮助</button>
+        </div>
+        <a class="pf-cc-topbar-link">打开 OCR 工作区 ↗</a>
+      </div>
+
+      <div class="pf-cc-eyebrow">帮助</div>
+      <h1 class="pf-cc-title">从任务开始</h1>
+      <p class="pf-cc-lede">打开相关模块，或复制诊断信息寻求支持。</p>
+
+      <div class="pf-help-task-list">
+        <button class="pf-help-task-btn">
+          <div>
+            <strong>连接 Zotero 并同步文献</strong
+            ><span
+              >将你的 Zotero 文献库连接到 PaperForge，自动同步 PDF
+              和元数据。</span
+            >
+          </div>
+          <span class="pf-help-task-arrow">→</span>
+        </button>
+        <button class="pf-help-task-btn">
+          <div>
+            <strong>处理 PDF 全文</strong
+            ><span>使用 OCR 引擎提取论文全文、图表和表格。</span>
+          </div>
+          <span class="pf-help-task-arrow">→</span>
+        </button>
+        <button class="pf-help-task-btn">
+          <div>
+            <strong>构建语义搜索索引</strong
+            ><span>为全文创建向量索引，支持自然语言搜索。</span>
+          </div>
+          <span class="pf-help-task-arrow">→</span>
+        </button>
+        <button class="pf-help-task-btn">
+          <div>
+            <strong>配置 AI Agent 平台</strong
+            ><span>连接 Claude、Cursor 等 AI 工具进行深度阅读。</span>
+          </div>
+          <span class="pf-help-task-arrow">→</span>
+        </button>
+      </div>
+
+      <h3
+        style="
+          font-size: var(--font-ui-small);
+          font-weight: var(--font-semibold);
+          margin: 0 0 12px;
+        "
+      >
+        支持诊断
+      </h3>
+      <p
+        style="
+          color: var(--text-muted);
+          font-size: var(--font-ui-smaller);
+          margin: 0 0 12px;
+        "
+      >
+        复制隐私安全的诊断信息，发送给支持团队排查问题。
+      </p>
+      <button
+        style="
+          background: var(--interactive-normal);
+          border: 1px solid var(--background-modifier-border);
+          border-radius: var(--radius-s);
+          padding: 6px 16px;
+          font-size: var(--font-ui-small);
+          cursor: pointer;
+        "
+      >
+        复制诊断信息
+      </button>
+    </div>
+  </body>
+</html>

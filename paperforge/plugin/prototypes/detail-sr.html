@@ -1,0 +1,348 @@
+<!doctype html>
+<html class="theme-light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Smart Retrieval Detail</title>
+    <style>
+      :root {
+        --background-primary: #fff;
+        --background-secondary: #f7f7f5;
+        --background-modifier-border: #e3e3e0;
+        --background-modifier-border-hover: #cfcfc9;
+        --background-modifier-hover: #efefec;
+        --text-normal: #262626;
+        --text-muted: #7a7a76;
+        --text-faint: #9e9e9a;
+        --interactive-accent: #7f6df2;
+        --text-on-accent: #fff;
+        --interactive-normal: #f1f1ef;
+        --interactive-hover: #e5e5e2;
+        --text-success: #4a9e5a;
+        --text-warning: #c26e1a;
+        --text-error: #c23c3c;
+        --font-ui-large: 20px;
+        --font-ui-medium: 16px;
+        --font-ui-small: 13px;
+        --font-ui-smaller: 11px;
+        --font-monospace-theme: "Cascadia Code", Consolas, monospace;
+        --radius-m: 6px;
+        --radius-s: 4px;
+        --size-4-1: 4px;
+        --size-4-2: 8px;
+        --size-4-3: 12px;
+        --size-4-4: 16px;
+        --font-semibold: 600;
+      }
+      body {
+        margin: 0;
+        background: var(--background-primary);
+        color: var(--text-normal);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .modal-content {
+        padding: 20px;
+        overflow-y: auto;
+        height: 100%;
+      }
+      button {
+        background: var(--interactive-normal);
+        border: 1px solid var(--background-modifier-border);
+        border-radius: var(--radius-s);
+        color: var(--text-normal);
+        font-family: inherit;
+        font-size: var(--font-ui-small);
+        padding: 6px 12px;
+        cursor: pointer;
+        min-height: 30px;
+      }
+    </style>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div
+      class="modal-content pf-control-center"
+      style="max-width: 660px; margin: 0 auto"
+    >
+      <button
+        style="
+          background: none;
+          border: none;
+          color: var(--interactive-accent);
+          padding: 0;
+          margin-bottom: 16px;
+          cursor: pointer;
+        "
+      >
+        ← 返回总览
+      </button>
+
+      <div
+        style="
+          display: flex;
+          gap: 4px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid var(--background-modifier-border);
+          margin-bottom: 20px;
+        "
+      >
+        <button
+          style="
+            flex: 1;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+          "
+        >
+          基础环境
+        </button>
+        <button
+          style="
+            flex: 1;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+          "
+        >
+          文献库
+        </button>
+        <button
+          style="
+            flex: 1;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+          "
+        >
+          OCR 引擎
+        </button>
+        <button
+          style="
+            flex: 1;
+            background: var(--interactive-accent);
+            color: var(--text-on-accent);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+          "
+        >
+          智能检索
+        </button>
+        <button
+          style="
+            flex: 1;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: var(--radius-s);
+            padding: 8px;
+            font-size: var(--font-ui-smaller);
+          "
+        >
+          Agent
+        </button>
+      </div>
+
+      <div style="margin-bottom: 16px">
+        <h2
+          style="
+            font-size: var(--font-ui-medium);
+            font-weight: var(--font-semibold);
+            margin: 0 0 4px;
+          "
+        >
+          智能检索
+        </h2>
+        <span
+          style="
+            display: inline-flex;
+            padding: 2px 8px;
+            border-radius: var(--radius-s);
+            font-size: 11px;
+            font-weight: 500;
+            background: color-mix(
+              in srgb,
+              var(--text-warning) 10%,
+              transparent
+            );
+            color: var(--text-warning);
+          "
+          >需要操作</span
+        >
+        <p
+          style="
+            color: var(--text-muted);
+            font-size: var(--font-ui-small);
+            margin: 8px 0 0;
+          "
+        >
+          尚未建立检索索引，请先构建以启用搜索。
+        </p>
+      </div>
+
+      <button
+        style="
+          background: var(--interactive-accent);
+          color: var(--text-on-accent);
+          border: none;
+          border-radius: var(--radius-s);
+          padding: 8px 16px;
+          font-size: var(--font-ui-small);
+          font-weight: 500;
+        "
+      >
+        构建索引
+      </button>
+
+      <div
+        style="
+          background: var(--background-secondary);
+          border: 1px solid var(--background-modifier-border);
+          border-radius: var(--radius-m);
+          padding: 4px 16px;
+          margin: 20px 0;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--background-modifier-border);
+          "
+        >
+          <span
+            style="
+              font-size: var(--font-ui-small);
+              font-weight: var(--font-semibold);
+            "
+            >数据库状态</span
+          >
+          <span
+            style="
+              font-size: var(--font-ui-smaller);
+              font-family: var(--font-monospace-theme);
+              color: var(--text-muted);
+            "
+            >不存在</span
+          >
+        </div>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--background-modifier-border);
+          "
+        >
+          <span
+            style="
+              font-size: var(--font-ui-small);
+              font-weight: var(--font-semibold);
+            "
+            >向量后端</span
+          >
+          <span
+            style="
+              font-size: var(--font-ui-smaller);
+              font-family: var(--font-monospace-theme);
+              color: var(--text-muted);
+            "
+            >vec0</span
+          >
+        </div>
+        <div
+          style="display: flex; justify-content: space-between; padding: 10px 0"
+        >
+          <span
+            style="
+              font-size: var(--font-ui-small);
+              font-weight: var(--font-semibold);
+            "
+            >API Key</span
+          >
+          <span
+            style="
+              font-size: var(--font-ui-smaller);
+              font-family: var(--font-monospace-theme);
+              color: var(--text-muted);
+            "
+            >未配置</span
+          >
+        </div>
+      </div>
+
+      <div
+        style="
+          border-left: 2px solid var(--text-warning);
+          background: color-mix(in srgb, var(--text-warning) 6%, transparent);
+          border-radius: 0 var(--radius-s) var(--radius-s) 0;
+          padding: 12px 16px;
+          margin: 16px 0;
+        "
+      >
+        <strong
+          style="
+            display: block;
+            font-size: var(--font-ui-smaller);
+            font-weight: var(--font-semibold);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+            color: var(--text-warning);
+          "
+          >需要操作</strong
+        >
+        <p
+          style="
+            color: var(--text-muted);
+            font-size: var(--font-ui-small);
+            line-height: 1.5;
+            margin: 0;
+          "
+        >
+          智能检索需要 OpenAI API Key
+          和向量索引才能工作。点击"构建索引"开始设置。
+        </p>
+      </div>
+
+      <details style="margin-top: 16px">
+        <summary
+          style="
+            color: var(--text-faint);
+            font-size: var(--font-ui-smaller);
+            cursor: pointer;
+          "
+        >
+          诊断详情
+        </summary>
+        <div
+          style="
+            margin-top: 8px;
+            padding: 8px;
+            background: var(--background-secondary);
+            border-radius: var(--radius-s);
+            font-size: 11px;
+            font-family: var(--font-monospace-theme);
+            color: var(--text-faint);
+          "
+        >
+          module: memory | state: action_required | severity: warning | reason:
+          memory.db_missing
+        </div>
+      </details>
+    </div>
+  </body>
+</html>
