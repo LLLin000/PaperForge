@@ -19,7 +19,6 @@ import {
   setupAction,
   validatePersistedEnvelopes,
   classifyCapabilityAction,
-  type MaintenanceItem,
 } from "./constants";
 import releaseNotesData from "./release-notes.json";
 import {
@@ -60,15 +59,6 @@ import {
   buildRedactedDraft,
   checkOrphanState,
 } from "./views/modals";
-import {
-  buildMaintenanceSummary,
-  maintenanceActionForRow,
-  maintenanceActionRequiresConfirmation,
-  MaintenanceDisplayRow,
-  MaintenanceCache,
-  readMaintenanceCache,
-  refreshMaintenanceData,
-} from "./services/ocr-maintenance-ui";
 import {
   ManagedRuntime,
   runtimeActionsForHealth,
@@ -176,10 +166,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _runtimeBusy: boolean = false;
   /** True while a library sync or memory build is in flight. */
   _libraryRunning: boolean = false;
-  _dismissedMaintenanceItems: Set<string> = new Set();
   private _displayInProgress: boolean = false;
-  _pendingMaintenanceRefresh: boolean = false;
-  _maintenanceNoticeShown: boolean = false;
   _detailReturn: { tab: string; selector: string } | null = null;
   private _agentPlatformDraft: string | null = null;
 
@@ -321,34 +308,56 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         cls: "paperforge-manual-links",
       });
     }
-    // --- Tab bar ---
-    const tabBar = containerEl.createDiv({ cls: "paperforge-settings-tabs" });
+    // --- Topbar ---
+    const topbar = containerEl.createDiv({ cls: "pf-cc-topbar" });
+
+    // Left: Brand + Version
+    const brandLeft = topbar.createDiv({ cls: "pf-cc-topbar-left" });
+    brandLeft.createEl("span", {
+      cls: "pf-cc-topbar-brand",
+      text: "PaperForge",
+    });
+    brandLeft.createEl("span", {
+      cls: "pf-cc-topbar-version",
+      text: "v" + (this.plugin.manifest?.version ?? "?"),
+    });
+
+    // Center: Tab buttons
+    const tabCenter = topbar.createDiv({ cls: "pf-cc-topbar-center" });
     const tabs = [
       { id: "overview", label: t("tab_overview") || "Overview" },
-      { id: "maintenance", label: t("tab_maintenance") || "Maintenance" },
       { id: "help", label: t("tab_help") || "Help" },
     ];
     const tabContents: Record<string, HTMLDivElement> = {};
 
     tabs.forEach((tab) => {
-      const btn = tabBar.createEl("button", {
+      const btn = tabCenter.createEl("button", {
         cls:
-          "paperforge-settings-tab" +
-          (tab.id === this.activeTab ? " paperforge-settings-tab--active" : ""),
+          "pf-cc-topbar-tab" +
+          (tab.id === this.activeTab ? " pf-cc-topbar-tab--active" : ""),
         text: tab.label,
       });
       btn.addEventListener("click", () => {
-        if (tab.id === "maintenance") {
-          this._maintenanceNoticeShown = false;
-          this._focusTargetId = "#pf-maintenance-heading";
-        } else {
-          this._detailReturn = null;
-        }
+        this._detailReturn = null;
         this.activeTab = tab.id;
         this._navMemory = { destination: tab.id };
         this._persistNavMemory();
         this.display();
       });
+    });
+
+    // Right: OCR Workspace link
+    const rightLink = topbar.createDiv({ cls: "pf-cc-topbar-right" });
+    const ocrLink = rightLink.createEl("a", {
+      cls: "pf-cc-topbar-ocr-link",
+      text: (t("md_ocr_workspace") || "OCR Workspace") + " \u2197",
+      attr: { href: "#", role: "button" },
+    });
+    ocrLink.addEventListener("click", (e: MouseEvent) => {
+      e.preventDefault();
+      (this.app as any).workspace.getLeaf().setViewState({
+        type: "paperforge-ocr-workspace",
+      } as any);
     });
 
     // --- Tab content containers ---
@@ -374,8 +383,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._renderOverviewTab(tabContents.overview);
     } else if (this.activeTab === "module-detail") {
       this._renderModuleDetailTab(tabContents["module-detail"]);
-    } else if (this.activeTab === "maintenance") {
-      this._renderMaintenanceTab(tabContents.maintenance);
     } else if (this.activeTab === "help") {
       this._renderHelpTab(tabContents.help);
     }
@@ -388,7 +395,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // #86: If target not found (e.g., help card removed from overview),
       // fall back to first overview card
       if (!target && this.activeTab === "overview") {
-        target = containerEl.querySelector(".pf-cc-card");
+        target = containerEl.querySelector(".pf-cc-module-card");
       }
       if (target) {
         try {
@@ -1521,7 +1528,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._detailReturn = null;
       } else {
         this.activeTab = "overview";
-        this._focusTargetId = `button.pf-cc-card[data-module="${mod}"]`;
+        this._focusTargetId = `button.pf-cc-module-card[data-module="${mod}"]`;
       }
       this._selectedDetailModule = "";
       this.display();
@@ -1657,98 +1664,52 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Render the Help tab (top-level destination with docs + release notes). */
   /** Help is task support and privacy-safe diagnostics, never a health module. */
   _renderHelpTab(containerEl: HTMLElement): void {
-    containerEl.createEl("h2", { text: t("help_title") });
+    // Eyebrow + Title + Lede
+    containerEl.createEl("div", {
+      cls: "pf-cc-eyebrow",
+      text: t("help_eyebrow") || "help",
+    });
+    containerEl.createEl("h1", {
+      cls: "pf-cc-title",
+      text: t("help_title") || "Start with the task",
+    });
     containerEl.createEl("p", {
-      text: t("help_intro"),
-      cls: "paperforge-settings-desc",
+      cls: "pf-cc-lede",
+      text:
+        t("help_lede") ||
+        "Open the relevant module, or copy a diagnostic for support.",
     });
 
-    const tasks = containerEl.createDiv({ cls: "pf-help-section" });
-    tasks.createEl("h3", { text: t("help_getting_started") });
-    for (const item of [
-      ["library", "help_library_task"],
-      ["ocr", "help_ocr_task"],
-      ["memory", "help_retrieval_task"],
-      ["agent", "help_agent_task"],
-    ]) {
-      const button = tasks.createEl("button", {
-        cls: "pf-help-task",
-        text: t(item[1]),
-        attr: { "data-module": item[0] },
+    // Task list — 4 task links (Library, OCR, Retrieval, Agent)
+    const taskList = containerEl.createDiv({ cls: "pf-help-task-list" });
+    const tasks = [
+      ["library", t("help_library_task")],
+      ["ocr", t("help_ocr_task")],
+      ["memory", t("help_retrieval_task")],
+      ["agent", t("help_agent_task")],
+    ];
+    for (const [mod, taskLabel] of tasks) {
+      const btn = taskList.createEl("button", {
+        cls: "pf-help-task-btn",
+        text: taskLabel,
+        attr: { "data-module": mod },
       });
-      button.addEventListener("click", () => {
+      btn.addEventListener("click", () => {
         this._detailReturn = {
           tab: "help",
-          selector: `.pf-help-task[data-module="${item[0]}"]`,
+          selector: `.pf-help-task-btn[data-module="${mod}"]`,
         };
-        this._handleCardNavigation(item[0]);
+        this._handleCardNavigation(mod);
       });
     }
 
-    const problems = Object.values(this._capabilityState ?? {}).filter(
-      (env) =>
-        env.user_visible_failure ||
-        env.user_state === "action_required" ||
-        env.user_state === "detection_failed"
-    );
-    const guidance = containerEl.createDiv({ cls: "pf-help-section" });
-    guidance.createEl("h3", { text: t("help_current_problem") });
-    if (problems.length === 0) {
-      guidance.createEl("p", {
-        text: t("help_no_problem"),
-        cls: "setting-item-description",
-      });
-    } else {
-      for (const env of problems) {
-        const row = guidance.createDiv({ cls: "pf-help-problem" });
-        row.createEl("strong", {
-          text: this._getUserModuleName(env.module),
-        });
-        row.createEl("span", {
-          text: this._getModuleConsequence(env.module, env),
-        });
-      }
-    }
-
-    const support = containerEl.createDiv({ cls: "pf-help-section" });
-    support.createEl("h3", { text: t("help_support") });
-    support.createEl("p", {
-      text: t("help_support_desc"),
-      cls: "setting-item-description",
-    });
-    renderActionButton(support, {
-      label: t("help_copy"),
-      onClick: () => this._buildAndCopyDiagnostic(),
-    });
-
-    const docs = containerEl.createDiv({ cls: "pf-help-section" });
-    docs.createEl("h3", { text: t("help_documentation") });
-    docs.createEl("p", {
-      text: t("help_documentation_desc"),
-      cls: "setting-item-description",
-    });
-    const docsLink = docs.createEl("a", {
-      text: t("help_open_documentation"),
-      href: "https://github.com/LLLin000/PaperForge#readme",
-      cls: "pf-help-link",
-    });
-    docsLink.setAttr("target", "_blank");
-
-    const releases = containerEl.createDiv({ cls: "pf-help-section" });
-    releases.createEl("h3", { text: t("help_release_notes") });
-    releases.createEl("p", {
-      text: t("help_release_notes_desc").replace(
-        "{version}",
-        this.plugin.manifest?.version ?? "—"
-      ),
-      cls: "setting-item-description",
-    });
-    const releaseLink = releases.createEl("a", {
-      text: t("help_open_release_notes"),
-      href: "https://github.com/LLLin000/PaperForge/releases",
-      cls: "pf-help-link",
-    });
-    releaseLink.setAttr("target", "_blank");
+    // Copy diagnostic button
+    containerEl
+      .createEl("button", {
+        cls: "pf-help-diagnostic-btn",
+        text: t("help_copy") || "Copy diagnostic",
+      })
+      .addEventListener("click", () => this._buildAndCopyDiagnostic());
   }
 
   _execMemoryStatus(
@@ -2967,169 +2928,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
   }
 
-  _dispatchItemAction(item: MaintenanceItem): void {
-    if (!item.action) return;
-    this._pendingMaintenanceRefresh = true;
-    const env: ProbeEnvelope = {
-      schema_version: 1,
-      module: item.module,
-      capability_state: item.capability_state,
-      activity_state: item.activity_state,
-      activity_label: item.activity_label,
-      activity_progress: item.activity_progress,
-      severity: item.severity,
-      reason: { code: item.reason_code, text: item.reason_text },
-      action: { primary: item.action },
-      notices: [],
-      user_state:
-        item.user_state ??
-        (item.capability_state === "ready" ? "ready" : "action_required"),
-      capability_kind:
-        "installation" === item.module || "library" === item.module
-          ? "required"
-          : "optional",
-      maintenance_eligible: item.maintenance_eligible ?? false,
-      user_visible_failure: false,
-      user_impact: item.user_impact ?? null,
-      updated_at: item.module + "-item",
-      ttl_seconds: 60,
-    };
-    this._dispatchModuleAction(item.module as CapabilityModule, env);
-  }
-
-  _requestMaintenanceProjection(): void {
-    if (this._probing.has("maintenance")) {
-      this._pendingMaintenanceRefresh = true;
-      return;
-    }
-    this._pendingMaintenanceRefresh = false;
-    this._probeModule("maintenance");
-  }
-
-  _renderMaintenanceInbox(containerEl: HTMLElement): void {
-    const inbox = containerEl.createDiv({ cls: "pf-maintenance-inbox" });
-    const env = this._capabilityState?.maintenance;
-    const isChecking =
-      !env ||
-      (env.activity_state === "running" &&
-        env.reason?.code === "maintenance.probing") ||
-      env.user_state === "checking" ||
-      env.capability_state === "unknown" ||
-      (env.capability_state !== "ready" &&
-        env.capability_state !== "needs_action");
-    if (isChecking) {
-      inbox.createEl("p", {
-        cls: "pf-maintenance-inbox-empty",
-        text: t("maintenance_checking"),
-      });
-      if (!env || env.capability_state === "unknown") {
-        if (!this._probing.has("maintenance")) {
-          this._probeModule("maintenance");
-        }
-      } else if (env.activity_state !== "running") {
-        this._requestMaintenanceProjection();
-      }
-      return;
-    }
-
-    const items = (env.items ?? []).filter(
-      (item) =>
-        item.activity_state !== "running" && item.maintenance_eligible !== false
-    );
-    if (items.length === 0) {
-      const empty = inbox.createDiv({ cls: "pf-maintenance-empty-state" });
-      empty.createEl("h3", { text: t("maintenance_empty_title") });
-      empty.createEl("p", { text: t("maintenance_empty_body") });
-      return;
-    }
-
-    inbox.createEl("p", {
-      cls: "pf-maintenance-inbox-summary",
-      text: t("maintenance_n_pending").replace("{n}", String(items.length)),
-    });
-    const list = inbox.createDiv({
-      cls: "pf-maintenance-inbox-list",
-      attr: { role: "list" },
-    });
-    for (const item of items) {
-      this._renderMaintenanceInboxItem(list, item);
-    }
-  }
-
-  _renderMaintenanceInboxItem(
-    container: HTMLElement,
-    item: MaintenanceItem
-  ): void {
-    const row = container.createDiv({
-      cls: "pf-maintenance-inbox-item",
-      attr: { role: "listitem", "data-module": item.module },
-    });
-    const info = row.createDiv({ cls: "pf-maintenance-inbox-item-info" });
-    const header = info.createDiv({ cls: "pf-maintenance-item-header" });
-    header.createEl("strong", {
-      text: this._getUserModuleName(item.module),
-    });
-    const userState =
-      item.user_state ??
-      (item.severity === "error" || item.severity === "warning"
-        ? "action_required"
-        : "detection_failed");
-    renderStatusBadge(header, userState, this._getUserStateLabel(userState));
-    info.createEl("p", {
-      cls: "pf-maintenance-inbox-item-reason",
-      text:
-        this._localizeReason(item.reason_code, item.module) ??
-        t("cc_consequence_action_required"),
-    });
-    info.createEl("p", {
-      cls: "pf-maintenance-inbox-item-impact",
-      text:
-        item.module === "library"
-          ? t("library_problem_impact")
-          : item.module === "ocr"
-            ? t("ocr_problem_impact")
-            : item.module === "memory"
-              ? t("retrieval_problem_impact")
-              : t("maintenance_default_impact"),
-    });
-
-    const action = item.action;
-    const actionKey = action
-      ? "action_" + (action.action_id ?? action.verb).replace(/[.-]/g, "_")
-      : "";
-    const translatedAction = actionKey ? t(actionKey) : "";
-    const actionLabel = action
-      ? translatedAction !== actionKey
-        ? translatedAction
-        : t("cc_action_" + action.verb) !== "cc_action_" + action.verb
-          ? t("cc_action_" + action.verb)
-          : t("maintenance_open_module")
-      : t("maintenance_open_module");
-    const button = row.createEl("button", {
-      cls: "pf-maintenance-inbox-item-action",
-      text: actionLabel,
-    });
-    button.addEventListener("click", () => {
-      if (action) this._dispatchItemAction(item);
-      else {
-        this._detailReturn = {
-          tab: "maintenance",
-          selector:
-            '.pf-maintenance-inbox-item[data-module="' + item.module + '"]',
-        };
-        this._handleCardNavigation(item.module);
-      }
-    });
-  }
-
-  _renderMaintenanceTab(containerEl: HTMLElement) {
-    containerEl.createEl("h2", {
-      text: t("tab_maintenance"),
-      attr: { id: "pf-maintenance-heading", tabindex: "-1" },
-    });
-    this._renderMaintenanceInbox(containerEl);
-  }
-
   _renderReleaseNotesTab(containerEl: HTMLElement) {
     containerEl.createEl("h2", { text: "\u66F4\u65B0\u4E0E\u624B\u518C" });
 
@@ -3267,7 +3065,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       activity_progress: null,
       severity: "unknown",
       reason: { code: `${mod}.probing`, text: `Checking ${mod} status...` },
-      action: { primary: mod === "maintenance" ? null : probeAction(mod) },
+      action: { primary: probeAction(mod) },
       notices: current?.notices ?? [],
       user_state: "checking",
       capability_kind:
@@ -3385,17 +3183,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       envelope.activity_state !== "running"
     ) {
       new Notice(t("cc_notice_refreshed"), 3000);
-      if (envelope.module !== "maintenance") {
-        if (
-          this._pendingMaintenanceRefresh ||
-          this.activeTab === "maintenance"
-        ) {
-          this._requestMaintenanceProjection();
-        }
-      } else if (this._pendingMaintenanceRefresh) {
-        this._pendingMaintenanceRefresh = false;
-        this._probeModule("maintenance");
-      }
     }
     if (!this._displayInProgress) {
       this.display();
@@ -3445,7 +3232,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     "ocr",
     "memory",
     "help",
-    "maintenance",
   ]);
   /** Modules that have a navigation entry in the overview card grid. */
   private static _NAVIGABLE = new Set([
@@ -3453,7 +3239,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     "library",
     "ocr",
     "memory",
-    "maintenance",
     "help",
   ]);
 
@@ -3492,9 +3277,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 ? t("module_detail_open_memory")
                 : mod === "help"
                   ? t("module_detail_open_help")
-                  : mod === "maintenance"
-                    ? t("module_detail_open_maintenance")
-                    : t("md_select_installation");
+                  : t("md_select_installation");
       const navBtn = nameArea.createEl("button", {
         cls: "pf-open-module-btn",
         text: t("cc_module_" + mod),
@@ -3627,10 +3410,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.activeTab = "help";
       this._selectedDetailModule = "";
       this._focusTargetId = "button.pf-open-module-btn[data-module=help]";
-    } else if (mod === "maintenance") {
-      this.activeTab = "maintenance";
-      this._selectedDetailModule = "";
-      this._focusTargetId = "#pf-maintenance-heading";
     } else {
       this.activeTab = "module-detail";
       this._selectedDetailModule = mod;
@@ -3645,7 +3424,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const envelopes: Record<string, ProbeEnvelope> =
       this._capabilityState ?? {};
 
-    // ── Operational Baseline (#86 §2.1) ──
+    // ── Eyebrow + Title + Lede ──
+    cc.createEl("div", {
+      cls: "pf-cc-eyebrow",
+      text: t("cc_eyebrow") || "control center",
+    });
+    cc.createEl("h1", {
+      cls: "pf-cc-title",
+      text: t("cc_title") || "Your literature pipeline",
+    });
+    cc.createEl("p", {
+      cls: "pf-cc-lede",
+      text:
+        t("cc_lede") ||
+        "See what is working and what needs attention across your pipeline.",
+    });
+
+    // ── Summary Card ──
     const foundationEnv =
       envelopes["installation"] ?? createUnknownEnvelope("installation");
     const libraryEnv = envelopes["library"] ?? createUnknownEnvelope("library");
@@ -3655,16 +3450,30 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const baselineChecking = [foundationEnv, libraryEnv].some(
       (env) => env.user_state === "checking"
     );
+    const needsAttention = Object.values(envelopes).filter(
+      (e) =>
+        e.user_state &&
+        e.user_state !== "ready" &&
+        e.user_state !== "not_enabled"
+    ).length;
 
-    // Count maintenance items
-    let maintenanceCount = 0;
-    const maintEnv = envelopes["maintenance"];
-    if (maintEnv?.items && Array.isArray(maintEnv.items)) {
-      maintenanceCount = maintEnv.items.length;
-    }
-
-    // ── Summary ──
     const summaryEl = cc.createEl("div", { cls: "pf-cc-summary" });
+    const badgeCls = baselineReady
+      ? "ready"
+      : baselineChecking
+        ? "checking"
+        : "attention";
+    const badgeText = baselineReady
+      ? t("cc_badge_ready") || "Ready"
+      : baselineChecking
+        ? t("cc_badge_checking") || "Checking"
+        : t("cc_badge_attention") || "Needs attention";
+    summaryEl.createEl("span", {
+      cls: `pf-cc-summary-badge pf-cc-summary-badge--${badgeCls}`,
+      text: badgeText,
+    });
+
+    const summaryCopy = summaryEl.createDiv({ cls: "pf-cc-summary-copy" });
     const summaryTitle = baselineReady
       ? t("cc_summary_ready")
       : baselineChecking
@@ -3679,61 +3488,60 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         : this.plugin.settings._setup_complete === false
           ? t("cc_summary_incomplete_body")
           : t("cc_summary_attention_body");
-    summaryEl.createEl("div", {
-      cls: "pf-cc-summary-title",
-      text: summaryTitle,
-    });
-    summaryEl.createEl("div", {
-      cls: "pf-cc-summary-body",
-      text: summaryBody,
-    });
+    summaryCopy.createEl("strong", { text: summaryTitle });
+    summaryCopy.createEl("span", { cls: "caption", text: summaryBody });
 
-    // Maintenance count + refresh
-    const metaRow = summaryEl.createEl("div", { cls: "pf-cc-summary-meta" });
-    if (maintenanceCount > 0) {
-      metaRow.createEl("span", {
-        cls: "pf-cc-summary-maintenance",
-        text: t("cc_maintenance_count").replace(
-          "{n}",
-          String(maintenanceCount)
-        ),
-      });
-    }
-    const refreshBtn = metaRow.createEl("button", {
-      cls: "pf-global-refresh-btn",
-      text: t("cc_refresh_btn") || "Refresh Status",
-    });
-    refreshBtn.addEventListener("click", () => {
-      this._refreshAllModules();
-    });
+    const summaryMeta = summaryEl.createDiv({ cls: "pf-cc-summary-meta" });
+    const needItem = summaryMeta.createEl("span");
+    needItem.createEl("strong", { text: String(needsAttention) });
+    needItem.appendText(
+      " " + (t("cc_needs_attention") || "item needs attention")
+    );
 
-    // Last updated
+    // Last checked time
     const latest = Object.values(envelopes)
       .map((e) => e.updated_at)
       .filter(Boolean)
       .sort()
       .pop();
-    if (latest) {
-      metaRow.createEl("span", {
-        cls: "pf-last-known",
-        text:
-          (t("cc_last_checked") || "Last checked: ") +
-          new Date(latest).toLocaleString(),
-      });
-    }
-
-    // ── Module Grid (#86: 5 cards, navigation-only) ──
-    const grid = cc.createEl("div", {
-      cls: "pf-cc-grid",
-      attr: { role: "list", "aria-label": t("cc_operational_modules") },
+    summaryMeta.createEl("span", {
+      text: latest
+        ? (t("cc_last_checked") || "Checked just now: ") +
+          new Date(latest).toLocaleString()
+        : t("cc_checked_pending") || "Not checked yet",
     });
+
+    const refreshBtn = summaryMeta.createEl("button", {
+      cls: "pf-cc-summary-refresh",
+      text: t("cc_refresh_btn") || "Refresh status",
+    });
+    refreshBtn.addEventListener("click", () => this._refreshAllModules());
+
+    // ── Section Head ──
+    const sectionHead = cc.createDiv({ cls: "pf-cc-section-head" });
+    sectionHead.createEl("div", {
+      cls: "pf-cc-eyebrow",
+      text: t("cc_modules_label") || "modules",
+    });
+    sectionHead.createEl("h2", {
+      text: t("cc_modules_title") || "Five capabilities",
+    });
+    sectionHead.createEl("span", {
+      cls: "caption",
+      text:
+        t("cc_modules_caption") ||
+        "Optional modules do not affect core readiness.",
+    });
+
+    // ── Module List (5 cards with numbering 01-05) ──
+    const moduleList = cc.createDiv({ cls: "pf-cc-module-list" });
     for (const [idx, mod] of this._getOverviewModules().entries()) {
       const env =
         mod.id === "agent"
           ? this._getAgentPlaceholderEnvelope()
           : (envelopes[mod.id] ??
             createUnknownEnvelope(mod.id as CapabilityModule));
-      this._renderOverviewCard(grid, mod.id, mod.label, env, idx + 1);
+      this._renderOverviewCard(moduleList, mod.id, mod.label, env, idx + 1);
     }
   }
 
@@ -3771,59 +3579,49 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     env: ProbeEnvelope,
     num: number
   ): void {
-    const item = grid.createDiv({
-      cls: "pf-cc-card-item",
-      attr: { role: "listitem" },
-    });
-    const card = item.createEl("button", {
-      cls: "pf-cc-card pf-open-module-btn",
+    const card = grid.createEl("button", {
+      cls: "pf-cc-module-card pf-open-module-btn",
       attr: {
         "data-module": mod,
         "aria-label": label + " — " + this._getUserStateLabel(env.user_state),
       },
     });
-    const header = card.createDiv({ cls: "pf-cc-card-header" });
-    header.createEl("span", {
+    // Number
+    card.createEl("span", {
       cls: "pf-cc-num",
       text: String(num).padStart(2, "0"),
     });
-    header.createEl("span", {
-      cls: "pf-cc-card-title",
+    // Name
+    card.createEl("span", {
+      cls: "pf-cc-card-name",
       text: label,
     });
+    // Badge
     renderStatusBadge(
-      header,
+      card,
       env.user_state,
       this._getUserStateLabel(env.user_state)
     );
-
-    card.createEl("div", {
-      cls: "pf-cc-card-consequence",
+    // Sentence (one-line status)
+    card.createEl("span", {
+      cls: "pf-cc-card-sentence",
       text: this._getModuleConsequence(mod, env),
     });
-    if (env.activity_state === "running") {
-      renderActivityRow(card, {
-        label: t("cc_activity_running"),
-        progress: env.activity_progress,
-      });
-    }
-    if (env.updated_at && env.updated_at !== new Date(0).toISOString()) {
-      card.createEl("div", {
-        cls: "pf-cc-card-last-known",
-        text: t("cc_last_checked") + new Date(env.updated_at).toLocaleString(),
-      });
-    }
+    // Metric (version / papers info)
+    const metricText =
+      env.user_state === "ready" && env.action?.primary?.scope_count
+        ? (t("cc_metric_papers") || "Papers: ") + env.action.primary.scope_count
+        : env.updated_at && env.updated_at !== new Date(0).toISOString()
+          ? (t("cc_last_checked") || "") +
+            new Date(env.updated_at).toLocaleString()
+          : "";
+    card.createEl("span", {
+      cls: "pf-cc-card-metric",
+      text: metricText,
+    });
+    // Arrow
+    card.createEl("span", { cls: "pf-cc-card-arrow", text: "\u2192" });
     card.addEventListener("click", () => this._handleCardNavigation(mod));
-
-    if (env.user_state === "detection_failed" && mod !== "agent") {
-      const retry = item.createEl("button", {
-        cls: "pf-cc-card-retry",
-        text: t("cc_card_retry"),
-      });
-      retry.addEventListener("click", () =>
-        this._probeModule(mod as CapabilityModule)
-      );
-    }
   }
 
   /** #86: Plain-language consequence based on module state. */
@@ -4153,7 +3951,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       | undefined;
     if (
       saved?.destination &&
-      ["overview", "maintenance", "help"].includes(saved.destination)
+      ["overview", "help"].includes(saved.destination)
     ) {
       this.activeTab = saved.destination;
       this._navMemory = { destination: saved.destination };

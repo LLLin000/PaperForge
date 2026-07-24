@@ -283,7 +283,7 @@ describe("production navigation state transitions", () => {
     expect(display).toHaveBeenCalledOnce();
   });
 
-  it("maintenance card navigates to maintenance tab", () => {
+  it("maintenance card navigates to module-detail (no separate maintenance tab)", () => {
     const display = vi.fn();
     const tab: Record<string, unknown> = {
       _setupView: "overview",
@@ -297,8 +297,8 @@ describe("production navigation state transitions", () => {
       PaperForgeSettingTab.prototype._handleCardNavigation.bind(tab);
     handler("maintenance");
 
-    expect(tab.activeTab).toBe("maintenance");
-    expect(tab._selectedDetailModule).toBe("");
+    expect(tab.activeTab).toBe("module-detail");
+    expect(tab._selectedDetailModule).toBe("maintenance");
     expect(display).toHaveBeenCalledOnce();
   });
 
@@ -1380,7 +1380,8 @@ describe("Issue #77: Help→Overview focus restoration in real DOM", () => {
     tab.display();
 
     // Help card no longer exists in overview — focus falls back to first card
-    const firstCardBtn = containerEl.querySelector<HTMLElement>(".pf-cc-card");
+    const firstCardBtn =
+      containerEl.querySelector<HTMLElement>(".pf-cc-module-card");
     expect(firstCardBtn).toBeTruthy();
     expect(globalThis.document.activeElement).toBe(firstCardBtn);
 
@@ -1431,11 +1432,10 @@ describe("Issue #77: zero reachable Features owner", () => {
 //   The only Notice beyond "Running..." is the cancellation from the Stop handler.
 
 // ── 28. Issue #77 RED 1: Maintenance navigation entry via _renderCard ──
-//   After separate _NAVIGABLE static set, maintenance gets a nav button
-//   while library/ocr/memory remain non-navigable. Tests exercise the
-//   production _renderCard method through a PaperForgeSettingTab instance.
+//   Maintenance is no longer navigable from cards. These tests assert
+//   the old _renderCard correctly omits the nav button for maintenance.
 
-describe("Issue #77 RED 1: Maintenance navigation entry", () => {
+describe("Issue #77 RED 1: Maintenance navigation entry (removed)", () => {
   function createMockPlugin(): Record<string, unknown> {
     return {
       settings: {
@@ -1451,7 +1451,7 @@ describe("Issue #77 RED 1: Maintenance navigation entry", () => {
     };
   }
 
-  it("maintenance card has pf-open-module-btn with data-module=maintenance and localized aria-label", () => {
+  it("maintenance card has no pf-open-module-btn since maintenance is no longer navigable", () => {
     const app = new App() as unknown as Record<string, unknown>;
     (app as Record<string, unknown>).vault = {
       adapter: { basePath: "/test/vault" },
@@ -1472,13 +1472,10 @@ describe("Issue #77 RED 1: Maintenance navigation entry", () => {
     const btn = container.querySelector<HTMLButtonElement>(
       "button.pf-open-module-btn[data-module=maintenance]"
     );
-    expect(btn).toBeTruthy();
-    expect(btn?.getAttribute("aria-label")).toBe(
-      t("module_detail_open_maintenance")
-    );
+    expect(btn).toBeFalsy();
   });
 
-  it("library/ocr/memory cards have no pf-open-module-btn", () => {
+  it("library/ocr/memory/installation/help cards have pf-open-module-btn", () => {
     const app = new App() as unknown as Record<string, unknown>;
     (app as Record<string, unknown>).vault = {
       adapter: { basePath: "/test/vault" },
@@ -1489,14 +1486,20 @@ describe("Issue #77 RED 1: Maintenance navigation entry", () => {
       plugin
     );
 
-    for (const mod of ["library", "ocr", "memory"] as CapabilityModule[]) {
+    for (const mod of [
+      "library",
+      "ocr",
+      "memory",
+      "installation",
+      "help",
+    ] as CapabilityModule[]) {
       const container = document.createElement("div");
       tab._renderCard(container, mod, createUnknownEnvelope(mod));
       expect(container.querySelector("button.pf-open-module-btn")).toBeTruthy();
     }
   });
 
-  it("click on maintenance nav button routes through _handleCardNavigation to maintenance tab", () => {
+  it("click on library nav button routes through _handleCardNavigation to module detail", () => {
     const app = new App() as unknown as Record<string, unknown>;
     (app as Record<string, unknown>).vault = {
       adapter: { basePath: "/test/vault" },
@@ -1513,11 +1516,7 @@ describe("Issue #77 RED 1: Maintenance navigation entry", () => {
     tab._focusTargetId = null;
 
     const container = document.createElement("div");
-    tab._renderCard(
-      container,
-      "maintenance",
-      createUnknownEnvelope("maintenance")
-    );
+    tab._renderCard(container, "library", createUnknownEnvelope("library"));
 
     const btn = container.querySelector<HTMLButtonElement>(
       "button.pf-open-module-btn"
@@ -1525,12 +1524,12 @@ describe("Issue #77 RED 1: Maintenance navigation entry", () => {
     expect(btn).toBeTruthy();
     btn!.click();
 
-    expect(tab.activeTab).toBe("maintenance");
-    expect(tab._selectedDetailModule).toBe("");
+    expect(tab.activeTab).toBe("module-detail");
+    expect(tab._selectedDetailModule).toBe("library");
     expect(tab.display).toHaveBeenCalledOnce();
   });
 
-  it("keyboard Enter on maintenance nav button dispatches _handleCardNavigation", () => {
+  it("keyboard Enter on library nav button dispatches _handleCardNavigation", () => {
     const app = new App() as unknown as Record<string, unknown>;
     (app as Record<string, unknown>).vault = {
       adapter: { basePath: "/test/vault" },
@@ -1547,11 +1546,7 @@ describe("Issue #77 RED 1: Maintenance navigation entry", () => {
     tab._focusTargetId = null;
 
     const container = document.createElement("div");
-    tab._renderCard(
-      container,
-      "maintenance",
-      createUnknownEnvelope("maintenance")
-    );
+    tab._renderCard(container, "library", createUnknownEnvelope("library"));
 
     const btn = container.querySelector<HTMLButtonElement>(
       "button.pf-open-module-btn"
@@ -1561,8 +1556,8 @@ describe("Issue #77 RED 1: Maintenance navigation entry", () => {
     btn!.dispatchEvent(
       new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
     );
-    expect(tab.activeTab).toBe("maintenance");
-    expect(tab._selectedDetailModule).toBe("");
+    expect(tab.activeTab).toBe("module-detail");
+    expect(tab._selectedDetailModule).toBe("library");
     expect(tab.display).toHaveBeenCalledOnce();
   });
 });
