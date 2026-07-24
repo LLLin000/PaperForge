@@ -1,81 +1,45 @@
 /**
- * Issue #80 — Maintenance inbox production DOM tests.
+ * Issue #80 — Maintenance inbox production DOM tests (legacy).
+ * Updated after #UX: maintenance tab removed. Keeps modal redaction tests.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { JSDOM } from "jsdom";
 
-const { noticeCalls, execFileCalls } = vi.hoisted(() => {
-  const calls: { msg: string; timeout?: number }[] = [];
-  const efCalls: unknown[] = [];
-  return { noticeCalls: calls, execFileCalls: efCalls };
-});
+const { noticeCalls, execFileCalls } = vi.hoisted(() => ({
+  noticeCalls: [] as { msg: string; timeout?: number }[],
+  execFileCalls: [] as { args: string[]; cb?: Function }[],
+}));
 
 vi.mock("../src/release-notes.json", () => ({ default: { versions: [] } }));
 
 vi.mock("obsidian", () => ({
   PluginSettingTab: class {
-    containerEl: HTMLDivElement;
-    app: Record<string, unknown>;
-    constructor(
-      app: Record<string, unknown>,
-      _plugin: Record<string, unknown>
-    ) {
-      this.app = app;
+    containerEl: HTMLElement;
+    constructor() {
       this.containerEl = document.createElement("div");
     }
+    display() {}
   },
-  App: class {},
   Setting: class {
-    settingEl: HTMLDivElement;
-    nameEl: HTMLDivElement;
-    descEl: HTMLDivElement & { setText?: (t: string) => void };
-    controlEl: HTMLDivElement;
-    constructor(containerEl: HTMLElement) {
-      this.settingEl = document.createElement("div");
-      this.settingEl.className = "setting-item";
-      this.nameEl = document.createElement("div");
-      this.nameEl.className = "setting-item-name";
-      this.descEl = Object.assign(document.createElement("div"), {
-        className: "setting-item-description",
-        setText: (t: string) => {
-          this.descEl.textContent = t;
-        },
-      });
-      this.controlEl = document.createElement("div");
-      this.controlEl.className = "setting-item-control";
-      this.settingEl.appendChild(this.nameEl);
-      this.settingEl.appendChild(this.descEl);
-      this.settingEl.appendChild(this.controlEl);
-      containerEl.appendChild(this.settingEl);
-    }
-    setName(_t: string) {
+    constructor() {}
+    setName() {
       return this;
     }
-    setDesc(_t: string) {
+    setDesc() {
       return this;
     }
-    addText(_cb: unknown) {
+    addToggle() {
       return this;
     }
-    addButton(_cb: unknown) {
+    addButton() {
       return this;
     }
-    addDropdown(_cb: unknown) {
+    addText() {
       return this;
     }
-    addToggle(_cb: unknown) {
+    addDropdown() {
       return this;
     }
-  },
-  Modal: class {
-    app: Record<string, unknown>;
-    contentEl: HTMLDivElement;
-    constructor(app: Record<string, unknown>) {
-      this.app = app;
-      this.contentEl = document.createElement("div");
-    }
-    open() {}
-    close() {}
   },
   Notice: class {
     constructor(msg: string, timeout?: number) {
@@ -84,6 +48,20 @@ vi.mock("obsidian", () => ({
   },
   setTooltip: () => {},
   Platform: {},
+  Modal: class {
+    contentEl: HTMLElement;
+    constructor() {
+      this.contentEl = document.createElement("div");
+    }
+    onOpen() {}
+    onClose() {}
+    open() {
+      this.onOpen();
+    }
+    close() {
+      this.onClose();
+    }
+  },
 }));
 
 vi.mock("fs", () => ({
@@ -179,33 +157,7 @@ vi.mock("../src/services/progress-parser", () => ({
   processProgressChunk: () => {},
 }));
 
-import type { ProbeEnvelope, MaintenanceItem } from "../src/constants";
-import { PaperForgeSettingTab } from "../src/settings";
-import { setLanguage } from "../src/i18n";
-import {
-  PaperForgeConfirmModal,
-  type ConfirmModalConfig,
-  PaperForgeIssueDraftModal,
-} from "../src/views/modals";
-
-function fakeApp(): Record<string, unknown> {
-  return {
-    vault: { adapter: { basePath: "/test/vault" }, getConfig: () => "en" },
-  };
-}
-function fakePlugin(): Record<string, unknown> {
-  return {
-    settings: { capabilityState: {}, vault_path: "/test/vault" },
-    manifest: { version: "2.1.0" },
-    saveSettings: vi.fn(),
-    loadSettings: vi.fn(),
-    readPaperforgeJson: () => ({}),
-    savePaperforgeJson: vi.fn(),
-    _autoSyncRunning: false,
-    _ocrProcess: null,
-    _ocrProgress: null,
-  };
-}
+import { PaperForgeIssueDraftModal } from "../src/views/modals";
 
 let dom: JSDOM;
 function augmentEl(el: HTMLElement): HTMLElement {
@@ -243,64 +195,6 @@ function augmentEl(el: HTMLElement): HTMLElement {
   rec.createDiv = (o?: Record<string, unknown>) => rec.createEl("div", o);
   return el;
 }
-function makeTab(): PaperForgeSettingTab {
-  const app = fakeApp();
-  const plugin = fakePlugin();
-  setLanguage(app as never);
-  const tab = new PaperForgeSettingTab(app as never, plugin);
-  augmentEl(tab.containerEl);
-  return tab;
-}
-function makeMaintEnv(overrides: Partial<ProbeEnvelope> = {}): ProbeEnvelope {
-  return {
-    schema_version: 1,
-    module: "maintenance",
-    capability_state: "needs_action",
-    activity_state: "idle",
-    activity_label: null,
-    activity_progress: null,
-    severity: "warning",
-    reason: {
-      code: "maintenance.items_present",
-      text: "1 module(s) need attention",
-    },
-    action: { primary: null },
-    notices: [],
-    updated_at: new Date().toISOString(),
-    ttl_seconds: 60,
-    items: [
-      {
-        module: "ocr",
-        capability_state: "needs_action",
-        severity: "warning",
-        activity_state: "idle",
-        activity_label: null,
-        activity_progress: null,
-        reason_code: "ocr.artifacts_stale",
-        reason_text: "OCR artifacts stale",
-        action: {
-          verb: "rebuild_derived",
-          label: "Rebuild",
-          destructive: false,
-          destructive_scope: null,
-          destructive_effect: null,
-          confirmation_required: false,
-          confirmation_prompt: null,
-          command: "paperforge ocr rebuild --all",
-          scope: "module",
-          scope_count: 1,
-        },
-      },
-    ],
-    ...overrides,
-  };
-}
-function makeContainer(): HTMLElement {
-  return augmentEl(dom.window.document.createElement("div"));
-}
-function getState(tab: PaperForgeSettingTab): Record<string, unknown> {
-  return tab as unknown as Record<string, unknown>;
-}
 
 beforeEach(() => {
   dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
@@ -314,139 +208,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   dom.window.close();
-});
-
-describe("Rendering states", () => {
-  it("1. absent -> Checking+probe", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = {};
-    const c = makeContainer();
-    getState(t)._renderMaintenanceInbox(c);
-    expect(c.innerHTML).toContain("Checking");
-    expect(getState(t)._probing as Set<string>).toContain("maintenance");
-  });
-  it("2. ready+no_items+[] -> all-clear", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = {
-      maintenance: makeMaintEnv({
-        capability_state: "ready",
-        severity: "ok",
-        reason: { code: "maintenance.no_items", text: "All ready" },
-        items: [],
-      }),
-    };
-    const c = makeContainer();
-    getState(t)._renderMaintenanceInbox(c);
-    expect(c.innerHTML).toContain("No maintenance needed");
-  });
-  it("3. malformed ready+no_items+nonempty -> not all-clear", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = {
-      maintenance: makeMaintEnv({
-        capability_state: "ready",
-        severity: "ok",
-        reason: { code: "maintenance.no_items", text: "All ready" },
-      }),
-    };
-    const c = makeContainer();
-    getState(t)._renderMaintenanceInbox(c);
-    expect(c.innerHTML).not.toContain("no maintenance needed");
-  });
-  it("4. needs_action -> module+action", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = { maintenance: makeMaintEnv() };
-    const c = makeContainer();
-    getState(t)._renderMaintenanceInbox(c);
-    expect(c.innerHTML).toContain("OCR Engine");
-    expect(c.innerHTML).toContain("Rebuild");
-  });
-  it("5. running+probing -> Checking", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = {
-      maintenance: makeMaintEnv({
-        activity_state: "running",
-        reason: { code: "maintenance.probing", text: "..." },
-      }),
-    };
-    const c = makeContainer();
-    getState(t)._renderMaintenanceInbox(c);
-    expect(c.innerHTML).toContain("Checking");
-  });
-  it("6. unknown -> Checking+probe", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = {
-      maintenance: makeMaintEnv({ capability_state: "unknown" }),
-    };
-    const c = makeContainer();
-    getState(t)._renderMaintenanceInbox(c);
-    expect(c.innerHTML).toContain("Checking");
-  });
-  it("7. limited -> Checking+request", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = {
-      maintenance: makeMaintEnv({ capability_state: "limited" }),
-    };
-    const c = makeContainer();
-    getState(t)._renderMaintenanceInbox(c);
-    expect(c.innerHTML).toContain("Checking");
-  });
-  it("8. unavailable -> Checking+request", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = {
-      maintenance: makeMaintEnv({ capability_state: "unavailable" }),
-    };
-    const c = makeContainer();
-    getState(t)._renderMaintenanceInbox(c);
-    expect(c.innerHTML).toContain("Checking");
-  });
-  it("9. missing_input -> Checking+request", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = {
-      maintenance: makeMaintEnv({ capability_state: "missing_input" }),
-    };
-    const c = makeContainer();
-    getState(t)._renderMaintenanceInbox(c);
-    expect(c.innerHTML).toContain("Checking");
-  });
-});
-
-describe("Focus", () => {
-  it("10. heading tabindex=-1", () => {
-    const t = makeTab();
-    getState(t)._capabilityState = {
-      maintenance: makeMaintEnv({
-        capability_state: "ready",
-        severity: "ok",
-        reason: { code: "maintenance.no_items", text: "All ready" },
-        items: [],
-      }),
-    };
-    t.activeTab = "maintenance";
-    t.display();
-    expect(
-      t.containerEl
-        .querySelector("#pf-maintenance-heading")
-        ?.getAttribute("tabindex")
-    ).toBe("-1");
-  });
-});
-
-describe("_requestMaintenanceProjection dedup", () => {
-  it("11. sets pending when probing", () => {
-    const t = makeTab();
-    getState(t)._probing = new Set(["maintenance"]);
-    getState(t)._pendingMaintenanceRefresh = false;
-    getState(t)._requestMaintenanceProjection();
-    expect(getState(t)._pendingMaintenanceRefresh).toBe(true);
-  });
-  it("12. probes when not probing", () => {
-    const t = makeTab();
-    getState(t)._probing = new Set();
-    getState(t)._pendingMaintenanceRefresh = true;
-    getState(t)._requestMaintenanceProjection();
-    expect(getState(t)._probing as Set<string>).toContain("maintenance");
-    expect(getState(t)._pendingMaintenanceRefresh).toBe(false);
-  });
 });
 
 describe("PaperForgeIssueDraftModal redaction", () => {
@@ -546,26 +307,5 @@ describe("PaperForgeIssueDraftModal redaction", () => {
     expect(html).toContain("paper content");
     expect(html).not.toContain("attached diagnostic");
     expect(html).not.toContain("See attached");
-  });
-});
-
-describe("Modal inert cleanup and focus restoration", () => {
-  it("16. overview card renders real reason, no action, nav button exists", () => {
-    const tab = makeTab();
-    (tab as unknown as Record<string, unknown>)._capabilityState = {
-      maintenance: makeMaintEnv(),
-    };
-    const cardContainer = makeContainer();
-    const env = makeMaintEnv();
-    (tab as unknown as Record<string, unknown>)._renderCard(
-      cardContainer,
-      "maintenance",
-      env
-    );
-    const html = cardContainer.innerHTML;
-    expect(html).not.toContain("Detection pending");
-    expect(html).toContain("need attention");
-    expect(cardContainer.querySelector(".pf-cc-card-action")).toBeNull();
-    expect(cardContainer.querySelector(".pf-open-module-btn")).toBeTruthy();
   });
 });
