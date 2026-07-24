@@ -519,13 +519,13 @@ describe("back button", () => {
     // in the overview, NOT null
     tab.activeTab = "overview";
     tab._selectedDetailModule = "";
-    tab._focusTargetId = "button.pf-open-module-btn[data-module=installation]";
+    tab._focusTargetId = "div.pf-open-module-btn[data-module=installation]";
     tab.display();
 
     expect(tab.activeTab).toBe("overview");
     expect(tab._selectedDetailModule).toBe("");
     expect(tab._focusTargetId).toBe(
-      "button.pf-open-module-btn[data-module=installation]"
+      "div.pf-open-module-btn[data-module=installation]"
     );
     expect(display).toHaveBeenCalledOnce();
   });
@@ -1099,9 +1099,7 @@ describe("help card navigation through PaperForgeSettingTab (Defect 4)", () => {
 
     expect(tab.activeTab).toBe("help");
     expect(tab._selectedDetailModule).toBe("");
-    expect(tab._focusTargetId).toBe(
-      "button.pf-open-module-btn[data-module=help]"
-    );
+    expect(tab._focusTargetId).toBe("div.pf-open-module-btn[data-module=help]");
   });
 });
 
@@ -1135,9 +1133,7 @@ describe("Help→Overview focus restoration (Defect 4 fix)", () => {
 
     // The focus target must be a module card button that exists after Overview re-render
     expect(tab.activeTab).toBe("help");
-    expect(tab._focusTargetId).toBe(
-      "button.pf-open-module-btn[data-module=help]"
-    );
+    expect(tab._focusTargetId).toBe("div.pf-open-module-btn[data-module=help]");
   });
 
   it("focus target survives Help tab rendering (not consumed until Overview)", () => {
@@ -1162,9 +1158,7 @@ describe("Help→Overview focus restoration (Defect 4 fix)", () => {
 
     // After display() renders the Help tab, _focusTargetId must still be set
     // because _renderHelpTab does not consume it (only _renderOverviewTab does)
-    expect(tab._focusTargetId).toBe(
-      "button.pf-open-module-btn[data-module=help]"
-    );
+    expect(tab._focusTargetId).toBe("div.pf-open-module-btn[data-module=help]");
   });
 });
 
@@ -1302,7 +1296,7 @@ describe("Issue #77: Back button focus restoration in real DOM", () => {
     // The focus restoration code (now in display()) should have consumed
     // _focusTargetId and focused the Installation card button.
     const installCardBtn = containerEl.querySelector<HTMLElement>(
-      "button.pf-open-module-btn[data-module=installation]"
+      "div.pf-open-module-btn[data-module=installation]"
     );
     expect(installCardBtn).toBeTruthy();
     expect(globalThis.document.activeElement).toBe(installCardBtn);
@@ -1666,7 +1660,7 @@ describe("Issue #77 Contract 3 RED: _focusTargetId survives Help display()", () 
     const tab = new PaperForgeSettingTab(app as unknown as App, plugin);
 
     tab.activeTab = "help";
-    tab._focusTargetId = "button.pf-open-module-btn[data-module=help]";
+    tab._focusTargetId = "div.pf-open-module-btn[data-module=help]";
 
     // Override _renderHelpTab to inject a matching button AFTER
     // containerEl.empty() runs, so querySelector finds it during
@@ -1683,8 +1677,6 @@ describe("Issue #77 Contract 3 RED: _focusTargetId survives Help display()", () 
     tab.display();
 
     // With guard: _focusTargetId survives. Without: it is null.
-    expect(tab._focusTargetId).toBe(
-      "button.pf-open-module-btn[data-module=help]"
-    );
+    expect(tab._focusTargetId).toBe("div.pf-open-module-btn[data-module=help]");
   });
 });

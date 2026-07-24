@@ -3409,7 +3409,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (mod === "help") {
       this.activeTab = "help";
       this._selectedDetailModule = "";
-      this._focusTargetId = "button.pf-open-module-btn[data-module=help]";
+      this._focusTargetId = "div.pf-open-module-btn[data-module=help]";
     } else {
       this.activeTab = "module-detail";
       this._selectedDetailModule = mod;
@@ -3579,13 +3579,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     env: ProbeEnvelope,
     num: number
   ): void {
-    const card = grid.createEl("button", {
+    const card = grid.createEl("div", {
       cls: "pf-cc-module-card pf-open-module-btn",
       attr: {
         "data-module": mod,
         "aria-label": label + " — " + this._getUserStateLabel(env.user_state),
+        role: "button",
+        tabindex: "0",
       },
     });
+    card.style.cursor = "pointer";
     // Number
     card.createEl("span", {
       cls: "pf-cc-num",

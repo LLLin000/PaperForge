@@ -7306,7 +7306,7 @@ var Ae = class Ae extends R.PluginSettingTab {
     (e === "help"
       ? ((this.activeTab = "help"),
         (this._selectedDetailModule = ""),
-        (this._focusTargetId = "button.pf-open-module-btn[data-module=help]"))
+        (this._focusTargetId = "div.pf-open-module-btn[data-module=help]"))
       : ((this.activeTab = "module-detail"),
         (this._selectedDetailModule = e),
         (this._focusTargetId = "#pf-" + e + "-detail-heading")),
@@ -7440,14 +7440,20 @@ var Ae = class Ae extends R.PluginSettingTab {
   }
   _renderOverviewCard(e, t, r, n, i) {
     var l, p;
-    let s = e.createEl("button", {
+    let s = e.createEl("div", {
       cls: "pf-cc-module-card pf-open-module-btn",
       attr: {
         "data-module": t,
         "aria-label": r + " \u2014 " + this._getUserStateLabel(n.user_state),
+        role: "button",
+        tabindex: "0",
       },
     });
-    (s.createEl("span", { cls: "pf-cc-num", text: String(i).padStart(2, "0") }),
+    ((s.style.cursor = "pointer"),
+      s.createEl("span", {
+        cls: "pf-cc-num",
+        text: String(i).padStart(2, "0"),
+      }),
       s.createEl("span", { cls: "pf-cc-card-name", text: r }),
       Y(s, n.user_state, this._getUserStateLabel(n.user_state)),
       s.createEl("span", {
