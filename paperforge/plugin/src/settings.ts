@@ -1273,6 +1273,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
+    // API key config link
+    if (reasonCode !== "memory.disabled") {
+      const cfgRow = body.createDiv({ cls: "pf-sr-config-link" });
+      cfgRow
+        .createEl("a", {
+          text: t("sr_configure_api_keys") || "Configure API keys...",
+          href: "#",
+        })
+        .addEventListener("click", (e: Event) => {
+          e.preventDefault();
+          new Notice(
+            t("sr_configure_api_keys_hint") ||
+              "Configure API keys in Settings > Smart Retrieval",
+            5000
+          );
+        });
+      cfgRow.createEl("span", {
+        cls: "pf-sr-config-hint",
+        text: " → " + (t("sr_config_hint") || "Settings › Smart Retrieval"),
+      });
+    }
+
     // ── Info card (read-only status) ──
     const dbStatus =
       env.user_state === "ready"
