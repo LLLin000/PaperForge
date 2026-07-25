@@ -4125,7 +4125,7 @@ var Ee = class extends G.Modal {
         "--vault",
         t.vault_path.trim(),
         "setup",
-        "--headless",
+        "--modular",
         "--system-dir",
         t.system_dir.trim(),
         "--resources-dir",

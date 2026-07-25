@@ -874,7 +874,7 @@ def main(argv: list[str] | None = None) -> int:
     print("The interactive Textual TUI has been removed.")
     print()
     print("To run setup non-interactively, use:")
-    print("  paperforge setup --headless")
+    print("  paperforge setup --modular")
     print()
     print("Or configure PaperForge via the Obsidian plugin settings tab:")
     print("  1. Open Obsidian → Settings → Community Plugins → PaperForge")
