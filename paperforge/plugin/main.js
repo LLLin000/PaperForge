@@ -2059,6 +2059,10 @@ var pt = {
       sr_impact_schema_stale:
         "\u5411\u91CF\u6A21\u5F0F\u5DF2\u8FC7\u671F\u3002\u8BF7\u91CD\u5EFA\u4EE5\u5339\u914D\u5F53\u524D\u6587\u732E\u5E93\u3002",
       sr_action_enable: "\u542F\u7528\u667A\u80FD\u68C0\u7D22",
+      sr_configure_api_keys: "\u914D\u7F6E API Key...",
+      sr_config_hint: "\u8BBE\u7F6E \u203A \u667A\u80FD\u68C0\u7D22",
+      sr_configure_api_keys_hint:
+        "\u8BF7\u5728 \u8BBE\u7F6E \u2192 PaperForge \u2192 Smart Retrieval \u4E2D\u914D\u7F6E API Key\u3002",
       ocr_ws_title: "OCR \u5DE5\u4F5C\u533A",
       ocr_ws_filter_all: "\u5168\u90E8",
       ocr_ws_filter_unprocessed: "\u672A\u5904\u7406",
