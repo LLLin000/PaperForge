@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="UTF-8">
+<title>PaperForge Control Center — Live Probe</title>
+<link rel="stylesheet" href="paperforge/plugin/styles.css">
+<style>
+body { max-width:720px; margin:20px auto; font-family:system-ui; }
+h2 { font-size:18px; margin:8px 0; }
+.probe-card { border:1px solid #ddd; border-radius:8px; padding:12px; margin:8px 0; }
+.badge-ready { color:#4a9e5a; }
+.badge-action { color:#c26e1a; }
+.badge-failed { color:#c23c3c; }
+.badge-disabled { color:#9e9e9a; }
+</style></head><body>
+<h1>PaperForge Probe Status</h1>
+<p>Live data from <code>paperforge probe --json</code></p>
+<div class="probe-card">
+<h2>✅ installation</h2>
+<p>state=ready | reason=installation.ready | ttl=3600s</p>
+<p style="color:#888;font-size:12px">PaperForge is installed and configured</p>
+</div><div class="probe-card">
+<h2>✅ library</h2>
+<p>state=ready | reason=library.ready | ttl=300s</p>
+<p style="color:#888;font-size:12px">Library synced and index is fresh (593 papers)</p>
+</div><div class="probe-card">
+<h2>✅ ocr</h2>
+<p>state=ready | reason=ocr.ready | ttl=60s</p>
+<p style="color:#888;font-size:12px">OCR pipeline functional (5 papers processed)</p>
+</div><div class="probe-card">
+<h2>— memory</h2>
+<p>state=not_enabled | reason=memory.disabled | ttl=300s</p>
+<p style="color:#888;font-size:12px">Smart Retrieval is not enabled</p>
+<p>➤ action: Enable Smart Retrieval (set_config)</p></div><div class="probe-card">
+<h2>✅ maintenance</h2>
+<p>state=ready | reason=maintenance.no_items | ttl=60s</p>
+<p style="color:#888;font-size:12px">All modules are ready — no maintenance needed</p>
+</div><div class="probe-card">
+<h2>✅ help</h2>
+<p>state=ready | reason=help.ready | ttl=3600s</p>
+<p style="color:#888;font-size:12px">Help and skill documentation available</p>
+</div></body></html>
