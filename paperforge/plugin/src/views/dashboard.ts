@@ -65,7 +65,13 @@ export class PaperForgeStatusView extends ItemView {
   _modeSubscribers: { event: string; ref: any }[] = [];
 
   _resolvePython(): { path: string; args: string[] } | null {
+    // 1. Use custom python_path from plugin settings if set
     const plugin = ((this.app as any).plugins.plugins as any)["paperforge"];
+    const customPath = plugin?.settings?.python_path?.trim();
+    if (customPath && require("fs").existsSync(customPath)) {
+      return { path: customPath, args: [] };
+    }
+    // 2. Fall back to managed runtime
     const mr = plugin?.getManagedRuntime?.();
     if (!mr) return null;
     const run = resolveRuntimeCommand(mr.current());
