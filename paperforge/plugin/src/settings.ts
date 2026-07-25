@@ -858,6 +858,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (!this._selectedDetailModule) {
       this._selectedDetailModule = "installation";
     }
+    // Re-probe stale modules before rendering detail
+    if (this._selectedDetailModule !== "help") {
+      const env = this._capabilityState?.[this._selectedDetailModule];
+      if (
+        env?.user_state === "detection_failed" &&
+        env.reason.code.endsWith(".stale")
+      ) {
+        this._probeModule(this._selectedDetailModule as CapabilityModule);
+      }
+    }
     if (this._selectedDetailModule === "installation") {
       this._renderInstallationDetail(containerEl);
     } else if (this._selectedDetailModule === "library") {
