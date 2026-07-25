@@ -1204,6 +1204,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         text: t("sr_state_disabled"),
         cls: "setting-item-description",
       });
+      // Enable button — directly toggle features.vector_db
+      renderActionButton(body, {
+        label: t("sr_action_enable") || "Enable Smart Retrieval",
+        onClick: () => {
+          if (!this.plugin.settings.features) {
+            this.plugin.settings.features = {
+              memory_layer: true,
+              vector_db: false,
+            };
+          }
+          this.plugin.settings.features.vector_db = true;
+          this.plugin.saveSettings().then(() => this._probeModule("memory"));
+        },
+      });
     } else if (reasonCode === "memory.db_missing") {
       // ── memory.db_missing → action_required ──
       renderStatusBadge(body, "action_required");
@@ -1333,7 +1347,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       (verb === "setup" || verb === "set_config") &&
       cmd === "paperforge setup"
     ) {
-      if (mod === "installation" || mod === "library" || mod === "ocr") {
+      if (
+        mod === "installation" ||
+        mod === "library" ||
+        mod === "ocr" ||
+        mod === "memory"
+      ) {
         const probeMods: CapabilityModule[] = [mod];
         if (mod === "installation") {
           probeMods.push("help");

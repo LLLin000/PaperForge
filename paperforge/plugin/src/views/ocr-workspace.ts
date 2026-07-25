@@ -603,17 +603,30 @@ export class OcrWorkspaceView extends ItemView {
 
 function statusClass(status: string): string {
   if (status === "done") return "pf-done";
-  if (status === "failed" || status === "error") return "pf-failed";
-  if (status === "processing" || status === "running") return "pf-pending";
+  if (status === "done_degraded") return "pf-done-degraded";
+  if (status === "done_incomplete") return "pf-done-incomplete";
+  if (status === "failed" || status === "error" || status === "fatal_error")
+    return "pf-failed";
+  if (status === "retryable_error") return "pf-error";
+  if (status === "processing" || status === "running") return "pf-running";
+  if (status === "queued") return "pf-queued";
+  if (status === "blocked") return "pf-blocked";
   return "pf-pending";
 }
 
 function statusLabel(status: string): string {
   if (status === "done") return t("ocr_ws_status_done") || "Processed";
-  if (status === "failed" || status === "error")
+  if (status === "done_degraded")
+    return t("ocr_ws_status_degraded") || "Partial";
+  if (status === "done_incomplete")
+    return t("ocr_ws_status_incomplete") || "Incomplete";
+  if (status === "failed" || status === "error" || status === "fatal_error")
     return t("ocr_ws_status_failed") || "Failed";
+  if (status === "retryable_error") return t("ocr_ws_status_error") || "Error";
   if (status === "processing" || status === "running")
     return t("ocr_ws_status_processing") || "Processing";
+  if (status === "queued") return t("ocr_ws_status_queued") || "Queued";
+  if (status === "blocked") return t("ocr_ws_status_blocked") || "Blocked";
   if (status === "nopdf") return t("ocr_ws_status_nopdf") || "No PDF";
   return t("ocr_ws_status_pending") || "Pending";
 }

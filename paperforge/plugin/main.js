@@ -5607,6 +5607,20 @@ var Te = class Te extends R.PluginSettingTab {
           r.createEl("p", {
             text: a("sr_state_disabled"),
             cls: "setting-item-description",
+          }),
+          z(r, {
+            label: a("sr_action_enable") || "Enable Smart Retrieval",
+            onClick: () => {
+              (this.plugin.settings.features ||
+                (this.plugin.settings.features = {
+                  memory_layer: !0,
+                  vector_db: !1,
+                }),
+                (this.plugin.settings.features.vector_db = !0),
+                this.plugin
+                  .saveSettings()
+                  .then(() => this._probeModule("memory")));
+            },
           }))
         : n === "memory.db_missing"
           ? (Y(r, "action_required"),
@@ -5718,7 +5732,7 @@ var Te = class Te extends R.PluginSettingTab {
     if (
       (t === "setup" || t === "set_config") &&
       r === "paperforge setup" &&
-      (e === "installation" || e === "library" || e === "ocr")
+      (e === "installation" || e === "library" || e === "ocr" || e === "memory")
     ) {
       let l = [e];
       (e === "installation" && l.push("help"),
@@ -11356,20 +11370,42 @@ var Le = class extends ie.ItemView {
 function yr(d) {
   return d === "done"
     ? "pf-done"
-    : d === "failed" || d === "error"
-      ? "pf-failed"
-      : "pf-pending";
+    : d === "done_degraded"
+      ? "pf-done-degraded"
+      : d === "done_incomplete"
+        ? "pf-done-incomplete"
+        : d === "failed" || d === "error" || d === "fatal_error"
+          ? "pf-failed"
+          : d === "retryable_error"
+            ? "pf-error"
+            : d === "processing" || d === "running"
+              ? "pf-running"
+              : d === "queued"
+                ? "pf-queued"
+                : d === "blocked"
+                  ? "pf-blocked"
+                  : "pf-pending";
 }
 function br(d) {
   return d === "done"
     ? a("ocr_ws_status_done") || "Processed"
-    : d === "failed" || d === "error"
-      ? a("ocr_ws_status_failed") || "Failed"
-      : d === "processing" || d === "running"
-        ? a("ocr_ws_status_processing") || "Processing"
-        : d === "nopdf"
-          ? a("ocr_ws_status_nopdf") || "No PDF"
-          : a("ocr_ws_status_pending") || "Pending";
+    : d === "done_degraded"
+      ? a("ocr_ws_status_degraded") || "Partial"
+      : d === "done_incomplete"
+        ? a("ocr_ws_status_incomplete") || "Incomplete"
+        : d === "failed" || d === "error" || d === "fatal_error"
+          ? a("ocr_ws_status_failed") || "Failed"
+          : d === "retryable_error"
+            ? a("ocr_ws_status_error") || "Error"
+            : d === "processing" || d === "running"
+              ? a("ocr_ws_status_processing") || "Processing"
+              : d === "queued"
+                ? a("ocr_ws_status_queued") || "Queued"
+                : d === "blocked"
+                  ? a("ocr_ws_status_blocked") || "Blocked"
+                  : d === "nopdf"
+                    ? a("ocr_ws_status_nopdf") || "No PDF"
+                    : a("ocr_ws_status_pending") || "Pending";
 }
 var at = class extends q.Plugin {
   constructor() {
