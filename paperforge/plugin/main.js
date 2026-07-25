@@ -2045,6 +2045,20 @@ var pt = {
         "\u73B0\u6709 ChromaDB \u6570\u636E\u4F1A\u5F97\u5230\u4FDD\u7559\u3002\u6B64\u8FC7\u7A0B\u9700\u8981\u6709\u6548\u7684 API Key \u5E76\u53EF\u80FD\u4EA7\u751F API \u8D39\u7528\u3002",
       sr_api_key_notice:
         "API Key \u672A\u914D\u7F6E \u2014 \u641C\u7D22\u548C\u68C0\u7D22\u4E0D\u53EF\u7528",
+      sr_db_status: "\u6570\u636E\u5E93",
+      sr_backend: "\u540E\u7AEF",
+      sr_api_key: "API Key",
+      sr_db_exists: "\u5DF2\u6FC0\u6D3B",
+      sr_db_missing: "\u672A\u6784\u5EFA",
+      sr_impact_db_missing:
+        "\u667A\u80FD\u68C0\u7D22\u9700\u8981 OpenAI API Key \u548C\u5411\u91CF\u7D22\u5F15\u3002\u70B9\u51FB\u6784\u5EFA\u7D22\u5F15\u5F00\u59CB\u8BBE\u7F6E\u3002",
+      sr_impact_upgrade:
+        "\u65B0\u7684\u5411\u91CF\u540E\u7AEF\u53EF\u7528\u3002\u5347\u7EA7\u53EF\u63D0\u5347\u641C\u7D22\u8D28\u91CF\u3002",
+      sr_impact_build_failed:
+        "\u4E0A\u6B21\u6784\u5EFA\u5931\u8D25\u3002\u8BF7\u68C0\u67E5 API Key \u540E\u91CD\u8BD5\u3002",
+      sr_impact_schema_stale:
+        "\u5411\u91CF\u6A21\u5F0F\u5DF2\u8FC7\u671F\u3002\u8BF7\u91CD\u5EFA\u4EE5\u5339\u914D\u5F53\u524D\u6587\u732E\u5E93\u3002",
+      sr_action_enable: "\u542F\u7528\u667A\u80FD\u68C0\u7D22",
       ocr_ws_title: "OCR \u5DE5\u4F5C\u533A",
       ocr_ws_filter_all: "\u5168\u90E8",
       ocr_ws_filter_unprocessed: "\u672A\u5904\u7406",
@@ -5276,20 +5290,32 @@ var Te = class Te extends R.PluginSettingTab {
         }));
   }
   _renderModuleDetailTab(e) {
-    (this._selectedDetailModule ||
-      (this._selectedDetailModule = "installation"),
-      this._selectedDetailModule === "installation"
-        ? this._renderInstallationDetail(e)
-        : this._selectedDetailModule === "library"
-          ? this._renderLibraryDetail(e)
-          : this._selectedDetailModule === "ocr"
-            ? this._renderOcrDetail(e)
-            : this._selectedDetailModule === "memory"
-              ? this._renderMemoryDetail(e)
-              : this._selectedDetailModule === "agent"
-                ? this._renderAgentDetail(e)
-                : ((this._selectedDetailModule = "installation"),
-                  this._renderInstallationDetail(e)));
+    var t;
+    if (
+      (this._selectedDetailModule ||
+        (this._selectedDetailModule = "installation"),
+      this._selectedDetailModule !== "help")
+    ) {
+      let r =
+        (t = this._capabilityState) == null
+          ? void 0
+          : t[this._selectedDetailModule];
+      (r == null ? void 0 : r.user_state) === "detection_failed" &&
+        r.reason.code.endsWith(".stale") &&
+        this._probeModule(this._selectedDetailModule);
+    }
+    this._selectedDetailModule === "installation"
+      ? this._renderInstallationDetail(e)
+      : this._selectedDetailModule === "library"
+        ? this._renderLibraryDetail(e)
+        : this._selectedDetailModule === "ocr"
+          ? this._renderOcrDetail(e)
+          : this._selectedDetailModule === "memory"
+            ? this._renderMemoryDetail(e)
+            : this._selectedDetailModule === "agent"
+              ? this._renderAgentDetail(e)
+              : ((this._selectedDetailModule = "installation"),
+                this._renderInstallationDetail(e));
   }
   _renderLibraryDetail(e) {
     var o, l;

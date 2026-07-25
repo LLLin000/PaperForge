@@ -1458,6 +1458,17 @@ const LANG: Record<string, Record<string, string>> = {
     sr_upgrade_modal_safety:
       "现有 ChromaDB 数据会得到保留。此过程需要有效的 API Key 并可能产生 API 费用。",
     sr_api_key_notice: "API Key 未配置 \u2014 搜索和检索不可用",
+    sr_db_status: "数据库",
+    sr_backend: "后端",
+    sr_api_key: "API Key",
+    sr_db_exists: "已激活",
+    sr_db_missing: "未构建",
+    sr_impact_db_missing:
+      "智能检索需要 OpenAI API Key 和向量索引。点击构建索引开始设置。",
+    sr_impact_upgrade: "新的向量后端可用。升级可提升搜索质量。",
+    sr_impact_build_failed: "上次构建失败。请检查 API Key 后重试。",
+    sr_impact_schema_stale: "向量模式已过期。请重建以匹配当前文献库。",
+    sr_action_enable: "启用智能检索",
     // ── OCR 工作区 (Issue #95) ──
     ocr_ws_title: "OCR 工作区",
     ocr_ws_filter_all: "全部",
