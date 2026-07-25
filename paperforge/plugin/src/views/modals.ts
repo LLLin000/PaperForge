@@ -307,6 +307,12 @@ export class PaperForgeSetupModal extends Modal {
   }
 
   _resolvePython(): { path: string; args: string[] } {
+    // 1. Use custom python_path from settings if set and exists
+    const customPath = this.plugin.settings.python_path?.trim();
+    if (customPath && fs.existsSync(customPath)) {
+      return { path: customPath, args: [] };
+    }
+    // 2. Fall back to managed runtime detection
     const vp = this.plugin.settings.vault_path?.trim() || ".";
     const rt = new ManagedRuntime({
       runtimeDir: path.join(vp, ".paperforge-test-venv"),
