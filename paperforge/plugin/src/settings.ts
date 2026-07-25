@@ -1034,11 +1034,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       renderStatusBadge(body, "ready");
       const readyText = pipelineVersion
         ? t("ocr_state_ready")
-            .replace("{count}", String(env.action?.primary?.scope_count ?? ""))
+            .replace(
+              "{count}",
+              String(
+                env.action?.primary?.scope_count ??
+                  (env.pipeline_version_summary as any)?.total ??
+                  ""
+              )
+            )
             .replace("{version}", pipelineVersion)
         : t("ocr_state_ready_no_version").replace(
             "{count}",
-            String(env.action?.primary?.scope_count ?? "")
+            String(
+              env.action?.primary?.scope_count ??
+                (env.pipeline_version_summary as any)?.total ??
+                ""
+            )
           );
       body.createEl("p", { text: readyText, cls: "pf-status-ok" });
       // Open OCR Workspace (secondary action)
@@ -1273,28 +1284,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
-    // API key config link
-    if (reasonCode !== "memory.disabled") {
-      const cfgRow = body.createDiv({ cls: "pf-sr-config-link" });
-      cfgRow
-        .createEl("a", {
-          text: t("sr_configure_api_keys") || "Configure API keys...",
-          href: "#",
-        })
-        .addEventListener("click", (e: Event) => {
-          e.preventDefault();
-          new Notice(
-            t("sr_configure_api_keys_hint") ||
-              "Configure API keys in Settings > Smart Retrieval",
-            5000
-          );
-        });
-      cfgRow.createEl("span", {
-        cls: "pf-sr-config-hint",
-        text: " → " + (t("sr_config_hint") || "Settings › Smart Retrieval"),
-      });
-    }
-
     // ── Info card (read-only status) ──
     const dbStatus =
       env.user_state === "ready"
@@ -1319,25 +1308,37 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       row.createEl("span", { cls: "pf-sr-info-value", text: value });
     }
 
-    // API Key input (collapsed by default when already configured)
-    const apiSection = body.createDiv({ cls: "pf-sr-api-section" });
-    const apiHeader = apiSection.createEl("div", {
-      cls: "pf-sr-api-header",
-      text: "▶ " + (t("feat_openai_key") || "API Key"),
+    // ── Configuration (single collapsible section) ──
+    const cfgOpen = !apiKeyConfigured;
+    const cfgSection = body.createDiv({ cls: "pf-sr-cfg" });
+    const cfgHead = cfgSection.createDiv({ cls: "pf-sr-cfg-head" });
+    cfgHead.createEl("span", {
+      cls: "pf-sr-cfg-title",
+      text: t("sr_config_label") || "\u914d\u7f6e",
     });
-    const apiBody = apiSection.createDiv({ cls: "pf-sr-api-body" });
-    apiBody.style.display = apiKeyConfigured ? "none" : "";
-    apiHeader.addEventListener("click", () => {
-      apiBody.style.display = apiBody.style.display === "none" ? "" : "none";
-      apiHeader.textContent =
-        (apiBody.style.display === "none" ? "▶ " : "▼ ") +
-        (t("feat_openai_key") || "API Key");
+    const cfgIcon = cfgHead.createEl("span", {
+      cls: "pf-sr-cfg-icon",
+      text: cfgOpen ? "\u25bc" : "\u25b6",
     });
-    const ki = apiBody.createEl("input", {
-      cls: "pf-sr-api-input",
+    const cfgBody = cfgSection.createDiv({ cls: "pf-sr-cfg-body" });
+    cfgBody.style.display = cfgOpen ? "" : "none";
+    cfgHead.addEventListener("click", () => {
+      const open = cfgBody.style.display !== "none";
+      cfgBody.style.display = open ? "none" : "";
+      cfgIcon.textContent = open ? "\u25b6" : "\u25bc";
+    });
+
+    // API Key
+    const kr = cfgBody.createDiv({ cls: "pf-sr-cfg-row" });
+    kr.createEl("label", {
+      text: t("feat_openai_key") || "API Key",
+      cls: "pf-sr-cfg-lbl",
+    });
+    const ki = kr.createEl("input", {
+      cls: "pf-sr-cfg-input",
       attr: {
         type: "password",
-        placeholder: apiKeyConfigured ? "•••• (stored)" : "sk-...",
+        placeholder: apiKeyConfigured ? "\u2022\u2022\u2022\u2022" : "sk-...",
       },
     }) as HTMLInputElement;
     let kt: ReturnType<typeof setTimeout> | null = null;
@@ -1355,22 +1356,45 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             this.plugin.settings.vector_db_api_key = "";
             await this.plugin.saveSettings();
             ki.value = "";
-            ki.placeholder = "•••• (stored)";
-            apiBody.style.display = "none";
-            apiHeader.textContent = "▶ " + (t("feat_openai_key") || "API Key");
+            ki.placeholder = "\u2022\u2022\u2022\u2022";
+            cfgBody.style.display = "none";
+            cfgIcon.textContent = "\u25b6";
           }
         } catch {}
         kt = null;
       }, 600);
     });
+
     // Base URL
-    const bu = apiBody.createEl("input", {
-      cls: "pf-sr-api-input",
+    const br = cfgBody.createDiv({ cls: "pf-sr-cfg-row" });
+    br.createEl("label", {
+      text: t("feat_api_base_url") || "API Base URL",
+      cls: "pf-sr-cfg-lbl",
+    });
+    const bi = br.createEl("input", {
+      cls: "pf-sr-cfg-input",
       attr: { type: "text", placeholder: "https://api.openai.com/v1" },
     }) as HTMLInputElement;
-    bu.value = this.plugin.settings.vector_db_api_base || "";
-    bu.addEventListener("change", () => {
-      this.plugin.settings.vector_db_api_base = bu.value;
+    bi.value = this.plugin.settings.vector_db_api_base || "";
+    bi.addEventListener("change", () => {
+      this.plugin.settings.vector_db_api_base = bi.value;
+      this.plugin.saveSettings();
+    });
+
+    // Model
+    const mr = cfgBody.createDiv({ cls: "pf-sr-cfg-row" });
+    mr.createEl("label", {
+      text: t("feat_api_model") || "Model",
+      cls: "pf-sr-cfg-lbl",
+    });
+    const mi = mr.createEl("input", {
+      cls: "pf-sr-cfg-input",
+      attr: { type: "text", placeholder: "text-embedding-3-small" },
+    }) as HTMLInputElement;
+    mi.value =
+      this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
+    mi.addEventListener("change", () => {
+      this.plugin.settings.vector_db_api_model = mi.value;
       this.plugin.saveSettings();
     });
 
