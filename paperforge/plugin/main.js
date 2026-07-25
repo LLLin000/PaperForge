@@ -364,7 +364,7 @@ function lt(d) {
     ttl_seconds: 0,
   };
 }
-function ke(d) {
+function Se(d) {
   return {
     schema_version: We,
     module: d,
@@ -417,7 +417,7 @@ function It(d, c) {
       continue;
     }
     if (!ot(r, t)) {
-      e[t] = ke(t);
+      e[t] = Se(t);
       continue;
     }
     if (ct(r)) {
@@ -2124,7 +2124,7 @@ function Nt(d, c = "") {
 function a(d) {
   return (dt && dt[d]) || pt.en[d] || d;
 }
-var C = require("obsidian"),
+var R = require("obsidian"),
   j = N(require("fs")),
   Z = N(require("path")),
   ur = N(require("os")),
@@ -2335,7 +2335,7 @@ function Ut(d, c) {
 var _e = N(require("fs")),
   ve = N(require("path")),
   Xt = N(require("os")),
-  Se = require("child_process");
+  Pe = require("child_process");
 var Br = ["paddleocr_api_key", "vector_db_api_key"],
   Mr = {
     paddleocr_api_key: "paddleocr-api-key",
@@ -2516,13 +2516,13 @@ function ht() {
     let d;
     if (process.platform === "win32") {
       let c = process.env.ComSpec || "C:\\Windows\\System32\\cmd.exe";
-      d = (0, Se.execFileSync)(c, ["/c", "where", "git"], {
+      d = (0, Pe.execFileSync)(c, ["/c", "where", "git"], {
         timeout: 5e3,
         windowsHide: !0,
         encoding: "utf-8",
       });
     } else
-      d = (0, Se.execFileSync)("which", ["git"], {
+      d = (0, Pe.execFileSync)("which", ["git"], {
         timeout: 5e3,
         encoding: "utf-8",
       });
@@ -2590,11 +2590,11 @@ function Ze(d) {
   } catch (c) {}
   return !1;
 }
-var Ce = N(require("fs")),
+var Re = N(require("fs")),
   U = N(require("path")),
   er = require("child_process");
 function Vr(d, c) {
-  let e = c || Ce,
+  let e = c || Re,
     t = U.join(d, "paperforge.json"),
     r = {
       system_dir: "System",
@@ -2654,7 +2654,7 @@ function X(d, c) {
 }
 function mt(d) {
   try {
-    return Ce.existsSync(d) ? JSON.parse(Ce.readFileSync(d, "utf-8")) : null;
+    return Re.existsSync(d) ? JSON.parse(Re.readFileSync(d, "utf-8")) : null;
   } catch (c) {
     return null;
   }
@@ -2663,11 +2663,11 @@ function Hr(d) {
   let c = X(d);
   return mt(c.memoryStatePath);
 }
-var Pe = null;
+var Ce = null;
 function Ge(d) {
   let c = X(d),
     e = Date.now();
-  if (Pe && Pe.vaultPath === d && e - Pe.ts < 2e3) return Pe.result;
+  if (Ce && Ce.vaultPath === d && e - Ce.ts < 2e3) return Ce.result;
   let t = "",
     r = [
       U.join(d, ".paperforge-test-venv", "Scripts", "python.exe"),
@@ -2675,7 +2675,7 @@ function Ge(d) {
       U.join(d, "venv", "Scripts", "python.exe"),
     ];
   for (let i = 0; i < r.length; i++)
-    if (Ce.existsSync(r[i])) {
+    if (Re.existsSync(r[i])) {
       t = r[i];
       break;
     }
@@ -2689,11 +2689,11 @@ function Ge(d) {
         s = JSON.parse(i);
       if (s.ok && s.data) {
         let o = s.data;
-        return ((Pe = { vaultPath: d, result: o, ts: e }), o);
+        return ((Ce = { vaultPath: d, result: o, ts: e }), o);
       }
     } catch (i) {}
   let n = mt(c.vectorStatePath);
-  return ((Pe = { vaultPath: d, result: n, ts: e }), n);
+  return ((Ce = { vaultPath: d, result: n, ts: e }), n);
 }
 function He(d) {
   let c = X(d);
@@ -2710,7 +2710,7 @@ function yt(d) {
     ? "DB not found. Run paperforge memory build."
     : "Papers: " + c.paper_count_db + " | " + (c.fresh ? "fresh" : "stale");
 }
-function Re(d) {
+function Fe(d) {
   var t, r, n;
   let c = Ge(d);
   return c
@@ -2730,7 +2730,7 @@ var G = require("obsidian"),
   se = N(require("fs")),
   vt = N(require("path")),
   or = N(require("https")),
-  Fe = require("child_process");
+  De = require("child_process");
 var bt = N(require("fs")),
   B = N(require("path")),
   Ye = require("child_process"),
@@ -3489,7 +3489,7 @@ var Et = class extends G.Modal {
           return;
         }
         let i = n.map((s) => s.key);
-        (0, Fe.execFile)(
+        (0, De.execFile)(
           this.py.path,
           [
             ...this.py.extraArgs,
@@ -3544,7 +3544,7 @@ function Qe(d, c, e) {
     console.log("[PF] checkOrphanState exception:", t.message || t);
   }
 }
-var De = class extends G.Modal {
+var Ee = class extends G.Modal {
   constructor(e, t, r) {
     super(e);
     this._pendingSave = null;
@@ -3562,7 +3562,7 @@ var De = class extends G.Modal {
         osPlatform: process.platform,
         osArch: process.arch,
         fs: se,
-        execFile: Fe.execFile,
+        execFile: De.execFile,
         execFileSync: require("child_process").execFileSync,
       }),
       r = ce(t.current());
@@ -4094,7 +4094,7 @@ var De = class extends G.Modal {
     let n = (f, g = {}) =>
         new Promise((h, b) => {
           let { path: E, args: m = [] } = this._resolvePython(),
-            v = (0, Fe.spawn)(E, [...m, ...f], {
+            v = (0, De.spawn)(E, [...m, ...f], {
               cwd: t.vault_path.trim(),
               env: fe(),
               timeout: 12e4,
@@ -4378,7 +4378,7 @@ var De = class extends G.Modal {
     {
       let u = n,
         { path: _, args: f = [] } = this._resolvePython();
-      (0, Fe.execFile)(
+      (0, De.execFile)(
         _,
         [...f, "-c", "import paperforge; print(paperforge.__version__)"],
         { cwd: u, timeout: 1e4 },
@@ -4719,7 +4719,7 @@ function et(d, c) {
 function dr(d) {
   return { app: { secretStorage: d.secretStorage }, saveData: async () => {} };
 }
-var Ae = class Ae extends C.PluginSettingTab {
+var Ae = class Ae extends R.PluginSettingTab {
   constructor(e, t) {
     super(e, t);
     this._saveTimeout = null;
@@ -5113,7 +5113,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         }
       ),
       t.user_state !== "ready" &&
-        new C.Setting(r)
+        new R.Setting(r)
           .setName(a("foundation_setup"))
           .setDesc(a("foundation_setup_desc"))
           .addButton((y) =>
@@ -5121,13 +5121,13 @@ var Ae = class Ae extends C.PluginSettingTab {
               .setButtonText(a("foundation_setup_btn"))
               .setCta()
               .onClick(() => {
-                (new C.Notice(a("foundation_running_setup")),
+                (new R.Notice(a("foundation_running_setup")),
                   (this.plugin.settings._setup_complete = !1),
                   this.plugin.saveSettings(),
                   this.display());
               })
           ),
-      new C.Setting(r)
+      new R.Setting(r)
         .setName(a("foundation_reinstall"))
         .setDesc(a("foundation_reinstall_desc"))
         .addButton((y) =>
@@ -5135,20 +5135,9 @@ var Ae = class Ae extends C.PluginSettingTab {
             .setButtonText(a("foundation_reinstall_btn"))
             .setWarning()
             .onClick(() => {
-              (new C.Notice(a("foundation_reinstalling")),
-                m(
-                  `"${s}" -m pip install -e "${o}/../"`,
-                  { cwd: o },
-                  (x, w, S) => {
-                    x
-                      ? new C.Notice(
-                          a("foundation_reinstall_failed") +
-                            ": " +
-                            S.slice(0, 200)
-                        )
-                      : new C.Notice(a("foundation_reinstall_ok"));
-                  }
-                ));
+              new Ee(this.app, this.plugin, () => {
+                (this._probeModule("installation"), this._probeModule("help"));
+              }).open();
             })
         ));
   }
@@ -5232,7 +5221,7 @@ var Ae = class Ae extends C.PluginSettingTab {
                 ? " [" + a("skills_system") + "]"
                 : " [" + a("skills_user") + "]",
               S = y.desc || "",
-              P = new C.Setting(E).setName(x + w).setDesc(S);
+              P = new R.Setting(E).setName(x + w).setDesc(S);
             ((P.settingEl.style.opacity = y.disabled ? "0.4" : "1"),
               P.addToggle((M) => {
                 M.setValue(!y.disabled).onChange((I) => {
@@ -5338,7 +5327,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         notConfiguredLabel: a("config_not_configured"),
         onChangeLabel: a("config_change"),
         onChange: () => {
-          new De(this.app, this.plugin, () => {
+          new Ee(this.app, this.plugin, () => {
             (this.plugin.savePaperforgeJson({
               zotero_data_dir: this.plugin.settings.zotero_data_dir,
             }),
@@ -5570,7 +5559,7 @@ var Ae = class Ae extends C.PluginSettingTab {
             var v;
             let E = (v = this._agentPlatformDraft) != null ? v : i,
               m = j.existsSync(Z.join(this._getVaultBasePath(), n[E]));
-            new C.Notice(
+            new R.Notice(
               m ? a("agent_verify_found") : a("agent_verify_missing")
             );
           },
@@ -5723,7 +5712,7 @@ var Ae = class Ae extends C.PluginSettingTab {
     ) {
       let l = [e];
       (e === "installation" && l.push("help"),
-        new De(this.app, this.plugin, () => {
+        new Ee(this.app, this.plugin, () => {
           for (let p of l) this._probeModule(p);
         }).open());
       return;
@@ -5817,7 +5806,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         }
       }
     }
-    (new C.Notice(
+    (new R.Notice(
       (a("action_unknown_pair") || "Unknown action: {verb}").replace(
         "{verb}",
         t
@@ -5830,7 +5819,7 @@ var Ae = class Ae extends C.PluginSettingTab {
     var l;
     let t = this.app.vault.adapter.basePath;
     if (!this._resolveRuntimeCommand(t)) {
-      new C.Notice(a("runtime_not_available") || "No Python runtime available");
+      new R.Notice(a("runtime_not_available") || "No Python runtime available");
       return;
     }
     let n =
@@ -5893,7 +5882,7 @@ var Ae = class Ae extends C.PluginSettingTab {
             ((s.ocr.activity_state = "idle"),
             (s.ocr.activity_label = null),
             (s.ocr.activity_progress = null)),
-          new C.Notice(a("ocr_error_notice"), 8e3),
+          new R.Notice(a("ocr_error_notice"), 8e3),
           this._probeModule("ocr"),
           this.display());
       },
@@ -5904,7 +5893,7 @@ var Ae = class Ae extends C.PluginSettingTab {
             (s.ocr.activity_label = null),
             (s.ocr.activity_progress = null)),
           p === 0
-            ? new C.Notice(
+            ? new R.Notice(
                 e === "run"
                   ? a("ocr_run_complete")
                   : e === "rebuild"
@@ -5913,8 +5902,8 @@ var Ae = class Ae extends C.PluginSettingTab {
               )
             : p === 130 || this.plugin._ocrWasStopped
               ? ((this.plugin._ocrWasStopped = !1),
-                new C.Notice(a("ocr_stopped_notice")))
-              : new C.Notice(a("ocr_failed_notice"), 8e3),
+                new R.Notice(a("ocr_stopped_notice")))
+              : new R.Notice(a("ocr_failed_notice"), 8e3),
           this._probeModule("ocr"),
           this.display());
       },
@@ -5972,7 +5961,7 @@ var Ae = class Ae extends C.PluginSettingTab {
               ((r.memory.activity_state = "idle"),
               (r.memory.activity_label = null),
               (r.memory.activity_progress = null)),
-            new C.Notice(i + " build error: " + (l.message || l), 8e3),
+            new R.Notice(i + " build error: " + (l.message || l), 8e3),
             this._probeModule("memory"),
             this.display());
         },
@@ -5983,8 +5972,8 @@ var Ae = class Ae extends C.PluginSettingTab {
               (r.memory.activity_label = null),
               (r.memory.activity_progress = null)),
             l === 0
-              ? new C.Notice(i + " build complete.")
-              : new C.Notice(
+              ? new R.Notice(i + " build complete.")
+              : new R.Notice(
                   i + " build failed with exit code " + (l != null ? l : "?"),
                   8e3
                 ),
@@ -6001,8 +5990,8 @@ var Ae = class Ae extends C.PluginSettingTab {
             ((r.memory.activity_state = "idle"),
             (r.memory.activity_label = null)),
             o === 0
-              ? new C.Notice(i + " rebuild complete")
-              : new C.Notice(
+              ? new R.Notice(i + " rebuild complete")
+              : new R.Notice(
                   i + " build failed" + (p ? ": " + p.slice(0, 120) : ""),
                   8e3
                 ),
@@ -6280,7 +6269,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         let s = this.app.vault.adapter.basePath,
           o = this._resolveRuntimeCommand(s);
         if (!(o != null && o.path)) {
-          new C.Notice(a("feat_no_python"));
+          new R.Notice(a("feat_no_python"));
           return;
         }
         (console.log("[PaperForge] Rebuilding memory:", o.path),
@@ -6298,8 +6287,8 @@ var Ae = class Ae extends C.PluginSettingTab {
                 n.setText(a("feat_memory_rebuild_btn")),
                 n.removeAttribute("disabled"),
                 l === 0
-                  ? new C.Notice(a("feat_memory_rebuild_done"))
-                  : new C.Notice(
+                  ? new R.Notice(a("feat_memory_rebuild_done"))
+                  : new R.Notice(
                       a("feat_memory_rebuild_failed") +
                         (u ? " " + u.slice(0, 80) : "")
                     ),
@@ -6375,7 +6364,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         (n, i, s) => {
           ((this._refreshPending = !1),
             (this._memoryStatusText = yt(e)),
-            (this._embedStatusText = Re(e)),
+            (this._embedStatusText = Fe(e)),
             this.display());
         }
       ));
@@ -6389,7 +6378,7 @@ var Ae = class Ae extends C.PluginSettingTab {
       e
         .createEl("div", { cls: "paperforge-desc-box" })
         .setText(a("feat_vector_desc")),
-      new C.Setting(e)
+      new R.Setting(e)
         .setName(a("feat_vector_enable"))
         .setDesc(a("feat_vector_enable_desc"))
         .addToggle((p) => {
@@ -6439,7 +6428,7 @@ var Ae = class Ae extends C.PluginSettingTab {
     if (this._vectorDepsOk === null) {
       let p = Ge(r);
       ((this._vectorDepsOk = p && (l = p.deps_installed) != null ? l : !1),
-        this._vectorDepsOk && (this._embedStatusText = Re(r)),
+        this._vectorDepsOk && (this._embedStatusText = Fe(r)),
         this.display());
     }
   }
@@ -6449,7 +6438,7 @@ var Ae = class Ae extends C.PluginSettingTab {
           ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
           : "sk-...",
       n = null;
-    (new C.Setting(e)
+    (new R.Setting(e)
       .setName(a("feat_openai_key"))
       .setDesc(a("feat_openai_key_desc"))
       .addText((i) => {
@@ -6476,7 +6465,7 @@ var Ae = class Ae extends C.PluginSettingTab {
                 }, 600)));
             }));
       }),
-      new C.Setting(e)
+      new R.Setting(e)
         .setName(a("feat_api_base_url"))
         .setDesc(a("feat_api_base_url_desc"))
         .addText((i) => {
@@ -6487,7 +6476,7 @@ var Ae = class Ae extends C.PluginSettingTab {
                 this.plugin.saveSettings());
             });
         }),
-      new C.Setting(e)
+      new R.Setting(e)
         .setName(a("feat_api_model"))
         .setDesc(a("feat_api_model_desc"))
         .addText((i) => {
@@ -6506,7 +6495,7 @@ var Ae = class Ae extends C.PluginSettingTab {
     (e
       .createEl("div", { cls: "paperforge-desc-box" })
       .setText(a("feat_deps_missing")),
-      new C.Setting(e)
+      new R.Setting(e)
         .setName(a("feat_install_deps"))
         .setDesc(a("feat_install_deps_desc"))
         .addButton((r) => {
@@ -6516,12 +6505,12 @@ var Ae = class Ae extends C.PluginSettingTab {
               let n = this.app.vault.adapter.basePath,
                 i = this._resolveRuntimeCommand(n);
               if (!(i != null && i.path)) {
-                new C.Notice(a("feat_no_python"));
+                new R.Notice(a("feat_no_python"));
                 return;
               }
               (r.setButtonText(a("feat_installing")), r.setDisabled(!0));
               let s = "chromadb openai",
-                o = new C.Notice(
+                o = new R.Notice(
                   a("feat_installing_pkgs").replace("{pkgs}", s),
                   0
                 );
@@ -6542,13 +6531,13 @@ var Ae = class Ae extends C.PluginSettingTab {
                   );
                 }),
                   o.hide(),
-                  new C.Notice(a("feat_install_done")),
+                  new R.Notice(a("feat_install_done")),
                   (this._vectorDepsOk = !0),
-                  (this._embedStatusText = Re(n)),
+                  (this._embedStatusText = Fe(n)),
                   this.display());
               } catch (l) {
                 (o.hide(),
-                  new C.Notice(
+                  new R.Notice(
                     a("feat_install_failed") + (l.stderr || l.message || l)
                   ),
                   r.setButtonText(a("feat_retry_btn")),
@@ -6558,7 +6547,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         }));
   }
   _renderVectorReady(e, t) {
-    (e.createEl("div", { cls: "paperforge-desc-box" }).setText(Re(t)),
+    (e.createEl("div", { cls: "paperforge-desc-box" }).setText(Fe(t)),
       this._renderApiConfig(e));
     let n = e.createEl("div", { cls: "paperforge-embed-section" });
     n.createEl("div", { cls: "paperforge-embed-header" }).createEl("span", {
@@ -6612,13 +6601,13 @@ var Ae = class Ae extends C.PluginSettingTab {
             : !0,
         P = typeof _.status == "string" ? _.status : "",
         M = typeof _.message == "string" ? _.message : "",
-        I = async (R) => {
+        I = async (C) => {
           var J;
-          if (R === "--resume" && k && !y) {
+          if (C === "--resume" && k && !y) {
             let L = a("retrieval_rebuild_warning").replace("{n}", String(v));
             if (!confirm(L)) return;
           }
-          if (R === "--force" && k && !y) {
+          if (C === "--force" && k && !y) {
             let L =
               "Force rebuild will replace " +
               v +
@@ -6627,7 +6616,7 @@ var Ae = class Ae extends C.PluginSettingTab {
           }
           let V = this._resolveRuntimeCommand(t);
           if (!(V != null && V.path)) {
-            new C.Notice(a("retrieval_no_python"));
+            new R.Notice(a("retrieval_no_python"));
             return;
           }
           let Q = await he(dr(this.app), "embed");
@@ -6640,7 +6629,7 @@ var Ae = class Ae extends C.PluginSettingTab {
             (this.plugin._embedStderr = ""),
             (this.plugin._embedProgress = { current: 0, total: 0, key: "" }),
             (this.plugin._embedProcess = this._callPython(
-              ["embed", "build", R],
+              ["embed", "build", C],
               {
                 stream: !0,
                 env: Q,
@@ -6652,11 +6641,11 @@ var Ae = class Ae extends C.PluginSettingTab {
                         : Buffer.isBuffer(L)
                           ? L.toString("utf-8")
                           : String(L),
-                    { events: oe, buffer: we } = et(
+                    { events: oe, buffer: ke } = et(
                       ne,
                       (de = this.plugin._embedBuffer) != null ? de : ""
                     );
-                  this.plugin._embedBuffer = we;
+                  this.plugin._embedBuffer = ke;
                   for (let W of oe)
                     W.event === "START"
                       ? (this.plugin._embedProgress.total = W.total || 0)
@@ -6676,7 +6665,7 @@ var Ae = class Ae extends C.PluginSettingTab {
                 },
                 onError: (L) => {
                   ((this.plugin._embedProcess = null),
-                    new C.Notice(
+                    new R.Notice(
                       a("feat_build_failed") + ": " + (L.message || L)
                     ),
                     this.display());
@@ -6696,12 +6685,12 @@ var Ae = class Ae extends C.PluginSettingTab {
                     ((this.plugin._embedProgress.current =
                       this.plugin._embedProgress.total),
                       this.plugin.saveSettings(),
-                      (this._embedStatusText = Re(t)),
-                      new C.Notice(a("feat_build_complete")));
+                      (this._embedStatusText = Fe(t)),
+                      new R.Notice(a("feat_build_complete")));
                   else {
                     this._embedStatusText = null;
                     let oe = (this.plugin._embedStderr || "").slice(0, 200);
-                    new C.Notice(
+                    new R.Notice(
                       a("feat_build_failed") + (oe ? ": " + oe : ""),
                       8e3
                     );
@@ -6744,7 +6733,7 @@ var Ae = class Ae extends C.PluginSettingTab {
                               (this.plugin._embedProgress.key =
                                 W.paper_id || "")));
                         }
-                      } catch (we) {}
+                      } catch (ke) {}
                   },
                 }));
             }, 2e3)),
@@ -6781,15 +6770,15 @@ var Ae = class Ae extends C.PluginSettingTab {
         T)
       ) {
         case "building": {
-          let R = s.createEl("div", { cls: "paperforge-progress-track" });
-          R.style.cssText = "flex:1;";
+          let C = s.createEl("div", { cls: "paperforge-progress-track" });
+          C.style.cssText = "flex:1;";
           let V = g > 0 ? ((f / g) * 100).toFixed(1) : "0",
-            Q = R.createEl("div", { cls: "paperforge-progress-seg done" });
+            Q = C.createEl("div", { cls: "paperforge-progress-seg done" });
           if (
             ((Q.style.cssText = `width:${V}%; min-width:${f > 0 ? "2px" : "0"};`),
             f < g)
           ) {
-            let L = R.createEl("div", {
+            let L = C.createEl("div", {
               cls: "paperforge-progress-seg pending",
             });
             L.style.cssText = `width:${(100 - parseFloat(V)).toFixed(1)}%;`;
@@ -6813,15 +6802,15 @@ var Ae = class Ae extends C.PluginSettingTab {
           break;
         }
         case "stopping": {
-          let R = s.createEl("div", { cls: "paperforge-progress-track" });
-          R.style.cssText = "flex:1; opacity:0.5;";
+          let C = s.createEl("div", { cls: "paperforge-progress-track" });
+          C.style.cssText = "flex:1; opacity:0.5;";
           let V = g > 0 ? ((f / g) * 100).toFixed(1) : "0",
-            Q = R.createEl("div", { cls: "paperforge-progress-seg done" });
+            Q = C.createEl("div", { cls: "paperforge-progress-seg done" });
           if (
             ((Q.style.cssText = `width:${V}%; min-width:${f > 0 ? "2px" : "0"};`),
             f < g)
           ) {
-            let L = R.createEl("div", {
+            let L = C.createEl("div", {
               cls: "paperforge-progress-seg pending",
             });
             L.style.cssText = `width:${(100 - parseFloat(V)).toFixed(1)}%;`;
@@ -6839,10 +6828,10 @@ var Ae = class Ae extends C.PluginSettingTab {
             text: a("retrieval_build_failed") + (M ? ": " + M : ""),
             attr: { style: "color:var(--text-error);" },
           });
-          let R = s.createEl("button");
-          (R.setText(a("retrieval_retry")),
-            (R.className = "mod-cta"),
-            R.addEventListener("click", () => I("--resume")));
+          let C = s.createEl("button");
+          (C.setText(a("retrieval_retry")),
+            (C.className = "mod-cta"),
+            C.addEventListener("click", () => I("--resume")));
           let V = s.createEl("button");
           (V.setText(a("retrieval_force_rebuild")),
             (V.style.marginLeft = "6px"),
@@ -6851,10 +6840,10 @@ var Ae = class Ae extends C.PluginSettingTab {
         }
         case "stopped": {
           o.setText(a("retrieval_build_stopped"));
-          let R = s.createEl("button");
-          (R.setText(a("retrieval_retry")),
-            (R.className = "mod-cta"),
-            R.addEventListener("click", () => I("--resume")));
+          let C = s.createEl("button");
+          (C.setText(a("retrieval_retry")),
+            (C.className = "mod-cta"),
+            C.addEventListener("click", () => I("--resume")));
           break;
         }
         case "corrupted": {
@@ -6863,10 +6852,10 @@ var Ae = class Ae extends C.PluginSettingTab {
             text: a("feat_vector_corrupted"),
             attr: { style: "background:var(--background-modifier-warning);" },
           });
-          let R = s.createEl("button");
-          (R.setText(a("retrieval_force_rebuild")),
-            (R.className = "mod-cta"),
-            R.addEventListener("click", () => I("--force")));
+          let C = s.createEl("button");
+          (C.setText(a("retrieval_force_rebuild")),
+            (C.className = "mod-cta"),
+            C.addEventListener("click", () => I("--force")));
           break;
         }
         case "stale": {
@@ -6875,10 +6864,10 @@ var Ae = class Ae extends C.PluginSettingTab {
             text: a("retrieval_build_stale"),
             attr: { style: "color:var(--text-warning);" },
           });
-          let R = s.createEl("button");
-          (R.setText(a("retrieval_rebuild_vectors")),
-            (R.className = "mod-cta"),
-            R.addEventListener("click", () => I("--resume")));
+          let C = s.createEl("button");
+          (C.setText(a("retrieval_rebuild_vectors")),
+            (C.className = "mod-cta"),
+            C.addEventListener("click", () => I("--resume")));
           break;
         }
         case "ready": {
@@ -6886,10 +6875,10 @@ var Ae = class Ae extends C.PluginSettingTab {
             text: v + " chunks embedded",
             cls: "setting-item-description",
           });
-          let R = s.createEl("button");
-          (R.setText(a("retrieval_rebuild_vectors")),
-            (R.className = "mod-cta"),
-            R.addEventListener("click", () => I("--resume")));
+          let C = s.createEl("button");
+          (C.setText(a("retrieval_rebuild_vectors")),
+            (C.className = "mod-cta"),
+            C.addEventListener("click", () => I("--resume")));
           let V = s.createEl("button");
           (V.setText(a("retrieval_force_rebuild")),
             (V.style.marginLeft = "6px"),
@@ -6898,10 +6887,10 @@ var Ae = class Ae extends C.PluginSettingTab {
         }
         case "deps-missing": {
           o.setText(a("retrieval_build_deps_missing"));
-          let R = s.createEl("a");
-          (R.setText(a("feat_install_deps")),
-            (R.style.cssText = "cursor:pointer; text-decoration:underline;"),
-            R.addEventListener("click", () => {
+          let C = s.createEl("a");
+          (C.setText(a("feat_install_deps")),
+            (C.style.cssText = "cursor:pointer; text-decoration:underline;"),
+            C.addEventListener("click", () => {
               this.display();
             }));
           break;
@@ -6912,10 +6901,10 @@ var Ae = class Ae extends C.PluginSettingTab {
             text: a("retrieval_build_runtime_mismatch"),
             attr: { style: "color:var(--text-warning);" },
           });
-          let R = s.createEl("a");
-          (R.setText(a("runtime_health_sync")),
-            (R.style.cssText = "cursor:pointer; text-decoration:underline;"),
-            R.addEventListener("click", () => {
+          let C = s.createEl("a");
+          (C.setText(a("runtime_health_sync")),
+            (C.style.cssText = "cursor:pointer; text-decoration:underline;"),
+            C.addEventListener("click", () => {
               this.display();
             }));
           break;
@@ -6923,10 +6912,10 @@ var Ae = class Ae extends C.PluginSettingTab {
         case "idle":
         default: {
           o.setText(a("retrieval_build_idle"));
-          let R = s.createEl("button");
-          (R.setText(a("feat_build_btn")),
-            (R.className = "mod-cta"),
-            R.addEventListener("click", () => I("--resume")));
+          let C = s.createEl("button");
+          (C.setText(a("feat_build_btn")),
+            (C.className = "mod-cta"),
+            C.addEventListener("click", () => I("--resume")));
           break;
         }
       }
@@ -6979,14 +6968,14 @@ var Ae = class Ae extends C.PluginSettingTab {
       let r = "\u8BF7\u8F93\u5165\u8DEF\u5F84 / Enter a path first";
       (t &&
         (t.innerHTML = `<span style="color:var(--text-error)">\u2717 ${r}</span>`),
-        new C.Notice(r));
+        new R.Notice(r));
       return;
     }
     if (!j.existsSync(e)) {
       let r = "\u8DEF\u5F84\u4E0D\u5B58\u5728 / Path does not exist";
       (t &&
         (t.innerHTML = `<span style="color:var(--text-error)">\u2717 ${r}</span>`),
-        new C.Notice(r, 4e3));
+        new R.Notice(r, 4e3));
       return;
     }
     try {
@@ -6995,7 +6984,7 @@ var Ae = class Ae extends C.PluginSettingTab {
       let n = "\u4E0D\u53EF\u6267\u884C / Not executable";
       (t &&
         (t.innerHTML = `<span style="color:var(--text-error)">\u2717 ${n}</span>`),
-        new C.Notice(n, 4e3));
+        new R.Notice(n, 4e3));
       return;
     }
     (0, re.execFile)(e, ["--version"], { timeout: 8e3 }, (r, n) => {
@@ -7003,7 +6992,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         let l = "\u65E0\u6CD5\u8FD0\u884C / Cannot run";
         (t &&
           (t.innerHTML = `<span style="color:var(--text-error)">\u2717 ${l}</span>`),
-          new C.Notice(l, 4e3));
+          new R.Notice(l, 4e3));
         return;
       }
       let i = n.match(/Python (\d+)\.(\d+)/);
@@ -7011,7 +7000,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         let l = "\u65E0\u6CD5\u89E3\u6790\u7248\u672C / Cannot parse version";
         (t &&
           (t.innerHTML = `<span style="color:var(--text-error)">\u2717 ${l}</span>`),
-          new C.Notice(l, 4e3));
+          new R.Notice(l, 4e3));
         return;
       }
       let s = parseInt(i[1], 10),
@@ -7021,7 +7010,7 @@ var Ae = class Ae extends C.PluginSettingTab {
           "Python \u7248\u672C\u8FC7\u4F4E\uFF0C\u9700\u8981 3.11+ / Python version too low, need 3.11+";
         (t &&
           (t.innerHTML = `<span style="color:var(--text-error)">\u2717 ${l}</span>`),
-          new C.Notice(l, 4e3));
+          new R.Notice(l, 4e3));
         return;
       }
       (0, re.execFile)(e, ["-m", "pip", "--version"], { timeout: 8e3 }, (l) => {
@@ -7029,12 +7018,12 @@ var Ae = class Ae extends C.PluginSettingTab {
           let p = `\u2713 Python ${s}.${o} \u6709\u6548\uFF0C\u4F46\u672A\u68C0\u6D4B\u5230 pip / Valid, but pip not found`;
           (t &&
             (t.innerHTML = `<span style="color:var(--text-warning)">\u26A0 ${p}</span>`),
-            new C.Notice(p, 4e3));
+            new R.Notice(p, 4e3));
         } else {
           let p = `\u2713 Python ${s}.${o} \u6709\u6548 / Valid`;
           (t &&
             (t.innerHTML = `<span style="color:var(--text-accent)">${p}</span>`),
-            new C.Notice(p, 4e3));
+            new R.Notice(p, 4e3));
         }
       });
     });
@@ -7148,7 +7137,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         }
         let g = s.filter((h) => !h.ok);
         (g.length > 0 &&
-          new C.Notice(
+          new R.Notice(
             `[!!] \u672A\u901A\u8FC7: ${g.map((h) => h.label).join(", ")}`,
             6e3
           ),
@@ -7294,7 +7283,7 @@ var Ae = class Ae extends C.PluginSettingTab {
           ttl_seconds: 60,
         };
         this._updateCapabilityEnvelope(e, f);
-      } else this._updateCapabilityEnvelope(e, ke(e));
+      } else this._updateCapabilityEnvelope(e, Se(e));
       return;
     }
     let o = [...s.args, "-m", "paperforge", "--vault", i, "probe", e, "--json"];
@@ -7305,7 +7294,7 @@ var Ae = class Ae extends C.PluginSettingTab {
       (0, re.execFile)(s.path, o, { cwd: i, timeout: 15e3 }, (f, g, h) => {
         if ((this._probing.delete(e), f)) {
           (console.warn(`[PaperForge] Probe ${e} failed:`, f.message),
-            this._updateCapabilityEnvelope(e, ke(e)));
+            this._updateCapabilityEnvelope(e, Se(e)));
           return;
         }
         try {
@@ -7316,13 +7305,13 @@ var Ae = class Ae extends C.PluginSettingTab {
                 `[PaperForge] Probe ${e}: invalid envelope schema`,
                 g == null ? void 0 : g.slice(0, 200)
               ),
-              this._updateCapabilityEnvelope(e, ke(e)));
+              this._updateCapabilityEnvelope(e, Se(e)));
         } catch (b) {
           (console.warn(
             `[PaperForge] Probe ${e}: unparseable JSON`,
             g == null ? void 0 : g.slice(0, 200)
           ),
-            this._updateCapabilityEnvelope(e, ke(e)));
+            this._updateCapabilityEnvelope(e, Se(e)));
         }
       }));
   }
@@ -7334,7 +7323,7 @@ var Ae = class Ae extends C.PluginSettingTab {
       this._persistCapabilityState(),
       (r == null ? void 0 : r.activity_state) === "running" &&
         t.activity_state !== "running" &&
-        new C.Notice(a("cc_notice_refreshed"), 3e3),
+        new R.Notice(a("cc_notice_refreshed"), 3e3),
       this._displayInProgress || this.display());
   }
   _ccBadgeKey(e, t) {
@@ -7457,7 +7446,7 @@ var Ae = class Ae extends C.PluginSettingTab {
         attr: { "aria-label": x.label },
       }).addEventListener("click", () => {
         x.kind === "setup"
-          ? new De(this.app, this.plugin, () => {
+          ? new Ee(this.app, this.plugin, () => {
               (this._probeModule("installation"), this._probeModule("help"));
             }).open()
           : this._dispatchModuleAction(t, n);
@@ -7706,7 +7695,7 @@ var Ae = class Ae extends C.PluginSettingTab {
       ),
       n = zt({ pluginVersion: e, modules: t });
     $t(n, () => {
-      new C.Notice(a("support_diagnostic_copied"), 3e3);
+      new R.Notice(a("support_diagnostic_copied"), 3e3);
     });
   }
   _persistNavMemory() {
@@ -7964,7 +7953,7 @@ var Ae = class Ae extends C.PluginSettingTab {
   ])));
 var tt = Ae;
 var F = require("obsidian"),
-  Ee = N(require("fs")),
+  xe = N(require("fs")),
   rt = N(require("path")),
   ge = require("child_process");
 var $e = N(require("path"));
@@ -8378,7 +8367,7 @@ var Te = class extends F.ItemView {
           : s.system_dir) || "System",
       i = rt.join(t, n, "PaperForge", "indexes", "formal-library.json");
     try {
-      let l = Ee.readFileSync(i, "utf-8"),
+      let l = xe.readFileSync(i, "utf-8"),
         p = JSON.parse(l),
         u = p.items || [],
         _ = {},
@@ -8506,7 +8495,7 @@ Make sure paperforge is installed and in your PATH.`,
           : i.system_dir) || "System",
       n = rt.join(e, r, "PaperForge", "indexes", "formal-library.json");
     try {
-      let s = Ee.readFileSync(n, "utf-8");
+      let s = xe.readFileSync(n, "utf-8");
       return JSON.parse(s);
     } catch (s) {
       return null;
@@ -8883,7 +8872,7 @@ Make sure paperforge is installed and in your PATH.`,
       }
   }
   _renderGlobalMode() {
-    var oe, we, de, W, St, Pt, Ct;
+    var oe, ke, de, W, St, Pt, Ct;
     if (!this._contentEl) return;
     let e = this._contentEl.createEl("div", { cls: "paperforge-global-view" });
     ((this._driftBannerEl = e.createEl("div", {
@@ -8968,16 +8957,16 @@ Make sure paperforge is installed and in your PATH.`,
       m ? E.items.length + " entries" : "formal-library.json not found"
     );
     let v =
-        ((we = f == null ? void 0 : f.settings) == null
+        ((ke = f == null ? void 0 : f.settings) == null
           ? void 0
-          : we.system_dir) || "System",
+          : ke.system_dir) || "System",
       k = this.app.vault.adapter.basePath,
       y = !1,
       x = "No exports found";
     try {
       let O = rt.join(k, v, "PaperForge", "exports");
-      if (Ee.existsSync(O)) {
-        let H = Ee.readdirSync(O).filter((ue) => ue.endsWith(".json"));
+      if (xe.existsSync(O)) {
+        let H = xe.readdirSync(O).filter((ue) => ue.endsWith(".json"));
         ((y = H.length > 0),
           (x = y ? H.length + " export(s)" : "No JSON exports"));
       }
@@ -9059,12 +9048,12 @@ Make sure paperforge is installed and in your PATH.`,
           Be && this._runAction(Be, ee);
         }));
     }
-    let R = e.createEl("div", { cls: "paperforge-global-actions" });
-    R.createEl("div", {
+    let C = e.createEl("div", { cls: "paperforge-global-actions" });
+    C.createEl("div", {
       cls: "paperforge-section-label",
       text: "Start Working",
     });
-    let V = R.createEl("div", { cls: "paperforge-global-actions-row" }),
+    let V = C.createEl("div", { cls: "paperforge-global-actions-row" }),
       Q = V.createEl("button", { cls: "paperforge-contextual-btn primary" });
     (Q.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
@@ -10863,7 +10852,7 @@ Make sure paperforge is installed and in your PATH.`,
 };
 var ie = require("obsidian"),
   pe = N(require("fs")),
-  xe = N(require("path")),
+  we = N(require("path")),
   kt = require("child_process");
 var nt = class extends ie.ItemView {
   constructor(e, t) {
@@ -10893,7 +10882,7 @@ var nt = class extends ie.ItemView {
     var n, i, s, o, l, p, u, _, f, g, h;
     let e = this.app.vault.adapter.basePath,
       t = X(e),
-      r = xe.join(
+      r = we.join(
         e,
         t.systemDir,
         "PaperForge",
@@ -10911,13 +10900,13 @@ var nt = class extends ie.ItemView {
       for (let m of E) {
         let v = m.zotero_key;
         if (!v) continue;
-        let k = xe.join(e, t.systemDir, "PaperForge", "ocr", v, "meta.json"),
+        let k = we.join(e, t.systemDir, "PaperForge", "ocr", v, "meta.json"),
           y = {};
         if (pe.existsSync(k))
           try {
             y = JSON.parse(pe.readFileSync(k, "utf-8"));
           } catch (S) {}
-        let x = xe.join(e, t.systemDir, "PaperForge", "ocr", v, "backups"),
+        let x = we.join(e, t.systemDir, "PaperForge", "ocr", v, "backups"),
           w = 0;
         (pe.existsSync(x) &&
           (w = pe
@@ -11312,13 +11301,13 @@ var nt = class extends ie.ItemView {
   _openFulltext(e) {
     let t = this.app.vault.adapter.basePath,
       r = X(t),
-      n = xe.join(t, r.systemDir, "PaperForge", "ocr", e, "fulltext.md");
+      n = we.join(t, r.systemDir, "PaperForge", "ocr", e, "fulltext.md");
     if (!pe.existsSync(n)) {
       new ie.Notice("Fulltext not found");
       return;
     }
     let i = this.app.vault.getAbstractFileByPath(
-      xe.relative(t, n).replace(/\\/g, "/")
+      we.relative(t, n).replace(/\\/g, "/")
     );
     i
       ? this.app.workspace.getLeaf().openFile(i)

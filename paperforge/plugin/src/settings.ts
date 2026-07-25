@@ -647,7 +647,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         );
     }
 
-    // Reinstall button
+    // Reinstall button - triggers full setup wizard
     new Setting(body)
       .setName(t("foundation_reinstall"))
       .setDesc(t("foundation_reinstall_desc"))
@@ -656,22 +656,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           .setButtonText(t("foundation_reinstall_btn"))
           .setWarning()
           .onClick(() => {
-            new Notice(t("foundation_reinstalling"));
-            exec(
-              `"${pythonPath}" -m pip install -e "${vp}/../"`,
-              { cwd: vp },
-              (err: any, stdout: string, stderr: string) => {
-                if (err) {
-                  new Notice(
-                    t("foundation_reinstall_failed") +
-                      ": " +
-                      stderr.slice(0, 200)
-                  );
-                } else {
-                  new Notice(t("foundation_reinstall_ok"));
-                }
-              }
-            );
+            new PaperForgeSetupModal(this.app, this.plugin, () => {
+              this._probeModule("installation");
+              this._probeModule("help");
+            }).open();
           })
       );
   }
