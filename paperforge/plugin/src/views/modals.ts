@@ -988,7 +988,7 @@ export class PaperForgeSetupModal extends Modal {
       "--vault",
       s.vault_path.trim(),
       "setup",
-      "--headless",
+      "--modular",
       "--system-dir",
       s.system_dir.trim(),
       "--resources-dir",

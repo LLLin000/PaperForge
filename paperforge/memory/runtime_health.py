@@ -35,7 +35,7 @@ def _check_bootstrap(vault: Path) -> dict:
     if not pf_json.exists():
         return _layer("blocked", [f"paperforge.json not found at {vault}"],
                       "Run paperforge setup to initialize vault",
-                      "paperforge setup --headless")
+                      "paperforge setup --modular")
     try:
         import json
         cfg = json.loads(pf_json.read_text(encoding="utf-8"))

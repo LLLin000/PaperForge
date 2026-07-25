@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "open-design": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "D:\\L\\Med\\Research\\99_System\\LiteraturePipeline\\github-release\\.open-design\\source\\apps\\daemon\\dist\\cli.js",
+        "mcp",
+        "--daemon-url",
+        "http://127.0.0.1:17456"
+      ],
+      "env": {
+        "OD_DAEMON_URL": "http://127.0.0.1:17456",
+        "OD_BIN": "D:\\L\\Med\\Research\\99_System\\LiteraturePipeline\\github-release\\.open-design\\source\\apps\\daemon\\dist\\cli.js"
+      }
+    }
+  }
+}
