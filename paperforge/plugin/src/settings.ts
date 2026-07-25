@@ -1269,6 +1269,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         label: t("cc_action_rebuild_derived") || "Rebuild Index",
         onClick: () => this._dispatchMemoryBuild("embed"),
       });
+    } else if (
+      env.action?.primary &&
+      env.user_state !== "ready" &&
+      env.user_state !== "not_enabled"
+    ) {
+      // ── Generic fallback: any actionable state with a primary action ──
+      const actionLabel =
+        env.action.primary.label || t("cc_action_rebuild_derived") || "Fix";
+      renderActionButton(body, {
+        label: actionLabel,
+        onClick: () => this._dispatchModuleAction("memory", env),
+      });
     }
 
     // ── Info card (read-only status) ──
