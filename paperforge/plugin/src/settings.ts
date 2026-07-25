@@ -1172,39 +1172,62 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._renderSkillsList(body);
   }
 
-  /** Render the Memory detail view (Issue #104: reason-code states). */
+  /** Render the Memory detail view matching prototype layout. */
   _renderMemoryDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "memory");
     const env =
       this._capabilityState?.memory ?? createUnknownEnvelope("memory");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
-    body.createEl("h3", { text: t("md_retrieval_coverage") });
-
     const reasonCode = env.reason?.code ?? "";
     const isRunning = env.activity_state === "running";
-    const hasApiKeyNotice = env.notices?.some(
-      (n) =>
-        n.level === "warning" &&
-        (n.message.toLowerCase().includes("api key") ||
-          n.message.toLowerCase().includes("api_key"))
-    );
 
+    // ── Badge + description ──
     if (isRunning && env.user_state === "ready") {
-      // ── memory.ready + running ──
       renderStatusBadge(body, "ready");
-      const activityLabel = env.activity_label ?? t("cc_activity_running");
       body.createEl("p", {
-        text: activityLabel,
+        text: env.activity_label ?? t("cc_activity_running"),
         cls: "pf-status-ok",
       });
     } else if (reasonCode === "memory.disabled") {
-      // ── memory.disabled → not_enabled ──
       renderStatusBadge(body, "not_enabled");
       body.createEl("p", {
         text: t("sr_state_disabled"),
         cls: "setting-item-description",
       });
-      // Enable button — directly toggle features.vector_db
+    } else if (reasonCode === "memory.db_missing") {
+      renderStatusBadge(body, "action_required");
+      body.createEl("p", {
+        text: t("sr_state_db_missing"),
+        cls: "setting-item-description",
+      });
+    } else if (reasonCode === "memory.backend_upgrade_available") {
+      renderStatusBadge(body, "action_required");
+      body.createEl("p", {
+        text: t("sr_state_upgrade_available"),
+        cls: "setting-item-description",
+      });
+    } else if (reasonCode === "memory.vector_build_failed") {
+      renderStatusBadge(body, "action_required");
+      body.createEl("p", {
+        text: t("sr_state_build_failed"),
+        cls: "setting-item-description",
+      });
+    } else if (reasonCode === "memory.schema_stale") {
+      renderStatusBadge(body, "action_required");
+      body.createEl("p", {
+        text: env.reason.text,
+        cls: "setting-item-description",
+      });
+    } else if (env.user_state === "ready") {
+      renderStatusBadge(body, "ready");
+      body.createEl("p", {
+        text: t("md_retrieval_ready"),
+        cls: "pf-status-ok",
+      });
+    }
+
+    // ── Primary action button ──
+    if (reasonCode === "memory.disabled") {
       renderActionButton(body, {
         label: t("sr_action_enable") || "Enable Smart Retrieval",
         onClick: () => {
@@ -1219,206 +1242,86 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         },
       });
     } else if (reasonCode === "memory.db_missing") {
-      // ── memory.db_missing → action_required ──
-      renderStatusBadge(body, "action_required");
-      body.createEl("p", {
-        text: t("sr_state_db_missing"),
-        cls: "setting-item-description",
-      });
       renderActionButton(body, {
-        label: t("sr_action_build"),
+        label: t("sr_action_build") || "Build Index",
         onClick: () => this._dispatchMemoryBuild("build"),
       });
     } else if (reasonCode === "memory.backend_upgrade_available") {
-      // ── memory.backend_upgrade_available → action_required ──
-      renderStatusBadge(body, "action_required");
-      body.createEl("p", {
-        text: t("sr_state_upgrade_available"),
-        cls: "setting-item-description",
-      });
-      // Upgrade button triggers the shell's dispatch (handles confirmation modal)
-      const upgradeAction = env.action?.primary;
-      if (upgradeAction) {
-        renderActionButton(body, {
-          label: t("sr_action_upgrade"),
-          onClick: () => this._dispatchModuleAction("memory", env),
-        });
-      }
-    } else if (reasonCode === "memory.vector_build_failed") {
-      // ── memory.vector_build_failed → action_required ──
-      renderStatusBadge(body, "action_required");
-      body.createEl("p", {
-        text: t("sr_state_build_failed"),
-        cls: "setting-item-description",
-      });
       renderActionButton(body, {
-        label: t("cc_action_rebuild_derived"),
+        label: t("sr_action_upgrade") || "Upgrade",
+        onClick: () => this._dispatchModuleAction("memory", env),
+      });
+    } else if (
+      reasonCode === "memory.vector_build_failed" ||
+      reasonCode === "memory.schema_stale"
+    ) {
+      renderActionButton(body, {
+        label: t("cc_action_rebuild_derived") || "Rebuild Index",
         onClick: () => this._dispatchMemoryBuild("embed"),
       });
-    } else if (reasonCode === "memory.schema_stale") {
-      // ── memory.schema_stale → action_required ──
-      renderStatusBadge(body, "action_required");
-      body.createEl("p", {
-        text: env.reason.text,
-        cls: "setting-item-description",
-      });
-      renderActionButton(body, {
-        label: t("sr_action_rebuild"),
-        onClick: () => this._dispatchMemoryBuild("build"),
-      });
-    } else if (env.user_state === "ready") {
-      // ── memory.ready ──
-      renderStatusBadge(body, "ready");
-      body.createEl("p", {
-        text: t("md_retrieval_ready"),
-        cls: "pf-status-ok",
-      });
     }
 
-    // ── API key notice (shown in any state, at bottom of body) ──
-    if (hasApiKeyNotice) {
-      const warn = body.createDiv({ cls: "pf-notice-warning" });
-      warn.createEl("span", { text: t("sr_api_key_notice") });
-    }
-
-    // ── Facts: coverage + freshness ──
-    const facts = body.createDiv({ cls: "pf-module-facts" });
-    const coverage = facts.createDiv({ cls: "pf-module-fact" });
-    coverage.createEl("span", { text: t("md_retrieval_coverage") });
-    coverage.createEl("span", {
-      text:
-        env.user_state === "ready"
-          ? t("coverage_complete")
-          : t("metric_not_available"),
-    });
-    const freshness = facts.createDiv({ cls: "pf-module-fact" });
-    freshness.createEl("span", { text: t("retrieval_freshness") });
-    freshness.createEl("span", {
-      text:
-        env.updated_at && env.updated_at !== new Date(0).toISOString()
-          ? new Date(env.updated_at).toLocaleString()
-          : t("metric_not_available"),
-    });
-
-    // ── Configuration ──
-    body.createEl("h4", {
-      text: t("feat_vector_config_label") || "Configuration",
-    });
-
-    // Enable toggle (shown when disabled)
-    if (reasonCode === "memory.disabled") {
-      const tr = body.createDiv({ cls: "pf-module-field" });
-      const tl = tr.createEl("label", {
-        text: t("feat_vector_enable") || "Enable",
-        cls: "setting-item-name",
-      });
-      tl.style.cursor = "pointer";
-      const tg = tr.createEl("input", {
-        attr: { type: "checkbox" },
-      }) as HTMLInputElement;
-      tg.checked = false;
-      tg.addEventListener("change", () => {
-        if (!this.plugin.settings.features)
-          this.plugin.settings.features = {
-            memory_layer: true,
-            vector_db: false,
-          };
-        this.plugin.settings.features.vector_db = tg.checked;
-        this.plugin.saveSettings().then(() => {
-          if (tg.checked) this._probeModule("memory");
-        });
-      });
-    }
-
-    // API Key
-    const ks = body.createDiv({ cls: "pf-module-field" });
-    ks.createEl("label", {
-      text: t("feat_openai_key") || "API Key",
-      cls: "setting-item-name",
-    });
-    const ki = ks.createEl("input", {
-      cls: "pf-module-input",
-      attr: {
-        type: "password",
-        placeholder: this.plugin.settings._vector_db_configured
-          ? "•••••••• (stored)"
-          : "sk-...",
-      },
-    }) as HTMLInputElement;
-    let kt: ReturnType<typeof setTimeout> | null = null;
-    ki.addEventListener("input", () => {
-      const v = ki.value;
-      if (!v) return;
-      if (kt) clearTimeout(kt);
-      kt = setTimeout(async () => {
-        const ss = (this.app as any).secretStorage;
-        if (!ss?.setSecret) return;
-        try {
-          await ss.setSecret("vector-db-api-key", v);
-          if ((await ss.getSecret("vector-db-api-key")) === v) {
-            this.plugin.settings._vector_db_configured = true;
-            this.plugin.settings.vector_db_api_key = "";
-            await this.plugin.saveSettings();
-            ki.value = "";
-            ki.placeholder = "•••••••• (stored)";
-          }
-        } catch {}
-        kt = null;
-      }, 600);
-    });
-
-    // API Base URL
-    const bs = body.createDiv({ cls: "pf-module-field" });
-    bs.createEl("label", {
-      text: t("feat_api_base_url") || "API Base URL",
-      cls: "setting-item-name",
-    });
-    const bi = bs.createEl("input", {
-      cls: "pf-module-input",
-      attr: { type: "text", placeholder: "https://api.openai.com/v1" },
-    }) as HTMLInputElement;
-    bi.value = this.plugin.settings.vector_db_api_base || "";
-    bi.addEventListener("change", () => {
-      this.plugin.settings.vector_db_api_base = bi.value;
-      this.plugin.saveSettings();
-    });
-
-    // Model
-    const ms = body.createDiv({ cls: "pf-module-field" });
-    ms.createEl("label", {
-      text: t("feat_api_model") || "Model",
-      cls: "setting-item-name",
-    });
-    const mi = ms.createEl("input", {
-      cls: "pf-module-input",
-      attr: { type: "text", placeholder: "text-embedding-3-small" },
-    }) as HTMLInputElement;
-    mi.value =
-      this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
-    mi.addEventListener("change", () => {
-      this.plugin.settings.vector_db_api_model = mi.value;
-      this.plugin.saveSettings();
-    });
-
-    // Build button
-    if (
-      reasonCode === "memory.db_missing" ||
-      reasonCode === "memory.vector_build_failed" ||
-      reasonCode === "memory.schema_stale" ||
+    // ── Info card (read-only status) ──
+    const dbStatus =
       env.user_state === "ready"
-    ) {
-      body.createEl("p", { cls: "setting-item-description", text: " " });
-      renderActionButton(body, {
-        label:
+        ? t("sr_db_exists") || "Active"
+        : t("sr_db_missing") || "Not built";
+    const backend = "vec0";
+    const apiKeyConfigured =
+      this.plugin.settings._vector_db_configured || false;
+    const apiKeyStatus = apiKeyConfigured
+      ? t("api_key_set") || "Configured"
+      : t("api_key_missing") || "Not configured";
+
+    const infoCard = body.createDiv({ cls: "pf-sr-info-card" });
+    const rows: [string, string][] = [
+      [t("sr_db_status") || "Database", dbStatus],
+      [t("sr_backend") || "Backend", backend],
+      [t("sr_api_key") || "API Key", apiKeyStatus],
+    ];
+    for (const [label, value] of rows) {
+      const row = infoCard.createDiv({ cls: "pf-sr-info-row" });
+      row.createEl("span", { cls: "pf-sr-info-label", text: label });
+      row.createEl("span", { cls: "pf-sr-info-value", text: value });
+    }
+
+    // ── Impact box (when action needed) ──
+    if (reasonCode !== "ready" && reasonCode !== "memory.disabled") {
+      const impact = body.createDiv({ cls: "pf-sr-impact-box" });
+      impact.createEl("strong", {
+        text: t("cc_badge_action_required") || "Action Required",
+      });
+      impact.createEl("p", {
+        text:
           reasonCode === "memory.db_missing"
-            ? t("sr_action_build") || "Build Index"
-            : t("cc_action_rebuild_derived") || "Rebuild Index",
-        onClick: () =>
-          this._dispatchMemoryBuild(
-            reasonCode === "memory.db_missing" ? "build" : "embed"
-          ),
+            ? t("sr_impact_db_missing") ||
+              "Smart Retrieval needs an OpenAI API key and vector index. Click Build Index to get started."
+            : reasonCode === "memory.backend_upgrade_available"
+              ? t("sr_impact_upgrade") ||
+                "A new vector backend is available. Upgrade to improve search quality."
+              : reasonCode === "memory.vector_build_failed"
+                ? t("sr_impact_build_failed") ||
+                  "The last build failed. Check your API key and try again."
+                : t("sr_impact_schema_stale") ||
+                  "The vector schema is outdated. Rebuild to match the current library.",
       });
     }
+
+    // ── Diagnostic details (collapsed) ──
+    const details = body.createEl("details", { cls: "pf-sr-diagnostics" });
+    details.createEl("summary", {
+      text: t("cc_diagnostic_toggle") || "Diagnostic Details",
+    });
+    const diagBody = details.createDiv({ cls: "pf-sr-diagnostics-body" });
+    diagBody.createEl("div", {
+      text:
+        "module: memory | state: " +
+        env.capability_state +
+        " | severity: " +
+        env.severity +
+        " | reason: " +
+        reasonCode,
+    });
   }
   /** Dispatch a backend action command through exact (verb, command) allowlist (Issue #78). */
   _dispatchModuleAction(mod: CapabilityModule, env: ProbeEnvelope): void {

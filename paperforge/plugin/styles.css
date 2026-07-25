@@ -6866,3 +6866,73 @@
   border-color: var(--interactive-accent);
   box-shadow: 0 0 0 1px var(--interactive-accent);
 }
+
+/* ── Smart Retrieval: info card (prototype match) ── */
+.pf-sr-info-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 6px);
+  padding: 4px 16px;
+  margin: 20px 0;
+}
+.pf-sr-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.pf-sr-info-row:last-child {
+  border-bottom: none;
+}
+.pf-sr-info-label {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold, 600);
+}
+.pf-sr-info-value {
+  font-size: var(--font-ui-smaller);
+  font-family: var(--font-monospace-theme);
+  color: var(--text-muted);
+}
+
+/* ── Smart Retrieval: impact box ── */
+.pf-sr-impact-box {
+  border-left: 2px solid var(--text-warning);
+  background: color-mix(in srgb, var(--text-warning) 6%, transparent);
+  border-radius: 0 var(--radius-s, 4px) var(--radius-s, 4px) 0;
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+.pf-sr-impact-box strong {
+  display: block;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+  color: var(--text-warning);
+}
+.pf-sr-impact-box p {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Smart Retrieval: diagnostic details ── */
+.pf-sr-diagnostics {
+  margin-top: 16px;
+}
+.pf-sr-diagnostics summary {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+.pf-sr-diagnostics-body {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s, 4px);
+  font-size: 11px;
+  font-family: var(--font-monospace-theme);
+  color: var(--text-faint);
+}
