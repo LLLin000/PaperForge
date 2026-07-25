@@ -6842,31 +6842,6 @@
   }
 }
 
-/* ── Memory Detail: configuration fields ── */
-.pf-module-field {
-  margin-bottom: 12px;
-}
-.pf-module-field label {
-  display: block;
-  font-size: var(--font-ui-small);
-  font-weight: 600;
-  color: var(--text-normal);
-  margin-bottom: 4px;
-}
-.pf-module-input {
-  width: 100%;
-  padding: 6px 8px;
-  font-size: var(--font-ui-small);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  background: var(--background-primary);
-  color: var(--text-normal);
-}
-.pf-module-input:focus {
-  border-color: var(--interactive-accent);
-  box-shadow: 0 0 0 1px var(--interactive-accent);
-}
-
 /* ── Smart Retrieval: info card (prototype match) ── */
 .pf-sr-info-card {
   background: var(--background-secondary);
@@ -6937,32 +6912,52 @@
   color: var(--text-faint);
 }
 
-/* ── Smart Retrieval: API key inputs ── */
-.pf-sr-api-section {
+/* ── Smart Retrieval: unified configuration ── */
+.pf-sr-cfg {
   margin-top: 12px;
 }
-.pf-sr-api-header {
-  font-size: var(--font-ui-small);
-  font-weight: var(--font-semibold, 600);
+.pf-sr-cfg-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   cursor: pointer;
-  color: var(--text-muted);
-  padding: 4px 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--background-modifier-border);
 }
-.pf-sr-api-body {
-  margin-top: 8px;
+.pf-sr-cfg-title {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.pf-sr-cfg-icon {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.pf-sr-cfg-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding: 8px 0;
 }
-.pf-sr-api-input {
+.pf-sr-cfg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pf-sr-cfg-lbl {
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.pf-sr-cfg-input {
   width: 100%;
   padding: 6px 8px;
   font-size: var(--font-ui-small);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
+  border-radius: var(--radius-s, 4px);
   background: var(--background-primary);
   color: var(--text-normal);
 }
-.pf-sr-api-input:focus {
+.pf-sr-cfg-input:focus {
   border-color: var(--interactive-accent);
 }
