@@ -29,11 +29,18 @@ class SetupChecker:
         if py_version < self.MIN_PYTHON:
             issues.append(f"Python {py_version[0]}.{py_version[1]} < {self.MIN_PYTHON[0]}.{self.MIN_PYTHON[1]}")
 
-        # Check pip availability
-        pip_path = shutil.which("pip") or shutil.which("pip3")
-        details["pip_found"] = pip_path is not None
-        if not pip_path:
-            issues.append("pip not found in PATH")
+        # Check pip availability via python -m pip
+        pip_ok = False
+        try:
+            import subprocess
+            r = subprocess.run([sys.executable, "-m", "pip", "--version"],
+                               capture_output=True, timeout=10)
+            pip_ok = r.returncode == 0
+        except Exception:
+            pip_ok = False
+        details["pip_found"] = pip_ok
+        if not pip_ok:
+            issues.append("pip not found via python -m pip")
 
         # Check vault directory
         details["vault_exists"] = self.vault.exists()
