@@ -425,15 +425,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ── Control Center (Issue #76) ──
     this._renderControlCenter(containerEl);
 
-    // Auto-probe never-probed/migrated modules once per session
+    // Auto-probe modules that are unknown or stale once per session
     for (const mod of CAPABILITY_MODULES) {
       const env = this._capabilityState?.[mod];
-      if (
-        env &&
+      if (!env) continue;
+      const neverProbed =
         env.capability_state === "unknown" &&
-        env.updated_at === new Date(0).toISOString() &&
-        !this._attemptedProbes.has(mod)
-      ) {
+        env.updated_at === new Date(0).toISOString();
+      const isStale =
+        env.user_state === "detection_failed" &&
+        env.reason.code.endsWith(".stale");
+      if ((neverProbed || isStale) && !this._attemptedProbes.has(mod)) {
         this._attemptedProbes.add(mod);
         if (mod !== "maintenance") {
           this._probeModule(mod);

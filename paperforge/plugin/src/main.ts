@@ -88,6 +88,9 @@ export default class PaperForgePlugin extends Plugin {
     this.addRibbonIcon(PF_ICON_ID, "PaperForge Dashboard", () =>
       PaperForgeStatusView.open(this as any)
     );
+    this.addRibbonIcon("scan-text", "PaperForge OCR Workspace", () =>
+      OcrWorkspaceView.open(this as any)
+    );
 
     const redoAction = ACTIONS.find((a) => a.id === "paperforge-ocr-redo");
     if (redoAction) {
@@ -125,6 +128,11 @@ export default class PaperForgePlugin extends Plugin {
       id: "paperforge-status-panel",
       name: `PaperForge: ${t("guide_open")}`,
       callback: () => PaperForgeStatusView.open(this as any),
+    });
+    this.addCommand({
+      id: "paperforge-ocr-workspace",
+      name: "PaperForge: Open OCR Workspace",
+      callback: () => OcrWorkspaceView.open(this as any),
     });
 
     for (const a of ACTIONS) {
