@@ -1,0 +1,67 @@
+<!doctype html><html><head><meta charset="UTF-8"><title>Page 1: Overview</title>
+<style>
+body { margin:0; background:#fff; color:#262626; font-family:system-ui,-apple-system,sans-serif; padding:24px; max-width:660px; }
+.eyebrow { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#9e9e9a; }
+h1 { font-size:22px; font-weight:600; margin:4px 0 0; }
+.lede { color:#888; font-size:14px; margin:8px 0 0; }
+.refresh-row { margin:12px 0; }
+.refresh { font-size:12px; color:#7f6df2; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+.refresh:hover { text-decoration:underline; }
+.summary { border:1px solid #e3e3e0; border-radius:8px; padding:12px 16px; margin:16px 0; display:flex; justify-content:space-between; align-items:center; }
+.summary-status { font-weight:600; font-size:14px; }
+.summary-detail { font-size:13px; color:#888; }
+.module-list { display:flex; flex-direction:column; gap:4px; margin-top:8px; }
+.module-card { border:1px solid #e3e3e0; border-radius:8px; padding:12px 16px; display:flex; align-items:center; gap:8px; cursor:pointer; transition: background .1s; }
+.module-card:hover { background:#fafaf8; }
+.module-num { font-size:11px; color:#9e9e9a; min-width:24px; }
+.module-info { flex:1; }
+.module-name { font-weight:600; font-size:14px; }
+.module-desc { font-size:12px; color:#999; margin-top:2px; }
+.module-arrow { color:#ccc; font-size:14px; }
+</style></head><body>
+
+<div class="eyebrow">control center</div>
+<h1>Your literature pipeline</h1>
+<p class="lede">See what is working and what needs attention across your pipeline.</p>
+
+<div class="refresh-row"><span class="refresh">↻ Refresh</span></div>
+
+<div class="summary">
+  <div>
+    <div class="summary-status">✅ PaperForge is ready</div>
+    <div class="summary-detail">1 module need attention · last checked just now</div>
+  </div>
+</div>
+
+<div class="module-list">
+<div class="module-card">
+  <div class="module-num">01</div>
+  <div class="module-info"><div class="module-name">Foundation</div><div class="module-desc">PaperForge is installed and configured.</div></div>
+  <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#d4edda;color:#4a9e5a">Ready</span>
+  <div class="module-arrow">→</div>
+</div>
+<div class="module-card">
+  <div class="module-num">02</div>
+  <div class="module-info"><div class="module-name">Library</div><div class="module-desc">Library synced (593 papers).</div></div>
+  <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#d4edda;color:#4a9e5a">Ready</span>
+  <div class="module-arrow">→</div>
+</div>
+<div class="module-card">
+  <div class="module-num">03</div>
+  <div class="module-info"><div class="module-name">OCR Engine</div><div class="module-desc">OCR functional (5 papers processed).</div></div>
+  <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#d4edda;color:#4a9e5a">Ready</span>
+  <div class="module-arrow">→</div>
+</div>
+<div class="module-card">
+  <div class="module-num">04</div>
+  <div class="module-info"><div class="module-name">Smart Retrieval</div><div class="module-desc">Vector index has not been built — rebuild to enable semantic</div></div>
+  <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#fff3cd;color:#c26e1a">Action Required</span>
+  <div class="module-arrow">→</div>
+</div>
+<div class="module-card">
+  <div class="module-num">05</div>
+  <div class="module-info"><div class="module-name">Agent Integration</div><div class="module-desc">Agent skills deployed to opencode</div></div>
+  <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f1f1ef;color:#9e9e9a">Not Enabled</span>
+  <div class="module-arrow">→</div>
+</div>
+</div></body></html>
