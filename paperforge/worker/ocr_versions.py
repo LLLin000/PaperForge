@@ -30,6 +30,7 @@ def expected_raw_payload(*, ocr_model: str) -> dict:
 
 def expected_derived_payload() -> dict:
     return {
+        "ocr_pipeline_version": OCR_PIPELINE_VERSION,
         "canonical_block_version": EXPECTED_CANONICAL_BLOCK_VERSION,
         "structure_version": EXPECTED_STRUCTURE_VERSION,
         "metadata_resolver_version": EXPECTED_METADATA_RESOLVER_VERSION,

@@ -103,8 +103,9 @@ def _apply_post_rebuild_version_flags(meta: dict, vault: Path | None = None, key
     - version_state_updated_at is refreshed
     - structured_content_hash / mtime / size are stored when vault+key provided
     """
-    from paperforge.worker.ocr_versions import compute_structured_hash, expected_derived_payload
+    from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION, compute_structured_hash, expected_derived_payload
     updated = dict(meta)
+    updated["ocr_pipeline_version"] = OCR_PIPELINE_VERSION
     updated["derived_version"] = expected_derived_payload()
     updated["derived_stale"] = False
     updated["version_state_updated_at"] = datetime.datetime.now().isoformat()
