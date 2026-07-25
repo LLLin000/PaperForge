@@ -1299,6 +1299,126 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           ? new Date(env.updated_at).toLocaleString()
           : t("metric_not_available"),
     });
+
+    // ── Configuration ──
+    body.createEl("h4", {
+      text: t("feat_vector_config_label") || "Configuration",
+    });
+
+    // Enable toggle (shown when disabled)
+    if (reasonCode === "memory.disabled") {
+      const tr = body.createDiv({ cls: "pf-module-field" });
+      const tl = tr.createEl("label", {
+        text: t("feat_vector_enable") || "Enable",
+        cls: "setting-item-name",
+      });
+      tl.style.cursor = "pointer";
+      const tg = tr.createEl("input", {
+        attr: { type: "checkbox" },
+      }) as HTMLInputElement;
+      tg.checked = false;
+      tg.addEventListener("change", () => {
+        if (!this.plugin.settings.features)
+          this.plugin.settings.features = {
+            memory_layer: true,
+            vector_db: false,
+          };
+        this.plugin.settings.features.vector_db = tg.checked;
+        this.plugin.saveSettings().then(() => {
+          if (tg.checked) this._probeModule("memory");
+        });
+      });
+    }
+
+    // API Key
+    const ks = body.createDiv({ cls: "pf-module-field" });
+    ks.createEl("label", {
+      text: t("feat_openai_key") || "API Key",
+      cls: "setting-item-name",
+    });
+    const ki = ks.createEl("input", {
+      cls: "pf-module-input",
+      attr: {
+        type: "password",
+        placeholder: this.plugin.settings._vector_db_configured
+          ? "•••••••• (stored)"
+          : "sk-...",
+      },
+    }) as HTMLInputElement;
+    let kt: ReturnType<typeof setTimeout> | null = null;
+    ki.addEventListener("input", () => {
+      const v = ki.value;
+      if (!v) return;
+      if (kt) clearTimeout(kt);
+      kt = setTimeout(async () => {
+        const ss = (this.app as any).secretStorage;
+        if (!ss?.setSecret) return;
+        try {
+          await ss.setSecret("vector-db-api-key", v);
+          if ((await ss.getSecret("vector-db-api-key")) === v) {
+            this.plugin.settings._vector_db_configured = true;
+            this.plugin.settings.vector_db_api_key = "";
+            await this.plugin.saveSettings();
+            ki.value = "";
+            ki.placeholder = "•••••••• (stored)";
+          }
+        } catch {}
+        kt = null;
+      }, 600);
+    });
+
+    // API Base URL
+    const bs = body.createDiv({ cls: "pf-module-field" });
+    bs.createEl("label", {
+      text: t("feat_api_base_url") || "API Base URL",
+      cls: "setting-item-name",
+    });
+    const bi = bs.createEl("input", {
+      cls: "pf-module-input",
+      attr: { type: "text", placeholder: "https://api.openai.com/v1" },
+    }) as HTMLInputElement;
+    bi.value = this.plugin.settings.vector_db_api_base || "";
+    bi.addEventListener("change", () => {
+      this.plugin.settings.vector_db_api_base = bi.value;
+      this.plugin.saveSettings();
+    });
+
+    // Model
+    const ms = body.createDiv({ cls: "pf-module-field" });
+    ms.createEl("label", {
+      text: t("feat_api_model") || "Model",
+      cls: "setting-item-name",
+    });
+    const mi = ms.createEl("input", {
+      cls: "pf-module-input",
+      attr: { type: "text", placeholder: "text-embedding-3-small" },
+    }) as HTMLInputElement;
+    mi.value =
+      this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
+    mi.addEventListener("change", () => {
+      this.plugin.settings.vector_db_api_model = mi.value;
+      this.plugin.saveSettings();
+    });
+
+    // Build button
+    if (
+      reasonCode === "memory.db_missing" ||
+      reasonCode === "memory.vector_build_failed" ||
+      reasonCode === "memory.schema_stale" ||
+      env.user_state === "ready"
+    ) {
+      body.createEl("p", { cls: "setting-item-description", text: " " });
+      renderActionButton(body, {
+        label:
+          reasonCode === "memory.db_missing"
+            ? t("sr_action_build") || "Build Index"
+            : t("cc_action_rebuild_derived") || "Rebuild Index",
+        onClick: () =>
+          this._dispatchMemoryBuild(
+            reasonCode === "memory.db_missing" ? "build" : "embed"
+          ),
+      });
+    }
   }
   /** Dispatch a backend action command through exact (verb, command) allowlist (Issue #78). */
   _dispatchModuleAction(mod: CapabilityModule, env: ProbeEnvelope): void {
