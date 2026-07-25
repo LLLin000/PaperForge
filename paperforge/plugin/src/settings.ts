@@ -468,6 +468,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _resolveRuntimeCommand(
     vp: string
   ): { path: string; args: string[] } | null {
+    // 1. Use custom python_path from settings if set
+    const customPath = this.plugin.settings.python_path?.trim();
+    if (customPath && fs.existsSync(customPath)) {
+      return { path: customPath, args: [] };
+    }
+    // 2. Fall back to managed runtime detection
     const run = resolveRuntimeCommand(this._ensureManagedRuntime().current());
     if (run) {
       return { path: run.command, args: [...run.args] };
