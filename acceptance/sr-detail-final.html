@@ -1,0 +1,45 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"><title>SR Detail — Final</title>
+<style>
+body { background:#fff; color:#262626; font-family:system-ui; max-width:660px; margin:20px auto; padding:20px; }
+h2 { font-size:18px; margin:4px 0; }
+.btn-primary { padding:8px 16px; border-radius:6px; border:none; cursor:pointer; font-size:13px; background:#7f6df2; color:#fff; }
+.btn-ghost { padding:6px 12px; border-radius:4px; border:1px solid #e3e3e0; cursor:pointer; font-size:12px; background:none; color:#666; }
+.badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+.badge-warn { background:#fff3cd; color:#c26e1a; }
+.badge-muted { background:#f1f1ef; color:#9e9e9a; }
+.card { background:#f7f7f5; border:1px solid #e3e3e0; border-radius:6px; padding:4px 16px; margin:16px 0; }
+.r { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #e3e3e0; font-size:13px; }
+.r:last-child { border:none; }
+.rl { font-weight:600; }
+.rv { font-family:monospace; color:#888; }
+.api-section { margin-top:12px; }
+.api-header { font-size:13px; font-weight:600; cursor:pointer; color:#888; padding:4px 0; }
+.api-body { margin-top:8px; display:flex; flex-direction:column; gap:8px; }
+.api-input { width:calc(100%-18px); padding:6px 8px; font-size:13px; border:1px solid #e3e3e0; border-radius:4px; }
+.api-input:focus { border-color:#7f6df2; outline:none; }
+</style></head><body>
+
+<h2>Smart Retrieval</h2>
+<span class="badge badge-warn">⚠️ Action Required</span>
+<p style="color:#888;font-size:13px;margin:8px 0">Vector index has not been built — rebuild to enable semantic search</p>
+
+<button class="btn-primary">Build vector index</button>
+
+<div class="card">
+  <div class="r"><span class="rl">Database</span><span class="rv">Not built</span></div>
+  <div class="r"><span class="rl">Backend</span><span class="rv">vec0</span></div>
+  <div class="r"><span class="rl">API Key</span><span class="rv">Not configured</span></div>
+</div>
+
+<div class="api-section">
+  <div class="api-header">▶ API Key</div>
+  <div class="api-body">
+    <input class="api-input" type="password" placeholder="sk-...">
+    <input class="api-input" type="text" placeholder="https://api.openai.com/v1" value="https://api.example.com/v1">
+  </div>
+</div>
+
+<p style="font-size:12px;color:#999;margin-top:16px">Model: test-model</p>
+
+</body></html>

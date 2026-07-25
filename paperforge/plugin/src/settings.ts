@@ -1319,6 +1319,61 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       row.createEl("span", { cls: "pf-sr-info-value", text: value });
     }
 
+    // API Key input (collapsed by default when already configured)
+    const apiSection = body.createDiv({ cls: "pf-sr-api-section" });
+    const apiHeader = apiSection.createEl("div", {
+      cls: "pf-sr-api-header",
+      text: "▶ " + (t("feat_openai_key") || "API Key"),
+    });
+    const apiBody = apiSection.createDiv({ cls: "pf-sr-api-body" });
+    apiBody.style.display = apiKeyConfigured ? "none" : "";
+    apiHeader.addEventListener("click", () => {
+      apiBody.style.display = apiBody.style.display === "none" ? "" : "none";
+      apiHeader.textContent =
+        (apiBody.style.display === "none" ? "▶ " : "▼ ") +
+        (t("feat_openai_key") || "API Key");
+    });
+    const ki = apiBody.createEl("input", {
+      cls: "pf-sr-api-input",
+      attr: {
+        type: "password",
+        placeholder: apiKeyConfigured ? "•••• (stored)" : "sk-...",
+      },
+    }) as HTMLInputElement;
+    let kt: ReturnType<typeof setTimeout> | null = null;
+    ki.addEventListener("input", () => {
+      const v = ki.value;
+      if (!v) return;
+      if (kt) clearTimeout(kt);
+      kt = setTimeout(async () => {
+        const ss = (this.app as any).secretStorage;
+        if (!ss?.setSecret) return;
+        try {
+          await ss.setSecret("vector-db-api-key", v);
+          if ((await ss.getSecret("vector-db-api-key")) === v) {
+            this.plugin.settings._vector_db_configured = true;
+            this.plugin.settings.vector_db_api_key = "";
+            await this.plugin.saveSettings();
+            ki.value = "";
+            ki.placeholder = "•••• (stored)";
+            apiBody.style.display = "none";
+            apiHeader.textContent = "▶ " + (t("feat_openai_key") || "API Key");
+          }
+        } catch {}
+        kt = null;
+      }, 600);
+    });
+    // Base URL
+    const bu = apiBody.createEl("input", {
+      cls: "pf-sr-api-input",
+      attr: { type: "text", placeholder: "https://api.openai.com/v1" },
+    }) as HTMLInputElement;
+    bu.value = this.plugin.settings.vector_db_api_base || "";
+    bu.addEventListener("change", () => {
+      this.plugin.settings.vector_db_api_base = bu.value;
+      this.plugin.saveSettings();
+    });
+
     // ── Impact box (when action needed) ──
     if (reasonCode !== "ready" && reasonCode !== "memory.disabled") {
       const impact = body.createDiv({ cls: "pf-sr-impact-box" });

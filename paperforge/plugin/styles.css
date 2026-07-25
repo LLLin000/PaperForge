@@ -6936,3 +6936,33 @@
   font-family: var(--font-monospace-theme);
   color: var(--text-faint);
 }
+
+/* ── Smart Retrieval: API key inputs ── */
+.pf-sr-api-section {
+  margin-top: 12px;
+}
+.pf-sr-api-header {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold, 600);
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+.pf-sr-api-body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pf-sr-api-input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: var(--font-ui-small);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+.pf-sr-api-input:focus {
+  border-color: var(--interactive-accent);
+}
