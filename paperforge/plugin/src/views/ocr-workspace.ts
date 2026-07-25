@@ -40,6 +40,22 @@ export class OcrWorkspaceView extends ItemView {
     super(leaf);
   }
 
+  static async open(plugin: any): Promise<void> {
+    const { WorkspaceLeaf } = require("obsidian");
+    const leaves = plugin.app.workspace.getLeavesOfType(
+      VIEW_TYPE_OCR_WORKSPACE
+    );
+    if (leaves.length > 0) {
+      plugin.app.workspace.revealLeaf(leaves[0]);
+      return;
+    }
+    const leaf = plugin.app.workspace.getRightLeaf(false);
+    if (leaf) {
+      await leaf.setViewState({ type: VIEW_TYPE_OCR_WORKSPACE, active: true });
+      plugin.app.workspace.revealLeaf(leaf);
+    }
+  }
+
   getViewType(): string {
     return VIEW_TYPE_OCR_WORKSPACE;
   }
