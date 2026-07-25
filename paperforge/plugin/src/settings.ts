@@ -858,16 +858,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (!this._selectedDetailModule) {
       this._selectedDetailModule = "installation";
     }
-    // Re-probe stale modules before rendering detail
-    if (this._selectedDetailModule !== "help") {
-      const env = this._capabilityState?.[this._selectedDetailModule];
-      if (
-        env?.user_state === "detection_failed" &&
-        env.reason.code.endsWith(".stale")
-      ) {
-        this._probeModule(this._selectedDetailModule as CapabilityModule);
-      }
-    }
     if (this._selectedDetailModule === "installation") {
       this._renderInstallationDetail(containerEl);
     } else if (this._selectedDetailModule === "library") {
@@ -3669,6 +3659,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         t("cc_lede") ||
         "See what is working and what needs attention across your pipeline.",
     });
+
+    // Refresh link
+    const refRow = cc.createDiv({ cls: "pf-cc-refresh-row" });
+    refRow
+      .createEl("button", {
+        cls: "pf-action-btn pf-action-btn--ghost",
+        text: "↻ " + (t("ocr_ws_btn_refresh") || "Refresh"),
+      })
+      .addEventListener("click", () => {
+        for (const mod of CAPABILITY_MODULES) {
+          if (mod !== "maintenance") this._probeModule(mod as CapabilityModule);
+        }
+      });
 
     // ── Summary Card ──
     const foundationEnv =
