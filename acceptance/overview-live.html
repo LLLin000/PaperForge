@@ -1,0 +1,65 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"><title>PaperForge Overview — Live</title>
+<style>
+body { background:#fff; color:#262626; font-family:system-ui; max-width:660px; margin:20px auto; padding:20px; }
+.eyebrow { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#999; }
+h1 { font-size:22px; margin:4px 0; }
+.lede { color:#888; font-size:14px; margin-bottom:16px; }
+.refresh { font-size:12px; color:var(--interactive-accent,#7f6df2); cursor:pointer; margin-bottom:12px; }
+.summary { border:1px solid #e3e3e0; border-radius:8px; padding:12px 16px; margin:12px 0; display:flex; justify-content:space-between; align-items:center; }
+.summary-status { font-weight:600; }
+.summary-count { font-size:13px; color:#888; }
+.module-list { display:flex; flex-direction:column; gap:4px; }
+.module-card { border:1px solid #e3e3e0; border-radius:8px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+.module-card:hover { background:#fafaf8; }
+.module-num { font-size:11px; color:#999; width:28px; }
+.module-name { font-weight:600; flex:1; }
+.module-badge { font-size:11px; padding:2px 8px; border-radius:4px; }
+.badge-ready { background:#d4edda; color:#4a9e5a; }
+.badge-action { background:#fff3cd; color:#c26e1a; }
+.badge-fail { background:#fce4e4; color:#c23c3c; }
+.badge-muted { background:#f1f1ef; color:#9e9e9a; }
+.module-desc { font-size:12px; color:#999; margin-top:2px; }
+.module-arrow { color:#ccc; }
+</style></head><body>
+
+<div class="eyebrow">control center</div>
+<h1>Your literature pipeline</h1>
+<p class="lede">See what is working and what needs attention.</p>
+<div class="refresh">↻ Refresh</div>
+
+<div class="summary">
+<div><span class="summary-status">✅ PaperForge is ready</span><br>
+<span class="summary-count">0 needs attention · last checked just now</span></div>
+</div>
+<div class="module-card">
+<div class="module-num">01</div>
+<div class="module-name">Foundation<div class="module-desc">PaperForge is installed and configured</div></div>
+<div class="module-badge badge-ready">✅ Ready</div>
+<div class="module-arrow">→</div>
+</div>
+<div class="module-card">
+<div class="module-num">02</div>
+<div class="module-name">Library<div class="module-desc">Library synced and index is fresh (593 papers)</div></div>
+<div class="module-badge badge-ready">✅ Ready</div>
+<div class="module-arrow">→</div>
+</div>
+<div class="module-card">
+<div class="module-num">03</div>
+<div class="module-name">OCR Engine<div class="module-desc">OCR pipeline functional (5 papers processed)</div></div>
+<div class="module-badge badge-ready">✅ Ready</div>
+<div class="module-arrow">→</div>
+</div>
+<div class="module-card">
+<div class="module-num">04</div>
+<div class="module-name">Smart Retrieval<div class="module-desc">Smart Retrieval is not enabled</div></div>
+<div class="module-badge badge-muted">— Disabled</div>
+<div class="module-arrow">→</div>
+</div>
+<div class="module-card">
+<div class="module-num">05</div>
+<div class="module-name">Agent Integration<div class="module-desc">PaperForge is installed and configured</div></div>
+<div class="module-badge badge-ready">✅ Ready</div>
+<div class="module-arrow">→</div>
+</div>
+</body></html>
