@@ -613,9 +613,9 @@ def run(args: argparse.Namespace) -> int:
         vault = resolve_vault(cli_vault=getattr(args, "vault", None))
 
     diagnose_only = getattr(args, "diagnose", False)
-    key = getattr(args, "key", None)
     live = getattr(args, "live", False)
     json_output = getattr(args, "json", False)
+    keys: list[str] = getattr(args, "keys", None) or []
 
     # Backward compat: if subcommand was "doctor", diagnose
     ocr_action = getattr(args, "ocr_action", None)
@@ -654,11 +654,11 @@ def run(args: argparse.Namespace) -> int:
             parallel_workers=parallel_workers,
         )
 
-    if key:
-        logger.info("Processing specific key: %s", key)
+    if keys:
+        logger.info("Processing specific keys: %s", keys)
 
     run_ocr = _get_run_ocr()
-    selected_keys = {key} if key else None
+    selected_keys: set | None = set(keys) if keys else None
     exit_code = run_ocr(
         vault,
         verbose=getattr(args, "verbose", False),
@@ -678,7 +678,7 @@ def run(args: argparse.Namespace) -> int:
         return 0 if pf.ok else 1
 
     # Auto-diagnose after successful run (new unified behavior)
-    if exit_code == 0 and ocr_action is None and not diagnose_only and not key:
+    if exit_code == 0 and ocr_action is None and not diagnose_only and not keys:
         logger.info("Running post-OCR diagnostic...")
         try:
             diag_code = _diagnose(vault, live=False)

@@ -228,7 +228,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Process specific Zotero key",
     )
     ocr_sub = p_ocr.add_subparsers(dest="ocr_action")
-    ocr_sub.add_parser("run", help="Run OCR queue")
+    run_parser = ocr_sub.add_parser("run", help="Run OCR queue")
+    run_parser.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys to process (default: entire queue)")
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
     redo_parser = ocr_sub.add_parser("redo", help="Re-run OCR for papers marked ocr_redo: true")
