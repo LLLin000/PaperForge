@@ -792,8 +792,8 @@ const LANG: Record<string, Record<string, string>> = {
   },
   zh: {
     action_running: "正在执行 ",
-    api_key_missing: "未配置 ✗",
-    api_key_set: "已配置 ✓",
+    api_key_missing: "未配置",
+    api_key_set: "已配置",
     btn_install: "打开安装向导",
     btn_install_desc: "自动检测 Python + 前置环境，通过后打开分步安装向导",
     btn_reconfig: "重新配置",
