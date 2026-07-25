@@ -6841,3 +6841,28 @@
     transition: none !important;
   }
 }
+
+/* ── Memory Detail: configuration fields ── */
+.pf-module-field {
+  margin-bottom: 12px;
+}
+.pf-module-field label {
+  display: block;
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-normal);
+  margin-bottom: 4px;
+}
+.pf-module-input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: var(--font-ui-small);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+.pf-module-input:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
