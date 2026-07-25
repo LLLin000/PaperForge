@@ -1821,6 +1821,8 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     page_cache_dir.mkdir(parents=True, exist_ok=True)
     page_num = 0
     meta = read_json(meta_path) if meta_path.exists() else {}
+    from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
+    meta["ocr_pipeline_version"] = OCR_PIPELINE_VERSION
     source_pdf = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
     pdf_doc = None
     try:
