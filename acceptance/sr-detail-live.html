@@ -1,0 +1,48 @@
+<!doctype html>
+<html><head><meta charset="UTF-8">
+<title>Smart Retrieval Detail — Live Render</title>
+<link rel="stylesheet" href="../paperforge/plugin/styles.css">
+<style>
+body { background:#fff; color:#262626; font-family:system-ui; max-width:660px; margin:20px auto; padding:20px; }
+h4 { font-size:16px; margin:16px 0 8px; }
+.btn { padding:8px 16px; border-radius:4px; border:1px solid #e3e3e0; cursor:pointer; font-size:13px; }
+.btn-primary { background:var(--interactive-accent,#7f6df2); color:#fff; border:none; }
+.badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+.badge-{"ready" if usr=="ready" else "warn" if usr=="action_required" else "muted" if usr=="not_enabled" else "fail"} {
+  background:#f1f1ef;
+  color:#9e9e9a;
+}
+.info-card { background:var(--background-secondary,#f7f7f5); border:1px solid var(--background-modifier-border,#e3e3e0); border-radius:6px; padding:4px 16px; margin:16px 0; }
+.info-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #e3e3e0; font-size:13px; }
+.info-row:last-child { border:none; }
+.info-label { font-weight:600; }
+.info-value { font-family:monospace; color:#888; }
+.impact { border-left:2px solid #c26e1a; background:#fff8f0; padding:12px 16px; margin:16px 0; border-radius:0 4px 4px 0; }
+.impact strong { display:block; font-size:11px; text-transform:uppercase; color:#c26e1a; margin-bottom:4px; }
+.impact p { margin:0; font-size:13px; color:#666; }
+.diag { margin-top:16px; font-size:11px; font-family:monospace; color:#999; }
+.diag summary { cursor:pointer; }
+</style></head><body>
+
+<h2>Smart Retrieval</h2>
+<span class="badge badge-muted">— Not Enabled</span>
+<p style="color:#888;font-size:13px;">Smart Retrieval is not enabled</p>
+
+<div class="btn btn-primary">Build Index</div>
+
+<div class="info-card">
+  <div class="info-row"><span class="info-label">Database</span><span class="info-value">Not built</span></div>
+  <div class="info-row"><span class="info-label">Backend</span><span class="info-value">vec0</span></div>
+  <div class="info-row"><span class="info-label">API Key</span><span class="info-value">Not configured</span></div>
+</div>
+
+<div class="impact">
+  <strong>Action Required</strong>
+  <p>Smart Retrieval needs an OpenAI API key and vector index. Configure API keys in Settings → PaperForge → Smart Retrieval, then click Build Index.</p>
+</div>
+
+<details class="diag"><summary>Diagnostic Details</summary>
+module: memory | state: not_configured | severity: ok | reason: memory.disabled
+</details>
+
+</body></html>
