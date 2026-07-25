@@ -2125,7 +2125,7 @@ function a(d) {
   return (dt && dt[d]) || pt.en[d] || d;
 }
 var R = require("obsidian"),
-  j = N(require("fs")),
+  V = N(require("fs")),
   Z = N(require("path")),
   ur = N(require("os")),
   re = require("child_process");
@@ -4990,8 +4990,11 @@ var Ae = class Ae extends R.PluginSettingTab {
         this._managedRuntime);
   }
   _resolveRuntimeCommand(e) {
-    let t = ce(this._ensureManagedRuntime().current());
-    return t ? { path: t.command, args: [...t.args] } : null;
+    var n;
+    let t = (n = this.plugin.settings.python_path) == null ? void 0 : n.trim();
+    if (t && V.existsSync(t)) return { path: t, args: [] };
+    let r = ce(this._ensureManagedRuntime().current());
+    return r ? { path: r.command, args: [...r.args] } : null;
   }
   _renderInstallationDetail(e) {
     var v, k;
@@ -5030,7 +5033,7 @@ var Ae = class Ae extends R.PluginSettingTab {
     i(a("foundation_python"), "\u2014", s, "pf-status-checking");
     let o = this.app.vault.adapter.basePath,
       l = Z.join(o, this.plugin.settings.system_dir || "System"),
-      p = j.existsSync(l);
+      p = V.existsSync(l);
     i(
       a("foundation_vault_structure"),
       p ? "\u2713" : "\u2717",
@@ -5039,7 +5042,7 @@ var Ae = class Ae extends R.PluginSettingTab {
     );
     let u =
       this.plugin.settings.zotero_data_dir &&
-      j.existsSync(this.plugin.settings.zotero_data_dir);
+      V.existsSync(this.plugin.settings.zotero_data_dir);
     i(
       a("foundation_zotero"),
       u ? "\u2713" : "\u2717",
@@ -5161,12 +5164,12 @@ var Ae = class Ae extends R.PluginSettingTab {
     let s = Z.join(r, t[n]),
       o = [],
       l = [];
-    j.existsSync(s) &&
-      j.readdirSync(s, { withFileTypes: !0 }).forEach((_) => {
+    V.existsSync(s) &&
+      V.readdirSync(s, { withFileTypes: !0 }).forEach((_) => {
         if (!_.isDirectory()) return;
         let f = Z.join(s, _.name, "SKILL.md");
-        if (!j.existsSync(f)) return;
-        let g = j.readFileSync(f, "utf-8"),
+        if (!V.existsSync(f)) return;
+        let g = V.readFileSync(f, "utf-8"),
           h = g.match(/^name:\s*(.+)$/m),
           b = g.split(`
 `),
@@ -5236,7 +5239,7 @@ var Ae = class Ae extends R.PluginSettingTab {
                           `$1disable-model-invocation: ${D}
 `
                         );
-                  (j.writeFileSync(y.path, T, "utf-8"),
+                  (V.writeFileSync(y.path, T, "utf-8"),
                     (y.disabled = D),
                     (y.content = T),
                     (P.settingEl.style.opacity = y.disabled ? "0.4" : "1"));
@@ -5500,7 +5503,7 @@ var Ae = class Ae extends R.PluginSettingTab {
       },
       i = this.plugin.settings.agent_platform || "opencode",
       s = Z.join(this._getVaultBasePath(), n[i]),
-      o = j.existsSync(s),
+      o = V.existsSync(s),
       l = t.createDiv({ cls: "pf-module-facts" }),
       p = l.createDiv({ cls: "pf-module-fact" });
     (p.createEl("span", { text: a("md_agent_platform") }),
@@ -5558,7 +5561,7 @@ var Ae = class Ae extends R.PluginSettingTab {
           onClick: () => {
             var v;
             let E = (v = this._agentPlatformDraft) != null ? v : i,
-              m = j.existsSync(Z.join(this._getVaultBasePath(), n[E]));
+              m = V.existsSync(Z.join(this._getVaultBasePath(), n[E]));
             new R.Notice(
               m ? a("agent_verify_found") : a("agent_verify_missing")
             );
@@ -6614,8 +6617,8 @@ var Ae = class Ae extends R.PluginSettingTab {
               " existing chunk(s). Continue?";
             if (!confirm(L)) return;
           }
-          let V = this._resolveRuntimeCommand(t);
-          if (!(V != null && V.path)) {
+          let H = this._resolveRuntimeCommand(t);
+          if (!(H != null && H.path)) {
             new R.Notice(a("retrieval_no_python"));
             return;
           }
@@ -6772,16 +6775,16 @@ var Ae = class Ae extends R.PluginSettingTab {
         case "building": {
           let C = s.createEl("div", { cls: "paperforge-progress-track" });
           C.style.cssText = "flex:1;";
-          let V = g > 0 ? ((f / g) * 100).toFixed(1) : "0",
+          let H = g > 0 ? ((f / g) * 100).toFixed(1) : "0",
             Q = C.createEl("div", { cls: "paperforge-progress-seg done" });
           if (
-            ((Q.style.cssText = `width:${V}%; min-width:${f > 0 ? "2px" : "0"};`),
+            ((Q.style.cssText = `width:${H}%; min-width:${f > 0 ? "2px" : "0"};`),
             f < g)
           ) {
             let L = C.createEl("div", {
               cls: "paperforge-progress-seg pending",
             });
-            L.style.cssText = `width:${(100 - parseFloat(V)).toFixed(1)}%;`;
+            L.style.cssText = `width:${(100 - parseFloat(H)).toFixed(1)}%;`;
           }
           (o.createEl("span", {
             cls: "paperforge-embed-progress-text",
@@ -6804,16 +6807,16 @@ var Ae = class Ae extends R.PluginSettingTab {
         case "stopping": {
           let C = s.createEl("div", { cls: "paperforge-progress-track" });
           C.style.cssText = "flex:1; opacity:0.5;";
-          let V = g > 0 ? ((f / g) * 100).toFixed(1) : "0",
+          let H = g > 0 ? ((f / g) * 100).toFixed(1) : "0",
             Q = C.createEl("div", { cls: "paperforge-progress-seg done" });
           if (
-            ((Q.style.cssText = `width:${V}%; min-width:${f > 0 ? "2px" : "0"};`),
+            ((Q.style.cssText = `width:${H}%; min-width:${f > 0 ? "2px" : "0"};`),
             f < g)
           ) {
             let L = C.createEl("div", {
               cls: "paperforge-progress-seg pending",
             });
-            L.style.cssText = `width:${(100 - parseFloat(V)).toFixed(1)}%;`;
+            L.style.cssText = `width:${(100 - parseFloat(H)).toFixed(1)}%;`;
           }
           o.createEl("span", { text: a("retrieval_build_stopping") });
           let J = s.createEl("button");
@@ -6832,10 +6835,10 @@ var Ae = class Ae extends R.PluginSettingTab {
           (C.setText(a("retrieval_retry")),
             (C.className = "mod-cta"),
             C.addEventListener("click", () => I("--resume")));
-          let V = s.createEl("button");
-          (V.setText(a("retrieval_force_rebuild")),
-            (V.style.marginLeft = "6px"),
-            V.addEventListener("click", () => I("--force")));
+          let H = s.createEl("button");
+          (H.setText(a("retrieval_force_rebuild")),
+            (H.style.marginLeft = "6px"),
+            H.addEventListener("click", () => I("--force")));
           break;
         }
         case "stopped": {
@@ -6879,10 +6882,10 @@ var Ae = class Ae extends R.PluginSettingTab {
           (C.setText(a("retrieval_rebuild_vectors")),
             (C.className = "mod-cta"),
             C.addEventListener("click", () => I("--resume")));
-          let V = s.createEl("button");
-          (V.setText(a("retrieval_force_rebuild")),
-            (V.style.marginLeft = "6px"),
-            V.addEventListener("click", () => I("--force")));
+          let H = s.createEl("button");
+          (H.setText(a("retrieval_force_rebuild")),
+            (H.style.marginLeft = "6px"),
+            H.addEventListener("click", () => I("--force")));
           break;
         }
         case "deps-missing": {
@@ -6971,7 +6974,7 @@ var Ae = class Ae extends R.PluginSettingTab {
         new R.Notice(r));
       return;
     }
-    if (!j.existsSync(e)) {
+    if (!V.existsSync(e)) {
       let r = "\u8DEF\u5F84\u4E0D\u5B58\u5728 / Path does not exist";
       (t &&
         (t.innerHTML = `<span style="color:var(--text-error)">\u2717 ${r}</span>`),
@@ -6979,7 +6982,7 @@ var Ae = class Ae extends R.PluginSettingTab {
       return;
     }
     try {
-      j.accessSync(e, j.constants.X_OK);
+      V.accessSync(e, V.constants.X_OK);
     } catch (r) {
       let n = "\u4E0D\u53EF\u6267\u884C / Not executable";
       (t &&
@@ -7058,7 +7061,7 @@ var Ae = class Ae extends R.PluginSettingTab {
             Z.join(l, "Applications", "Zotero.app"),
           ].some((b) => {
             try {
-              return j.existsSync(b);
+              return V.existsSync(b);
             } catch (E) {
               return !1;
             }
@@ -7076,7 +7079,7 @@ var Ae = class Ae extends R.PluginSettingTab {
             .filter(Boolean)
             .some((m) => {
               try {
-                return j.existsSync(m);
+                return V.existsSync(m);
               } catch (v) {
                 return !1;
               }
@@ -7088,7 +7091,7 @@ var Ae = class Ae extends R.PluginSettingTab {
             "/usr/local/bin/zotero",
           ].some((b) => {
             try {
-              return j.existsSync(b);
+              return V.existsSync(b);
             } catch (E) {
               return !1;
             }
@@ -7096,7 +7099,7 @@ var Ae = class Ae extends R.PluginSettingTab {
         let p = this.plugin.settings.zotero_data_dir;
         if (!o && p)
           try {
-            o = j.existsSync(p);
+            o = V.existsSync(p);
           } catch (h) {}
         s.push({
           label: "Zotero",
@@ -8901,12 +8904,12 @@ Make sure paperforge is installed and in your PATH.`,
         { value: s, label: "deep-read done" },
       ];
     for (let O of p) {
-      let H = l.createEl("div", { cls: "paperforge-snapshot-pill" });
-      (H.createEl("span", {
+      let j = l.createEl("div", { cls: "paperforge-snapshot-pill" });
+      (j.createEl("span", {
         cls: "paperforge-snapshot-value",
         text: String(O.value),
       }),
-        H.createEl("span", {
+        j.createEl("span", {
           cls: "paperforge-snapshot-label",
           text: " " + O.label,
         }));
@@ -8926,11 +8929,11 @@ Make sure paperforge is installed and in your PATH.`,
     if (!h) {
       let O = this._resolvePython();
       if (O) {
-        let { path: H, args: ue = [] } = O;
+        let { path: j, args: ue = [] } = O;
         try {
           let le = this.app.vault.adapter.basePath,
             ee = (0, ge.execFileSync)(
-              H,
+              j,
               [...ue, "-c", "import paperforge; print(paperforge.__version__)"],
               { cwd: le, timeout: 5e3, encoding: "utf-8", windowsHide: !0 }
             ).trim();
@@ -8966,9 +8969,9 @@ Make sure paperforge is installed and in your PATH.`,
     try {
       let O = rt.join(k, v, "PaperForge", "exports");
       if (xe.existsSync(O)) {
-        let H = xe.readdirSync(O).filter((ue) => ue.endsWith(".json"));
-        ((y = H.length > 0),
-          (x = y ? H.length + " export(s)" : "No JSON exports"));
+        let j = xe.readdirSync(O).filter((ue) => ue.endsWith(".json"));
+        ((y = j.length > 0),
+          (x = y ? j.length + " export(s)" : "No JSON exports"));
       }
     } catch (O) {}
     this._renderSystemStatusRow(
@@ -9013,24 +9016,24 @@ Make sure paperforge is installed and in your PATH.`,
         cls: "paperforge-section-label",
         text: "\u9700\u8981\u5904\u7406",
       });
-      let H = O.createEl("div", { cls: "paperforge-issue-list" });
+      let j = O.createEl("div", { cls: "paperforge-issue-list" });
       (A &&
-        H.createEl("div", {
+        j.createEl("div", {
           cls: "paperforge-issue-item",
           text: "Runtime version mismatch",
         }),
         m ||
-          H.createEl("div", {
+          j.createEl("div", {
             cls: "paperforge-issue-item",
             text: "Index missing or corrupted",
           }),
         y ||
-          H.createEl("div", {
+          j.createEl("div", {
             cls: "paperforge-issue-item",
             text: "No Zotero export found",
           }),
         S ||
-          H.createEl("div", {
+          j.createEl("div", {
             cls: "paperforge-issue-item",
             text: "PaddleOCR API key not configured",
           }));
@@ -9053,8 +9056,8 @@ Make sure paperforge is installed and in your PATH.`,
       cls: "paperforge-section-label",
       text: "Start Working",
     });
-    let V = C.createEl("div", { cls: "paperforge-global-actions-row" }),
-      Q = V.createEl("button", { cls: "paperforge-contextual-btn primary" });
+    let H = C.createEl("div", { cls: "paperforge-global-actions-row" }),
+      Q = H.createEl("button", { cls: "paperforge-contextual-btn primary" });
     (Q.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
       text: "\u{1F4C1}",
@@ -9066,12 +9069,12 @@ Make sure paperforge is installed and in your PATH.`,
             ((ue = f == null ? void 0 : f.settings) == null
               ? void 0
               : ue.base_dir) || "Bases",
-          H = this.app.vault.getAbstractFileByPath(O);
-        if (H) {
+          j = this.app.vault.getAbstractFileByPath(O);
+        if (j) {
           let le = null;
           if (
-            (H.children &&
-              (le = H.children.find((ee) => ee.extension === "base")),
+            (j.children &&
+              (le = j.children.find((ee) => ee.extension === "base")),
             le)
           ) {
             let ee = this.app.workspace.getLeaf(!1);
@@ -9079,34 +9082,34 @@ Make sure paperforge is installed and in your PATH.`,
           } else new F.Notice("[!!] No .base file found in " + O, 6e3);
         } else new F.Notice("[!!] Base directory not found: " + O, 6e3);
       }));
-    let J = V.createEl("button", { cls: "paperforge-contextual-btn" });
+    let J = H.createEl("button", { cls: "paperforge-contextual-btn" });
     (J.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
       text: "\u21BB",
     }),
       J.createEl("span", { text: "Sync Library" }),
       J.addEventListener("click", () => {
-        let O = te.find((H) => H.id === "paperforge-sync");
+        let O = te.find((j) => j.id === "paperforge-sync");
         O && this._runAction(O, J);
       }));
-    let L = V.createEl("button", { cls: "paperforge-contextual-btn" });
+    let L = H.createEl("button", { cls: "paperforge-contextual-btn" });
     (L.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
       text: "\u229E",
     }),
       L.createEl("span", { text: "Run OCR" }),
       L.addEventListener("click", () => {
-        let O = te.find((H) => H.id === "paperforge-ocr");
+        let O = te.find((j) => j.id === "paperforge-ocr");
         O && this._runAction(O, L);
       }));
-    let ne = V.createEl("button", { cls: "paperforge-contextual-btn warn" });
+    let ne = H.createEl("button", { cls: "paperforge-contextual-btn warn" });
     (ne.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
       text: "\u21BA",
     }),
       ne.createEl("span", { text: "Redo OCR" }),
       ne.addEventListener("click", () => {
-        let O = te.find((H) => H.id === "paperforge-ocr-redo");
+        let O = te.find((j) => j.id === "paperforge-ocr-redo");
         O && this._runAction(O, ne);
       }));
   }
