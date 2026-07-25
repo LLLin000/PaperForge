@@ -1469,6 +1469,10 @@ const LANG: Record<string, Record<string, string>> = {
     sr_impact_build_failed: "上次构建失败。请检查 API Key 后重试。",
     sr_impact_schema_stale: "向量模式已过期。请重建以匹配当前文献库。",
     sr_action_enable: "启用智能检索",
+    sr_configure_api_keys: "配置 API Key...",
+    sr_config_hint: "设置 › 智能检索",
+    sr_configure_api_keys_hint:
+      "请在 设置 → PaperForge → Smart Retrieval 中配置 API Key。",
     // ── OCR 工作区 (Issue #95) ──
     ocr_ws_title: "OCR 工作区",
     ocr_ws_filter_all: "全部",
