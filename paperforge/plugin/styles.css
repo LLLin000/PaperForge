@@ -7232,12 +7232,13 @@ input.pf-ocr-ws-search-input::placeholder {
 .pf-sr-cfg-input:focus {
   border-color: var(--interactive-accent);
 }
+
 .pf-vr-layout {
   display: flex;
   gap: 0;
   min-height: 500px;
   height: 65vh;
-  width: 780px;
+  width: 100%;
 }
 
 .pf-vr-sidebar {

@@ -788,9 +788,10 @@ class VersionRestoreModal extends Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.addClass("paperforge-modal");
-    // Widen the modal container
-    const mc = contentEl.closest(".modal-container") as HTMLElement;
-    if (mc) mc.style.width = "840px";
+    try {
+      const mc = contentEl.closest(".modal-container") as HTMLElement;
+      if (mc) mc.style.width = "min(90vw, 840px)";
+    } catch {}
     contentEl.empty();
 
     // Cache current render content
