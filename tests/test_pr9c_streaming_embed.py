@@ -62,6 +62,7 @@ def _call_run(
     papers: list[dict],
     *,
     resume: bool = False,
+    force: bool = False,
     overrides: dict | None = None,
 ) -> tuple[int, dict]:
     """Call ``run()`` with all heavyweight dependencies mocked.
@@ -75,7 +76,7 @@ def _call_run(
         embed_subcommand="build",
         json=False,
         resume=resume,
-        force=False,
+        force=force,
     )
 
     # Resume gates need a real vector-DB path to exist on disk
@@ -92,10 +93,8 @@ def _call_run(
         "_has_body_units_in_db": MagicMock(return_value=False),
         "_has_object_units_in_db": MagicMock(return_value=False),
         "progress_bar": MagicMock(side_effect=lambda x, **kw: x),
+        "ensure_vec_tables": MagicMock(),
         # Resume gates
-        "get_vector_db_path": MagicMock(return_value=mock_db_path),
-        "read_vector_build_state": MagicMock(return_value={"status": "idle"}),
-        "_assert_collections_healthy": MagicMock(return_value=(True, "")),
         # State bookkeeping
         "mark_vector_build_state": MagicMock(),
         "write_vector_runtime": MagicMock(),
@@ -144,6 +143,18 @@ def _call_run(
 
 # ---------------------------------------------------------------------------
 # Tests
+
+def test_force_rebuild_initializes_existing_vector_database(tmp_path: Path) -> None:
+    """Forced rebuild must use module helpers rather than function-local imports."""
+    from paperforge.memory.db import get_connection, get_memory_db_path
+
+    db_path = get_memory_db_path(tmp_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    get_connection(db_path).close()
+
+    rc, _ = _call_run(tmp_path, [{"ocr_status": "done"}], force=True)
+
+    assert rc == 0
 # ---------------------------------------------------------------------------
 
 class TestProcessedCount:

@@ -40,6 +40,7 @@ def write_vector_runtime(vault: Path, *, enabled: bool, mode: str, model: str,
                          build_state: dict | None, healthy: bool = True,
                          error: str = "", corrupted: bool = False,
                          body_chunk_count: int = 0,
+                         object_chunk_count: int = 0,
                          total_chunks: int | None = None,
                          backend: str = "") -> None:
     snap = {

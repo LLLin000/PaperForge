@@ -21,6 +21,7 @@ const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens } = vi.hoisted(
     const spawnedProcesses: Array<{
       args: string[];
       onData?: (data: unknown) => void;
+      onStderr?: (data: unknown) => void;
       onError?: (err: Error) => void;
       onClose?: (code: number | null) => void;
     }> = [];
@@ -195,10 +196,15 @@ vi.mock("child_process", () => {
             self.onData = cb;
           },
         },
-        stderr: { on: () => {} },
+        stderr: {
+          on: (_ev: string, cb: (data: unknown) => void) => {
+            self.onStderr = cb;
+          },
+        },
         stdin: { write: (_s: string) => true },
         kill: (_sig: string) => {},
         onData: undefined as ((data: unknown) => void) | undefined,
+        onStderr: undefined as ((data: unknown) => void) | undefined,
         onError: undefined as ((err: Error) => void) | undefined,
         onClose: undefined as ((code: number | null) => void) | undefined,
       };
@@ -210,7 +216,11 @@ vi.mock("child_process", () => {
             self.onData = cb;
           },
         },
-        stderr: { on: () => {} },
+        stderr: {
+          on: (_ev: string, cb: (data: unknown) => void) => {
+            self.onStderr = cb;
+          },
+        },
         stdin: { write: (_s: string) => true },
         kill: (_sig: string) => {},
         on: (ev: string, cb: (arg: unknown) => void) => {
@@ -228,6 +238,7 @@ vi.mock("../src/services/python-bridge", () => ({
   resolvePythonExecutable: () => ({ path: "/usr/bin/python3", extraArgs: [] }),
   buildRuntimeInstallCommand: () => "pip install",
   paperforgeEnrichedEnv: () => ({}),
+  buildTargetedEnv: async () => ({}),
   scanBbtUnderProfiles: () => [],
   scanBbtDirectChildren: () => [],
   runSubprocess: () => {},
@@ -694,6 +705,68 @@ describe("Memory module detail (Issue #78)", () => {
     expect(el.querySelector(".pf-module-detail-heading")).not.toBeNull();
     expect(el.querySelector(".mod-cta")).toBeNull();
   });
+
+  it("renders Build Index for a stale vector index and dispatches its exact action", async () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = {
+      memory: {
+        ...createUnknownEnvelope("memory"),
+        capability_state: "needs_action",
+        user_state: "action_required",
+        reason: { code: "memory.index_stale", text: "Index stale" },
+        action: {
+          primary: {
+            action_id: "memory.rebuild_vector",
+            verb: "rebuild_index",
+            label: "Build vector index",
+            command: "paperforge embed build --force",
+            availability: "available",
+            safety_class: "safe",
+            preservation_facts: [],
+            replacement_facts: [],
+            interruptible: true,
+            confirmation_required: false,
+            confirmation_prompt: null,
+            scope: "module",
+            scope_count: 1,
+          },
+        },
+      },
+    };
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderMemoryDetail(el);
+    const button = [...el.querySelectorAll("button")].find(
+      (node) => node.textContent === "Build Index"
+    ) as HTMLButtonElement | undefined;
+    expect(button).toBeDefined();
+    spawnedProcesses.length = 0;
+    button?.click();
+    await Promise.resolve();
+    expect(
+      spawnedProcesses.some((process) =>
+        process.args.join(" ").includes("embed build --force")
+      )
+    ).toBe(true);
+  });
+
+  it("hides the action-required impact box once the vector index is ready", () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = {
+      memory: {
+        ...createUnknownEnvelope("memory"),
+        capability_state: "ready",
+        user_state: "ready",
+        severity: "ok",
+        reason: { code: "memory.ready", text: "Index ready" },
+        action: { primary: null },
+      },
+    };
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderMemoryDetail(el);
+
+    expect(el.querySelector(".pf-sr-impact-box")).toBeNull();
+    expect(el.querySelectorAll(".pf-sr-cfg-input")).toHaveLength(3);
+  });
 });
 
 // ════════════════════════════════ 4. Dispatch allowlist ════════════════
@@ -816,11 +889,9 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     modalOpens.length = 0;
     spawnedProcesses.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
-    // Modal opens, no process spawned yet
     expect(modalOpens.length).toBe(1);
     expect(modalOpens[0].effectLabel).toBe("OCR artifacts");
     expect(spawnedProcesses.length).toBe(0);
-    // Simulate confirm callback
     if (modalOpens[0].onConfirm) modalOpens[0].onConfirm();
     expect(spawnedProcesses[spawnedProcesses.length - 1].args).toContain(
       "redo"
@@ -857,7 +928,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     ).toBe(true);
   });
 
-  it("embed build --force -> spawns embed", () => {
+  it("embed build --force -> spawns embed", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     const env = {
@@ -881,6 +952,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       },
     } as any;
     (tab as any)._dispatchModuleAction("memory", env);
+    await Promise.resolve();
     const es = spawnedProcesses.find((p: { args: string[] }) =>
       p.args.includes("embed")
     );
@@ -1112,10 +1184,11 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     expect(buildCalls.length).toBeGreaterThan(0);
   });
 
-  it("embed mode overlays envelope, spawns embed --force", () => {
+  it("embed mode overlays envelope, spawns embed --force", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     (tab as any)._dispatchMemoryBuild("embed");
+    await Promise.resolve();
     expect(
       ((tab as any)._capabilityState as any)?.memory?.activity_label
     ).toContain("vector");
@@ -1125,10 +1198,42 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     expect(es?.args).toContain("--force");
   });
 
-  it("embed parses PROGRESS into activity_progress", () => {
+  it("shows the command's terminal diagnostic when an embed build fails", async () => {
+    const tab = makeTab();
+    noticeCalls.length = 0;
+    (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
+    (tab as any)._dispatchMemoryBuild("embed");
+    await Promise.resolve();
+    const process = spawnedProcesses.find((p: { args: string[] }) =>
+      p.args.includes("embed")
+    );
+    process?.onStderr?.(
+      "Traceback (most recent call last):\nUnboundLocalError: vec0 unavailable\n"
+    );
+    process?.onClose?.(1);
+
+    const messages = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
+    expect(messages).toContain("UnboundLocalError: vec0 unavailable");
+  });
+
+  it("injects the current secure credential profile into embed builds", () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
+    const launch = vi
+      .spyOn(tab as any, "_callPython")
+      .mockReturnValue({} as never);
+    (tab as any)._dispatchMemoryBuild("embed");
+    expect(launch).toHaveBeenCalledWith(
+      ["embed", "build", "--force"],
+      expect.objectContaining({ credentialType: "embed", stream: true })
+    );
+  });
+
+  it("embed parses PROGRESS into activity_progress", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     (tab as any)._dispatchMemoryBuild("embed");
+    await Promise.resolve();
     spawnedProcesses
       .find((p: { args: string[] }) => p.args.includes("embed"))
       ?.onData?.("MEMORY_EMBED PROGRESS 100 500\n");

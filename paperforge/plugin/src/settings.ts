@@ -53,7 +53,6 @@ import {
 
 import {
   PaperForgeOcrPrivacyModal,
-  PaperForgeSetupModal,
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
   buildRedactedDraft,
@@ -68,9 +67,11 @@ import {
 } from "./services/managed-runtime";
 import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
 import {
-  resolveCredentialEnv,
+  hasVectorDbCredential,
+  storeVectorDbCredential,
   stripCredentialEnv,
   type PluginForSecrets,
+  type VectorDbCredentialProfile,
 } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
 
@@ -82,6 +83,18 @@ function asPluginForSecrets(
   return {
     app: { secretStorage: (app as any).secretStorage },
     saveData: async () => {},
+  };
+}
+
+function vectorDbProfile(
+  settings: Pick<
+    PaperForgeSettings,
+    "vector_db_api_base" | "vector_db_api_model"
+  >
+): VectorDbCredentialProfile {
+  return {
+    baseUrl: settings.vector_db_api_base,
+    model: settings.vector_db_api_model,
   };
 }
 
@@ -154,6 +167,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     memory: false,
     agent: false,
   };
+  /** Explicit reinstall stays inside the current setup journey. */
+  private _setupReinstallRequested = false;
+  private _setupOperation: "idle" | "running" | "failed" = "idle";
+  private _setupFeedback: string | null = null;
   /** Currently selected module in the detail view. */
   _selectedDetailModule: string = "";
   /** Focus target id after re-render. */
@@ -406,6 +423,143 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     this._displayInProgress = false;
   }
+  private _startSetupJourney(
+    stage: 1 | 2 | 3 | 4 = 1,
+    reinstall = false
+  ): void {
+    this._setupStage = stage;
+    this._setupReinstallRequested = reinstall;
+    this._setupOperation = "idle";
+    this._setupFeedback = null;
+    this.plugin.settings._setup_complete = false;
+    void this.plugin.saveSettings().then(() => this.display());
+  }
+
+  private _runSetupPython(args: string[]): Promise<void> {
+    const child = spawn(
+      this.plugin.settings.python_path?.trim() || "python",
+      args,
+      {
+        cwd: this._getVaultBasePath(),
+        env: paperforgeEnrichedEnv(),
+        windowsHide: true,
+      }
+    );
+    return new Promise<void>((resolve, reject) => {
+      let stderr = "";
+      child.stderr?.on("data", (chunk: Buffer) => {
+        stderr += chunk.toString("utf-8");
+      });
+      child.once("error", reject);
+      child.once("close", (code) => {
+        code === 0
+          ? resolve()
+          : reject(new Error(stderr || `exit code ${code}`));
+      });
+    });
+  }
+
+  private _installFoundation(forceInstall: boolean): void {
+    if (this._setupOperation === "running") return;
+    this._setupOperation = "running";
+    this._setupFeedback = null;
+    this.display();
+
+    const installPackage = async () => {
+      const args = ["-m", "pip", "install", "--upgrade"];
+      if (process.platform !== "win32") args.push("--user");
+      try {
+        await this._runSetupPython([
+          ...args,
+          `paperforge==${this.plugin.manifest.version}`,
+        ]);
+      } catch {
+        await this._runSetupPython([
+          ...args,
+          `git+https://github.com/LLLin000/PaperForge.git@v${this.plugin.manifest.version}`,
+        ]);
+      }
+    };
+
+    void (async () => {
+      try {
+        if (forceInstall) {
+          await installPackage();
+        } else {
+          try {
+            await this._runSetupPython(["-c", "import paperforge"]);
+          } catch {
+            await installPackage();
+          }
+        }
+        this._setupOperation = "idle";
+        this._setupReinstallRequested = false;
+        this._setupFeedback = t("setup_install_complete");
+        this._probeModule("installation");
+        this._probeModule("help");
+        this.display();
+      } catch (error) {
+        console.error("PaperForge runtime installation failed:", error);
+        this._setupOperation = "failed";
+        this._setupFeedback = t("setup_install_failed");
+        this.display();
+      }
+    })();
+  }
+
+  private _applyLibraryConfiguration(): void {
+    if (this._setupOperation === "running") return;
+    this._setupOperation = "running";
+    this._setupFeedback = null;
+    const settings = this.plugin.settings;
+    const paths = {
+      zotero_data_dir: settings.zotero_data_dir,
+      system_dir: settings.system_dir,
+      resources_dir: settings.resources_dir,
+      literature_dir: settings.literature_dir,
+      base_dir: settings.base_dir,
+    };
+    this.plugin.savePaperforgeJson(paths);
+    this.display();
+
+    const args = [
+      "-m",
+      "paperforge",
+      "--vault",
+      this._getVaultBasePath(),
+      "setup",
+      "--modular",
+      "--system-dir",
+      settings.system_dir?.trim() || "System",
+      "--resources-dir",
+      settings.resources_dir?.trim() || "Resources",
+      "--literature-dir",
+      settings.literature_dir?.trim() || "Literature",
+      "--base-dir",
+      settings.base_dir?.trim() || "Bases",
+      "--agent",
+      settings.agent_platform || "opencode",
+    ];
+    if (settings.zotero_data_dir?.trim()) {
+      args.push("--zotero-data", settings.zotero_data_dir.trim());
+    }
+    void (async () => {
+      try {
+        await this.plugin.saveSettings();
+        await this._runSetupPython(args);
+        this._setupOperation = "idle";
+        this._setupFeedback = t("setup_library_configured");
+        this._attemptedProbes.add("library");
+        this._probeModule("library");
+        this.display();
+      } catch (error) {
+        console.error("PaperForge library configuration failed:", error);
+        this._setupOperation = "failed";
+        this._setupFeedback = t("setup_library_config_failed");
+        this.display();
+      }
+    })();
+  }
   /** Render the Overview tab (header + control center + advanced settings). */
   _renderOverviewTab(containerEl: HTMLElement) {
     const vaultPath = this._getVaultBasePath();
@@ -564,13 +718,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     addCheck(
       t("foundation_paddle_key"),
       hasPaddle ? "✓" : "✗",
-      hasPaddle ? "Configured" : t("foundation_paddle_missing"),
+      hasPaddle ? t("config_configured") : t("foundation_paddle_missing"),
       hasPaddle ? "pf-status-ok" : "pf-status-error"
     );
     addCheck(
       t("foundation_openai_key"),
       hasOpenai ? "✓" : "✗",
-      hasOpenai ? "Configured" : t("foundation_openai_missing"),
+      hasOpenai ? t("config_configured") : t("foundation_openai_missing"),
       hasOpenai ? "pf-status-ok" : "pf-status-error"
     );
 
@@ -578,7 +732,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const { execSync } = require("child_process");
     try {
       execSync("git --version", { timeout: 3000 });
-      addCheck(t("foundation_git"), "✓", "Installed", "pf-status-ok");
+      addCheck(t("foundation_git"), "✓", t("check_bbt_ok"), "pf-status-ok");
     } catch {
       addCheck(
         t("foundation_git"),
@@ -645,13 +799,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           btn
             .setButtonText(t("foundation_setup_btn"))
             .setCta()
-            .onClick(() => {
-              new Notice(t("foundation_running_setup"));
-              // Trigger setup wizard
-              this.plugin.settings._setup_complete = false;
-              this.plugin.saveSettings();
-              this.display();
-            })
+            .onClick(() => this._startSetupJourney(1))
         );
     }
 
@@ -663,12 +811,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         btn
           .setButtonText(t("foundation_reinstall_btn"))
           .setWarning()
-          .onClick(() => {
-            new PaperForgeSetupModal(this.app, this.plugin, () => {
-              this._probeModule("installation");
-              this._probeModule("help");
-            }).open();
-          })
+          .onClick(() => this._startSetupJourney(1, true))
       );
   }
 
@@ -927,14 +1070,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       configuredLabel: t("config_configured"),
       notConfiguredLabel: t("config_not_configured"),
       onChangeLabel: t("config_change"),
-      onChange: () => {
-        new PaperForgeSetupModal(this.app, this.plugin, () => {
-          this.plugin.savePaperforgeJson({
-            zotero_data_dir: this.plugin.settings.zotero_data_dir,
-          });
-          this._probeModule("library");
-        }).open();
-      },
+      onChange: () => this._startSetupJourney(2),
     });
   }
 
@@ -944,6 +1080,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const env = this._capabilityState?.ocr ?? createUnknownEnvelope("ocr");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     body.createEl("h3", { text: t("md_ocr_status") });
+    if (env.user_state === "detection_failed") {
+      body.createEl("p", {
+        cls: "pf-status-checking",
+        text: t("md_status_refresh_hint"),
+      });
+    }
 
     const pipelineVersion = env.pipeline_version;
     const lastPipelineVersion = env.last_pipeline_version;
@@ -1031,7 +1173,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     } else if (env.user_state === "ready") {
       // ── State: Ready ──
-      renderStatusBadge(body, "ready");
+      renderStatusBadge(body, "ready", t("cc_state_ready"));
       const readyText = pipelineVersion
         ? t("ocr_state_ready")
             .replace(
@@ -1080,11 +1222,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _renderAgentDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "agent");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
-    body.createEl("h3", { text: t("md_agent_integration") });
-    body.createEl("p", {
-      text: t("md_agent_placeholder"),
-      cls: "setting-item-description",
-    });
 
     const platforms: Record<string, string> = {
       opencode: "OpenCode",
@@ -1185,56 +1322,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Render the Memory detail view matching prototype layout. */
   _renderMemoryDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "memory");
+    this._renderModuleDetailShell(containerEl, "memory", false);
     const env =
       this._capabilityState?.memory ?? createUnknownEnvelope("memory");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     const reasonCode = env.reason?.code ?? "";
     const isRunning = env.activity_state === "running";
 
-    // ── Badge + description ──
+    // The shared summary owns the module state. The body only adds the
+    // consequence needed for the next action.
+    let statusText: string | null = null;
+    let statusClass = "setting-item-description";
     if (isRunning && env.user_state === "ready") {
-      renderStatusBadge(body, "ready");
-      body.createEl("p", {
-        text: env.activity_label ?? t("cc_activity_running"),
-        cls: "pf-status-ok",
-      });
+      statusText = env.activity_label ?? t("cc_activity_running");
+      statusClass = "pf-status-ok";
     } else if (reasonCode === "memory.disabled") {
-      renderStatusBadge(body, "not_enabled");
-      body.createEl("p", {
-        text: t("sr_state_disabled"),
-        cls: "setting-item-description",
-      });
+      statusText = t("sr_state_disabled");
     } else if (reasonCode === "memory.db_missing") {
-      renderStatusBadge(body, "action_required");
-      body.createEl("p", {
-        text: t("sr_state_db_missing"),
-        cls: "setting-item-description",
-      });
+      statusText = t("sr_state_db_missing");
     } else if (reasonCode === "memory.backend_upgrade_available") {
-      renderStatusBadge(body, "action_required");
-      body.createEl("p", {
-        text: t("sr_state_upgrade_available"),
-        cls: "setting-item-description",
-      });
+      statusText = t("sr_state_upgrade_available");
     } else if (reasonCode === "memory.vector_build_failed") {
-      renderStatusBadge(body, "action_required");
-      body.createEl("p", {
-        text: t("sr_state_build_failed"),
-        cls: "setting-item-description",
-      });
+      statusText = t("sr_state_build_failed");
     } else if (reasonCode === "memory.schema_stale") {
-      renderStatusBadge(body, "action_required");
-      body.createEl("p", {
-        text: env.reason.text,
-        cls: "setting-item-description",
-      });
+      statusText = env.reason.text;
     } else if (env.user_state === "ready") {
-      renderStatusBadge(body, "ready");
-      body.createEl("p", {
-        text: t("md_retrieval_ready"),
-        cls: "pf-status-ok",
-      });
+      statusText = t("md_retrieval_ready");
+      statusClass = "pf-status-ok";
+    }
+    if (statusText) {
+      body.createEl("p", { text: statusText, cls: statusClass });
     }
 
     // ── Primary action button ──
@@ -1252,10 +1369,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this.plugin.saveSettings().then(() => this._probeModule("memory"));
         },
       });
-    } else if (reasonCode === "memory.db_missing") {
+    } else if (
+      reasonCode === "memory.db_missing" ||
+      reasonCode === "memory.index_stale"
+    ) {
       renderActionButton(body, {
         label: t("sr_action_build") || "Build Index",
-        onClick: () => this._dispatchMemoryBuild("build"),
+        onClick: () => this._dispatchModuleAction("memory", env),
       });
     } else if (reasonCode === "memory.backend_upgrade_available") {
       renderActionButton(body, {
@@ -1275,9 +1395,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       env.user_state !== "ready" &&
       env.user_state !== "not_enabled"
     ) {
-      // ── Generic fallback: any actionable state with a primary action ──
+      const actionKey =
+        "action_" +
+        (env.action.primary.action_id ?? env.action.primary.verb).replace(
+          /[.-]/g,
+          "_"
+        );
       const actionLabel =
-        env.action.primary.label || t("cc_action_rebuild_derived") || "Fix";
+        t(actionKey) !== actionKey
+          ? t(actionKey)
+          : t("cc_action_" + env.action.primary.verb) !==
+              "cc_action_" + env.action.primary.verb
+            ? t("cc_action_" + env.action.primary.verb)
+            : t("cc_action_probe");
       renderActionButton(body, {
         label: actionLabel,
         onClick: () => this._dispatchModuleAction("memory", env),
@@ -1347,20 +1477,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (!v) return;
       if (kt) clearTimeout(kt);
       kt = setTimeout(async () => {
-        const ss = (this.app as any).secretStorage;
-        if (!ss?.setSecret) return;
-        try {
-          await ss.setSecret("vector-db-api-key", v);
-          if ((await ss.getSecret("vector-db-api-key")) === v) {
-            this.plugin.settings._vector_db_configured = true;
-            this.plugin.settings.vector_db_api_key = "";
-            await this.plugin.saveSettings();
-            ki.value = "";
-            ki.placeholder = "\u2022\u2022\u2022\u2022";
-            cfgBody.style.display = "none";
-            cfgIcon.textContent = "\u25b6";
-          }
-        } catch {}
+        if (await this._storeVectorDbCredential(v)) {
+          ki.value = "";
+          ki.placeholder = "\u2022\u2022\u2022\u2022";
+          cfgBody.style.display = "none";
+          cfgIcon.textContent = "\u25b6";
+        }
         kt = null;
       }, 600);
     });
@@ -1378,7 +1500,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     bi.value = this.plugin.settings.vector_db_api_base || "";
     bi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_base = bi.value;
-      this.plugin.saveSettings();
+      void this.plugin.saveSettings();
+      this._refreshVectorDbCredentialStatus();
     });
 
     // Model
@@ -1395,18 +1518,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
     mi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_model = mi.value;
-      this.plugin.saveSettings();
+      void this.plugin.saveSettings();
+      this._refreshVectorDbCredentialStatus();
     });
 
     // ── Impact box (when action needed) ──
-    if (reasonCode !== "ready" && reasonCode !== "memory.disabled") {
+    if (
+      env.capability_state === "needs_action" &&
+      reasonCode !== "memory.disabled"
+    ) {
       const impact = body.createDiv({ cls: "pf-sr-impact-box" });
       impact.createEl("strong", {
         text: t("cc_badge_action_required") || "Action Required",
       });
       impact.createEl("p", {
         text:
-          reasonCode === "memory.db_missing"
+          reasonCode === "memory.db_missing" ||
+          reasonCode === "memory.index_stale"
             ? t("sr_impact_db_missing") ||
               "Smart Retrieval needs an OpenAI API key and vector index. Click Build Index to get started."
             : reasonCode === "memory.backend_upgrade_available"
@@ -1483,21 +1611,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       (verb === "setup" || verb === "set_config") &&
       cmd === "paperforge setup"
     ) {
-      if (
-        mod === "installation" ||
-        mod === "library" ||
-        mod === "ocr" ||
-        mod === "memory"
-      ) {
-        const probeMods: CapabilityModule[] = [mod];
-        if (mod === "installation") {
-          probeMods.push("help");
-        }
-        new PaperForgeSetupModal(this.app, this.plugin, () => {
-          for (const m of probeMods) this._probeModule(m);
-        }).open();
-        return;
+      if (mod === "library") {
+        this._startSetupJourney(2);
+      } else {
+        const reinstall =
+          mod === "installation" &&
+          env.reason.code === "installation.version_mismatch";
+        this._startSetupJourney(
+          mod === "ocr" || mod === "memory" ? 3 : 1,
+          reinstall
+        );
       }
+      return;
     }
 
     // Probe verb → exact command match, directly re-probe without Notice
@@ -1741,7 +1866,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // Embed build: stream progress
       this.plugin._embedBuffer = "";
       this.plugin._embedProgress = { current: 0, total: 0, key: "" };
+      let stderr = "";
       const child = this._callPython(cliArgs, {
+        credentialType: "embed",
         stream: true,
         onData: (data: unknown) => {
           const text =
@@ -1772,6 +1899,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           }
           this.display();
         },
+        onStderr: (data: unknown) => {
+          stderr +=
+            typeof data === "string"
+              ? data
+              : Buffer.isBuffer(data)
+                ? data.toString("utf-8")
+                : String(data);
+        },
         onError: (err: Error) => {
           this.plugin._embedProcess = null;
           if (envelopes["memory"]) {
@@ -1793,8 +1928,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           if (code === 0) {
             new Notice(label + " build complete.");
           } else {
+            const lines = stderr.trim().split(/\r?\n/).filter(Boolean);
+            const diagnostic = lines[lines.length - 1];
             new Notice(
-              label + " build failed with exit code " + (code ?? "?"),
+              t("sr_build_failed_notice").replace(
+                "{detail}",
+                diagnostic || "exit code " + (code ?? "?")
+              ),
               8000
             );
           }
@@ -1831,12 +1971,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Shared module detail shell for all five operational modules. */
   _renderModuleDetailShell(
     containerEl: HTMLElement,
-    mod: CapabilityModule | "agent"
+    mod: CapabilityModule | "agent",
+    showPrimary = true
   ): void {
     containerEl.classList.add("pf-module-detail");
-    const headingKey =
-      mod === "agent" ? "agent_detail_heading" : mod + "_detail_heading";
-    const headingId = "pf-" + mod + "-detail-heading";
 
     const backBtn = containerEl.createEl("button", {
       cls: "pf-back-btn",
@@ -1895,12 +2033,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.display();
     });
 
-    containerEl.createEl("h2", {
-      cls: "pf-module-detail-heading",
-      text: t(headingKey),
-      attr: { id: headingId, tabindex: "-1" },
-    });
-
     const env =
       mod === "agent"
         ? this._getAgentPlaceholderEnvelope()
@@ -1913,9 +2045,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       attr: { "aria-live": "polite" },
     });
     const header = summary.createDiv({ cls: "pf-module-summary-header" });
-    header.createEl("span", {
-      cls: "pf-module-summary-name",
+    header.createEl("h2", {
+      cls: "pf-module-summary-name pf-module-detail-heading",
       text: this._getUserModuleName(mod),
+      attr: { id: "pf-" + mod + "-detail-heading", tabindex: "-1" },
     });
     renderStatusBadge(header, userState, this._getUserStateLabel(userState));
     summary.createEl("p", {
@@ -1929,9 +2062,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         progress: env.activity_progress,
       });
     }
-
     const primary = env.action?.primary;
-    if (primary && userState !== "ready" && mod !== "agent") {
+
+    if (showPrimary && primary && userState !== "ready" && mod !== "agent") {
       const actionKey =
         "action_" + (primary.action_id ?? primary.verb).replace(/[.-]/g, "_");
       const translated = t(actionKey);
@@ -2142,7 +2275,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // Async: resolve SecretStorage credentials before launch
       buildTargetedEnv(
         asPluginForSecrets((this as any).app),
-        opts.credentialType
+        opts.credentialType,
+        vectorDbProfile(this.plugin.settings)
       ).then((env) => {
         if (opts && opts.stream) {
           spawnChild(env);
@@ -2416,19 +2550,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             // ponytail: debounce per-keystroke SecretStorage writes
             if (storeTimer) clearTimeout(storeTimer);
             storeTimer = setTimeout(async () => {
-              const ss = (this.app as any).secretStorage;
-              if (!ss?.setSecret) return;
-              try {
-                await ss.setSecret("vector-db-api-key", value);
-                const readback = await ss.getSecret("vector-db-api-key");
-                if (readback === value) {
-                  this.plugin.settings._vector_db_configured = true;
-                  this.plugin.settings.vector_db_api_key = "";
-                  await this.plugin.saveSettings();
-                  text.setValue("");
-                }
-              } catch {
-                // SecretStorage write failed; leave input as-is for retry
+              if (await this._storeVectorDbCredential(value)) {
+                text.setValue("");
               }
               storeTimer = null;
             }, 600);
@@ -2443,7 +2566,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.vector_db_api_base || "")
           .onChange((value) => {
             this.plugin.settings.vector_db_api_base = value;
-            this.plugin.saveSettings();
+            void this.plugin.saveSettings();
+            this._refreshVectorDbCredentialStatus();
           });
       });
     new Setting(containerEl)
@@ -2457,7 +2581,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           )
           .onChange((value) => {
             this.plugin.settings.vector_db_api_model = value;
-            this.plugin.saveSettings();
+            void this.plugin.saveSettings();
+            this._refreshVectorDbCredentialStatus();
           });
       });
   }
@@ -2630,7 +2755,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // Issue #79: resolve credentials immediately before embed build launch
         const env = await buildTargetedEnv(
           asPluginForSecrets((this as any).app),
-          "embed"
+          "embed",
+          vectorDbProfile(this.plugin.settings)
         );
         // Merge non-credential embed settings that aren't secret-managed
         env.PYTHONIOENCODING = "utf-8";
@@ -3452,6 +3578,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     ) {
       args.push("--last-operation-exit-code", String(lastOperationExitCode));
     }
+    if (mod === "installation") {
+      args.push("--expected-version", this.plugin.manifest.version);
+    }
 
     execFile(
       resolved.path,
@@ -3497,6 +3626,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._lastKnownState.set(mod, captureLastKnown(envelope));
     }
 
+    if (mod === "installation" && envelope.user_state === "ready") {
+      this._setupReinstallRequested = false;
+    }
     this._capabilityState[envelope.module] = envelope;
     this._persistCapabilityState();
     if (
@@ -3678,10 +3810,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
       btn.addEventListener("click", () => {
         if (action.kind === "setup") {
-          new PaperForgeSetupModal(this.app, this.plugin, () => {
-            this._probeModule("installation");
-            this._probeModule("help");
-          }).open();
+          this._startSetupJourney(1);
         } else {
           this._dispatchModuleAction(mod, env);
         }
@@ -3855,15 +3984,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const sectionHead = cc.createDiv({ cls: "pf-cc-section-head" });
     sectionHead.createEl("div", {
       cls: "pf-cc-eyebrow",
-      text: t("cc_modules_label") || "modules",
+      text: t("cc_modules_header") || "modules",
     });
     sectionHead.createEl("h2", {
-      text: t("cc_modules_title") || "Five capabilities",
+      text: t("cc_five_capabilities") || "Five capabilities",
     });
     sectionHead.createEl("span", {
       cls: "caption",
       text:
-        t("cc_modules_caption") ||
+        t("cc_optional_note") ||
         "Optional modules do not affect core readiness.",
     });
 
@@ -3879,29 +4008,48 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
 
-  /** #86: Agent Integration placeholder — not yet a backend probe. */
+  /** Derive Agent availability from the selected platform's deployed skill. */
   _getAgentPlaceholderEnvelope(): ProbeEnvelope {
+    const platform = this.plugin.settings.agent_platform || "opencode";
+    const directories: Record<string, string> = {
+      opencode: ".opencode/skills",
+      claude: ".claude/skills",
+      codex: ".codex/skills",
+      cursor: ".cursor/skills",
+      windsurf: ".windsurf/skills",
+      github_copilot: ".github/skills",
+      gemini: ".gemini/skills",
+    };
+    const skill = path.join(
+      this._getVaultBasePath(),
+      directories[platform] ?? directories.opencode,
+      "paperforge",
+      "SKILL.md"
+    );
+    const deployed = fs.existsSync(skill);
     return {
       schema_version: 2,
       module: "agent",
-      capability_state: "unknown",
+      capability_state: deployed ? "ready" : "needs_action",
       activity_state: "idle",
       activity_label: null,
       activity_progress: null,
-      severity: "unknown",
+      severity: deployed ? "ok" : "warning",
       reason: {
-        code: "agent.not_implemented",
-        text: "Agent Integration will be available in a future update.",
+        code: deployed ? "agent.skills_deployed" : "agent.skills_not_deployed",
+        text: deployed
+          ? "PaperForge Skills are deployed for the selected platform."
+          : "PaperForge Skills have not been deployed for the selected platform.",
       },
       action: { primary: null },
       notices: [],
-      user_state: "not_enabled",
+      user_state: deployed ? "ready" : "not_enabled",
       capability_kind: "optional",
       maintenance_eligible: false,
       user_visible_failure: false,
       user_impact: null,
-      updated_at: new Date(0).toISOString(),
-      ttl_seconds: 0,
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 300,
     };
   }
 
@@ -4084,8 +4232,32 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const env =
       this._capabilityState?.installation ??
       createUnknownEnvelope("installation");
+    const needsProbe =
+      (env.capability_state === "unknown" &&
+        env.updated_at === new Date(0).toISOString()) ||
+      (env.user_state === "detection_failed" &&
+        env.reason.code.endsWith(".stale"));
+    if (needsProbe && !this._attemptedProbes.has("installation")) {
+      this._attemptedProbes.add("installation");
+      this._probeModule("installation");
+    }
     containerEl.createEl("h3", { text: t("setup_foundation_title") });
     containerEl.createEl("p", { text: t("setup_foundation_desc") });
+    const pythonField = containerEl.createDiv({ cls: "pf-setup-field" });
+    pythonField.createEl("label", { text: t("setup_foundation_python") });
+    pythonField.createEl("span", {
+      cls: "caption",
+      text: t("setup_foundation_python_hint"),
+    });
+    const pythonInput = pythonField.createEl("input", {
+      cls: "pf-setup-input",
+      attr: { type: "text", placeholder: "python" },
+    }) as HTMLInputElement;
+    pythonInput.value = this.plugin.settings.python_path || "";
+    pythonInput.addEventListener("input", () => {
+      this.plugin.settings.python_path = pythonInput.value.trim();
+      this._debouncedSave();
+    });
     renderStatusBadge(
       containerEl,
       env.user_state,
@@ -4098,24 +4270,48 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           : this._getModuleConsequence("installation", env),
       cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
     });
-    if (env.action?.primary && env.user_state !== "ready") {
-      const verbKey = "cc_action_" + env.action.primary.verb;
-      renderActionButton(containerEl, {
-        label: t(verbKey) === verbKey ? t("cc_action_setup") : t(verbKey),
-        onClick: () =>
-          this._runAllowedDispatch(
-            "installation",
-            env.action.primary!.verb,
-            env.action.primary!.command,
-            env
-          ),
+    if (this._setupOperation === "running") {
+      containerEl.createEl("p", {
+        cls: "pf-setup-status",
+        text: t("setup_installing"),
       });
+    } else {
+      if (this._setupFeedback) {
+        containerEl.createEl("p", {
+          cls:
+            this._setupOperation === "failed" ? "pf-setup-warn" : "pf-setup-ok",
+          text: this._setupFeedback,
+        });
+      }
+      if (
+        env.user_state !== "ready" &&
+        (this._setupReinstallRequested ||
+          env.reason.code === "installation.version_mismatch")
+      ) {
+        containerEl.createEl("p", {
+          cls: "pf-setup-warn",
+          text: t("setup_reinstall_notice"),
+        });
+        renderActionButton(containerEl, {
+          label: t("foundation_reinstall_btn"),
+          onClick: () => this._installFoundation(true),
+        });
+      } else if (
+        env.user_state !== "ready" ||
+        this._setupOperation === "failed"
+      ) {
+        renderActionButton(containerEl, {
+          label: t("setup_foundation_install_btn"),
+          onClick: () => this._installFoundation(false),
+        });
+      }
     }
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
       disabled: env.user_state !== "ready",
       onClick: () => {
+        this._setupFeedback = null;
         this._setupStage = 2;
         this.display();
       },
@@ -4125,6 +4321,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _renderSetupStageLibrary(containerEl: HTMLElement): void {
     const env =
       this._capabilityState?.library ?? createUnknownEnvelope("library");
+    const needsProbe =
+      (env.capability_state === "unknown" &&
+        env.updated_at === new Date(0).toISOString()) ||
+      (env.user_state === "detection_failed" &&
+        env.reason.code.endsWith(".stale"));
+    if (needsProbe && !this._attemptedProbes.has("library")) {
+      this._attemptedProbes.add("library");
+      this._probeModule("library");
+    }
+
     containerEl.createEl("h3", { text: t("setup_library_title") });
     containerEl.createEl("p", { text: t("setup_library_desc") });
     renderStatusBadge(
@@ -4139,46 +4345,147 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           : this._getModuleConsequence("library", env),
       cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
     });
-    if (env.action?.primary && env.user_state !== "ready") {
-      const verbKey = "cc_action_" + env.action.primary.verb;
-      renderActionButton(containerEl, {
-        label: t(verbKey) === verbKey ? t("cc_action_set_config") : t(verbKey),
-        onClick: () =>
-          this._runAllowedDispatch(
-            "library",
-            env.action.primary!.verb,
-            env.action.primary!.command,
-            env
-          ),
+    if (this._setupOperation === "running") {
+      containerEl.createEl("p", {
+        cls: "pf-setup-status",
+        text: t("setup_library_configuring"),
+      });
+    } else if (this._setupFeedback) {
+      containerEl.createEl("p", {
+        cls:
+          this._setupOperation === "failed" ? "pf-setup-warn" : "pf-setup-ok",
+        text: this._setupFeedback,
       });
     }
+
+    const form = containerEl.createDiv({ cls: "pf-setup-library-form" });
+    form.createEl("p", {
+      cls: "pf-setup-form-intro",
+      text: t("setup_library_config_desc"),
+    });
+    const addField = (
+      parent: HTMLElement,
+      label: string,
+      key:
+        | "zotero_data_dir"
+        | "system_dir"
+        | "resources_dir"
+        | "literature_dir"
+        | "base_dir",
+      hint?: string
+    ) => {
+      const field = parent.createDiv({ cls: "pf-setup-field" });
+      field.createEl("label", { text: label });
+      if (hint) field.createEl("span", { cls: "caption", text: hint });
+      const input = field.createEl("input", {
+        cls: "pf-setup-input",
+        attr: { type: "text" },
+      }) as HTMLInputElement;
+      input.value = this.plugin.settings[key] || "";
+      input.addEventListener("input", () => {
+        this.plugin.settings[key] = input.value.trim();
+        this._debouncedSave();
+      });
+    };
+
+    addField(
+      form,
+      t("field_zotero_data"),
+      "zotero_data_dir",
+      t("setup_library_zotero_hint")
+    );
+    form.createEl("h4", { text: t("setup_library_folder_heading") });
+    const folders = form.createDiv({ cls: "pf-setup-folder-grid" });
+    addField(folders, t("dir_system"), "system_dir");
+    addField(folders, t("dir_resources"), "resources_dir");
+    addField(folders, t("dir_notes"), "literature_dir");
+    addField(folders, t("dir_base"), "base_dir");
+
+    const verify = form.createEl("button", {
+      cls: "pf-setup-verify",
+      text: t("setup_library_verify"),
+      attr: { type: "button" },
+    });
+    verify.disabled = this._setupOperation === "running";
+    verify.addEventListener("click", () => this._applyLibraryConfiguration());
+
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
       onClick: () => {
+        this._setupFeedback = null;
         this._setupStage = 1;
         this.display();
       },
     });
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
-      disabled: env.user_state !== "ready",
+      disabled:
+        env.user_state !== "ready" || this._setupOperation === "running",
       onClick: () => {
+        this._setupFeedback = null;
         this._setupStage = 3;
         this.display();
       },
     });
+  }
+  private _refreshVectorDbCredentialStatus(): void {
+    void hasVectorDbCredential(
+      asPluginForSecrets(this.app),
+      vectorDbProfile(this.plugin.settings)
+    ).then((configured) => {
+      if (configured === this.plugin.settings._vector_db_configured) return;
+      this.plugin.settings._vector_db_configured = configured;
+      void this.plugin.saveSettings();
+    });
+  }
+
+  private async _storeVectorDbCredential(value: string): Promise<boolean> {
+    const saved = await storeVectorDbCredential(
+      asPluginForSecrets(this.app),
+      vectorDbProfile(this.plugin.settings),
+      value
+    );
+    if (!saved) return false;
+    this.plugin.settings._vector_db_configured = true;
+    this.plugin.settings.vector_db_api_key = "";
+    this.plugin.settings._migration_warnings = Array.isArray(
+      this.plugin.settings._migration_warnings
+    )
+      ? this.plugin.settings._migration_warnings.filter(
+          (key) => key !== "vector_db_api_key"
+        )
+      : [];
+    await this.plugin.saveSettings();
+    this.display();
+    return true;
+  }
+
+  private async _storeSetupSecret(
+    secretId: "paddleocr-api-key" | "vector-db-api-key",
+    value: string
+  ): Promise<boolean> {
+    if (secretId === "vector-db-api-key")
+      return this._storeVectorDbCredential(value);
+    const storage = asPluginForSecrets(this.app).app.secretStorage;
+    if (!value || !storage?.setSecret) return false;
+    try {
+      await storage.setSecret(secretId, value);
+      if ((await storage.getSecret(secretId)) !== value) return false;
+      this.plugin.settings._paddleocr_configured = true;
+      this.plugin.settings.paddleocr_api_key = "";
+      await this.plugin.saveSettings();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   _renderSetupStageOptionals(containerEl: HTMLElement): void {
     containerEl.createEl("h3", { text: t("setup_optionals_title") });
     containerEl.createEl("p", { text: t("setup_optionals_desc") });
     const optionals = [
-      {
-        id: "ocr",
-        label: t("cc_module_ocr"),
-        desc: t("setup_opt_ocr_desc"),
-      },
+      { id: "ocr", label: t("cc_module_ocr"), desc: t("setup_opt_ocr_desc") },
       {
         id: "memory",
         label: t("cc_module_memory"),
@@ -4198,7 +4505,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       checkbox.checked = this._setupOptionals[opt.id];
       checkbox.addEventListener("change", () => {
         this._setupOptionals[opt.id] = checkbox.checked;
+        this.display();
       });
+      const configured =
+        opt.id === "ocr"
+          ? !!this.plugin.settings._paddleocr_configured
+          : opt.id === "memory"
+            ? !!this.plugin.settings._vector_db_configured
+            : true;
       const copy = row.createDiv({ cls: "pf-setup-optional-copy" });
       copy.createEl("label", {
         attr: { for: "pf-setup-opt-" + opt.id },
@@ -4209,6 +4523,138 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         text: opt.desc,
         cls: "pf-setup-optional-desc",
       });
+      const status = copy.createEl("span", {
+        cls: "pf-setup-optional-state",
+        text: configured ? t("config_configured") : t("config_not_configured"),
+      });
+      if (!checkbox.checked) continue;
+
+      const config = row.createDiv({ cls: "pf-setup-optional-config" });
+      if (opt.id === "ocr") {
+        config.createEl("label", { text: t("field_paddleocr") });
+        config.createEl("p", {
+          cls: "caption",
+          text: t("ocr_privacy_warning"),
+        });
+        const key = config.createEl("input", {
+          cls: "pf-setup-input",
+          attr: {
+            type: "password",
+            autocomplete: "off",
+            placeholder: this.plugin.settings._paddleocr_configured
+              ? "••••"
+              : t("field_paddleocr"),
+          },
+        }) as HTMLInputElement;
+        const save = config.createEl("button", {
+          cls: "pf-setup-verify",
+          text: t("config_save"),
+          attr: { type: "button" },
+        });
+        save.addEventListener("click", () => {
+          void this._storeSetupSecret("paddleocr-api-key", key.value).then(
+            (saved) => {
+              status.setText(
+                saved
+                  ? t("setup_optional_saved")
+                  : t("setup_optional_save_failed")
+              );
+              if (saved) key.value = "";
+            }
+          );
+        });
+      } else if (opt.id === "memory") {
+        config.createEl("label", { text: t("feat_openai_key") });
+        config.createEl("p", {
+          cls: "caption",
+          text: t("feat_openai_key_desc"),
+        });
+        const key = config.createEl("input", {
+          cls: "pf-setup-input",
+          attr: {
+            type: "password",
+            autocomplete: "off",
+            placeholder: this.plugin.settings._vector_db_configured
+              ? "••••"
+              : "sk-...",
+          },
+        }) as HTMLInputElement;
+        config.createEl("label", { text: t("feat_api_model") });
+        const model = config.createEl("input", {
+          cls: "pf-setup-input",
+          attr: {
+            type: "text",
+            placeholder:
+              this.plugin.settings.vector_db_api_model ||
+              "text-embedding-3-small",
+          },
+        }) as HTMLInputElement;
+        model.addEventListener("change", () => {
+          this.plugin.settings.vector_db_api_model = model.value.trim();
+          void this.plugin.saveSettings();
+          this._refreshVectorDbCredentialStatus();
+        });
+        config.createEl("label", { text: t("feat_api_base_url") });
+        const base = config.createEl("input", {
+          cls: "pf-setup-input",
+          attr: {
+            type: "text",
+            placeholder:
+              this.plugin.settings.vector_db_api_base ||
+              "https://api.openai.com/v1",
+          },
+        }) as HTMLInputElement;
+        base.addEventListener("change", () => {
+          this.plugin.settings.vector_db_api_base = base.value.trim();
+          void this.plugin.saveSettings();
+          this._refreshVectorDbCredentialStatus();
+        });
+        const save = config.createEl("button", {
+          cls: "pf-setup-verify",
+          text: t("config_save"),
+          attr: { type: "button" },
+        });
+        save.addEventListener("click", () => {
+          void this._storeSetupSecret("vector-db-api-key", key.value).then(
+            (saved) => {
+              status.setText(
+                saved
+                  ? t("setup_optional_saved")
+                  : t("setup_optional_save_failed")
+              );
+              if (saved) key.value = "";
+            }
+          );
+        });
+      } else {
+        config.createEl("label", { text: t("feat_agent_platform") });
+        config.createEl("p", {
+          cls: "caption",
+          text: t("feat_agent_platform_desc"),
+        });
+        const select = config.createEl("select") as HTMLSelectElement;
+        for (const [value, label] of Object.entries({
+          opencode: "OpenCode",
+          claude: "Claude Code",
+          codex: "Codex",
+          cursor: "Cursor",
+          windsurf: "Windsurf",
+          github_copilot: "GitHub Copilot",
+          gemini: "Gemini CLI",
+        })) {
+          const option = select.createEl("option", {
+            text: label,
+            attr: { value },
+          }) as HTMLOptionElement;
+          option.selected = value === this.plugin.settings.agent_platform;
+        }
+        select.addEventListener("change", () => {
+          this.plugin.settings.agent_platform = select.value;
+          this.plugin.savePaperforgeJson({ agent_platform: select.value });
+          void this.plugin.saveSettings();
+          status.setText(t("setup_optional_saved"));
+        });
+      }
     }
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
@@ -4220,28 +4666,42 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
-      onClick: () => {
-        this._setupStage = 4;
-        this.display();
-      },
+      onClick: () => this._refreshSetupReadiness(),
     });
+  }
+
+  private _refreshSetupReadiness(): void {
+    this._setupStage = 4;
+    for (const mod of ["installation", "library"] as const) {
+      this._attemptedProbes.add(mod);
+      this._probeModule(mod);
+    }
+    this.display();
   }
 
   _renderSetupStageReview(containerEl: HTMLElement): void {
     containerEl.createEl("h3", { text: t("setup_review_title") });
-    const foundationReady =
-      this._capabilityState?.installation?.user_state === "ready";
-    const libraryReady = this._capabilityState?.library?.user_state === "ready";
+    const foundation = this._capabilityState?.installation;
+    const library = this._capabilityState?.library;
+    const foundationReady = foundation?.user_state === "ready";
+    const libraryReady = library?.user_state === "ready";
+    const checking =
+      foundation?.user_state === "checking" ||
+      library?.user_state === "checking";
     containerEl.createEl("p", {
       text: foundationReady
         ? t("setup_ready")
-        : t("cc_consequence_setup_required"),
+        : checking
+          ? t("setup_review_checking")
+          : t("cc_consequence_setup_required"),
       cls: foundationReady ? "pf-setup-ok" : "pf-setup-warn",
     });
     containerEl.createEl("p", {
       text: libraryReady
         ? t("setup_library_ready")
-        : t("cc_consequence_setup_required"),
+        : checking
+          ? t("setup_review_checking")
+          : t("cc_consequence_setup_required"),
       cls: libraryReady ? "pf-setup-ok" : "pf-setup-warn",
     });
     const selected = Object.entries(this._setupOptionals)
@@ -4261,6 +4721,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this.display();
       },
     });
+    if (!foundationReady || !libraryReady) {
+      renderActionButton(nav, {
+        label: t("setup_review_recheck"),
+        disabled: checking,
+        onClick: () => this._refreshSetupReadiness(),
+      });
+    }
     renderActionButton(nav, {
       label: t("setup_nav_complete"),
       disabled: !foundationReady || !libraryReady,
@@ -4268,7 +4735,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     if (!foundationReady || !libraryReady) {
       containerEl.createEl("p", {
-        text: t("setup_incomplete_warn"),
+        text: checking
+          ? t("setup_review_checking")
+          : t("setup_incomplete_warn"),
         cls: "pf-setup-warn",
       });
     }

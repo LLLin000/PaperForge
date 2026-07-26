@@ -126,19 +126,19 @@ export default class PaperForgePlugin extends Plugin {
 
     this.addCommand({
       id: "paperforge-status-panel",
-      name: `PaperForge: ${t("guide_open")}`,
+      name: t("guide_open"),
       callback: () => PaperForgeStatusView.open(this as any),
     });
     this.addCommand({
       id: "paperforge-ocr-workspace",
-      name: "PaperForge: Open OCR Workspace",
+      name: "Open OCR Workspace",
       callback: () => OcrWorkspaceView.open(this as any),
     });
 
     for (const a of ACTIONS) {
       this.addCommand({
         id: a.id,
-        name: `PaperForge: ${a.title}`,
+        name: a.title,
         callback: async () => {
           if (a.disabled) {
             new Notice(

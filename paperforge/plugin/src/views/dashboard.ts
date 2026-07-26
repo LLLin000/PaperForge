@@ -34,7 +34,10 @@ import {
   buildTargetedEnv,
 } from "../services/python-bridge";
 import { resolveRuntimeCommand } from "../services/managed-runtime";
-import type { PluginForSecrets } from "../services/secret-storage";
+import {
+  type PluginForSecrets,
+  type VectorDbCredentialProfile,
+} from "../services/secret-storage";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
@@ -53,6 +56,28 @@ interface IPluginRef {
   manifest: { version: string };
   settings?: PaperForgeSettings;
   [key: string]: unknown;
+}
+
+function recordValue(value: unknown, key: string): unknown {
+  return value && typeof value === "object" && key in value
+    ? Reflect.get(value, key)
+    : undefined;
+}
+
+function vectorDbProfileForApp(
+  app: App
+): VectorDbCredentialProfile | undefined {
+  const manager = recordValue(app, "plugins");
+  const plugins = recordValue(manager, "plugins");
+  const plugin = recordValue(plugins, "paperforge");
+  const settings = recordValue(plugin, "settings");
+  if (!settings || typeof settings !== "object") return undefined;
+  const baseUrl = recordValue(settings, "vector_db_api_base");
+  const model = recordValue(settings, "vector_db_api_model");
+  return {
+    baseUrl: typeof baseUrl === "string" ? baseUrl : "",
+    model: typeof model === "string" ? model : "",
+  };
 }
 
 export class PaperForgeStatusView extends ItemView {
@@ -2768,27 +2793,6 @@ export class PaperForgeStatusView extends ItemView {
       return;
     }
 
-    let pluginSettings: unknown = null;
-    const appRecord = this.app as unknown as Record<string, unknown>;
-    const pluginsVal = appRecord["plugins"];
-    if (
-      pluginsVal &&
-      typeof pluginsVal === "object" &&
-      "plugins" in pluginsVal
-    ) {
-      const pluginsMap = (pluginsVal as Record<string, unknown>)["plugins"];
-      if (
-        pluginsMap &&
-        typeof pluginsMap === "object" &&
-        "paperforge" in pluginsMap
-      ) {
-        const pf = (pluginsMap as Record<string, unknown>)["paperforge"];
-        if (pf && typeof pf === "object" && "settings" in pf) {
-          pluginSettings = (pf as Record<string, unknown>)["settings"];
-        }
-      }
-    }
-
     const py = this._resolvePython();
     if (!py) {
       this._searchState = "backend-unavailable";
@@ -2800,7 +2804,8 @@ export class PaperForgeStatusView extends ItemView {
     // Issue #79: resolve memory credentials immediately before search/retrieve spawn
     const searchEnv = await buildTargetedEnv(
       { app: this.app } as unknown as PluginForSecrets,
-      "memory"
+      "memory",
+      vectorDbProfileForApp(this.app)
     );
     const child = spawn(
       pythonExe,
@@ -3161,7 +3166,8 @@ export class PaperForgeStatusView extends ItemView {
     // Issue #79: resolve credentials for allowlisted command types immediately before launch
     const actionEnv = await buildTargetedEnv(
       { app: this.app } as unknown as PluginForSecrets,
-      a.cmd
+      a.cmd,
+      vectorDbProfileForApp(this.app)
     );
     const child = spawn(
       pythonExe,

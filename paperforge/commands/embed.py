@@ -28,7 +28,8 @@ from paperforge.embedding.builder import (
     write_encoded_payload,
 )
 from paperforge.embedding.preflight import _preflight_check
-from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+from paperforge.memory.schema import ensure_schema
 from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
 from paperforge.worker._progress import progress_bar
@@ -262,8 +263,6 @@ def run(args: argparse.Namespace) -> int:
                 mark_vector_build_state(vault, status="idle", current=0, pid=0)
                 resume = False
         # 门二：no vec0 rows → fresh build（不是 error）
-        from paperforge.memory.db import ensure_vec_extension
-        from paperforge.memory.schema import ensure_schema
 
         _db_path = get_memory_db_path(vault)
         _any_rows = False
@@ -410,8 +409,6 @@ def run(args: argparse.Namespace) -> int:
 
                         if body_units:
                             try:
-                                from paperforge.memory.db import ensure_vec_extension
-                                from paperforge.memory.schema import ensure_schema
 
                                 db_path = get_memory_db_path(vault)
                                 conn = get_connection(db_path)
@@ -435,8 +432,6 @@ def run(args: argparse.Namespace) -> int:
 
                         if object_units:
                             try:
-                                from paperforge.memory.db import ensure_vec_extension
-                                from paperforge.memory.schema import ensure_schema
 
                                 db_path = get_memory_db_path(vault)
                                 conn = get_connection(db_path)
@@ -485,8 +480,6 @@ def run(args: argparse.Namespace) -> int:
 
                     if resume:
                         try:
-                            from paperforge.memory.db import ensure_vec_extension
-                            from paperforge.memory.schema import ensure_schema
 
                             db_path = get_memory_db_path(vault)
                             conn = get_connection(db_path)

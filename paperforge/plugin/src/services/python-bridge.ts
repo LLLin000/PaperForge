@@ -3,7 +3,12 @@ import * as path from "path";
 import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
 import type { PaperForgeSettings } from "../constants";
-import { stripCredentialEnv, resolveCredentialEnv, type PluginForSecrets } from "./secret-storage";
+import {
+  stripCredentialEnv,
+  resolveCredentialEnv,
+  type PluginForSecrets,
+  type VectorDbCredentialProfile,
+} from "./secret-storage";
 
 // ── Types ──
 
@@ -498,8 +503,9 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
 export async function buildTargetedEnv(
   plugin: PluginForSecrets,
   commandType: string,
+  vectorProfile?: VectorDbCredentialProfile
 ): Promise<Record<string, string | undefined>> {
-  const creds = await resolveCredentialEnv(plugin, commandType);
+  const creds = await resolveCredentialEnv(plugin, commandType, vectorProfile);
   const base = paperforgeEnrichedEnv();
   if (Object.keys(creds).length === 0) return base;
   return Object.assign({}, base, creds);

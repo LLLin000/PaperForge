@@ -1,6 +1,6 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; Control Center redesign #83–#93 is implemented, live-audited, and deployed to Literature-hub. Release remains explicitly deferred pending owner approval.
-> Last updated: 2026-07-20
+> Status: OCR-v2 is stable; real `D:\L\Med\test` visual audit repairs are deployed, including a complete four-stage Setup Journey with in-flow Foundation, Library, and optional-capability configuration. Release remains explicitly deferred pending owner acceptance.
+> Last updated: 2026-07-26
 
 ## Current checkpoint
 
@@ -32,10 +32,14 @@
 - **[#80](https://github.com/LLLin000/PaperForge/issues/80) implemented**: Maintenance probe with backend-derived actionable-only rows, privacy-safe local issue drafts, and accessible destructive confirmation. Backend owns exact actions from `probe maintenance --json`; frontend renders via derived VerbModel with primary null for quality-ok items. Verification: backend focused gate 77/77; plugin full suite 381/382 (pre-existing capability-state test expecting help.stale but receiving help.invalid_response); typecheck/build clean; production bundle 264.4KB; Obsidian 1.12.7 smoke 730/768: entry focus, actionable-only rows, keyboard Enter, accessible destructive confirmation with exact backend effect, focus trap/restoration, owned inert cleanup, redacted editable issue draft, no token input/auto-open, explicit GitHub open only, URL re-redaction, no horizontal overflow.
 - **Literature-hub deployment recovered, then safely rolled back**: duplicate plugin discovery and plaintext credentials remain fixed. The active pointer now targets the probe-capable `v1.5.15` slot because the published `1.5.15` installed into `v1.5.15_build2` lacks `paperforge probe`; do not update/repair until a probe-capable package is published and clean-venv verified.
 
+- **Test-vault UI repair deployed:** OCR Workspace now loads the 593-paper formal index through `ResolvedPaths`, opens as a main tab rather than a right sidebar, hides idle activity, localizes the live Chinese Control Center/Smart Retrieval labels, and uses an accent primary action despite Obsidian core button styling.
+- **Setup Journey boundary repair deployed:** Foundation exposes the Python executable and installs/verifies only the PaperForge package; Stage 2 alone presents the editable Zotero plus four vault paths and runs modular setup to save and verify them. Reinstall remains in-flow and no longer opens the legacy wizard.
+- **Optional setup configuration deployed:** selected Stage 3 OCR, Smart Retrieval, and Agent cards expand their credential/model/base-URL/platform fields. Credentials are saved through Obsidian SecretStorage, not plugin settings.
+- **Smart Retrieval live rebuild repaired:** test-vault `构建索引` now rebuilds the 593-paper vec0 index to `memory.ready`. The unified detail has one configuration disclosure for API key, Base URL, and model; terminal failures display their final stderr diagnostic; a ready index has no stale warning panel.
 ## Verification status
 
 - Focused Python OCR paths: **99 passed, 1 Windows SIGINT test skipped, 1 unrelated empty-result regression deselected**.
-- Plugin: **420/420 passed**; TypeScript check and production build passed (**280.1KB**).
+- Plugin: **414/414 passed**; TypeScript check and production build passed (**303.7KB**).
 - Maintenance regression tests: **19/19 passed** (canonical action routing, confirmation gate, cache manifest preservation).
 - Live Obsidian verification: PaperForge 1.5.15 loaded without captured errors; maintenance rendered **734 All** rows and **700 Recommended** rows from the canonical backend flag.
 - Live progress-state harness showed the floating progress bar, current key, Stop control, and disabled row actions.
@@ -50,8 +54,11 @@
 - Issue #76 verification: **21/21 backend probe tests and 169/169 plugin tests passed**; TypeScript check and production build passed; live Obsidian stale-cache/action-label smoke test and independent review passed.
 - Live rollback verification: active Runtime is `windows-x64\\v1.5.15\\venv\\Scripts\\python.exe`; Installation and Help are ready, Library/OCR/Memory return real probe envelopes, Maintenance returns three backend-derived items, and Obsidian captured no errors.
 - Control Center live acceptance: Obsidian 1.12.7 exercised Overview, all five Module Details, Maintenance, Help, and all four Setup Journey stages in English and Chinese; no untranslated keys or horizontal overflow. Corrected bundle deployed to Literature-hub.
-- No production plugin code was modified during prototype work.
-- The repository-wide Python suite remains blocked during collection by the pre-existing `test_pr9a_resume_rebuild.py` import of removed `_assert_collections_healthy`.
+- Live Setup Journey verification: Foundation auto-refreshed to ready; Library Stage 2 rendered five editable fields with no raw i18n keys. An invalid Zotero path failed validation and disabled Continue; restoring the path re-enabled it.
+- Live Foundation-run verification: completed with no legacy modal and no Library stage transition; `D:\L\Med\test\paperforge.json` retained SHA-256 `856d89520a766e927dbae7e00880b912cfbf89a3747fa0f109329dc864f5a36c`.
+- Live optional-stage verification: all three selected cards rendered in the in-flow setup with two SecretStorage password fields, four total configuration inputs, one Agent platform selector, enabled Continue, vertical page scroll, and no raw i18n keys.
+- Production plugin code was modified only for the deployed test-vault UX repairs; prototype-only records above remain historical.
+- The repository-wide Python suite remains blocked during collection by two pre-existing removed-symbol imports: `test_pr9a_resume_rebuild.py` imports `_assert_collections_healthy`, and `test_layer4_vector_backend.py` imports `get_vector_backend`.
 ## Frontier
 
 - [x] Prototype the six-module control center ([#71](https://github.com/LLLin000/PaperForge/issues/71)).

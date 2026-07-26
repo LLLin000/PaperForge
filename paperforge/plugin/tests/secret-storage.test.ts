@@ -7,6 +7,8 @@ import {
   CREDENTIAL_COMMAND_ALLOWLIST,
   migrateCredentials,
   resolveCredentialEnv,
+  storeVectorDbCredential,
+  vectorDbSecretId,
   stripCredentialEnv,
   isAllowlistedCommand,
 } from "../src/services/secret-storage";
@@ -50,6 +52,25 @@ function createMockPlugin(opts: PluginMockOpts) {
   };
 }
 
+const VECTOR_PROFILE = {
+  baseUrl: "https://api.example.com/v1",
+  model: "text-embedding-3-small",
+};
+
+async function createVectorPlugin(
+  vectorKey: string,
+  secretStore: SecretStore = {}
+) {
+  const plugin = createMockPlugin({
+    settings: {
+      vector_db_api_base: VECTOR_PROFILE.baseUrl,
+      vector_db_api_model: VECTOR_PROFILE.model,
+    },
+    secretStore,
+  });
+  await storeVectorDbCredential(plugin as never, VECTOR_PROFILE, vectorKey);
+  return plugin;
+}
 const OCR_ID = "paddleocr-api-key";
 const VEC_ID = "vector-db-api-key";
 
@@ -70,18 +91,45 @@ describe("SecretStorage migration", () => {
     expect(plugin.saveData).toHaveBeenCalled();
   });
 
-  it("migrates plaintext vector_db_api_key", async () => {
+  it("migrates plaintext vector_db_api_key into the active endpoint profile", async () => {
     const plugin = createMockPlugin({
-      settings: { vector_db_api_key: "sk-test-openai-key" },
+      settings: {
+        vector_db_api_key: "sk-test-openai-key",
+        vector_db_api_base: "https://api.example.com/v1",
+        vector_db_api_model: "test-model",
+      },
     });
     const result = await migrateCredentials(plugin as never, plugin.settings);
     expect(result.migrated).toContain("vector_db_api_key");
     expect(result.warnings).toHaveLength(0);
     expect(plugin._ss.setSecret).toHaveBeenCalledWith(
-      VEC_ID,
+      await vectorDbSecretId({
+        baseUrl: "https://api.example.com/v1",
+        model: "test-model",
+      }),
       "sk-test-openai-key"
     );
     expect(plugin.settings.vector_db_api_key).toBe("");
+  });
+
+  it("does not bind a legacy global vector key to an unproven profile", async () => {
+    const profile = {
+      baseUrl: "https://api.example.com/v1",
+      model: "embedding-a",
+    };
+    const plugin = createMockPlugin({
+      settings: {
+        vector_db_api_base: profile.baseUrl,
+        vector_db_api_model: profile.model,
+      },
+      secretStore: { [VEC_ID]: "legacy-key" },
+    });
+    await migrateCredentials(plugin as never, plugin.settings);
+    expect(plugin._ss.store[await vectorDbSecretId(profile)]).toBeUndefined();
+    await expect(
+      resolveCredentialEnv(plugin as never, "memory", profile)
+    ).resolves.not.toHaveProperty("VECTOR_DB_API_KEY");
+    expect(plugin.settings._vector_db_configured).toBe(false);
   });
 
   it("skips migration for empty credential values", async () => {
@@ -103,6 +151,28 @@ describe("SecretStorage migration", () => {
     expect(result.warnings).toContain("paddleocr_api_key");
     // Plaintext preserved for user to decide
     expect(plugin.settings.paddleocr_api_key).toBe("old-plaintext");
+  });
+
+  it("clears a stale vector-key migration warning when the active profile is configured", async () => {
+    const profile = {
+      baseUrl: "https://api.example.com/v1",
+      model: "embedding-a",
+    };
+    const plugin = createMockPlugin({
+      settings: {
+        vector_db_api_key: "unscoped-legacy-key",
+        vector_db_api_base: profile.baseUrl,
+        vector_db_api_model: profile.model,
+        _migration_warnings: ["vector_db_api_key"],
+      },
+      secretStore: {
+        [await vectorDbSecretId(profile)]: "current-profile-key",
+      },
+    });
+    await migrateCredentials(plugin as never, plugin.settings);
+    expect(plugin.settings._vector_db_configured).toBe(true);
+    expect(plugin.settings._migration_warnings).toEqual([]);
+    expect(plugin.settings.vector_db_api_key).toBe("unscoped-legacy-key");
   });
 
   it("completes crash-recovery migration when existing secret equals plaintext", async () => {
@@ -184,14 +254,40 @@ describe("Credential resolution", () => {
   });
 
   it("returns VECTOR_DB_API_KEY only for memory command", async () => {
-    const plugin = createMockPlugin({
-      settings: {},
-      secretStore: { [VEC_ID]: "sk-memory-key" },
-    });
+    const plugin = await createVectorPlugin("sk-memory-key");
     const env = await resolveCredentialEnv(plugin as never, "memory");
     expect(env.VECTOR_DB_API_KEY).toBe("sk-memory-key");
     expect(env.VECTOR_DB_API_BASE).toBeUndefined();
     expect(env.PADDLEOCR_API_KEY).toBeUndefined();
+  });
+
+  it("isolates retrieval keys by endpoint and model profile", async () => {
+    const plugin = createMockPlugin({ settings: {} });
+    const first = {
+      baseUrl: "https://api.example.com/v1",
+      model: "embedding-a",
+    };
+    const second = {
+      baseUrl: "https://api.other.example/v1",
+      model: "embedding-b",
+    };
+    const firstId = await vectorDbSecretId(first);
+    expect(firstId).toMatch(/^[a-z0-9-]{1,64}$/);
+    await storeVectorDbCredential(plugin as never, first, "key-for-first");
+    await storeVectorDbCredential(plugin as never, second, "key-for-second");
+
+    await expect(
+      resolveCredentialEnv(plugin as never, "memory", first)
+    ).resolves.toMatchObject({ VECTOR_DB_API_KEY: "key-for-first" });
+    await expect(
+      resolveCredentialEnv(plugin as never, "embed", second)
+    ).resolves.toMatchObject({ VECTOR_DB_API_KEY: "key-for-second" });
+    await expect(
+      resolveCredentialEnv(plugin as never, "memory", {
+        baseUrl: first.baseUrl,
+        model: "embedding-c",
+      })
+    ).resolves.not.toHaveProperty("VECTOR_DB_API_KEY");
   });
 
   it("returns empty env for non-target commands", async () => {
@@ -335,12 +431,8 @@ describe("production env isolation", () => {
   });
 
   it("resolveCredentialEnv for memory never returns PADDLEOCR keys", async () => {
-    const plugin = createMockPlugin({
-      settings: {},
-      secretStore: {
-        "paddleocr-api-key": "ocr-secret",
-        "vector-db-api-key": "vec-secret",
-      },
+    const plugin = await createVectorPlugin("vec-secret", {
+      "paddleocr-api-key": "ocr-secret",
     });
     const env = await resolveCredentialEnv(plugin as never, "memory");
     expect(env.VECTOR_DB_API_KEY).toBe("vec-secret");
@@ -378,20 +470,14 @@ describe("buildTargetedEnv (production dispatch seam)", () => {
   });
 
   it("injects Memory key into env and strips it from process.env base", async () => {
-    const plugin = createMockPlugin({
-      settings: {},
-      secretStore: { "vector-db-api-key": "vk-mem-test-secret" },
-    });
+    const plugin = await createVectorPlugin("vk-mem-test-secret");
     const env = await buildTargetedEnv(plugin as never, "memory");
     expect(env.VECTOR_DB_API_KEY).toBe("vk-mem-test-secret");
     expect(env.PADDLEOCR_API_KEY).toBeUndefined();
   });
 
   it("embed command gets same Memory credentials as memory command", async () => {
-    const plugin = createMockPlugin({
-      settings: {},
-      secretStore: { "vector-db-api-key": "vk-embed-test" },
-    });
+    const plugin = await createVectorPlugin("vk-embed-test");
     const env = await buildTargetedEnv(plugin as never, "embed");
     expect(env.VECTOR_DB_API_KEY).toBe("vk-embed-test");
     expect(env.PADDLEOCR_API_KEY).toBeUndefined();
@@ -461,10 +547,10 @@ describe("targeted vs non-targeted command isolation", () => {
   });
 
   it("targeted memory: VECTOR_DB_API_KEY present, PADDLEOCR keys absent", async () => {
-    const env = await resolveCredentialEnv(
-      PLUGIN_WITH_ALL_SECRETS as never,
-      "memory"
-    );
+    const plugin = await createVectorPlugin("vec-secret-456", {
+      "paddleocr-api-key": "ocr-secret-123",
+    });
+    const env = await resolveCredentialEnv(plugin as never, "memory");
     expect(env.VECTOR_DB_API_KEY).toBe("vec-secret-456");
     expect(env.PADDLEOCR_API_KEY).toBeUndefined();
     expect(env.PADDLEOCR_API_TOKEN).toBeUndefined();
@@ -648,10 +734,7 @@ describe("embed env strip-before-inject (Fix C)", () => {
 
   it("buildTargetedEnv for embed: base is stripped, only allowlisted key injected", async () => {
     const { buildTargetedEnv } = await import("../src/services/python-bridge");
-    const plugin = createMockPlugin({
-      settings: {},
-      secretStore: { "vector-db-api-key": "vk-embed-isolated" },
-    });
+    const plugin = await createVectorPlugin("vk-embed-isolated");
     const env = await buildTargetedEnv(plugin as never, "embed");
     // Allowlisted key injected from SecretStorage
     expect(env.VECTOR_DB_API_KEY).toBe("vk-embed-isolated");

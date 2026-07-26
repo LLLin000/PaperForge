@@ -17,6 +17,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from paperforge import __version__ as PAPERFORGE_VERSION
 from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
 
 # ---------------------------------------------------------------------------
@@ -173,7 +174,7 @@ def _load_pf_config(vault: Path) -> tuple[dict[str, Any] | None, str | None]:
 # Probes
 # ---------------------------------------------------------------------------
 
-def probe_installation(vault: Path) -> dict[str, Any]:
+def probe_installation(vault: Path, expected_version: str | None = None) -> dict[str, Any]:
     pf_json = vault / "paperforge.json"
 
     if not pf_json.exists():
@@ -230,6 +231,19 @@ def probe_installation(vault: Path) -> dict[str, Any]:
             action_primary=build_action_primary(
                 action_id="foundation.update_python",
                 verb="update", label="Update Python", command="",
+            ),
+            ttl_seconds=TTL_INSTALLATION,
+        )
+
+    if expected_version and PAPERFORGE_VERSION != expected_version:
+        return build_envelope(
+            module="installation", capability_state="needs_action", severity="warning",
+            reason_code="installation.version_mismatch",
+            reason_text=f"PaperForge {PAPERFORGE_VERSION} does not match plugin {expected_version}",
+            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
+            action_primary=build_action_primary(
+                action_id="foundation.setup", verb="setup", label="Update PaperForge",
+                command="paperforge setup",
             ),
             ttl_seconds=TTL_INSTALLATION,
         )
@@ -1112,7 +1126,7 @@ def run(args: Any) -> int:
     module: str = args.probe_module
 
     if module == "installation":
-        envelope = probe_installation(vault)
+        envelope = probe_installation(vault, expected_version=getattr(args, "expected_version", None))
     elif module == "library":
         last_code: int | None = getattr(args, "last_operation_exit_code", None)
         envelope = probe_library(vault, last_operation_exit_code=last_code)

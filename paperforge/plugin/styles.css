@@ -5719,44 +5719,6 @@
   border-color: var(--interactive-accent);
 }
 
-/* ── Table ── */
-.pf-ocr-ws-table {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.pf-ocr-ws-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto auto;
-  gap: 8px;
-  align-items: center;
-  padding: 8px 10px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-s);
-  cursor: pointer;
-  font-size: var(--font-ui-small);
-}
-.pf-ocr-ws-row:hover {
-  background: var(--background-modifier-hover);
-}
-.pf-ocr-ws-row.pf-selected {
-  background: var(--background-secondary-alt);
-  border-color: var(--interactive-accent);
-}
-.pf-ocr-ws-col-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-}
-.pf-ocr-ws-col-status,
-.pf-ocr-ws-col-version,
-.pf-ocr-ws-col-lastrun {
-  white-space: nowrap;
-  color: var(--text-muted);
-  font-size: 11px;
-}
-
 /* ── Status badge ── */
 .pf-ocr-ws-badge {
   display: inline-block;
@@ -5944,6 +5906,32 @@
 .pf-ocr-ws-toolbar-count strong {
   color: var(--text-normal);
 }
+
+/* ── Search bar ── */
+.pf-ocr-ws-search {
+  grid-column: 1 / -1;
+}
+input.pf-ocr-ws-search-input {
+  width: 100%;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-normal);
+  outline: none;
+  transition:
+    border-color 120ms,
+    box-shadow 120ms;
+}
+input.pf-ocr-ws-search-input:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+}
+input.pf-ocr-ws-search-input::placeholder {
+  color: var(--text-faint);
+}
 .pf-ocr-ws-field label {
   display: block;
   font-size: 10px;
@@ -5984,14 +5972,6 @@
   transition:
     background 120ms,
     color 120ms;
-}
-.pf-ocr-ws-chip:hover {
-  border-color: var(--interactive-accent);
-}
-.pf-ocr-ws-chip.pf-active {
-  background: var(--interactive-accent);
-  border-color: var(--interactive-accent);
-  color: var(--text-on-accent);
 }
 
 /* ── Table ── */
@@ -6046,10 +6026,35 @@
 }
 .pf-ocr-ws-col-date {
   width: 90px;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11px;
 }
 .pf-ocr-ws-col-action {
   width: 80px;
   text-align: right;
+}
+.pf-ocr-ws-paper-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+  display: flex;
+  gap: 8px;
+}
+.pf-ocr-ws-meta-author {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pf-ocr-ws-meta-year {
+  flex-shrink: 0;
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 .pf-ocr-ws-paper-title {
   font-weight: 500;
