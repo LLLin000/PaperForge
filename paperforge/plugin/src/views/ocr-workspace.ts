@@ -790,7 +790,12 @@ class VersionRestoreModal extends Modal {
     contentEl.addClass("paperforge-modal");
     try {
       const mc = contentEl.closest(".modal-container") as HTMLElement;
-      if (mc) mc.style.width = "min(90vw, 840px)";
+      if (mc) {
+        mc.style.width = "min(90vw, 1200px)";
+        // Also widen the inner .modal element
+        const innerModal = mc.querySelector(".modal") as HTMLElement;
+        if (innerModal) innerModal.style.width = "100%";
+      }
     } catch {}
     contentEl.empty();
 
