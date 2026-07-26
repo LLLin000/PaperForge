@@ -43,3 +43,11 @@ You only need to re-export when you add, remove, or modify papers in Zotero.
 Disable the plugin in **Obsidian Settings → Community Plugins → PaperForge**. To fully remove: delete the plugin folder from `.obsidian/plugins/paperforge/` and the PaperForge runtime directory from your vault's System folder.
 
 Your Zotero data, PDFs, and notes are never modified by PaperForge and remain untouched.
+
+---
+
+## Why doesn't PaperForge have built-in literature search capabilities?
+
+1. Current AI Agents still face obstacles in fully retrieving and downloading literature.
+2. Human-controlled literature searching and downloading ensures the most complete collection of materials.
+3. There are already powerful literature search and download Skills available that work alongside PaperForge.
