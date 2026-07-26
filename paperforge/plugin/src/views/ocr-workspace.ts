@@ -1,5 +1,5 @@
 import { scanVersions, restoreVersion } from "../services/version-history";
-import { ItemView, WorkspaceLeaf, Notice, Modal } from "obsidian";
+import { ItemView, WorkspaceLeaf, Notice, Modal, MarkdownRenderer, Component } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import { execFile } from "child_process";
@@ -756,6 +756,7 @@ class VersionRestoreModal extends Modal {
   private selectedIdx: number = 0;
   private onRestored: (() => void) | null;
   private contentCache: Map<string, string> = new Map();
+  private mdComponent: Component;
 
   constructor(app: any, vaultPath: string, paperKey: string, versions: VersionEntry[], currentLabel: string, onRestored?: () => void) {
     super(app);
@@ -765,6 +766,8 @@ class VersionRestoreModal extends Modal {
     this.versions = versions;
     this.currentLabel = currentLabel;
     this.onRestored = onRestored ?? null;
+    this.mdComponent = new Component();
+    this.mdComponent.load();
   }
 
   private getContent(label: string): string {
@@ -785,14 +788,15 @@ class VersionRestoreModal extends Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.addClass("paperforge-modal");
+    // Widen the modal container
+    const mc = contentEl.closest(".modal-container") as HTMLElement;
+    if (mc) mc.style.width = "840px";
     contentEl.empty();
 
     // Cache current render content
     const curPath = path.join(this.ocrDir, this.paperKey, "render", "fulltext.md");
     try { if (fs.existsSync(curPath)) this.contentCache.set("__current__", fs.readFileSync(curPath, "utf-8")); } catch {}
 
-    // Wait, need to reference buttons created in the render functions
-    // Use a simpler approach — render everything in onOpen
     this.renderAll();
   }
 
@@ -833,9 +837,8 @@ class VersionRestoreModal extends Modal {
 
     const contentArea = preview.createDiv({ cls: "pf-vr-content" });
     const diffArea = preview.createDiv({ cls: "pf-vr-diff" });
+    MarkdownRenderer.render(this.app, this.getContent(ver.label), contentArea, this.vaultPath, this.mdComponent);
     diffArea.style.display = "none";
-
-    contentArea.setText(this.getContent(ver.label));
 
     if (!isCurrent) {
       const compareBtn = actionsDiv.createEl("button", { cls: "btn-secondary pf-vr-btn", text: t("ocr_ws_restore_compare") || "Compare with current" });
@@ -893,9 +896,9 @@ class VersionRestoreModal extends Modal {
       new Notice("Restore failed");
     }
   }
-
   onClose() {
     try { this.contentEl.empty(); } catch {}
     this.contentCache.clear();
+    this.mdComponent.unload();
   }
 }

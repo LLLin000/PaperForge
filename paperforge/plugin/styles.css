@@ -7232,14 +7232,14 @@ input.pf-ocr-ws-search-input::placeholder {
 .pf-sr-cfg-input:focus {
   border-color: var(--interactive-accent);
 }
-
-/* ── Version Restore Modal (timeline + preview) ── */
 .pf-vr-layout {
   display: flex;
   gap: 0;
-  min-height: 420px;
-  height: 60vh;
+  min-height: 500px;
+  height: 65vh;
+  width: 780px;
 }
+
 .pf-vr-sidebar {
   width: 220px;
   flex-shrink: 0;
