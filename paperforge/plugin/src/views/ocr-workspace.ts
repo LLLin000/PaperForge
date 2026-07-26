@@ -561,19 +561,44 @@ export class OcrWorkspaceView extends ItemView {
     });
     restoreBtn.disabled = !paper.hasBackup;
     restoreBtn.addEventListener("click", () => {
-      const vp = (this.app.vault.adapter as any).basePath as string;
+      const self = this;
+      const vp = (self.app.vault.adapter as any).basePath as string;
+      const paths = resolveVaultPaths(vp);
+      // Try version manifest first
       const versions = scanVersions(vp, paper.key);
-      if (!versions || versions.versions.length === 0) {
+      if (versions && versions.versions.length > 0) {
+        const modal = new VersionRestoreModal(
+          self.app, vp, paper.key,
+          versions.versions.map(v => ({label:v.label,created_at:v.created_at,source:v.source,renderer_version:v.renderer_version,fulltext_size:v.fulltext_size})),
+          versions.currentLabel,
+          () => { self._loadPapers().then(() => self._render()); }
+        );
+        modal.open();
+        return;
+      }
+      // Fallback: scan backups/ directory for pre-rebuild files
+      const backupsDir = path.join(paths.ocrDir, paper.key, "backups");
+      if (!fs.existsSync(backupsDir)) {
         new Notice("No backup versions available");
         return;
       }
+      const backupFiles = fs.readdirSync(backupsDir)
+        .filter(f => f.startsWith("fulltext.pre-rebuild"))
+        .sort();
+      if (backupFiles.length === 0) {
+        new Notice("No backup versions available");
+        return;
+      }
+      const backupEntries = backupFiles.map(f => {
+        const ts = f.replace("fulltext.pre-rebuild.", "");
+        let size = 0;
+        try { size = fs.statSync(path.join(backupsDir, f)).size; } catch {}
+        return { label: "backup-" + ts, created_at: ts, source: "pre-rebuild", fulltext_size: size };
+      });
       const modal = new VersionRestoreModal(
-        this.app,
-        vp,
-        paper.key,
-        versions.versions,
-        versions.currentLabel,
-        () => this._loadPapers().then(() => this._render())
+        self.app, vp, paper.key,
+        backupEntries, "",
+        () => { self._loadPapers().then(() => self._render()); }
       );
       modal.open();
     });
@@ -725,12 +750,10 @@ function statusClass(status: string): string {
   if (status === "done_incomplete") return "pf-done-incomplete";
   if (status === "failed" || status === "error" || status === "fatal_error")
     return "pf-failed";
-  if (status === "retryable_error") return "pf-error";
-  if (status === "processing" || status === "running") return "pf-running";
-  if (status === "queued") return "pf-queued";
-  if (status === "blocked") return "pf-blocked";
-  return "pf-pending";
+  return "";
 }
+/* ── Version Restore Modal ── */
+
 
 function statusLabel(status: string): string {
   if (status === "done") return t("ocr_ws_status_done") || "Processed";
@@ -826,7 +849,24 @@ class VersionRestoreModal extends Modal {
           text: t("ocr_ws_restore_btn") || "Restore this version",
         });
         restoreBtn.addEventListener("click", () => {
-          const ok = restoreVersion(this.vaultPath, this.paperKey, ver.label);
+          let ok = false;
+          // Backup-file restore: label = "backup-<timestamp>"
+          if (ver.label.startsWith("backup-")) {
+            const ts = ver.label.slice("backup-".length);
+            const ocrDir = path.join(this.vaultPath, "System", "PaperForge", "ocr");
+            const source = path.join(ocrDir, this.paperKey, "backups", "fulltext.pre-rebuild." + ts);
+            const targetDir = path.join(ocrDir, this.paperKey, "render");
+            const target = path.join(targetDir, "fulltext.md");
+            try {
+              if (fs.existsSync(source)) {
+                if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {recursive:true});
+                fs.copyFileSync(source, target);
+                ok = true;
+              }
+            } catch(e) {}
+          } else {
+            ok = restoreVersion(this.vaultPath, this.paperKey, ver.label);
+          }
           if (ok) {
             new Notice(
               t("ocr_ws_detail_restore_done").replace("{label}", ver.label)
