@@ -120,7 +120,6 @@ export class PaperForgeStatusView extends ItemView {
   _ocrBadge: HTMLElement | null = null;
   _ocrTrack: HTMLElement | null = null;
   _ocrCounts: HTMLElement | null = null;
-  _driftBannerEl: HTMLElement | null = null;
   // ── Search state ──
   // ── Version state ──
   _versionPapers: PaperVersionInfo[] | null = null;
@@ -253,34 +252,20 @@ export class PaperForgeStatusView extends ItemView {
   /* ---------------------------------------------------------------------- */
   _fetchVersion() {
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const plugin = ((this.app as any).plugins.plugins as any)[
-      "paperforge"
-    ] as any;
-    const pluginVer = plugin?.manifest?.version || "?";
     const py = this._resolvePython();
     if (!py) return;
     const { path: pythonExe, args = [] } = py;
-    Promise.resolve({ status: "ok", pyVersion: "?" }).then((result: any) => {
-      if (result.status === "not-installed") return;
-      const v = result.pyVersion || "";
-      this._paperforgeVersion = v.startsWith("v") ? v : "v" + v;
-      if (this._versionBadge)
-        this._versionBadge.setText(this._paperforgeVersion);
-      if (
-        this._driftBannerEl &&
-        pluginVer &&
-        this._paperforgeVersion !== "v" + pluginVer.replace(/^v/, "")
-      ) {
-        this._driftBannerEl.style.display = "block";
-        this._driftBannerEl.setText(
-          t("dashboard_drift_warning")
-            .replace("{0}", this._paperforgeVersion)
-            .replace("{1}", "v" + pluginVer.replace(/^v/, ""))
-        );
-      } else if (this._driftBannerEl) {
-        this._driftBannerEl.style.display = "none";
-      }
-    });
+    try {
+      const raw = execFileSync(
+        pythonExe,
+        [...args, "-c", "import paperforge; print(paperforge.__version__)"],
+        { cwd: vp, timeout: 5000, encoding: "utf-8", windowsHide: true }
+      ).trim();
+      if (!raw) return;
+      const v = raw.startsWith("v") ? raw : "v" + raw;
+      this._paperforgeVersion = v;
+      if (this._versionBadge) this._versionBadge.setText(v);
+    } catch {}
   }
 
   _fetchStats(quiet: boolean) {
@@ -1006,10 +991,6 @@ export class PaperForgeStatusView extends ItemView {
     const view = this._contentEl.createEl("div", {
       cls: "paperforge-global-view",
     });
-    this._driftBannerEl = view.createEl("div", {
-      cls: "paperforge-drift-banner",
-    });
-    this._driftBannerEl.style.display = "none";
     const items = this._getCachedIndex();
     const totalPapers = items.length;
     let pdfReady = 0,
@@ -1060,36 +1041,6 @@ export class PaperForgeStatusView extends ItemView {
     const plugin = ((this.app as any).plugins.plugins as any)[
       "paperforge"
     ] as any;
-    const pluginVer = plugin?.manifest?.version || "?";
-    let pyVer = this._paperforgeVersion;
-    if (!pyVer) {
-      const py = this._resolvePython();
-      if (py) {
-        const { path: pyExe, args = [] } = py;
-        try {
-          const vp = (this.app.vault.adapter as any).basePath as string;
-          const raw = execFileSync(
-            pyExe,
-            [...args, "-c", "import paperforge; print(paperforge.__version__)"],
-            { cwd: vp, timeout: 5000, encoding: "utf-8", windowsHide: true }
-          ).trim();
-          if (raw) {
-            pyVer = raw.startsWith("v") ? raw : "v" + raw;
-            this._paperforgeVersion = pyVer;
-          }
-        } catch {}
-      }
-    }
-    pyVer = pyVer || "\u2014";
-    const runtimeOk = pyVer === "v" + pluginVer;
-    this._renderSystemStatusRow(
-      statusGrid,
-      "Runtime",
-      runtimeOk ? "healthy" : "mismatch",
-      runtimeOk
-        ? "v" + pluginVer
-        : "plugin v" + pluginVer + " \u2260 CLI " + pyVer
-    );
     const index = this._loadIndex();
     const indexOk = index && index.items && index.items.length > 0;
     this._renderSystemStatusRow(
@@ -1146,8 +1097,7 @@ export class PaperForgeStatusView extends ItemView {
       memOk ? "healthy" : "fail",
       memDetail
     );
-    const hasVersionMismatch = !runtimeOk && pyVer !== "\u2014";
-    const hasIssues = hasVersionMismatch || !indexOk || !exportOk || !tokenOk;
+    const hasIssues = !indexOk || !exportOk || !tokenOk;
     if (hasIssues) {
       const issueSection = view.createEl("div", {
         cls: "paperforge-issue-summary",
@@ -1159,11 +1109,6 @@ export class PaperForgeStatusView extends ItemView {
       const issueList = issueSection.createEl("div", {
         cls: "paperforge-issue-list",
       });
-      if (hasVersionMismatch)
-        issueList.createEl("div", {
-          cls: "paperforge-issue-item",
-          text: "Runtime version mismatch",
-        });
       if (!indexOk)
         issueList.createEl("div", {
           cls: "paperforge-issue-item",
@@ -1260,18 +1205,6 @@ export class PaperForgeStatusView extends ItemView {
     globalOcrBtn.addEventListener("click", () => {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr");
       if (action) this._runAction(action, globalOcrBtn);
-    });
-    const globalRedoBtn = btnsRow.createEl("button", {
-      cls: "paperforge-contextual-btn warn",
-    });
-    globalRedoBtn.createEl("span", {
-      cls: "paperforge-contextual-btn-icon",
-      text: "\u21BA",
-    });
-    globalRedoBtn.createEl("span", { text: "Redo OCR" });
-    globalRedoBtn.addEventListener("click", () => {
-      const action = ACTIONS.find((a) => a.id === "paperforge-ocr-redo");
-      if (action) this._runAction(action, globalRedoBtn);
     });
   }
 
@@ -2053,18 +1986,6 @@ export class PaperForgeStatusView extends ItemView {
     syncBtn.addEventListener("click", () => {
       const action = ACTIONS.find((a) => a.id === "paperforge-sync");
       if (action) this._runAction(action, syncBtn);
-    });
-    const redoBtn = actionsRow.createEl("button", {
-      cls: "paperforge-contextual-btn warn",
-    });
-    redoBtn.createEl("span", {
-      cls: "paperforge-contextual-btn-icon",
-      text: "\u21BA",
-    });
-    redoBtn.createEl("span", { text: "Redo OCR" });
-    redoBtn.addEventListener("click", () => {
-      const action = ACTIONS.find((a) => a.id === "paperforge-ocr-redo");
-      if (action) this._runAction(action, redoBtn);
     });
     this.renderSearchSection(view);
   }
