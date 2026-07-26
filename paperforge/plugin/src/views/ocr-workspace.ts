@@ -590,10 +590,13 @@ export class OcrWorkspaceView extends ItemView {
         return;
       }
       const backupEntries = backupFiles.map(f => {
-        const ts = f.replace("fulltext.pre-rebuild.", "");
+        const ts = f.replace("fulltext.pre-rebuild.", "").replace(/\.md$/, "");
+        const iso = ts.length >= 16
+          ? ts.slice(0,4) + "-" + ts.slice(4,6) + "-" + ts.slice(6,8) + "T" + ts.slice(9,11) + ":" + ts.slice(11,13) + ":" + ts.slice(13,15) + "Z"
+          : ts;
         let size = 0;
         try { size = fs.statSync(path.join(backupsDir, f)).size; } catch {}
-        return { label: "backup-" + ts, created_at: ts, source: "pre-rebuild", fulltext_size: size };
+        return { label: "backup-" + ts, created_at: iso, source: "pre-rebuild", fulltext_size: size };
       });
       const modal = new VersionRestoreModal(
         self.app, vp, paper.key,
@@ -850,11 +853,10 @@ class VersionRestoreModal extends Modal {
         });
         restoreBtn.addEventListener("click", () => {
           let ok = false;
-          // Backup-file restore: label = "backup-<timestamp>"
           if (ver.label.startsWith("backup-")) {
             const ts = ver.label.slice("backup-".length);
             const ocrDir = path.join(this.vaultPath, "System", "PaperForge", "ocr");
-            const source = path.join(ocrDir, this.paperKey, "backups", "fulltext.pre-rebuild." + ts);
+            const source = path.join(ocrDir, this.paperKey, "backups", "fulltext.pre-rebuild." + ts + ".md");
             const targetDir = path.join(ocrDir, this.paperKey, "render");
             const target = path.join(targetDir, "fulltext.md");
             try {
@@ -863,7 +865,7 @@ class VersionRestoreModal extends Modal {
                 fs.copyFileSync(source, target);
                 ok = true;
               }
-            } catch(e) {}
+            } catch(e) { console.warn("[PaperForge] Restore backup failed:", e); }
           } else {
             ok = restoreVersion(this.vaultPath, this.paperKey, ver.label);
           }
@@ -893,6 +895,6 @@ class VersionRestoreModal extends Modal {
   }
 
   onClose() {
-    this.contentEl.empty();
+    try { this.contentEl.empty(); } catch {}
   }
 }
