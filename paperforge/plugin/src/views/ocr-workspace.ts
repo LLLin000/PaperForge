@@ -718,116 +718,184 @@ interface VersionEntry {
   fulltext_size: number;
 }
 
+function versionContentPath(ocrDir: string, key: string, label: string): string {
+  if (label.startsWith("backup-")) {
+    const ts = label.slice("backup-".length);
+    return path.join(ocrDir, key, "backups", "fulltext.pre-rebuild." + ts + ".md");
+  }
+  return path.join(ocrDir, key, "versions", label, "fulltext.md");
+}
+
+function diffParagraphs(textA: string, textB: string): { type: "added" | "removed" | "unchanged"; text: string }[] {
+  const split = (t: string) => t.split(/\n\n+/).filter(Boolean);
+  const pa = split(textA);
+  const pb = split(textB);
+  const max = Math.max(pa.length, pb.length);
+  const result: { type: "added" | "removed" | "unchanged"; text: string }[] = [];
+  for (let i = 0; i < max; i++) {
+    const a = i < pa.length ? pa[i] : "";
+    const b = i < pb.length ? pb[i] : "";
+    if (!a && b) result.push({ type: "added", text: b });
+    else if (a && !b) result.push({ type: "removed", text: a });
+    else if (a !== b) {
+      result.push({ type: "removed", text: a });
+      result.push({ type: "added", text: b });
+    } else {
+      result.push({ type: "unchanged", text: a });
+    }
+  }
+  return result;
+}
+
 class VersionRestoreModal extends Modal {
   private versions: VersionEntry[];
   private currentLabel: string;
   private vaultPath: string;
   private paperKey: string;
+  private ocrDir: string;
+  private selectedIdx: number = 0;
   private onRestored: (() => void) | null;
+  private contentCache: Map<string, string> = new Map();
 
-  constructor(
-    app: any,
-    vaultPath: string,
-    paperKey: string,
-    versions: VersionEntry[],
-    currentLabel: string,
-    onRestored?: () => void
-  ) {
+  constructor(app: any, vaultPath: string, paperKey: string, versions: VersionEntry[], currentLabel: string, onRestored?: () => void) {
     super(app);
     this.vaultPath = vaultPath;
     this.paperKey = paperKey;
+    this.ocrDir = path.join(vaultPath, "System", "PaperForge", "ocr");
     this.versions = versions;
     this.currentLabel = currentLabel;
     this.onRestored = onRestored ?? null;
   }
 
+  private getContent(label: string): string {
+    const cached = this.contentCache.get(label);
+    if (cached !== undefined) return cached;
+    try {
+      const fp = versionContentPath(this.ocrDir, this.paperKey, label);
+      if (fs.existsSync(fp)) {
+        const text = fs.readFileSync(fp, "utf-8");
+        this.contentCache.set(label, text);
+        return text;
+      }
+    } catch {}
+    this.contentCache.set(label, "");
+    return "";
+  }
+
   onOpen() {
     const { contentEl } = this;
     contentEl.addClass("paperforge-modal");
-    contentEl.createEl("h2", { text: t("ocr_ws_restore_title") || "Restore Backup" });
-    contentEl.createEl("p", {
-      text: t("ocr_ws_restore_desc") || "Select a version to restore for this paper.",
+    contentEl.empty();
+
+    // Cache current render content
+    const curPath = path.join(this.ocrDir, this.paperKey, "render", "fulltext.md");
+    try { if (fs.existsSync(curPath)) this.contentCache.set("__current__", fs.readFileSync(curPath, "utf-8")); } catch {}
+
+    // Wait, need to reference buttons created in the render functions
+    // Use a simpler approach — render everything in onOpen
+    this.renderAll();
+  }
+
+  private renderAll() {
+    const { contentEl } = this;
+    contentEl.empty();
+
+    const layout = contentEl.createDiv({ cls: "pf-vr-layout" });
+    const sidebar = layout.createDiv({ cls: "pf-vr-sidebar" });
+    const preview = layout.createDiv({ cls: "pf-vr-preview" });
+
+    // ── Sidebar ──
+    sidebar.createEl("div", { cls: "pf-vr-sidebar-title", text: t("ocr_ws_restore_versions") || "Versions" });
+    const timeline = sidebar.createDiv({ cls: "pf-vr-timeline" });
+    this.versions.forEach((ver, i) => {
+      const date = new Date(ver.created_at).toLocaleDateString();
+      const entry = timeline.createDiv({
+        cls: "pf-vr-entry" + (i === this.selectedIdx ? " pf-vr-entry--active" : "") + (ver.label === this.currentLabel ? " pf-vr-entry--current" : ""),
+        attr: { "data-idx": String(i) },
+      });
+      entry.createEl("span", { cls: "pf-vr-entry-label", text: ver.label });
+      entry.createEl("span", { cls: "pf-vr-entry-date", text: date });
+      if (ver.label === this.currentLabel) entry.createEl("span", { cls: "pf-vr-entry-badge", text: t("ocr_ws_restore_current") || "current" });
+      entry.addEventListener("click", () => { this.selectedIdx = i; this.renderAll(); });
     });
 
-    const list = contentEl.createDiv({ cls: "pf-version-list" });
+    // ── Preview ──
+    const ver = this.versions[this.selectedIdx];
+    const isCurrent = ver.label === this.currentLabel;
 
-    for (const ver of this.versions) {
-      const card = list.createDiv({
-        cls:
-          "pf-version-card" +
-          (ver.label === this.currentLabel ? " pf-version-card--current" : ""),
+    const toolbar = preview.createDiv({ cls: "pf-vr-toolbar" });
+    const info = toolbar.createDiv({ cls: "pf-vr-info" });
+    const actionsDiv = toolbar.createDiv({ cls: "pf-vr-actions" });
+
+    const date = new Date(ver.created_at).toLocaleString();
+    const sizeStr = ver.fulltext_size > 1024 ? (ver.fulltext_size / 1024).toFixed(0) + "KB" : ver.fulltext_size + "B";
+    info.innerHTML = "<strong>" + ver.label + "</strong>" + (isCurrent ? " <span class=\"pf-vr-current-tag\">" + (t("ocr_ws_restore_current") || "current") + "</span>" : "") + "<br><span class=\"pf-vr-info-meta\">" + date + " · " + ver.source + " · " + sizeStr + (ver.renderer_version ? " · renderer v" + ver.renderer_version : "") + "</span>";
+
+    const contentArea = preview.createDiv({ cls: "pf-vr-content" });
+    const diffArea = preview.createDiv({ cls: "pf-vr-diff" });
+    diffArea.style.display = "none";
+
+    contentArea.setText(this.getContent(ver.label));
+
+    if (!isCurrent) {
+      const compareBtn = actionsDiv.createEl("button", { cls: "btn-secondary pf-vr-btn", text: t("ocr_ws_restore_compare") || "Compare with current" });
+      compareBtn.addEventListener("click", () => {
+        const textA = this.getContent("__current__");
+        const textB = this.getContent(ver.label);
+        contentArea.style.display = "none";
+        diffArea.style.display = "block";
+        diffArea.empty();
+        const hdr = diffArea.createEl("div", { cls: "pf-vr-diff-header" });
+        hdr.setText((t("ocr_ws_restore_diff_title") || "Changes from current").replace("{v}", ver.label));
+        const body = diffArea.createEl("div", { cls: "pf-vr-diff-body" });
+        const diffs = diffParagraphs(textA, textB);
+        for (const d of diffs) {
+          const line = body.createEl("div", { cls: "pf-vr-diff-line pf-vr-diff-" + d.type });
+          line.createEl("span", { cls: "pf-vr-diff-prefix", text: d.type === "added" ? "+ " : d.type === "removed" ? "\u2212 " : "  " });
+          line.createEl("span", { cls: "pf-vr-diff-text", text: d.text.slice(0, 200) + (d.text.length > 200 ? "\u2026" : "") });
+        }
+        if (diffs.length === 0) body.createEl("div", { cls: "pf-vr-diff-empty", text: t("ocr_ws_restore_no_diff") || "No differences" });
+        const backBtn = diffArea.createEl("button", { cls: "btn-secondary pf-vr-btn", text: t("ocr_ws_restore_back") || "Back" });
+        backBtn.addEventListener("click", () => { contentArea.style.display = "block"; diffArea.style.display = "none"; diffArea.empty(); });
       });
-      card.createEl("strong", {
-        text:
-          ver.label +
-          (ver.label === this.currentLabel ? " (" + (t("ocr_ws_restore_current") || "current") + ")" : ""),
-      });
-      const ts = new Date(ver.created_at).toLocaleString();
-      card.createEl("div", {
-        cls: "pf-version-meta",
-        text: t("ocr_ws_restore_created") + " " + ts,
-      });
-      if (ver.source) {
-        card.createEl("div", {
-          cls: "pf-version-meta",
-          text: t("ocr_ws_restore_source") + " " + ver.source,
-        });
-      }
-      if (ver.renderer_version) {
-        card.createEl("div", {
-          cls: "pf-version-meta",
-          text: t("ocr_ws_restore_renderer") + " v" + ver.renderer_version,
-        });
-      }
-      if (ver.label !== this.currentLabel) {
-        const restoreBtn = card.createEl("button", {
-          cls: "mod-warning",
-          text: t("ocr_ws_restore_btn") || "Restore this version",
-        });
-        restoreBtn.addEventListener("click", () => {
-          let ok = false;
-          if (ver.label.startsWith("backup-")) {
-            const ts = ver.label.slice("backup-".length);
-            const ocrDir = path.join(this.vaultPath, "System", "PaperForge", "ocr");
-            const source = path.join(ocrDir, this.paperKey, "backups", "fulltext.pre-rebuild." + ts + ".md");
-            const targetDir = path.join(ocrDir, this.paperKey, "render");
-            const target = path.join(targetDir, "fulltext.md");
-            try {
-              if (fs.existsSync(source)) {
-                if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {recursive:true});
-                fs.copyFileSync(source, target);
-                ok = true;
-              }
-            } catch(e) { console.warn("[PaperForge] Restore backup failed:", e); }
-          } else {
-            ok = restoreVersion(this.vaultPath, this.paperKey, ver.label);
-          }
-          if (ok) {
-            new Notice(
-              t("ocr_ws_detail_restore_done").replace("{label}", ver.label)
-            );
-            this.close();
-            this.onRestored?.();
-          } else {
-            new Notice("Restore failed");
-          }
-        });
-      } else {
-        card.createEl("span", {
-          cls: "pf-version-current-label",
-          text: t("ocr_ws_restore_current") || "current",
-        });
-      }
+
+      const restoreBtn = actionsDiv.createEl("button", { cls: "btn-primary pf-vr-btn", text: t("ocr_ws_restore_btn") || "Restore this version" });
+      restoreBtn.addEventListener("click", () => this.doRestore(ver));
     }
 
-    const closeBtn = contentEl.createEl("button", {
-      cls: "pf-btn pf-btn-ghost",
-      text: t("ocr_ws_close") || "Close",
-    });
+    // Close
+    const closeBtn = contentEl.createEl("button", { cls: "pf-btn pf-btn-ghost pf-vr-close", text: t("ocr_ws_close") || "Close" });
     closeBtn.addEventListener("click", () => this.close());
+  }
+
+  private doRestore(ver: VersionEntry) {
+    if (ver.label === this.currentLabel) return;
+    let ok = false;
+    if (ver.label.startsWith("backup-")) {
+      const source = versionContentPath(this.ocrDir, this.paperKey, ver.label);
+      const targetDir = path.join(this.ocrDir, this.paperKey, "render");
+      const target = path.join(targetDir, "fulltext.md");
+      try {
+        if (fs.existsSync(source)) {
+          if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+          fs.copyFileSync(source, target);
+          ok = true;
+        }
+      } catch (e) { console.warn("[PaperForge] Restore backup failed:", e); }
+    } else {
+      ok = restoreVersion(this.vaultPath, this.paperKey, ver.label);
+    }
+    if (ok) {
+      new Notice(t("ocr_ws_detail_restore_done").replace("{label}", ver.label));
+      this.close();
+      this.onRestored?.();
+    } else {
+      new Notice("Restore failed");
+    }
   }
 
   onClose() {
     try { this.contentEl.empty(); } catch {}
+    this.contentCache.clear();
   }
 }
