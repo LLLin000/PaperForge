@@ -845,6 +845,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Regenerate rendered results from existing OCR raw data without re-running OCR. Run this when the OCR render version has changed.",
     ocr_ws_tooltip_reextract:
       "Re-run OCR from scratch for this paper (deletes and regenerates all OCR data).",
+    ocr_ws_detail_restore_done: "Restored backup {label}",
     ocr_ws_close: "Close",
     ocr_ws_fact_version: "OCR Version",
     ocr_ws_fact_last_run: "Last Processed",
@@ -1636,6 +1637,7 @@ const LANG: Record<string, Record<string, string>> = {
       "基于已有 OCR 原始数据重新生成渲染结果，不重新运行 OCR。OCR 渲染版本更新后需要执行。",
     ocr_ws_tooltip_reextract:
       "从头重新 OCR 此论文（删除并重新生成全部 OCR 数据）。",
+    ocr_ws_detail_restore_done: "已恢复备份 {label}",
     ocr_ws_close: "关闭",
     ocr_ws_fact_version: "OCR 版本",
     ocr_ws_fact_last_run: "最后处理",
