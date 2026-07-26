@@ -6923,6 +6923,49 @@ input.pf-ocr-ws-search-input::placeholder {
     align-items: flex-start;
   }
 }
+
+/* ── BBT JSON Import (Setup Stage 2) ── */
+.pf-setup-import {
+  margin-top: var(--size-4-6);
+  padding-top: var(--size-4-4);
+  border-top: 1px solid var(--background-modifier-border);
+}
+.pf-setup-import h4 {
+  margin: 0 0 var(--size-4-2);
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+}
+.pf-setup-path-row {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-3);
+  flex-wrap: wrap;
+}
+.pf-setup-path-label {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  flex-shrink: 0;
+}
+.pf-setup-path-value {
+  font-size: var(--font-ui-smaller);
+  font-family: var(--font-monospace-theme);
+  color: var(--text-muted);
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+}
+.pf-setup-detect-row {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-3);
+  margin-top: var(--size-4-3);
+}
+.pf-setup-detect-status {
+  font-size: var(--font-ui-small);
+  color: var(--text-success);
+}
 @media (prefers-reduced-motion: reduce) {
   .pf-progress-fill,
   .pf-btn,

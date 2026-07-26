@@ -4430,6 +4430,73 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     verify.disabled = this._setupOperation === "running";
     verify.addEventListener("click", () => this._applyLibraryConfiguration());
 
+    // ── BBT JSON Export ──
+    const importSection = containerEl.createDiv({ cls: "pf-setup-import" });
+    importSection.createEl("h4", { text: t("setup_bbt_title") || "BBT JSON Export" });
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    const paths = require("./services/memory-state").resolveVaultPaths(vp);
+    importSection.createEl("p", {
+      cls: "pf-setup-form-intro",
+      text: t("setup_bbt_desc") || "Export your Zotero library as Better BibTeX JSON into the folder below. Enable 'Keep updated' for automatic re-exports.",
+    });
+    // Exports path
+    const pathRow = importSection.createDiv({ cls: "pf-setup-path-row" });
+    pathRow.createEl("span", { cls: "pf-setup-path-label", text: t("setup_bbt_path") || "Exports folder:" });
+    pathRow.createEl("code", { cls: "pf-setup-path-value", text: paths.exportsDir });
+    const copyBtn = pathRow.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: t("setup_bbt_copy") || "Copy",
+    });
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(paths.exportsDir);
+      new Notice(t("setup_bbt_copied") || "Path copied");
+    });
+
+    // Expandable guide
+    const guide = importSection.createEl("details", { cls: "pf-setup-guide" });
+    guide.createEl("summary", { cls: "pf-setup-guide-summary", text: t("setup_bbt_guide") || "How to export from Zotero \u2192" });
+    const guideBody = guide.createDiv({ cls: "pf-setup-guide-body" });
+    const base = "https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images";
+    const steps = [
+      { img: "bbt-plugin.jpg", title: t("setup_bbt_step1") || "1. Install Better BibTeX", desc: t("setup_bbt_step1_desc") || "In Zotero, go to Tools \u2192 Add-ons, search for Better BibTeX, and install it." },
+      { img: "bbt-export.jpg", title: t("setup_bbt_step2") || "2. Export with auto-update", desc: t("setup_bbt_step2_desc") || "Right-click your library or collection \u2192 Export Library\u2026 \u2192 choose 'Better BibTeX JSON' format. Check 'Keep updated'." },
+      { img: "bbt-save.jpg", title: t("setup_bbt_step3") || "3. Save to exports folder", desc: (t("setup_bbt_step3_desc") || "Point the export destination to the folder above. Once saved, click 'Detect' below.") },
+    ];
+    for (const step of steps) {
+      const entry = guideBody.createDiv({ cls: "pf-setup-guide-step" });
+      entry.createEl("strong", { text: step.title });
+      entry.createEl("p", { text: step.desc });
+      const img = entry.createEl("img", {
+        attr: {
+          src: base + "/" + step.img,
+          alt: step.title,
+          loading: "lazy",
+          onerror: "this.style.display='none'",
+        },
+      });
+      img.addClass("pf-setup-guide-img");
+    }
+    const detectRow = importSection.createDiv({ cls: "pf-setup-detect-row" });
+    const detectStatus = detectRow.createEl("span", { cls: "pf-setup-detect-status" });
+    detectRow.createEl("button", {
+      cls: "pf-btn pf-btn-primary",
+      text: t("setup_bbt_detect") || "Detect",
+    }).addEventListener("click", () => {
+      try {
+        if (!fs.existsSync(paths.exportsDir)) fs.mkdirSync(paths.exportsDir, { recursive: true });
+        const files = fs.readdirSync(paths.exportsDir).filter((f: string) => f.endsWith(".json"));
+        if (files.length === 0) {
+          detectStatus.setText(t("setup_bbt_no_files") || "No JSON files found.");
+        } else {
+          detectStatus.setText("\u2713 " + (t("setup_bbt_found") || "Found: ") + files.join(", "));
+        }
+        const contBtn = nav.querySelector(".pf-action-btn:last-child") as HTMLButtonElement | null;
+        if (contBtn) contBtn.disabled = files.length === 0 || env.user_state !== "ready" || this._setupOperation === "running";
+      } catch { /* ignore */ }
+    });
+
+    // ── Navigation (at the very bottom) ──
+
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
@@ -4441,8 +4508,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
-      disabled:
-        env.user_state !== "ready" || this._setupOperation === "running",
+      disabled: true,
       onClick: () => {
         this._setupFeedback = null;
         this._setupStage = 3;
@@ -4450,6 +4516,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       },
     });
   }
+
   private _refreshVectorDbCredentialStatus(): void {
     void hasVectorDbCredential(
       asPluginForSecrets(this.app),
