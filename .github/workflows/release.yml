@@ -35,10 +35,21 @@ jobs:
         working-directory: paperforge/plugin
         run: npm run build
 
+      - name: Determine release type
+        id: release_type
+        run: |
+          TAG="${{ github.ref_name }}"
+          if echo "$TAG" | grep -qiE '\-(beta|alpha|rc|preview|dev)\.[0-9]+$'; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.ref_name }}
+          prerelease: ${{ steps.release_type.outputs.prerelease }}
           generate_release_notes: true
           files: |
             paperforge/plugin/main.js

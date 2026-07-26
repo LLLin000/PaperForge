@@ -251,6 +251,8 @@ describe("production navigation state transitions", () => {
       _focusTargetId: null,
       activeTab: "overview",
       display,
+      _navMemory: { destination: "overview" },
+      _persistNavMemory: () => {},
     };
 
     // Bind and call the production _handleCardNavigation from the prototype
@@ -272,6 +274,8 @@ describe("production navigation state transitions", () => {
       _focusTargetId: null,
       activeTab: "overview",
       display,
+      _navMemory: { destination: "overview" },
+      _persistNavMemory: () => {},
     };
 
     const handler =
@@ -291,6 +295,8 @@ describe("production navigation state transitions", () => {
       _focusTargetId: null,
       activeTab: "overview",
       display,
+      _navMemory: { destination: "overview" },
+      _persistNavMemory: () => {},
     };
 
     const handler =
@@ -310,6 +316,8 @@ describe("production navigation state transitions", () => {
       _focusTargetId: null,
       activeTab: "overview",
       display,
+      _navMemory: { destination: "overview" },
+      _persistNavMemory: () => {},
     };
 
     const handler =
@@ -1369,11 +1377,9 @@ describe("Issue #77: Help→Overview focus restoration in real DOM", () => {
     tab._handleCardNavigation("help");
 
     // The Help tab has no card buttons, so _focusTargetId survives
-    // Now simulate return to Overview
+    // Now simulate return to Overview (as if user clicked the tab button)
+    tab._navMemory = { destination: "overview" };
     tab.activeTab = "overview";
-    tab.display();
-
-    // Help card no longer exists in overview — focus falls back to first card
     const firstCardBtn =
       containerEl.querySelector<HTMLElement>(".pf-cc-module-card");
     expect(firstCardBtn).toBeTruthy();
