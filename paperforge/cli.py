@@ -501,6 +501,10 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="CODE",
         help="Last operation exit code for library sync failure probe",
     )
+    p_probe.add_argument(
+        "--expected-version",
+        help="Expected PaperForge package version; installation probe reports a mismatch",
+    )
 
     return parser
 

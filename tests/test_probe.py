@@ -293,6 +293,19 @@ class TestInstallationProbe:
         assert data["reason"]["code"] == "installation.ready"
         assert data["action"]["primary"] is None
 
+    def test_expected_version_mismatch_requires_update(self, tmp_path: Path) -> None:
+        """The plugin's expected package version gates installation readiness."""
+        (tmp_path / "paperforge.json").write_text(
+            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
+        )
+        data = _run_probe(
+            "installation", tmp_path, extra_args=["--expected-version", "0.0.0"],
+        )
+        assert data["capability_state"] == "needs_action"
+        assert data["user_state"] == "action_required"
+        assert data["reason"]["code"] == "installation.version_mismatch"
+        assert data["action"]["primary"]["command"] == "paperforge setup"
+
 
 # ---------------------------------------------------------------------------
 # Help probe states

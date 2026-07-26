@@ -32,6 +32,7 @@ export class OcrWorkspaceView extends ItemView {
   private checkedKeys: Set<string> = new Set();
   private running: boolean = false;
   private progress = { current: 0, total: 0, paperKey: "" };
+  private _searchQuery: string = "";
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -41,7 +42,6 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   static async open(plugin: any): Promise<void> {
-    const { WorkspaceLeaf } = require("obsidian");
     const leaves = plugin.app.workspace.getLeavesOfType(
       VIEW_TYPE_OCR_WORKSPACE
     );
@@ -49,7 +49,7 @@ export class OcrWorkspaceView extends ItemView {
       plugin.app.workspace.revealLeaf(leaves[0]);
       return;
     }
-    const leaf = plugin.app.workspace.getRightLeaf(false);
+    const leaf = plugin.app.workspace.getLeaf("tab");
     if (leaf) {
       await leaf.setViewState({ type: VIEW_TYPE_OCR_WORKSPACE, active: true });
       plugin.app.workspace.revealLeaf(leaf);
@@ -60,7 +60,7 @@ export class OcrWorkspaceView extends ItemView {
     return VIEW_TYPE_OCR_WORKSPACE;
   }
   getDisplayText(): string {
-    return "OCR Workspace";
+    return t("ocr_ws_title");
   }
   getIcon(): string {
     return "scan-text";
@@ -76,13 +76,7 @@ export class OcrWorkspaceView extends ItemView {
   private async _loadPapers(): Promise<void> {
     const vp = (this.app.vault.adapter as any).basePath as string;
     const paths = resolveVaultPaths(vp);
-    const indexPath = path.join(
-      vp,
-      paths.systemDir,
-      "PaperForge",
-      "indexes",
-      "formal-library.json"
-    );
+    const indexPath = path.join(paths.indexesDir, "formal-library.json");
     if (!fs.existsSync(indexPath)) {
       this.papers = [];
       return;
@@ -94,28 +88,14 @@ export class OcrWorkspaceView extends ItemView {
       for (const item of items) {
         const key = item.zotero_key;
         if (!key) continue;
-        const metaPath = path.join(
-          vp,
-          paths.systemDir,
-          "PaperForge",
-          "ocr",
-          key,
-          "meta.json"
-        );
+        const metaPath = path.join(paths.ocrDir, key, "meta.json");
         let meta: any = {};
         if (fs.existsSync(metaPath)) {
           try {
             meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
           } catch {}
         }
-        const backupsDir = path.join(
-          vp,
-          paths.systemDir,
-          "PaperForge",
-          "ocr",
-          key,
-          "backups"
-        );
+        const backupsDir = path.join(paths.ocrDir, key, "backups");
         let backupCount = 0;
         if (fs.existsSync(backupsDir)) {
           backupCount = fs
@@ -141,6 +121,7 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   /* ── Render ── */
+  /* ── Full render (structure) ── */
 
   private _render(): void {
     const container = this.containerEl.children[1] as HTMLElement;
@@ -152,6 +133,39 @@ export class OcrWorkspaceView extends ItemView {
     this._renderToolbar(container);
     this._renderTable(container);
     this._renderBatchBar(container);
+    if (this.selectedKey) {
+      this._renderDetail(container);
+    }
+  }
+
+  /* ── Partial table refresh (preserves input focus) ── */
+
+  private _refreshTable(): void {
+    const container = this.containerEl.children[1] as HTMLElement;
+    const existingViewport = container.querySelector(".pf-ocr-ws-viewport");
+    const existingBatchBar = container.querySelector(".pf-ocr-ws-batchbar");
+    const existingDetail = container.querySelector(".pf-ocr-ws-detail");
+
+    // Update count
+    const countEl = container.querySelector(".pf-ocr-ws-toolbar-count");
+    const filtered = this._filteredPapers();
+    if (countEl) {
+      countEl.innerHTML = t("ocr_ws_showing")
+        .replace("{count}", String(filtered.length))
+        .replace("{total}", String(this.papers.length));
+    }
+
+    // Replace viewport (table)
+    if (existingViewport) existingViewport.remove();
+    const vp = container.createDiv({ cls: "pf-ocr-ws-viewport" });
+    this._buildTableBody(vp, filtered);
+
+    // Replace batch bar
+    if (existingBatchBar) existingBatchBar.remove();
+    this._renderBatchBar(container);
+
+    // Toggle detail
+    if (existingDetail) existingDetail.remove();
     if (this.selectedKey) {
       this._renderDetail(container);
     }
@@ -211,6 +225,35 @@ export class OcrWorkspaceView extends ItemView {
       .replace("{count}", String(filtered.length))
       .replace("{total}", String(this.papers.length));
 
+    // Search input
+    const searchField = tb.createDiv({ cls: "pf-ocr-ws-search" });
+    const searchInput = searchField.createEl("input", {
+      cls: "pf-ocr-ws-search-input",
+      attr: {
+        type: "text",
+        placeholder:
+          t("ocr_ws_search_placeholder") ||
+          "Search papers by title, author, year...",
+      },
+    }) as HTMLInputElement;
+    searchInput.value = this._searchQuery;
+    searchInput.addEventListener("input", () => {
+      this._searchQuery = searchInput.value;
+      this.selectedKey = null;
+      this.checkedKeys.clear();
+      this._refreshTable();
+    });
+    searchInput.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        searchInput.value = "";
+        this._searchQuery = "";
+        this.selectedKey = null;
+        this.checkedKeys.clear();
+        this._refreshTable();
+        searchInput.blur();
+      }
+    });
+
     const field = tb.createDiv({ cls: "pf-ocr-ws-field" });
     field.createEl("label", { text: t("ocr_ws_filter_status") });
     const select = field.createEl("select");
@@ -230,7 +273,7 @@ export class OcrWorkspaceView extends ItemView {
       this.filter = select.value as any;
       this.selectedKey = null;
       this.checkedKeys.clear();
-      this._render();
+      this._refreshTable();
     });
 
     if (versions.length > 0) {
@@ -242,7 +285,7 @@ export class OcrWorkspaceView extends ItemView {
         });
         chip.addEventListener("click", () => {
           this.versionFilter = this.versionFilter === v ? null : v;
-          this._render();
+          this._refreshTable();
         });
       }
     }
@@ -260,13 +303,26 @@ export class OcrWorkspaceView extends ItemView {
       list = list.filter((p) => p.status === "done");
     if (this.versionFilter)
       list = list.filter((p) => p.pipelineVersion === this.versionFilter);
+    if (this._searchQuery.trim()) {
+      const q = this._searchQuery.trim().toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.authors.toLowerCase().includes(q) ||
+          p.year.toLowerCase().includes(q) ||
+          p.key.toLowerCase().includes(q)
+      );
+    }
     return list;
   }
 
   private _renderTable(container: HTMLElement): void {
     const filtered = this._filteredPapers();
     const vp = container.createDiv({ cls: "pf-ocr-ws-viewport" });
+    this._buildTableBody(vp, filtered);
+  }
 
+  private _buildTableBody(vp: HTMLElement, filtered: OcrPaper[]): void {
     if (filtered.length === 0) {
       vp.createDiv({
         cls: "pf-ocr-ws-empty pf-visible",
@@ -288,7 +344,7 @@ export class OcrWorkspaceView extends ItemView {
           } else {
             this.checkedKeys.clear();
           }
-          this._render();
+          this._refreshTable();
         });
       }
     );
@@ -326,7 +382,7 @@ export class OcrWorkspaceView extends ItemView {
       tr.addEventListener("click", (e) => {
         if ((e.target as HTMLElement).tagName === "INPUT") return;
         this.selectedKey = paper.key === this.selectedKey ? null : paper.key;
-        this._render();
+        this._refreshTable();
       });
 
       // Checkbox
@@ -339,7 +395,7 @@ export class OcrWorkspaceView extends ItemView {
           cb.addEventListener("change", () => {
             if (cb.checked) this.checkedKeys.add(paper.key);
             else this.checkedKeys.delete(paper.key);
-            this._render();
+            this._refreshTable();
           });
         }
       );
@@ -348,10 +404,21 @@ export class OcrWorkspaceView extends ItemView {
       const tdPaper = tr.createEl("td", { cls: "pf-ocr-ws-col-paper" });
       tdPaper.createDiv({ cls: "pf-ocr-ws-paper-title", text: paper.title });
       if (paper.authors || paper.year) {
-        tdPaper.createDiv({
-          cls: "pf-ocr-ws-paper-meta",
-          text: [paper.authors, paper.year].filter(Boolean).join(", "),
-        });
+        const meta = tdPaper.createDiv({ cls: "pf-ocr-ws-paper-meta" });
+        if (paper.authors) {
+          const first = paper.authors.split(",")[0].trim();
+          const etAl = paper.authors.includes(",") ? " et al." : "";
+          meta.createEl("span", {
+            cls: "pf-ocr-ws-meta-author",
+            text: first + etAl,
+          });
+        }
+        if (paper.year) {
+          meta.createEl("span", {
+            cls: "pf-ocr-ws-meta-year",
+            text: paper.year,
+          });
+        }
       }
 
       // Status badge
@@ -440,7 +507,7 @@ export class OcrWorkspaceView extends ItemView {
     });
     closeBtn.addEventListener("click", () => {
       this.selectedKey = null;
-      this._render();
+      this._refreshTable();
     });
 
     // Fact grid

@@ -42,6 +42,58 @@ interface SecretAccess {
 export interface PluginForSecrets {
   app: { secretStorage: SecretAccess };
   saveData(data: unknown): Promise<void>;
+  settings?: {
+    vector_db_api_base?: string;
+    vector_db_api_model?: string;
+  };
+}
+
+export interface VectorDbCredentialProfile {
+  baseUrl: string;
+  model: string;
+}
+
+function canonicalVectorDbProfile({
+  baseUrl,
+  model,
+}: VectorDbCredentialProfile): string {
+  return `${baseUrl.trim()}\u0000${model.trim() || "text-embedding-3-small"}`;
+}
+
+export async function vectorDbSecretId(
+  profile: VectorDbCredentialProfile
+): Promise<string> {
+  const bytes = new TextEncoder().encode(canonicalVectorDbProfile(profile));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const digestHex = [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  // Obsidian accepts only lowercase/digit/dash secret IDs up to 64 characters.
+  return `vector-db-api-key-v2-${digestHex.slice(0, 40)}`;
+}
+
+export async function storeVectorDbCredential(
+  plugin: PluginForSecrets,
+  profile: VectorDbCredentialProfile,
+  value: string
+): Promise<boolean> {
+  if (!value) return false;
+  const id = await vectorDbSecretId(profile);
+  try {
+    await plugin.app.secretStorage.setSecret(id, value);
+    return (await plugin.app.secretStorage.getSecret(id)) === value;
+  } catch {
+    return false;
+  }
+}
+
+export async function hasVectorDbCredential(
+  plugin: PluginForSecrets,
+  profile: VectorDbCredentialProfile
+): Promise<boolean> {
+  return Boolean(
+    await plugin.app.secretStorage.getSecret(await vectorDbSecretId(profile))
+  );
 }
 
 // ── Migration ──
@@ -68,7 +120,19 @@ export async function migrateCredentials(
       typeof settings[key] === "string" ? (settings[key] as string) : "";
     if (!plaintext) continue;
 
-    const secretId = SETTINGS_TO_SECRET_ID[key] || key;
+    const secretId =
+      key === "vector_db_api_key"
+        ? await vectorDbSecretId({
+            baseUrl:
+              typeof settings.vector_db_api_base === "string"
+                ? settings.vector_db_api_base
+                : "",
+            model:
+              typeof settings.vector_db_api_model === "string"
+                ? settings.vector_db_api_model
+                : "",
+          })
+        : SETTINGS_TO_SECRET_ID[key] || key;
     const existing = await ss.getSecret(secretId);
     if (existing !== null) {
       if (existing === plaintext) {
@@ -100,7 +164,43 @@ export async function migrateCredentials(
     settings[SETTINGS_TO_CONFIGURED_FLAG[key]] = true;
   }
 
-  if (migrated.length > 0 || warnings.length > 0) {
+  const vectorProfile = {
+    baseUrl:
+      typeof settings.vector_db_api_base === "string"
+        ? settings.vector_db_api_base
+        : "",
+    model:
+      typeof settings.vector_db_api_model === "string"
+        ? settings.vector_db_api_model
+        : "",
+  };
+  // Legacy global secrets lack endpoint/model provenance and must not be
+  // assigned to a profile automatically.
+  let profileStateChanged = false;
+  const profileConfigured = await hasVectorDbCredential(plugin, vectorProfile);
+  if (settings._vector_db_configured !== profileConfigured) {
+    settings._vector_db_configured = profileConfigured;
+    profileStateChanged = true;
+  }
+
+  const existingWarnings = Array.isArray(settings._migration_warnings)
+    ? (settings._migration_warnings as string[])
+    : [];
+  const nextWarnings = profileConfigured
+    ? [...existingWarnings, ...warnings].filter(
+        (key) => key !== "vector_db_api_key"
+      )
+    : [...existingWarnings, ...warnings];
+  const warningsChanged =
+    nextWarnings.length !== existingWarnings.length ||
+    nextWarnings.some((key, index) => key !== existingWarnings[index]);
+
+  if (
+    migrated.length > 0 ||
+    warnings.length > 0 ||
+    profileStateChanged ||
+    warningsChanged
+  ) {
     const keys = Array.isArray(settings._migrated_keys)
       ? [...(settings._migrated_keys as string[])]
       : [];
@@ -108,12 +208,7 @@ export async function migrateCredentials(
       if (!keys.includes(k)) keys.push(k);
     }
     settings._migrated_keys = keys;
-    if (warnings.length > 0) {
-      const existingWarnings = Array.isArray(settings._migration_warnings)
-        ? (settings._migration_warnings as string[])
-        : [];
-      settings._migration_warnings = [...existingWarnings, ...warnings];
-    }
+    settings._migration_warnings = nextWarnings;
     await plugin.saveData(settings);
   }
 
@@ -122,9 +217,21 @@ export async function migrateCredentials(
 
 // ── Credential resolution ──
 
+function profileFromPlugin(
+  plugin: PluginForSecrets
+): VectorDbCredentialProfile | undefined {
+  const settings = plugin.settings;
+  if (!settings) return undefined;
+  return {
+    baseUrl: settings.vector_db_api_base ?? "",
+    model: settings.vector_db_api_model ?? "",
+  };
+}
+
 export async function resolveCredentialEnv(
   plugin: PluginForSecrets,
-  commandType: string
+  commandType: string,
+  vectorProfile?: VectorDbCredentialProfile
 ): Promise<Record<string, string>> {
   const allowlist = CREDENTIAL_COMMAND_ALLOWLIST[commandType];
   if (!allowlist) return {};
@@ -139,7 +246,9 @@ export async function resolveCredentialEnv(
       env.PADDLEOCR_API_TOKEN = key;
     }
   } else if (commandType === "memory" || commandType === "embed") {
-    const key = await ss.getSecret("vector-db-api-key");
+    const profile = vectorProfile ?? profileFromPlugin(plugin);
+    if (!profile) return env;
+    const key = await ss.getSecret(await vectorDbSecretId(profile));
     if (key) env.VECTOR_DB_API_KEY = key;
   }
 

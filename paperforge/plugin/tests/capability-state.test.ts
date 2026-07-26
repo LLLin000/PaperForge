@@ -158,9 +158,7 @@ describe("isValidEnvelope", () => {
   });
 
   it("accepts unknown severity (validation relaxed)", () => {
-    expect(isValidEnvelope(validEnvelope({ severity: "critical" }))).toBe(
-      true
-    );
+    expect(isValidEnvelope(validEnvelope({ severity: "critical" }))).toBe(true);
   });
 
   it("rejects missing activity_state", () => {
@@ -1007,6 +1005,9 @@ describe("production-seam runtime dispatch", () => {
     expect(execArgs).toContain("probe");
     expect(execArgs).toContain("installation");
     expect(execArgs).toContain("--json");
+    const expectedVersionIndex = execArgs.indexOf("--expected-version");
+    expect(expectedVersionIndex).toBeGreaterThan(-1);
+    expect(execArgs[expectedVersionIndex + 1]).toBe(plugin.manifest.version);
     expect(mockExecFile.mock.calls[0][3]).toBeInstanceOf(Function);
   });
 

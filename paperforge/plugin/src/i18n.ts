@@ -45,6 +45,7 @@ const LANG: Record<string, Record<string, string>> = {
     dir_notes: "Notes Dir",
     dir_resources: "Resource Dir",
     dir_system: "System Dir",
+    ocr_ws_search_placeholder: "Search papers by title, author, year...",
     dir_vault: "Vault Path",
     error_copied: "Copied!",
     error_copy_diagnostic: "Copy diagnostic",
@@ -426,6 +427,8 @@ const LANG: Record<string, Record<string, string>> = {
       "Your Zotero library is connected and current.",
     cc_consequence_ocr_ready: "OCR is ready to process papers.",
     cc_consequence_memory_ready: "Your papers are indexed and searchable.",
+    cc_consequence_agent_ready:
+      "PaperForge Skills are deployed for the selected Agent platform.",
     cc_consequence_agent_not_enabled:
       "Choose an agent platform when you want to deploy PaperForge Skills.",
     cc_consequence_ocr_not_enabled:
@@ -440,6 +443,8 @@ const LANG: Record<string, Record<string, string>> = {
     md_library_corpus: "Literature corpus",
     md_library_last_sync: "Last successful sync",
     md_ocr_status: "OCR capability",
+    md_status_refresh_hint:
+      "Check status to load the current OCR details. This does not change any papers.",
     ocr_error_notice:
       "OCR stopped because of an error. Open Advanced Diagnostics for details.",
     ocr_run_complete: "OCR run complete.",
@@ -511,15 +516,40 @@ const LANG: Record<string, Record<string, string>> = {
     setup_progress: "Setup progress",
     setup_foundation_title: "Step 1: Foundation",
     setup_foundation_desc:
-      "PaperForge needs a verified environment on this device.",
+      "Choose the Python runtime, then install the PaperForge package. It does not create or configure your library.",
     setup_ready: "Foundation is ready.",
+    setup_foundation_python: "Python executable",
+    setup_foundation_python_hint:
+      'Leave blank to use "python" from your system PATH.',
+    setup_foundation_install_btn: "Install PaperForge",
     setup_library_title: "Step 2: Connect Library",
     setup_library_desc:
       "Connect Zotero so PaperForge can sync your literature.",
     setup_library_ready: "Library is connected.",
+    setup_library_config_desc:
+      "Verify the Zotero data directory, then confirm where PaperForge stores files in this vault.",
+    setup_library_zotero_hint:
+      "PaperForge reads this folder; it never modifies Zotero's database.",
+    setup_library_folder_heading: "Vault folders",
+    setup_library_verify: "Save and verify configuration",
+    setup_library_configured:
+      "Library configuration saved. Checking the connection.",
+    setup_library_configuring: "Saving and checking library configuration…",
+    setup_library_config_failed:
+      "Library configuration could not be verified. Check the paths, then try again.",
+    setup_reinstall_notice:
+      "Reinstall only the local PaperForge Python package. Your library configuration is unchanged.",
+    setup_installing: "Installing and preparing PaperForge…",
+    setup_install_complete:
+      "Installation complete. Checking the updated environment.",
+    setup_install_failed:
+      "PaperForge could not be installed. Check the Python path, then try again.",
     setup_optionals_title: "Step 3: Optional Capabilities",
     setup_optionals_desc:
       "Choose only what you need. Skipped capabilities can be enabled later.",
+    setup_optional_saved: "Configuration saved securely.",
+    setup_optional_save_failed:
+      "Configuration could not be saved. Check Obsidian secure storage, then try again.",
     setup_opt_ocr_desc: "Extract text and figures from PDFs",
     setup_opt_memory_desc: "Search and navigate across your papers",
     setup_opt_agent_desc: "Deploy and manage PaperForge Skills",
@@ -528,6 +558,8 @@ const LANG: Record<string, Record<string, string>> = {
     setup_no_optionals: "No optional capabilities selected.",
     setup_incomplete_warn:
       "Foundation and Library must be ready before setup can finish.",
+    setup_review_checking: "Checking your current configuration…",
+    setup_review_recheck: "Recheck configuration",
     setup_nav_continue: "Continue",
     setup_nav_skip: "Skip for now",
     setup_nav_back: "Back",
@@ -578,6 +610,8 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_python_status: "Python Status",
     foundation_python_ok: "Python is installed",
     foundation_python_missing: "Python not found — install Python 3.11+",
+    foundation_vault_structure: "Vault folders",
+    foundation_zotero: "Zotero data directory",
     foundation_reinstall: "Reinstall PaperForge",
     foundation_reinstall_desc:
       "Reinstall the Python package from the local source",
@@ -736,7 +770,8 @@ const LANG: Record<string, Record<string, string>> = {
     sr_state_upgrade_available:
       "Your vector index uses the old ChromaDB backend",
     sr_state_build_failed: "The last vector build failed",
-    sr_action_build: "Build Memory",
+    sr_build_failed_notice: "Vector index build failed: {detail}",
+    sr_action_build: "Build Index",
     sr_action_rebuild: "Rebuild Index",
     sr_action_upgrade: "Upgrade to vec0",
     sr_upgrade_modal_title: "Upgrade Vector Index",
@@ -746,6 +781,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Your existing ChromaDB data is preserved. This process requires an active API key and may incur API charges.",
     sr_api_key_notice:
       "API key not configured \u2014 search and retrieval are unavailable",
+    sr_config_label: "Configuration",
     // ── OCR Workspace (Issue #95) ──
     ocr_ws_title: "OCR Workspace",
     ocr_ws_filter_all: "All",
@@ -1157,6 +1193,8 @@ const LANG: Record<string, Record<string, string>> = {
     cc_needs_attention: "项需要关注",
     cc_checked_pending: "尚未检查",
     cc_eyebrow: "控制中心",
+    cc_title: "文献工作流",
+    cc_lede: "查看各项能力的运行状态、需要处理的事项，以及下一步该做什么。",
     cc_modules_header: "模块",
     cc_five_capabilities: "五个功能",
     cc_optional_note: "可选模块不影响核心运行状态。",
@@ -1174,6 +1212,7 @@ const LANG: Record<string, Record<string, string>> = {
     cc_consequence_library_ready: "Zotero 文献库已连接并保持最新。",
     cc_consequence_ocr_ready: "OCR 已准备好处理论文。",
     cc_consequence_memory_ready: "论文已建立索引并可搜索。",
+    cc_consequence_agent_ready: "PaperForge Skills 已部署到所选 Agent 平台。",
     cc_consequence_agent_not_enabled:
       "需要部署 PaperForge Skills 时再选择 Agent 平台。",
     cc_consequence_ocr_not_enabled: "OCR 为可选功能，当前未启用。",
@@ -1191,6 +1230,8 @@ const LANG: Record<string, Record<string, string>> = {
     md_library_corpus: "文献语料库",
     md_library_last_sync: "上次成功同步",
     md_ocr_status: "OCR 功能",
+    md_status_refresh_hint:
+      "请先检测状态以加载当前 OCR 信息；此操作不会修改论文。",
     md_ocr_ready: "OCR 已配置并可用。",
     md_ocr_workspace: "打开 OCR 工作区",
     md_retrieval_coverage: "检索覆盖范围",
@@ -1252,13 +1293,33 @@ const LANG: Record<string, Record<string, string>> = {
     setup_progress: "设置进度",
     setup_foundation_title: "第 1 步：基础环境",
     setup_foundation_desc:
-      "PaperForge 需要在此设备上准备好经过验证的运行环境。",
+      "选择 Python 运行环境，然后安装 PaperForge 包；此步骤不会创建或配置文献库。",
     setup_ready: "基础环境已就绪。",
+    setup_foundation_python: "Python 可执行文件",
+    setup_foundation_python_hint: "留空时使用系统 PATH 中的 “python”。",
+    setup_foundation_install_btn: "安装 PaperForge",
     setup_library_title: "第 2 步：连接文献库",
     setup_library_desc: "连接 Zotero，让 PaperForge 可以同步文献。",
     setup_library_ready: "文献库已连接。",
+    setup_library_config_desc:
+      "验证 Zotero 数据目录，然后确认 PaperForge 在此库中使用的文件夹。",
+    setup_library_zotero_hint:
+      "PaperForge 只读取此文件夹，不会修改 Zotero 数据库。",
+    setup_library_folder_heading: "库内文件夹",
+    setup_library_verify: "保存并验证配置",
+    setup_library_configured: "文献库配置已保存，正在检查连接。",
+    setup_library_configuring: "正在保存并检查文献库配置…",
+    setup_library_config_failed: "文献库配置无法验证。请检查路径后重试。",
+    setup_reinstall_notice:
+      "只重新安装本机的 PaperForge Python 包，不会改动文献库配置。",
+    setup_installing: "正在安装并准备 PaperForge…",
+    setup_install_complete: "安装完成，正在检查更新后的运行环境。",
+    setup_install_failed: "PaperForge 安装未完成。请检查 Python 路径后重试。",
     setup_optionals_title: "第 3 步：可选功能",
     setup_optionals_desc: "只选择需要的功能；跳过后仍可随时启用。",
+    setup_optional_saved: "配置已安全保存。",
+    setup_optional_save_failed:
+      "配置无法保存。请检查 Obsidian 安全存储后重试。",
     setup_opt_ocr_desc: "从 PDF 提取文本和图表",
     setup_opt_memory_desc: "跨论文搜索和浏览",
     setup_opt_agent_desc: "部署并管理 PaperForge Skills",
@@ -1266,6 +1327,8 @@ const LANG: Record<string, Record<string, string>> = {
     setup_review_selected: "已选择：",
     setup_no_optionals: "未选择可选功能。",
     setup_incomplete_warn: "基础环境和文献库均就绪后才能完成设置。",
+    setup_review_checking: "正在检查当前配置…",
+    setup_review_recheck: "重新检查配置",
     setup_nav_continue: "继续",
     setup_nav_skip: "暂时跳过",
     setup_nav_back: "返回",
@@ -1326,6 +1389,8 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_python_status: "Python 状态",
     foundation_python_ok: "Python 已安装",
     foundation_python_missing: "未找到 Python — 请安装 Python 3.11+",
+    foundation_vault_structure: "库内文件夹",
+    foundation_zotero: "Zotero 数据目录",
     foundation_reinstall: "重新安装 PaperForge",
     foundation_reinstall_desc: "从本地源码重新安装 Python 包",
     foundation_reinstall_btn: "重新安装",
@@ -1457,7 +1522,8 @@ const LANG: Record<string, Record<string, string>> = {
     sr_state_db_missing: "记忆数据库尚未构建",
     sr_state_upgrade_available: "向量索引使用旧版 ChromaDB 后端",
     sr_state_build_failed: "上次向量构建失败",
-    sr_action_build: "构建记忆库",
+    sr_build_failed_notice: "向量索引构建失败：{detail}",
+    sr_action_build: "构建索引",
     sr_action_rebuild: "重建索引",
     sr_action_upgrade: "升级到 vec0",
     sr_upgrade_modal_title: "升级向量索引",
@@ -1480,6 +1546,7 @@ const LANG: Record<string, Record<string, string>> = {
     sr_config_hint: "设置 › 智能检索",
     sr_configure_api_keys_hint:
       "请在 设置 → PaperForge → Smart Retrieval 中配置 API Key。",
+    sr_config_label: "配置",
     // ── OCR 工作区 (Issue #95) ──
     ocr_ws_title: "OCR 工作区",
     ocr_ws_filter_all: "全部",
@@ -1506,6 +1573,7 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_processing: "处理中\u2026",
     ocr_ws_stop: "停止",
     ocr_ws_btn_refresh: "刷新",
+    ocr_ws_search_placeholder: "按标题、作者、年份搜索论文...",
     ocr_ws_showing: "共 {total} 篇，显示 <strong>{count}</strong> 篇",
     ocr_ws_filter_status: "按状态筛选",
     ocr_ws_none_selected: "未选择论文",
