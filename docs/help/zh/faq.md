@@ -28,14 +28,16 @@ OCR 失败通常由以下原因导致：Zotero 中缺少 PDF 附件、PDF 文件
 
 PaperForge 使用 Better BibTeX JSON 格式的 Zotero 文献库导出作为论文索引来源。
 
-更新方法：
+如果你在 Zotero 中配置了 BBT **自动导出**，文件会自动保持更新，无需手动操作。
+
+如需手动更新：
 1. 打开已安装 Better BibTeX 插件的 Zotero。
 2. 右键文献库或分类 → **导出文献库…**
 3. 选择 **Better BibTeX JSON** 格式。
 4. 保存到保管库的配置路径，覆盖已有文件。
 5. 在 PaperForge 中，前往概览页点击**同步文献库**。
 
-只有在向 Zotero 添加、删除或修改论文时才需要重新导出。
+只有在向 Zotero 添加、删除或修改论文后才需要更新。
 
 ---
 

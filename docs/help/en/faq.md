@@ -26,15 +26,18 @@ A rebuild may be needed after: adding many new papers, changing the embedding mo
 
 ## How do I update the BBT JSON file?
 
-PaperForge uses a Better BibTeX JSON export of your Zotero library as its paper index source. To update:
+PaperForge uses a Better BibTeX JSON export of your Zotero library as its paper index source.
 
+If you have BBT **auto-export** configured in Zotero, the file stays up to date automatically — no manual action needed.
+
+To update manually:
 1. Open Zotero with the Better BibTeX plugin installed.
 2. Right-click your library or collection → **Export Library…**
 3. Choose **Better BibTeX JSON** as the format.
 4. Save the file to your vault's configured path, overwriting the existing file.
 5. In PaperForge, go to Overview and click **Sync Library**.
 
-You only need to re-export when you add, remove, or modify papers in Zotero.
+You only need to update when you add, remove, or modify papers in Zotero.
 
 ---
 
