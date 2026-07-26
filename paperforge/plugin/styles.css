@@ -7240,14 +7240,14 @@ input.pf-ocr-ws-search-input::placeholder {
   height: 65vh;
   width: 100%;
 }
-
 .pf-vr-sidebar {
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
   border-right: 1px solid var(--background-modifier-border);
   padding: var(--size-4-3);
   overflow-y: auto;
 }
+
 .pf-vr-sidebar-title {
   font-size: var(--font-ui-smaller);
   font-weight: 700;
