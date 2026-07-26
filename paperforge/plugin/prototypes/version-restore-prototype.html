@@ -1,0 +1,558 @@
+<!doctype html>
+<html class="theme-light">
+<head>
+<meta charset="UTF-8" />
+<title>Version Restore Modal — Prototype</title>
+<style>
+:root {
+  --background-primary: #fff;
+  --background-secondary: #f7f7f5;
+  --background-modifier-border: #e3e3e0;
+  --background-modifier-border-hover: #cfcfc9;
+  --background-modifier-hover: #efefec;
+  --text-normal: #262626;
+  --text-muted: #7a7a76;
+  --text-faint: #9e9e9a;
+  --interactive-accent: #7f6df2;
+  --text-on-accent: #fff;
+  --interactive-normal: #f1f1ef;
+  --interactive-hover: #e5e5e2;
+  --text-success: #4a9e5a;
+  --text-warning: #c26e1a;
+  --text-error: #c23c3c;
+  --font-ui-large: 20px;
+  --font-ui-medium: 16px;
+  --font-ui-small: 14px;
+  --font-ui-smaller: 12px;
+  --font-monospace: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --size-4-1: 4px;
+  --size-4-2: 8px;
+  --size-4-3: 12px;
+  --size-4-4: 16px;
+  --size-4-5: 20px;
+  --size-4-6: 24px;
+  --shadow-s: 0 1px 3px rgba(0,0,0,.08);
+  --shadow-m: 0 4px 12px rgba(0,0,0,.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: rgba(0,0,0,.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--text-normal);
+}
+
+/* Modal chrome */
+.modal-container {
+  background: var(--background-primary);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-m);
+  width: 820px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--size-4-4) var(--size-4-5);
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+.modal-header h2 {
+  font-size: var(--font-ui-medium);
+  font-weight: 700;
+}
+.modal-header .paper-title {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--size-4-4) var(--size-4-5);
+}
+
+/* Variant switcher — bottom bar */
+.switcher {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1a1a2e;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 24px;
+  font-size: var(--font-ui-smaller);
+  z-index: 999;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+}
+.switcher button {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.switcher button:hover { background: rgba(255,255,255,.15); }
+.switcher .label { min-width: 160px; text-align: center; font-weight: 600; }
+
+/* ──────────── VARIANT A — Timeline + Preview ──────────── */
+.var-a-layout {
+  display: flex;
+  gap: var(--size-4-4);
+  min-height: 420px;
+}
+.var-a-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--background-modifier-border);
+  padding-right: var(--size-4-3);
+}
+.var-a-preview {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.var-a-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.var-a-timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--background-modifier-border);
+}
+.var-a-entry {
+  position: relative;
+  padding: var(--size-4-2) var(--size-4-2) var(--size-4-2) 28px;
+  cursor: pointer;
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  transition: background .1s;
+}
+.var-a-entry:hover { background: var(--background-modifier-hover); }
+.var-a-entry.active { background: color-mix(in srgb, var(--interactive-accent) 10%, transparent); }
+.var-a-entry::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--background-modifier-border);
+  z-index: 1;
+}
+.var-a-entry.current::before {
+  background: var(--interactive-accent);
+  width: 12px;
+  height: 12px;
+  left: 3px;
+}
+.var-a-entry .label { font-weight: 600; display: block; }
+.var-a-entry .date { color: var(--text-muted); display: block; margin-top: 2px; }
+
+.var-a-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--size-4-3);
+  padding-bottom: var(--size-4-3);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.var-a-preview-header .version-label { font-weight: 700; font-size: var(--font-ui-small); }
+.var-a-preview-header .actions { display: flex; gap: var(--size-4-2); }
+
+.var-a-content {
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-3);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 320px;
+}
+
+/* ──────────── VARIANT B — Card Grid + Inline Diff ──────────── */
+.var-b-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+}
+.var-b-row {
+  display: flex;
+  gap: var(--size-4-3);
+  align-items: stretch;
+}
+.var-b-card {
+  flex: 1;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-3);
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+.var-b-card:hover { border-color: var(--interactive-accent); box-shadow: var(--shadow-s); }
+.var-b-card.selected { border-color: var(--interactive-accent); background: color-mix(in srgb, var(--interactive-accent) 5%, transparent); }
+.var-b-card.current { border-color: var(--text-success); }
+.var-b-card .label { font-weight: 700; font-size: var(--font-ui-small); }
+.var-b-card .meta { font-size: var(--font-ui-smaller); color: var(--text-muted); margin-top: var(--size-4-1); }
+.var-b-card .badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-top: var(--size-4-2); }
+.var-b-card .badge.current { background: color-mix(in srgb, var(--text-success) 15%, transparent); color: var(--text-success); }
+.var-b-card .badge.prev { background: color-mix(in srgb, var(--interactive-accent) 10%, transparent); color: var(--interactive-accent); }
+
+.var-b-diff {
+  display: none;
+  margin-top: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+}
+.var-b-diff.open { display: block; }
+.var-b-diff-header {
+  background: var(--background-secondary);
+  padding: var(--size-4-2) var(--size-4-3);
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.var-b-diff-body {
+  padding: var(--size-4-3);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.6;
+  max-height: 250px;
+  overflow-y: auto;
+}
+.var-b-diff-body .added { background: #d4edda; color: #155724; }
+.var-b-diff-body .removed { background: #f8d7da; color: #721c24; }
+.var-b-diff-body .unchanged { color: var(--text-muted); }
+
+/* ──────────── VARIANT C — File Explorer ──────────── */
+.var-c-layout {
+  display: flex;
+  gap: 0;
+  min-height: 420px;
+}
+.var-c-tree {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--background-modifier-border);
+  padding-right: var(--size-4-2);
+}
+.var-c-tree-header {
+  font-size: var(--font-ui-smaller);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+  padding: var(--size-4-2) var(--size-4-2);
+  margin-bottom: var(--size-4-1);
+}
+.var-c-item {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-4-1) var(--size-4-2);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  font-size: var(--font-ui-smaller);
+}
+.var-c-item:hover { background: var(--background-modifier-hover); }
+.var-c-item.active { background: color-mix(in srgb, var(--interactive-accent) 10%, transparent); color: var(--interactive-accent); }
+.var-c-item .icon { flex-shrink: 0; font-size: 14px; width: 20px; text-align: center; }
+.var-c-item .name { flex: 1; }
+.var-c-item .date { color: var(--text-muted); font-size: 10px; }
+.var-c-item.current { font-weight: 600; }
+
+.var-c-preview {
+  flex: 1;
+  padding-left: var(--size-4-4);
+  display: flex;
+  flex-direction: column;
+}
+.var-c-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--size-4-3);
+  padding-bottom: var(--size-4-3);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.var-c-toolbar .info { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.var-c-content {
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-4);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 320px;
+}
+
+/* Shared buttons */
+.btn-primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  padding: 6px 16px;
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-secondary {
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  padding: 5px 14px;
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+.btn-secondary:hover { background: var(--interactive-hover); }
+.btn-ghost {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+.btn-ghost:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
+
+.hidden { display: none !important; }
+
+/* ──────────── Sample data ──────────── */
+.sample-ft { display: none; }
+</style>
+</head>
+<body>
+
+<div class="modal-container" id="modal">
+  <div class="modal-header">
+    <div>
+      <h2 id="modal-title">恢复备份版本</h2>
+      <div class="paper-title">Articular cartilage injury in athletes</div>
+    </div>
+    <button class="btn-ghost" onclick="document.getElementById('modal').style.display='none'">✕</button>
+  </div>
+  <div class="modal-body" id="modal-body">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<!-- ─── Floating variant switcher ─── -->
+<div class="switcher">
+  <button onclick="switchVariant(-1)">◀</button>
+  <span class="label" id="variant-label">A — Timeline + Preview</span>
+  <button onclick="switchVariant(1)">▶</button>
+</div>
+
+<script>
+// ─── Sample version data ───
+const versions = [
+  { label: 'v3', created_at: '2026-07-25T12:39:28Z', source: 'rebuild', renderer_version: '1.5.15', size: 36233, current: true,
+    content: '# Articular cartilage injury in athletes\n\n## Abstract\n\nThis review synthesizes current evidence on articular cartilage injuries in athletic populations, with emphasis on diagnosis, treatment algorithms, and return-to-play criteria.\n\n## Introduction\n\nArticular cartilage lesions represent a unique challenge in sports medicine due to the tissue limited intrinsic healing capacity. The incidence of such injuries in athletes is approximately 5-10% of all sports-related knee injuries.\n\n## Methods\n\nA systematic review of PubMed, Embase, and Cochrane databases was performed for articles published between 2010 and 2025. Inclusion criteria encompassed original research, systematic reviews, and clinical practice guidelines focusing on articular cartilage injury in athletes.\n\n## Results\n\nA total of 847 articles were identified, of which 42 met inclusion criteria. The most common mechanisms of injury were non-contact pivoting (45%), direct impact (30%), and repetitive microtrauma (25%).\n\n## Discussion\n\nThe findings highlight the importance of early diagnosis through MRI imaging and the evolving role of biologic augmentation in surgical management. Return-to-play decisions should be individualized based on lesion characteristics and sport-specific demands.\n\n## Conclusion\n\nArticular cartilage injuries in athletes require a multidisciplinary approach. Emerging biologic therapies show promise but require further validation through randomized controlled trials.' },
+  { label: 'v2', created_at: '2026-07-20T09:15:00Z', source: 'rebuild', renderer_version: '1.5.14', size: 35810, current: false,
+    content: '# Articular cartilage injury in athletes\n\n## Abstract\n\nThis review synthesizes current evidence on articular cartilage injuries in athletic populations, with emphasis on diagnosis and treatment algorithms.\n\n## Introduction\n\nArticular cartilage lesions represent a unique challenge in sports medicine due to the tissue limited intrinsic healing capacity.\n\n## Methods\n\nA systematic review of PubMed and Embase databases was performed for articles published between 2010 and 2024.\n\n## Results\n\nA total of 723 articles were identified, of which 38 met inclusion criteria.\n\n## Discussion\n\nThe findings highlight the importance of early diagnosis through MRI imaging. Return-to-play decisions should be individualized.\n\n## Conclusion\n\nArticular cartilage injuries in athletes require a multidisciplinary approach.' },
+  { label: 'v1', created_at: '2026-07-15T14:30:00Z', source: 'initial_ocr', renderer_version: '1.5.13', size: 34102, current: false,
+    content: '# Articular cartilage injury in athletes\n\n## Abstract\n\nThis review discusses articular cartilage injuries in athletes.\n\n## Introduction\n\nArticular cartilage lesions are common in sports medicine.\n\n## Methods\n\nA literature review was performed.\n\n## Results\n\nMultiple treatment options exist for cartilage injuries.\n\n## Discussion\n\nEarly diagnosis is important for optimal outcomes.\n\n## Conclusion\n\nMore research is needed in this area.' },
+];
+
+const VARIANTS = [
+  { id: 'A', name: 'Timeline + Preview', fn: renderVariantA },
+  { id: 'B', name: 'Card Grid + Diff', fn: renderVariantB },
+  { id: 'C', name: 'File Explorer', fn: renderVariantC },
+];
+
+let currentVariant = 0;
+
+function switchVariant(dir) {
+  currentVariant = (currentVariant + dir + VARIANTS.length) % VARIANTS.length;
+  renderVariant(currentVariant);
+}
+
+function renderVariant(idx) {
+  const v = VARIANTS[idx];
+  document.getElementById('variant-label').textContent = `${v.id} — ${v.name}`;
+  v.fn();
+  // Update URL hash
+  window.location.hash = 'variant=' + v.id;
+}
+
+function renderVariantA() {
+  const body = document.getElementById('modal-body');
+  let html = `<div class="var-a-layout">
+    <div class="var-a-sidebar">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">Versions</div>
+      <div class="var-a-timeline">`;
+  versions.forEach((v, i) => {
+    const date = new Date(v.created_at).toLocaleDateString('zh-CN');
+    const time = new Date(v.created_at).toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+    html += `<div class="var-a-entry${v.current ? ' current' : ''}${i === 0 ? ' active' : ''}" onclick="selectVersionA(${i})" data-idx="${i}">
+      <span class="label">${v.label}${v.current ? ' (当前)' : ''}</span>
+      <span class="date">${date} ${time}</span>
+    </div>`;
+  });
+  html += `</div></div>
+    <div class="var-a-preview">
+      <div class="var-a-preview-header">
+        <div>
+          <div class="version-label" id="va-label">${versions[0].label}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">渲染器 v${versions[0].renderer_version} · ${(versions[0].size/1024).toFixed(0)}KB · ${versions[0].source}</div>
+        </div>
+        <div class="actions">
+          <button class="btn-secondary">对比当前</button>
+          <button class="btn-primary">恢复此版本</button>
+        </div>
+      </div>
+      <div class="var-a-content" id="va-content">${versions[0].content}</div>
+    </div>
+  </div>`;
+  body.innerHTML = html;
+  window.selectVersionA = (i) => {
+    document.querySelectorAll('.var-a-entry').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.var-a-entry[data-idx="${i}"]`).classList.add('active');
+    const v = versions[i];
+    document.getElementById('va-label').textContent = v.label + (v.current ? ' (当前)' : '');
+    document.getElementById('va-content').textContent = v.content;
+  };
+}
+
+function renderVariantB() {
+  const body = document.getElementById('modal-body');
+  let html = `<div style="margin-bottom:12px;font-size:13px;font-weight:600;">选择要对比的版本：</div>
+    <div class="var-b-grid">`;
+  versions.forEach((v, i) => {
+    const date = new Date(v.created_at).toLocaleDateString('zh-CN');
+    const badge = v.current ? '<span class="badge current">当前版本</span>' : (i === 0 ? '' : '<span class="badge prev">可恢复</span>');
+    html += `<div class="var-b-row">
+      <div class="var-b-card${v.current ? ' current' : ''}${!v.current && i === 1 ? ' selected' : ''}" onclick="selectVersionB(${i})" data-idx="${i}">
+        <div class="label">${v.label}</div>
+        <div class="meta">${date} · ${v.source} · ${(v.size/1024).toFixed(0)}KB</div>
+        ${badge}
+      </div>
+      ${i === 0 ? '' : `<button class="btn-primary" style="align-self:center;" onclick="restoreVersion(${i})">恢复</button>`}
+    </div>`;
+  });
+  html += `</div>
+    <div class="var-b-diff open" id="vb-diff">
+      <div class="var-b-diff-header">对比 v2 ↔ v3 (当前)</div>
+      <div class="var-b-diff-body" id="vb-diff-body">
+        <div class="added">+ A total of 847 articles were identified, of which 42 met inclusion criteria.</div>
+        <div class="removed">− A total of 723 articles were identified, of which 38 met inclusion criteria.</div>
+        <div class="added">+ The most common mechanisms of injury were non-contact pivoting (45%), direct impact (30%), and repetitive microtrauma (25%).</div>
+        <div class="unchanged"> The findings highlight the importance of early diagnosis through MRI imaging.</div>
+        <div class="added">+ and the evolving role of biologic augmentation in surgical management.</div>
+        <div class="added">+ Return-to-play decisions should be individualized based on lesion characteristics and sport-specific demands.</div>
+        <div class="unchanged"> Articular cartilage injuries in athletes require a multidisciplinary approach.</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn-secondary" onclick="closeModal()">关闭</button>
+    </div>`;
+  body.innerHTML = html;
+  window.selectVersionB = (i) => {
+    document.querySelectorAll('.var-b-card').forEach(el => el.classList.remove('selected'));
+    document.querySelector(`.var-b-card[data-idx="${i}"]`).classList.add('selected');
+    // Would update diff here
+  };
+  window.restoreVersion = (i) => {
+    const confirmed = confirm(`确定要恢复到版本 ${versions[i].label}？`);
+    if (confirmed) alert('已恢复');
+  };
+}
+
+function renderVariantC() {
+  const body = document.getElementById('modal-body');
+  let html = `<div class="var-c-layout">
+    <div class="var-c-tree">
+      <div class="var-c-tree-header">版本历史</div>`;
+  versions.slice().reverse().forEach((v, i) => {
+    const date = new Date(v.created_at).toLocaleDateString('zh-CN');
+    const icon = v.current ? '📄' : '📋';
+    html += `<div class="var-c-item${v.current ? ' current' : ''}${i === 0 ? ' active' : ''}" onclick="selectVersionC(${i})" data-idx="${i}">
+      <span class="icon">${icon}</span>
+      <span class="name">${v.label}${v.current ? ' (当前)' : ''}</span>
+      <span class="date">${date}</span>
+    </div>`;
+  });
+  html += `</div>
+    <div class="var-c-preview">
+      <div class="var-c-toolbar">
+        <div class="info" id="vc-info">${versions[0].label} · ${(versions[0].size/1024).toFixed(0)}KB · 渲染器 v${versions[0].renderer_version}</div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-secondary" onclick="alert('diff')">对比当前</button>
+          <button class="btn-primary" onclick="alert('restore')">恢复</button>
+        </div>
+      </div>
+      <div class="var-c-content" id="vc-content">${versions[0].content}</div>
+    </div>
+  </div>`;
+  body.innerHTML = html;
+  window.selectVersionC = (i) => {
+    document.querySelectorAll('.var-c-item').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.var-c-item[data-idx="${i}"]`).classList.add('active');
+    const v = versions[i];
+    document.getElementById('vc-info').textContent = `${v.label} · ${(v.size/1024).toFixed(0)}KB · 渲染器 v${v.renderer_version}`;
+    document.getElementById('vc-content').textContent = v.content;
+  };
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+// Init
+const hash = window.location.hash.match(/variant=([A-C])/);
+if (hash) {
+  const idx = VARIANTS.findIndex(v => v.id === hash[1]);
+  if (idx >= 0) currentVariant = idx;
+}
+renderVariant(currentVariant);
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+  if (e.key === 'ArrowLeft') switchVariant(-1);
+  if (e.key === 'ArrowRight') switchVariant(1);
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>
