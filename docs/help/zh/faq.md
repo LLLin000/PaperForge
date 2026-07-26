@@ -44,3 +44,11 @@ PaperForge 使用 Better BibTeX JSON 格式的 Zotero 文献库导出作为论�
 在 **Obsidian 设置 → 第三方插件 → PaperForge** 中禁用插件。要完全移除：删除 `.obsidian/plugins/paperforge/` 插件文件夹以及保管库 System 文件夹中的 PaperForge 运行时目录。
 
 你的 Zotero 数据、PDF 和笔记不会受到 PaperForge 的任何修改，将完整保留。
+
+---
+
+## 为什么 PaperForge 不具备文献检索能力？
+
+1. 目前 AI Agent 对于文献的完整检索以及下载存在一些障碍。
+2. 人类控制的文献检索以及下载能够最大程度地实现资料的完整搜集。
+3. 目前已有一些强大的文献检索与下载 Skill 可以配合 PaperForge 使用。

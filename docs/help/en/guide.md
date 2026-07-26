@@ -1,16 +1,12 @@
 # Feature Guide
 
-## Typical Workflow
+## How Agent Uses the PaperForge Literature Library
 
-A common day-to-day pattern for using PaperForge:
+PaperForge provides a powerful literature workflow foundation for AI Agents:
 
-1. **Sync** your library from the Overview to pull in new Zotero items.
-2. **OCR** — Open OCR Workspace, filter by "Not Processed", and run OCR on new papers.
-3. **Review** — Processed papers show "Processed" when complete.
-4. **Search** — Use Smart Retrieval from the Dashboard for full-text search.
-5. **Cite** — Use your Zotero + Better BibTeX workflow as usual. PaperForge does not interfere with your citation manager.
-
-The Overview shows you at a glance what needs attention: OCR papers to process, a stale vector index, or library items awaiting sync.
+1. **OCR Full-text Extraction** — PaperForge converts all PDF literature into Markdown format that Agents can easily read. This is the foundation of the literature workflow.
+2. **Dual-layer Memory Retrieval** — Through the sqlite-vec dual-layer memory system, Agents can precisely locate papers via metadata search, and also find the best-matching papers through specific text expressions and semantic meaning within the literature.
+3. **Robust Academic Support** — Building on OCR and the memory layer, Agents can quickly find literature support through PaperForge Skills for any task. You can easily have your Agent help with: literature review writing with solid citations, experiment planning, inspiration discovery, deep paper reading, precise summaries on specific topics…
 
 ---
 
