@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+import sqlite3
 from typing import Optional
 
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
@@ -13,14 +14,32 @@ logger = logging.getLogger(__name__)
 _DETECTED_DIM: Optional[int] = None
 
 
-def detect_embedding_dim(vault: Path) -> int:
-    """Call the embedding API once to determine the output dimension.
+def detect_embedding_dim(vault: Path, conn: sqlite3.Connection | None = None) -> int:
+    """Detect the embedding dimension.
 
-    Result is cached globally for the process lifetime.
+    Priority:
+    1. Process-global cache (fastest)
+    2. Existing vec0 table DDL (no API needed)
+    3. Embedding API call (fallback)
     """
     global _DETECTED_DIM
     if _DETECTED_DIM is not None:
         return _DETECTED_DIM
+
+    # Try reading from existing vec0 table DDL first — no API call needed
+    if conn is not None:
+        try:
+            row = conn.execute("SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'").fetchone()
+            if row:
+                import re
+                m = re.search(r"float\[(\d+)\]", row[0])
+                if m:
+                    dim = int(m.group(1))
+                    _DETECTED_DIM = dim
+                    logger.info("Detected embedding dimension: %d (from vec0 DDL)", dim)
+                    return dim
+        except Exception:
+            pass
 
     provider = OpenAICompatibleProvider(vault)
     test_vec = provider.encode_single("dimension detection probe")

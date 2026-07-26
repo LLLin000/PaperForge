@@ -193,22 +193,37 @@ def build_query_plan(query: str, intent: str) -> dict:
             },
         ]
     elif intent == "content":
-        content_query = (
-            " ".join(signals.content_terms or signals.title_like_tokens or tokenize(query)[:6]).strip() or query.strip()
-        )
-        primary = {"command": "retrieve", "args": {"query": content_query, "limit": 30}}
-        query_rules.extend(
-            [
-                "For content lookup, start with retrieve rather than metadata search.",
+        # Strong metadata signals override content intent — route to search for precision
+        if signals.author_tokens and signals.year_tokens:
+            query_class = "mixed_query"
+            primary = {
+                "command": "search",
+                "args": {
+                    "query": signals.author_tokens[0],
+                    "year_from": min(signals.year_tokens),
+                    "year_to": max(signals.year_tokens),
+                    "limit": 10,
+                },
+            }
+            query_rules = [
+                "Content query with author+year signals: use metadata search first for precision.",
+                "When author and year are known, do not mix title words into the first-pass query.",
+            ]
+            fallback_plan = [
+                {"when": "zero_results", "action": "content_retrieve_fallback"},
+                {"when": "multiple_results", "action": "visually_narrow_with_title_terms"},
+            ]
+        else:
+            content_query = query.strip()
+            primary = {"command": "retrieve", "args": {"query": content_query, "limit": 30, "deep": True}}
+            query_rules = [
+                "For content-only queries, start with retrieve --deep (hybrid BM25+vec0) for fulltext semantic search.",
                 "Use content-bearing terms, parameters, and method phrases as they would appear in fulltext.",
             ]
-        )
-        fallback_plan.extend(
-            [
-                {"when": "retrieve_unavailable", "action": "interactive_fulltext_fallback"},
-                {"when": "zero_results", "action": "interactive_fulltext_fallback"},
+            fallback_plan = [
+                {"when": "retrieve_unavailable", "action": "metadata_search_fallback"},
+                {"when": "zero_results", "action": "metadata_search_fallback"},
             ]
-        )
     elif signals.author_tokens and signals.year_tokens:
         primary = {
             "command": "search",
@@ -272,7 +287,7 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
     from paperforge.worker.asset_index import read_index
 
     embed = get_embed_status(vault)
-    retrieve_available = bool(embed.get("healthy", True) and embed.get("db_exists") and embed.get("chunk_count", 0) > 0)
+    retrieve_available = bool(embed.get("healthy", True) and embed.get("db_exists") and embed.get("total_chunks", 0) > 0)
     ocr_evidence_available = False
     try:
         ocr_root = vault / "System" / "PaperForge" / "ocr"
