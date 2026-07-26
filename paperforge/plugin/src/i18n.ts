@@ -846,6 +846,13 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_tooltip_reextract:
       "Re-run OCR from scratch for this paper (deletes and regenerates all OCR data).",
     ocr_ws_detail_restore_done: "Restored backup {label}",
+    ocr_ws_restore_title: "Restore Backup Version",
+    ocr_ws_restore_desc: "Select a version to restore for this paper. The current fulltext will be replaced.",
+    ocr_ws_restore_current: "current",
+    ocr_ws_restore_created: "Created:",
+    ocr_ws_restore_source: "Source:",
+    ocr_ws_restore_renderer: "Renderer:",
+    ocr_ws_restore_btn: "Restore",
     ocr_ws_close: "Close",
     ocr_ws_fact_version: "OCR Version",
     ocr_ws_fact_last_run: "Last Processed",
@@ -1631,6 +1638,13 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_selected: "已选择 {count} 篇",
     ocr_ws_btn_process_selected: "处理所选",
     ocr_ws_btn_rebuild_selected: "重建所选",
+    ocr_ws_restore_title: "恢复备份版本",
+    ocr_ws_restore_desc: "选择要恢复的版本。当前的全文将被替换。",
+    ocr_ws_restore_current: "当前",
+    ocr_ws_restore_created: "创建时间：",
+    ocr_ws_restore_source: "来源：",
+    ocr_ws_restore_renderer: "渲染器：",
+    ocr_ws_restore_btn: "恢复",
     ocr_ws_tooltip_process:
       "从头执行完整 OCR：提取文字并重建衍生结果。OCR 模型更新后需要执行，但一般不需要。",
     ocr_ws_tooltip_rebuild:

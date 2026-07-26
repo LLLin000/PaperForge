@@ -143,22 +143,21 @@ export function renderActionButton(
     cls: "pf-action-btn",
     text: config.loading ? "…" : config.label,
   });
-  if (config.disabled || config.loading) {
+  if (config.loading) {
+    btn.setAttr("disabled", "true");
+    btn.classList.add("pf-action-btn--loading");
+  } else if (config.disabled) {
     btn.setAttr("disabled", "true");
     btn.classList.add("pf-action-btn--disabled");
   }
-  if (config.loading) {
-    btn.classList.add("pf-action-btn--loading");
-  }
-  if (!config.disabled && !config.loading) {
-    btn.addEventListener("click", config.onClick);
-    btn.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        config.onClick();
-      }
-    });
-  }
+  // Always attach click handler — button may be enabled later by BBT detect
+  btn.addEventListener("click", config.onClick);
+  btn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      config.onClick();
+    }
+  });
   return btn;
 }
 

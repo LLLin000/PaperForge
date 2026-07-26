@@ -1,5 +1,5 @@
 import { scanVersions, restoreVersion } from "../services/version-history";
-import { ItemView, WorkspaceLeaf, Notice } from "obsidian";
+import { ItemView, WorkspaceLeaf, Notice, Modal } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import { execFile } from "child_process";
@@ -184,10 +184,10 @@ export class OcrWorkspaceView extends ItemView {
     header.createEl("h1", { text: t("ocr_ws_title") });
     header.createEl("p", { cls: "pf-ocr-ws-lede", text: t("ocr_ws_lede") });
   }
-
   private _renderActivity(container: HTMLElement): void {
+    if (!this.running) return;
     const act = container.createDiv({
-      cls: `pf-ocr-ws-activity${this.running ? " pf-active" : ""}`,
+      cls: "pf-ocr-ws-activity pf-active",
       attr: { "aria-live": "polite" },
     });
     const head = act.createDiv({ cls: "pf-ocr-ws-activity-head" });
@@ -196,7 +196,10 @@ export class OcrWorkspaceView extends ItemView {
     const key = this.progress.paperKey;
     if (key) {
       const paper = this.papers.find((p) => p.key === key);
-      title.createEl("span", { text: paper?.title ?? key });
+      if (paper) {
+        const titleSpan = title.createEl("span");
+        titleSpan.setText(paper.title ?? key);
+      }
     }
     const stopBtn = head.createEl("button", {
       cls: "pf-btn pf-btn-ghost",
@@ -564,16 +567,15 @@ export class OcrWorkspaceView extends ItemView {
         new Notice("No backup versions available");
         return;
       }
-      const latest = versions.versions[versions.versions.length - 1];
-      const ok = restoreVersion(vp, paper.key, latest.label);
-      if (ok) {
-        new Notice(
-          t("ocr_ws_detail_restore_done").replace("{label}", latest.label)
-        );
-        this._loadPapers().then(() => this._render());
-      } else {
-        new Notice("Restore failed");
-      }
+      const modal = new VersionRestoreModal(
+        this.app,
+        vp,
+        paper.key,
+        versions.versions,
+        versions.currentLabel,
+        () => this._loadPapers().then(() => this._render())
+      );
+      modal.open();
     });
 
     // Re-extract — runs paperforge ocr redo <key>
@@ -745,4 +747,112 @@ function statusLabel(status: string): string {
   if (status === "blocked") return t("ocr_ws_status_blocked") || "Blocked";
   if (status === "nopdf") return t("ocr_ws_status_nopdf") || "No PDF";
   return t("ocr_ws_status_pending") || "Pending";
+}
+
+/* ── Version Restore Modal ── */
+
+interface VersionEntry {
+  label: string;
+  created_at: string;
+  source: string;
+  renderer_version?: string;
+  fulltext_size: number;
+}
+
+class VersionRestoreModal extends Modal {
+  private versions: VersionEntry[];
+  private currentLabel: string;
+  private vaultPath: string;
+  private paperKey: string;
+  private onRestored: (() => void) | null;
+
+  constructor(
+    app: any,
+    vaultPath: string,
+    paperKey: string,
+    versions: VersionEntry[],
+    currentLabel: string,
+    onRestored?: () => void
+  ) {
+    super(app);
+    this.vaultPath = vaultPath;
+    this.paperKey = paperKey;
+    this.versions = versions;
+    this.currentLabel = currentLabel;
+    this.onRestored = onRestored ?? null;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.addClass("paperforge-modal");
+    contentEl.createEl("h2", { text: t("ocr_ws_restore_title") || "Restore Backup" });
+    contentEl.createEl("p", {
+      text: t("ocr_ws_restore_desc") || "Select a version to restore for this paper.",
+    });
+
+    const list = contentEl.createDiv({ cls: "pf-version-list" });
+
+    for (const ver of this.versions) {
+      const card = list.createDiv({
+        cls:
+          "pf-version-card" +
+          (ver.label === this.currentLabel ? " pf-version-card--current" : ""),
+      });
+      card.createEl("strong", {
+        text:
+          ver.label +
+          (ver.label === this.currentLabel ? " (" + (t("ocr_ws_restore_current") || "current") + ")" : ""),
+      });
+      const ts = new Date(ver.created_at).toLocaleString();
+      card.createEl("div", {
+        cls: "pf-version-meta",
+        text: t("ocr_ws_restore_created") + " " + ts,
+      });
+      if (ver.source) {
+        card.createEl("div", {
+          cls: "pf-version-meta",
+          text: t("ocr_ws_restore_source") + " " + ver.source,
+        });
+      }
+      if (ver.renderer_version) {
+        card.createEl("div", {
+          cls: "pf-version-meta",
+          text: t("ocr_ws_restore_renderer") + " v" + ver.renderer_version,
+        });
+      }
+      if (ver.label !== this.currentLabel) {
+        const restoreBtn = card.createEl("button", {
+          cls: "mod-warning",
+          text: t("ocr_ws_restore_btn") || "Restore this version",
+        });
+        restoreBtn.addEventListener("click", () => {
+          const ok = restoreVersion(this.vaultPath, this.paperKey, ver.label);
+          if (ok) {
+            new Notice(
+              t("ocr_ws_detail_restore_done").replace("{label}", ver.label)
+            );
+            this.close();
+            this.onRestored?.();
+          } else {
+            new Notice("Restore failed");
+          }
+        });
+      } else {
+        card.createEl("span", {
+          cls: "pf-version-current-label",
+          text: t("ocr_ws_restore_current") || "current",
+        });
+      }
+    }
+
+    const closeBtn = contentEl.createEl("button", {
+      cls: "pf-btn pf-btn-ghost",
+      text: t("ocr_ws_close") || "Close",
+    });
+    closeBtn.addEventListener("click", () => this.close());
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
 }
