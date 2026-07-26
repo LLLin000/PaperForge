@@ -1,9 +1,17 @@
-import { PluginSettingTab, App, Setting, Notice, setTooltip } from "obsidian";
+import {
+  PluginSettingTab,
+  App,
+  Setting,
+  Notice,
+  setTooltip,
+  MarkdownRenderer,
+  Component,
+} from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
-import { t, setLanguage } from "./i18n";
+import { t, setLanguage, langFromApp } from "./i18n";
 import {
   PaperForgeSettings,
   ProbeEnvelope,
@@ -100,27 +108,14 @@ function vectorDbProfile(
 
 // ── Interface ──
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ISettingPlugin {
   settings: PaperForgeSettings;
   saveSettings(): Promise<void>;
   loadSettings(): Promise<void>;
   manifest: { version: string };
-  readPaperforgeJson(): Record<string, string>;
-  savePaperforgeJson(pc: Record<string, string>): void;
-  getManagedRuntime?(): ManagedRuntime;
-  _autoSyncRunning?: boolean;
-  _lastSyncTime?: string | null;
-  _memoryStatusText?: string | null;
-  _embedProcess?: unknown;
-  _embedProgress?: { current: number; total: number; key: string };
-  _embedStderr?: string;
-  _embedBuffer?: string;
-  _ocrProcess?: unknown;
-  _ocrProgress?: { current: number; total: number; key: string };
-  _ocrBuffer?: string;
-  _ocrWasStopped?: boolean;
-  _embedPollInterval?: ReturnType<typeof setInterval> | null;
-  _embedPolling?: boolean;
+  getManagedRuntime(): ManagedRuntime | null;
+  [key: string]: any;
 }
 
 export class PaperForgeSettingTab extends PluginSettingTab {
@@ -153,6 +148,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _navMemory: { destination: string; module?: string } = {
     destination: "overview",
   };
+  /** #85: True only for the first display() call — guards _restoreNavMemory. */
+  private _initialDisplay: boolean = true;
   /** Tracks which modules are currently being probed. */
   private _probing: Set<string> = new Set();
   /** Modules that have already been auto-probed (prevents endless re-probe). */
@@ -224,9 +221,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     this._refreshPfConfig();
-    this._restoreNavMemory();
+    if (this._initialDisplay) {
+      this._restoreNavMemory();
+      this._initialDisplay = false;
+    }
     this._initCapabilityState();
-    this._applyStaleTolerance();
 
     // #87: Show Setup Journey on first open (never reverse once complete)
     // #87: Only show Setup Journey for first-time users (explicitly false).
@@ -668,8 +667,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     ) => {
       const row = checks.createDiv({ cls: "pf-config-row" });
       row.createEl("span", { cls: "pf-config-key", text: key });
-      row.createEl("span", { cls: statusClass, text: status });
-      row.createEl("span", { cls: "pf-config-value", text: value });
+      const right = row.createDiv({ cls: "pf-config-right" });
+      right.createEl("span", { cls: statusClass, text: status });
+      right.createEl("span", { cls: "pf-config-value", text: value });
     };
 
     // Version
@@ -711,10 +711,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       hasZotero ? "pf-status-ok" : "pf-status-error"
     );
 
-    // API keys
-    const hasPaddle = !!this.plugin.settings.paddleocr_api_key;
+    // API keys — check SecretStorage configured flags, not raw key values
+    const hasPaddle = !!this.plugin.settings._paddleocr_configured;
     const hasOpenai =
-      !!this.plugin.settings.vector_db_api_key || !!process.env.OPENAI_API_KEY;
+      !!this.plugin.settings._vector_db_configured ||
+      !!process.env.OPENAI_API_KEY;
     addCheck(
       t("foundation_paddle_key"),
       hasPaddle ? "✓" : "✗",
@@ -727,20 +728,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       hasOpenai ? t("config_configured") : t("foundation_openai_missing"),
       hasOpenai ? "pf-status-ok" : "pf-status-error"
     );
-
-    // Git
-    const { execSync } = require("child_process");
-    try {
-      execSync("git --version", { timeout: 3000 });
-      addCheck(t("foundation_git"), "✓", t("check_bbt_ok"), "pf-status-ok");
-    } catch {
-      addCheck(
-        t("foundation_git"),
-        "✗",
-        t("foundation_git_missing"),
-        "pf-status-error"
-      );
-    }
 
     // Obsidian version check
     const minVersion = "1.11.4";
@@ -761,7 +748,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       "pf-status-checking"
     );
 
-    // Python async check
+    // Python version check
     const { exec } = require("child_process");
     exec(`"${pythonPath}" --version`, { timeout: 5000 }, (err: any) => {
       const row = checks.children[1] as HTMLElement;
@@ -774,9 +761,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     });
 
-    // Python packages async check
+    // Python packages async check — import test using the configured Python
     exec(
-      `"${pythonPath}" -c "import paddleocr; import openai; import sqlite3; print('ok')"`,
+      `"${pythonPath}" -c "import openai; import sqlite3; print('ok')"`,
       { timeout: 10000 },
       (err: any) => {
         const row = checks.children[checks.children.length - 1] as HTMLElement;
@@ -785,6 +772,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           if (statusEl) {
             statusEl.textContent = err ? "✗" : "✓";
             statusEl.className = err ? "pf-status-error" : "pf-status-ok";
+            const valueEl = row.querySelector(".pf-config-value");
+            if (valueEl) {
+              valueEl.textContent = err
+                ? t("foundation_packages_missing") || "Missing packages"
+                : t("check_bbt_ok") || "Ready";
+            }
           }
         }
       }
@@ -2115,17 +2108,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
   }
 
-  /** Render the Help tab (top-level destination with docs + release notes). */
-  /** Help is task support and privacy-safe diagnostics, never a health module. */
+  /** Render the Help tab — fetches Markdown from GitHub for live-editable docs. */
   _renderHelpTab(containerEl: HTMLElement): void {
-    // Eyebrow + Title + Lede
     containerEl.createEl("div", {
       cls: "pf-cc-eyebrow",
       text: t("help_eyebrow") || "help",
     });
     containerEl.createEl("h1", {
       cls: "pf-cc-title",
-      text: t("help_title") || "Start with the task",
+      text: t("help_title") || "Help",
     });
     containerEl.createEl("p", {
       cls: "pf-cc-lede",
@@ -2134,36 +2125,77 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         "Open the relevant module, or copy a diagnostic for support.",
     });
 
-    // Task list — 4 task links (Library, OCR, Retrieval, Agent)
-    const taskList = containerEl.createDiv({ cls: "pf-help-task-list" });
-    const tasks = [
-      ["library", t("help_library_task")],
-      ["ocr", t("help_ocr_task")],
-      ["memory", t("help_retrieval_task")],
-      ["agent", t("help_agent_task")],
-    ];
-    for (const [mod, taskLabel] of tasks) {
-      const btn = taskList.createEl("button", {
-        cls: "pf-help-task-btn",
-        text: taskLabel,
-        attr: { "data-module": mod },
-      });
-      btn.addEventListener("click", () => {
-        this._detailReturn = {
-          tab: "help",
-          selector: `.pf-help-task-btn[data-module="${mod}"]`,
-        };
-        this._handleCardNavigation(mod);
-      });
-    }
+    // Loading indicator
+    const loading = containerEl.createEl("p", {
+      cls: "pf-help-loading",
+      text: "Loading help content\u2026",
+    });
 
-    // Copy diagnostic button
-    containerEl
-      .createEl("button", {
-        cls: "pf-help-diagnostic-btn",
-        text: t("help_copy") || "Copy diagnostic",
+    const lang = langFromApp(this.app);
+    const base =
+      "https://api.github.com/repos/LLLin000/PaperForge/contents/docs/help";
+    const files = ["guide", "faq", "support"];
+    const self = this;
+
+    Promise.all(
+      files.map((f) =>
+        fetch(`${base}/${lang}/${f}.md`)
+          .then((r) => (r.ok ? r.json() : Promise.reject()))
+          .then((j: { content: string }) => {
+            const bin = atob(j.content.replace(/\n/g, ""));
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new TextDecoder().decode(bytes);
+          })
+          .then((text) => ({ name: f, text }))
+          .catch(() => ({ name: f, text: "" }))
+      )
+    )
+      .then((results) => {
+        loading.remove();
+        for (const { name, text } of results) {
+          if (!text) continue;
+          const titleMatch = text.match(/^#\s+(.+)/m);
+          const title = titleMatch ? titleMatch[1] : name;
+          const body = text.replace(/^#\s+.+(\r?\n|$)/, "").trim();
+
+          const section = containerEl.createEl("details", {
+            cls: "pf-help-section",
+            attr: name === "support" ? { open: "true" } : {},
+          });
+          section.createEl("summary", {
+            cls: "pf-help-section-title",
+            text: title,
+          });
+          const bodyEl = section.createDiv({ cls: "pf-help-section-body" });
+          if (name === "support") {
+            MarkdownRenderer.render(
+              self.app,
+              body,
+              bodyEl,
+              "",
+              self.plugin as unknown as Component
+            );
+            bodyEl
+              .createEl("button", {
+                cls: "pf-help-diagnostic-btn",
+                text: t("help_copy") || "Copy Support Diagnostic",
+              })
+              .addEventListener("click", () => self._buildAndCopyDiagnostic());
+          } else {
+            MarkdownRenderer.render(
+              self.app,
+              body,
+              bodyEl,
+              "",
+              self.plugin as unknown as Component
+            );
+          }
+        }
       })
-      .addEventListener("click", () => this._buildAndCopyDiagnostic());
+      .catch(() => {
+        loading.setText(t("help_load_error") || "Failed to load help content.");
+      });
   }
 
   _execMemoryStatus(
@@ -3865,6 +3897,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._selectedDetailModule = mod;
       this._focusTargetId = "#pf-" + mod + "-detail-heading";
     }
+    // Nav memory is intentionally NOT updated here — only the topbar tab
+    // click handler persists it. _restoreNavMemory runs only on the first
+    // display() call, so subsequent programmatic navigations are unaffected.
     this.display();
   }
 
@@ -3889,19 +3924,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         t("cc_lede") ||
         "See what is working and what needs attention across your pipeline.",
     });
-
-    // Refresh link
-    const refRow = cc.createDiv({ cls: "pf-cc-refresh-row" });
-    refRow
-      .createEl("button", {
-        cls: "pf-action-btn pf-action-btn--ghost",
-        text: "↻ " + (t("ocr_ws_btn_refresh") || "Refresh"),
-      })
-      .addEventListener("click", () => {
-        for (const mod of CAPABILITY_MODULES) {
-          if (mod !== "maintenance") this._probeModule(mod as CapabilityModule);
-        }
-      });
 
     // ── Summary Card ──
     const foundationEnv =
@@ -3985,9 +4007,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     sectionHead.createEl("div", {
       cls: "pf-cc-eyebrow",
       text: t("cc_modules_header") || "modules",
-    });
-    sectionHead.createEl("h2", {
-      text: t("cc_five_capabilities") || "Five capabilities",
     });
     sectionHead.createEl("span", {
       cls: "caption",
@@ -4094,7 +4113,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     // Metric (version / papers info)
     const metricText =
-      env.user_state === "ready" && env.action?.primary?.scope_count
+      env.user_state === "ready" &&
+      env.action?.primary?.scope_count &&
+      env.action.primary.scope_count > 1
         ? (t("cc_metric_papers") || "Papers: ") + env.action.primary.scope_count
         : env.updated_at && env.updated_at !== new Date(0).toISOString()
           ? (t("cc_last_checked") || "") +
@@ -4747,8 +4768,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _completeSetup(): void {
     this.plugin.settings._setup_complete = true;
     this.plugin.saveSettings();
-    this.activeTab = "overview";
-    this.display();
   }
 
   _restoreNavMemory(): void {
@@ -4761,10 +4780,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     ) {
       this.activeTab = saved.destination;
       this._navMemory = { destination: saved.destination };
-      // Only clear transient state on fresh open, not on re-renders
-      this._focusTargetId = null;
-      this._detailReturn = null;
-      this._setupView = "overview";
+      // Only clear _focusTargetId for genuine session restore (no target set).
+      // If _handleCardNavigation set it just before display(), keep it alive.
+      if (!this._focusTargetId) {
+        this._focusTargetId = null;
+        this._detailReturn = null;
+        this._setupView = "overview";
+      }
     }
   }
 }

@@ -587,7 +587,8 @@ const LANG: Record<string, Record<string, string>> = {
     help_release_notes_desc:
       "Installed version: {version}. See GitHub for the complete change history.",
     help_open_release_notes: "Open Release Notes",
-    support_diagnostic_copied: "Support diagnostic copied.",
+    help_load_error:
+      "Failed to load help content. Check your internet connection.",
     maintenance_empty_title: "No maintenance needed",
     maintenance_empty_body:
       "There are no unresolved problems that require action.",
@@ -1361,6 +1362,7 @@ const LANG: Record<string, Record<string, string>> = {
     maintenance_open_module: "打开模块",
     migration_banner_title: "凭据迁移通知",
     cc_summary_attention: "部分模块需要关注",
+    help_load_error: "无法加载帮助内容。请检查网络连接。",
     cc_summary_ok_body: "PaperForge 环境已完全就绪。安装和帮助文档均正常可用。",
     cc_summary_core_ok_body:
       "安装和帮助模块已可用。文献索引、OCR、记忆层和维护模块将在后端接入后显示实时状态。",
