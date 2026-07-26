@@ -161,7 +161,50 @@ export function readJSONFile(filePath: string): Record<string, unknown> | null {
 
 export function getMemoryRuntime(vaultPath: string): MemoryRuntime | null {
   const paths = resolveVaultPaths(vaultPath);
-  return readJSONFile(paths.memoryStatePath) as MemoryRuntime | null;
+  const snapshot = readJSONFile(paths.memoryStatePath) as MemoryRuntime | null;
+  // If snapshot is stale or shows 0 papers, try live CLI
+  if (!snapshot || snapshot.paper_count_db === 0) {
+    let pythonPath = "";
+    const candidates = [
+      path.join(vaultPath, ".paperforge-test-venv", "Scripts", "python.exe"),
+      path.join(vaultPath, ".venv", "Scripts", "python.exe"),
+      path.join(vaultPath, "venv", "Scripts", "python.exe"),
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) {
+        pythonPath = c;
+        break;
+      }
+    }
+    if (!pythonPath) return snapshot;
+    try {
+      const out = execFileSync(
+        pythonPath,
+        [
+          "-m",
+          "paperforge",
+          "--vault",
+          vaultPath,
+          "memory",
+          "status",
+          "--json",
+        ],
+        { encoding: "utf-8", timeout: 10000, windowsHide: true }
+      );
+      const parsed = JSON.parse(out);
+      if (parsed.ok && parsed.data) {
+        const result = parsed.data as MemoryRuntime;
+        // Cache: write to snapshot file so it's fresh next time
+        try {
+          fs.writeFileSync(paths.memoryStatePath, out, "utf-8");
+        } catch {}
+        return result;
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  return snapshot;
 }
 
 let _vectorRuntimeCache: {

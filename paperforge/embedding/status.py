@@ -21,6 +21,7 @@ def get_embed_status(vault: Path) -> dict:
     body_chunk_count = 0
     error = ""
     healthy = True
+    dimension = 0
     if exists:
         conn = None
         try:
@@ -36,10 +37,21 @@ def get_embed_status(vault: Path) -> dict:
             row_obj = conn.execute("SELECT COUNT(*) AS cnt FROM vec_objects_meta").fetchone()
             object_chunk_count = row_obj["cnt"] if row_obj else 0
 
+            # Read dimension from vec0 table DDL
+            try:
+                row = conn.execute("SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'").fetchone()
+                if row:
+                    import re
+                    m = re.search(r"float\[(\d+)\]", row[0])
+                    if m:
+                        dimension = int(m.group(1))
+            except Exception:
+                pass
+
             # -- vec0 k-NN health probe --
             total_meta = chunk_count + body_chunk_count + object_chunk_count
-            if total_meta > 0:
-                zero_vec = [0.0] * detect_embedding_dim(vault)
+            if total_meta > 0 and dimension > 0:
+                zero_vec = [0.0] * dimension
                 zero_json = _json.dumps(zero_vec)
                 for vec_table, meta_count in [
                     ("vec_fulltext", chunk_count),
@@ -69,6 +81,7 @@ def get_embed_status(vault: Path) -> dict:
         "body_chunk_count": body_chunk_count,
         "object_chunk_count": object_chunk_count,
         "total_chunks": chunk_count + body_chunk_count + object_chunk_count,
+        "dimension": dimension,
         "model": model,
         "mode": "api",
         "healthy": healthy,

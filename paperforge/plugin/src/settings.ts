@@ -54,11 +54,11 @@ import {
 } from "./services/python-bridge";
 import {
   getVectorRuntime,
+  getMemoryRuntime,
   getRuntimeHealth,
   getMemoryStatusText,
   getVectorStatusText,
 } from "./services/memory-state";
-
 import {
   PaperForgeOcrPrivacyModal,
   PaperForgeConfirmModal,
@@ -298,6 +298,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 .paperforge-issue-draft-included { color: var(--text-success); margin-bottom: 2px; }
                 .paperforge-issue-draft-redacted { color: var(--text-warning); }
                 .paperforge-issue-draft-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+                .pf-diag-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                .pf-diag-table tr + tr { border-top: 1px solid var(--background-modifier-border); }
+                .pf-diag-label { padding: 4px 8px; color: var(--text-muted); white-space: nowrap; vertical-align: top; width: 140px; }
+                .pf-diag-value { padding: 4px 8px; color: var(--text-normal); font-family: var(--font-monospace); }
+                .pf-sr-diagnostics { margin-top: 16px; padding: 8px 12px; border: 1px solid var(--background-modifier-border); border-radius: 6px; }
+                .pf-sr-diagnostics summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text-muted); }
+                .pf-sr-diagnostics summary:hover { color: var(--text-normal); }
+                .pf-sr-diagnostics-body { margin-top: 8px; }
             `;
       document.head.appendChild(style);
     }
@@ -1541,22 +1549,52 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                   "The vector schema is outdated. Rebuild to match the current library.",
       });
     }
-
-    // ── Diagnostic details (collapsed) ──
+    // ── Advanced Status (collapsible, detailed diagnostics) ──
     const details = body.createEl("details", { cls: "pf-sr-diagnostics" });
     details.createEl("summary", {
-      text: t("cc_diagnostic_toggle") || "Diagnostic Details",
+      text: t("cc_diagnostic_toggle") || "Advanced Status",
     });
     const diagBody = details.createDiv({ cls: "pf-sr-diagnostics-body" });
-    diagBody.createEl("div", {
-      text:
-        "module: memory | state: " +
-        env.capability_state +
-        " | severity: " +
-        env.severity +
-        " | reason: " +
-        reasonCode,
-    });
+
+    const vp = this._getVaultBasePath();
+    const mem = vp ? getMemoryRuntime(vp) : null;
+    const vec = vp ? getVectorRuntime(vp) : null;
+    const bs = vec?.build_state as Record<string, unknown> | undefined;
+    const baseUrl = this.plugin.settings.vector_db_api_base || "-";
+
+    const tbl = diagBody.createEl("table", { cls: "pf-diag-table" });
+    const addRow = (label: string, value: string) => {
+      const tr = tbl.createEl("tr");
+      tr.createEl("td", { cls: "pf-diag-label", text: label });
+      tr.createEl("td", { cls: "pf-diag-value", text: value });
+    };
+
+    addRow("FTS5 Papers", String(mem?.paper_count_db ?? "?"));
+    addRow("FTS5 Fresh", mem?.fresh ? "Yes" : mem ? "Stale" : "?");
+    addRow("Needs Rebuild", mem?.needs_rebuild ? "Yes" : "No");
+    addRow("", ""); // spacer
+    addRow("Vector Backend", "vec0 (sqlite-vec)");
+    addRow("Vector Model", vec?.model ?? "-");
+    addRow("Vector Mode", vec?.mode ?? "-");
+    addRow("Vector Dimension", String(vec?.dimension ?? 0));
+    addRow("Base URL", baseUrl);
+    addRow("", ""); // spacer
+    addRow("Body Chunks", String(vec?.body_chunk_count ?? 0));
+    addRow("Object Chunks", String(vec?.object_chunk_count ?? 0));
+    addRow("Legacy Chunks", String(vec?.chunk_count ?? 0));
+    addRow("Total Chunks", String(vec?.total_chunks ?? 0));
+    addRow("", ""); // spacer
+    addRow("Build Status", String(bs?.status ?? "-"));
+    addRow("Build Progress", `${bs?.current ?? "?"}/${bs?.total ?? "?"}`);
+    addRow(
+      "DB Healthy",
+      vec?.healthy ? "Yes" : vec?.healthy === false ? "No" : "?"
+    );
+    addRow("API Key", apiKeyConfigured ? "Configured" : "Missing");
+    addRow("", ""); // spacer
+    addRow("Capability State", env.capability_state);
+    addRow("Severity", env.severity);
+    addRow("Reason Code", reasonCode);
   }
   /** Dispatch a backend action command through exact (verb, command) allowlist (Issue #78). */
   _dispatchModuleAction(mod: CapabilityModule, env: ProbeEnvelope): void {
@@ -4648,6 +4686,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         )
       : [];
     await this.plugin.saveSettings();
+
+    // Write to .env so CLI can also read the key
+    this._updateDotEnv("VECTOR_DB_API_KEY", value);
+
     this.display();
     return true;
   }
@@ -4662,13 +4704,35 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (!value || !storage?.setSecret) return false;
     try {
       await storage.setSecret(secretId, value);
-      if ((await storage.getSecret(secretId)) !== value) return false;
       this.plugin.settings._paddleocr_configured = true;
       this.plugin.settings.paddleocr_api_key = "";
       await this.plugin.saveSettings();
+      this._updateDotEnv("PADDLEOCR_API_KEY", value);
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /** Write a key=value pair to the vault .env file for CLI access. */
+  private _updateDotEnv(key: string, value: string): void {
+    const vaultPath = this._getVaultBasePath();
+    if (!vaultPath) return;
+    const envPath = path.join(vaultPath, ".env");
+    let lines: string[] = [];
+    try {
+      const existing = fs.readFileSync(envPath, "utf-8");
+      lines = existing.split(/\r?\n/);
+    } catch {
+      /* file doesn't exist yet */
+    }
+    // Remove any existing line for this key
+    const cleaned = lines.filter((l) => !l.startsWith(key + "="));
+    cleaned.push(`${key}=${value}`);
+    try {
+      fs.writeFileSync(envPath, cleaned.join("\n") + "\n", "utf-8");
+    } catch {
+      /* best-effort */
     }
   }
 
