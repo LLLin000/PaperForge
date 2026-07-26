@@ -1,3 +1,4 @@
+import { scanVersions, restoreVersion } from "../services/version-history";
 import { ItemView, WorkspaceLeaf, Notice } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
@@ -542,11 +543,6 @@ export class OcrWorkspaceView extends ItemView {
       paper.backupCount > 0 ? String(paper.backupCount) : "\u2014"
     );
 
-    // Re-extract disabled warning
-    const warning = card.createDiv({ cls: "pf-impact-box" });
-    warning.createEl("strong", { text: t("ocr_ws_re_extract_disabled_title") });
-    warning.createEl("p", { text: t("ocr_ws_re_extract_disabled_body") });
-
     // Action buttons
     const actions = card.createDiv({ cls: "pf-ocr-ws-detail-actions" });
     const fulltextBtn = actions.createEl("button", {
@@ -555,20 +551,40 @@ export class OcrWorkspaceView extends ItemView {
     });
     fulltextBtn.addEventListener("click", () => this._openFulltext(paper.key));
 
+    // Restore backup — uses version-history service
     const restoreBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
       text: t("ocr_ws_detail_restore_backup"),
     });
     restoreBtn.disabled = !paper.hasBackup;
     restoreBtn.addEventListener("click", () => {
-      new Notice("Version history panel not yet integrated");
+      const vp = (this.app.vault.adapter as any).basePath as string;
+      const versions = scanVersions(vp, paper.key);
+      if (!versions || versions.versions.length === 0) {
+        new Notice("No backup versions available");
+        return;
+      }
+      const latest = versions.versions[versions.versions.length - 1];
+      const ok = restoreVersion(vp, paper.key, latest.label);
+      if (ok) {
+        new Notice(
+          t("ocr_ws_detail_restore_done").replace("{label}", latest.label)
+        );
+        this._loadPapers().then(() => this._render());
+      } else {
+        new Notice("Restore failed");
+      }
     });
+
+    // Re-extract — runs paperforge ocr redo <key>
     const reExtractBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-warning",
       text: t("ocr_ws_detail_re_extract"),
     });
     reExtractBtn.title = t("ocr_ws_tooltip_reextract");
-    reExtractBtn.disabled = true;
+    reExtractBtn.addEventListener("click", () => {
+      this._runRedo(paper.key);
+    });
 
     // Disclosure: "What happens when I re-extract?"
     const details = card.createEl("details");
@@ -641,6 +657,28 @@ export class OcrWorkspaceView extends ItemView {
         this.running = false;
         if (err) new Notice("Rebuild failed: " + (err.message || err));
         else new Notice("Rebuild completed");
+        this._loadPapers().then(() => this._render());
+      }
+    );
+  }
+
+  private _runRedo(key: string): void {
+    const pyCmd = this._resolvePython();
+    if (!pyCmd) {
+      new Notice("Runtime not ready");
+      return;
+    }
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    this.running = true;
+    this._render();
+    execFile(
+      pyCmd.path,
+      [...pyCmd.args, "-m", "paperforge", "ocr", "redo", key],
+      { cwd: vp, timeout: 600000 },
+      (err: any) => {
+        this.running = false;
+        if (err) new Notice("Redo failed: " + (err.message || err));
+        else new Notice("OCR redo completed");
         this._loadPapers().then(() => this._render());
       }
     );
