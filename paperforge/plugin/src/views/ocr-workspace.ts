@@ -33,6 +33,7 @@ export class OcrWorkspaceView extends ItemView {
   private running: boolean = false;
   private progress = { current: 0, total: 0, paperKey: "" };
   private _searchQuery: string = "";
+  private _searchTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -139,32 +140,38 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   /* ── Partial table refresh (preserves input focus) ── */
-
   private _refreshTable(): void {
     const container = this.containerEl.children[1] as HTMLElement;
-    const existingViewport = container.querySelector(".pf-ocr-ws-viewport");
-    const existingBatchBar = container.querySelector(".pf-ocr-ws-batchbar");
-    const existingDetail = container.querySelector(".pf-ocr-ws-detail");
+    const filtered = this._filteredPapers();
 
     // Update count
     const countEl = container.querySelector(".pf-ocr-ws-toolbar-count");
-    const filtered = this._filteredPapers();
     if (countEl) {
       countEl.innerHTML = t("ocr_ws_showing")
         .replace("{count}", String(filtered.length))
         .replace("{total}", String(this.papers.length));
     }
 
-    // Replace viewport (table)
-    if (existingViewport) existingViewport.remove();
-    const vp = container.createDiv({ cls: "pf-ocr-ws-viewport" });
-    this._buildTableBody(vp, filtered);
+    // DOM-reuse: keep table and thead, only replace tbody
+    const existingTable =
+      container.querySelector<HTMLTableElement>(".pf-ocr-ws-table");
+    if (existingTable) {
+      const oldTbody = existingTable.querySelector("tbody");
+      if (oldTbody) oldTbody.remove();
+      this._buildTableRows(existingTable, filtered);
+    } else {
+      // First render — build full table
+      const vp = container.createDiv({ cls: "pf-ocr-ws-viewport" });
+      this._buildTableBody(vp, filtered);
+    }
 
     // Replace batch bar
+    const existingBatchBar = container.querySelector(".pf-ocr-ws-batchbar");
     if (existingBatchBar) existingBatchBar.remove();
     this._renderBatchBar(container);
 
     // Toggle detail
+    const existingDetail = container.querySelector(".pf-ocr-ws-detail");
     if (existingDetail) existingDetail.remove();
     if (this.selectedKey) {
       this._renderDetail(container);
@@ -241,7 +248,8 @@ export class OcrWorkspaceView extends ItemView {
       this._searchQuery = searchInput.value;
       this.selectedKey = null;
       this.checkedKeys.clear();
-      this._refreshTable();
+      clearTimeout(this._searchTimer);
+      this._searchTimer = setTimeout(() => this._refreshTable(), 100);
     });
     searchInput.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -249,11 +257,11 @@ export class OcrWorkspaceView extends ItemView {
         this._searchQuery = "";
         this.selectedKey = null;
         this.checkedKeys.clear();
+        clearTimeout(this._searchTimer);
         this._refreshTable();
         searchInput.blur();
       }
     });
-
     const field = tb.createDiv({ cls: "pf-ocr-ws-field" });
     field.createEl("label", { text: t("ocr_ws_filter_status") });
     const select = field.createEl("select");
@@ -330,8 +338,12 @@ export class OcrWorkspaceView extends ItemView {
       });
       return;
     }
-
     const table = vp.createEl("table", { cls: "pf-ocr-ws-table" });
+    this._buildTableHead(table);
+    this._buildTableRows(table, filtered);
+  }
+
+  private _buildTableHead(table: HTMLTableElement): void {
     const thead = table.createEl("thead");
     const hr = thead.createEl("tr");
     hr.createEl("th", { cls: "pf-ocr-ws-col-check" }).createEl(
@@ -339,8 +351,9 @@ export class OcrWorkspaceView extends ItemView {
       { attr: { type: "checkbox" } },
       (cb: HTMLInputElement) => {
         cb.addEventListener("change", () => {
+          const current = this._filteredPapers();
           if (cb.checked) {
-            filtered.forEach((p) => this.checkedKeys.add(p.key));
+            current.forEach((p) => this.checkedKeys.add(p.key));
           } else {
             this.checkedKeys.clear();
           }
@@ -365,7 +378,9 @@ export class OcrWorkspaceView extends ItemView {
       text: t("ocr_ws_col_lastrun"),
     });
     hr.createEl("th", { cls: "pf-ocr-ws-col-action" });
+  }
 
+  private _buildTableRows(table: HTMLTableElement, filtered: OcrPaper[]): void {
     const tbody = table.createEl("tbody");
     for (const paper of filtered) {
       const versionBehind = Boolean(
@@ -385,7 +400,6 @@ export class OcrWorkspaceView extends ItemView {
         this._refreshTable();
       });
 
-      // Checkbox
       const tdCheck = tr.createEl("td", { cls: "pf-ocr-ws-col-check" });
       tdCheck.createEl(
         "input",
@@ -400,7 +414,6 @@ export class OcrWorkspaceView extends ItemView {
         }
       );
 
-      // Paper title
       const tdPaper = tr.createEl("td", { cls: "pf-ocr-ws-col-paper" });
       tdPaper.createDiv({ cls: "pf-ocr-ws-paper-title", text: paper.title });
       if (paper.authors || paper.year) {
@@ -421,25 +434,21 @@ export class OcrWorkspaceView extends ItemView {
         }
       }
 
-      // Status badge
       const tdStatus = tr.createEl("td", { cls: "pf-ocr-ws-col-status" });
       tdStatus.createEl("span", {
         cls: `pf-ocr-ws-status pf-${statusClass(paper.status)}`,
         text: statusLabel(paper.status),
       });
 
-      // Version
       const tdVer = tr.createEl("td", { cls: "pf-ocr-ws-col-version" });
       tdVer.createEl("span", {
         cls: "pf-ocr-ws-version",
         text: paper.pipelineVersion || "\u2014",
       });
 
-      // Date
       const tdDate = tr.createEl("td", { cls: "pf-ocr-ws-col-date" });
       tdDate.setText(paper.lastRun ? paper.lastRun.slice(0, 10) : "\u2014");
 
-      // Preview
       const tdAction = tr.createEl("td", { cls: "pf-ocr-ws-col-action" });
       const previewBtn = tdAction.createEl("button", {
         cls: "pf-btn pf-btn-secondary",
