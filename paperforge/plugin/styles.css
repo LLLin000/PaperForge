@@ -7385,11 +7385,6 @@ input.pf-ocr-ws-search-input::placeholder {
 .pf-vr-diff-prefix { user-select: none; margin-right: 4px; }
 .pf-vr-diff-text { white-space: pre-wrap; }
 .pf-vr-diff-empty { color: var(--text-muted); font-style: italic; padding: var(--size-4-3); }
-.pf-vr-close {
-  position: absolute;
-  top: var(--size-4-3);
-  right: var(--size-4-3);
-}
 .paperforge-modal.pf-vr-modal {
   padding: 0;
   overflow: hidden;

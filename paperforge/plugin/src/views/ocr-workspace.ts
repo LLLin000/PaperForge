@@ -747,7 +747,7 @@ function diffParagraphs(textA: string, textB: string): { type: "added" | "remove
   return result;
 }
 
-class VersionRestoreModal extends Modal {
+export class VersionRestoreModal extends Modal {
   private versions: VersionEntry[];
   private currentLabel: string;
   private vaultPath: string;
@@ -789,15 +789,10 @@ class VersionRestoreModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass("paperforge-modal");
     try {
-      const mc = contentEl.closest(".modal-container") as HTMLElement;
-      if (mc) {
-        mc.style.width = "min(90vw, 1200px)";
-        // Also widen the inner .modal element
-        const innerModal = mc.querySelector(".modal") as HTMLElement;
-        if (innerModal) innerModal.style.width = "100%";
-      }
+      // Only widen the inner .modal, NOT .modal-container (which is fullscreen overlay)
+      const innerModal = contentEl.closest(".modal") as HTMLElement;
+      if (innerModal) innerModal.style.width = "min(90vw, 1200px)";
     } catch {}
-    contentEl.empty();
 
     // Cache current render content
     const curPath = path.join(this.ocrDir, this.paperKey, "render", "fulltext.md");
@@ -871,12 +866,7 @@ class VersionRestoreModal extends Modal {
       const restoreBtn = actionsDiv.createEl("button", { cls: "btn-primary pf-vr-btn", text: t("ocr_ws_restore_btn") || "Restore this version" });
       restoreBtn.addEventListener("click", () => this.doRestore(ver));
     }
-
-    // Close
-    const closeBtn = contentEl.createEl("button", { cls: "pf-btn pf-btn-ghost pf-vr-close", text: t("ocr_ws_close") || "Close" });
-    closeBtn.addEventListener("click", () => this.close());
   }
-
   private doRestore(ver: VersionEntry) {
     if (ver.label === this.currentLabel) return;
     let ok = false;
