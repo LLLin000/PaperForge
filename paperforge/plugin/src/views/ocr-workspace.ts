@@ -480,17 +480,19 @@ export class OcrWorkspaceView extends ItemView {
       cls: "pf-btn pf-btn-primary",
       text: t("ocr_ws_btn_process_selected"),
     });
+    processBtn.title = t("ocr_ws_tooltip_process");
     processBtn.disabled = selected.length === 0;
     processBtn.addEventListener("click", () =>
       this._runOcr(selected.map((p) => p.key))
     );
 
-    const updateBtn = actions.createEl("button", {
+    const rebuildBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-warning",
-      text: t("ocr_ws_btn_update_selected"),
+      text: t("ocr_ws_btn_rebuild_selected"),
     });
-    updateBtn.disabled = selected.length === 0;
-    updateBtn.addEventListener("click", () =>
+    rebuildBtn.title = t("ocr_ws_tooltip_rebuild");
+    rebuildBtn.disabled = selected.length === 0;
+    rebuildBtn.addEventListener("click", () =>
       this._runRebuild(selected.map((p) => p.key))
     );
   }
@@ -561,11 +563,11 @@ export class OcrWorkspaceView extends ItemView {
     restoreBtn.addEventListener("click", () => {
       new Notice("Version history panel not yet integrated");
     });
-
     const reExtractBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-warning",
       text: t("ocr_ws_detail_re_extract"),
     });
+    reExtractBtn.title = t("ocr_ws_tooltip_reextract");
     reExtractBtn.disabled = true;
 
     // Disclosure: "What happens when I re-extract?"

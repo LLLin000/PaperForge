@@ -4577,6 +4577,11 @@
   color: var(--text-muted);
 }
 
+.pf-control-center .pf-cc-card-badge--checking {
+  background: color-mix(in srgb, var(--text-accent) 10%, transparent);
+  color: var(--text-accent);
+}
+
 .pf-control-center .pf-cc-card-reason {
   font-size: 12px;
   color: var(--text-muted);
@@ -5439,6 +5444,56 @@
 .pf-setup-body {
   min-height: 200px;
 }
+.pf-setup-library-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4);
+}
+.pf-setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+}
+.pf-setup-field label {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+.pf-setup-field .caption {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+.pf-setup-library-form .pf-setup-input {
+  width: 100%;
+  min-height: 32px;
+  padding: var(--size-4-1) var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  box-sizing: border-box;
+}
+.pf-setup-folder-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--size-4-3);
+}
+.pf-setup-library-form .pf-setup-verify {
+  align-self: flex-start;
+  min-height: 30px;
+  padding: var(--size-4-1) var(--size-4-4);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+  transition: background 120ms;
+}
+.pf-setup-library-form .pf-setup-verify:hover {
+  background: var(--interactive-hover);
+}
 .pf-setup-nav {
   display: flex;
   gap: 8px;
@@ -5459,20 +5514,96 @@
 }
 .pf-setup-optional {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
   flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--size-4-3);
+  padding: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  margin-bottom: var(--size-4-3);
+  background: var(--background-primary);
+}
+.pf-setup-optional input[type="checkbox"] {
+  margin-top: var(--size-4-1);
+  flex-shrink: 0;
+}
+.pf-setup-optional-copy {
+  flex: 1;
+  min-width: 0;
+}
+.pf-setup-optional-config {
+  flex-basis: 100%;
+  margin-top: var(--size-4-3);
+  padding-top: var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
+}
+.pf-setup-optional input[type="checkbox"] {
+  margin-top: var(--size-4-1);
+  flex-shrink: 0;
+}
+.pf-setup-optional-copy {
+  flex: 1;
+  min-width: 0;
 }
 .pf-setup-optional-label {
   font-weight: 600;
   font-size: var(--font-ui-small);
+  display: block;
+  margin-bottom: var(--size-4-1);
 }
 .pf-setup-optional-desc {
-  font-size: 12px;
+  font-size: var(--font-ui-small);
   color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: var(--size-4-1);
+}
+.pf-setup-optional-state {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-success);
+}
+.pf-setup-optional-config {
+  margin-top: var(--size-4-3);
+  padding-top: var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
   width: 100%;
-  padding-left: 24px;
+}
+.pf-setup-optional-config label {
+  display: block;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  margin-bottom: var(--size-4-1);
+}
+.pf-setup-optional-config .caption {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  margin-bottom: var(--size-4-2);
+}
+.pf-setup-optional-config input,
+.pf-setup-optional-config select {
+  width: 100%;
+  min-height: 32px;
+  padding: var(--size-4-1) var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  box-sizing: border-box;
+  margin-bottom: var(--size-4-2);
+}
+.pf-setup-optional-config button {
+  min-height: 30px;
+  padding: var(--size-4-1) var(--size-4-4);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+.pf-setup-optional-config button:hover {
+  background: var(--interactive-hover);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -7000,8 +7131,16 @@ input.pf-ocr-ws-search-input::placeholder {
   font-family: var(--font-monospace-theme);
   color: var(--text-muted);
 }
-
-/* ── Smart Retrieval: impact box ── */
+.pf-setup-guide-img {
+  display: block;
+  max-width: 100%;
+  max-height: 480px;
+  width: auto;
+  height: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  margin-top: var(--size-4-2);
+}
 .pf-sr-impact-box {
   border-left: 2px solid var(--text-warning);
   background: color-mix(in srgb, var(--text-warning) 6%, transparent);

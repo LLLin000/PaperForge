@@ -371,9 +371,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     ocrLink.addEventListener("click", (e: MouseEvent) => {
       e.preventDefault();
+      (this.app as any).setting.close();
       (this.app as any).workspace.getLeaf().setViewState({
         type: "paperforge-ocr-workspace",
-      } as any);
+      });
     });
 
     // --- Tab content containers ---
@@ -575,10 +576,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "paperforge-settings-desc",
     });
 
-    // ── Control Center (Issue #76) ──
-    this._renderControlCenter(containerEl);
-
-    // Auto-probe modules that are unknown or stale once per session
+    // Auto-probe stale/unknown modules BEFORE rendering so cards show "Checking..."
     for (const mod of CAPABILITY_MODULES) {
       const env = this._capabilityState?.[mod];
       if (!env) continue;
@@ -595,6 +593,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         }
       }
     }
+
+    // ── Control Center (Issue #76) ──
+    this._renderControlCenter(containerEl);
   }
 
   /** Safe vault base path extraction. */
@@ -3629,7 +3630,46 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           const parsed: unknown = JSON.parse(stdout);
           // Backend JSON passed through unchanged after strict validation
           if (isValidEnvelope(parsed, mod)) {
-            this._updateCapabilityEnvelope(mod, parsed as ProbeEnvelope);
+            const envelope = parsed as ProbeEnvelope;
+            // Auto-sync: version mismatch → trigger runtime sync instead of showing error
+            if (
+              mod === "installation" &&
+              envelope.reason.code === "installation.version_mismatch"
+            ) {
+              const syncEnvelope: ProbeEnvelope = {
+                schema_version: 2,
+                module: "installation",
+                capability_state: "unknown",
+                activity_state: "running",
+                activity_label: t("runtime_health_syncing"),
+                activity_progress: null,
+                severity: "unknown",
+                reason: {
+                  code: "installation.syncing",
+                  text: t("runtime_health_syncing"),
+                },
+                action: { primary: null },
+                notices: [],
+                user_state: "checking",
+                capability_kind: "required",
+                maintenance_eligible: false,
+                user_visible_failure: false,
+                user_impact: null,
+                updated_at: new Date().toISOString(),
+                ttl_seconds: 300,
+              };
+              this._updateCapabilityEnvelope(mod, syncEnvelope);
+              this._ensureManagedRuntime()
+                .ensure({ version: this.plugin.manifest.version })
+                .then(() => {
+                  this._probeModule("installation");
+                })
+                .catch(() => {
+                  this._updateCapabilityEnvelope(mod, envelope);
+                });
+              return;
+            }
+            this._updateCapabilityEnvelope(mod, envelope);
           } else {
             console.warn(
               `[PaperForge] Probe ${mod}: invalid envelope schema`,
@@ -3676,6 +3716,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Derive badge i18n key from envelope severity + module. */
   private _ccBadgeKey(env: ProbeEnvelope, mod: CapabilityModule): string {
+    if (env.activity_state === "running") return "cc_badge_checking";
     if (env.severity === "ok") return "cc_badge_ok";
     if (env.severity === "error" && mod === "installation")
       return "cc_badge_setup";
@@ -3685,7 +3726,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   /** CSS severity class from backend severity string. Unknown maps to neutral. */
-  _sevClass(severity: string): string {
+  _sevClass(severity: string, activity?: string): string {
+    if (activity === "running") return "checking";
     if (severity === "error") return "error";
     if (severity === "warning") return "warn";
     if (severity === "unknown") return "unknown";
@@ -3733,7 +3775,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     envelope: ProbeEnvelope
   ): void {
     const env = envelope;
-    const sevClass = this._sevClass(env.severity);
+    const sevClass = this._sevClass(env.severity, env.activity_state);
     const isReal = PaperForgeSettingTab._REAL_PROBE.has(mod);
     const isNavigable = PaperForgeSettingTab._NAVIGABLE.has(mod);
     const card = container.createEl("div", {
@@ -4432,17 +4474,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // ── BBT JSON Export ──
     const importSection = containerEl.createDiv({ cls: "pf-setup-import" });
-    importSection.createEl("h4", { text: t("setup_bbt_title") || "BBT JSON Export" });
+    importSection.createEl("h4", {
+      text: t("setup_bbt_title") || "BBT JSON Export",
+    });
     const vp = (this.app.vault.adapter as any).basePath as string;
     const paths = require("./services/memory-state").resolveVaultPaths(vp);
     importSection.createEl("p", {
       cls: "pf-setup-form-intro",
-      text: t("setup_bbt_desc") || "Export your Zotero library as Better BibTeX JSON into the folder below. Enable 'Keep updated' for automatic re-exports.",
+      text:
+        t("setup_bbt_desc") ||
+        "Export your Zotero library as Better BibTeX JSON into the folder below. Enable 'Keep updated' for automatic re-exports.",
     });
     // Exports path
     const pathRow = importSection.createDiv({ cls: "pf-setup-path-row" });
-    pathRow.createEl("span", { cls: "pf-setup-path-label", text: t("setup_bbt_path") || "Exports folder:" });
-    pathRow.createEl("code", { cls: "pf-setup-path-value", text: paths.exportsDir });
+    pathRow.createEl("span", {
+      cls: "pf-setup-path-label",
+      text: t("setup_bbt_path") || "Exports folder:",
+    });
+    pathRow.createEl("code", {
+      cls: "pf-setup-path-value",
+      text: paths.exportsDir,
+    });
     const copyBtn = pathRow.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
       text: t("setup_bbt_copy") || "Copy",
@@ -4454,13 +4506,35 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // Expandable guide
     const guide = importSection.createEl("details", { cls: "pf-setup-guide" });
-    guide.createEl("summary", { cls: "pf-setup-guide-summary", text: t("setup_bbt_guide") || "How to export from Zotero \u2192" });
+    guide.createEl("summary", {
+      cls: "pf-setup-guide-summary",
+      text: t("setup_bbt_guide") || "How to export from Zotero \u2192",
+    });
     const guideBody = guide.createDiv({ cls: "pf-setup-guide-body" });
-    const base = "https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images";
+    const base =
+      "https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images";
     const steps = [
-      { img: "bbt-plugin.jpg", title: t("setup_bbt_step1") || "1. Install Better BibTeX", desc: t("setup_bbt_step1_desc") || "In Zotero, go to Tools \u2192 Add-ons, search for Better BibTeX, and install it." },
-      { img: "bbt-export.jpg", title: t("setup_bbt_step2") || "2. Export with auto-update", desc: t("setup_bbt_step2_desc") || "Right-click your library or collection \u2192 Export Library\u2026 \u2192 choose 'Better BibTeX JSON' format. Check 'Keep updated'." },
-      { img: "bbt-save.jpg", title: t("setup_bbt_step3") || "3. Save to exports folder", desc: (t("setup_bbt_step3_desc") || "Point the export destination to the folder above. Once saved, click 'Detect' below.") },
+      {
+        img: "bbt-plugin-installed.jpg",
+        title: t("setup_bbt_step1") || "1. Install Better BibTeX",
+        desc:
+          t("setup_bbt_step1_desc") ||
+          "In Zotero, go to Tools \u2192 Add-ons, search for Better BibTeX and install it. If you cannot find it, download from: https://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",
+      },
+      {
+        img: "bbt-export-dialog.jpg",
+        title: t("setup_bbt_step2") || "2. Export with auto-update",
+        desc:
+          t("setup_bbt_step2_desc") ||
+          "Right-click your library or collection \u2192 Export Library\u2026 \u2192 choose 'Better BibTeX JSON' format. Check 'Keep updated'.",
+      },
+      {
+        img: "bbt-save-dialog.jpg",
+        title: t("setup_bbt_step3") || "3. Save to exports folder",
+        desc:
+          t("setup_bbt_step3_desc") ||
+          "Point the export destination to the folder above. Once saved, click 'Detect' below.",
+      },
     ];
     for (const step of steps) {
       const entry = guideBody.createDiv({ cls: "pf-setup-guide-step" });
@@ -4477,27 +4551,53 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       img.addClass("pf-setup-guide-img");
     }
     const detectRow = importSection.createDiv({ cls: "pf-setup-detect-row" });
-    const detectStatus = detectRow.createEl("span", { cls: "pf-setup-detect-status" });
-    detectRow.createEl("button", {
-      cls: "pf-btn pf-btn-primary",
-      text: t("setup_bbt_detect") || "Detect",
-    }).addEventListener("click", () => {
-      try {
-        if (!fs.existsSync(paths.exportsDir)) fs.mkdirSync(paths.exportsDir, { recursive: true });
-        const files = fs.readdirSync(paths.exportsDir).filter((f: string) => f.endsWith(".json"));
-        if (files.length === 0) {
-          detectStatus.setText(t("setup_bbt_no_files") || "No JSON files found.");
-        } else {
-          detectStatus.setText("\u2713 " + (t("setup_bbt_found") || "Found: ") + files.join(", "));
-        }
-        const contBtn = nav.querySelector(".pf-action-btn:last-child") as HTMLButtonElement | null;
-        if (contBtn) contBtn.disabled = files.length === 0 || env.user_state !== "ready" || this._setupOperation === "running";
-      } catch { /* ignore */ }
+    const detectStatus = detectRow.createEl("span", {
+      cls: "pf-setup-detect-status",
     });
+    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
+
+    // Shared: update Continue from BBT file state
+    const _refreshBbtStatus = () => {
+      try {
+        if (!fs.existsSync(paths.exportsDir))
+          fs.mkdirSync(paths.exportsDir, { recursive: true });
+        const files = fs
+          .readdirSync(paths.exportsDir)
+          .filter((f: string) => f.endsWith(".json"));
+        if (files.length === 0) {
+          detectStatus.setText(
+            t("setup_bbt_no_files") || "No JSON files found."
+          );
+        } else {
+          detectStatus.setText(
+            "\u2713 " + (t("setup_bbt_found") || "Found: ") + files.join(", ")
+          );
+        }
+        const contBtn = nav.querySelector(
+          ".pf-action-btn:last-child"
+        ) as HTMLButtonElement | null;
+        if (contBtn) {
+          const shouldDisable =
+            files.length === 0 ||
+            env.user_state !== "ready" ||
+            this._setupOperation === "running";
+          contBtn.disabled = shouldDisable;
+          contBtn.classList.toggle("pf-action-btn--disabled", shouldDisable);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    detectRow
+      .createEl("button", {
+        cls: "pf-btn pf-btn-primary",
+        text: t("setup_bbt_detect") || "Detect",
+      })
+      .addEventListener("click", _refreshBbtStatus);
 
     // ── Navigation (at the very bottom) ──
 
-    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
       onClick: () => {
@@ -4515,6 +4615,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this.display();
       },
     });
+
+    // Auto-run after nav buttons exist
+    _refreshBbtStatus();
   }
 
   private _refreshVectorDbCredentialStatus(): void {
@@ -4834,7 +4937,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** #87: Complete setup — persist and transition to normal operation. */
   _completeSetup(): void {
     this.plugin.settings._setup_complete = true;
-    this.plugin.saveSettings();
+    this.plugin.saveSettings().then(() => this.display());
   }
 
   _restoreNavMemory(): void {

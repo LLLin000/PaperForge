@@ -662,18 +662,22 @@ const LANG: Record<string, Record<string, string>> = {
     cc_state_needs_action: "Needs Action",
     cc_action_setup: "Open Setup Wizard",
     setup_bbt_title: "Import BBT JSON",
-    setup_bbt_desc: "Export your Zotero library as Better BibTeX JSON from Zotero (File → Export Library → Better BibTeX JSON), then drop or select the file(s) below.",
+    setup_bbt_desc:
+      "Export your Zotero library as Better BibTeX JSON from Zotero (File → Export Library → Better BibTeX JSON), then drop or select the file(s) below.",
     setup_bbt_path: "Exports folder:",
     setup_bbt_drop: "Drop BBT JSON files here or click to select",
     setup_bbt_no_files: "No JSON files imported yet.",
     setup_bbt_invalid: "Invalid JSON file: ",
     setup_bbt_guide: "How to export from Zotero",
     setup_bbt_step1: "1. Install Better BibTeX",
-    setup_bbt_step1_desc: "In Zotero, go to Tools → Add-ons, search for Better BibTeX, and install it.",
+    setup_bbt_step1_desc:
+      "In Zotero, go to Tools → Add-ons, search for Better BibTeX and install it. If you cannot find it, download from: https://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",
     setup_bbt_step2: "2. Export with auto-update",
-    setup_bbt_step2_desc: "Right-click your library or collection → Export Library… → choose 'Better BibTeX JSON' format. Check 'Keep updated'.",
+    setup_bbt_step2_desc:
+      "Right-click your library or collection → Export Library… → choose 'Better BibTeX JSON' format. Check 'Keep updated'.",
     setup_bbt_step3: "3. Save to exports folder",
-    setup_bbt_step3_desc: "Point the export destination to the folder shown above. Once saved, click 'Detect'.",
+    setup_bbt_step3_desc:
+      "Point the export destination to the folder shown above. Once saved, click 'Detect'.",
     setup_bbt_copy: "Copy",
     setup_bbt_copied: "Path copied",
     setup_bbt_detect: "Detect",
@@ -834,7 +838,13 @@ const LANG: Record<string, Record<string, string>> = {
       "Select papers that are not processed or have an update available.",
     ocr_ws_selected: "{count} paper(s) selected",
     ocr_ws_btn_process_selected: "Process selected",
-    ocr_ws_btn_update_selected: "Update selected",
+    ocr_ws_btn_rebuild_selected: "Rebuild selected",
+    ocr_ws_tooltip_process:
+      "Run full OCR from scratch: extract text, then rebuild derived artifacts. Needed when the OCR model is updated, but generally not required.",
+    ocr_ws_tooltip_rebuild:
+      "Regenerate rendered results from existing OCR raw data without re-running OCR. Run this when the OCR render version has changed.",
+    ocr_ws_tooltip_reextract:
+      "Re-run OCR from scratch for this paper (deletes and regenerates all OCR data).",
     ocr_ws_close: "Close",
     ocr_ws_fact_version: "OCR Version",
     ocr_ws_fact_last_run: "Last Processed",
@@ -1453,7 +1463,8 @@ const LANG: Record<string, Record<string, string>> = {
     cc_action_probe: "检测",
     cc_action_set_config: "配置设置",
     setup_bbt_title: "导入 BBT JSON",
-    setup_bbt_desc: "从 Zotero 中导出 Better BibTeX JSON（文件 → 导出文献库 → Better BibTeX JSON），然后将文件拖入下方或点击选择。",
+    setup_bbt_desc:
+      "从 Zotero 中导出 Better BibTeX JSON（文件 → 导出文献库 → Better BibTeX JSON），然后将文件拖入下方或点击选择。",
     setup_bbt_path: "导出文件夹：",
     setup_bbt_drop: "将 BBT JSON 文件拖到此处，或点击选择",
     setup_bbt_no_files: "尚未导入 JSON 文件。",
@@ -1461,9 +1472,13 @@ const LANG: Record<string, Record<string, string>> = {
     setup_bbt_guide: "如何从 Zotero 导出",
     setup_bbt_step1: "1. 安装 Better BibTeX",
     setup_bbt_step2: "2. 导出并开启自动更新",
-    setup_bbt_step2_desc: "右键文献库或分类 → 导出文献库… → 选择「Better BibTeX JSON」格式。勾选「Keep updated」，以后 Zotero 有变化时会自动重新导出。",
+    setup_bbt_step1_desc:
+      "在 Zotero 中打开 工具 → 插件，搜索 Better BibTeX 并安装。如果搜索不到，请从以下地址下载：https://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",
+    setup_bbt_step2_desc:
+      "右键文献库或分类 → 导出文献库… → 选择「Better BibTeX JSON」格式。勾选「Keep updated」，以后 Zotero 有变化时会自动重新导出。",
     setup_bbt_step3: "3. 保存到导出文件夹",
-    setup_bbt_step3_desc: "将导出目标指向上方显示的文件夹。保存后点击「检测」。",
+    setup_bbt_step3_desc:
+      "将导出目标指向上方显示的文件夹。保存后点击「检测」。",
     setup_bbt_copy: "复制",
     setup_bbt_copied: "路径已复制",
     setup_bbt_detect: "检测",
@@ -1614,7 +1629,13 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_select_hint: "选择未处理或有更新可用的论文。",
     ocr_ws_selected: "已选择 {count} 篇",
     ocr_ws_btn_process_selected: "处理所选",
-    ocr_ws_btn_update_selected: "更新所选",
+    ocr_ws_btn_rebuild_selected: "重建所选",
+    ocr_ws_tooltip_process:
+      "从头执行完整 OCR：提取文字并重建衍生结果。OCR 模型更新后需要执行，但一般不需要。",
+    ocr_ws_tooltip_rebuild:
+      "基于已有 OCR 原始数据重新生成渲染结果，不重新运行 OCR。OCR 渲染版本更新后需要执行。",
+    ocr_ws_tooltip_reextract:
+      "从头重新 OCR 此论文（删除并重新生成全部 OCR 数据）。",
     ocr_ws_close: "关闭",
     ocr_ws_fact_version: "OCR 版本",
     ocr_ws_fact_last_run: "最后处理",
