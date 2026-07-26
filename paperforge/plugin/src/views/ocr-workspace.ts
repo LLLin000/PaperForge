@@ -480,16 +480,6 @@ export class OcrWorkspaceView extends ItemView {
     }
 
     const actions = bar.createDiv({ cls: "pf-ocr-ws-batch-actions" });
-    const processBtn = actions.createEl("button", {
-      cls: "pf-btn pf-btn-primary",
-      text: t("ocr_ws_btn_process_selected"),
-    });
-    processBtn.title = t("ocr_ws_tooltip_process");
-    processBtn.disabled = selected.length === 0;
-    processBtn.addEventListener("click", () =>
-      this._runOcr(selected.map((p) => p.key))
-    );
-
     const rebuildBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-warning",
       text: t("ocr_ws_btn_rebuild_selected"),
@@ -607,19 +597,6 @@ export class OcrWorkspaceView extends ItemView {
     });
 
     // Re-extract — runs paperforge ocr redo <key>
-    const reExtractBtn = actions.createEl("button", {
-      cls: "pf-btn pf-btn-warning",
-      text: t("ocr_ws_detail_re_extract"),
-    });
-    reExtractBtn.title = t("ocr_ws_tooltip_reextract");
-    reExtractBtn.addEventListener("click", () => {
-      this._runRedo(paper.key);
-    });
-
-    // Disclosure: "What happens when I re-extract?"
-    const details = card.createEl("details");
-    details.createEl("summary", { text: t("ocr_ws_what_happens") });
-    details.createEl("p", { text: t("ocr_ws_disclosure_text") });
   }
 
   private _addFact(grid: HTMLElement, label: string, value: string): void {
@@ -646,28 +623,6 @@ export class OcrWorkspaceView extends ItemView {
     return { path: run.command, args: [...run.args] };
   }
 
-  private _runOcr(keys: string[]): void {
-    const pyCmd = this._resolvePython();
-    if (!pyCmd) {
-      new Notice("Runtime not ready");
-      return;
-    }
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    this.running = true;
-    this.progress = { current: 0, total: keys.length, paperKey: "" };
-    this._render();
-    execFile(
-      pyCmd.path,
-      [...pyCmd.args, "-m", "paperforge", "ocr", "run", ...keys],
-      { cwd: vp, timeout: 600000 },
-      (err: any) => {
-        this.running = false;
-        if (err) new Notice("OCR failed: " + (err.message || err));
-        else new Notice("OCR completed");
-        this._loadPapers().then(() => this._render());
-      }
-    );
-  }
 
   private _runRebuild(keys: string[]): void {
     const pyCmd = this._resolvePython();
@@ -687,28 +642,6 @@ export class OcrWorkspaceView extends ItemView {
         this.running = false;
         if (err) new Notice("Rebuild failed: " + (err.message || err));
         else new Notice("Rebuild completed");
-        this._loadPapers().then(() => this._render());
-      }
-    );
-  }
-
-  private _runRedo(key: string): void {
-    const pyCmd = this._resolvePython();
-    if (!pyCmd) {
-      new Notice("Runtime not ready");
-      return;
-    }
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    this.running = true;
-    this._render();
-    execFile(
-      pyCmd.path,
-      [...pyCmd.args, "-m", "paperforge", "ocr", "redo", key],
-      { cwd: vp, timeout: 600000 },
-      (err: any) => {
-        this.running = false;
-        if (err) new Notice("Redo failed: " + (err.message || err));
-        else new Notice("OCR redo completed");
         this._loadPapers().then(() => this._render());
       }
     );
