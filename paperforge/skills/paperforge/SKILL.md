@@ -1,4 +1,3 @@
----
 name: paperforge
 description: >
   Research Memory Runtime — 文献搜索、精读、问答、阅读笔记、
@@ -8,9 +7,8 @@ description: >
   "讨论" "记录阅读" "记录工作" "总结会话" "提取方法论"
   "记一下" "保存这次" "找证据" "找75 Hz" "找支持" "collection" "库里".
 source: paperforge
-skill_version: 2026-05-27.1
+skill_version: 2026-07-27.1
 skill_api_version: 2
----
 
 # PaperForge — Research Memory Runtime
 
@@ -56,13 +54,9 @@ bootstrap 现在也返回一个 `capabilities` 块（rg, semantic, metadata 等�
 
 - [ ] **bootstrap completed**：`$VAULT`、`$PYTHON`、`$LIT_DIR`、`$SKILL_DIR` 已定义
 - [ ] **skill contract**：bootstrap 已返回 `plugin_version`、`skill_version`、`skill_api_version`；若 `skill_api_version` 不兼容，提示用户运行 `paperforge update`
-- [ ] **capabilities**：已读取 `capabilities` 块中的 `rg`、`metadata_search`、`paper_context`、`semantic_enabled`、`semantic_ready`
-- [ ] **runtime-health passed**：`safe_read`、`safe_write` 已知，vector 状态已知
+- [ ] **runtime-health passed**：`safe_read`、`safe_write` 已知
 - [ ] **intent identified**：用户意图已映射到一个顶层 research intent
 - [ ] **molecule selected**：已路由到对应的 `molecules/<intent>.md`
-
-如果任一检查未通过，先执行对应的步骤，**不跳过**。
-
 ---
 
 ## 2. Agent Context — bootstrap 成功后执行
@@ -93,14 +87,11 @@ $PYTHON -m paperforge --vault "$VAULT" runtime-health --json
 
 - `data.summary.safe_read == false`：禁止路由到 discover-papers、read-known-paper、deep-analyze-paper
 - `data.summary.safe_write == false`：禁止路由到 write-reading-log-jsonl、write-project-reading-log、write-project-log
-- `data.layers.vector.status != "ok"`：禁止把 semantic retrieve 当主路径，必要时退回 FTS / paper-context / fulltext
 - `data.layers.*.repair_command` 存在时，优先把该命令作为修复建议返回给用户
 
-一旦 runtime-health 通过，后续 molecule 继承该状态，**不要在每个 molecule 里重复跑 preflight**。
-
-Dashboard 的 `System Status` 只是这个 contract 的薄展示，不是第二套真相源。
-
----
+**检索可用性不由 runtime-health 决定。** 检索命令选择由 `query-plan` 决定。
+CLI 返回的 `INTERNAL_ERROR` 或 `vector_unavailable` 由 molecule 按 `atoms/retrieval-routing.md` §4 fallback 协议处理。
+不要基于 capabilities 自行替换 primary 命令。
 
 ## 4. 意图路由
 
@@ -167,7 +158,7 @@ Reading-log 不是事实源。它记录的是**之前的关注点、解读和预
 
 ## 6. 全局禁止规则
 
-- **禁止自行拼接文件路径**。所有路径从 bootstrap 或 paper-context 获取。
+2. **`read_known_paper`** — 用户给定了明确的 paper（key/DOI/标题）。query-plan 使用 `--intent locate`。
 - **禁止绕过 CLI 直接操作文件**。搜索用 `$PYTHON -m paperforge search`，不用 glob/grep 扫库。
 - **禁止在未完成 paper-context 检查前读取原文**（适用于 read-known-paper、deep-analyze-paper）。
 

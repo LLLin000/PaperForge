@@ -102,6 +102,42 @@ Each literature item tracks `ocr_status` through a finite state machine:
 
 ---
 
+## Retrieval Architecture
+
+PaperForge 的检索系统分两层：**工作流意图**（由 Agent molecule 编排）和 **检索意图**（由 query-plan 规划）。
+
+```
+用户工作流意图
+├── read_known_paper
+├── discover_papers
+├── find_supporting_evidence
+├── deep_analyze_paper
+└── capture_project_knowledge
+        ↓
+检索意图（query-plan 分类）
+├── locate    — 定位一篇已明确的论文
+├── discover  — 发现一批相关论文
+└── content   — 查找正文中的事实、参数、方法或证据
+        ↓
+CLI 执行器
+├── paper-context [--structure]
+├── search
+└── retrieve [--deep] [--paper KEY]
+```
+
+### 合约要点
+
+1. **query-plan 是唯一的检索规划器。** Agent 不自行选择检索策略。query-plan 返回 `primary` + 最多一个 `fallback`。
+2. **最多一次 fallback。** primary 零结果时才触发 fallback。scope=paper 时不执行 fallback。
+3. **StructureTree** 是章节导航地图，不是全文内容替代品。`paper-context --structure` 返回论文的章节树（node_id、parent_id、path、depth、page_span），用于确定 evidence 所在章节。
+4. **Evidence 由结构化字段判定。** `source_kind=body` + `structure_resolved=true` = 可靠正文证据；`source_kind=object` = 图表证据。
+5. **Agent 只理解 CLI contract。** 不接触 vec0、FTS5、embedding、SQLite 等存储层实现。
+
+### 简化过程
+
+v1.5 用三个检索意图取代了旧版的 L4 gateway 系统（content-discovery、scoped-fetch、paper-lookup、paper-navigation）。
+旧 gateway 命令保留向后兼容，但 Agent 不再使用。
+
 ## Directory Structure
 
 PaperForge uses **5 core directories** under the Obsidian vault root. All paths are configurable via `paperforge.json` and resolved through the shared config resolver (see [ADR-001](#adr-001-config-precedence)).

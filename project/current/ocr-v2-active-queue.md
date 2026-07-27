@@ -80,3 +80,15 @@
 - Vector rebuild UX and Memory/global maintenance naming are superseded by the approved Smart Retrieval and user-problem-only Maintenance design; implementation remains pending in the new slices.
 - OCR ETA and real-time per-row mutation: out of scope for the completed OCR slice.
 - Compatibility naming cleanup remains deferred post-release.
+
+
+## 2026-07-27: #112 — Agent Skill retrieval contract sync
+
+- [x] Rewrite `atoms/retrieval-routing.md` as 5-part canonical protocol (intent determination, planner protocol, safe executor, one-fallback rule, evidence interpretation + session state)
+- [x] Update `SKILL.md`: version bump `2026-07-27.1`, remove `rg`/`semantic` from pre-flight, replace `known-paper` intent with `locate`, remove "vector status gates retrieval routing" from runtime-health
+- [x] Rewrite `molecules/discover-papers.md`: delete multi-arm search, use plan→primary→fallback, delete top-10 paper-context enrichment
+- [x] Rewrite `molecules/find-supporting-evidence.md`: delete `rg`/`grep` ladder, use structure coordinates for evidence, scope-paper safety rules
+- [x] Rewrite `molecules/read-known-paper.md`: two-phase (locate → Q&A), session cache, question-type routing, no default fulltext load
+- [x] Rewrite `molecules/deep-analyze-paper.md`: Step 0 uses `--structure`, StructureTree as navigation map, no hardcoded section titles
+- [x] Sync `docs/ARCHITECTURE.md`, `docs/COMMANDS.md`, `docs/help/en/guide.md`, `docs/help/zh/guide.md`
+- [x] Mark issues #106–#110 closed

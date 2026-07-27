@@ -2,101 +2,112 @@
 
 为特定论点或问题查找文献中的证据支持。
 
+> 检索决策由 `atoms/retrieval-routing.md` 决定。这个 molecule 只编排工作流和解释证据。
+
 ---
 
 ## Pre-flight Checklist
 
-进入此 molecule 前，确认以下检查已完成：
-
 - [ ] SKILL.md Section 1a Pre-flight 全部通过
-- [ ] `$VAULT`、`$PYTHON`、`$LIT_DIR` 已从 bootstrap 获取
-- [ ] `capabilities` 已读取（关键：`rg`、`semantic_enabled`、`semantic_ready`）
-- [ ] `atoms/retrieval-routing.md` 已就绪（提供检索梯级选择）
+- [ ] `$VAULT`、`$PYTHON` 已从 bootstrap 获取
 - [ ] intent 已确定为 `find_supporting_evidence`
+- [ ] `atoms/retrieval-routing.md` §5（Evidence Interpretation）已熟知
 
 ---
 
 ## 步骤
 
-### Step 1: 解析用户证据需求
+### Step 1: 解析证据需求 + 调用 planner
 
-提取以下信息（缺什么就问用户）：
-- **论点/问题**：用户需要支持的具体主张或疑问
-- **范围限制**：是否限定特定 domain、作者、年份
-- **证据类型**：统计结果、方法引用、临床发现、机制解释等
-
-**先调用 query-plan：**
+提取：
+- **论点/问题**：需要支持的具体主张
+- **范围**：是否限定特定论文、domain、作者
+- **证据类型**：统计结果、方法引用、临床发现、机制解释
 
 ```bash
-$PYTHON -m paperforge --vault "$VAULT" query-plan "<user_query>" --intent content --json
+$PYTHON -m paperforge --vault "$VAULT" \
+  query-plan "<user_query>" \
+  --intent content --json
 ```
 
-如果 `query-plan` 推荐 `retrieve`，直接从 `retrieve` 开始，不要先走一遍 paper discovery。
+打开 `atoms/retrieval-routing.md`，按 **Planner Protocol**（§2）和 **Safe Executor**（§3）执行 `data.primary`。
 
-### Step 2: 检索梯级选择（`atoms/retrieval-routing.md`）
+### Step 2: Library scope
 
-**先检查 `retrieve` 是否可用：**
+当 scope=library 时，primary 通常是 `retrieve`（跨论文正文检索）。
+
+#### 如果有结果
+
+按 `atoms/retrieval-routing.md` §5 解释每条 evidence：
+
+```yaml
+source_kind: body + structure_resolved: true
+  → 正文证据，可直接使用
+  → 标注章节位置
+
+source_kind: object
+  → 图表证据，标注 object_kind
+
+structure_resolved: false
+  → 内容存在但章节未确认，慎用
+```
+
+不要求额外的 `rg`/`grep` 验证——结构坐标即为验证。
+
+#### 如果 zero_results 且 fallback 非 null
+
+执行一次 fallback（通常为 `search`）。fallback 结果必须标为：
+
+```
+metadata candidate
+fulltext_verified=false
+```
+
+不能与 retrieve evidence 混为同级。
+
+#### 如果 zero_results 且 fallback 为 null
+
+告知用户"未检索到相关内容"。
+
+### Step 3: Paper scope
+
+当 scope=paper 时（planner 返回 `paper_key` 且有值）：
 
 ```bash
-$PYTHON -m paperforge --vault "$VAULT" embed status --json
+$PYTHON -m paperforge --vault "$VAULT" \
+  retrieve "<question>" --paper <KEY> --json
 ```
 
-仅当 `data.db_exists == true && data.chunk_count > 0` 时 `retrieve` 可用。
+- 只查该论文
+- `fallback=null`（paper scope 不执行 fallback）
+- 无全文 → 报告"本文无可用正文"
+- 零结果 → 报告"本文未检索到相关内容"
+- 不能再 search 其他论文
 
-根据运行时状态，从以下路径中选择：
+单事实问题（"用了多少 Hz"、"样本量多少"）直接用 `retrieve --paper KEY`。
+不需要加载整篇 fulltext.md，不需要 StructureTree。
 
-1. **Ladder B1**（首选，当 `retrieve` 可用）-- 语义全文快速定位
-   - 直接调 `paperforge retrieve <query> --json --limit 30` 获取语义匹配的全文块
-   - `retrieve` 返回的 chunks 已包含 `section`、`page_number`、`chunk_text`、`paper_id`
-   - 按论文分组组织结果 → 直接进入 Step 3 展示
-   - 如需精确定位验证，再用 `rg` / `grep` 在论文全文中确认
-
-2. **Ladder B2**（备选，无 `retrieve` 但有 `rg`）-- 元数据→全文 grep
-   - 默认不要静默降级到 metadata search
-   - 先根据 query-plan 返回向用户解释：retrieve 不可用 / 0 结果，需要选择 fallback 模式
-   - 如果用户同意 metadata 缩一轮，再用 `paperforge search` 生成候选集
-   - 用 `runtime-health` 或 `paper-context` 筛选有 OCR/全文的论文
-   - 在解析后的全文中运行 `rg` 定位匹配片段
-
-3. **Ladder C**（回退）-- 无 `rg` 时用 `grep`/`findstr`
-   - 同上流程但用系统搜索工具代替 rg
-
-4. **Ladder D**（补充）-- 当 Ladder B1 命中太少时，用 `search` 做元数据补充
-   - 取 `retrieve` 结果 + `search` 结果的并集
-   - 去重后展示更完整的证据列表
-
-5. **元数据降级** -- 当没有任何论文有 OCR/全文时，只出候选论文列表，不做片段验证
-
-### Step 3: 展示分组证据命中（grouped evidence hits with snippets）
-
-格式：
+### Step 4: 展示证据
 
 ```
 找到 N 条与 "<论点>" 相关的证据：
 
-=== Smith 2024 (zotero_key: ABC12345) ===
-[1] 第 5 页 · 方法部分
-    匹配片段："...we used a randomized controlled trial..."
-    上下文：在讨论实验设计时作者描述了...
+=== Smith 2024 (ABC12345) ===
+[1] Introduction · section_title="Background"
+    structure_resolved: true
+    "…electrical stimulation parameters included 75 Hz frequency…"
 
-=== Jones 2023 (zotero_key: DEF67890) ===
-[2] 第 12 页 · 讨论部分
-    匹配片段："...our findings align with previous meta-analyses..."
-    上下文：作者比较本研究与已有综述的一致性...
-
-（共 N 条，来自 M 篇论文）
+=== Jones 2023 (DEF67890) ===
+[2] Methods
+    structure_resolved: true
+    metadata candidate — fulltext not yet available
+    "study of PTOA patients using biophysical stimulation…"
 ```
 
-每项包含：
-- 论文标识（`zotero_key`、标题）
-- 章节或页码引用
-- 匹配片段
-- 简短上下文
+### Step 5: 等待用户选择
 
-### Step 4: 等用户选择后续操作
-
-- "看 [1] 的详情" → 路由到 `read-known-paper.md`
-- "保存 [1]" / "记录这条证据" → 路由到 `capture-project-knowledge.md`
+- "看 [1] 的详情" → `read-known-paper.md`
+- "保存这条证据" → `capture-project-knowledge.md`
 - "换个关键词" → 回到 Step 1
 - "够了" → 结束
 
@@ -106,24 +117,25 @@ $PYTHON -m paperforge --vault "$VAULT" embed status --json
 
 | 用户动作 | 路由目标 |
 |---------|---------|
-| 用户想查看论文详情 | `read-known-paper.md` |
-| 用户想保存证据到项目知识 | `capture-project-knowledge.md` |
-| 用户想重新搜索 | 回到 Step 1 |
+| 查看论文详情 | `read-known-paper.md` |
+| 保存证据到项目知识 | `capture-project-knowledge.md` |
+| 重新搜索 | 回到 Step 1 |
 
 ---
 
 ## 元数据降级
 
-当 `runtime-health` 显示没有任何论文有 OCR 或全文可用时：
+当 runtime-health 显示没有任何论文有 OCR 或全文可用时：
 
-> 精确证据验证受限 -- 降级到元数据级支持
+> 精确证据验证受限——降级到元数据级支持
 
-仅输出候选论文列表（不含片段验证），告知用户当前无法做全文级证据检索。
+输出候选项时标注 `fulltext_available=false`，不虚构引用位置或片段。
 
 ---
 
 ## 禁止
 
 - 不要在没有 OCR/全文的情况下虚构引用位置或片段
-- 不要在没有 `rg`/`grep` 验证的情况下把语义检索结果当最终证据
+- 不要把 metadata candidate 与正文证据混为同级
 - 不要在用户未要求时自动保存证据
+- 不要绕过 CLI 使用 `rg`/`grep` 验证——结构坐标即为验证

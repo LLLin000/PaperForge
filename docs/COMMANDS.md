@@ -1,22 +1,84 @@
 # PaperForge 命令参考
 
-> 所有 CLI 命令和 Agent 命令速查。
+> 所有 CLI 命令和 Agent 命令速查。Agent 技能中的检索路由协议的权威定义见 `paperforge/skills/paperforge/atoms/retrieval-routing.md`。
 
 ---
 
-## 命令矩阵
+## 检索命令体系
 
-| Agent 命令 | CLI 命令 | 用途 | 前置条件 |
-|-----------|---------|------|---------|
-| `/pf-sync` | `paperforge sync` | 同步 Zotero，生成正式笔记 | BBT JSON 导出 |
-| `/pf-ocr` | `paperforge ocr` | PDF OCR 文本与图表提取 | `do_ocr: true` |
-| `/pf-status` | `paperforge status` / `paperforge runtime-health` | 查看系统状态 | 配置完成 |
-| `/pf-deep <key>` | `paperforge deep-reading` (队列) | 三阶段精读 (Agent 层) | OCR done + `analyze: true` |
-| `/pf-paper <key>` | — | 文献问答 (Agent 层) | 正式笔记存在 |
-| `/pf-end <key>` | — | 结束精读/问答 Session (Agent 层) | 精读或问答进行中 |
-| `/pf-log-reading` | `paperforge reading-log --write <key>` | 记录阅读笔记 | 精读进行中 |
-| `/pf-log-session` | `paperforge project-log --write` | 总结会话决策 | 会话结束 |
+检索系统分三个意图，一个规划器，三个执行命令：
 
+```
+query-plan (规划器) — 决定使用哪条路径
+├── intent=locate    → paper-context（定位论文）
+├── intent=discover  → search（发现论文）
+└── intent=content   → retrieve（正文检索）
+```
+
+### `paperforge query-plan`
+
+```bash
+paperforge query-plan "<query>" --intent locate|discover|content --json
+```
+
+返回 JSON：
+- `data.intent` — 回显检索意图
+- `data.query` — 规范化后的检索 query
+- `data.scope` — `paper`（单篇）| `library`（全库）
+- `data.paper_key` — scope=paper 时的 identifier
+- `data.primary` — 推荐命令 + 参数（`command` / `args`）
+- `data.fallback` — primary 零结果时的备选（或 null）
+
+### `paperforge paper-context`
+
+定位已有论文或获取论文完整上下文。
+
+```bash
+paperforge paper-context <KEY|DOI|citation_key> --json
+paperforge paper-context <KEY> --structure --json   # 附加 StructureTree
+```
+
+`--structure` 返回章节导航地图（node_id、parent_id、path、depth、page_span）。
+StructureTree 用于确定 evidence 所在章节，不是全文替代品。
+
+### `paperforge search`
+
+元数据全文搜索。跨论文标题、摘要、作者、期刊。
+
+```bash
+paperforge search "<query>" --json
+paperforge search "<query>" --domain <domain> --json
+paperforge search "<query>" --year-from <Y> --year-to <Y> --json
+paperforge search "<query>" --ocr done|pending --json
+paperforge search "<query>" --limit <N> --json
+```
+
+返回 `data.matches[]`，每项包含：
+`zotero_key`, `title`, `first_author`, `year`, `journal`, `domain`,
+`fulltext_available`, `body_units_count`, `ocr_status`
+
+`fulltext_available=false` 时结果为 metadata candidate，不是正文证据。
+
+### `paperforge retrieve`
+
+正文内容检索。在 OCR 全文块中查找匹配内容。
+
+```bash
+paperforge retrieve "<query>" --json
+paperforge retrieve "<query>" --limit <N> --json
+paperforge retrieve "<query>" --paper <KEY> --json          # 限定单篇论文
+paperforge retrieve "<query>" --deep --json                 # 混合检索（BM25 + 向量）
+paperforge retrieve "<query>" --paper <KEY> --deep --json   # 单篇混合检索
+```
+
+返回 `data.matches[]`，每项包含：
+`zotero_key`, `unit_id`, `source_kind`(body|object), `structure_resolved`,
+`node_id`, `structure_path`, `section_title`, `section_level`, `part_ordinal`,
+`text`, `score`, `object_kind`（仅 object）
+
+---
+
+## 命令矩阵（Agent / CLI）
 ---
 
 ## CLI 命令
@@ -140,75 +202,29 @@ paperforge embed stop --json        # JSON 输出
 ### `paperforge retrieve`
 
 ```bash
-paperforge retrieve "<query>"       # 跨 OCR 全文语义检索
-paperforge retrieve "PEMF" --limit 10 --json
-paperforge retrieve "75 Hz" --no-expand
+paperforge retrieve "<query>"            # 正文内容检索（完整语法见上方检索命令体系）
+paperforge retrieve "<query>" --json
+paperforge retrieve "<query>" --limit 10
+paperforge retrieve "<query>" --paper KEY
+paperforge retrieve "<query>" --deep
 ```
 
 ### `paperforge query-plan`
 
 ```bash
-paperforge query-plan "<query>" --intent discover    # 文献发现
-paperforge query-plan "<query>" --intent content      # 内容检索
-paperforge query-plan "<query>" --intent known-paper  # 已知论文定位
-paperforge query-plan "<query>" --intent discover --json
-```
-
-### `paperforge prune`
-
-```bash
-paperforge prune                     # 预览删除孤儿产物 (dry-run)
-paperforge prune --force             # 实际删除
-paperforge prune <KEY> [KEY...]      # 仅处理指定 key
-paperforge prune --json              # JSON 输出
-```
-
-### `paperforge memory`
-
-```bash
-paperforge memory build              # 构建 memory DB
-paperforge memory build --json       # JSON 输出
-paperforge memory status             # 查看 memory DB 状态
-paperforge memory status --json      # JSON 输出
-```
-
-### `paperforge search`
-
-```bash
-paperforge search "<query>"          # 元数据全文搜索
-paperforge search "<query>" --json
-paperforge search "PEMF" --domain 骨科 --ocr done --year-from 2020
-paperforge search "PEMF" --deep done --lifecycle fulltext_ready
-paperforge search "PEMF" --next-step ocr --limit 10
-```
-
-### `paperforge paper-status`
-
-```bash
-paperforge paper-status <query>      # 查找文献状态 (key/DOI/title/alias)
-paperforge paper-status "XGT9Z257" --json
+paperforge query-plan "<query>" --intent locate    # 定位已知论文
+paperforge query-plan "<query>" --intent discover  # 发现论文
+paperforge query-plan "<query>" --intent content    # 正文内容检索
+paperforge query-plan "<query>" --intent locate --json
 ```
 
 ### `paperforge paper-context`
 
 ```bash
-paperforge paper-context <key>       # 文献完整上下文
-paperforge paper-context "XGT9Z257" --json
+paperforge paper-context <KEY>          # 论文完整上下文
+paperforge paper-context <KEY> --json
+paperforge paper-context <KEY> --structure --json  # 附加 StructureTree
 ```
-
-### `paperforge reading-log`
-
-```bash
-paperforge reading-log --write <KEY> --section "Discussion P12" --excerpt "..." --usage "..." # 写阅读笔记
-paperforge reading-log --render      # 渲染 reading-log.md
-paperforge reading-log --lookup <KEY> # 查某文献的阅读笔记
-paperforge reading-log --since 2026-01-01 --limit 100 --output notes.md # 导出
-paperforge reading-log --validate reading-log.md
-paperforge reading-log --import reading-log.md
-paperforge reading-log --correct <ID> --correction "..." --reason "..." # 修正笔记
-paperforge reading-log --json
-```
-
 ### `paperforge project-log`
 
 ```bash
