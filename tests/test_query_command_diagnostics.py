@@ -148,8 +148,13 @@ def test_retrieve_paper_scoped_zero_has_no_warnings(monkeypatch, tmp_path: Path,
     args = _Args(tmp_path)
     args.query = "unknown term"
     args.paper = "P001"
-
-
+    assert retrieve_command.run(args) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is True
+    assert payload["data"]["count"] == 0
+    assert payload["data"]["scoped_paper"] == "P001"
+    assert not payload.get("warnings"), "Paper-scoped zero results must not emit warnings"
+    assert not payload.get("next_actions"), "Paper-scoped zero results must not emit next_actions"
 def test_deep_bm25_only_on_vector_failure(monkeypatch, tmp_path: Path) -> None:
     """retrieve --deep returns BM25 results even when _vec_search fails."""
     import sqlite3
