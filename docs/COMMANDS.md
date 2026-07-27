@@ -27,7 +27,7 @@ paperforge query-plan "<query>" --intent locate|discover|content --json
 - `data.scope` — `paper`（单篇）| `library`（全库）
 - `data.paper_key` — scope=paper 时的 identifier
 - `data.primary` — 推荐命令 + 参数（`command` / `args`）
-- `data.fallback` — primary 零结果时的备选（或 null）
+- `data.fallback` — 触发声明条件时的备选（or null）；trigger 包括 zero_results、no_direct_answer
 
 ### `paperforge paper-context`
 
@@ -61,7 +61,8 @@ paperforge search "<query>" --limit <N> --json
 
 `search "<query>" --evidence --json` 返回 `data.metadata_candidates[]`（evidence 模式）。
 用于 fallback.mode=evidence 的场景。
-正文内容检索。在 OCR 全文块中查找匹配内容。
+
+### `paperforge retrieve`
 
 ```bash
 paperforge retrieve "<query>" --json

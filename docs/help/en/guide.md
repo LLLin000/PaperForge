@@ -44,8 +44,8 @@ A **planner** (`paperforge query-plan`) classifies your question and recommends 
 
 Smart Retrieval builds a vector index of paper full text using an embedding model.
 When vectors are available, `retrieve --deep` adds semantic search on top of keyword matching.
-The system automatically falls back to metadata search when vectors are not available.
-
+The planner (`query-plan`) determines which retrieval path to use and whether
+fallback to metadata search is appropriate based on intent and result availability.
 **Requires:** an OpenAI-compatible API endpoint and an embedding model for vector features.
 Metadata search works without any API key.
 ---

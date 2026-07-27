@@ -53,43 +53,54 @@ $PYTHON -m paperforge --vault "$VAULT" \
 - `data.paper.ocr_status != "done"` → "OCR 未完成，请先运行 paperforge ocr"，停止
 - `data.paper.analyze != true` → "analyze 未开启，请在 formal note frontmatter 中设为 true"，停止
 
-**读取 StructureTree：**
+**检查 structure：**
 
+```text
+data.structure == null → 章节树暂不可用
+  → 继续原有 fulltext + pf_deep.py 工作流
+  → 不使用 node/path 导航
+  → 不终止精读
+  → structure_available = false
 ```
 
-StructureTree 是**导航地图，不是全文内容替代品**。它用于：
+data.structure 非 null 时，读取 StructureTree：
 
-- 确定文章有哪些核心章节
-- 确定章节父子关系
-- 确定 document order
-- 判断 evidence 位于 Methods / Results / Discussion
-- 找到图表所处章节
+```text
+data.structure.version   — 结构版本（与检索结果中的 structure_version 对照）
+data.structure.nodes[]   — 章节导航地图
+
+每个 node 包含：
+  node_id               — 节点 ID
+  parent_id             — 父节点 ID（null = root）
+  title                 — 章节标题
+  path                  — 章节路径数组
+  depth                 — 深度
+  own_block_count       — 本节点包含的 block 数
+  page_span             — 跨页范围
+  document_order        — 文档内顺序
+structure_available = true
+```
+
+StructureTree 是**导航地图，不是全文内容替代品**。用于确定章节父子关系、document order、判断 evidence 所在章节。
 
 **不要硬编码英文章节标题。** 优先识别 Methods / Results / Discussion 语义角色；
-找不到标准标题时，按 `document_order` 和 `path` 判断对应章节。
-很多论文会使用 Materials and Methods、Experimental、Findings、Results and Discussion、Case Presentation 等变体。
-
+找不到标准标题时，按 `document_order` 和 `path` 判断。很多论文使用 Materials and Methods、Experimental、Findings 等变体。
 详细内容仍由 `pf_deep.py prepare`、fulltext、figure/table 素材、chart-reading atom 提供。
 
 **检查 prior_notes：**
 
 - 如果存在 `data.prior_notes`，逐条看 `verified` 字段
 - `verified: false` 的条目记入 recheck_targets，精读时必须回原文复核
-- `verified: true` 的条目可以信任，但标注"之前已验证"
+- `verified: true` → 可作为已核过的历史记录和复查优先级；**仍不能脱离原文直接回答事实问题**（见 SKILL.md §5 Reading-Log Safety Rule）
 
 **记录关键路径：**
 
 - `data.paper.note_path`
 - `data.paper.fulltext_path`
-- `data.structure.version`
-- `data.structure.nodes`
+- `data.structure.version`（仅当 structure 非 null）
+- `data.structure.nodes`（仅当 structure 非 null）
+- `structure_available`
 - `recheck_targets`
-
-**StructureTree 降级 path：**
-- `data.structure == null` → 报告"章节树暂不可用"
-  → 继续原有 fulltext + pf_deep.py 工作流
-  → 不使用 node/path 导航
-  → 不终止精读
 
 ---
 

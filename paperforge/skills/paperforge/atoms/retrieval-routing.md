@@ -39,17 +39,29 @@ $PYTHON -m paperforge --vault "$VAULT" \
   --json
 ```
 
-### 解析 planner 输出
-
 读取以下固定字段：
 
 ```
 data.intent          — 回显本次检索意图
-data.query           — 规范化后的检索 query（可能包含改写）
+data.query           — 原始用户输入（fallback 时用作备选 query）
 data.scope           — "paper"（单篇范围）| "library"（全库范围）
 data.paper_key       — scope=paper 时的 paper identifier；scope=library 时为 null
-data.primary         — 推荐命令 + 参数，格式：{"command": "...", "args": {...}}
-data.fallback        — 仅当 primary 触发特定条件时使用；null 表示无 fallback
+data.primary         — 推荐命令 + 规范化执行参数
+data.fallback        — 触发声明条件时的备选（非零结果专用）
+```
+
+`data.primary.args` 中包含 primary 的规范化执行参数（含经过 planner 规整的 query）：
+
+```json
+{
+  "command": "search",
+  "args": {
+    "query": "Smith",           // 规整后的执行 query（不是原始输入）
+    "year_from": 2024,
+    "year_to": 2024,
+    "limit": 10
+  }
+}
 ```
 
 `data.fallback` 结构：
@@ -64,7 +76,6 @@ data.fallback        — 仅当 primary 触发特定条件时使用；null 表�
 
 `mode=evidence` 表示 fallback 应使用 `search --evidence`。
 `mode=content` 表示 fallback 应使用 `retrieve`。
-
 ### 不再读取的字段（后端已移除，molecules 不得引用）
 
 ```
@@ -87,12 +98,60 @@ query_writing_rules     ← 已移除
 | command | CLI 形式 |
 |---------|----------|
 | `paper-context` | `$PYTHON -m paperforge --vault "$VAULT" paper-context <args.key> --json` |
-| `search` | `$PYTHON -m paperforge --vault "$VAULT" search "<plan.query>" [--domain] [--year-from] [--year-to] [--ocr] [--limit N] --json` |
-| `retrieve` | `$PYTHON -m paperforge --vault "$VAULT" retrieve "<plan.query>" [--paper KEY] [--deep] [--limit N] --json` |
+| `search` | `$PYTHON -m paperforge --vault "$VAULT" search "<args.query>" [--domain <args.domain>] [--year-from <args.year_from>] [--year-to <args.year_to>] [--ocr <args.ocr>] [--limit <args.limit>] --json` |
+| `retrieve` | `$PYTHON -m paperforge --vault "$VAULT" retrieve "<args.query>" [--paper <args.paper>] [--deep] [--limit <args.limit>] --json` |
+
+### Query 来源规则
+
+**primary 使用 `primary.args.query`（planner 规整后的执行 query）。**
+**fallback 使用 `plan.query`（原始用户输入）。**
+
+示例：用户输入"帮我找 Smith 2024 cartilage"：
+
+```json
+{
+  "query": "帮我找 Smith 2024 cartilage",
+  "primary": {
+    "command": "search",
+    "args": {"query": "Smith", "year_from": 2024, "year_to": 2024, "limit": 10}
+  }
+}
+```
+
+正确渲染：
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" search "Smith" --year-from 2024 --year-to 2024 --limit 10 --json
+```
+
+错误渲染（使用原始输入）：
+
+```bash
+# ❌ 错误—query 是原始用户输入，不是规整后的执行 query
+$PYTHON -m paperforge --vault "$VAULT" search "帮我找 Smith 2024 那篇关于 cartilage 的论文" --json
+```
+
+**当 `retrieve` 的 `primary.args` 不含 `query` 字段时**，回退到 `plan.query`：
+
+```json
+{
+  "query": "75 Hz frequency",
+  "primary": {
+    "command": "retrieve",
+    "args": {"paper": "ABCDEFGH"}
+  }
+}
+```
+
+渲染：
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" retrieve "75 Hz frequency" --paper ABCDEFGH --json
+```
 
 ### Fallback mode 渲染
 
-当 `fallback.mode` 存在时，按 mode 追加 CLI flag：
+fallback 使用 `plan.query`（原始输入），不读取 `primary.args.query`。
 
 | fallback.mode | CLI 参数 |
 |--------------|----------|
@@ -106,33 +165,6 @@ $PYTHON -m paperforge --vault "$VAULT" search "<plan.query>" --evidence --json
 
 # fallback.command == "retrieve", fallback.mode == null
 $PYTHON -m paperforge --vault "$VAULT" retrieve "<plan.query>" --json
-```
-
-### 关键渲染规则
-
-**`retrieve` 和 `search` 的 query 来自 `plan.query`，不是来自 `args`。** 示例：
-
-```json
-{
-  "query": "what frequency was used",
-  "primary": {
-    "command": "retrieve",
-    "args": {"paper": "ABCDEFGH"}
-  }
-}
-```
-
-应渲染为：
-
-```bash
-$PYTHON -m paperforge --vault "$VAULT" retrieve "what frequency was used" --paper ABCDEFGH --json
-```
-
-不是：
-
-```bash
-# ❌ 错误 — 缺少位置参数 query
-$PYTHON -m paperforge --vault "$VAULT" retrieve --paper ABCDEFGH
 ```
 
 ### scope safety guard
@@ -230,34 +262,21 @@ object 结果包含:
   - structure_path: 章节路径
 ```
 
-### metadata 候选项
 
-```yaml
-来自 search 命令（无 --evidence）:
-  fulltext_available: false
-  body_units_count: 0
-  ocr_status: "pending"
-  → 仅元数据候选项，不是正文验证
-  → 标注为"metadata candidate — fulltext not yet available"
 
-来自 search --evidence :
-  → 返回 metadata_candidates[] 结构
-  → 每个候选项有 evidence_status / fulltext_verified
-  → 展示时与正文 evidence 分两个区块，不混合
 ```
+search "<query>" [--domain D] [--year-from Y] [--year-to Y] [--ocr S] [--limit N] --json
+  → data.matches[]: zotero_key, title, first_author, year, journal, domain
+    fulltext_available, body_units_count, ocr_status
 
-### 不存在正文时的边界
-
-```yaml
-paper scope + fulltext_unavailable:
-  → 明确报告限制，不搜索其他论文
-  → 不虚构引用位置或片段
+search "<query>" --evidence --json
+  → 顶层字段：
+    data.evidence_status: "metadata_only"
+    data.fulltext_verified: false
+    data.metadata_candidates[]: zotero_key, title, first_author, year
+  fallback.mode=evidence 时使用此形式
+  候选项本身只含 metadata，不包含章节或正文片段
 ```
-
----
-
-## Session State
-
 一次会话中多个检索请求应复用已获取的信息：
 
 ```

@@ -33,15 +33,11 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 通常 primary 是 `search`。search 已直接返回 `fulltext_available`、`body_units_count`、`ocr_status`——不需要额外调用 paper-context 做 enrichment。
 
-### Step 2: Zero-results 处理
+### Step 2: 执行 + 评估结果
 
-如果 primary 返回 `data.matches` 为空：
-
-1. 检查 `data.fallback`——如果不为 null 且 scope=library → 执行一次 fallback
-2. fallback 通常为 `retrieve`（当有向量索引时）
-3. fallback 后不再二次 fallback
-
-如果 fallback 也为空 → 告知用户"未找到匹配"，建议更换关键词。
+打开 `atoms/retrieval-routing.md`，按 **Planner Protocol**（§2）和 **Safe Executor**（§3）执行 `data.primary`。
+然后按 §4 评估结果。可能的 fallback trigger 为 `zero_results` 或 `no_direct_answer`。
+本 molecule 不重新定义 trigger 规则。
 
 ### Step 3: 按 zotero_key 去重
 
