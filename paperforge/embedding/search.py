@@ -11,19 +11,16 @@ logger = logging.getLogger(__name__)
 
 RETRIEVAL_COLLECTIONS = ["paperforge_fulltext", "paperforge_body", "paperforge_objects"]
 
-# vec0 table name -> source label
 _VEC_SOURCE_MAP = {
-    "vec_fulltext": "legacy_chunk",
-    "vec_body": "body_unit",
-    "vec_objects": "object_unit",
+    "vec_body": "body",
+    "vec_objects": "object",
 }
 
-# vec0 table name -> companion meta table name
 _VEC_META_MAP = {
-    "vec_fulltext": "vec_fulltext_meta",
     "vec_body": "vec_body_meta",
     "vec_objects": "vec_objects_meta",
 }
+
 
 
 def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True) -> list[dict]:
@@ -63,8 +60,60 @@ def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True
     return results[:limit]
 
 
-def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True) -> list[dict]:
-    """Query all vec0 tables, merge with unit-level dedup and per-paper cap."""
+def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str) -> dict:
+    """Return structural coordinates for any retrieval hit.
+
+    Used by both merge_retrieve() and hybrid_search().
+    """
+    enrichment: dict = {"structure_resolved": True}
+    if source_kind == "body":
+        row = conn.execute(
+            "SELECT node_id, section_path_json, section_title, section_level, part_ordinal, unit_kind "
+            "FROM body_units WHERE unit_id=? AND paper_id=?",
+            (unit_id, paper_id),
+        ).fetchone()
+        if row:
+            enrichment["node_id"] = row["node_id"]
+            enrichment["structure_path"] = json.loads(row["section_path_json"]) if row["section_path_json"] else []
+            enrichment["section_title"] = row["section_title"]
+            enrichment["section_level"] = row["section_level"]
+            enrichment["part_ordinal"] = row["part_ordinal"]
+            enrichment["unit_kind"] = row["unit_kind"]
+        else:
+            enrichment["node_id"] = ""
+            enrichment["structure_path"] = []
+            enrichment["structure_resolved"] = False
+    elif source_kind == "object":
+        row = conn.execute(
+            "SELECT node_id, section_path_json, object_kind "
+            "FROM object_units WHERE unit_id=? AND paper_id=?",
+            (unit_id, paper_id),
+        ).fetchone()
+        if row:
+            enrichment["node_id"] = row["node_id"]
+            enrichment["structure_path"] = json.loads(row["section_path_json"]) if row["section_path_json"] else []
+            enrichment["object_kind"] = row["object_kind"]
+        else:
+            enrichment["node_id"] = ""
+            enrichment["structure_path"] = []
+            enrichment["structure_resolved"] = False
+
+    # Read structure_version from DB manifest
+    row = conn.execute("SELECT value FROM meta WHERE key = ?", (f"manifest:{paper_id}",)).fetchone()
+    if row:
+        try:
+            manifest = json.loads(row[0])
+            enrichment["structure_version"] = str(manifest.get("ocr_result_hash", ""))
+        except (TypeError, ValueError, KeyError):
+            enrichment["structure_version"] = ""
+    else:
+        enrichment["structure_version"] = ""
+
+    return enrichment
+
+
+def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True, paper_id: str | None = None) -> list[dict]:
+    """Query vec0 tables, enrich with structural coordinates, dedup by unit_id."""
     provider = OpenAICompatibleProvider(vault)
     q_emb = provider.encode_single(query)
     n = limit * 2 if expand else limit
@@ -79,13 +128,19 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True)
         for vec_table, source in _VEC_SOURCE_MAP.items():
             meta_table = _VEC_META_MAP[vec_table]
             try:
-                rows = conn.execute(
-                    f"""SELECT m.paper_id, m.chunk_index, m.text, v.distance
-                        FROM {vec_table} v
-                        JOIN {meta_table} m ON v.rowid = m.rowid
-                        WHERE v.embedding MATCH ? AND v.k = ?""",
-                    (q_emb_json, n),
-                ).fetchall()
+                base_sql = f"""SELECT m.paper_id, m.unit_id, m.text, v.distance
+                               FROM {vec_table} v
+                               JOIN {meta_table} m ON v.rowid = m.rowid
+                               WHERE v.embedding MATCH ? AND v.k = ? AND m.unit_id <> ''"""
+                params: list = [q_emb_json, n]
+                if paper_id:
+                    base_sql += f""" AND v.rowid IN (
+                        SELECT rowid FROM {meta_table}
+                        WHERE paper_id = ? AND unit_id <> ''
+                    )"""
+                    params.append(paper_id)
+                base_sql += " ORDER BY v.distance"
+                rows = conn.execute(base_sql, params).fetchall()
             except Exception as exc:
                 logger.warning("merge_retrieve: %s query failed: %s", vec_table, exc)
                 continue
@@ -94,11 +149,11 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True)
                 all_results.append(
                     {
                         "paper_id": row[0],
+                        "unit_id": row[1],
                         "section_path": "",
                         "chunk_text": row[2],
                         "score": round(1.0 - row[3], 4),
                         "source": source,
-                        "unit_id": row[1],
                         "object_kind": "",
                         "object_label": "",
                     }
@@ -109,9 +164,7 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True)
         per_paper: dict[str, int] = {}
         merged: list[dict] = []
         for r in all_results:
-            dedupe_key = (
-                (r["source"], r["unit_id"]) if r.get("unit_id") else (r["source"], r["paper_id"], hash(r["chunk_text"]))
-            )
+            dedupe_key = (r["source"], r["unit_id"])
             if dedupe_key in seen:
                 continue
             seen.add(dedupe_key)
@@ -119,24 +172,17 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True)
             if per_paper.get(pid, 0) >= 2:
                 continue
             per_paper[pid] = per_paper.get(pid, 0) + 1
+            # Enrich with structural coordinates
+            enrichment = enrich_retrieval_hit(conn, paper_id=pid, source_kind=r["source"], unit_id=r["unit_id"])
+            r.update(enrichment)
             merged.append(r)
             if len(merged) >= limit:
                 break
         return merged
     finally:
         conn.close()
-
-
-def hybrid_search(vault: Path, query: str, limit: int = 10) -> list[dict]:
-    """Hybrid search: BM25 FTS5 + vec0 k-NN with query rewrite.
-
-    Runs on body_units_fts (BM25) and vec_body/vec_objects (k-NN),
-    fuses scores (0.3 BM25 + 0.7 vec), and returns deduplicated results
-    with text snippets and source types.
-
-    Falls back to BM25-only when vec0 tables are unavailable or empty.
-    """
-    logger = logging.getLogger(__name__)
+def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None = None) -> list[dict]:
+    """Hybrid search: BM25 FTS5 + vec0 k-NN with query rewrite."""
     from paperforge.embedding.query_rewrite import expand_query as do_expand
 
     query_variants = do_expand(query)
@@ -144,23 +190,22 @@ def hybrid_search(vault: Path, query: str, limit: int = 10) -> list[dict]:
     conn = get_connection(db_path, read_only=True)
     try:
         ensure_vec_extension(conn)
-
-        # ── Step 2: BM25 FTS5 ──────────────────────────────────────────
-        bm25_results: list[dict] = _bm25_search(conn, query_variants, limit * 2)
-
-        # ── Step 3: vec0 k-NN  ─────────────────────────────────────────
-        vec_results: list[dict] = _vec_search(conn, vault, query, limit * 2)
-
-        # ── Step 4: Score fusion ────────────────────────────────────────
+        bm25_results: list[dict] = _bm25_search(conn, query_variants, limit * 2, paper_id=paper_id)
+        vec_results: list[dict] = _vec_search(conn, vault, query, limit * 2, paper_id=paper_id)
         fused = _fuse_results(bm25_results, vec_results, limit)
+
+        # Enrich fused results with structural coordinates
+        for r in fused:
+            enrichment = enrich_retrieval_hit(
+                conn, paper_id=r.get("paper_id", ""), source_kind=r.get("source", "body"), unit_id=r.get("unit_id", "")
+            )
+            r.update(enrichment)
 
         return fused
     finally:
         conn.close()
-
-
 def _bm25_search(
-    conn: sqlite3.Connection, query_variants: list[str], limit: int
+    conn: sqlite3.Connection, query_variants: list[str], limit: int, paper_id: str | None = None
 ) -> list[dict]:
     """Run BM25 (FTS5) search across body_units_fts for each query variant.
 
@@ -171,8 +216,8 @@ def _bm25_search(
 
     for qv in query_variants:
         try:
-            rows = conn.execute(
-                """SELECT
+            params = [qv]
+            sql = """SELECT
                     bu.unit_id,
                     bu.paper_id,
                     bu.section_path,
@@ -187,11 +232,13 @@ def _bm25_search(
                    FROM body_units_fts bu_fts
                    JOIN body_units bu ON bu_fts.unit_id = bu.unit_id
                    JOIN papers p ON bu.paper_id = p.zotero_key
-                   WHERE body_units_fts MATCH ?
-                   ORDER BY rank
-                   LIMIT ?""",
-                (qv, limit),
-            ).fetchall()
+                   WHERE body_units_fts MATCH ?"""
+            if paper_id:
+                sql += " AND bu.paper_id = ?"
+                params.append(paper_id)
+            sql += " ORDER BY rank LIMIT ?"
+            params.append(limit)
+            rows = conn.execute(sql, params).fetchall()
         except Exception as exc:
             logger = logging.getLogger(__name__)
             logger.warning("BM25 query failed for %r: %s", qv, exc)
@@ -211,12 +258,11 @@ def _bm25_search(
                 {
                     "unit_id": row["unit_id"],
                     "paper_id": row["paper_id"],
-                    "title": row["title"],
+                    "source": "body",
                     "first_author": row["first_author"],
                     "year": row["year"],
                     "journal": row["journal"],
                     "domain": row["domain"],
-                    "source": "body_unit",
                     "text": row["unit_text"],
                     "heading": row["section_title"],
                     "bm25_score": round(bm25_norm, 4),
@@ -229,11 +275,12 @@ def _bm25_search(
 
 
 def _vec_search(
-    conn: sqlite3.Connection, vault: Path, query: str, limit: int
+    conn: sqlite3.Connection, vault: Path, query: str, limit: int, paper_id: str | None = None
 ) -> list[dict]:
-    """Run vec0 k-NN on vec_body and vec_objects.
+    """Run vec0 k-NN on vec_body and vec_objects with unit_id.
 
     Gracefully returns empty list when vec0 extension or tables are missing.
+    Supports paper-scoped filtering via rowid pre-filter.
     """
     logger = logging.getLogger(__name__)
     provider = OpenAICompatibleProvider(vault)
@@ -242,26 +289,31 @@ def _vec_search(
 
     results: list[dict] = []
     for vec_table, source in _VEC_SOURCE_MAP.items():
-        if vec_table not in ("vec_body", "vec_objects"):
-            continue
         meta_table = _VEC_META_MAP[vec_table]
         try:
-            rows = conn.execute(
-                f"""SELECT m.paper_id, m.chunk_index, m.text, v.distance
-                    FROM {vec_table} v
-                    JOIN {meta_table} m ON v.rowid = m.rowid
-                    WHERE v.embedding MATCH ? AND v.k = ?""",
-                (q_emb_json, limit),
-            ).fetchall()
+            base_sql = f"""SELECT m.paper_id, m.unit_id, m.text, v.distance
+                           FROM {vec_table} v
+                           JOIN {meta_table} m ON v.rowid = m.rowid
+                           WHERE v.embedding MATCH ? AND v.k = ? AND m.unit_id <> ''"""
+            params: list = [q_emb_json, limit]
+            if paper_id:
+                base_sql += f""" AND v.rowid IN (
+                    SELECT rowid FROM {meta_table}
+                    WHERE paper_id = ? AND unit_id <> ''
+                )"""
+                params.append(paper_id)
+            base_sql += " ORDER BY v.distance"
+            rows = conn.execute(base_sql, params).fetchall()
         except Exception as exc:
             logger.warning("vec0 query failed for %s: %s", vec_table, exc)
             continue
 
         for row in rows:
-            vec_sim = round(1.0 - row[3], 4)  # convert distance to similarity
+            vec_sim = round(1.0 - row[3], 4)
             results.append(
                 {
                     "paper_id": row[0],
+                    "unit_id": row[1],
                     "source": source,
                     "text": row[2] or "",
                     "vec_score": vec_sim,
@@ -270,22 +322,18 @@ def _vec_search(
 
     return results
 
-
 def _fuse_results(
     bm25_results: list[dict], vec_results: list[dict], limit: int
 ) -> list[dict]:
     """Fuse BM25 and vec0 results with combined score.
 
     Fusion formula: combined = 0.3 * bm25_norm + 0.7 * vec_norm.
-    When vec0 is unavailable, uses BM25 scores directly.
-
-    Returns list deduplicated by (paper_id, text) with combined score.
+    Deduplicates by (source_kind, unit_id).
     """
-    # Build vec lookup: (paper_id, text) -> vec_score
+    # Build vec lookup: (source, unit_id) -> vec_score
     vec_lookup: dict[tuple[str, str], float] = {}
     for vr in vec_results:
-        key = (vr["paper_id"], vr["text"])
-        # Keep the highest vec score per unique paper_id+text
+        key = (vr.get("source", ""), vr.get("unit_id", ""))
         if key not in vec_lookup or vr["vec_score"] > vec_lookup[key]:
             vec_lookup[key] = vr["vec_score"]
 
@@ -293,32 +341,28 @@ def _fuse_results(
 
     for br in bm25_results:
         bm25_norm = br["bm25_score"]
-        key = (br["paper_id"], br.get("text", ""))
+        key = ("body", br.get("unit_id", ""))
 
         if has_vec and key in vec_lookup:
             vec_raw = vec_lookup[key]
-            # Normalize vec score similarly
             vec_norm = 1.0 - (1.0 / (1.0 + vec_raw)) if vec_raw > 0 else 0.0
             br["vec_score"] = round(vec_raw, 4)
             combined = 0.3 * bm25_norm + 0.7 * vec_norm
             br["score"] = round(combined, 4)
         else:
-            # No vec data for this item — use BM25 alone
             br["vec_score"] = 0.0
             br["score"] = round(bm25_norm, 4)
 
-    # Sort by combined score descending
     bm25_results.sort(key=lambda r: r["score"], reverse=True)
 
-    # Final dedup and cap
+    # Final dedup and cap by (source, unit_id)
     seen: set[tuple[str, str]] = set()
     out: list[dict] = []
     for r in bm25_results:
-        key = (r["paper_id"], r.get("text", ""))
+        key = ("body", r.get("unit_id", ""))
         if key in seen:
             continue
         seen.add(key)
-        # Include matched terms hint
         r["matched_terms"] = ""
         out.append(r)
         if len(out) >= limit:
@@ -326,18 +370,19 @@ def _fuse_results(
 
     # If BM25 was empty but vec had results, synthesize entries
     if not out and has_vec:
-        seen_text: set[tuple[str, str]] = set()
+        seen_v: set[tuple[str, str]] = set()
         for vr in vec_results:
-            key = (vr["paper_id"], vr.get("text", ""))
-            if key in seen_text:
+            key = (vr.get("source", ""), vr.get("unit_id", ""))
+            if key in seen_v:
                 continue
-            seen_text.add(key)
+            seen_v.add(key)
             vec_raw = vr["vec_score"]
             vec_norm = 1.0 - (1.0 / (1.0 + vec_raw)) if vec_raw > 0 else 0.0
             out.append(
                 {
                     "paper_id": vr["paper_id"],
-                    "source": vr["source"],
+                    "source": vr.get("source", ""),
+                    "unit_id": vr.get("unit_id", ""),
                     "text": vr.get("text", ""),
                     "vec_score": round(vec_raw, 4),
                     "score": round(vec_norm, 4),

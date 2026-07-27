@@ -279,6 +279,7 @@ def build_query_plan(query: str, intent: str) -> dict:
 
     return {
         "intent": intent,
+        "query": query,
         "scope": "library",
         "paper_key": None,
         "identifier": identifier,
@@ -338,9 +339,34 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
             except Exception:
                 pass
 
+    # Detect known domain/collection for discover intent
+    if plan["intent"] == "discover":
+        from paperforge.worker.asset_index import read_index
+        data = read_index(vault)
+        items = []
+        if isinstance(data, dict):
+            items = data.get("items", [])
+        elif isinstance(data, list):
+            items = data
+
+        query_lower = plan.get("query", "").lower()
+        domain_counts: dict[str, int] = {}
+        for entry in items:
+            d = entry.get("domain", "")
+            if d:
+                domain_counts[d] = domain_counts.get(d, 0) + 1
+        matched_domain = None
+        for d in domain_counts:
+            if d.lower() in query_lower or query_lower in d.lower():
+                matched_domain = d
+                break
+
+        if matched_domain:
+            plan["primary"] = {"command": "context", "args": {"domain": matched_domain}}
+            plan["fallback"] = {"command": "retrieve", "mode": "content", "triggers": ["zero_results", "no_direct_answer"]}
+
     if plan["intent"] == "content" and not retrieve_available:
         plan["runtime"]["retrieve_unavailable"] = True
-
     return plan
 
 

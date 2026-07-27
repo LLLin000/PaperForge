@@ -22,6 +22,8 @@ def get_embed_status(vault: Path) -> dict:
     error = ""
     healthy = True
     dimension = 0
+    valid_body = 0
+    valid_object = 0
     if exists:
         conn = None
         try:
@@ -36,6 +38,10 @@ def get_embed_status(vault: Path) -> dict:
             body_chunk_count = row_body["cnt"] if row_body else 0
             row_obj = conn.execute("SELECT COUNT(*) AS cnt FROM vec_objects_meta").fetchone()
             object_chunk_count = row_obj["cnt"] if row_obj else 0
+            row_vb = conn.execute("SELECT COUNT(*) FROM vec_body_meta WHERE unit_id <> ''").fetchone()
+            valid_body = row_vb[0] if row_vb else 0
+            row_vo = conn.execute("SELECT COUNT(*) FROM vec_objects_meta WHERE unit_id <> ''").fetchone()
+            valid_object = row_vo[0] if row_vo else 0
 
             # Read dimension from vec0 table DDL
             try:
@@ -49,20 +55,14 @@ def get_embed_status(vault: Path) -> dict:
                 pass
 
             # -- vec0 k-NN health probe --
-            total_meta = chunk_count + body_chunk_count + object_chunk_count
-            if total_meta > 0 and dimension > 0:
+            total_valid = valid_body + valid_object
+            if total_valid > 0 and dimension > 0:
                 zero_vec = [0.0] * dimension
                 zero_json = _json.dumps(zero_vec)
-                for vec_table, meta_count in [
-                    ("vec_fulltext", chunk_count),
-                    ("vec_body", body_chunk_count),
-                    ("vec_objects", object_chunk_count),
-                ]:
-                    if meta_count > 0:
-                        conn.execute(
-                            f"SELECT 1 FROM {vec_table} WHERE embedding MATCH ? AND k = 1",
-                            (zero_json,),
-                        )
+                conn.execute(
+                    "SELECT 1 FROM vec_body WHERE embedding MATCH ? AND k = 1",
+                    (zero_json,),
+                )
         except Exception as exc:
             healthy = False
             error = str(exc)
@@ -74,17 +74,29 @@ def get_embed_status(vault: Path) -> dict:
                     pass
 
     model = get_api_model(vault)
+    raw_total = chunk_count + body_chunk_count + object_chunk_count
+    total_valid = valid_body + valid_object
+    if total_valid > 0:
+        vector_state = "ready"
+    elif raw_total > 0:
+        vector_state = "stale"
+    else:
+        vector_state = "not_built"
 
     return {
         "db_exists": exists,
         "chunk_count": chunk_count,
         "body_chunk_count": body_chunk_count,
         "object_chunk_count": object_chunk_count,
-        "total_chunks": chunk_count + body_chunk_count + object_chunk_count,
+        "total_chunks": raw_total,
         "dimension": dimension,
         "model": model,
         "mode": "api",
         "healthy": healthy,
         "corrupted": not healthy,
         "error": error,
+        "valid_body_chunk_count": valid_body,
+        "valid_object_chunk_count": valid_object,
+        "valid_total_chunks": total_valid,
+        "vector_state": vector_state,
     }

@@ -305,6 +305,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_retrieve.add_argument("--limit", type=int, default=5)
     p_retrieve.add_argument("--deep", action="store_true", help="Enable @ Deep Search mode with query rewrite + hybrid retrieval (BM25 + vec0)")
     p_retrieve.add_argument("--expand", action="store_true", default=True)
+    p_retrieve.add_argument("--paper", help="Scope retrieval to a single paper by zotero key")
 
 
     # prune
