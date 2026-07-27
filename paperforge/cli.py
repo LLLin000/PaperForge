@@ -376,6 +376,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_search.add_argument("--deep", choices=["done","pending"], help="Filter by deep reading status")
     p_search.add_argument("--lifecycle", choices=["indexed","pdf_ready","fulltext_ready","deep_read_done"], help="Filter by lifecycle")
     p_search.add_argument("--next-step", choices=["sync","ocr","/pf-deep","ready"], help="Filter by next step")
+    p_search.add_argument("--evidence", action="store_true", help="Evidence-mode: wrap results as metadata-only candidates")
 
     # agent-context
     p_ac = sub.add_parser("agent-context", help="Generate agent bootstrap context")

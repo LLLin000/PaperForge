@@ -49,6 +49,7 @@ def run(args: argparse.Namespace) -> int:
         # Normalize to unified PFResult match format
         unified: list[dict] = []
         for r in results:
+            body_count = r.get("body_units_count", 0) or 0
             unified.append({
                 "zotero_key": r.get("zotero_key", ""),
                 "title": r.get("title", ""),
@@ -61,36 +62,50 @@ def run(args: argparse.Namespace) -> int:
                 "text": r.get("abstract", ""),
                 "heading": "",
                 "source": "fts",
+                "fulltext_available": body_count > 0,
+                "body_units_count": body_count,
+                "ocr_status": r.get("ocr_status", ""),
             })
         results = unified
-        data = {
-            "query": query,
-            "matches": results,
-            "count": len(results),
-            "filters_applied": {
-                "domain": args.domain,
-                "year_from": args.year_from,
-                "year_to": args.year_to,
-                "ocr": args.ocr,
-                "deep": args.deep,
-                "lifecycle": args.lifecycle,
-                "next_step": args.next_step,
-            },
-            "route_explanation": {
-                "primary_arm": "paper_fts",
-                "compatibility_mode": False,
-            },
-        }
+        data: dict
+        if getattr(args, "evidence", False):
+            data = {
+                "query": query,
+                "evidence_status": "metadata_only",
+                "fulltext_verified": False,
+                "metadata_candidates": results,
+                "count": len(results),
+            }
+        else:
+            data = {
+                "query": query,
+                "matches": results,
+                "count": len(results),
+                "filters_applied": {
+                    "domain": args.domain,
+                    "year_from": args.year_from,
+                    "year_to": args.year_to,
+                    "ocr": args.ocr,
+                    "deep": args.deep,
+                    "lifecycle": args.lifecycle,
+                    "next_step": args.next_step,
+                },
+                "route_explanation": {
+                    "primary_arm": "paper_fts",
+                    "compatibility_mode": False,
+                },
+            }
         warnings: list[str] = []
         next_actions: list[dict] = []
         if len(results) == 0:
             plan = enrich_query_plan_with_runtime(build_query_plan(query, "discover"), vault)
-            data["query_diagnostic"] = {
-                "query_class": plan["query_class"],
-                "recommended_primary": plan["recommended_primary"],
-                "query_writing_rules": plan["query_writing_rules"],
-                "scope_assessment": plan.get("scope_assessment"),
-            }
+            if not getattr(args, "evidence", False):
+                data["query_diagnostic"] = {
+                    "query_class": plan["query_class"],
+                    "recommended_primary": plan["recommended_primary"],
+                    "query_writing_rules": plan["query_writing_rules"],
+                    "scope_assessment": plan.get("scope_assessment"),
+                }
             if plan["query_class"] in {"mixed_query", "author_year"}:
                 warnings.append("Zero results may reflect a noncanonical metadata query rather than library absence.")
             evidence_plan = enrich_query_plan_with_runtime(build_query_plan(query, "evidence"), vault)
@@ -125,13 +140,17 @@ def run(args: argparse.Namespace) -> int:
         print(result.to_json())
     else:
         if result.ok:
-            matches = result.data["matches"]
-            print(f"Found {len(matches)} results for: {query}")
-            for m in matches:
-                rank_val = m.get("rank", "")
-                print(
-                    f"  [{m['lifecycle']:16}] {m['zotero_key']} | {m['year']} | {m['first_author']} | {m['title'][:60]}"
-                )
+            if getattr(args, "evidence", False):
+                candidates = result.data.get("metadata_candidates", [])
+                print(f"Evidence mode — {len(candidates)} metadata candidates for: {query}")
+                for m in candidates:
+                    ft = "✓" if m.get("fulltext_available") else "✗"
+                    print(f"  [{ft}] {m['zotero_key']} | {m['year']} | {m['first_author']} | {m['title'][:60]}")
+            else:
+                matches = result.data.get("matches", [])
+                print(f"Found {len(matches)} results for: {query}")
+                for m in matches:
+                    print(f"  {m['zotero_key']} | {m['year']} | {m['first_author']} | {m['title'][:60]}")
         else:
             print(f"Error: {result.error.message}", file=sys.stderr)
     return 0 if result.ok else 1
