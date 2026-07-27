@@ -38,7 +38,7 @@ def _is_low_confidence_semantic_result(chunks: list[dict]) -> bool:
     max_score = max(float(chunk.get("score", 0) or 0) for chunk in chunks[:5])
     return generic_top >= 3 or max_score < 0.62
 
-def _paper_scope_check(vault, paper_key: str) -> dict | None:
+def _paper_scope_check(vault, paper_key: str, allow_bm25_only: bool = False) -> dict | None:
     """Check paper existence, fulltext availability, and vector status.
 
     Returns a result dict to short-circuit on failure, or None to proceed.
@@ -69,6 +69,8 @@ def _paper_scope_check(vault, paper_key: str) -> dict | None:
             (paper_key,),
         ).fetchone()[0]
         if valid_body + valid_object == 0:
+            if allow_bm25_only:
+                return None  # BM25-only mode: vectors optional
             old_body = conn.execute(
                 "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=?", (paper_key,),
             ).fetchone()[0]
@@ -89,7 +91,7 @@ def run(args: argparse.Namespace) -> int:
 
     # Paper-scoped availability check (applies to both deep and standard paths)
     if paper_key:
-        scope = _paper_scope_check(vault, paper_key)
+        scope = _paper_scope_check(vault, paper_key, allow_bm25_only=deep)
         if scope is not None:
             if "error" in scope:
                 result = PFResult(ok=False, command="retrieve", version=PF_VERSION,
@@ -142,29 +144,10 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     # ── Standard vector retrieve ──────────────────────────────────
-
+    status = get_embed_status(vault)
     valid_total = status.get("valid_total_chunks", 0)
     if valid_total == 0:
         avail = status.get("vector_state", "not_built")
-        plan = enrich_query_plan_with_runtime(build_query_plan(query, "content"), vault)
-        result = PFResult(
-            ok=False,
-            command="retrieve",
-            version=PF_VERSION,
-            error=PFError(
-                code=ErrorCode.INTERNAL_ERROR,
-                message=f"Vector index is {avail}. {'Rebuild vectors before retrieving.' if avail == 'not_built' else 'Rebuild required.'}",
-            ),
-            data={
-                "next_action": "paperforge embed build" if avail == "not_built" else "paperforge embed build --force",
-                "vector_state": avail,
-            },
-        )
-        if args.json:
-            print(result.to_json())
-        else:
-            print(f"Error: {result.error.message}", file=sys.stderr)
-        return 1
 
     try:
         chunks = merge_retrieve(vault, query, limit=limit, expand=args.expand, paper_id=paper_key)
@@ -196,16 +179,14 @@ def run(args: argparse.Namespace) -> int:
 def _normalize_matches(chunks: list[dict], source_prefix: str = "") -> list[dict]:
     """Normalize retrieval chunks to unified PFResult match format."""
     matches: list[dict] = []
-    seen_zotero: set[str] = set()
     for c in chunks:
         zkey = c.get("paper_id", c.get("zotero_key", ""))
-        # Avoid duplicates
-        if zkey in seen_zotero and not c.get("unit_id"):
-            continue
-        seen_zotero.add(zkey)
+        base_source = source_prefix or c.get("source", "vector")
         match = {
             "zotero_key": zkey,
             "unit_id": c.get("unit_id", ""),
+            "source_kind": c.get("source_kind", c.get("source", "vector")),
+            "retrieval_mode": base_source if source_prefix else "standard",
             "title": c.get("title", ""),
             "first_author": c.get("first_author", ""),
             "year": c.get("year", ""),
@@ -215,11 +196,13 @@ def _normalize_matches(chunks: list[dict], source_prefix: str = "") -> list[dict
             "score": c.get("score", 0),
             "text": c.get("chunk_text", c.get("text", "")),
             "heading": c.get("section_path", c.get("heading", "")),
-            "source": source_prefix or c.get("source", "vector"),
             "node_id": c.get("node_id", ""),
             "structure_path": c.get("structure_path", []),
             "structure_version": c.get("structure_version", ""),
             "structure_resolved": c.get("structure_resolved", False),
+            "section_title": c.get("section_title", ""),
+            "section_level": c.get("section_level", 0),
+            "part_ordinal": c.get("part_ordinal", 0),
         }
         if c.get("object_kind"):
             match["object_kind"] = c["object_kind"]
@@ -231,18 +214,19 @@ def _build_result(query: str, data: dict, matches: list[dict], vault: Path) -> P
     """Build PFResult with warnings and next actions."""
     warnings: list[str] = []
     next_actions: list[dict] = []
+    is_scoped = bool(data.get("scoped_paper"))
     if not matches:
-        plan = enrich_query_plan_with_runtime(build_query_plan(query, "content"), vault)
-        warnings.append("Retrieval returned no results for the query.")
-        next_actions.append({"command": "paperforge query-plan", "reason": "Review fallback modes."})
+        if is_scoped:
+            pass  # Paper-scoped zero results do NOT emit fallback
+        else:
+            warnings.append("Retrieval returned no results for the query.")
+            next_actions.append({"command": "paperforge query-plan", "reason": "Review fallback modes."})
     else:
-        # Check if any results have low confidence
         if _is_low_confidence_semantic_result(matches):
             warnings.append("Low-confidence hits — verify with fulltext grep before treating as evidence.")
     return PFResult(
         ok=True, command="retrieve", version=PF_VERSION, data=data, warnings=warnings, next_actions=next_actions
     )
-
 
 def _output(args: argparse.Namespace, result: PFResult, query: str) -> None:
     """Print result in JSON or human-readable format."""

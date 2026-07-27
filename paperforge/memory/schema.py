@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS body_units (
     section_path_json TEXT NOT NULL DEFAULT '[]',
     section_level INTEGER NOT NULL DEFAULT 0,
     section_title TEXT NOT NULL DEFAULT '',
+    node_id TEXT NOT NULL DEFAULT '',
     unit_text TEXT NOT NULL,
     unit_kind TEXT NOT NULL DEFAULT 'body',
     part_ordinal INTEGER NOT NULL DEFAULT 0,
@@ -211,6 +212,8 @@ CREATE TABLE IF NOT EXISTS object_units (
     unit_id TEXT PRIMARY KEY,
     paper_id TEXT NOT NULL,
     section_path TEXT NOT NULL,
+    node_id TEXT NOT NULL DEFAULT '',
+    section_path_json TEXT NOT NULL DEFAULT '[]',
     object_kind TEXT NOT NULL,
     object_label TEXT NOT NULL,
     caption_text TEXT NOT NULL,
@@ -244,12 +247,12 @@ CREATE TABLE IF NOT EXISTS vec_fulltext_meta (
   source TEXT
 );
 """
-
 CREATE_VEC_BODY_META = """
 CREATE TABLE IF NOT EXISTS vec_body_meta (
   rowid INTEGER PRIMARY KEY,
   paper_id TEXT NOT NULL,
   chunk_index INTEGER,
+  unit_id TEXT NOT NULL DEFAULT '',
   text TEXT,
   body_units_hash TEXT,
   retrieval_policy_version TEXT
@@ -260,6 +263,7 @@ CREATE TABLE IF NOT EXISTS vec_objects_meta (
   rowid INTEGER PRIMARY KEY,
   paper_id TEXT NOT NULL,
   chunk_index INTEGER,
+  unit_id TEXT NOT NULL DEFAULT '',
   text TEXT,
   object_units_hash TEXT,
   retrieval_policy_version TEXT

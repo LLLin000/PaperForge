@@ -295,7 +295,7 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
     from paperforge.memory.query import lookup_paper
 
     embed = get_embed_status(vault)
-    retrieve_available = bool(embed.get("healthy", True) and embed.get("db_exists") and embed.get("total_chunks", 0) > 0)
+    retrieve_available = bool(embed.get("healthy", True) and embed.get("db_exists") and embed.get("valid_total_chunks", 0) > 0)
     ocr_evidence_available = False
     try:
         ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -341,7 +341,7 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
                 else:
                     # Identifier detected but not resolved → use exact search
                     plan["primary"] = {"command": "search", "args": {"query": ident["value"], "limit": 10}}
-                    plan["fallback"] = None if plan["intent"] == "locate" else {"command": "retrieve", "mode": "content", "triggers": ["zero_results", "no_direct_answer"]}
+                    plan["fallback"] = None
                 conn.close()
             except Exception:
                 pass
