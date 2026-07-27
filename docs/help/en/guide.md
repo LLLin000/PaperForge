@@ -30,12 +30,24 @@ Open the OCR Workspace from the ribbon icon or `Ctrl+P → Open OCR Workspace`. 
 
 ## Smart Retrieval
 
-Semantic search across your paper collection. Smart Retrieval builds a vector index of your papers' full text using an embedding model, then enables natural-language queries that go beyond keyword matching.
+PaperForge's retrieval system is organized around three search intents:
 
-To use: configure an API key and model in Smart Retrieval settings, then click "Build Index". Once built, you can search from the Dashboard search bar.
+- **Locate** — Find a specific paper you already know (by DOI, key, or author + year)
+- **Discover** — Find relevant papers on a topic
+- **Content** — Find specific facts, parameters, methods, or evidence within papers
 
-**Requires:** an OpenAI-compatible API endpoint and an embedding model.
+A **planner** (`paperforge query-plan`) classifies your question and recommends the best command:
 
+- `paper-context` for paper location and structure
+- `search` for metadata discovery across titles, abstracts, and authors
+- `retrieve` for body-text evidence retrieval within OCR fulltext
+
+Smart Retrieval builds a vector index of paper full text using an embedding model.
+When vectors are available, `retrieve --deep` adds semantic search on top of keyword matching.
+The system automatically falls back to metadata search when vectors are not available.
+
+**Requires:** an OpenAI-compatible API endpoint and an embedding model for vector features.
+Metadata search works without any API key.
 ---
 
 ## Agent Integration

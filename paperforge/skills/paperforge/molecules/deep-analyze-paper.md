@@ -11,6 +11,8 @@
 
 Keshav 三阶段精读。在 formal note 中写入结构化的 `## 精读` 区域。
 
+> 检索决策由 `atoms/retrieval-routing.md` 决定。StructureTree 在本 molecule 中作为导航地图使用。
+
 ---
 
 ## Pre-flight Checklist
@@ -23,26 +25,63 @@ Keshav 三阶段精读。在 formal note 中写入结构化的 `## 精读` 区�
 
 ---
 
-### Step 0: paper-context（必须）
+### Step 0: paper-context with StructureTree
 
 ```bash
-$PYTHON -m paperforge --vault "$VAULT" paper-context <zotero_key> --json
+$PYTHON -m paperforge --vault "$VAULT" \
+  paper-context <zotero_key> --structure --json
 ```
 
 检查返回 JSON：
+
 - `ok: false` → 报告 `error.message`，停止
 - `data.paper.ocr_status != "done"` → "OCR 未完成，请先运行 paperforge ocr"，停止
 - `data.paper.analyze != true` → "analyze 未开启，请在 formal note frontmatter 中设为 true"，停止
 
+**读取 StructureTree：**
+
+```
+data.structure.version   — 结构版本（用于与检索结果中的 structure_version 对照）
+data.structure.nodes[]   — 章节导航地图
+
+每个 node 包含：
+  node_id               — 节点 ID（检索结果中的 node_id 关联到此 ID）
+  parent_id             — 父节点 ID（null = root）
+  title                 — 章节标题
+  path                  — 章节路径数组（["Introduction", "Methods"]）
+  depth                 — 深度
+  own_block_count       — 本节点包含的 block 数
+  page_span             — 跨页范围
+  document_order        — 文档内顺序
+```
+
+StructureTree 是**导航地图，不是全文内容替代品**。它用于：
+
+- 确定文章有哪些核心章节
+- 确定章节父子关系
+- 确定 document order
+- 判断 evidence 位于 Methods / Results / Discussion
+- 找到图表所处章节
+
+**不要硬编码英文章节标题。** 优先识别 Methods / Results / Discussion 语义角色；
+找不到标准标题时，按 `document_order` 和 `path` 判断对应章节。
+很多论文会使用 Materials and Methods、Experimental、Findings、Results and Discussion、Case Presentation 等变体。
+
+详细内容仍由 `pf_deep.py prepare`、fulltext、figure/table 素材、chart-reading atom 提供。
+
 **检查 prior_notes：**
+
 - 如果存在 `data.prior_notes`，逐条看 `verified` 字段
-- `verified: false` 的条目记入 recheck_targets，精读时必须回原文复核这些位置
+- `verified: false` 的条目记入 recheck_targets，精读时必须回原文复核
 - `verified: true` 的条目可以信任，但标注"之前已验证"
 
 **记录关键路径：**
-- `data.paper.note_path`（formal note 路径）
-- `data.paper.fulltext_path`（fulltext 路径）
-- 记下 `recheck_targets` 列表
+
+- `data.paper.note_path`
+- `data.paper.fulltext_path`
+- `data.structure.version`
+- `data.structure.nodes`
+- `recheck_targets`
 
 ---
 
@@ -54,16 +93,15 @@ $PYTHON -m paperforge --vault "$VAULT" paper-context <zotero_key> --json
 $PYTHON "$SKILL_DIR/scripts/pf_deep.py" prepare --key <zotero_key> --vault "$VAULT"
 ```
 
-> [!warning] `--force` 禁止在精读过程中使用。`--force` 会清除已有精读内容重新生成骨架，仅在用户明确要求重读时才能用。任何时候都不要主动加 `--force`。
+> [!warning] `--force` 禁止在精读过程中使用。仅在用户明确要求重读时才能用。
 
 解析返回 JSON：
-- `status: "ok"` → **记下 `figures`（数字）、`tables`（数字）、`figure_map`、`chart_type_map`、`formal_note`、`fulltext_md` 路径**
+
+- `status: "ok"` → 记下 `figures`、`tables`、`figure_map`、`chart_type_map`、`formal_note`、`fulltext_md` 路径
 - `status: "warn"` + `deep_reading_status: done` → 告知用户"该文献已精读过"，确认是否重读
 - `status: "error"` → 报告 `message`，停止
 
-**把 `figures` 数量记在当前上下文**——Step 4 要用。
-
-读 formal note，确认 `## 精读` 骨架已插入。
+记下 `figures` 数量——Step 4 要用。读 formal note，确认 `## 精读` 骨架已插入。
 
 ---
 
@@ -73,18 +111,10 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" prepare --key <zotero_key> --vault "$VAU
 
 填写内容必须来自原文，不可推断：
 
-- **一句话总览**：论文类型 + 核心发现，一句话
-- **5 Cs 快速评估**：
-  - Category（RCT / 队列 / 综述 / 基础研究等）
-  - Context（领域共识，本文要解决什么）
-  - Correctness（初步直觉，逻辑有否明显漏洞）
-  - Contributions（1-3 条）
-  - Clarity（写作质量，图表可读性）
-- **Figure 导读**（基于 fulltext 浏览各图 caption）：
-  - 关键主图：列出，一句话概括要证明什么
-  - 证据转折点：哪个 figure 是叙事关键转折
-  - 需要重点展开的 supplementary
-  - 关键表格
+- **一句话总览**：论文类型 + 核心发现
+- **5 Cs 快速评估**：Category / Context / Correctness / Contributions / Clarity
+- **Figure 导读**基于 fulltext 浏览各图 caption：
+  - 关键主图、证据转折点、需展开的 supplementary、关键表格
 
 填完立即保存。
 
@@ -92,29 +122,20 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" prepare --key <zotero_key> --vault "$VAU
 
 ### Step 3: Pass 2 — 精读还原
 
-填 `### Pass 2: 精读还原`。**按 figure 顺序逐个处理**。
+填 `### Pass 2: 精读还原`。按 figure 顺序逐个处理，每处理完一个立即保存。
 
-每处理完一个 figure 立即保存。
+#### 图表类型定位
 
-#### 图表类型定位（两步）
+读 chart-type-map → Agent 读 caption 做最终判断（打开 `atoms/chart-reading/INDEX.md`）。
 
-**A: 读 chart-type-map**（prepare 输出中包含该路径）。这是关键词命中建议。
-
-**B: Agent 读 caption 做最终判断**
-1. 读该 figure 的 caption（来自 fulltext）
-2. 打开 `atoms/chart-reading/INDEX.md`，对照 caption 内容判断图表类型
-3. chart-type-map 建议和 Agent 判断不一致时 → 以 Agent 判断为准
-4. 无法确定类型 → 跳过 chart guide，按通用结构分析
-5. 确定类型 → 读对应 chart-reading 指南，按指南中的检查清单分析
-
-#### 每张 Figure 的子标题（固定，不可跳过）
+#### 每张 Figure 的子标题
 
 ```
 **图像定位与核心问题**：页码 + 要回答什么问题
-**方法与结果**：实验设计 / 数据来源 / 技术手段；核心数据、趋势、对比
+**方法与结果**：实验设计 / 核心数据 / 趋势 / 对比
 **图表质量审查**：按 chart-reading 指南检查坐标轴、单位、误差棒、统计标注
 **作者解释**：作者在正文中对该图的解读
-**我的理解**：自己的理解（必须与作者解释做明显区分）
+**我的理解**：必须与作者解释做明显区分
 **疑点/局限**：用 `> [!warning]` 突出
 ```
 
@@ -124,28 +145,36 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" prepare --key <zotero_key> --vault "$VAU
 回答什么问题、关键字段/分组、主要结果、我的理解、疑点/局限
 ```
 
+#### 跨章节定向检索
+
+在每个 Pass 内可用 retrieve 做定向提取：
+
+```
+# Pass 2 中需要确认具体参数时
+$PYTHON -m paperforge --vault "$VAULT" \
+  retrieve "experimental design" --paper <KEY> --deep
+
+$PYTHON -m paperforge --vault "$VAULT" \
+  retrieve "main findings" --paper <KEY> --deep
+```
+
+但不能只依赖 top-k retrieve 宣称已经完整分析整篇。
+
 #### 所有 figure/table 处理完后
 
-**关键方法补课**：简要解释不熟悉的实验技术（1-2 项）
-
-**主要发现与新意**：
-- 发现 1：...（来源：Figure X）
-- 发现 2：...（来源：Table Y）
-- 每条发现必须标注来源（Figure 编号或正文段落）
+关键方法补课 + 主要发现与新意（每条标注 Figure/Table 来源）。
 
 ---
 
-### Step 4: Postprocess（跑校验，修正问题）
-
-**`N` = Step 1 prepare 输出中的 `figures` 值，不要自己猜。**
+### Step 4: Postprocess
 
 ```bash
 $PYTHON "$SKILL_DIR/scripts/pf_deep.py" postprocess-pass2 "<formal_note_path>" --figures <N>
 ```
 
-- 输出 `OK` → 继续 Step 5
-- 输出错误列表（含行号）→ 按提示修正，修正后重新跑
-- 最多 3 轮修正。3 轮后仍失败 → 报告剩余错误给用户
+- `OK` → 继续 Step 5
+- 错误列表 → 按提示修正，修正后重新跑
+- 最多 3 轮修正
 
 ---
 
@@ -153,13 +182,11 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" postprocess-pass2 "<formal_note_path>" -
 
 填 `### Pass 3: 深度理解`。基于 Pass 1/2 已写内容。
 
-- **假设挑战与隐藏缺陷**：隐含假设；放宽假设后结论还成立吗；缺少的关键引用；实验/分析技术潜在问题
-- **哪些结论扎实，哪些仍存疑**：
-  - 较扎实：...
-  - 仍存疑：...（用 `> [!warning]`）
-- **Discussion 与 Conclusion 怎么读**：作者实际完成了什么；哪些有拔高；哪些是推测
-- **对我的启发**：研究设计、figure 组织、方法组合、未来工作
-- **遗留问题**：...（用 `> [!question]`）
+- 假设挑战与隐藏缺陷
+- 哪些结论扎实，哪些仍存疑（`> [!warning]`）
+- Discussion 与 Conclusion 怎么读
+- 对自己的启发
+- 遗留问题（`> [!question]`）
 
 ---
 
@@ -169,27 +196,18 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" postprocess-pass2 "<formal_note_path>" -
 $PYTHON "$SKILL_DIR/scripts/pf_deep.py" validate-note "<formal_note_path>" --fulltext "<fulltext_path>"
 ```
 
-- 输出 `OK` → 告知用户精读完成
-- 输出错误 → 修正缺失项，直到通过
-
-**如果 validate 反复失败（超过 3 轮）→ 先自查：**
-1. 检查 note 结构：`## 🔍 精读` 骨架是否完整？是否被多次 `prepare` 破坏？
-2. 检查 `Pass 2` 中每个 figure 的子标题是否完整（6 个子标题全部存在？）
-3. 检查 Pass 1 和 Pass 2 之间是否有内容错位
-4. 检查 `--figures N` 是否和 paper 实际图片数一致（读 fulltext caption 核实）
-5. 以上都确认无误还失败 → 报告全部错误给用户，不要继续重试
-
-### Post-action: 保存/归档
-
-如果用户要求保存精读成果到项目知识库，跳转至 `capture-project-knowledge.md`。
+- `OK` → 告知用户精读完成
+- 错误 → 修正缺失项，直到通过（最多 3 轮）
 
 ---
 
 ## Callout 格式规则
 
 - `> [!important]` — 每个 main finding
-- `> [!warning]` — 疑问、局限、证据边界、仍存疑条目
+- `> [!warning]` — 疑问、局限、证据边界
 - `> [!question]` — 遗留问题
-- **相邻 callout 之间必须有空行**（否则 Obsidian 合并）：
-  - 正确：`> [!important] A\n\n> [!important] B`
-  - 错误：`> [!important] A\n> [!important] B`
+- 相邻 callout 之间必须有空行
+
+### Post-action: 保存/归档
+
+如果用户要求保存精读成果到项目知识库，跳转至 `capture-project-knowledge.md`。
