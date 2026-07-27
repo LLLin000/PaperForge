@@ -398,4 +398,31 @@ def _fuse_results(
             if len(out) >= limit:
                 break
 
-    return out
+    # Append object-only vec hits not covered by BM25
+    if has_vec and len(out) < limit:
+        for vr in vec_results:
+            if vr.get("source") != "object":
+                continue
+            key = ("object", vr.get("unit_id", ""))
+            if key in seen:
+                continue
+            seen.add(key)
+            vec_raw = vr["vec_score"]
+            vec_norm = 1.0 - (1.0 / (1.0 + vec_raw)) if vec_raw > 0 else 0.0
+            out.append({
+                "paper_id": vr["paper_id"],
+                "source": "object",
+                "unit_id": vr.get("unit_id", ""),
+                "text": vr.get("text", ""),
+                "vec_score": round(vec_raw, 4),
+                "score": round(vec_norm, 4),
+                "matched_terms": "",
+                "heading": "",
+                "title": "",
+                "first_author": "",
+                "year": "",
+                "journal": "",
+                "domain": "",
+            })
+            if len(out) >= limit:
+                break

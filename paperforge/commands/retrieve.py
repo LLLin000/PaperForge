@@ -38,6 +38,47 @@ def _is_low_confidence_semantic_result(chunks: list[dict]) -> bool:
     max_score = max(float(chunk.get("score", 0) or 0) for chunk in chunks[:5])
     return generic_top >= 3 or max_score < 0.62
 
+def _paper_scope_check(vault, paper_key: str) -> dict | None:
+    """Check paper existence, fulltext availability, and vector status.
+
+    Returns a result dict to short-circuit on failure, or None to proceed.
+    """
+    from paperforge.memory.db import get_connection, get_memory_db_path
+    db_path = get_memory_db_path(vault)
+    if not db_path.exists():
+        return None
+    conn = get_connection(db_path, read_only=True)
+    try:
+        paper_exists = conn.execute("SELECT 1 FROM papers WHERE zotero_key=?", (paper_key,)).fetchone()
+        if not paper_exists:
+            return {"error": "paper_not_found", "message": f"Paper not found: {paper_key}"}
+
+        bc = conn.execute(
+            "SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1",
+            (paper_key,),
+        ).fetchone()[0]
+        if bc == 0:
+            return {"fulltext_unavailable": True}
+
+        valid_body = conn.execute(
+            "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=? AND unit_id<>''",
+            (paper_key,),
+        ).fetchone()[0]
+        valid_object = conn.execute(
+            "SELECT COUNT(*) FROM vec_objects_meta WHERE paper_id=? AND unit_id<>''",
+            (paper_key,),
+        ).fetchone()[0]
+        if valid_body + valid_object == 0:
+            old_body = conn.execute(
+                "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=?", (paper_key,),
+            ).fetchone()[0]
+            vs = "stale" if old_body > 0 else "not_built"
+            return {"vector_state": vs}
+
+        return None  # all checks passed
+    finally:
+        conn.close()
+
 
 def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
@@ -46,8 +87,32 @@ def run(args: argparse.Namespace) -> int:
     deep = getattr(args, "deep", False)
     paper_key = getattr(args, "paper", None)
 
-    from paperforge.embedding import get_embed_status
+    # Paper-scoped availability check (applies to both deep and standard paths)
+    if paper_key:
+        scope = _paper_scope_check(vault, paper_key)
+        if scope is not None:
+            if "error" in scope:
+                result = PFResult(ok=False, command="retrieve", version=PF_VERSION,
+                    error=PFError(code=ErrorCode.PATH_NOT_FOUND if scope["error"] == "paper_not_found" else ErrorCode.INTERNAL_ERROR,
+                        message=scope["message"]),
+                    data={"scoped_paper": paper_key})
+                _output(args, result, query)
+                return 1
+            if scope.get("fulltext_unavailable"):
+                result = PFResult(ok=True, command="retrieve", version=PF_VERSION,
+                    data={"query": query, "matches": [], "count": 0, "fulltext_unavailable": True, "scoped_paper": paper_key})
+                _output(args, result, query)
+                return 0
+            if "vector_state" in scope:
+                vs = scope["vector_state"]
+                result = PFResult(ok=False, command="retrieve", version=PF_VERSION,
+                    error=PFError(code=ErrorCode.INTERNAL_ERROR,
+                        message=f"Vectors for {paper_key} are {vs}. {'Rebuild required.' if vs == 'stale' else 'Build vectors first.'}"),
+                    data={"vector_state": vs, "scoped_paper": paper_key})
+                _output(args, result, query)
+                return 1
 
+    from paperforge.embedding import get_embed_status
     # ── @ Deep Search mode: query rewrite + hybrid retrieval ──────
     if deep:
         try:
@@ -77,82 +142,6 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     # ── Standard vector retrieve ──────────────────────────────────
-    status = get_embed_status(vault)
-
-    # Paper-scoped availability check
-    if paper_key:
-        db_path = get_memory_db_path(vault)
-        fulltext_unavailable = False
-        if db_path.exists():
-            conn = get_connection(db_path, read_only=True)
-            try:
-                # 1. Check paper exists
-                paper_exists = conn.execute("SELECT 1 FROM papers WHERE zotero_key=?", (paper_key,)).fetchone()
-                if not paper_exists:
-                    _output(args, PFResult(ok=False, command="retrieve", version=PF_VERSION,
-                        error=PFError(code=ErrorCode.PATH_NOT_FOUND, message=f"Paper not found: {paper_key}"),
-                        data={"scoped_paper": paper_key}), query)
-                    return 1 if not args.json else 0
-
-                # 2. Check fulltext availability
-                bc = conn.execute(
-                    "SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1",
-                    (paper_key,),
-                ).fetchone()[0]
-                if bc == 0:
-                    fulltext_unavailable = True
-
-                # 3. Check per-paper valid vectors
-                valid_for_paper = conn.execute(
-                    "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=? AND unit_id<>''",
-                    (paper_key,),
-                ).fetchone()[0]
-                valid_for_paper += conn.execute(
-                    "SELECT COUNT(*) FROM vec_objects_meta WHERE paper_id=? AND unit_id<>''",
-                    (paper_key,),
-                ).fetchone()[0]
-            finally:
-                conn.close()
-
-        if fulltext_unavailable:
-            result = PFResult(
-                ok=True, command="retrieve", version=PF_VERSION,
-                data={"query": query, "matches": [], "count": 0, "fulltext_unavailable": True, "scoped_paper": paper_key},
-            )
-            _output(args, result, query)
-            return 0
-
-        if bc > 0 and valid_for_paper == 0:
-            # Has body_units but no valid vectors — check if vectors ever existed
-            had_vecs = conn.execute(
-                "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=?",
-                (paper_key,),
-            ).fetchone()[0] if db_path.exists() else 0
-            vec_state = "stale" if had_vecs > 0 else "not_built"
-            result = PFResult(
-                ok=False, command="retrieve", version=PF_VERSION,
-                error=PFError(code=ErrorCode.INTERNAL_ERROR,
-                    message=f"Vectors for {paper_key} are {vec_state}. {'Rebuild required.' if vec_state == 'stale' else 'Build vectors first.'}"),
-                data={"vector_state": vec_state, "scoped_paper": paper_key},
-            )
-            _output(args, result, query)
-            return 1
-        # For paper-scoped, skip global valid_total check — use per-paper result
-        if valid_for_paper > 0:
-            try:
-                chunks = merge_retrieve(vault, query, limit=limit, expand=args.expand, paper_id=paper_key)
-            except Exception as e:
-                result = PFResult(ok=False, command="retrieve", version=PF_VERSION,
-                    error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
-                _output(args, result, query)
-                return 1
-            matches = _normalize_matches(chunks)
-            data = {"query": query, "matches": matches, "count": len(matches),
-                    "route_explanation": {"primary_arm": "vector_retrieve", "compatibility_mode": False},
-                    "scoped_paper": paper_key}
-            result = _build_result(query, data, matches, vault)
-            _output(args, result, query)
-            return 0
 
     valid_total = status.get("valid_total_chunks", 0)
     if valid_total == 0:
