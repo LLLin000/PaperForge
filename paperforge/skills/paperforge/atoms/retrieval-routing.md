@@ -252,31 +252,76 @@ object_kind: "figure" | "table"
   → 图或表证据
   → object_kind 区分类型
 
-structure_resolved: false（默认，大部分 object 节点未关联章节）
-  → 标注"图表章节归属未确认"
-  → 除非 node_id 明确不为空
+structure_resolved: false（默认）
+  → 图表章节归属未确认，这是正常状态
+  → 不等于不可用——见下方 Object Context Resolution Protocol
 
 object 结果包含:
+  - object_label: "Figure 2" / "Table 1"
+  - caption_text: caption 正文
   - text: 图表标签 + caption + 附近正文
-  - node_id: structure tree 节点 ID
-  - structure_path: 章节路径
+  - page: 页码
+  - node_id: ""（通常为空）
 ```
 
+### Object Context Resolution Protocol
 
+object hit 的 `structure_resolved=false` 不意味着它不可用，而是需要**按需**补正文上下文。
 
+#### 判断流程
+
+```text
+收到 source_kind=object 的 hit：
+
+1. 读取 object_label、caption_text、object_kind、page
+
+2. 判断 caption 是否已直接回答用户问题：
+   ├── 是 → 直接使用
+   │        标注为"图表 caption 信息"
+   │        不追加检索
+   └── 否 → 进入步骤 3
+
+3. 判断是否需要作者解释/章节语境/正文论证：
+   ├── 需要 → 在同一 paper scope 内补查正文引用
+   │          执行一次 contextual retrieve（见下方）
+   └── 不需要 → 仅展示 caption
+
+4. 合并 object hit 与正文引用
+
+5. 找不到正文引用时：
+   → 仍可展示 caption
+   → 明确说明"未检索到正文中的直接讨论"
 ```
-search "<query>" [--domain D] [--year-from Y] [--year-to Y] [--ocr S] [--limit N] --json
-  → data.matches[]: zotero_key, title, first_author, year, journal, domain
-    fulltext_available, body_units_count, ocr_status
 
-search "<query>" --evidence --json
-  → 顶层字段：
-    data.evidence_status: "metadata_only"
-    data.fulltext_verified: false
-    data.metadata_candidates[]: zotero_key, title, first_author, year
-  fallback.mode=evidence 时使用此形式
-  候选项本身只含 metadata，不包含章节或正文片段
+#### 哪些情况触发补查
+
+| 触发 | 不触发 |
+|------|--------|
+| 用户问"这张图说明什么" | caption 已包含所需参数 |
+| Caption 相关但不足以支持主张 | 用户只要求列出图表 |
+| 章节位置对回答重要 | object hit 仅是候选（未确定相关） |
+| 需要区分结果与讨论（同一图在不同章节的引用） | discover 工作流 |
+| | deep analysis Pass 2 已逐图处理 |
+| | 本 session 已补查过同一 object_label |
+
+#### Contextual retrieve 方法
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" \
+  retrieve "<object_label> <caption 核心术语>" --paper <KEY> --json
 ```
+
+- query 同时包含图编号和 2–4 个 caption 高信息词，不单独检索编号
+- 只取 `source_kind=body` 的结果作为正文讨论
+- 忽略同一 object 的重复 hit
+- 不递归继续查
+- 最多一次 CLI 调用
+
+#### 调用数量控制
+
+- 只对最终准备用于回答的 object 做补查
+- 同一 object_label 每个 session 最多补查一次
+- 单次用户问题最多补查 2 个 object
 一次会话中多个检索请求应复用已获取的信息：
 
 ```

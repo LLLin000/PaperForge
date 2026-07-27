@@ -72,7 +72,13 @@ $PYTHON -m paperforge --vault "$VAULT" \
 [1] Introduction · section_title="Background"
     structure_resolved: true
     "…electrical stimulation parameters included 75 Hz frequency…"
-```
+
+**object / 图表证据**（来自 retrieve primary）：
+
+打开 `atoms/retrieval-routing.md` §5 的 **Object Context Resolution Protocol**。
+
+判断 caption 是否直接回答用户问题。如果需要作者解释或正文论证，执行一次
+contextual retrieve，合并展示。
 
 **元数据候选区块**（来自 search --evidence fallback）：
 
