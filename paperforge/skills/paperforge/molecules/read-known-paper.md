@@ -60,20 +60,24 @@ $PYTHON -m paperforge --vault "$VAULT" paper-context <KEY> --json
 
 告知用户"未找到匹配论文"。
 
-### Step A4: 加载结构（仅首次）
+### Step A3: 初始化 Q&A Session
 
-首次进入 Q&A 时不加载整篇 fulltext.md。只展示论文信息：
+展示论文信息，不加载全文：
 
 ```
 已定位: <title> (<year>, <journal>)
 作者: <authors> | Key: <KEY> | 领域: <domain>
 正文可用: yes / no
+StructureTree: available / unavailable
 
 请问有什么问题？
 ```
 
----
-
+如果 StructureTree 不可用，在后续章节级问答中：
+- 不缓存 structure.nodes
+- 报告"章节导航暂不可用"
+- 仍可继续 scoped retrieve / fulltext 分析
+- 回答中不声称章节位置已确认
 ## 阶段 B：论文内 Q&A
 
 ### 检索策略分类

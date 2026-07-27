@@ -32,41 +32,13 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 打开 `atoms/retrieval-routing.md`，按 **Planner Protocol**（§2）和 **Safe Executor**（§3）执行 `data.primary`。
 
-### Step 2: Library scope
+### Step 2: 评估结果
 
-当 scope=library 时，primary 通常是 `retrieve`（跨论文正文检索）。
+按 `atoms/retrieval-routing.md` §4（Exactly-One-Fallback Protocol）评估结果。
+可能的 fallback trigger 为 `zero_results` 或 `no_direct_answer`。
+本 molecule 不重新定义 trigger 规则。
 
-#### 如果有结果
-
-按 `atoms/retrieval-routing.md` §5 解释每条 evidence：
-
-```yaml
-source_kind: body + structure_resolved: true
-  → 章节归属已解析
-  → Agent 仍须阅读 text 判断是否直接支持用户问题
-  → 区分作者陈述与 Agent 推断
-  → section_title / section_level / part_ordinal 可用
-
-source_kind: body + structure_resolved: false
-  → 内容存在但章节位置未确认
-  → 慎用，标注"章节未确认"
-
-source_kind: object
-  → 图表证据，标注 object_kind
-  structure_resolved 默认为 false（大部分 object 未关联章节）
-```
-
-#### 如果 zero_results 且 fallback 非 null
-
-执行一次 fallback（通常为 `search`）。fallback 结果必须标为：
-
-```
-metadata candidate
-fulltext_verified=false
-```
-
-不能与 retrieve evidence 混为同级。
-
+### 有正文证据时（scope=library, primary=retrieve）
 #### 如果 zero_results 且 fallback 为 null
 
 告知用户"未检索到相关内容"。
