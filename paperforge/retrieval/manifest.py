@@ -12,7 +12,7 @@ from hashlib import sha256
 from typing import Any
 import json
 
-RETRIEVAL_POLICY_VERSION = "l4.body.v2"
+RETRIEVAL_POLICY_VERSION = "l4.body.v3"
 
 
 def compute_body_units_hash(units: list[dict]) -> str:
@@ -21,7 +21,9 @@ def compute_body_units_hash(units: list[dict]) -> str:
         [
             {
                 "unit_id": u["unit_id"],
+                "node_id": u.get("node_id", ""),
                 "section_path": u["section_path"],
+                "section_path_json": u.get("section_path_json", "[]"),
                 "section_level": u.get("section_level", 0),
                 "section_title": u.get("section_title", ""),
                 "unit_kind": u.get("unit_kind", "body"),
@@ -44,7 +46,9 @@ def compute_object_units_hash(units: list[dict]) -> str:
             {
                 "unit_id": u["unit_id"],
                 "paper_id": u["paper_id"],
+                "node_id": u.get("node_id", ""),
                 "section_path": u.get("section_path", ""),
+                "section_path_json": u.get("section_path_json", "[]"),
                 "object_kind": u.get("object_kind", ""),
                 "object_label": u.get("object_label", ""),
                 "caption_text": u.get("caption_text", ""),
