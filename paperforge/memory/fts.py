@@ -69,6 +69,7 @@ def _fts_query(conn, query, filter_clause, filter_params, limit):
                p.first_author, p.journal, p.domain, p.lifecycle,
                p.ocr_status, p.deep_reading_status, p.next_step,
                substr(p.abstract, 1, 300) as abstract,
+               (SELECT COUNT(*) FROM body_units b WHERE b.paper_id = p.zotero_key AND b.indexable = 1) as body_units_count,
                rank
         FROM paper_fts f
         JOIN papers p ON p.rowid = f.rowid
@@ -99,6 +100,7 @@ def _like_query(conn, query, filter_clause, filter_params, limit):
                p.first_author, p.journal, p.domain, p.lifecycle,
                p.ocr_status, p.deep_reading_status, p.next_step,
                substr(p.abstract, 1, 300) as abstract,
+               (SELECT COUNT(*) FROM body_units b WHERE b.paper_id = p.zotero_key AND b.indexable = 1) as body_units_count,
                0 as rank
         FROM papers p
         WHERE {where_clause}{filter_clause}

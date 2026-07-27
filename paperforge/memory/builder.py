@@ -18,6 +18,7 @@ from paperforge.memory.schema import (
     drop_all_tables,
     ensure_schema,
     get_schema_version,
+    migrate_schema,
 )
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, build_paper_manifest
 from paperforge.retrieval.units import build_body_units, build_object_units
@@ -181,11 +182,33 @@ def build_from_index(vault: Path) -> dict:
     try:
         stored_version = get_schema_version(conn)
         logger.info("Schema version: stored=%s, current=%s", stored_version, CURRENT_SCHEMA_VERSION)
-        if stored_version != CURRENT_SCHEMA_VERSION:
-            logger.warning("Schema version mismatch, dropping all tables")
-            drop_all_tables(conn)
-        ensure_schema(conn)
 
+        # Step 1: migrate schema BEFORE any hash-based fast-path check
+        migrate_schema(conn, stored_version, CURRENT_SCHEMA_VERSION)
+
+        # Step 2: re-check fast path now that schema matches
+        if canonical_hash and db_path.exists():
+            cached = conn.execute("SELECT value FROM meta WHERE key='canonical_index_hash'").fetchone()
+            if cached and cached[0] == canonical_hash:
+                stored_v2 = get_schema_version(conn)
+                if stored_v2 == CURRENT_SCHEMA_VERSION:
+                    logger.info("Index hash unchanged after migration — incremental only")
+                    ocr_root = vault / "System" / "PaperForge" / "ocr"
+                    if ocr_root.exists():
+                        _incremental_units_only(conn, vault, items)
+                    conn.commit()
+                    conn.close()
+                    return {
+                        "papers": 0,
+                        "body_units": 0,
+                        "object_units": 0,
+                        "assets": 0,
+                        "events": 0,
+                        "hash_match": True,
+                    }
+
+        # Step 3: full rebuild needed (data changed)
+        ensure_schema(conn)
         logger.info("Clearing tables before rebuild")
         conn.execute("PRAGMA foreign_keys=OFF;")
         conn.execute("DELETE FROM paper_events;")

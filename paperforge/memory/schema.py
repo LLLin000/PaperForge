@@ -301,8 +301,6 @@ ALL_TABLES = [
     "build_state",
 ]
 VEC_TABLES = ["vec_fulltext", "vec_body", "vec_objects"]
-
-
 def ensure_schema(conn: sqlite3.Connection) -> None:
     """Create tables and indexes if they don't exist."""
     conn.execute(CREATE_META)
@@ -314,18 +312,59 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_READING_LOG)
     conn.execute(CREATE_PROJECT_LOG)
 
-
     # vec0 companion meta and build_state — created unconditionally so force-rebuild works
     conn.execute(CREATE_VEC_FULLTEXT_META)
     conn.execute(CREATE_VEC_BODY_META)
     conn.execute(CREATE_VEC_OBJECTS_META)
     conn.execute(CREATE_BUILD_STATE)
-    # Migration: derived tables are rebuildable, drop and recreate when shape changes
-    current_version = get_schema_version(conn)
+
+    # Run pending migrations
+    migrate_schema(conn, get_schema_version(conn), CURRENT_SCHEMA_VERSION)
+
+    conn.execute(CREATE_BODY_UNITS)
+    conn.execute(CREATE_BODY_UNITS_FTS)
+    conn.execute(CREATE_OBJECT_UNITS)
+    for idx_sql in INDEX_SQL:
+        conn.execute(idx_sql)
+
+    # Always attempt vec0 creation — they may have been skipped in v5 migration
+    # due to sqlite-vec extension not being available at that time.
+    for vec_sql in [CREATE_VEC_FULLTEXT, CREATE_VEC_BODY, CREATE_VEC_OBJECTS]:
+        try:
+            conn.execute(vec_sql)
+        except sqlite3.OperationalError:
+            pass
+
+    for idx_sql in EVENT_INDEX_SQL:
+        conn.execute(idx_sql)
+    for trigger_sql in FTS_TRIGGERS:
+        conn.execute(trigger_sql)
+
+    _set_schema_version(conn, CURRENT_SCHEMA_VERSION)
+    conn.commit()
+
+
+def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version: int) -> None:
+    """Migrate schema from stored_version to target_version.
+
+    Additive migrations (v4+) run ALTER TABLE in place.
+    Pre-v3 migrations require destructive rebuild of derived tables.
+    Raises UnsupportedSchemaVersion if stored > target.
+    """
+    if stored_version > target_version:
+        raise UnsupportedSchemaVersion(
+            f"Database schema version {stored_version} is newer than "
+            f"the code supports ({target_version}). Upgrade PaperForge."
+        )
+    if stored_version == 0:
+        return  # fresh database — ensure_schema creates everything
+
+    current_version = stored_version
     if current_version < 3:
         logger.info("Migrating schema v%s -> v3: rebuilding body_units, body_units_fts, object_units", current_version)
         for table in ("body_units", "body_units_fts", "object_units"):
             conn.execute(f"DROP TABLE IF EXISTS {table};")
+        current_version = 3
     if current_version < 4:
         logger.info("Migrating schema v%s -> v4: adding body_units columns", current_version)
         for col_sql in [
@@ -338,7 +377,7 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
                 conn.execute(col_sql)
             except Exception:
                 pass  # column may already exist
-
+        current_version = 4
     if current_version < 5:
         logger.info(
             "Migrating schema v%s -> v5: adding vec0 vector tables, companion meta, and build_state", current_version
@@ -349,7 +388,7 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
             conn.execute(CREATE_VEC_OBJECTS)
         except sqlite3.OperationalError:
             logger.warning("sqlite-vec extension not available, skipping vector virtual tables")
-
+        current_version = 5
     if current_version < 6:
         logger.info(
             "Migrating schema v%s -> v6: adding hash/policy columns to vec companion meta tables", current_version
@@ -364,30 +403,23 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
                 conn.execute(col_sql)
             except Exception:
                 pass  # column may already exist
+        current_version = 6
+    if current_version < 7:
+        # v6→v7: reserved for #109 structural retrieval schema.
+        # #109 will add ALTER TABLE statements here for:
+        #   body_units.node_id, object_units.node_id
+        #   object_units.section_path_json
+        #   vec_body_meta.unit_id, vec_objects_meta.unit_id
+        # CURRENT_SCHEMA_VERSION stays 6 until #109 merges.
+        current_version = 6
 
-    conn.execute(CREATE_BODY_UNITS)
-    conn.execute(CREATE_BODY_UNITS_FTS)
-    conn.execute(CREATE_OBJECT_UNITS)
-    for idx_sql in INDEX_SQL:
-        conn.execute(idx_sql)
+    # Sync the stored version if we made progress (even partial)
+    if current_version > stored_version:
+        _set_schema_version(conn, current_version)
 
-    # Always attempt vec0 creation — they may have been skipped in v5 migration
-    # due to sqlite-vec extension not being available at that time.
-    # CREATE VIRTUAL TABLE IF NOT EXISTS is idempotent.
-    for vec_sql in [CREATE_VEC_FULLTEXT, CREATE_VEC_BODY, CREATE_VEC_OBJECTS]:
-        try:
-            conn.execute(vec_sql)
-        except sqlite3.OperationalError:
-            pass  # extension still not available
 
-    for idx_sql in EVENT_INDEX_SQL:
-        conn.execute(idx_sql)
-    for trigger_sql in FTS_TRIGGERS:
-        conn.execute(trigger_sql)
-
-    _set_schema_version(conn, CURRENT_SCHEMA_VERSION)
-    conn.commit()
-
+class UnsupportedSchemaVersion(Exception):
+    """Raised when the database schema is newer than the code supports."""
 
 def drop_all_tables(conn: sqlite3.Connection) -> None:
     """Drop all Memory Layer tables (for rebuild)."""
