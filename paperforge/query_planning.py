@@ -338,6 +338,10 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
                         plan["fallback"] = None
                     elif plan["intent"] == "locate":
                         plan["primary"] = {"command": "paper-context", "args": {"key": pk}}
+                else:
+                    # Identifier detected but not resolved → use exact search
+                    plan["primary"] = {"command": "search", "args": {"query": ident["value"], "limit": 10}}
+                    plan["fallback"] = None if plan["intent"] == "locate" else {"command": "retrieve", "mode": "content", "triggers": ["zero_results", "no_direct_answer"]}
                 conn.close()
             except Exception:
                 pass

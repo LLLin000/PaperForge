@@ -6,6 +6,7 @@ import sys
 
 import sqlite3
 from pathlib import Path
+from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
