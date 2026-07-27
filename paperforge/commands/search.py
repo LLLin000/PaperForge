@@ -101,25 +101,13 @@ def run(args: argparse.Namespace) -> int:
             plan = enrich_query_plan_with_runtime(build_query_plan(query, "discover"), vault)
             if not getattr(args, "evidence", False):
                 data["query_diagnostic"] = {
-                    "query_class": plan["query_class"],
-                    "recommended_primary": plan["recommended_primary"],
-                    "query_writing_rules": plan["query_writing_rules"],
-                    "scope_assessment": plan.get("scope_assessment"),
+                    "recommended_primary": plan.get("primary"),
+                    "recommended_fallback": plan.get("fallback"),
                 }
-            if plan["query_class"] in {"mixed_query", "author_year"}:
-                warnings.append("Zero results may reflect a noncanonical metadata query rather than library absence.")
-            evidence_plan = enrich_query_plan_with_runtime(build_query_plan(query, "evidence"), vault)
-            data["ocr_evidence_supported"] = evidence_plan.get("runtime", {}).get("ocr_evidence_available", False)
-            next_actions.append(
-                {
-                    "command": "paperforge query-plan",
-                    "reason": "Normalize the query and choose the correct first retrieval command.",
-                }
-            )
-            if plan["recommended_primary"]["command"] != "search":
+            if plan.get("primary", {}).get("command") != "search":
                 next_actions.append(
                     {
-                        "command": f"paperforge {plan['recommended_primary']['command']}",
+                        "command": f"paperforge {plan['primary']['command']}",
                         "reason": "The planning layer recommends a different first command for this query.",
                     }
                 )

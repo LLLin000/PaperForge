@@ -262,29 +262,36 @@ def build_query_plan(query: str, intent: str) -> dict:
             ]
         )
 
+    # Build identifier info for resolution-aware output
+    identifier = {"type": None, "value": None, "resolved": False}
+    if signals.doi:
+        identifier = {"type": "doi", "value": signals.doi, "resolved": False}
+    elif signals.zotero_key:
+        identifier = {"type": "zotero_key", "value": signals.zotero_key, "resolved": False}
+    elif signals.citation_key:
+        identifier = {"type": "citation_key", "value": signals.citation_key, "resolved": False}
+    fallback = None
+    if intent == "discover":
+        fallback = {"command": "retrieve", "mode": "content", "triggers": ["zero_results", "no_direct_answer"]}
+    elif intent == "content":
+        fallback = {"command": "search", "mode": "evidence", "triggers": ["zero_results", "no_direct_answer"]}
+    # locate has no fallback
+
     return {
         "intent": intent,
-        "query_class": query_class,
-        "signals": {
-            "doi": signals.doi,
-            "zotero_key": signals.zotero_key,
-            "citation_key": signals.citation_key,
-            "author_tokens": signals.author_tokens,
-            "year_tokens": signals.year_tokens,
-            "title_like_tokens": signals.title_like_tokens,
-            "content_terms": signals.content_terms,
-        },
-        "signal_priority": HIGH_SIGNAL_PRIORITY,
-        "recommended_primary": primary,
-        "query_writing_rules": query_rules,
-        "fallback_plan": fallback_plan,
-        "suggested_modes": suggested_modes,
+        "scope": "library",
+        "paper_key": None,
+        "identifier": identifier,
+        "primary": primary,
+        "fallback": fallback,
     }
 
 
 def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
+    """Add runtime state and resolve identifier to paper scope."""
     from paperforge.embedding import get_embed_status
-    from paperforge.worker.asset_index import read_index
+    from paperforge.memory.db import get_connection, get_memory_db_path
+    from paperforge.memory.query import lookup_paper
 
     embed = get_embed_status(vault)
     retrieve_available = bool(embed.get("healthy", True) and embed.get("db_exists") and embed.get("total_chunks", 0) > 0)
@@ -305,60 +312,34 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
         "vector_status": {
             "db_exists": embed.get("db_exists", False),
             "chunk_count": embed.get("chunk_count", 0),
+            "total_chunks": embed.get("total_chunks", 0),
             "healthy": embed.get("healthy", True),
-            "error": embed.get("error", ""),
         },
         "ocr_evidence_available": ocr_evidence_available,
     }
 
-    if plan.get("query_class") == "evidence_query" and ocr_evidence_available:
-        plan["suggested_modes"] = [
-            {
-                "mode": "ocr_evidence_layer",
-                "description": "Check OCR role-index for exact evidence blocks (body, captions, references).",
-            },
-            {
-                "mode": "metadata_narrow",
-                "description": "Narrow by domain/year/author for targeted evidence verification.",
-            },
-            {"mode": "read_fulltext", "description": "Read structured fulltext for context around evidence hits."},
-        ]
+    # Try to resolve identifier to a specific paper
+    ident = plan.get("identifier", {})
+    if ident.get("value") and not ident.get("resolved"):
+        id_val = ident["value"]
+        db_path = get_memory_db_path(vault)
+        if db_path.exists():
+            try:
+                conn = get_connection(db_path, read_only=True)
+                matches = lookup_paper(conn, id_val)
+                if matches and len(matches) == 1:
+                    plan["scope"] = "paper"
+                    plan["paper_key"] = matches[0]["zotero_key"]
+                    plan["identifier"]["resolved"] = True
+                    # Paper-scoped content queries have no fallback
+                    if plan["intent"] == "content":
+                        plan["fallback"] = None
+                conn.close()
+            except Exception:
+                pass
 
-    data = read_index(vault)
-    items = []
-    if isinstance(data, dict):
-        items = data.get("items", [])
-    elif isinstance(data, list):
-        items = data
-
-    scope = _assess_scope(items, plan["signals"])
-    plan["scope_assessment"] = scope
-
-    if plan["intent"] == "discover" and scope["source"] in {"domain", "collection"}:
-        if scope["source"] == "domain":
-            plan["recommended_primary"] = {
-                "command": "context",
-                "args": {"domain": scope["label"]},
-            }
-            plan["query_writing_rules"].append(
-                "When the user names a known domain, prefer context --domain over metadata search."
-            )
-        else:
-            plan["recommended_primary"] = {
-                "command": "context",
-                "args": {"collection": scope["label"]},
-            }
-            plan["query_writing_rules"].append(
-                "When the user names a known collection, prefer context --collection over metadata search."
-            )
-        plan["fallback_plan"].insert(0, {"when": "large_inventory", "action": "summarize_and_offer_narrowing"})
-
-    if plan["intent"] == "content":
-        plan["suggested_modes"] = _suggest_content_fallback_modes(scope)
     if plan["intent"] == "content" and not retrieve_available:
-        plan["interactive_fallback_required"] = True
-    elif plan["intent"] == "content":
-        plan["interactive_fallback_required"] = False
+        plan["runtime"]["retrieve_unavailable"] = True
 
     return plan
 
