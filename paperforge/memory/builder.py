@@ -425,15 +425,16 @@ def _upsert_body_units(conn: sqlite3.Connection, body_units: list[dict]) -> None
     for unit in body_units:
         conn.execute(
             """INSERT OR REPLACE INTO body_units
-               (unit_id, paper_id, section_path,
+               (unit_id, paper_id, node_id, section_path,
                 section_path_json, section_level, section_title,
                 unit_text, unit_kind, part_ordinal,
                 page_span_json, block_span_json,
                 token_estimate, indexable, veto_reason, quality_hints_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 unit["unit_id"],
                 unit["paper_id"],
+                unit.get("node_id", ""),
                 unit["section_path"],
                 unit.get("section_path_json", "[]"),
                 unit.get("section_level", 0),
@@ -471,15 +472,18 @@ def _upsert_object_units(conn: sqlite3.Connection, object_units: list[dict]) -> 
     for unit in object_units:
         conn.execute(
             """INSERT OR REPLACE INTO object_units
-               (unit_id, paper_id, section_path,
-                object_kind, object_label, caption_text, nearby_body_text,
+               (unit_id, paper_id, node_id, section_path,
+                section_path_json, object_kind, object_label,
+                caption_text, nearby_body_text,
                 page_span_json, block_span_json,
                 token_estimate, indexable, veto_reason, quality_hints_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 unit["unit_id"],
                 unit["paper_id"],
+                unit.get("node_id", ""),
                 unit["section_path"],
+                unit.get("section_path_json", "[]"),
                 unit.get("object_kind", ""),
                 unit.get("object_label", ""),
                 unit.get("caption_text", ""),

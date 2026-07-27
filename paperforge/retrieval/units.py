@@ -173,10 +173,10 @@ def build_body_units(
                     uid = build_unit_id_v2(
                         paper_id, "body", node["node_id"], f"{kind_sfx}{suffix}",
                     )
-
                     unit = {
                         "unit_id": uid,
                         "paper_id": paper_id,
+                        "node_id": node.get("node_id", ""),
                         "section_path": "/".join(this_path),
                         "section_path_json": json.dumps(this_path),
                         "section_level": node.get("level", 0),
@@ -295,41 +295,43 @@ def build_object_units(
                     break
 
         if not owning_node:
-            owning_node = tree.get("nodes", [{}])[0] if tree.get("nodes") else None
+            # No owning node found — don't fallback to first root. node_id stays "".
+            node_id = ""
+            section_path_parts = []
+        else:
+            node_id = owning_node.get("node_id", "")
+            # Build section path
+            section_path_parts: list[str] = []
 
-        if not owning_node:
-            continue
+            def _build_path(n: dict[str, Any], target: dict[str, Any]) -> list[str]:
+                if n is target:
+                    return [n.get("title", "")]
+                for child in n.get("children", []):
+                    result = _build_path(child, target)
+                    if result:
+                        return [n.get("title", "")] + result
+                return []
 
-        # Build section path
-        section_path_parts: list[str] = []
-
-        def _build_path(n: dict[str, Any], target: dict[str, Any]) -> list[str]:
-            if n is target:
-                return [n.get("title", "")]
-            for child in n.get("children", []):
-                result = _build_path(child, target)
-                if result:
-                    return [n.get("title", "")] + result
-            return []
-
-        for root in tree.get("nodes", []):
-            section_path_parts = _build_path(root, owning_node)
-            if section_path_parts:
-                break
+            for root in tree.get("nodes", []):
+                section_path_parts = _build_path(root, owning_node)
+                if section_path_parts:
+                    break
 
         uid = f"{paper_id}:obj:{obj_id}"
         unit = {
             "unit_id": uid,
             "paper_id": paper_id,
+            "node_id": node_id,
             "section_path": "/".join(section_path_parts),
+            "section_path_json": json.dumps(section_path_parts),
             "object_kind": obj_type,
             "object_label": obj_id,
             "caption_text": caption,
-            "nearby_body_text": "",  # Can be populated from own_block_ids text
+            "nearby_body_text": "",
             "page_span": [
                 owning_node.get("page_span", [0, 0])[0],
                 owning_node.get("page_span", [0, 0])[1],
-            ],
+            ] if owning_node else [0, 0],
             "block_span": [],
             "token_estimate": len(caption) // 4,
             "indexable": bool(caption.strip()),
@@ -337,5 +339,6 @@ def build_object_units(
             "quality_hints": [],
         }
         units.append(unit)
+
 
     return units
