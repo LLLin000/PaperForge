@@ -70,12 +70,12 @@ $PYTHON -m paperforge --vault "$VAULT" \
 ```
 
 按 `zotero_key` 聚合，只展示命中章节、片段和 score。不虚构 title/author/year。
+
+**object hit（图表结果）：** 作为"该论文命中了相关图表"的候选信号。
+不展开 object 的正文引用——discover 只返回候选，图表上下文由 `read-known-paper` 或
+`find-supporting-evidence` 中的 Object Context Resolution Protocol 处理。
+
 用户选中某篇后，由 `read-known-paper` 获取完整 metadata。
-
-**来源标注**：如果结果来自 fallback，明确标注"来自正文语义检索"。
-**不写"已验证证据"**——discover 只返回候选论文。
-
-不要对前十篇全部调用 paper-context。search 已返回足够的状态信息。
 只有用户选中某篇后，才进入 `read-known-paper` 并调用 paper-context。
 ### Step 5: 等待用户选择
 

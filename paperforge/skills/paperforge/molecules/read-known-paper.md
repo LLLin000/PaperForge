@@ -113,9 +113,22 @@ $PYTHON -m paperforge --vault "$VAULT" \
 $PYTHON -m paperforge --vault "$VAULT" \
   retrieve "<question>" --paper <KEY> --deep --json
 ```
-
 `--deep` 启用 BM25 + 向量混合检索，适用于跨章节关联查询。
 
+#### 图表相关问题
+
+如"Figure 3 表明什么"、"这张图在哪个章节讨论"：
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" \
+  retrieve "\"Figure 3\" | \"Fig. 3\"" --paper <KEY> --json
+```
+
+按 `atoms/retrieval-routing.md` §5 **Object Context Resolution Protocol** 处理：
+
+- Caption 已直接回答问题 → 直接使用，标注"图表 caption 信息"
+- 需要作者解释/正文论证 → 执行一次 contextual retrieve，合并展示
+- 同一 session 同一图不重复补查
 #### 总结型/整篇问题
 
 如"总结这篇文章的逻辑链"：

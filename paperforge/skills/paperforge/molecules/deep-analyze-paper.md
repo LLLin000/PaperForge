@@ -26,7 +26,8 @@ Keshav 三阶段精读。在 formal note 中写入结构化的 `## 精读` 区�
 
 ## 入口：定位论文（如果需要）
 
-如果尚未有唯一 zotero_key，先定位：
+> **图表处理说明：** Pass 2 已包含完整图表上下文化（读 caption → 读图像 → 查正文 → 逐图分析），
+> 不重复执行 `atoms/retrieval-routing.md` §5 的通用 Object Context Resolution Protocol。
 
 ```bash
 $PYTHON -m paperforge --vault "$VAULT" \
