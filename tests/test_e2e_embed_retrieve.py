@@ -176,12 +176,10 @@ class TestEmbedRetrieveE2E:
             _embed_paper(tmp_path, paper_id, _TOPICS[paper_id], mock_provider=mock_provider)
 
         results = merge_retrieve(tmp_path, "machine learning clinical", limit=10)
-        assert any(r["source"] == "body_unit" for r in results), (
-            "Expected at least one body_unit result"
+        assert any(r["source"] == "body" for r in results), (
+            "Expected at least one body result"
         )
-        assert any(r["source"] == "object_unit" for r in results), (
-            "Expected at least one object_unit result"
-        )
+        assert any(r["source"] == "object" for r in results), "Expected at least one object result"
 
     def test_retrieve_respects_per_paper_cap(
         self,

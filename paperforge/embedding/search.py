@@ -182,7 +182,11 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True,
     finally:
         conn.close()
 def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None = None) -> list[dict]:
-    """Hybrid search: BM25 FTS5 + vec0 k-NN with query rewrite."""
+    """Hybrid search: BM25 FTS5 + vec0 k-NN with query rewrite.
+
+    Vector failures (no API key, stale embeddings) degrade gracefully
+    to BM25-only — never crash.
+    """
     from paperforge.embedding.query_rewrite import expand_query as do_expand
 
     query_variants = do_expand(query)
@@ -191,7 +195,11 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
     try:
         ensure_vec_extension(conn)
         bm25_results: list[dict] = _bm25_search(conn, query_variants, limit * 2, paper_id=paper_id)
-        vec_results: list[dict] = _vec_search(conn, vault, query, limit * 2, paper_id=paper_id)
+        try:
+            vec_results: list[dict] = _vec_search(conn, vault, query, limit * 2, paper_id=paper_id)
+        except Exception:
+            vec_results = []
+
         fused = _fuse_results(bm25_results, vec_results, limit)
 
         # Enrich fused results with structural coordinates

@@ -357,10 +357,11 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
 
     current_version = stored_version
     if current_version < 3:
-        logger.info("Migrating schema v%s -> v3: rebuilding body_units, body_units_fts, object_units", current_version)
-        for table in ("body_units", "body_units_fts", "object_units"):
-            conn.execute(f"DROP TABLE IF EXISTS {table};")
-        current_version = 3
+        logger.info("Migrating schema v%s: destructive rebuild (pre-v3) → v7", current_version)
+        drop_all_tables(conn)
+        ensure_schema(conn)
+        logger.info("Destructive migration complete, schema is now v%s", target_version)
+        return
     if current_version < 4:
         logger.info("Migrating schema v%s -> v4: adding body_units columns", current_version)
         for col_sql in [

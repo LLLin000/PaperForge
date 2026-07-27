@@ -254,7 +254,7 @@ class TestHybridSearch:
             assert "text" in r
             assert "score" in r
             assert "heading" in r
-            assert r["source"] == "body_unit"
+            assert r["source"] == "body"
 
     def test_query_rewrite_broadens_bm25(self, tmp_path):
         """Query with abbreviation finds content via expanded form."""
