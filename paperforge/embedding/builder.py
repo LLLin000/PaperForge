@@ -203,6 +203,7 @@ def write_encoded_payload(vault: Path, encoded: EncodedPayload):
                     meta.get("retrieval_policy_version"),
                 ],
             )
+        elif meta_table == "vec_objects_meta":
             conn.execute(
                 f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, unit_id, text, object_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [
