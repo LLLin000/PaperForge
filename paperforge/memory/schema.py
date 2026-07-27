@@ -5,7 +5,7 @@ import sqlite3
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SCHEMA_VERSION = 6  # Bump from 5: add hash/policy cols to vec companion meta tables
+CURRENT_SCHEMA_VERSION = 7  # Bump from 6: add node_id/path_json/unit_id columns for structural retrieval
 
 CREATE_META = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -402,16 +402,25 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
             try:
                 conn.execute(col_sql)
             except Exception:
-                pass  # column may already exist
+                pass
         current_version = 6
     if current_version < 7:
-        # v6→v7: reserved for #109 structural retrieval schema.
-        # #109 will add ALTER TABLE statements here for:
-        #   body_units.node_id, object_units.node_id
-        #   object_units.section_path_json
-        #   vec_body_meta.unit_id, vec_objects_meta.unit_id
-        # CURRENT_SCHEMA_VERSION stays 6 until #109 merges.
-        current_version = 6
+        logger.info(
+            "Migrating schema v%s -> v7: adding node_id/path_json/unit_id columns for structural retrieval",
+            current_version,
+        )
+        for col_sql in [
+            "ALTER TABLE body_units ADD COLUMN node_id TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE object_units ADD COLUMN node_id TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE object_units ADD COLUMN section_path_json TEXT NOT NULL DEFAULT '[]'",
+            "ALTER TABLE vec_body_meta ADD COLUMN unit_id TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE vec_objects_meta ADD COLUMN unit_id TEXT NOT NULL DEFAULT ''",
+        ]:
+            try:
+                conn.execute(col_sql)
+            except Exception:
+                pass  # column may already exist from a prior partial migration
+        current_version = 7
 
     # Sync the stored version if we made progress (even partial)
     if current_version > stored_version:

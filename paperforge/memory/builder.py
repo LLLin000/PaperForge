@@ -195,7 +195,7 @@ def build_from_index(vault: Path) -> dict:
                     logger.info("Index hash unchanged after migration — incremental only")
                     ocr_root = vault / "System" / "PaperForge" / "ocr"
                     if ocr_root.exists():
-                        _incremental_units_only(conn, vault, items)
+                        _incremental_units_only(conn, items, ocr_root)
                     conn.commit()
                     conn.close()
                     return {
@@ -332,7 +332,7 @@ def build_from_index(vault: Path) -> dict:
                     paper_id=zotero_key,
                     ocr_result_hash=ocr_result_hash,
                     structure_tree_bytes=tree_path.read_bytes(),
-                    retrieval_policy_version="l4.body.v1",
+                    retrieval_policy_version=RETRIEVAL_POLICY_VERSION,
                     body_units=body_units,
                     object_units=object_units,
                     source_paths={

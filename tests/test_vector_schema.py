@@ -92,6 +92,6 @@ def test_schema_version_is_6():
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
     ensure_schema(conn)
-    assert get_schema_version(conn) == 6
-    assert CURRENT_SCHEMA_VERSION == 6
+    assert get_schema_version(conn) == 7
+    assert CURRENT_SCHEMA_VERSION == 7
     conn.close()
