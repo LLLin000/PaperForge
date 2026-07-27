@@ -74,8 +74,7 @@ def get_embed_status(vault: Path) -> dict:
                     pass
 
     model = get_api_model(vault)
-    raw_total = chunk_count + body_chunk_count + object_chunk_count
-    total_valid = valid_body + valid_object
+    raw_total = body_chunk_count + object_chunk_count  # exclude legacy vec_fulltext_meta
     if total_valid > 0:
         vector_state = "ready"
     elif raw_total > 0:
