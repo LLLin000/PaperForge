@@ -52,13 +52,9 @@ def test_query_plan_runtime_enrichment_without_retrieve(monkeypatch: pytest.Monk
     assert '"retrieve_available": false' in out.lower()
 
 
-def test_query_plan_discover_prefers_context_for_known_domain(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_query_plan_discover_uses_search_even_for_known_domain(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     plan = build_query_plan("骨科 里有什么", "discover")
     monkeypatch.setattr("paperforge.embedding.get_embed_status", lambda vault: {"db_exists": False, "chunk_count": 0, "healthy": True, "error": ""})
-    monkeypatch.setattr(
-        "paperforge.worker.asset_index.read_index",
-        lambda vault: {"items": [{"domain": "骨科", "lifecycle": "fulltext_ready", "collections": []} for _ in range(5)]},
-    )
     enriched = enrich_query_plan_with_runtime(plan, tmp_path)
-    assert enriched["primary"]["command"] == "context"
-    assert enriched["primary"]["args"]["domain"] == "骨科"
+    assert enriched["primary"]["command"] == "search"
+    assert enriched["fallback"]["command"] == "retrieve"

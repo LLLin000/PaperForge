@@ -234,14 +234,6 @@ def _vec_table_ddl(name: str, dim: int = VEC_EMBEDDING_DIM) -> str:
 CREATE_VEC_FULLTEXT = _vec_table_ddl("vec_fulltext")
 CREATE_VEC_BODY = _vec_table_ddl("vec_body")
 CREATE_VEC_OBJECTS = _vec_table_ddl("vec_objects")
-CREATE_VEC_FULLTEXT_META = """
-CREATE TABLE IF NOT EXISTS vec_fulltext_meta (
-  rowid INTEGER PRIMARY KEY,
-  paper_id TEXT NOT NULL,
-  chunk_index INTEGER,
-  text TEXT
-);
-"""
 
 CREATE_VEC_FULLTEXT_META = """
 CREATE TABLE IF NOT EXISTS vec_fulltext_meta (
@@ -401,8 +393,9 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
         ]:
             try:
                 conn.execute(col_sql)
-            except Exception:
-                pass
+            except sqlite3.OperationalError as e:
+                if "duplicate column" not in str(e).lower():
+                    raise
         current_version = 6
     if current_version < 7:
         logger.info(
@@ -418,8 +411,9 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
         ]:
             try:
                 conn.execute(col_sql)
-            except Exception:
-                pass  # column may already exist from a prior partial migration
+            except sqlite3.OperationalError as e:
+                if "duplicate column" not in str(e).lower():
+                    raise
         current_version = 7
 
     # Sync the stored version if we made progress (even partial)
