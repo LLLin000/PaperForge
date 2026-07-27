@@ -154,7 +154,7 @@ class TestEmbedRoundTrip:
         results = merge_retrieve(tmp_path, "body text", limit=5)
         assert len(results) >= 1
         assert results[0]["paper_id"] == key
-        assert results[0]["source"] == "body_unit"
+        assert results[0]["source"] == "body"
 
     def test_write_and_retrieve_object_units(self, tmp_path, mock_provider):
         """Write object units, retrieve them."""
@@ -166,7 +166,7 @@ class TestEmbedRoundTrip:
 
         results = merge_retrieve(tmp_path, "figure caption", limit=5)
         assert len(results) >= 1
-        assert results[0]["source"] == "object_unit"
+        assert results[0]["source"] == "object"
 
     def test_write_and_retrieve_legacy_chunks(self, tmp_path, mock_provider):
         """Write legacy chunks, retrieve them."""

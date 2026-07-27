@@ -398,3 +398,30 @@ def test_object_units_schema_includes_new_columns(tmp_path):
         assert col in cols, f"object_units missing {col} column"
     assert "object_role" not in cols, "object_units should not have legacy object_role column"
     conn.close()
+
+
+def test_fresh_schema_v7_columns(tmp_path):
+    """Fresh DB must include all 5 v7 columns (node_id, unit_id)."""
+    db = tmp_path / "test_v7_schema.db"
+    conn = sqlite3.connect(str(db))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    ensure_schema(conn)
+
+    sv = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
+    assert int(sv["value"]) == 7, f"expected schema v7, got {sv['value']}"
+
+    body_cols = {r[1] for r in conn.execute("PRAGMA table_info(body_units)").fetchall()}
+    assert "node_id" in body_cols, "body_units missing node_id"
+
+    obj_cols = {r[1] for r in conn.execute("PRAGMA table_info(object_units)").fetchall()}
+    assert "node_id" in obj_cols, "object_units missing node_id"
+    assert "section_path_json" in obj_cols, "object_units missing section_path_json"
+
+    vb_cols = {r[1] for r in conn.execute("PRAGMA table_info(vec_body_meta)").fetchall()}
+    assert "unit_id" in vb_cols, "vec_body_meta missing unit_id"
+
+    vo_cols = {r[1] for r in conn.execute("PRAGMA table_info(vec_objects_meta)").fetchall()}
+    assert "unit_id" in vo_cols, "vec_objects_meta missing unit_id"
+
+    conn.close()

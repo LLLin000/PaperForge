@@ -4,11 +4,11 @@ import argparse
 import sys
 
 from paperforge import __version__ as PF_VERSION
+from pathlib import Path
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
-from paperforge.embedding import hybrid_search, merge_retrieve, retrieve_chunks
-from paperforge.memory.db import get_connection, get_memory_db_path
-from paperforge.query_planning import build_query_plan, enrich_query_plan_with_runtime
+from paperforge.embedding import hybrid_search, merge_retrieve
+
 
 
 def _looks_generic_chunk(text: str) -> bool:
@@ -34,7 +34,7 @@ def _looks_generic_chunk(text: str) -> bool:
 def _is_low_confidence_semantic_result(chunks: list[dict]) -> bool:
     if not chunks:
         return False
-    generic_top = sum(1 for chunk in chunks[:5] if _looks_generic_chunk(chunk.get("chunk_text", "")))
+    generic_top = sum(1 for chunk in chunks[:5] if _looks_generic_chunk(chunk.get("text", chunk.get("chunk_text", ""))))
     max_score = max(float(chunk.get("score", 0) or 0) for chunk in chunks[:5])
     return generic_top >= 3 or max_score < 0.62
 
@@ -74,10 +74,12 @@ def _paper_scope_check(vault, paper_key: str, allow_bm25_only: bool = False) -> 
             old_body = conn.execute(
                 "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=?", (paper_key,),
             ).fetchone()[0]
-            vs = "stale" if old_body > 0 else "not_built"
+            old_object = conn.execute(
+                "SELECT COUNT(*) FROM vec_objects_meta WHERE paper_id=?", (paper_key,),
+            ).fetchone()[0]
+            raw_total = old_body + old_object
+            vs = "stale" if raw_total > 0 else "not_built"
             return {"vector_state": vs}
-
-        return None  # all checks passed
     finally:
         conn.close()
 
@@ -147,7 +149,25 @@ def run(args: argparse.Namespace) -> int:
     status = get_embed_status(vault)
     valid_total = status.get("valid_total_chunks", 0)
     if valid_total == 0:
-        avail = status.get("vector_state", "not_built")
+        state = status.get("vector_state", "not_built")
+        result = PFResult(
+            ok=False,
+            command="retrieve",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.INTERNAL_ERROR,
+                message=f"Vector index is {state}. {'Rebuild vectors before retrieving.' if state == 'not_built' else 'Rebuild required.'}",
+            ),
+            data={
+                "next_action": "paperforge embed build" if state == "not_built" else "paperforge embed build --force",
+                "vector_state": state,
+            },
+        )
+        if args.json:
+            print(result.to_json())
+        else:
+            print(f"Error: {result.error.message}", file=sys.stderr)
+        return 1
 
     try:
         chunks = merge_retrieve(vault, query, limit=limit, expand=args.expand, paper_id=paper_key)
@@ -216,9 +236,7 @@ def _build_result(query: str, data: dict, matches: list[dict], vault: Path) -> P
     next_actions: list[dict] = []
     is_scoped = bool(data.get("scoped_paper"))
     if not matches:
-        if is_scoped:
-            pass  # Paper-scoped zero results do NOT emit fallback
-        else:
+        if not is_scoped:
             warnings.append("Retrieval returned no results for the query.")
             next_actions.append({"command": "paperforge query-plan", "reason": "Review fallback modes."})
     else:
@@ -240,6 +258,6 @@ def _output(args: argparse.Namespace, result: PFResult, query: str) -> None:
             print(f"{len(matches)} matches{prefix} for: {query}")
             for m in matches:
                 path = "/".join(m.get("structure_path", [])) or m.get("heading", "")
-                print(f"  [{m.get('source', '?')}] {m.get('zotero_key', '')}: {path} — {m.get('text', '')[:60]}...")
+                print(f"  [{m.get('source_kind', '?')}] {m.get('zotero_key', '')}: {path} — {m.get('text', '')[:60]}...")
         else:
             print(f"Error: {result.error.message}", file=sys.stderr)
