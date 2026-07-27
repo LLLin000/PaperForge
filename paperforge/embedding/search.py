@@ -65,7 +65,7 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
 
     Used by both merge_retrieve() and hybrid_search().
     """
-    enrichment: dict = {"structure_resolved": True}
+    enrichment: dict = {"structure_resolved": False}
     if source_kind == "body":
         row = conn.execute(
             "SELECT node_id, section_path_json, section_title, section_level, part_ordinal, unit_kind "
@@ -73,16 +73,17 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
             (unit_id, paper_id),
         ).fetchone()
         if row:
-            enrichment["node_id"] = row["node_id"]
+            node_id = row["node_id"] or ""
+            enrichment["node_id"] = node_id
             enrichment["structure_path"] = json.loads(row["section_path_json"]) if row["section_path_json"] else []
             enrichment["section_title"] = row["section_title"]
             enrichment["section_level"] = row["section_level"]
             enrichment["part_ordinal"] = row["part_ordinal"]
             enrichment["unit_kind"] = row["unit_kind"]
+            enrichment["structure_resolved"] = bool(node_id)
         else:
             enrichment["node_id"] = ""
             enrichment["structure_path"] = []
-            enrichment["structure_resolved"] = False
     elif source_kind == "object":
         row = conn.execute(
             "SELECT node_id, section_path_json, object_kind "
@@ -90,13 +91,17 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
             (unit_id, paper_id),
         ).fetchone()
         if row:
-            enrichment["node_id"] = row["node_id"]
+            node_id = row["node_id"] or ""
+            enrichment["node_id"] = node_id
             enrichment["structure_path"] = json.loads(row["section_path_json"]) if row["section_path_json"] else []
             enrichment["object_kind"] = row["object_kind"]
+            enrichment["structure_resolved"] = bool(node_id)
         else:
             enrichment["node_id"] = ""
             enrichment["structure_path"] = []
-            enrichment["structure_resolved"] = False
+    else:
+        enrichment["node_id"] = ""
+        enrichment["structure_path"] = []
 
     # Read structure_version from DB manifest
     row = conn.execute("SELECT value FROM meta WHERE key = ?", (f"manifest:{paper_id}",)).fetchone()
@@ -434,3 +439,4 @@ def _fuse_results(
             })
             if len(out) >= limit:
                 break
+    return out
