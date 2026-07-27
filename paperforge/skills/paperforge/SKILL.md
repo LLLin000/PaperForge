@@ -1,3 +1,4 @@
+---
 name: paperforge
 description: >
   Research Memory Runtime — 文献搜索、精读、问答、阅读笔记、
@@ -9,7 +10,7 @@ description: >
 source: paperforge
 skill_version: 2026-07-27.1
 skill_api_version: 2
-
+---
 # PaperForge — Research Memory Runtime
 
 PaperForge 将文献、阅读痕迹、工作过程、方法论和产物
@@ -90,7 +91,8 @@ $PYTHON -m paperforge --vault "$VAULT" runtime-health --json
 - `data.layers.*.repair_command` 存在时，优先把该命令作为修复建议返回给用户
 
 **检索可用性不由 runtime-health 决定。** 检索命令选择由 `query-plan` 决定。
-CLI 返回的 `INTERNAL_ERROR` 或 `vector_unavailable` 由 molecule 按 `atoms/retrieval-routing.md` §4 fallback 协议处理。
+执行语义和 fallback 规则完全以 `atoms/retrieval-routing.md` 为准。
+CLI 返回 `ok=false` 时报告错误和 repair action；返回 `ok=true` 但无结果时按 fallback 协议处理。
 不要基于 capabilities 自行替换 primary 命令。
 
 ## 4. 意图路由
@@ -111,14 +113,13 @@ CLI 返回的 `INTERNAL_ERROR` 或 `vector_unavailable` 由 molecule 按 `atoms/
 | ----------- | ---------------------------- |
 | `/pf-deep`  | `deep_analyze_paper`         |
 | `/pf-paper` | `read_known_paper`           |
-
 ### C. 顶层研究意图（按判定顺序）
 
 1. **`capture_project_knowledge`** — 直接保存/归档/提取（用户说"记一下"、"保存这次"、"提取方法论"）
-2. **`read_known_paper`** — 用户给定了明确的 paper（key/DOI/标题）
-3. **`discover_papers`** — 用户要找一批论文（"找XX的文章"、"collection里有什么"）
-4. **`find_supporting_evidence`** — 用户要找具体证据/参数/术语（"找75 Hz"、"找支持这句话的依据"）
-5. **`deep_analyze_paper`** — 用户明确要精读（"/pf-deep"）
+2. **`deep_analyze_paper`** — 用户明确要求精读（出现"精读"、"深度分析"、"完整分析"、"Keshav"等动作词时，优先于普通问答）
+3. **`read_known_paper`** — 用户给定了明确的 paper（key/DOI/标题），但未要求精读
+4. **`discover_papers`** — 用户要找一批论文（"找XX的文章"、"collection里有什么"）
+5. **`find_supporting_evidence`** — 用户要找具体证据/参数/术语（"找75 Hz"、"找支持这句话的依据"）
 
 **判定顺序（必须严格按此顺序执行）：**
 
@@ -126,12 +127,13 @@ CLI 返回的 `INTERNAL_ERROR` 或 `vector_unavailable` 由 molecule 按 `atoms/
 0. 处理机械命令（A 节）
 1. 处理别名（B 节）→ deep_analyze_paper / read_known_paper
 2. 如果用户要求保存/归档/从上下文提取 → capture_project_knowledge
-3. 如果用户已指向单一论文 → read_known_paper
-4. 如果用户想要论文列表 → discover_papers
-5. 如果用户想要证据/支持 → find_supporting_evidence
-6. 如果意图无法判定 → 打开 atoms/clarify-user-intent.md
+3. 如果用户明确要求精读（含"精读"、"深度分析"、"Keshav"等词）→ deep_analyze_paper
+4. 如果用户已指向单一论文但未要求精读 → read_known_paper
+5. 如果用户想要论文列表 → discover_papers
+6. 如果用户想要证据/支持 → find_supporting_evidence
+7. 如果意图无法判定 → 打开 atoms/clarify-user-intent.md
    注意：如果多个 intent 同时匹配（如"找这篇的证据然后保存"），**除非某个 intent 明显主导**，否则也走 clarify；不要硬猜。
-7. post-action：molecule 输出后，如果用户要求保存 → capture_project_knowledge
+8. post-action：molecule 输出后，如果用户要求保存 → capture_project_knowledge
 ```
 
 ### D. Clarify 回退
@@ -158,7 +160,7 @@ Reading-log 不是事实源。它记录的是**之前的关注点、解读和预
 
 ## 6. 全局禁止规则
 
-2. **`read_known_paper`** — 用户给定了明确的 paper（key/DOI/标题）。query-plan 使用 `--intent locate`。
+- **禁止自行拼接文件路径**。所有路径从 bootstrap 或 paper-context 获取。
 - **禁止绕过 CLI 直接操作文件**。搜索用 `$PYTHON -m paperforge search`，不用 glob/grep 扫库。
 - **禁止在未完成 paper-context 检查前读取原文**（适用于 read-known-paper、deep-analyze-paper）。
 

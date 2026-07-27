@@ -59,8 +59,8 @@ paperforge search "<query>" --limit <N> --json
 
 `fulltext_available=false` 时结果为 metadata candidate，不是正文证据。
 
-### `paperforge retrieve`
-
+`search "<query>" --evidence --json` 返回 `data.metadata_candidates[]`（evidence 模式）。
+用于 fallback.mode=evidence 的场景。
 正文内容检索。在 OCR 全文块中查找匹配内容。
 
 ```bash
@@ -224,6 +224,54 @@ paperforge query-plan "<query>" --intent locate --json
 paperforge paper-context <KEY>          # 论文完整上下文
 paperforge paper-context <KEY> --json
 paperforge paper-context <KEY> --structure --json  # 附加 StructureTree
+```
+
+### `paperforge search`
+
+```bash
+paperforge search "<query>"          # 元数据全文搜索
+paperforge search "<query>" --json
+paperforge search "<query>" --evidence --json
+paperforge search "PEMF" --domain 骨科 --ocr done --year-from 2020
+paperforge search "PEMF" --limit 10
+```
+
+### `paperforge paper-status`
+
+```bash
+paperforge paper-status <query>      # 查找文献状态 (key/DOI/title/alias)
+paperforge paper-status "XGT9Z257" --json
+```
+
+### `paperforge reading-log`
+
+```bash
+paperforge reading-log --write <KEY> --section "Discussion P12" --excerpt "..." --usage "..." # 写阅读笔记
+paperforge reading-log --render      # 渲染 reading-log.md
+paperforge reading-log --lookup <KEY> # 查某文献的阅读笔记
+paperforge reading-log --since 2026-01-01 --limit 100 --output notes.md # 导出
+paperforge reading-log --validate reading-log.md
+paperforge reading-log --import reading-log.md
+paperforge reading-log --correct <ID> --correction "..." --reason "..." # 修正笔记
+paperforge reading-log --json
+```
+
+### `paperforge prune`
+
+```bash
+paperforge prune                     # 预览删除孤儿产物 (dry-run)
+paperforge prune --force             # 实际删除
+paperforge prune <KEY> [KEY...]      # 仅处理指定 key
+paperforge prune --json              # JSON 输出
+```
+
+### `paperforge memory`
+
+```bash
+paperforge memory build              # 构建 memory DB
+paperforge memory build --json       # JSON 输出
+paperforge memory status             # 查看 memory DB 状态
+paperforge memory status --json      # JSON 输出
 ```
 ### `paperforge project-log`
 
