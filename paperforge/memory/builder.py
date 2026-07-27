@@ -188,7 +188,10 @@ def build_from_index(vault: Path) -> dict:
 
         # Step 2: re-check fast path now that schema matches
         if canonical_hash and db_path.exists():
-            cached = conn.execute("SELECT value FROM meta WHERE key='canonical_index_hash'").fetchone()
+            try:
+                cached = conn.execute("SELECT value FROM meta WHERE key='canonical_index_hash'").fetchone()
+            except Exception:
+                cached = None
             if cached and cached[0] == canonical_hash:
                 stored_v2 = get_schema_version(conn)
                 if stored_v2 == CURRENT_SCHEMA_VERSION:
