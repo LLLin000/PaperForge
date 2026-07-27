@@ -36,18 +36,11 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 ### Step A2: 安全执行 primary
 
-按 **Safe Executor**（§3）渲染 CLI：
+按 **Safe Executor**（§3）渲染 CLI。
 
-- `paper-context` → 定位成功，取 `zotero_key`
-- `search` → 多候选时列出让用户选，无结果时告知
+#### 如果 primary 是 paper-context
 
-### Step A3: 检查 paper-context 返回
-
-```bash
-$PYTHON -m paperforge --vault "$VAULT" paper-context <KEY> --json
-```
-
-从返回中记录 session 状态：
+直接复用 primary 的 response，**不再调用第二次 paper-context**。从 response 中记录：
 ```
 paper_key              — session 生命周期复用
 title, first_author, year, journal, domain — 不重复调用
@@ -55,6 +48,17 @@ fulltext_path          — 有全文时记录
 note_path              — formal note 路径
 prior_notes            — 存在时记录 recheck_targets
 ```
+
+#### 如果 primary 是 search
+
+用户从候选中选择后，再调用一次 paper-context 获取完整信息：
+```bash
+$PYTHON -m paperforge --vault "$VAULT" paper-context <KEY> --json
+```
+
+#### 无结果时
+
+告知用户"未找到匹配论文"。
 
 ### Step A4: 加载结构（仅首次）
 

@@ -49,23 +49,38 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 ### Step 4: 展示候选清单
 
+**primary 来自 search 时：**
+
 ```
-找到 N 篇匹配 "<query>"（来源：[primary / fallback]）：
+找到 N 篇匹配 "<query>"：
 
 [1] ABC12345 | Smith 2024 | 论文标题
     Fulltext: available | OCR: done
 [2] DEF67890 | Jones 2023 | 论文标题
-    Fulltext: fulltext_available=false | OCR: pending
+    Fulltext: false | OCR: pending
 ```
 
 每项展示：`zotero_key`、`first_author`、`year`、`title`、`domain`、`fulltext_available`、`ocr_status`。
+
+**fallback 来自 retrieve 时**（retrieve 输出不保证包含 title/author/year）：
+
+```
+正文检索结果：
+
+[1] ABC12345 | Methods | score: 0.85
+    "75 Hz bipolar stimulation was applied..."
+[2] DEF67890 | Results | score: 0.72
+    "frequency of 75 Hz showed significant effect..."
+```
+
+按 `zotero_key` 聚合，只展示命中章节、片段和 score。不虚构 title/author/year。
+用户选中某篇后，由 `read-known-paper` 获取完整 metadata。
 
 **来源标注**：如果结果来自 fallback，明确标注"来自正文语义检索"。
 **不写"已验证证据"**——discover 只返回候选论文。
 
 不要对前十篇全部调用 paper-context。search 已返回足够的状态信息。
 只有用户选中某篇后，才进入 `read-known-paper` 并调用 paper-context。
-
 ### Step 5: 等待用户选择
 
 展示后不要自己决定下一步。等用户说：

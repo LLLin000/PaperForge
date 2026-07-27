@@ -19,11 +19,26 @@ Keshav 三阶段精读。在 formal note 中写入结构化的 `## 精读` 区�
 
 - [ ] SKILL.md Section 1a Pre-flight 全部通过
 - [ ] `$VAULT`、`$PYTHON` 已从 bootstrap 获取
-- [ ] 已确定唯一 paper（zotero_key）
 - [ ] OCR status 为 `done`（否则无法精读）
 - [ ] intent 已确定为 `deep_analyze_paper`
 
 ---
+
+## 入口：定位论文（如果需要）
+
+如果尚未有唯一 zotero_key，先定位：
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" \
+  query-plan "<identifier>" \
+  --intent locate --json
+```
+
+执行 `data.primary`（同 `atoms/retrieval-routing.md` §2–§3）。多候选则让用户选择。
+
+获得唯一 KEY 后进入 Step 0。
+
+如果已有唯一 KEY，直接进入 Step 0。
 
 ### Step 0: paper-context with StructureTree
 
@@ -40,19 +55,6 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 **读取 StructureTree：**
 
-```
-data.structure.version   — 结构版本（用于与检索结果中的 structure_version 对照）
-data.structure.nodes[]   — 章节导航地图
-
-每个 node 包含：
-  node_id               — 节点 ID（检索结果中的 node_id 关联到此 ID）
-  parent_id             — 父节点 ID（null = root）
-  title                 — 章节标题
-  path                  — 章节路径数组（["Introduction", "Methods"]）
-  depth                 — 深度
-  own_block_count       — 本节点包含的 block 数
-  page_span             — 跨页范围
-  document_order        — 文档内顺序
 ```
 
 StructureTree 是**导航地图，不是全文内容替代品**。它用于：
@@ -82,6 +84,12 @@ StructureTree 是**导航地图，不是全文内容替代品**。它用于：
 - `data.structure.version`
 - `data.structure.nodes`
 - `recheck_targets`
+
+**StructureTree 降级 path：**
+- `data.structure == null` → 报告"章节树暂不可用"
+  → 继续原有 fulltext + pf_deep.py 工作流
+  → 不使用 node/path 导航
+  → 不终止精读
 
 ---
 
@@ -152,10 +160,10 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" prepare --key <zotero_key> --vault "$VAU
 ```
 # Pass 2 中需要确认具体参数时
 $PYTHON -m paperforge --vault "$VAULT" \
-  retrieve "experimental design" --paper <KEY> --deep
+  retrieve "experimental design" --paper <KEY> --deep --json
 
 $PYTHON -m paperforge --vault "$VAULT" \
-  retrieve "main findings" --paper <KEY> --deep
+  retrieve "main findings" --paper <KEY> --deep --json
 ```
 
 但不能只依赖 top-k retrieve 宣称已经完整分析整篇。

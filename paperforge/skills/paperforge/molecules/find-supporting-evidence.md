@@ -42,17 +42,19 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 ```yaml
 source_kind: body + structure_resolved: true
-  → 正文证据，可直接使用
-  → 标注章节位置
+  → 章节归属已解析
+  → Agent 仍须阅读 text 判断是否直接支持用户问题
+  → 区分作者陈述与 Agent 推断
+  → section_title / section_level / part_ordinal 可用
+
+source_kind: body + structure_resolved: false
+  → 内容存在但章节位置未确认
+  → 慎用，标注"章节未确认"
 
 source_kind: object
   → 图表证据，标注 object_kind
-
-structure_resolved: false
-  → 内容存在但章节未确认，慎用
+  structure_resolved 默认为 false（大部分 object 未关联章节）
 ```
-
-不要求额外的 `rg`/`grep` 验证——结构坐标即为验证。
 
 #### 如果 zero_results 且 fallback 非 null
 
@@ -89,47 +91,29 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 ### Step 4: 展示证据
 
+**正文证据区块**（来自 retrieve primary）：
+
 ```
-找到 N 条与 "<论点>" 相关的证据：
+找到 N 条与 "<论点>" 相关的正文证据：
 
 === Smith 2024 (ABC12345) ===
 [1] Introduction · section_title="Background"
     structure_resolved: true
     "…electrical stimulation parameters included 75 Hz frequency…"
-
-=== Jones 2023 (DEF67890) ===
-[2] Methods
-    structure_resolved: true
-    metadata candidate — fulltext not yet available
-    "study of PTOA patients using biophysical stimulation…"
 ```
 
-### Step 5: 等待用户选择
+**元数据候选区块**（来自 search --evidence fallback）：
 
-- "看 [1] 的详情" → `read-known-paper.md`
-- "保存这条证据" → `capture-project-knowledge.md`
-- "换个关键词" → 回到 Step 1
-- "够了" → 结束
+```
+元数据候选（fulltext_verified=false，不显示正文引文）：
 
----
+[1] ABC12345 | Smith 2024 | 论文标题
+    evidence_status: metadata_only
+[2] DEF67890 | Jones 2023 | 论文标题
+    evidence_status: metadata_only
+```
 
-## 过渡路由
-
-| 用户动作 | 路由目标 |
-|---------|---------|
-| 查看论文详情 | `read-known-paper.md` |
-| 保存证据到项目知识 | `capture-project-knowledge.md` |
-| 重新搜索 | 回到 Step 1 |
-
----
-
-## 元数据降级
-
-当 runtime-health 显示没有任何论文有 OCR 或全文可用时：
-
-> 精确证据验证受限——降级到元数据级支持
-
-输出候选项时标注 `fulltext_available=false`，不虚构引用位置或片段。
+两个区块不混合。metadata candidate 不显示章节位置，不显示正文摘要。
 
 ---
 
@@ -138,4 +122,5 @@ $PYTHON -m paperforge --vault "$VAULT" \
 - 不要在没有 OCR/全文的情况下虚构引用位置或片段
 - 不要把 metadata candidate 与正文证据混为同级
 - 不要在用户未要求时自动保存证据
-- 不要绕过 CLI 使用 `rg`/`grep` 验证——结构坐标即为验证
+- 不要绕过 CLI 使用 `rg`/`grep` 搜索——所有检索通过 CLI 完成
+- 不要把 structure_resolved=true 等同于"该证据支持用户主张"——仅表示章节归属已解析
