@@ -11,8 +11,57 @@ from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.permanent import get_corrections_for_paper, get_reading_notes_for_paper
 from paperforge.memory.query import lookup_paper
 
+def _build_compact_tree(vault, zotero_key: str, conn) -> dict | None:
+    """Build compact document tree from OCR structure-tree.json.
 
-def _build_paper_context(vault, key: str) -> dict | None:
+    Pure projection of existing StructureTree fields — no block-level recalculation.
+    Returns None when paper has no OCR structure.
+    """
+    tree_path = vault / "System" / "PaperForge" / "ocr" / zotero_key / "index" / "structure-tree.json"
+    if not tree_path.exists():
+        return None
+
+    import json as _json
+    tree = _json.loads(tree_path.read_text(encoding="utf-8"))
+    raw_nodes = tree.get("nodes", [])
+    if not raw_nodes:
+        return None
+
+    compact: list[dict] = []
+
+    def _dfs(nodes: list[dict], parent_id: str | None, path: list[str], depth: int) -> None:
+        for node in nodes:
+            nid = node.get("node_id", "")
+            title = node.get("title", "")
+            cur_path = path + [title] if title else path
+            compact.append({
+                "node_id": nid,
+                "parent_id": parent_id,
+                "title": title,
+                "path": cur_path,
+                "depth": depth,
+                "own_block_count": len(node.get("own_block_ids", [])),
+                "subtree_block_count": len(node.get("subtree_block_ids", [])),
+                "child_count": len(node.get("children", [])),
+                "page_span": node.get("page_span", []),
+                "document_order": len(compact) + 1,
+            })
+            _dfs(node.get("children", []), nid, cur_path, depth + 1)
+
+    _dfs(raw_nodes, None, [], 1)
+
+    # Read structure_version from DB manifest
+    row = conn.execute("SELECT value FROM meta WHERE key = ?", (f"manifest:{zotero_key}",)).fetchone()
+    version = ""
+    if row:
+        try:
+            manifest = _json.loads(row[0])
+            version = str(manifest.get("ocr_result_hash", ""))
+        except (TypeError, ValueError, KeyError):
+            pass
+
+    return {"version": version, "nodes": compact}
+def _build_paper_context(vault, key: str, structure: bool = False) -> dict | None:
     """Build full context for a paper: metadata + reading notes + corrections."""
 
     db_path = get_memory_db_path(vault)
@@ -101,13 +150,28 @@ def _build_paper_context(vault, key: str) -> dict | None:
         except Exception:
             pass
 
-        return {
+        # Add fulltext availability metadata
+        try:
+            bc = conn.execute(
+                "SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1",
+                (resolved_key,),
+            ).fetchone()[0]
+            paper["body_units_count"] = bc
+            paper["fulltext_available"] = bc > 0
+        except Exception:
+            paper["body_units_count"] = 0
+            paper["fulltext_available"] = False
+
+        result = {
             "warning": "Prior reading notes are not verified facts. Re-check source before reuse.",
             "paper": paper,
             "prior_notes": prior_notes,
             "corrections": corrections,
             "recheck_targets": recheck_targets,
         }
+        if structure:
+            result["structure"] = _build_compact_tree(vault, resolved_key, conn)
+        return result
     finally:
         conn.close()
 
@@ -116,7 +180,7 @@ def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
     key = args.key
 
-    context = _build_paper_context(vault, key)
+    context = _build_paper_context(vault, key, structure=getattr(args, "structure", False))
 
     if context is None:
         result = PFResult(
@@ -146,12 +210,15 @@ def run(args: argparse.Namespace) -> int:
             print(f"  Key: {p.get('zotero_key', '')}")
             print(f"  OCR: {p.get('ocr_status', 'unknown')}")
             print(f"  Lifecycle: {p.get('lifecycle', '')}")
-            notes = result.data.get("prior_notes", [])
-            print(f"  Reading notes: {len(notes)}")
+            print(f"  Fulltext: {p.get('fulltext_available', False)} ({p.get('body_units_count', 0)} units)")
+            notes_n = len(result.data.get("prior_notes", []))
+            print(f"  Reading notes: {notes_n}")
             print(f"  Corrections: {len(result.data.get('corrections', []))}")
             if result.data.get("recheck_targets"):
                 print(f"  Recheck targets: {len(result.data['recheck_targets'])}")
+            if result.data.get("structure"):
+                s = result.data["structure"]
+                print(f"  Structure: {len(s.get('nodes', []))} nodes (v={s.get('version', '')[:12]})")
         else:
             print(f"Error: {result.error.message}", file=sys.stderr)
-
     return 0 if result.ok else 1
