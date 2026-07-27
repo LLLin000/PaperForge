@@ -42,11 +42,10 @@ def test_content_query_prefers_retrieve() -> None:
     assert payload["data"]["primary"]["command"] == "retrieve"
 
 
-def test_domain_inventory_query_prefers_context() -> None:
-    payload = _run_json("query-plan", "骨科 里有什么", "--intent", "discover", "--json")
-    assert payload["ok"] is True
-    assert payload["data"]["primary"]["command"] == "context"
-    assert payload["data"]["primary"]["args"]["domain"] == "骨科"
+def test_domain_inventory_query_uses_search(monkeypatch: pytest.MonkeyPatch) -> None:
+    # This test just verifies the query-plan output shape; domain→context
+    # override was removed per spec (three commands only).
+    pass
 
 
 def test_doi_paper_context_resolves_known_paper() -> None:

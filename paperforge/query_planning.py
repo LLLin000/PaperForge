@@ -329,46 +329,23 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
                 conn = get_connection(db_path, read_only=True)
                 matches = lookup_paper(conn, id_val)
                 if matches and len(matches) == 1:
+                    pk = matches[0]["zotero_key"]
                     plan["scope"] = "paper"
-                    plan["paper_key"] = matches[0]["zotero_key"]
+                    plan["paper_key"] = pk
                     plan["identifier"]["resolved"] = True
-                    # Paper-scoped content queries have no fallback
                     if plan["intent"] == "content":
+                        plan["primary"] = {"command": "retrieve", "args": {"paper": pk}}
                         plan["fallback"] = None
+                    elif plan["intent"] == "locate":
+                        plan["primary"] = {"command": "paper-context", "args": {"key": pk}}
                 conn.close()
             except Exception:
                 pass
 
-    # Detect known domain/collection for discover intent
-    if plan["intent"] == "discover":
-        from paperforge.worker.asset_index import read_index
-        data = read_index(vault)
-        items = []
-        if isinstance(data, dict):
-            items = data.get("items", [])
-        elif isinstance(data, list):
-            items = data
-
-        query_lower = plan.get("query", "").lower()
-        domain_counts: dict[str, int] = {}
-        for entry in items:
-            d = entry.get("domain", "")
-            if d:
-                domain_counts[d] = domain_counts.get(d, 0) + 1
-        matched_domain = None
-        for d in domain_counts:
-            if d.lower() in query_lower or query_lower in d.lower():
-                matched_domain = d
-                break
-
-        if matched_domain:
-            plan["primary"] = {"command": "context", "args": {"domain": matched_domain}}
-            plan["fallback"] = {"command": "retrieve", "mode": "content", "triggers": ["zero_results", "no_direct_answer"]}
-
     if plan["intent"] == "content" and not retrieve_available:
         plan["runtime"]["retrieve_unavailable"] = True
-    return plan
 
+    return plan
 
 def _assess_scope(items: list[dict], signals: dict) -> dict:
     matched_items = items

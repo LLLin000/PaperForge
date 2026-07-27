@@ -4,14 +4,15 @@ import argparse
 import json
 import sys
 
-from paperforge import __version__ as PF_VERSION
+import sqlite3
+from pathlib import Path
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.permanent import get_corrections_for_paper, get_reading_notes_for_paper
 from paperforge.memory.query import lookup_paper
 
-def _build_compact_tree(vault, zotero_key: str, conn) -> dict | None:
+def _build_compact_tree(vault: Path, zotero_key: str, conn: sqlite3.Connection) -> dict | None:
     """Build compact document tree from OCR structure-tree.json.
 
     Pure projection of existing StructureTree fields — no block-level recalculation.
@@ -61,8 +62,8 @@ def _build_compact_tree(vault, zotero_key: str, conn) -> dict | None:
             pass
 
     return {"version": version, "nodes": compact}
-def _build_paper_context(vault, key: str, structure: bool = False) -> dict | None:
-    """Build full context for a paper: metadata + reading notes + corrections."""
+
+def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict | None:
 
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
