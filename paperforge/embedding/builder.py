@@ -192,23 +192,24 @@ def write_encoded_payload(vault: Path, encoded: EncodedPayload):
         meta = encoded.metadatas[i]
         if meta_table == "vec_body_meta":
             conn.execute(
-                f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, text, body_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?, ?, ?)",
+                f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, unit_id, text, body_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [
                     rowid,
                     meta.get("paper_id", ""),
                     meta.get("chunk_index", i),
+                    meta.get("unit_id", ""),
                     encoded.texts[i],
                     meta.get("body_units_hash"),
                     meta.get("retrieval_policy_version"),
                 ],
             )
-        elif meta_table == "vec_objects_meta":
             conn.execute(
-                f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, text, object_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?, ?, ?)",
+                f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, unit_id, text, object_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [
                     rowid,
                     meta.get("paper_id", ""),
                     meta.get("chunk_index", i),
+                    meta.get("unit_id", ""),
                     encoded.texts[i],
                     meta.get("object_units_hash"),
                     meta.get("retrieval_policy_version"),
