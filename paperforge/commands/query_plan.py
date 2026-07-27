@@ -10,8 +10,11 @@ from paperforge.query_planning import build_query_plan, enrich_query_plan_with_r
 
 
 def run(args: argparse.Namespace) -> int:
+    intent = args.intent
+    if intent == "known-paper":
+        intent = "locate"
     try:
-        data = build_query_plan(args.query, args.intent)
+        data = build_query_plan(args.query, intent)
         data = enrich_query_plan_with_runtime(data, args.vault_path)
         result = PFResult(ok=True, command="query-plan", version=PF_VERSION, data=data)
     except Exception as exc:
@@ -26,11 +29,18 @@ def run(args: argparse.Namespace) -> int:
         print(result.to_json())
     else:
         if result.ok:
-            primary = result.data["recommended_primary"]
-            print(f"Intent: {result.data['intent']}")
-            print(f"Query class: {result.data['query_class']}")
-            print(f"Primary: {primary['command']}")
-            print(f"Args: {primary['args']}")
+            d = result.data
+            print(f"Intent: {d['intent']}")
+            print(f"Scope: {d.get('scope', 'library')}")
+            if d.get('paper_key'):
+                print(f"Paper: {d['paper_key']}")
+            p = d.get('primary', {})
+            print(f"Primary: {p.get('command', '?')} {p.get('args', {})}")
+            fb = d.get('fallback')
+            if fb:
+                print(f"Fallback: {fb.get('command', '?')} (triggers: {fb.get('triggers', [])})")
+            rt = d.get('runtime', {})
+            print(f"Retrieve available: {rt.get('retrieve_available', False)}")
         else:
             print(f"Error: {result.error.message}", file=sys.stderr)
 

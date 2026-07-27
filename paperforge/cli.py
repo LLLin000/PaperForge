@@ -306,10 +306,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_retrieve.add_argument("--deep", action="store_true", help="Enable @ Deep Search mode with query rewrite + hybrid retrieval (BM25 + vec0)")
     p_retrieve.add_argument("--expand", action="store_true", default=True)
 
-    p_qp = sub.add_parser("query-plan", help="Classify a literature query and recommend the first retrieval command")
-    p_qp.add_argument("query", help="User query to classify")
-    p_qp.add_argument("--intent", choices=["discover", "content", "known-paper"], required=True, help="Retrieval intent")
-    p_qp.add_argument("--json", action="store_true", help="Output as JSON")
 
     # prune
     p_prune = sub.add_parser("prune", help="Delete orphan paper artifacts (dry-run by default)")
@@ -363,8 +359,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_pl.add_argument("--project", help="Project name (required for write/list/render)")
     p_pl.add_argument("--list", action="store_true", help="List all entries for a project")
     p_pl.add_argument("--render", action="store_true", help="Render project-log.md")
-    p_pl.add_argument("--limit", type=int, default=50, help="Max entries to list")
-    p_pl.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+    p_qp = sub.add_parser("query-plan", help="Classify a literature query and recommend the first retrieval command")
+    p_qp.add_argument("query", help="User query to classify")
+    p_qp.add_argument("--intent", choices=["discover", "locate", "content", "known-paper"], required=True, help="Retrieval intent (known-paper is an alias for locate)")
+    p_qp.add_argument("--json", action="store_true", help="Output as JSON")
 
     p_search = sub.add_parser("search", help="Metadata FTS search across indexed paper fields")
     p_search.add_argument("query", help="Search query for title/abstract/author/journal/domain/collection metadata")
