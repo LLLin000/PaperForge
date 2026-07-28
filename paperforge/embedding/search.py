@@ -101,8 +101,13 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
             stored_label = row["object_label"] or ""
             caption = row["caption_text"] or ""
             if stored_label.startswith(("figure:p", "table:p")) and caption:
-                import re
-                m = re.search(r"(Figure|Fig\.|Table|Supplementary Table|Extended Data Figure)\s+[S]?\d+[A-Z]?", caption)
+                # Match various figure/table label patterns in caption
+                m = re.search(
+                    r"\b(?:(?:Extended\s+Data|Supplementary)\s+)?"
+                    r"(?:Figure|Fig\.?|Table)\s+S?\d+[A-Za-z]?\b",
+                    caption,
+                    re.IGNORECASE,
+                )
                 enrichment["object_label"] = m.group(0) if m else stored_label
             else:
                 enrichment["object_label"] = stored_label
