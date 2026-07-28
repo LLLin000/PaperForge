@@ -226,6 +226,12 @@ def _normalize_matches(chunks: list[dict], source_prefix: str = "") -> list[dict
         }
         if c.get("object_kind"):
             match["object_kind"] = c["object_kind"]
+        if c.get("object_label"):
+            match["object_label"] = c["object_label"]
+        if c.get("caption_text"):
+            match["caption_text"] = c["caption_text"]
+        if c.get("page_span"):
+            match["page_span"] = c["page_span"]
         matches.append(match)
     return matches
 

@@ -66,12 +66,6 @@ $PYTHON -m paperforge --vault "$VAULT" \
 **正文证据区块**（来自 retrieve primary）：
 
 ```
-找到 N 条与 "<论点>" 相关的正文证据：
-
-=== Smith 2024 (ABC12345) ===
-[1] Introduction · section_title="Background"
-    structure_resolved: true
-    "…electrical stimulation parameters included 75 Hz frequency…"
 
 **object / 图表证据**（来自 retrieve primary）：
 
@@ -79,7 +73,6 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 判断 caption 是否直接回答用户问题。如果需要作者解释或正文论证，执行一次
 contextual retrieve，合并展示。
-
 **元数据候选区块**（来自 search --evidence fallback）：
 
 ```
