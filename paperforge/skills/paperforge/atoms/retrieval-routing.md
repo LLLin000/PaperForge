@@ -273,7 +273,7 @@ object hit 的 `structure_resolved=false` 不意味着它不可用，而是需�
 ```text
 收到 source_kind=object 的 hit：
 
-1. 读取 object_label、caption_text、object_kind、page
+1. 读取 object_label、caption_text、object_kind，以及可选的 page_span
 
 2. 判断 caption 是否已直接回答用户问题：
    ├── 是 → 直接使用
@@ -308,8 +308,16 @@ object hit 的 `structure_resolved=false` 不意味着它不可用，而是需�
 
 ```bash
 $PYTHON -m paperforge --vault "$VAULT" \
-  retrieve "<object_label> <caption 核心术语>" --paper <KEY> --json
+  retrieve "<normalized object_label> <caption 核心术语>" --paper <KEY> --json
 ```
+
+规则：
+
+- query 使用规范化后的 object_label（如 "Figure 3"） + caption 的 2–4 个高信息词
+- 只将 `source_kind=body` 的结果视为正文讨论
+- contextual retrieve 再返回 object hit 时忽略
+- 不递归补查
+- 最多一次 CLI 调用
 
 #### 调用数量控制
 
@@ -317,7 +325,10 @@ $PYTHON -m paperforge --vault "$VAULT" \
 - 同一 object_label 每个 session 最多补查一次
 - 单次用户问题最多对两个 object 执行补查
 - 只对最终准备用于回答的 object 做补查
-```
+
+## Session State
+
+```text
 paper-key：session 生命周期内复用
   - session 内再次出现同一 paper_key 的请求，直接 retrieve --paper KEY
   - 不重新调用 query-plan，不重新加载 structure
@@ -386,21 +397,21 @@ search "<query>" [--domain D] [--year-from Y] [--year-to Y] [--ocr S] [--limit N
     fulltext_available, body_units_count, ocr_status
 
 search "<query>" --evidence --json
-  → data.metadata_candidates[]: zotero_key, evidence_status, fulltext_verified
+  → 顶层字段：data.evidence_status, data.fulltext_verified
+     data.metadata_candidates[]: zotero_key, title, first_author, year
   fallback.mode=evidence 时使用此形式
-```
 
 ### `retrieve` — 正文内容检索
 
-```
 retrieve "<query>" [--paper KEY] [--deep] [--limit N] --json
   → data.matches[]: zotero_key, unit_id, source_kind, structure_resolved,
     node_id, structure_path, section_title, section_level, part_ordinal,
-    text, score, object_kind（仅 object）
+    text, score,
+    object_kind, object_label, caption_text（仅 object）
+    page_span（存在时）
 
 --paper KEY: 限定到单篇论文
 --deep: 混合检索模式（BM25 + 向量），适用于需要跨章节关联的查询
-```
 
 ### `query-plan` — 检索规划器
 

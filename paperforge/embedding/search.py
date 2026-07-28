@@ -96,10 +96,22 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
             enrichment["node_id"] = node_id
             enrichment["structure_path"] = json.loads(row["section_path_json"]) if row["section_path_json"] else []
             enrichment["object_kind"] = row["object_kind"]
-            enrichment["object_label"] = row["object_label"] or ""
-            enrichment["caption_text"] = row["caption_text"] or ""
+
+            # Normalize object_label: internal keys like "figure:p6:17" -> extract from caption
+            stored_label = row["object_label"] or ""
+            caption = row["caption_text"] or ""
+            if stored_label.startswith(("figure:p", "table:p")) and caption:
+                import re
+                m = re.search(r"(Figure|Fig\.|Table|Supplementary Table|Extended Data Figure)\s+[S]?\d+[A-Z]?", caption)
+                enrichment["object_label"] = m.group(0) if m else stored_label
+            else:
+                enrichment["object_label"] = stored_label
+            enrichment["caption_text"] = caption
+
+            # page_span: suppress [0, 0] (unresolved)
             try:
-                enrichment["page_span"] = json.loads(row["page_span_json"]) if row["page_span_json"] else []
+                ps = json.loads(row["page_span_json"]) if row["page_span_json"] else []
+                enrichment["page_span"] = ps if ps != [0, 0] else []
             except (json.JSONDecodeError, TypeError):
                 enrichment["page_span"] = []
             enrichment["structure_resolved"] = bool(node_id)

@@ -65,33 +65,29 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 **正文证据区块**（来自 retrieve primary）：
 
+```text
+找到 N 条与 "<论点>" 相关的正文证据：
+
+=== Smith 2024 (ABC12345) ===
+[1] Introduction · section_title="Background"
+    structure_resolved: true
+    "…electrical stimulation parameters included 75 Hz frequency…"
 ```
 
 **object / 图表证据**（来自 retrieve primary）：
 
 打开 `atoms/retrieval-routing.md` §5 的 **Object Context Resolution Protocol**。
-
 判断 caption 是否直接回答用户问题。如果需要作者解释或正文论证，执行一次
 contextual retrieve，合并展示。
+
 **元数据候选区块**（来自 search --evidence fallback）：
 
-```
-元数据候选（fulltext_verified=false，不显示正文引文）：
+```text
+evidence_status: metadata_only
+fulltext_verified: false
 
 [1] ABC12345 | Smith 2024 | 论文标题
-    evidence_status: metadata_only
 [2] DEF67890 | Jones 2023 | 论文标题
-    evidence_status: metadata_only
 ```
 
 两个区块不混合。metadata candidate 不显示章节位置，不显示正文摘要。
-
----
-
-## 禁止
-
-- 不要在没有 OCR/全文的情况下虚构引用位置或片段
-- 不要把 metadata candidate 与正文证据混为同级
-- 不要在用户未要求时自动保存证据
-- 不要绕过 CLI 使用 `rg`/`grep` 搜索——所有检索通过 CLI 完成
-- 不要把 structure_resolved=true 等同于"该证据支持用户主张"——仅表示章节归属已解析

@@ -136,8 +136,7 @@ $PYTHON -m paperforge --vault "$VAULT" \
   ```
   只取 `source_kind=body` 的结果作为正文讨论
 - 同一 session 同一图不重复补查
-
-如"总结这篇文章的逻辑链"：
+#### 总结型 / 整篇问题
 
 需要完整全文：
 
