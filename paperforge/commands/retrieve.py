@@ -230,7 +230,7 @@ def _normalize_matches(chunks: list[dict], source_prefix: str = "") -> list[dict
             match["object_label"] = c["object_label"]
         if c.get("caption_text"):
             match["caption_text"] = c["caption_text"]
-        if c.get("page_span"):
+        if "page_span" in c:
             match["page_span"] = c["page_span"]
         matches.append(match)
     return matches
