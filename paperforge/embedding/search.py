@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
+import re
 
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
 from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
@@ -15,6 +15,24 @@ _VEC_SOURCE_MAP = {
     "vec_body": "body",
     "vec_objects": "object",
 }
+
+# ── Object label normalization ───────────────────────────────────────────
+
+_OBJECT_LABEL_RE = re.compile(
+    r"\b(?:(?:Extended\s+Data|Supplementary)\s+)?"
+    r"(?:Figure|Fig\.?|Table)\s+S?\d+[A-Za-z]?\b",
+    re.IGNORECASE,
+)
+
+
+def normalize_object_label(stored_label: str, caption: str) -> str:
+    """Normalize internal figure/table labels to display labels from caption."""
+    if not stored_label.startswith(("figure:p", "table:p")):
+        return stored_label
+    if not caption:
+        return stored_label
+    match = _OBJECT_LABEL_RE.search(caption)
+    return match.group(0) if match else stored_label
 
 _VEC_META_MAP = {
     "vec_body": "vec_body_meta",
@@ -98,20 +116,11 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
             enrichment["object_kind"] = row["object_kind"]
 
             # Normalize object_label: internal keys like "figure:p6:17" -> extract from caption
-            stored_label = row["object_label"] or ""
-            caption = row["caption_text"] or ""
-            if stored_label.startswith(("figure:p", "table:p")) and caption:
-                # Match various figure/table label patterns in caption
-                m = re.search(
-                    r"\b(?:(?:Extended\s+Data|Supplementary)\s+)?"
-                    r"(?:Figure|Fig\.?|Table)\s+S?\d+[A-Za-z]?\b",
-                    caption,
-                    re.IGNORECASE,
-                )
-                enrichment["object_label"] = m.group(0) if m else stored_label
-            else:
-                enrichment["object_label"] = stored_label
-            enrichment["caption_text"] = caption
+            enrichment["object_label"] = normalize_object_label(
+                row["object_label"] or "",
+                row["caption_text"] or "",
+            )
+            enrichment["caption_text"] = row["caption_text"] or ""
 
             # page_span: suppress [0, 0] (unresolved)
             try:
