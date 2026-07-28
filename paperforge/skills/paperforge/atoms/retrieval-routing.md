@@ -391,7 +391,7 @@ StructureTree 是导航地图，不是全文内容替代品：
 
 ### `search` — 元数据全文搜索
 
-```
+```text
 search "<query>" [--domain D] [--year-from Y] [--year-to Y] [--ocr S] [--limit N] --json
   → data.matches[]: zotero_key, title, first_author, year, journal, domain
     fulltext_available, body_units_count, ocr_status
@@ -400,9 +400,11 @@ search "<query>" --evidence --json
   → 顶层字段：data.evidence_status, data.fulltext_verified
      data.metadata_candidates[]: zotero_key, title, first_author, year
   fallback.mode=evidence 时使用此形式
+```
 
 ### `retrieve` — 正文内容检索
 
+```text
 retrieve "<query>" [--paper KEY] [--deep] [--limit N] --json
   → data.matches[]: zotero_key, unit_id, source_kind, structure_resolved,
     node_id, structure_path, section_title, section_level, part_ordinal,
@@ -412,10 +414,11 @@ retrieve "<query>" [--paper KEY] [--deep] [--limit N] --json
 
 --paper KEY: 限定到单篇论文
 --deep: 混合检索模式（BM25 + 向量），适用于需要跨章节关联的查询
+```
 
 ### `query-plan` — 检索规划器
 
-```
+```text
 query-plan "<query>" --intent <locate|discover|content> --json
 ```
 
