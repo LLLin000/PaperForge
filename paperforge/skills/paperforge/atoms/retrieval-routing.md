@@ -260,7 +260,7 @@ object 结果包含:
   - object_label: "Figure 2" / "Table 1"
   - caption_text: caption 正文
   - text: 图表标签 + caption + 附近正文
-  - page: 页码
+  - page_span: [开始页, 结束页]（存在时）
   - node_id: ""（通常为空）
 ```
 
@@ -311,19 +311,12 @@ $PYTHON -m paperforge --vault "$VAULT" \
   retrieve "<object_label> <caption 核心术语>" --paper <KEY> --json
 ```
 
-- query 同时包含图编号和 2–4 个 caption 高信息词，不单独检索编号
-- 只取 `source_kind=body` 的结果作为正文讨论
-- 忽略同一 object 的重复 hit
-- 不递归继续查
-- 最多一次 CLI 调用
-
 #### 调用数量控制
 
-- 只对最终准备用于回答的 object 做补查
+- 每个 object 最多执行一次 contextual retrieve
 - 同一 object_label 每个 session 最多补查一次
-- 单次用户问题最多补查 2 个 object
-一次会话中多个检索请求应复用已获取的信息：
-
+- 单次用户问题最多对两个 object 执行补查
+- 只对最终准备用于回答的 object 做补查
 ```
 paper-key：session 生命周期内复用
   - session 内再次出现同一 paper_key 的请求，直接 retrieve --paper KEY
@@ -338,6 +331,31 @@ metadata：不重复调用 paper-context
 
 重置条件：
   - 用户明确切换论文时重置全部 session state
+```
+
+### metadata 候选项
+
+```yaml
+来自 search 命令（无 --evidence）:
+  fulltext_available: false
+  body_units_count: 0
+  ocr_status: "pending"
+  → 仅元数据候选项，不是正文验证
+  → 标注为"metadata candidate — fulltext not yet available"
+
+来自 search --evidence ：
+  → data.evidence_status: "metadata_only"（顶层字段）
+  → data.fulltext_verified: false（顶层字段）
+  → data.metadata_candidates[]: 候选项列表
+  展示时与正文 evidence 分两个区块，不混合
+```
+
+### 不存在正文时的边界
+
+```yaml
+paper scope + fulltext_unavailable:
+  → 明确报告限制，不搜索其他论文
+  → 不虚构引用位置或片段
 ```
 
 ---

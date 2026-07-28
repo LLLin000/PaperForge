@@ -119,17 +119,23 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 如"Figure 3 表明什么"、"这张图在哪个章节讨论"：
 
+先做初始检索：
+
 ```bash
 $PYTHON -m paperforge --vault "$VAULT" \
-  retrieve "\"Figure 3\" | \"Fig. 3\"" --paper <KEY> --json
+  retrieve "<用户原问题，包含 Figure 3>" --paper <KEY> --json
 ```
 
-按 `atoms/retrieval-routing.md` §5 **Object Context Resolution Protocol** 处理：
+拿到 object hit 后，按 `atoms/retrieval-routing.md` §5 **Object Context Resolution Protocol** 处理：
 
 - Caption 已直接回答问题 → 直接使用，标注"图表 caption 信息"
-- 需要作者解释/正文论证 → 执行一次 contextual retrieve，合并展示
+- 需要作者解释/正文论证 → 执行一次 contextual retrieve:
+  ```bash
+  $PYTHON -m paperforge --vault "$VAULT" \
+    retrieve "Figure 3 <caption 关键词>" --paper <KEY> --deep --json
+  ```
+  只取 `source_kind=body` 的结果作为正文讨论
 - 同一 session 同一图不重复补查
-#### 总结型/整篇问题
 
 如"总结这篇文章的逻辑链"：
 

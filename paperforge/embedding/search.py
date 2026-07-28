@@ -86,7 +86,8 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
             enrichment["structure_path"] = []
     elif source_kind == "object":
         row = conn.execute(
-            "SELECT node_id, section_path_json, object_kind "
+            "SELECT node_id, section_path_json, object_kind, "
+            "       object_label, caption_text, page_span_json "
             "FROM object_units WHERE unit_id=? AND paper_id=?",
             (unit_id, paper_id),
         ).fetchone()
@@ -95,6 +96,12 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
             enrichment["node_id"] = node_id
             enrichment["structure_path"] = json.loads(row["section_path_json"]) if row["section_path_json"] else []
             enrichment["object_kind"] = row["object_kind"]
+            enrichment["object_label"] = row["object_label"] or ""
+            enrichment["caption_text"] = row["caption_text"] or ""
+            try:
+                enrichment["page_span"] = json.loads(row["page_span_json"]) if row["page_span_json"] else []
+            except (json.JSONDecodeError, TypeError):
+                enrichment["page_span"] = []
             enrichment["structure_resolved"] = bool(node_id)
         else:
             enrichment["node_id"] = ""
