@@ -305,13 +305,8 @@ class TestForceRebuildBackup:
         assert backup_path.exists(), "Backup should persist after successful clear"
 
 def test_object_label_normalization() -> None:
-    """enrich_retrieval_hit normalizes internal figure/table labels from caption."""
-    import re
-    pattern = re.compile(
-        r"\b(?:(?:Extended\s+Data|Supplementary)\s+)?"
-        r"(?:Figure|Fig\.?|Table)\s+S?\d+[A-Za-z]?\b",
-        re.IGNORECASE,
-    )
+    """normalize_object_label extracts display labels from caption text."""
+    from paperforge.embedding.search import normalize_object_label
 
     cases = [
         ("figure:p6:17", "Figure 3. Frequency-dependent cell response", "Figure 3"),
@@ -320,12 +315,10 @@ def test_object_label_normalization() -> None:
         ("table:p4:8", "Extended Data Table 1. Additional", "Extended Data Table 1"),
         ("figure:p6:17", "FIG 3. All caps variant", "FIG 3"),
         ("figure:p6:17", "no caption number here", "figure:p6:17"),  # fallback to internal
+        # Non-internal labels pass through unchanged
+        ("Figure 3", "Figure 3. test", "Figure 3"),
     ]
 
     for stored, caption, expected in cases:
-        if stored.startswith(("figure:p", "table:p")) and caption:
-            m = pattern.search(caption)
-            label = m.group(0) if m else stored
-        else:
-            label = stored
+        label = normalize_object_label(stored, caption)
         assert label == expected, f"FAIL: {stored} + {caption!r} -> {label!r}, expected {expected!r}"
