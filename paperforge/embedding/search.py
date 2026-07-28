@@ -20,10 +20,10 @@ _VEC_SOURCE_MAP = {
 
 _OBJECT_LABEL_RE = re.compile(
     r"\b(?:(?:Extended\s+Data|Supplementary)\s+)?"
-    r"(?:Figure|Fig\.?|Table)\s+S?\d+[A-Za-z]?\b",
+    r"(?:Figure|Fig\.?|Table)\s+"
+    r"(?:S?\d+[A-Za-z]?|[IVXLCDM]+)\b",
     re.IGNORECASE,
 )
-
 
 def normalize_object_label(stored_label: str, caption: str) -> str:
     """Normalize internal figure/table labels to display labels from caption."""

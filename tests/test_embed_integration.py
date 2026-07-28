@@ -311,6 +311,8 @@ def test_object_label_normalization() -> None:
     cases = [
         ("figure:p6:17", "Figure 3. Frequency-dependent cell response", "Figure 3"),
         ("figure:p6:17", "Fig. S3A. Supplementary result", "Fig. S3A"),
+        ("table:p4:10", "Table I. Options for Treatment", "Table I"),  # Roman numeral
+        ("table:p4:8", "Table II. Results", "Table II"),  # Roman numeral
         ("figure:p6:17", "Supplementary Figure 2. Extra data", "Supplementary Figure 2"),
         ("table:p4:8", "Extended Data Table 1. Additional", "Extended Data Table 1"),
         ("figure:p6:17", "FIG 3. All caps variant", "FIG 3"),
