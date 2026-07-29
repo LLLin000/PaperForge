@@ -95,7 +95,7 @@ def run(args: argparse.Namespace) -> int:
     sub = getattr(args, "embed_subcommand", "build")
 
     if sub == "status":
-        status = get_embed_status(vault)
+        status = get_embed_status(vault, probe=getattr(args, "probe", False))
         status["build_state"] = read_vector_build_state(vault)
 
         # Write vector-runtime-state.json snapshot (JS-First Memory State)

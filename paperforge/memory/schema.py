@@ -86,6 +86,15 @@ INDEX_SQL = [
     "CREATE INDEX IF NOT EXISTS idx_papers_next_step ON papers(next_step);",
 ]
 
+UNIT_INDEX_SQL = [
+    "CREATE INDEX IF NOT EXISTS idx_body_units_paper_indexable ON body_units(paper_id, indexable);",
+    "CREATE INDEX IF NOT EXISTS idx_object_units_paper_indexable ON object_units(paper_id, indexable);",
+    "CREATE INDEX IF NOT EXISTS idx_vec_body_meta_paper_unit ON vec_body_meta(paper_id, unit_id);",
+    "CREATE INDEX IF NOT EXISTS idx_vec_objects_meta_paper_unit ON vec_objects_meta(paper_id, unit_id);",
+    "CREATE INDEX IF NOT EXISTS idx_vec_fulltext_meta_paper ON vec_fulltext_meta(paper_id);",
+    "CREATE INDEX IF NOT EXISTS idx_aliases_paper ON paper_aliases(paper_id);",
+]
+
 CREATE_PAPER_FTS = """
 CREATE VIRTUAL TABLE IF NOT EXISTS paper_fts USING fts5(
     zotero_key,
@@ -321,6 +330,8 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_BODY_UNITS_FTS)
     conn.execute(CREATE_OBJECT_UNITS)
     for idx_sql in INDEX_SQL:
+        conn.execute(idx_sql)
+    for idx_sql in UNIT_INDEX_SQL:
         conn.execute(idx_sql)
 
     # Always attempt vec0 creation — they may have been skipped in v5 migration

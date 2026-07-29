@@ -12,7 +12,7 @@ from paperforge.memory.schema import ensure_schema
 logger = logging.getLogger(__name__)
 
 
-def get_embed_status(vault: Path) -> dict:
+def get_embed_status(vault: Path, *, probe: bool = False) -> dict:
     """Get vector DB status from sqlite-vec companion tables."""
     db_path = get_memory_db_path(vault)
     exists = db_path.exists()
@@ -54,9 +54,9 @@ def get_embed_status(vault: Path) -> dict:
             except Exception:
                 pass
 
-            # -- vec0 k-NN health probe --
+            # -- vec0 k-NN health probe (only when explicitly requested) --
             total_valid = valid_body + valid_object
-            if total_valid > 0 and dimension > 0:
+            if probe and total_valid > 0 and dimension > 0:
                 zero_vec = [0.0] * dimension
                 zero_json = _json.dumps(zero_vec)
                 conn.execute(
