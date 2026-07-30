@@ -345,17 +345,26 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     workspace_dir.mkdir(parents=True, exist_ok=True)
     (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
-    # ponytail: size + mtime guard avoids I/O on unchanged fulltext
-    # st_mtime_ns catches same-size content changes (e.g. "50 Hz" → "75 Hz")
-    fulltext_changed = (
-        not stale_workspace_fulltext.exists()
-        or source_fulltext.stat().st_size != stale_workspace_fulltext.stat().st_size
-        or source_fulltext.stat().st_mtime_ns != stale_workspace_fulltext.stat().st_mtime_ns
-    ) if source_fulltext.exists() else False
-    if fulltext_changed:
+    # ponytail: size + mtime guard avoids I/O on unchanged fulltext.
+    # If source was deleted, remove stale workspace copy.
+    if not source_fulltext.exists():
         if stale_workspace_fulltext.exists():
             stale_workspace_fulltext.unlink()
-        shutil.copy2(str(source_fulltext), str(stale_workspace_fulltext))
+    else:
+        try:
+            src = source_fulltext.stat()
+            dst = stale_workspace_fulltext.stat() if stale_workspace_fulltext.exists() else None
+        except OSError:
+            dst = None
+        fulltext_changed = (
+            dst is None
+            or src.st_size != dst.st_size
+            or src.st_mtime_ns != dst.st_mtime_ns
+        )
+        if fulltext_changed:
+            if stale_workspace_fulltext.exists():
+                stale_workspace_fulltext.unlink()
+            shutil.copy2(str(source_fulltext), str(stale_workspace_fulltext))
 
     fulltext_exists = source_fulltext.exists()
 

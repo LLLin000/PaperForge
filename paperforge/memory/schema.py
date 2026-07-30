@@ -366,7 +366,7 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
             f"the code supports ({target_version}). Upgrade PaperForge."
         )
     if stored_version == 0:
-        return "none"  # fresh database — ensure_schema creates everything
+        return "fresh"  # fresh database — ensure_schema creates everything
 
     current_version = stored_version
     if current_version < 3:
