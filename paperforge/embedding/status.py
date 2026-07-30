@@ -24,6 +24,7 @@ def get_embed_status(vault: Path, *, probe: bool = False) -> dict:
     dimension = 0
     valid_body = 0
     valid_object = 0
+    total_valid = 0
     if exists:
         conn = None
         try:

@@ -450,10 +450,9 @@ def drop_all_tables(conn: sqlite3.Connection) -> None:
 
 
 def clear_fts(conn: sqlite3.Connection) -> None:
-    """Delete all FTS index entries (before rebuild)."""
+    """Delete all FTS index entries (before rebuild).  No commit — caller owns tx."""
     conn.execute("DELETE FROM paper_fts;")
     conn.execute("DELETE FROM body_units_fts;")
-    conn.commit()
 
 
 def get_schema_version(conn: sqlite3.Connection) -> int:

@@ -8,8 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from paperforge import __version__ as PF_VERSION
-from paperforge.core.io import read_json, read_jsonl
-from paperforge.memory._columns import build_paper_row
+from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.paper_state import ASSET_FIELDS, ALIAS_TYPES, _paper_state_hash, upsert_paper_state
 from paperforge.memory.schema import (
@@ -108,6 +107,33 @@ def _import_project_log(conn, vault: Path) -> int:
         )
         count += 1
     return count
+
+def _import_correction_log(conn: sqlite3.Connection, vault: Path, valid_keys: set[str] | None = None) -> dict:
+    """Import correction-log.jsonl into paper_events for FTS search.
+
+    Skips orphans whose ``paper_id`` is not in *valid_keys*.
+    Returns ``{"imported": N, "orphaned_skipped": M}``.
+    """
+    from paperforge.memory.permanent import read_all_corrections
+
+    imported = 0
+    skipped = 0
+    for correction in read_all_corrections(vault):
+        paper_id = correction.get("paper_id", "")
+        if valid_keys is not None and paper_id not in valid_keys:
+            skipped += 1
+            continue
+        payload = {
+            "original_id": correction.get("original_id", ""),
+            "correction": correction.get("correction", ""),
+            "reason": correction.get("reason", ""),
+        }
+        conn.execute(
+            "INSERT INTO paper_events (paper_id, event_type, payload_json) VALUES (?, 'correction_note', ?)",
+            (paper_id, json.dumps(payload, ensure_ascii=False)),
+        )
+        imported += 1
+    return {"imported": imported, "orphaned_skipped": skipped}
 
 
 def _diff_paper_state(conn: sqlite3.Connection, items: list[dict]) -> dict:
@@ -229,8 +255,8 @@ def build_from_index(vault: Path) -> dict:
             conn.close()
             return result
 
-        # ── 3. Global hash unchanged → fast path ─────────────────────────
-        if canonical_hash and db_path.exists():
+        # ── 3. Global hash unchanged + no schema change → fast path ──────
+        if migration_action == "none" and canonical_hash and db_path.exists():
             try:
                 cached = conn.execute(
                     "SELECT value FROM meta WHERE key='canonical_index_hash'"
@@ -269,13 +295,12 @@ def build_from_index(vault: Path) -> dict:
                 upsert_paper_state(conn, vault=vault, entry=entry, generated_at=now_utc)
                 changed_count += 1
 
-        # 4c. Import logs with orphan guard
+        # 4c. Import corrections — incremental path only imports correction notes.
+        #     Reading/project logs are bulk-imported in _full_rebuild() only.
+        #     Per-paper deletion handles their cleanup individually.
         valid_keys = {e["zotero_key"] for e in items if e.get("zotero_key")}
-        reading_result = _import_reading_log(conn, vault, valid_keys)
-        _import_project_log(conn, vault)
         conn.execute("DELETE FROM paper_events WHERE event_type = 'correction_note';")
         correction_result = _import_correction_log(conn, vault, valid_keys)
-        conn.execute("DELETE FROM paper_events WHERE event_type != 'correction_note';")
 
         # 4d. OCR unit rebuilds (per-paper hash comparison)
         if ocr_root.exists():
@@ -356,8 +381,8 @@ def _full_rebuild(
     alias_rows: list[tuple] = []
     all_hashes: list[tuple[str, str]] = []
 
-    placeholders = ", ".join([f":{c}" for c in build_paper_row(items[0], "").keys()])
-    cols = ", ".join(build_paper_row(items[0], "").keys())
+    cols = ", ".join(PAPER_COLUMNS)
+    placeholders = ", ".join([f":{c}" for c in PAPER_COLUMNS])
     paper_sql = f"INSERT OR REPLACE INTO papers ({cols}) VALUES ({placeholders})"
 
     for entry in items:
