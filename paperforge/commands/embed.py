@@ -322,7 +322,8 @@ def run(args: argparse.Namespace) -> int:
             try:
                 ensure_vec_extension(_conn)
                 ensure_vec_tables(_conn, vault)
-                for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
+                for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
+                           "vec_fulltext", "vec_body", "vec_objects"):
                     _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
                 ensure_schema(_conn)
                 _conn.commit()
