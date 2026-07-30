@@ -524,19 +524,25 @@ def test_build_from_index_two_runs_incremental(tmp_path: Path) -> None:
     db_path = get_memory_db_path(vault)
     conn = get_connection(db_path)
     b_rowid_1 = conn.execute("SELECT rowid FROM papers WHERE zotero_key='B'").fetchone()[0]
+    b_updated_1 = conn.execute("SELECT updated_at FROM papers WHERE zotero_key='B'").fetchone()[0]
     conn.close()
-
     # Build 2: A's title changed, B untouched
     items[0] = {"zotero_key": "A", "title": "Paper Alpha v2", "domain": "骨科"}
     _write(items)
     r2 = build_from_index(vault)
 
+    # Only A should be in the changed set
+    assert set(r2.get("changed", [])) == {"A"}, f"only A should change, got {r2.get('changed')}"
+    assert set(r2.get("deleted", [])) == set(), f"no papers deleted, got {r2.get('deleted')}"
+
     conn = get_connection(db_path)
     a_title = conn.execute("SELECT title FROM papers WHERE zotero_key='A'").fetchone()[0]
     assert a_title == "Paper Alpha v2", f"A should have new title, got {a_title}"
     b_rowid_2 = conn.execute("SELECT rowid FROM papers WHERE zotero_key='B'").fetchone()[0]
+    b_updated_2 = conn.execute("SELECT updated_at FROM papers WHERE zotero_key='B'").fetchone()[0]
     b_title = conn.execute("SELECT title FROM papers WHERE zotero_key='B'").fetchone()[0]
     assert b_rowid_1 == b_rowid_2, "B rowid unchanged"
+    assert b_updated_1 == b_updated_2, "B updated_at unchanged"
     assert b_title == "Paper Beta", "B title unchanged"
     assert r2.get("hash_match") is not True, "second build should advance hash"
     conn.close()
