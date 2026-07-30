@@ -350,9 +350,9 @@ def build_from_index(vault: Path) -> dict:
         conn.execute("DELETE FROM paper_events WHERE event_type = 'correction_note';")
         correction_result = _import_correction_log(conn, vault, valid_keys)
         _hydrate_reading_log_for_keys(conn, vault, diff["added"])
-        # 4d. OCR unit rebuilds (per-paper hash comparison)
-        if ocr_root.exists():
-            _incremental_units_only(conn, items, ocr_root, vault=vault)
+        # 4d. OCR unit rebuilds (per-paper hash comparison).
+        #     Always run — function internally handles missing OCR artifacts.
+        _incremental_units_only(conn, items, ocr_root, vault=vault)
 
         # 4e. Advance canonical hash LAST — if anything fails before this,
         #     the next run re-diffs and retries
@@ -689,13 +689,14 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
         tree_path = paper_dir / "index" / "structure-tree.json"
         blocks_path = paper_dir / "structure" / "blocks.structured.jsonl"
 
-        # Check if paper has any stored units at all
-        stored = conn.execute(
+        # Check if paper has any stored derived state (manifest, units, vectors)
+        has_derived_state = conn.execute(
+            "SELECT 1 FROM meta WHERE key=? LIMIT 1", (f"manifest:{key}",)
+        ).fetchone() or conn.execute(
             "SELECT 1 FROM body_units WHERE paper_id=? LIMIT 1", (key,)
         ).fetchone()
         if not tree_path.exists() or not blocks_path.exists():
-            if stored:
-                # OCR artifacts disappeared — invalidate stale units + vectors
+            if has_derived_state:
                 from paperforge.embedding._chroma import delete_paper_vectors_in_conn
                 try:
                     delete_paper_vectors_in_conn(conn, key)
@@ -705,8 +706,8 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
                 conn.execute("DELETE FROM body_units_fts WHERE paper_id=?", (key,))
                 conn.execute("DELETE FROM body_units WHERE paper_id=?", (key,))
                 conn.execute("DELETE FROM object_units WHERE paper_id=?", (key,))
-                conn.execute("DELETE FROM meta WHERE key IN (?, ?)",
-                             (f"manifest:{key}", f"paper_state_hash:{key}"))
+                # Only delete manifest — preserve paper_state_hash (metadata layer)
+                conn.execute("DELETE FROM meta WHERE key=?", (f"manifest:{key}",))
                 cleared_count += 1
             continue
 
@@ -744,8 +745,12 @@ def _rebuild_paper_units(conn: sqlite3.Connection, key: str, paper_dir: Path,
             for t in ("vec_body_meta", "vec_objects_meta", "vec_fulltext_meta"):
                 conn.execute(f"DELETE FROM {t} WHERE paper_id=?", (key,))
 
+    # FTS before body — external-content FTS5 may fail if content is gone
+    try:
+        conn.execute("DELETE FROM body_units_fts WHERE paper_id = ?", (key,))
+    except sqlite3.DatabaseError:
+        pass  # FTS5 external content may raise on empty index
     conn.execute("DELETE FROM body_units WHERE paper_id = ?", (key,))
-    conn.execute("DELETE FROM body_units_fts WHERE paper_id = ?", (key,))
     conn.execute("DELETE FROM object_units WHERE paper_id = ?", (key,))
     tree = read_json(tree_path)
     blocks = read_jsonl(blocks_path)
