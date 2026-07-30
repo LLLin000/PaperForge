@@ -6,6 +6,8 @@ import logging
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+
+from paperforge.core.io import read_json, read_jsonl
 from paperforge import __version__ as PF_VERSION
 from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
 from paperforge.memory.db import get_connection, get_memory_db_path
@@ -29,6 +31,19 @@ from paperforge.worker.asset_state import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def materialize_paper_entry(entry: dict) -> dict:
+    """Compute derived lifecycle/maturity/next_step and return a new dict.
+
+    All callers that compute ``paper_state_hash`` or call ``upsert_paper_state``
+    MUST use this function first, so the hash covers the full materialized row.
+    """
+    m = dict(entry)
+    m["lifecycle"] = str(compute_lifecycle(m))
+    m["maturity"] = compute_maturity(m)
+    m["next_step"] = str(compute_next_step(m))
+    return m
 
 def compute_hash(items: list[dict]) -> str:
     sorted_items = sorted(items, key=lambda e: e["zotero_key"])
@@ -135,6 +150,41 @@ def _import_correction_log(conn: sqlite3.Connection, vault: Path, valid_keys: se
     return {"imported": imported, "orphaned_skipped": skipped}
 
 
+def _hydrate_reading_log_for_keys(conn: sqlite3.Connection, vault: Path, keys: set[str]) -> int:
+    """Selectively import reading log entries for the given paper keys.
+
+    Used in the incremental path when a paper is re-added after deletion,
+    to restore its reading-log history from JSONL without a full rewrite.
+    """
+    if not keys:
+        return 0
+    from paperforge.memory.permanent import read_all_reading_notes
+
+    imported = 0
+    for note in read_all_reading_notes(vault):
+        pid = note.get("paper_id", "")
+        if pid not in keys:
+            continue
+        conn.execute(
+            """INSERT OR REPLACE INTO reading_log
+               (id, paper_id, project, section, excerpt, context, usage, note, tags_json, created_at, agent, verified)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                note["id"], pid,
+                note.get("project", ""),
+                note["section"], note["excerpt"],
+                note.get("context", ""), note["usage"],
+                note.get("note", ""),
+                json.dumps(note.get("tags", []), ensure_ascii=False),
+                note["created_at"],
+                note.get("agent", ""),
+                1 if note.get("verified") else 0,
+            ),
+        )
+        imported += 1
+    return imported
+
+
 def _diff_paper_state(conn: sqlite3.Connection, items: list[dict]) -> dict:
     """Compare per-paper state hashes → {added, changed, deleted, unchanged}.
 
@@ -160,7 +210,7 @@ def _diff_paper_state(conn: sqlite3.Connection, items: list[dict]) -> dict:
         if key not in db_keys:
             added.add(key)
         else:
-            h = _paper_state_hash(entry, generated_at="")
+            h = _paper_state_hash(materialize_paper_entry(entry), generated_at="")
             if stored.get(key) == h:
                 unchanged.add(key)
             else:
@@ -264,7 +314,7 @@ def build_from_index(vault: Path) -> dict:
                 cached = None
             if cached and cached[0] == canonical_hash:
                 if ocr_root.exists():
-                    _incremental_units_only(conn, items, ocr_root)
+                    _incremental_units_only(conn, items, ocr_root, vault=vault)
                 conn.commit()
                 papers_count = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
                 conn.close()
@@ -288,22 +338,21 @@ def build_from_index(vault: Path) -> dict:
             if not key:
                 continue
             if key in diff["added"] | diff["changed"]:
-                entry["lifecycle"] = str(compute_lifecycle(entry))
-                entry["maturity"] = compute_maturity(entry)
-                entry["next_step"] = str(compute_next_step(entry))
-                upsert_paper_state(conn, vault=vault, entry=entry, generated_at=now_utc)
+                m_entry = materialize_paper_entry(entry)
+                upsert_paper_state(conn, vault=vault, entry=m_entry, generated_at=now_utc)
                 changed_count += 1
 
-        # 4c. Import corrections — incremental path only imports correction notes.
-        #     Reading/project logs are bulk-imported in _full_rebuild() only.
-        #     Per-paper deletion handles their cleanup individually.
+        # 4c. Import corrections + hydrate reading log for new keys.
+        #     Reading/project logs are bulk-imported in _full_rebuild() only;
+        #     per-paper deletion handles their cleanup.  But newly added keys
+        #     need selective hydration so their history isn't lost.
         valid_keys = {e["zotero_key"] for e in items if e.get("zotero_key")}
         conn.execute("DELETE FROM paper_events WHERE event_type = 'correction_note';")
         correction_result = _import_correction_log(conn, vault, valid_keys)
-
+        _hydrate_reading_log_for_keys(conn, vault, diff["added"])
         # 4d. OCR unit rebuilds (per-paper hash comparison)
         if ocr_root.exists():
-            _incremental_units_only(conn, items, ocr_root)
+            _incremental_units_only(conn, items, ocr_root, vault=vault)
 
         # 4e. Advance canonical hash LAST — if anything fails before this,
         #     the next run re-diffs and retries
@@ -386,12 +435,9 @@ def _full_rebuild(
         zotero_key = entry.get("zotero_key", "")
         if not zotero_key:
             continue
-        entry["lifecycle"] = str(compute_lifecycle(entry))
-        entry["maturity"] = compute_maturity(entry)
-        entry["next_step"] = str(compute_next_step(entry))
+        entry = materialize_paper_entry(entry)
         paper_rows.append(build_paper_row(entry, now_utc))
         all_hashes.append((f"paper_state_hash:{zotero_key}", _paper_state_hash(entry, "")))
-
         for asset_type, entry_field in ASSET_FIELDS:
             path_val = entry.get(entry_field, "")
             if not path_val:
@@ -627,9 +673,14 @@ def _upsert_object_units(conn: sqlite3.Connection, object_units: list[dict]) -> 
         )
 
 
-def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_root: Path) -> None:
-    """Incremental: rebuild only body/object units for papers whose OCR hash changed."""
+def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_root: Path, vault: Path | None = None) -> None:
+    """Incremental: rebuild only body/object units for papers whose OCR hash changed.
+
+    When OCR artifacts are missing but the paper has stored units, the units
+    are deleted (invalidated) rather than left stale.
+    """
     built_count = 0
+    cleared_count = 0
     for entry in items:
         key = entry.get("zotero_key", "")
         if not key:
@@ -637,28 +688,62 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
         paper_dir = ocr_root / key
         tree_path = paper_dir / "index" / "structure-tree.json"
         blocks_path = paper_dir / "structure" / "blocks.structured.jsonl"
+
+        # Check if paper has any stored units at all
+        stored = conn.execute(
+            "SELECT 1 FROM body_units WHERE paper_id=? LIMIT 1", (key,)
+        ).fetchone()
         if not tree_path.exists() or not blocks_path.exists():
+            if stored:
+                # OCR artifacts disappeared — invalidate stale units + vectors
+                from paperforge.embedding._chroma import delete_paper_vectors_in_conn
+                try:
+                    delete_paper_vectors_in_conn(conn, key)
+                except Exception:
+                    for t in ("vec_body_meta", "vec_objects_meta", "vec_fulltext_meta"):
+                        conn.execute(f"DELETE FROM {t} WHERE paper_id=?", (key,))
+                conn.execute("DELETE FROM body_units_fts WHERE paper_id=?", (key,))
+                conn.execute("DELETE FROM body_units WHERE paper_id=?", (key,))
+                conn.execute("DELETE FROM object_units WHERE paper_id=?", (key,))
+                conn.execute("DELETE FROM meta WHERE key IN (?, ?)",
+                             (f"manifest:{key}", f"paper_state_hash:{key}"))
+                cleared_count += 1
             continue
+
         current_hash = _resolve_ocr_result_hash(paper_dir)
         row = conn.execute(
             "SELECT value FROM meta WHERE key=?", (f"manifest:{key}",)
         ).fetchone()
         if row:
-            stored = json.loads(row[0])
-            if (stored.get("ocr_result_hash") == current_hash
-                and stored.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION):
+            stored_manifest = json.loads(row[0])
+            if (stored_manifest.get("ocr_result_hash") == current_hash
+                and stored_manifest.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION):
                 continue
-        _rebuild_paper_units(conn, key, paper_dir, tree_path, blocks_path)
+        _rebuild_paper_units(conn, key, paper_dir, tree_path, blocks_path, vault=vault)
         built_count += 1
-    if built_count:
-        logger.info("Incremental units rebuilt for %d papers", built_count)
+    if built_count or cleared_count:
+        logger.info("Incremental units: %d rebuilt, %d cleared (artifacts gone)", built_count, cleared_count)
     else:
         logger.info("No papers needed incremental unit rebuild")
 
 
 def _rebuild_paper_units(conn: sqlite3.Connection, key: str, paper_dir: Path,
-                          tree_path: Path, blocks_path: Path) -> None:
-    """Delete and rebuild body + object units for a single paper."""
+                          tree_path: Path, blocks_path: Path,
+                          vault: Path | None = None) -> None:
+    """Delete and rebuild body + object units for a single paper.
+
+    Also invalidates stale vectors so retrievals don't return old content
+    before ``embed build --resume`` re-embeds.
+    """
+    # Invalidate vectors first (same transaction)
+    if vault is not None:
+        from paperforge.embedding._chroma import delete_paper_vectors_in_conn
+        try:
+            delete_paper_vectors_in_conn(conn, key)
+        except Exception:
+            for t in ("vec_body_meta", "vec_objects_meta", "vec_fulltext_meta"):
+                conn.execute(f"DELETE FROM {t} WHERE paper_id=?", (key,))
+
     conn.execute("DELETE FROM body_units WHERE paper_id = ?", (key,))
     conn.execute("DELETE FROM body_units_fts WHERE paper_id = ?", (key,))
     conn.execute("DELETE FROM object_units WHERE paper_id = ?", (key,))
