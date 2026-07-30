@@ -313,8 +313,7 @@ def build_from_index(vault: Path) -> dict:
             except Exception:
                 cached = None
             if cached and cached[0] == canonical_hash:
-                if ocr_root.exists():
-                    _incremental_units_only(conn, items, ocr_root, vault=vault)
+                _incremental_units_only(conn, items, ocr_root, vault=vault)
                 conn.commit()
                 papers_count = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
                 conn.close()
