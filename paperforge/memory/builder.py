@@ -4,8 +4,7 @@ import hashlib
 import json
 import logging
 import sqlite3
-from datetime import datetime, timezone
-from pathlib import Path
+from paperforge.core.io import read_json, read_jsonl
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
@@ -317,17 +316,15 @@ def build_from_index(vault: Path) -> dict:
             ("canonical_index_generated_at", generated_at),
         )
 
-        conn.commit()
         logger.info(
-            "Index built: %d changed, %d deleted, %d reading (orphans: %d), %d corrections (orphans: %d)",
+            "Index built: %d changed, %d deleted, %d corrections (orphans: %d)",
             changed_count,
             len(diff["deleted"]),
-            reading_result.get("imported", 0),
-            reading_result.get("orphaned_skipped", 0),
             correction_result.get("imported", 0),
             correction_result.get("orphaned_skipped", 0),
         )
         papers_count = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+        conn.commit()
         conn.close()
         return {
             "papers_indexed": papers_count,
