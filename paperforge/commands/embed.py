@@ -321,8 +321,6 @@ def run(args: argparse.Namespace) -> int:
             _conn = get_connection(_tmp_path)
             try:
                 ensure_vec_extension(_conn)
-                # Drop first, then rebuild in correct order (ensure_schema
-                # for companion tables, ensure_vec_tables for vec0 at model dim)
                 for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
                            "vec_fulltext", "vec_body", "vec_objects"):
                     _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
@@ -333,13 +331,30 @@ def run(args: argparse.Namespace) -> int:
                 _conn.close()
                 _tmp_path.unlink(missing_ok=True)
                 raise
+            # Checkpoint WAL and switch to DELETE journal so sidecar files
+            # don't orphan after rename. Must happen before close + swap.
+            try:
+                _conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                _conn.execute("PRAGMA journal_mode=DELETE")
+            except Exception:
+                pass
+            _conn.close()
 
             # 3. Atomic swap: old → .old, tmp → .db
-            _os.replace(str(_db_path), str(_old_path))
-            _os.replace(str(_tmp_path), str(_db_path))
-            # Now get_memory_db_path() returns the cleared tmp.
-            # Workers write to it naturally — no code change needed.
-            # .old stays through the build; deleted on success, restored on failure.
+            # ponytail: two os.replace() calls, not truly atomic, but the
+            # gap is <1ms and .old is kept for recovery on failure.
+            try:
+                _os.replace(str(_db_path), str(_old_path))
+                _os.replace(str(_tmp_path), str(_db_path))
+            except Exception:
+                # Swap failed — restore .old if db is missing
+                if _old_path.exists() and not _db_path.exists():
+                    _os.replace(str(_old_path), str(_db_path))
+                raise
+            finally:
+                # Clean up .tmp regardless of swap success
+                if _tmp_path.exists():
+                    _tmp_path.unlink(missing_ok=True)
 
     _rebuild_has_old = _force_rebuild and _db_path.exists()
 
@@ -388,7 +403,7 @@ def run(args: argparse.Namespace) -> int:
                         paper_id=job.paper_id,
                         pid=0,
                     )
-                    continue  # skip bundle usage — it's undefined
+                    return False  # abort: worker failure must not mark success
                 delete_paper_vectors(vault, bundle.paper_id)
                 for payload in bundle.payloads:
                     write_encoded_payload(vault, payload)
