@@ -345,10 +345,12 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     workspace_dir.mkdir(parents=True, exist_ok=True)
     (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
-    # ponytail: size guard avoids I/O on unchanged fulltext
+    # ponytail: size + mtime guard avoids I/O on unchanged fulltext
+    # st_mtime_ns catches same-size content changes (e.g. "50 Hz" → "75 Hz")
     fulltext_changed = (
         not stale_workspace_fulltext.exists()
         or source_fulltext.stat().st_size != stale_workspace_fulltext.stat().st_size
+        or source_fulltext.stat().st_mtime_ns != stale_workspace_fulltext.stat().st_mtime_ns
     ) if source_fulltext.exists() else False
     if fulltext_changed:
         if stale_workspace_fulltext.exists():
