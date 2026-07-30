@@ -4,8 +4,8 @@ import hashlib
 import json
 import logging
 import sqlite3
-from paperforge.core.io import read_json, read_jsonl
-
+from datetime import datetime, timezone
+from pathlib import Path
 from paperforge import __version__ as PF_VERSION
 from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
 from paperforge.memory.db import get_connection, get_memory_db_path
@@ -247,8 +247,8 @@ def build_from_index(vault: Path) -> dict:
 
         ocr_root = vault / "System" / "PaperForge" / "ocr"
 
-        # ── 2. Destructive migration → full rebuild ──────────────────────
-        if migration_action == "destructive":
+        # ── 2. Fresh or destructive → full rebuild ────────────────────────
+        if migration_action in ("fresh", "destructive"):
             result = _full_rebuild(conn, vault, items, canonical_hash, generated_at, ocr_root)
             conn.commit()
             conn.close()

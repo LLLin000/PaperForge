@@ -492,3 +492,51 @@ def test_import_reading_log_skips_orphans(tmp_path: Path) -> None:
     assert result["imported"] == 1, "valid paper's log should be imported"
     assert result["orphaned_skipped"] == 1, "orphan record should be skipped"
     conn.close()
+
+
+def test_build_from_index_two_runs_incremental(tmp_path: Path) -> None:
+    """Second build with one paper's title changed should only update that paper."""
+    from paperforge.memory.builder import build_from_index
+    from paperforge.memory.db import get_connection, get_memory_db_path
+    from paperforge.memory.schema import ensure_schema
+    from paperforge.worker.asset_index import atomic_write_index, get_index_path
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "03_Resources" / "Literature" / "骨科").mkdir(parents=True)
+    (vault / "System" / "PaperForge").mkdir(parents=True)
+
+    items = [
+        {"zotero_key": "A", "title": "Paper Alpha", "domain": "骨科"},
+        {"zotero_key": "B", "title": "Paper Beta", "domain": "骨科"},
+    ]
+
+    def _write(data):
+        idx_path = get_index_path(vault)
+        idx_path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_index(idx_path, {"items": data, "generated_at": ""})
+
+    # Build 1
+    _write(items)
+    r1 = build_from_index(vault)
+    assert r1.get("hash_match") is False or "papers_indexed" in r1, "first build should not be fast path"
+
+    db_path = get_memory_db_path(vault)
+    conn = get_connection(db_path)
+    b_rowid_1 = conn.execute("SELECT rowid FROM papers WHERE zotero_key='B'").fetchone()[0]
+    conn.close()
+
+    # Build 2: A's title changed, B untouched
+    items[0] = {"zotero_key": "A", "title": "Paper Alpha v2", "domain": "骨科"}
+    _write(items)
+    r2 = build_from_index(vault)
+
+    conn = get_connection(db_path)
+    a_title = conn.execute("SELECT title FROM papers WHERE zotero_key='A'").fetchone()[0]
+    assert a_title == "Paper Alpha v2", f"A should have new title, got {a_title}"
+    b_rowid_2 = conn.execute("SELECT rowid FROM papers WHERE zotero_key='B'").fetchone()[0]
+    b_title = conn.execute("SELECT title FROM papers WHERE zotero_key='B'").fetchone()[0]
+    assert b_rowid_1 == b_rowid_2, "B rowid unchanged"
+    assert b_title == "Paper Beta", "B title unchanged"
+    assert r2.get("hash_match") is not True, "second build should advance hash"
+    conn.close()
