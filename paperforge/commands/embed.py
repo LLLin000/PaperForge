@@ -295,32 +295,51 @@ def run(args: argparse.Namespace) -> int:
     if _force_rebuild:
         _gc.collect()
         _db_path = get_memory_db_path(vault)
-        _backup_path: Path | None = None
         if _db_path.exists():
-            # Pre-rebuild backup (Decision #10, Issue #102)
+            # Build to tmp DB, then atomic swap (方案A: no permanent backup)
             import datetime as _dt_mod
-            _ts = _dt_mod.datetime.now(_dt_mod.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-            _backup_path = _db_path.with_name(f"paperforge.pre-rebuild-{_ts}.db")
-            shutil.copy2(str(_db_path), str(_backup_path))
-            _conn = get_connection(_db_path)
+            _tmp_path = _db_path.with_suffix(".db.tmp")
+            _old_path = _db_path.with_suffix(".db.old")
+
+            # Clean any stale leftover from a previous crash
+            if _old_path.exists():
+                _old_path.unlink()
+            if _tmp_path.exists():
+                _tmp_path.unlink()
+
+            # 1. Consistent backup via sqlite3 online backup API
+            import sqlite3 as _sqlite3
+            _src_conn = _sqlite3.connect(str(_db_path))
+            _dst_conn = _sqlite3.connect(str(_tmp_path))
+            try:
+                _src_conn.backup(_dst_conn, pages=64)
+            finally:
+                _src_conn.close()
+                _dst_conn.close()
+
+            # 2. Clear vec tables in tmp
+            _conn = get_connection(_tmp_path)
             try:
                 ensure_vec_extension(_conn)
-                # Drop and recreate vec0 tables first with correct dimension
                 ensure_vec_tables(_conn, vault)
                 for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
                     _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
-                # ensure_schema recreates meta tables (vec v-tables already correct from ensure_vec_tables)
                 ensure_schema(_conn)
                 _conn.commit()
             except Exception:
-                # Clear failed — restore backup atomically
                 _conn.close()
-                if _backup_path and _backup_path.exists():
-                    os.replace(str(_backup_path), str(_db_path))
+                _tmp_path.unlink(missing_ok=True)
                 raise
-            finally:
-                _conn.close()
-        # Successful clear: backup stays for user-managed recovery
+            _conn.close()
+
+            # 3. Atomic swap: old → .old, tmp → .db
+            _os.replace(str(_db_path), str(_old_path))
+            _os.replace(str(_tmp_path), str(_db_path))
+            # Now get_memory_db_path() returns the cleared tmp.
+            # Workers write to it naturally — no code change needed.
+            # .old stays through the build; deleted on success, restored on failure.
+
+    _rebuild_has_old = _force_rebuild and _db_path.exists()
 
     mark_vector_build_state(
         vault,
@@ -561,12 +580,22 @@ def run(args: argparse.Namespace) -> int:
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
         )
         print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+        # Restore .old on build failure
+        if _rebuild_has_old and _old_path.exists():
+            _os.replace(str(_old_path), str(get_memory_db_path(vault)))
+            logger.info("Restored paperforge.db from .old after failed build")
+        elif _rebuild_has_old:
+            _old_path.unlink(missing_ok=True)
         return 1
 
 
     # Check if we stopped or were cancelled — exit cleanly without marking completed
     if read_vector_build_state(vault).get("status") == "stopping":
         logger.info("Build stopped, exiting cleanly")
+        # Restore .old, stopped build may have partial data
+        if _rebuild_has_old and _old_path.exists():
+            _os.replace(str(_old_path), str(get_memory_db_path(vault)))
+            logger.info("Restored paperforge.db from .old after cancellation")
         print("EMBED_DONE", flush=True)
         return 0
 
@@ -625,4 +654,8 @@ def run(args: argparse.Namespace) -> int:
     else:
         skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
         print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}")
+    # Build succeeded: delete .old (no backup needed — DB is regenerable)
+    if _rebuild_has_old and _old_path.exists():
+        _old_path.unlink()
+        logger.info("Deleted .old after successful rebuild")
     return 0
