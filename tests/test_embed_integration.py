@@ -324,3 +324,171 @@ def test_object_label_normalization() -> None:
     for stored, caption, expected in cases:
         label = normalize_object_label(stored, caption)
         assert label == expected, f"FAIL: {stored} + {caption!r} -> {label!r}, expected {expected!r}"
+
+
+# ── Per-paper incremental build tests ────────────────────────────────────
+
+
+def test_paper_state_hash_stable() -> None:
+    """Same entry produces same hash; different entry produces different hash."""
+    from paperforge.memory.paper_state import _paper_state_hash
+
+    entry_a = {"zotero_key": "K001", "title": "Paper A", "doi": "10.1000/xyz"}
+    entry_b = {"zotero_key": "K001", "title": "Paper A", "doi": "10.1000/xyz"}
+    entry_c = {"zotero_key": "K001", "title": "Paper A", "doi": "10.1000/abc"}
+
+    h1 = _paper_state_hash(entry_a, "")
+    h2 = _paper_state_hash(entry_b, "")
+    h3 = _paper_state_hash(entry_c, "")
+
+    assert h1 == h2, "same entry → same hash"
+    assert h1 != h3, "different field → different hash"
+
+
+def test_paper_state_hash_excludes_timestamp() -> None:
+    """generated_at is excluded so hash is stable across calls."""
+    from paperforge.memory.paper_state import _paper_state_hash
+    entry = {"zotero_key": "K001", "title": "Paper A"}
+    h1 = _paper_state_hash(entry, "2026-01-01")
+    h2 = _paper_state_hash(entry, "2026-07-28")
+    assert h1 == h2, "generated_at should not change the hash"
+
+
+def test_paper_state_hash_covers_ocr_status() -> None:
+    """ocr_status changes are detected by the hash."""
+    from paperforge.memory.paper_state import _paper_state_hash
+    pending = {"zotero_key": "K001", "title": "Paper A", "ocr_status": "pending"}
+    done = {"zotero_key": "K001", "title": "Paper A", "ocr_status": "done"}
+    assert _paper_state_hash(pending, "") != _paper_state_hash(done, "")
+
+
+def test_paper_state_hash_covers_deep_reading_status() -> None:
+    """deep_reading_status is part of the materialized papers row."""
+    from paperforge.memory.paper_state import _paper_state_hash
+    a = {"zotero_key": "K001", "title": "Paper A", "deep_reading_status": ""}
+    b = {"zotero_key": "K001", "title": "Paper A", "deep_reading_status": "done"}
+    assert _paper_state_hash(a, "") != _paper_state_hash(b, "")
+
+
+def test_diff_paper_state_added_and_unchanged(tmp_path: Path) -> None:
+    """Papers in index but not in DB → added. Papers matching hash → unchanged."""
+    from paperforge.memory.db import get_connection
+    from paperforge.memory.schema import ensure_schema
+    from paperforge.memory.builder import _diff_paper_state
+
+    db = tmp_path / "test.db"
+    conn = get_connection(db)
+    ensure_schema(conn)
+
+    items = [
+        {"zotero_key": "A", "title": "Alpha"},
+        {"zotero_key": "B", "title": "Beta"},
+    ]
+    diff = _diff_paper_state(conn, items)
+
+    # Both should be added (no papers in DB yet)
+    assert diff["added"] == {"A", "B"}
+    assert diff["unchanged"] == set()
+    assert diff["deleted"] == set()
+    conn.close()
+
+
+def test_diff_paper_state_deleted(tmp_path: Path) -> None:
+    """Papers in DB but not in index → deleted."""
+    from paperforge.memory.db import get_connection
+    from paperforge.memory.schema import ensure_schema
+    from paperforge.memory.builder import _diff_paper_state
+    from paperforge.memory.paper_state import upsert_paper_state
+
+    db = tmp_path / "test.db"
+    conn = get_connection(db)
+    ensure_schema(conn)
+
+    # Insert paper C into DB
+    upsert_paper_state(conn, vault=tmp_path, entry={"zotero_key": "C", "title": "Charlie"}, generated_at="")
+    conn.commit()
+
+    # Index only has A and B — C should be detected as deleted
+    items = [
+        {"zotero_key": "A", "title": "Alpha"},
+        {"zotero_key": "B", "title": "Beta"},
+    ]
+    diff = _diff_paper_state(conn, items)
+    assert diff["deleted"] == {"C"}
+    conn.close()
+
+
+def test_diff_paper_state_changed(tmp_path: Path) -> None:
+    """Papers whose row hash differs → changed."""
+    from paperforge.memory.db import get_connection
+    from paperforge.memory.schema import ensure_schema
+    from paperforge.memory.builder import _diff_paper_state
+    from paperforge.memory.paper_state import upsert_paper_state
+
+    db = tmp_path / "test.db"
+    conn = get_connection(db)
+    ensure_schema(conn)
+
+    # Insert with title "Alpha"
+    upsert_paper_state(conn, vault=tmp_path, entry={"zotero_key": "A", "title": "Alpha"}, generated_at="")
+    conn.commit()
+
+    # Same key but title changed
+    items = [{"zotero_key": "A", "title": "Alpha v2"}]
+    diff = _diff_paper_state(conn, items)
+    assert diff["changed"] == {"A"}
+    assert diff["unchanged"] == set()
+    conn.close()
+
+
+def test_delete_paper_removes_all_state(tmp_path: Path) -> None:
+    """_delete_paper removes vectors, aliases, assets, events, papers row."""
+    from paperforge.memory.db import get_connection
+    from paperforge.memory.schema import ensure_schema
+    from paperforge.memory.builder import _delete_paper
+    from paperforge.memory.paper_state import upsert_paper_state
+
+    db = tmp_path / "test.db"
+    conn = get_connection(db)
+    ensure_schema(conn)
+
+    # Insert a paper
+    upsert_paper_state(conn, vault=tmp_path, entry={"zotero_key": "D", "title": "Delta"}, generated_at="")
+    conn.commit()
+
+    # Verify it exists
+    row = conn.execute("SELECT zotero_key FROM papers WHERE zotero_key='D'").fetchone()
+    assert row is not None
+
+    # Delete it
+    _delete_paper(conn, tmp_path, "D")
+    conn.commit()
+
+    # Verify all traces gone
+    assert conn.execute("SELECT zotero_key FROM papers WHERE zotero_key='D'").fetchone() is None
+    assert conn.execute("SELECT COUNT(*) FROM paper_aliases WHERE paper_id='D'").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM paper_assets WHERE paper_id='D'").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM meta WHERE key='paper_state_hash:D'").fetchone()[0] == 0
+    conn.close()
+
+def test_import_reading_log_skips_orphans(tmp_path: Path) -> None:
+    """Orphan reading log entries (paper_id not in valid_keys) are skipped."""
+    from paperforge.memory.events import write_reading_note
+    from paperforge.memory.db import get_connection
+    from paperforge.memory.schema import ensure_schema
+    from paperforge.memory.builder import _import_reading_log
+
+    db = tmp_path / "test.db"
+    conn = get_connection(db)
+    ensure_schema(conn)
+    conn.execute("INSERT INTO papers (zotero_key, title) VALUES ('VALID', 'Valid Paper')")
+    conn.commit()
+
+    # Write notes for both a valid and orphan key
+    write_reading_note(tmp_path, "VALID", section="sec", excerpt="Good", usage="read")
+    write_reading_note(tmp_path, "ORPHAN", section="sec", excerpt="Lost", usage="read")
+
+    result = _import_reading_log(conn, tmp_path, valid_keys={"VALID"})
+    assert result["imported"] == 1, "valid paper's log should be imported"
+    assert result["orphaned_skipped"] == 1, "orphan record should be skipped"
+    conn.close()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from paperforge.embedding._chroma import (
     delete_paper_vectors,
+    delete_paper_vectors_in_conn,
     get_collection,
     get_vector_db_path,
     migrate_chroma_to_vec0,

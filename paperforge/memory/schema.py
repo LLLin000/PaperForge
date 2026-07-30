@@ -351,12 +351,14 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version: int) -> None:
+def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version: int) -> str:
     """Migrate schema from stored_version to target_version.
 
     Additive migrations (v4+) run ALTER TABLE in place.
     Pre-v3 migrations require destructive rebuild of derived tables.
     Raises UnsupportedSchemaVersion if stored > target.
+
+    Returns ``"destructive"`` | ``"additive"`` | ``"none"``.
     """
     if stored_version > target_version:
         raise UnsupportedSchemaVersion(
@@ -364,7 +366,7 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
             f"the code supports ({target_version}). Upgrade PaperForge."
         )
     if stored_version == 0:
-        return  # fresh database — ensure_schema creates everything
+        return "none"  # fresh database — ensure_schema creates everything
 
     current_version = stored_version
     if current_version < 3:
@@ -372,7 +374,7 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
         drop_all_tables(conn)
         ensure_schema(conn)
         logger.info("Destructive migration complete, schema is now v%s", target_version)
-        return
+        return "destructive"
     if current_version < 4:
         logger.info("Migrating schema v%s -> v4: adding body_units columns", current_version)
         for col_sql in [
@@ -432,9 +434,8 @@ def migrate_schema(conn: sqlite3.Connection, stored_version: int, target_version
                     raise
         current_version = 7
 
-    # Sync the stored version if we made progress (even partial)
-    if current_version > stored_version:
-        _set_schema_version(conn, current_version)
+    _set_schema_version(conn, current_version)
+    return "additive" if current_version > stored_version else "none"
 
 
 class UnsupportedSchemaVersion(Exception):

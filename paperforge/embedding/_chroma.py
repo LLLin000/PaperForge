@@ -62,6 +62,28 @@ def _delete_from_chromadb(vault: Path, zotero_key: str) -> None:
         pass
 
 
+def delete_paper_vectors_in_conn(conn: sqlite3.Connection, key: str) -> int:
+    """Delete vec0 rows and meta rows for *key*. No commit/rollback/close.
+
+    Safe to call from within an outer transaction — the caller owns the
+    transaction boundary.  Returns count of vector rows deleted.
+    """
+    total = 0
+    for vec_table, meta_table in _VEC_TABLE_MAP.values():
+        rows = conn.execute(
+            f"SELECT rowid FROM {meta_table} WHERE paper_id = ?", (key,)
+        ).fetchall()
+        rowids = [r["rowid"] for r in rows]
+        if rowids:
+            placeholders = ",".join("?" for _ in rowids)
+            conn.execute(
+                f"DELETE FROM {vec_table} WHERE rowid IN ({placeholders})", rowids
+            )
+            conn.execute(f"DELETE FROM {meta_table} WHERE paper_id = ?", (key,))
+        total += len(rowids)
+    return total
+
+
 def delete_paper_vectors(vault: Path, zotero_key: str) -> int:
     _delete_from_chromadb(vault, zotero_key)
 
