@@ -345,9 +345,14 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     workspace_dir.mkdir(parents=True, exist_ok=True)
     (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
-    if stale_workspace_fulltext.exists():
-        stale_workspace_fulltext.unlink()
-    if source_fulltext.exists():
+    # ponytail: size guard avoids I/O on unchanged fulltext
+    fulltext_changed = (
+        not stale_workspace_fulltext.exists()
+        or source_fulltext.stat().st_size != stale_workspace_fulltext.stat().st_size
+    ) if source_fulltext.exists() else False
+    if fulltext_changed:
+        if stale_workspace_fulltext.exists():
+            stale_workspace_fulltext.unlink()
         shutil.copy2(str(source_fulltext), str(stale_workspace_fulltext))
 
     fulltext_exists = source_fulltext.exists()
