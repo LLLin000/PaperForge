@@ -321,17 +321,18 @@ def run(args: argparse.Namespace) -> int:
             _conn = get_connection(_tmp_path)
             try:
                 ensure_vec_extension(_conn)
-                ensure_vec_tables(_conn, vault)
+                # Drop first, then rebuild in correct order (ensure_schema
+                # for companion tables, ensure_vec_tables for vec0 at model dim)
                 for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
                            "vec_fulltext", "vec_body", "vec_objects"):
                     _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
                 ensure_schema(_conn)
+                ensure_vec_tables(_conn, vault)
                 _conn.commit()
             except Exception:
                 _conn.close()
                 _tmp_path.unlink(missing_ok=True)
                 raise
-            _conn.close()
 
             # 3. Atomic swap: old → .old, tmp → .db
             _os.replace(str(_db_path), str(_old_path))
@@ -387,6 +388,7 @@ def run(args: argparse.Namespace) -> int:
                         paper_id=job.paper_id,
                         pid=0,
                     )
+                    continue  # skip bundle usage — it's undefined
                 delete_paper_vectors(vault, bundle.paper_id)
                 for payload in bundle.payloads:
                     write_encoded_payload(vault, payload)
