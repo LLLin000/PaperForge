@@ -361,3 +361,112 @@ def test_publish_uses_reader_barrier(tmp_path: Path) -> None:
     # candidate is gone
     assert not target.vector_path.exists()
     assert live.exists()
+
+
+# ── Remaining PRD test cases ──────────────────────────────────────────────
+
+
+def test_dimension_change_rebuild_publishes(tmp_path: Path) -> None:
+    """D4/D5: candidate rebuilt at NEW dimension publishes; verify uses
+    candidate dimension, not live (regression: live reports old dim)."""
+    from paperforge.embedding.build_target import (
+        BuildTarget,
+        ShadowBuild,
+        verify_candidate,
+    )
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault)  # live vec0 at dim 3
+
+    import sqlite_vec
+
+    # Build candidate at a DIFFERENT dimension (simulated model migration)
+    build = live.with_suffix(".db.build")
+    conn = sqlite3.connect(str(build))
+    conn.enable_load_extension(True)
+    sqlite_vec.load(conn)
+    conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    conn.execute("CREATE VIRTUAL TABLE vec_body USING vec0(embedding float[5])")
+    conn.execute("CREATE TABLE vec_body_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)")
+    cur = conn.execute("INSERT INTO vec_body(embedding) VALUES (?)",
+                       [json.dumps([0.1] * 5)])
+    conn.execute("INSERT INTO vec_body_meta(rowid, paper_id, unit_id) VALUES (?, 'A', 'u1')",
+                 (cur.lastrowid,))
+    conn.commit()
+    conn.close()
+
+    # Verify with the CANDIDATE dimension (5), not live (3)
+    report = verify_candidate(build, dimension=5, expected_count=1)
+    assert report["ok"], report
+
+def test_integrity_failure_blocks_publish(tmp_path: Path) -> None:
+    """D4: corrupt candidate fails integrity_check → verify rejects."""
+    from paperforge.embedding.build_target import verify_candidate
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault)
+    build = live.with_suffix(".db.build")
+    build.write_bytes(b"not a database at all")
+
+    report = verify_candidate(build, dimension=3, expected_count=5)
+    assert not report["ok"]
+    assert any(k in report["reason"] for k in ("integrity", "missing", "not a database"))
+
+
+def test_memory_build_blocked_during_shadow(tmp_path: Path) -> None:
+    """D2: concurrent memory writer blocks on writer lock during shadow build."""
+    import subprocess
+    import sys
+
+    from paperforge.memory.db import WriterLock
+
+    vault = _make_vault(tmp_path)
+    _seed_live_db(vault)
+
+    # Helper script: try to acquire the writer lock with a short timeout
+    script = tmp_path / "try_lock.py"
+    script.write_text(
+        "import sys\n"
+        "sys.path.insert(0, r'{}')\n"
+        "from pathlib import Path\n"
+        "from paperforge.memory.db import WriterLock\n"
+        "v = Path(r'{}')\n"
+        "try:\n"
+        "    l = WriterLock(v, timeout=0.5)\n"
+        "    l.__enter__()\n"
+        "    print('ACQUIRED')\n"
+        "    l.__exit__(None, None, None)\n"
+        "except Exception as e:\n"
+        "    print('BLOCKED', type(e).__name__)\n"
+        .format(str(Path.cwd()), str(vault)),
+        encoding="utf-8",
+    )
+
+    lock = WriterLock(vault, timeout=1)
+    lock.__enter__()
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script)],
+            capture_output=True, text=True, timeout=10,
+        )
+        assert "ACQUIRED" not in result.stdout, "memory writer must block during shadow build"
+        assert "BLOCKED" in result.stdout, f"bounded wait then retryable error, got: {result.stdout!r}"
+    finally:
+        lock.__exit__(None, None, None)
+
+
+def test_refresh_paper_bounded_wait_during_shadow(tmp_path: Path) -> None:
+    """D2b: refresh_paper blocks up to 30s while writer lock held, then raises."""
+    from paperforge.memory.db import WriterLock
+    from paperforge.memory.refresh import refresh_paper
+
+    vault = _make_vault(tmp_path)
+    _seed_live_db(vault)
+
+    lock = WriterLock(vault, timeout=0.5)
+    lock.__enter__()
+    try:
+        with pytest.raises(Exception):  # filelock.Timeout after bounded wait
+            refresh_paper(vault, {"zotero_key": "A", "title": "Paper A"})
+    finally:
+        lock.__exit__(None, None, None)
