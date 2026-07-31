@@ -697,8 +697,10 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
         from paperforge.memory.refresh import refresh_paper
 
         refresh_paper(vault, new_entry)
-    except Exception:
-        pass  # memory DB refresh is best-effort
+    except Exception as exc:
+        # Memory DB refresh is best-effort, but a writer-lock timeout during
+        # a shadow rebuild is a real signal — surface it (D2b).
+        logger.warning("refresh_paper failed for %s (best-effort): %s", key, exc)
 
     def _apply(current):
         if is_legacy_format(current) or not isinstance(current, dict):

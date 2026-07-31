@@ -312,3 +312,52 @@ def test_dashboard_connection_read_only(tmp_path: Path) -> None:
     finally:
         writer.rollback()
         writer.close()
+
+
+# ── Regression tests from code review ─────────────────────────────────────
+
+
+def test_cleanup_stale_does_not_break_state_machine(tmp_path: Path) -> None:
+    """D6: cleanup_stale before prepare must not transition NEW → ABORTED."""
+    from paperforge.embedding.build_target import BuildTarget, ShadowBuild
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault)
+    target = BuildTarget(source_path=live, vector_path=live.with_suffix(".db.build"))
+
+    shadow = ShadowBuild(target)
+    shadow.cleanup_stale()   # stale candidate from crashed build
+    shadow.prepare()         # must still be valid (NEW → PREPARED)
+    shadow.building()
+    shadow.abort()
+
+
+def test_publish_uses_reader_barrier(tmp_path: Path) -> None:
+    """D1: publish takes the reader lock; sidecar cleanup inside barrier."""
+    from paperforge.embedding.build_target import BuildTarget, ShadowBuild
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault)
+    target = BuildTarget(source_path=live, vector_path=live.with_suffix(".db.build"))
+
+    with ShadowBuild(target) as shadow:
+        shadow.prepare()
+        import sqlite_vec
+
+        src = sqlite3.connect(str(live))
+        src.enable_load_extension(True)
+        sqlite_vec.load(src)
+        dst = sqlite3.connect(str(target.vector_path))
+        dst.enable_load_extension(True)
+        sqlite_vec.load(dst)
+        src.backup(dst)
+        src.close()
+        dst.close()
+        shadow.building()
+        shadow.verified()
+        shadow.publish()
+
+    # .read.lock file may linger (filelock) but publish succeeded and
+    # candidate is gone
+    assert not target.vector_path.exists()
+    assert live.exists()
