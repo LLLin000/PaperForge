@@ -57,28 +57,27 @@ def _dashboard_from_db(vault: Path) -> dict | None:
     if not db_path.exists():
         return None
     try:
-        import sqlite3
-        conn = sqlite3.connect("file:" + db_path.as_posix() + "?mode=ro", uri=True)
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute("""
-            SELECT has_pdf,
-                   CASE WHEN ocr_status='done' THEN 'done'
-                        WHEN ocr_status IN ('failed','blocked') THEN 'failed'
-                        ELSE 'pending' END as ocr,
-                   COUNT(*) as cnt
-            FROM papers GROUP BY has_pdf, ocr
-        """).fetchall()
-        total = sum(r["cnt"] for r in rows)
-        pdf_healthy = sum(r["cnt"] for r in rows if r["has_pdf"] == 1 and r["ocr"] != "failed")
-        pdf_missing = sum(r["cnt"] for r in rows if r["has_pdf"] == 0)
-        pdf_broken = total - pdf_healthy - pdf_missing
-        ocr_done = sum(r["cnt"] for r in rows if r["ocr"] == "done")
-        ocr_failed = sum(r["cnt"] for r in rows if r["ocr"] == "failed")
-        ocr_pending = total - ocr_done - ocr_failed
-        # Domain counts
-        rows = conn.execute("SELECT domain, COUNT(*) as cnt FROM papers GROUP BY domain").fetchall()
-        domain_counts = {r["domain"]: r["cnt"] for r in rows}
-        conn.close()
+        from paperforge.memory.db import open_live_reader
+
+        with open_live_reader(vault, db_path) as conn:
+            rows = conn.execute("""
+                SELECT has_pdf,
+                       CASE WHEN ocr_status='done' THEN 'done'
+                            WHEN ocr_status IN ('failed','blocked') THEN 'failed'
+                            ELSE 'pending' END as ocr,
+                       COUNT(*) as cnt
+                FROM papers GROUP BY has_pdf, ocr
+            """).fetchall()
+            total = sum(r["cnt"] for r in rows)
+            pdf_healthy = sum(r["cnt"] for r in rows if r["has_pdf"] == 1 and r["ocr"] != "failed")
+            pdf_missing = sum(r["cnt"] for r in rows if r["has_pdf"] == 0)
+            pdf_broken = total - pdf_healthy - pdf_missing
+            ocr_done = sum(r["cnt"] for r in rows if r["ocr"] == "done")
+            ocr_failed = sum(r["cnt"] for r in rows if r["ocr"] == "failed")
+            ocr_pending = total - ocr_done - ocr_failed
+            # Domain counts
+            rows = conn.execute("SELECT domain, COUNT(*) as cnt FROM papers GROUP BY domain").fetchall()
+            domain_counts = {r["domain"]: r["cnt"] for r in rows}
         return {
             "stats": {
                 "papers": total,

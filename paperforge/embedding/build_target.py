@@ -144,16 +144,25 @@ class ShadowBuild:
         live = self.target.source_path
         if vector == live:
             return  # In-place target: nothing to swap
-        # Checkpoint + switch journal off WAL so sidecars don't orphan
+        # P0-4: checkpoint + journal switch MUST succeed before publish —
+        # if the WAL still holds data and we swap the main file, we publish
+        # a DB missing its latest commits.  Abort, don't swallow.
         try:
             conn = sqlite3.connect(str(vector))
             try:
                 conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-                conn.execute("PRAGMA journal_mode=DELETE")
+                mode = conn.execute("PRAGMA journal_mode=DELETE").fetchone()[0]
+                if str(mode).lower() != "delete":
+                    raise sqlite3.Error(f"journal switch failed: mode={mode}")
+                side = Path(str(vector) + "-wal")
+                if side.exists() and side.stat().st_size > 0:
+                    raise sqlite3.Error(
+                        f"checkpoint left non-empty WAL: {side.stat().st_size} bytes"
+                    )
             finally:
                 conn.close()
-        except sqlite3.Error:
-            pass
+        except sqlite3.Error as exc:
+            raise BuildTargetError(f"candidate checkpoint failed: {exc}") from exc
         # D1 reader barrier: readers are short-lived CLI processes; take a
         # brief reader lock so no in-flight reader holds live open during the
         # swap (Windows cannot replace an open file).

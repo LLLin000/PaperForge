@@ -31,7 +31,10 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
     if exists:
         conn = None
         try:
-            conn = get_connection(db_path, read_only=True)
+            from paperforge.memory.db import open_live_reader
+
+            reader = open_live_reader(vault, db_path)
+            conn = reader.__enter__()
             try:
                 ensure_vec_extension(conn)
             except Exception:
@@ -76,6 +79,10 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
                     conn.close()
                 except Exception:
                     pass
+            try:
+                reader.__exit__(None, None, None)
+            except Exception:
+                pass
 
     model = get_api_model(vault)
     raw_total = body_chunk_count + object_chunk_count  # exclude legacy vec_fulltext_meta

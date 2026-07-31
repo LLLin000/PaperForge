@@ -470,3 +470,41 @@ def test_refresh_paper_bounded_wait_during_shadow(tmp_path: Path) -> None:
             refresh_paper(vault, {"zotero_key": "A", "title": "Paper A"})
     finally:
         lock.__exit__(None, None, None)
+
+
+# ── P0-2: real mutators take the writer lock ──────────────────────────────
+
+
+def test_build_from_index_acquires_writer_lock(tmp_path: Path) -> None:
+    """build_from_index() takes the writer lock — verified by holding it."""
+    from paperforge.memory.builder import build_from_index
+    from paperforge.memory.db import WriterLock, get_memory_db_path
+    from paperforge.worker.asset_index import atomic_write_index, get_index_path
+    import threading
+    import time
+
+    vault = _make_vault(tmp_path)
+    idx = get_index_path(vault)
+    idx.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_index(idx, {"items": [{"zotero_key": "A", "title": "Paper A"}], "generated_at": ""})
+    # Hold the writer lock; build_from_index must block (cross-owner).
+    lock = WriterLock(vault, timeout=0.5)
+    lock.__enter__()
+    result = {}
+
+    def _build():
+        try:
+            build_from_index(vault)
+            result["ok"] = True
+        except Exception as exc:
+            result["err"] = str(exc)
+
+    t = threading.Thread(target=_build)
+    t.start()
+    time.sleep(1.0)
+    # While we hold the lock, the build must not have completed
+    assert "ok" not in result, "build_from_index must block while writer lock held"
+    lock.__exit__(None, None, None)
+    t.join(timeout=15)
+    assert not t.is_alive(), "build_from_index should finish after lock release"
+    assert result.get("ok"), result

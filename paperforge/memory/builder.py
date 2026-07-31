@@ -263,6 +263,19 @@ def _delete_paper(conn: sqlite3.Connection, vault: Path, key: str) -> None:
 def build_from_index(vault: Path) -> dict:
     """Read formal-library.json and build/rebuild paperforge.db.
 
+    Acquires the cross-process writer lock for the whole build (D2) — a
+    shadow vector rebuild must not be racing a memory build that mutates
+    the same live DB (the shadow snapshot would be stale at publish).
+    """
+    from paperforge.memory.db import WriterLock
+
+    with WriterLock(vault):
+        return _build_from_index_locked(vault)
+
+
+def _build_from_index_locked(vault: Path) -> dict:
+    """Build/rebuild paperforge.db (writer lock already held).
+
     Scheduling:
     1. Schema migration (destructive → full rebuild).
     2. Global hash unchanged → skip (fast path).

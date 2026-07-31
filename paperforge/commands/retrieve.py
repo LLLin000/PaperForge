@@ -43,45 +43,48 @@ def _paper_scope_check(vault, paper_key: str, allow_bm25_only: bool = False) -> 
 
     Returns a result dict to short-circuit on failure, or None to proceed.
     """
-    from paperforge.memory.db import get_connection, get_memory_db_path
+    from paperforge.memory.db import get_memory_db_path, open_live_reader
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return None
-    conn = get_connection(db_path, read_only=True)
-    try:
-        paper_exists = conn.execute("SELECT 1 FROM papers WHERE zotero_key=?", (paper_key,)).fetchone()
-        if not paper_exists:
-            return {"error": "paper_not_found", "message": f"Paper not found: {paper_key}"}
+    with open_live_reader(vault, db_path) as conn:
+        return _check_paper_scope_locked(conn, paper_key, allow_bm25_only)
 
-        bc = conn.execute(
-            "SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1",
-            (paper_key,),
-        ).fetchone()[0]
-        if bc == 0:
-            return {"fulltext_unavailable": True}
 
-        valid_body = conn.execute(
-            "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=? AND unit_id<>''",
-            (paper_key,),
+def _check_paper_scope_locked(conn, paper_key: str, allow_bm25_only: bool) -> dict | None:
+    """Paper-scope availability check against an open reader connection."""
+    paper_exists = conn.execute("SELECT 1 FROM papers WHERE zotero_key=?", (paper_key,)).fetchone()
+    if not paper_exists:
+        return {"error": "paper_not_found", "message": f"Paper not found: {paper_key}"}
+
+    bc = conn.execute(
+        "SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1",
+        (paper_key,),
+    ).fetchone()[0]
+    if bc == 0:
+        return {"fulltext_unavailable": True}
+
+    valid_body = conn.execute(
+        "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=? AND unit_id<>''",
+        (paper_key,),
+    ).fetchone()[0]
+    valid_object = conn.execute(
+        "SELECT COUNT(*) FROM vec_objects_meta WHERE paper_id=? AND unit_id<>''",
+        (paper_key,),
+    ).fetchone()[0]
+    if valid_body + valid_object == 0:
+        if allow_bm25_only:
+            return None  # BM25-only mode: vectors optional
+        old_body = conn.execute(
+            "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=?", (paper_key,),
         ).fetchone()[0]
-        valid_object = conn.execute(
-            "SELECT COUNT(*) FROM vec_objects_meta WHERE paper_id=? AND unit_id<>''",
-            (paper_key,),
+        old_object = conn.execute(
+            "SELECT COUNT(*) FROM vec_objects_meta WHERE paper_id=?", (paper_key,),
         ).fetchone()[0]
-        if valid_body + valid_object == 0:
-            if allow_bm25_only:
-                return None  # BM25-only mode: vectors optional
-            old_body = conn.execute(
-                "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id=?", (paper_key,),
-            ).fetchone()[0]
-            old_object = conn.execute(
-                "SELECT COUNT(*) FROM vec_objects_meta WHERE paper_id=?", (paper_key,),
-            ).fetchone()[0]
-            raw_total = old_body + old_object
-            vs = "stale" if raw_total > 0 else "not_built"
-            return {"vector_state": vs}
-    finally:
-        conn.close()
+        raw_total = old_body + old_object
+        vs = "stale" if raw_total > 0 else "not_built"
+        return {"vector_state": vs}
+    return None
 
 
 def run(args: argparse.Namespace) -> int:
