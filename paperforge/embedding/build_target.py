@@ -100,6 +100,21 @@ class ShadowBuild:
                 logger.warning("abort: could not delete %s", p)
         self.state = self.ABORTED
 
+    def cleanup_stale(self) -> None:
+        """D6: unconditionally delete leftover candidate files.
+
+        Does NOT touch the lifecycle state (unlike ``abort()``) — a stale
+        candidate from a crashed build is deleted before a fresh
+        ``prepare()``, without transitioning the state machine.
+        """
+        for suffix in ("", "-wal", "-shm"):
+            p = Path(str(self.target.vector_path) + suffix)
+            try:
+                if p.exists():
+                    p.unlink()
+            except OSError:
+                logger.warning("cleanup_stale: could not delete %s", p)
+
     # ── candidate connection management ──────────────────────────────────
 
     def candidate_conn(self) -> sqlite3.Connection:
@@ -128,8 +143,7 @@ class ShadowBuild:
         vector = self.target.vector_path
         live = self.target.source_path
         if vector == live:
-            # In-place target: nothing to swap
-            return
+            return  # In-place target: nothing to swap
         # Checkpoint + switch journal off WAL so sidecars don't orphan
         try:
             conn = sqlite3.connect(str(vector))
@@ -140,15 +154,19 @@ class ShadowBuild:
                 conn.close()
         except sqlite3.Error:
             pass
-        # Clean stale live sidecars (safe: all readers quiesced by barrier)
-        for suffix in ("-wal", "-shm"):
-            p = Path(str(live) + suffix)
-            try:
-                if p.exists():
-                    p.unlink()
-            except OSError:
-                logger.warning("publish: could not delete %s", p)
-        os.replace(str(vector), str(live))
+        # D1 reader barrier: readers are short-lived CLI processes; take a
+        # brief reader lock so no in-flight reader holds live open during the
+        # swap (Windows cannot replace an open file).
+        barrier = _reader_barrier(self.target.source_path)
+        with barrier:
+            for suffix in ("-wal", "-shm"):
+                p = Path(str(live) + suffix)
+                try:
+                    if p.exists():
+                        p.unlink()
+                except OSError:
+                    logger.warning("publish: could not delete %s", p)
+            os.replace(str(vector), str(live))
 
     def __enter__(self) -> "ShadowBuild":
         return self
@@ -242,3 +260,20 @@ def verify_candidate(
         return _fail(str(exc))
     finally:
         conn.close()
+
+
+def _reader_barrier(live_path: Path):
+    """D1 publication barrier: brief read lock so no in-flight reader holds
+    the live DB open during the swap.
+
+    Readers are short-lived CLI processes; the lock is held only for the
+    ms-scale publish.  Falls back to a no-op if filelock is unavailable.
+    """
+    try:
+        from filelock import FileLock
+
+        return FileLock(str(live_path) + ".read.lock", timeout=10)
+    except Exception:
+        import contextlib
+
+        return contextlib.nullcontext()

@@ -291,6 +291,8 @@ def run(args: argparse.Namespace) -> int:
                 msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
                 if not getattr(args, "json", False):
                     print(msg)
+                resume = False
+
     _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
     _shadow: ShadowBuild | None = None
     _candidate_conn = None
@@ -315,7 +317,7 @@ def run(args: argparse.Namespace) -> int:
         )
         _shadow = ShadowBuild(_target)
         # D6: unconditional stale-candidate cleanup (no build_state dependency)
-        _shadow.abort()
+        _shadow.cleanup_stale()
         _shadow.prepare()
         _candidate_conn = _shadow.candidate_conn()
         try:
@@ -651,8 +653,23 @@ def run(args: argparse.Namespace) -> int:
     # Shadow: verify candidate, publish (swap), then mark completed on new live.
     if _shadow is not None:
         expected = chunks_embedded
+        # D4: dimension must come from the candidate's own vec0 DDL, not the
+        # live DB — a model migration rebuilds candidate at the NEW dimension
+        # while live still reports the old one.
+        _dim = 0
         try:
-            _dim = get_embed_status(vault).get("dimension", 0)
+            import re as _re
+            _cand = sqlite3.connect(f"file:{_shadow.target.vector_path.as_posix()}?mode=ro", uri=True)
+            try:
+                _row = _cand.execute(
+                    "SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'"
+                ).fetchone()
+                if _row:
+                    _m = _re.search(r"float\[(\d+)\]", _row[0])
+                    if _m:
+                        _dim = int(_m.group(1))
+            finally:
+                _cand.close()
         except Exception:
             _dim = 0
         report = verify_candidate(
