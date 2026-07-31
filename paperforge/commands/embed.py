@@ -716,9 +716,16 @@ def run(args: argparse.Namespace) -> int:
         vault,
         status="completed",
         current=total,
+        total=total,
         finished_at=_now(),
         message="",
         pid=0,
+        # Shadow publish swaps live for a candidate whose build_state table
+        # holds pre-build defaults (the live mark above was written before
+        # the swap) — without model/mode the next resume's gate-3 misreads a
+        # model change and re-embeds everything.
+        model=_current_model,
+        mode=get_embed_status(vault)["mode"],
     )
     try:
         _status = get_embed_status(vault)
