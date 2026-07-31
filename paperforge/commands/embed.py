@@ -298,7 +298,7 @@ def run(args: argparse.Namespace) -> int:
         _db_path = get_memory_db_path(vault)
         if _db_path.exists():
             # Conservative in-place rebuild with restorable backup.
-            # (Shadow build deferred to a dedicated issue — see #118.)
+            # (Shadow build deferred to a dedicated issue — see #117.)
             import datetime as _dt_mod
             _ts = _dt_mod.datetime.now(_dt_mod.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             _rebuild_backup_path = _db_path.with_name(f"paperforge.pre-rebuild-{_ts}.db")
