@@ -13,8 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_embed_status(vault: Path, *, probe: bool = False) -> dict:
-    """Get vector DB status from sqlite-vec companion tables."""
-    db_path = get_memory_db_path(vault)
+    """Get vector DB status from sqlite-vec companion tables (live DB)."""
+    return get_embed_status_for_path(vault, get_memory_db_path(vault), probe=probe)
+
+
+def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False) -> dict:
     exists = db_path.exists()
     chunk_count = 0
     object_chunk_count = 0

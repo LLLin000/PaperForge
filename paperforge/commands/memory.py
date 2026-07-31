@@ -26,6 +26,14 @@ def _restore_backup(vault: Path) -> PFResult:
     4. Atomic os.replace(temp, db_path)
     5. On any failure, current DB and backup remain unchanged; clean temp.
     """
+    from paperforge.memory.db import WriterLock, get_memory_db_path
+
+    with WriterLock(vault):
+        return _restore_backup_locked(vault)
+
+
+def _restore_backup_locked(vault: Path) -> PFResult:
+    """Restore paperforge.db from a validated backup (writer lock held)."""
     import os
     import shutil
     import sqlite3

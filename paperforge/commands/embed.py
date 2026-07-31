@@ -18,6 +18,8 @@ from paperforge.embedding import (
     mark_vector_build_state,
     read_vector_build_state,
 )
+from paperforge.embedding._chroma import delete_paper_vectors_in_conn
+from paperforge.embedding.build_target import BuildTarget, ShadowBuild, verify_candidate
 from paperforge.embedding.dim_detect import ensure_vec_tables
 from paperforge.embedding.builder import (
     PaperEmbeddingJob,
@@ -26,10 +28,10 @@ from paperforge.embedding.builder import (
     get_object_units_for_embedding,
     prepare_payloads_for_entry,
     write_encoded_payload,
+    write_encoded_payload_to_conn,
 )
 from paperforge.embedding.preflight import _preflight_check
-from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
-from paperforge.memory.schema import ensure_schema
+from paperforge.memory.db import WriterLock, ensure_vec_extension, get_connection, get_memory_db_path
 from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
 from paperforge.worker._progress import progress_bar
@@ -289,48 +291,89 @@ def run(args: argparse.Namespace) -> int:
                 msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
                 if not getattr(args, "json", False):
                     print(msg)
-                resume = False
-
     _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
+    _shadow: ShadowBuild | None = None
+    _candidate_conn = None
+    _write_lock: WriterLock | None = None
     _rebuild_backup_path: Path | None = None
-    if _force_rebuild:
-        _gc.collect()
-        _db_path = get_memory_db_path(vault)
-        if _db_path.exists():
-            # Conservative in-place rebuild with restorable backup.
-            # (Shadow build deferred to a dedicated issue — see #117.)
-            import datetime as _dt_mod
-            _ts = _dt_mod.datetime.now(_dt_mod.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-            _rebuild_backup_path = _db_path.with_name(f"paperforge.pre-rebuild-{_ts}.db")
 
-            # 1. Consistent backup via sqlite3 online backup API
+    # D5: full rebuilds (force / model change / resume reset) use shadow target.
+    requires_shadow = _force_rebuild and _db_path.exists()
+
+    if requires_shadow:
+        # Writer lock held for the whole shadow build (D2) — maintenance mode.
+        if not getattr(args, "json", False):
+            print(
+                "Maintenance mode: OCR syncs and memory updates are paused "
+                "until the rebuild completes."
+            )
+        _write_lock = WriterLock(vault)
+        _write_lock.__enter__()
+        _target = BuildTarget(
+            source_path=_db_path,
+            vector_path=_db_path.with_suffix(".db.build"),
+        )
+        _shadow = ShadowBuild(_target)
+        # D6: unconditional stale-candidate cleanup (no build_state dependency)
+        _shadow.abort()
+        _shadow.prepare()
+        _candidate_conn = _shadow.candidate_conn()
+        try:
+            # 1. Consistent snapshot: live → candidate via online backup API
             import sqlite3 as _sqlite3
             _src_conn = _sqlite3.connect(str(_db_path))
-            _dst_conn = _sqlite3.connect(str(_rebuild_backup_path))
+            _dst_conn = _sqlite3.connect(str(_target.vector_path))
             try:
                 _src_conn.backup(_dst_conn, pages=64)
             finally:
                 _src_conn.close()
                 _dst_conn.close()
 
-            # 2. Clear vec tables in place
-            _conn = get_connection(_db_path)
-            try:
-                ensure_vec_extension(_conn)
-                for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
-                           "vec_fulltext", "vec_body", "vec_objects"):
-                    _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
-                ensure_schema(_conn)
-                ensure_vec_tables(_conn, vault)
-                _conn.commit()
-            except Exception:
-                # Clear failed — restore backup atomically
-                _conn.close()
-                if _rebuild_backup_path and _rebuild_backup_path.exists():
-                    _os.replace(str(_rebuild_backup_path), str(_db_path))
-                raise
+            # 2. Clear vec tables in candidate; recreate at model dim
+            ensure_vec_extension(_candidate_conn)
+            for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
+                       "vec_fulltext", "vec_body", "vec_objects"):
+                _candidate_conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
+            ensure_schema(_candidate_conn)
+            ensure_vec_tables(_candidate_conn, vault)
+            _candidate_conn.commit()
+            _shadow.building()
+        except Exception:
+            _shadow.abort()
+            if _write_lock:
+                _write_lock.__exit__(None, None, None)
+            raise
+    elif _force_rebuild:
+        # Conservative in-place rebuild with restorable backup (fallback).
+        # (Shadow build is the default; this is the "inplace" strategy.)
+        import datetime as _dt_mod
+        _ts = _dt_mod.datetime.now(_dt_mod.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        _rebuild_backup_path = _db_path.with_name(f"paperforge.pre-rebuild-{_ts}.db")
+
+        import sqlite3 as _sqlite3
+        _src_conn = _sqlite3.connect(str(_db_path))
+        _dst_conn = _sqlite3.connect(str(_rebuild_backup_path))
+        try:
+            _src_conn.backup(_dst_conn, pages=64)
+        finally:
+            _src_conn.close()
+            _dst_conn.close()
+
+        _conn = get_connection(_db_path)
+        try:
+            ensure_vec_extension(_conn)
+            for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
+                       "vec_fulltext", "vec_body", "vec_objects"):
+                _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
+            ensure_schema(_conn)
+            ensure_vec_tables(_conn, vault)
+            _conn.commit()
+        except Exception:
             _conn.close()
-            # Backup stays until build completes; deleted on success, restored on failure.
+            if _rebuild_backup_path and _rebuild_backup_path.exists():
+                _os.replace(str(_rebuild_backup_path), str(_db_path))
+            raise
+        _conn.close()
 
     mark_vector_build_state(
         vault,
@@ -378,9 +421,15 @@ def run(args: argparse.Namespace) -> int:
                         pid=0,
                     )
                     return False  # abort: worker failure must not mark success
-                delete_paper_vectors(vault, bundle.paper_id)
-                for payload in bundle.payloads:
-                    write_encoded_payload(vault, payload)
+                if _candidate_conn is not None:
+                    delete_paper_vectors_in_conn(_candidate_conn, bundle.paper_id)
+                    for payload in bundle.payloads:
+                        write_encoded_payload_to_conn(_candidate_conn, payload)
+                    _candidate_conn.commit()
+                else:
+                    delete_paper_vectors(vault, bundle.paper_id)
+                    for payload in bundle.payloads:
+                        write_encoded_payload(vault, payload)
 
                 processed_count += 1
                 papers_embedded += 1
@@ -572,24 +621,66 @@ def run(args: argparse.Namespace) -> int:
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
         )
         print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
-        # Restore backup on build failure
-        if _rebuild_backup_path and _rebuild_backup_path.exists():
+        # Shadow: abort candidate, live untouched. In-place: restore backup.
+        if _shadow is not None:
+            _shadow.abort()
+            logger.info("Shadow build aborted; live DB untouched")
+        elif _rebuild_backup_path and _rebuild_backup_path.exists():
             _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
             logger.info("Restored paperforge.db from pre-rebuild backup after failed build")
         elif _rebuild_backup_path:
             _rebuild_backup_path.unlink(missing_ok=True)
+        if _write_lock:
+            _write_lock.__exit__(None, None, None)
         return 1
-
 
     # Check if we stopped or were cancelled — exit cleanly without marking completed
     if read_vector_build_state(vault).get("status") == "stopping":
         logger.info("Build stopped, exiting cleanly")
-        # Restore backup, stopped build may have partial data
-        if _rebuild_backup_path and _rebuild_backup_path.exists():
+        if _shadow is not None:
+            _shadow.abort()
+            logger.info("Shadow build aborted on cancellation; live DB untouched")
+        elif _rebuild_backup_path and _rebuild_backup_path.exists():
             _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
             logger.info("Restored paperforge.db from pre-rebuild backup after cancellation")
+        if _write_lock:
+            _write_lock.__exit__(None, None, None)
         print("EMBED_DONE", flush=True)
         return 0
+
+    # Shadow: verify candidate, publish (swap), then mark completed on new live.
+    if _shadow is not None:
+        expected = chunks_embedded
+        try:
+            _dim = get_embed_status(vault).get("dimension", 0)
+        except Exception:
+            _dim = 0
+        report = verify_candidate(
+            _shadow.target.vector_path,
+            dimension=_dim,
+            expected_count=expected,
+        )
+        if not report["ok"]:
+            _shadow.abort()
+            logger.error("Shadow verify failed: %s", report.get("reason"))
+            if _write_lock:
+                _write_lock.__exit__(None, None, None)
+            result = PFResult(
+                ok=False,
+                command="embed build",
+                version=PF_VERSION,
+                error=PFError(
+                    code=ErrorCode.INTERNAL_ERROR,
+                    message=f"Candidate verification failed: {report.get('reason')}",
+                ),
+            )
+            print(result.to_json() if args.json else result.error.message,
+                  file=sys.stderr if not args.json else sys.stdout)
+            return 1
+        _shadow.verified()
+        _shadow.publish()
+        logger.info("Shadow build published: %s → %s",
+                    _shadow.target.vector_path, _shadow.target.source_path)
 
     mark_vector_build_state(
         vault,
@@ -599,7 +690,6 @@ def run(args: argparse.Namespace) -> int:
         message="",
         pid=0,
     )
-
     try:
         _status = get_embed_status(vault)
         _real_chunks = _status.get("chunk_count", chunks_embedded)
@@ -646,8 +736,10 @@ def run(args: argparse.Namespace) -> int:
     else:
         skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
         print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}")
-    # Build succeeded: delete pre-rebuild backup
+    # Build succeeded: delete pre-rebuild backup (in-place strategy only)
     if _rebuild_backup_path and _rebuild_backup_path.exists():
         _rebuild_backup_path.unlink()
         logger.info("Deleted pre-rebuild backup after successful rebuild")
+    if _write_lock:
+        _write_lock.__exit__(None, None, None)
     return 0

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import threading
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
@@ -13,6 +14,53 @@ def get_memory_db_path(vault: Path) -> Path:
     if not index_path:
         raise FileNotFoundError("index path not configured")
     return index_path.parent / "paperforge.db"
+
+
+class WriterLock:
+    """Re-entrant per-thread writer lock backed by a cross-process filelock.
+
+    Top-level mutating commands (embed build, memory build, refresh flows,
+    restore-backup, force-rebuild restore) acquire this ONCE.  Nested rw
+    connections within the same thread do not re-block (thread-local
+    recursion counter).  Never acquire inside ``get_connection`` — embed
+    build opens 12+ rw connections per run and would deadlock on the
+    non-re-entrant filelock.
+
+    Use as a context manager::
+
+        with writer_lock(vault):
+            ...  # whole build/prepare/publish duration
+    """
+
+    _local = threading.local()
+
+    def __init__(self, vault: Path, timeout: float = -1) -> None:
+        from filelock import FileLock
+
+        db_path = get_memory_db_path(vault)
+        self._lock = FileLock(str(db_path) + ".write.lock", timeout=timeout)
+        self._acquired = False
+
+    def __enter__(self) -> "WriterLock":
+        depth = getattr(self._local, "depth", 0)
+        if depth > 0:
+            self._local.depth = depth + 1
+            self._acquired = False  # nested: re-entrant, no new file lock
+            return self
+        self._lock.acquire()
+        self._acquired = True
+        self._local.depth = 1
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        depth = getattr(self._local, "depth", 0)
+        if depth > 1:
+            self._local.depth = depth - 1
+            return
+        self._local.depth = 0
+        if self._acquired:
+            self._lock.release()
+            self._acquired = False
 
 
 def get_connection(db_path: Path, read_only: bool = False) -> sqlite3.Connection:
