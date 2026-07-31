@@ -292,33 +292,29 @@ def run(args: argparse.Namespace) -> int:
                 resume = False
 
     _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
+    _rebuild_backup_path: Path | None = None
     if _force_rebuild:
         _gc.collect()
         _db_path = get_memory_db_path(vault)
         if _db_path.exists():
-            # Build to tmp DB, then atomic swap (方案A: no permanent backup)
+            # Conservative in-place rebuild with restorable backup.
+            # (Shadow build deferred to a dedicated issue — see #118.)
             import datetime as _dt_mod
-            _tmp_path = _db_path.with_suffix(".db.tmp")
-            _old_path = _db_path.with_suffix(".db.old")
-
-            # Clean any stale leftover from a previous crash
-            if _old_path.exists():
-                _old_path.unlink()
-            if _tmp_path.exists():
-                _tmp_path.unlink()
+            _ts = _dt_mod.datetime.now(_dt_mod.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            _rebuild_backup_path = _db_path.with_name(f"paperforge.pre-rebuild-{_ts}.db")
 
             # 1. Consistent backup via sqlite3 online backup API
             import sqlite3 as _sqlite3
             _src_conn = _sqlite3.connect(str(_db_path))
-            _dst_conn = _sqlite3.connect(str(_tmp_path))
+            _dst_conn = _sqlite3.connect(str(_rebuild_backup_path))
             try:
                 _src_conn.backup(_dst_conn, pages=64)
             finally:
                 _src_conn.close()
                 _dst_conn.close()
 
-            # 2. Clear vec tables in tmp
-            _conn = get_connection(_tmp_path)
+            # 2. Clear vec tables in place
+            _conn = get_connection(_db_path)
             try:
                 ensure_vec_extension(_conn)
                 for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
@@ -328,35 +324,13 @@ def run(args: argparse.Namespace) -> int:
                 ensure_vec_tables(_conn, vault)
                 _conn.commit()
             except Exception:
+                # Clear failed — restore backup atomically
                 _conn.close()
-                _tmp_path.unlink(missing_ok=True)
+                if _rebuild_backup_path and _rebuild_backup_path.exists():
+                    _os.replace(str(_rebuild_backup_path), str(_db_path))
                 raise
-            # Checkpoint WAL and switch to DELETE journal so sidecar files
-            # don't orphan after rename. Must happen before close + swap.
-            try:
-                _conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-                _conn.execute("PRAGMA journal_mode=DELETE")
-            except Exception:
-                pass
             _conn.close()
-
-            # 3. Atomic swap: old → .old, tmp → .db
-            # ponytail: two os.replace() calls, not truly atomic, but the
-            # gap is <1ms and .old is kept for recovery on failure.
-            try:
-                _os.replace(str(_db_path), str(_old_path))
-                _os.replace(str(_tmp_path), str(_db_path))
-            except Exception:
-                # Swap failed — restore .old if db is missing
-                if _old_path.exists() and not _db_path.exists():
-                    _os.replace(str(_old_path), str(_db_path))
-                raise
-            finally:
-                # Clean up .tmp regardless of swap success
-                if _tmp_path.exists():
-                    _tmp_path.unlink(missing_ok=True)
-
-    _rebuild_has_old = _force_rebuild and _db_path.exists()
+            # Backup stays until build completes; deleted on success, restored on failure.
 
     mark_vector_build_state(
         vault,
@@ -598,22 +572,22 @@ def run(args: argparse.Namespace) -> int:
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
         )
         print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
-        # Restore .old on build failure
-        if _rebuild_has_old and _old_path.exists():
-            _os.replace(str(_old_path), str(get_memory_db_path(vault)))
-            logger.info("Restored paperforge.db from .old after failed build")
-        elif _rebuild_has_old:
-            _old_path.unlink(missing_ok=True)
+        # Restore backup on build failure
+        if _rebuild_backup_path and _rebuild_backup_path.exists():
+            _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
+            logger.info("Restored paperforge.db from pre-rebuild backup after failed build")
+        elif _rebuild_backup_path:
+            _rebuild_backup_path.unlink(missing_ok=True)
         return 1
 
 
     # Check if we stopped or were cancelled — exit cleanly without marking completed
     if read_vector_build_state(vault).get("status") == "stopping":
         logger.info("Build stopped, exiting cleanly")
-        # Restore .old, stopped build may have partial data
-        if _rebuild_has_old and _old_path.exists():
-            _os.replace(str(_old_path), str(get_memory_db_path(vault)))
-            logger.info("Restored paperforge.db from .old after cancellation")
+        # Restore backup, stopped build may have partial data
+        if _rebuild_backup_path and _rebuild_backup_path.exists():
+            _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
+            logger.info("Restored paperforge.db from pre-rebuild backup after cancellation")
         print("EMBED_DONE", flush=True)
         return 0
 
@@ -672,8 +646,8 @@ def run(args: argparse.Namespace) -> int:
     else:
         skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
         print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}")
-    # Build succeeded: delete .old (no backup needed — DB is regenerable)
-    if _rebuild_has_old and _old_path.exists():
-        _old_path.unlink()
-        logger.info("Deleted .old after successful rebuild")
+    # Build succeeded: delete pre-rebuild backup
+    if _rebuild_backup_path and _rebuild_backup_path.exists():
+        _rebuild_backup_path.unlink()
+        logger.info("Deleted pre-rebuild backup after successful rebuild")
     return 0
