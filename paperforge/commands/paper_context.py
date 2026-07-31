@@ -70,7 +70,9 @@ def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict
     if not db_path.exists():
         return None
 
-    conn = get_connection(db_path, read_only=True)
+    from paperforge.memory.db import open_live_reader
+    reader = open_live_reader(vault, db_path)
+    conn = reader.__enter__()
     try:
         matches = lookup_paper(conn, key)
         if not matches or len(matches) != 1:
@@ -176,6 +178,7 @@ def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict
         return result
     finally:
         conn.close()
+        reader.__exit__(None, None, None)
 
 
 def run(args: argparse.Namespace) -> int:

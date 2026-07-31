@@ -8,6 +8,7 @@ import shutil
 import sys
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
+import sqlite3
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
@@ -32,6 +33,7 @@ from paperforge.embedding.builder import (
 )
 from paperforge.embedding.preflight import _preflight_check
 from paperforge.memory.db import WriterLock, ensure_vec_extension, get_connection, get_memory_db_path
+from paperforge.memory.schema import ensure_schema
 from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
 from paperforge.worker._progress import progress_bar
@@ -222,6 +224,10 @@ def run(args: argparse.Namespace) -> int:
     items = envelope if isinstance(envelope, list) else envelope.get("items", [])
     done_papers = [e for e in items if e.get("ocr_status") == "done"]
 
+    # Resolve DB path unconditionally — shadow/force paths need it even when
+    # resume is False (regression: was only assigned inside `if resume:`).
+    _db_path = get_memory_db_path(vault)
+
     total = len(done_papers)
     print(f"EMBED_START:{total}", flush=True)
 
@@ -296,21 +302,25 @@ def run(args: argparse.Namespace) -> int:
     _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
     _shadow: ShadowBuild | None = None
     _candidate_conn = None
-    _write_lock: WriterLock | None = None
     _rebuild_backup_path: Path | None = None
+
+    # D2: every embed build variant (force / resume / incremental) takes the
+    # cross-process writer lock — a shadow snapshot must not race a memory
+    # build mutating live metadata, and ordinary writes must not interleave
+    # with a publish.  Released on every exit path below.
+    _write_lock = WriterLock(vault)
+    _write_lock.__enter__()
 
     # D5: full rebuilds (force / model change / resume reset) use shadow target.
     requires_shadow = _force_rebuild and _db_path.exists()
 
     if requires_shadow:
-        # Writer lock held for the whole shadow build (D2) — maintenance mode.
+        # Maintenance mode message (D2b).
         if not getattr(args, "json", False):
             print(
                 "Maintenance mode: OCR syncs and memory updates are paused "
                 "until the rebuild completes."
             )
-        _write_lock = WriterLock(vault)
-        _write_lock.__enter__()
         _target = BuildTarget(
             source_path=_db_path,
             vector_path=_db_path.with_suffix(".db.build"),
@@ -580,12 +590,15 @@ def run(args: argparse.Namespace) -> int:
                 if len(in_flight) >= window_size:
                     ok = _complete_one(pool, block=True)
                     if not ok:
-                        return 1
+                        # P0-5: raise so the unified except handler aborts the
+                        # shadow, closes connections, and releases the lock —
+                        # a bare `return 1` here would leak all three.
+                        raise RuntimeError("Embed worker failed; build aborted")
 
             while in_flight:
                 ok = _complete_one(pool, block=True)
                 if not ok:
-                    return 1
+                    raise RuntimeError("Embed worker failed; build aborted")
 
     except Exception as e:
         try:

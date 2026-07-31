@@ -32,7 +32,9 @@ def run(args: argparse.Namespace) -> int:
             print(f"Error: {result.error.message}", file=sys.stderr)
         return 1
 
-    conn = get_connection(db_path, read_only=True)
+    from paperforge.memory.db import open_live_reader
+    reader = open_live_reader(vault, db_path)
+    conn = reader.__enter__()
     try:
         results = search_papers(
             conn,
@@ -123,6 +125,7 @@ def run(args: argparse.Namespace) -> int:
         )
     finally:
         conn.close()
+        reader.__exit__(None, None, None)
 
     if args.json:
         print(result.to_json())

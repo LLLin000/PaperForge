@@ -104,3 +104,40 @@ def ensure_vec_extension(conn: sqlite3.Connection) -> None:
                 pass
     except ImportError:
         pass  # sqlite_vec not installed
+
+
+def open_live_reader(vault: Path, db_path: Path | None = None):
+    """Open a read-only connection to the live paperforge.db under the
+    publication barrier (D1).  All retrieval/status readers MUST go through
+    this entry so a shadow publish's brief reader lock actually quiesces them
+    (Windows cannot replace a file another process holds open).
+
+    Usage::
+
+        with open_live_reader(vault) as conn:
+            ...  # read-only queries
+    """
+    from contextlib import contextmanager
+
+    @contextmanager
+    def _reader():
+        path = db_path or get_memory_db_path(vault)
+        barrier = None
+        try:
+            from filelock import FileLock
+
+            barrier = FileLock(str(path) + ".read.lock", timeout=10)
+            barrier.acquire()
+        except Exception:
+            barrier = None  # lock unavailable — degrade to unlocked read
+        try:
+            conn = get_connection(path, read_only=True)
+            try:
+                yield conn
+            finally:
+                conn.close()
+        finally:
+            if barrier is not None:
+                barrier.release()
+
+    return _reader()

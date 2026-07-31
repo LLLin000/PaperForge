@@ -326,23 +326,24 @@ def enrich_query_plan_with_runtime(plan: dict, vault: Path) -> dict:
         db_path = get_memory_db_path(vault)
         if db_path.exists():
             try:
-                conn = get_connection(db_path, read_only=True)
-                matches = lookup_paper(conn, id_val)
-                if matches and len(matches) == 1:
-                    pk = matches[0]["zotero_key"]
-                    plan["scope"] = "paper"
-                    plan["paper_key"] = pk
-                    plan["identifier"]["resolved"] = True
-                    if plan["intent"] == "content":
-                        plan["primary"] = {"command": "retrieve", "args": {"paper": pk}}
+                from paperforge.memory.db import open_live_reader
+
+                with open_live_reader(vault, db_path) as conn:
+                    matches = lookup_paper(conn, id_val)
+                    if matches and len(matches) == 1:
+                        pk = matches[0]["zotero_key"]
+                        plan["scope"] = "paper"
+                        plan["paper_key"] = pk
+                        plan["identifier"]["resolved"] = True
+                        if plan["intent"] == "content":
+                            plan["primary"] = {"command": "retrieve", "args": {"paper": pk}}
+                            plan["fallback"] = None
+                        elif plan["intent"] == "locate":
+                            plan["primary"] = {"command": "paper-context", "args": {"key": pk}}
+                    else:
+                        # Identifier detected but not resolved → use exact search
+                        plan["primary"] = {"command": "search", "args": {"query": ident["value"], "limit": 10}}
                         plan["fallback"] = None
-                    elif plan["intent"] == "locate":
-                        plan["primary"] = {"command": "paper-context", "args": {"key": pk}}
-                else:
-                    # Identifier detected but not resolved → use exact search
-                    plan["primary"] = {"command": "search", "args": {"query": ident["value"], "limit": 10}}
-                    plan["fallback"] = None
-                conn.close()
             except Exception:
                 pass
 
