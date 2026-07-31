@@ -406,7 +406,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
                 index_hash = compute_hash(items)
                 db_path = get_memory_db_path(vault)
                 if db_path.exists():
-                    conn = _sqlite3.connect(str(db_path))
+                    conn = _sqlite3.connect("file:" + db_path.as_posix() + "?mode=ro", uri=True)
                     try:
                         row = conn.execute("SELECT value FROM meta WHERE key = 'canonical_index_hash'").fetchone()
                         db_stored = row[0] if row else ""

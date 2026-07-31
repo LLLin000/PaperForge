@@ -171,16 +171,14 @@ _VEC_TABLE_MAP = {
 }
 
 
-def write_encoded_payload(vault: Path, encoded: EncodedPayload):
-    db_path = get_memory_db_path(vault)
-    conn = get_connection(db_path)
-    ensure_vec_extension(conn)
-    ensure_vec_tables(conn, vault)
-    ensure_schema(conn)
+def write_encoded_payload_to_conn(conn: sqlite3.Connection, encoded: EncodedPayload) -> None:
+    """Write an encoded payload into the given connection. No commit/close.
 
+    The caller owns the transaction boundary.  Used by the shadow build
+    candidate connection and by the vault-based wrapper below.
+    """
     name = encoded.collection_name
     if name not in _VEC_TABLE_MAP:
-        conn.close()
         raise ValueError(f"Unknown collection name: {name}")
 
     vec_table, meta_table = _VEC_TABLE_MAP[name]
@@ -221,10 +219,22 @@ def write_encoded_payload(vault: Path, encoded: EncodedPayload):
                 f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, text) VALUES (?, ?, ?, ?)",
                 [rowid, meta.get("paper_id", ""), meta.get("chunk_index", i), encoded.texts[i]],
             )
-    conn.commit()
 
-    conn.close()
 
+def write_encoded_payload(vault: Path, encoded: EncodedPayload):
+    """Vault-based wrapper (non-shadow path): own connection + commit."""
+    if encoded.collection_name not in _VEC_TABLE_MAP:
+        raise ValueError(f"Unknown collection name: {encoded.collection_name}")
+    db_path = get_memory_db_path(vault)
+    conn = get_connection(db_path)
+    ensure_vec_extension(conn)
+    ensure_vec_tables(conn, vault)
+    ensure_schema(conn)
+    try:
+        write_encoded_payload_to_conn(conn, encoded)
+        conn.commit()
+    finally:
+        conn.close()
 
 def prepare_payloads_for_entry(
     vault: Path,

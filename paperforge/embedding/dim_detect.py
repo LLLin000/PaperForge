@@ -12,18 +12,44 @@ from paperforge.embedding.providers.openai_compatible import OpenAICompatiblePro
 logger = logging.getLogger(__name__)
 
 _DETECTED_DIM: Optional[int] = None
+_DETECTED_DIM_KEY: Optional[str] = None
+
+
+def _dim_cache_key(vault: Path) -> str:
+    """Dimension cache key: provider endpoint + model (per #117 D4)."""
+    from paperforge.embedding._config import get_api_base_url, get_api_model
+
+    try:
+        return f"{get_api_base_url(vault)}|{get_api_model(vault)}"
+    except Exception:
+        return f"{vault}"
+
+
+def reset_dim_cache() -> None:
+    """Clear the process-level dimension cache (model switch / tests)."""
+    global _DETECTED_DIM, _DETECTED_DIM_KEY
+    _DETECTED_DIM = None
+    _DETECTED_DIM_KEY = None
+
+
+def set_dim_cache(dim: int, vault: Path) -> None:
+    """Pin the dimension cache (used with first real payload length)."""
+    global _DETECTED_DIM, _DETECTED_DIM_KEY
+    _DETECTED_DIM = dim
+    _DETECTED_DIM_KEY = _dim_cache_key(vault)
 
 
 def detect_embedding_dim(vault: Path, conn: sqlite3.Connection | None = None) -> int:
     """Detect the embedding dimension.
 
     Priority:
-    1. Process-global cache (fastest)
+    1. Process-global cache keyed by (provider endpoint, model)
     2. Existing vec0 table DDL (no API needed)
     3. Embedding API call (fallback)
     """
-    global _DETECTED_DIM
-    if _DETECTED_DIM is not None:
+    global _DETECTED_DIM, _DETECTED_DIM_KEY
+    key = _dim_cache_key(vault)
+    if _DETECTED_DIM is not None and _DETECTED_DIM_KEY == key:
         return _DETECTED_DIM
 
     # Try reading from existing vec0 table DDL first — no API call needed
@@ -36,6 +62,7 @@ def detect_embedding_dim(vault: Path, conn: sqlite3.Connection | None = None) ->
                 if m:
                     dim = int(m.group(1))
                     _DETECTED_DIM = dim
+                    _DETECTED_DIM_KEY = key
                     logger.info("Detected embedding dimension: %d (from vec0 DDL)", dim)
                     return dim
         except Exception:
@@ -46,8 +73,8 @@ def detect_embedding_dim(vault: Path, conn: sqlite3.Connection | None = None) ->
     dim = len(test_vec)
     logger.info("Detected embedding dimension: %d (model: %s)", dim, getattr(provider, "model", "unknown"))
     _DETECTED_DIM = dim
+    _DETECTED_DIM_KEY = key
     return dim
-
 
 def ensure_vec_tables(conn, vault: Path) -> None:
     """Drop and recreate vec0 virtual tables to match the model's dimension.

@@ -58,8 +58,7 @@ def _dashboard_from_db(vault: Path) -> dict | None:
         return None
     try:
         import sqlite3
-        conn = sqlite3.connect(str(db_path))
-        conn.row_factory = sqlite3.Row
+        conn = sqlite3.connect("file:" + db_path.as_posix() + "?mode=ro", uri=True)
         # Aggregate stats via single GROUP BY
         rows = conn.execute("""
             SELECT has_pdf,
