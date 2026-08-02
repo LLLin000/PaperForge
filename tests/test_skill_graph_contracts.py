@@ -60,7 +60,7 @@ def test_retrieval_routing_has_fallback_ladder() -> None:
 
 def test_retrieval_routing_has_semantic_optional_rule() -> None:
     text = RETRIEVAL_MD.read_text(encoding="utf-8")
-    assert "optional" in text.lower() or "supplementary" in text.lower() or "only for candidate expansion" in text
+    assert "可选" in text or "候选" in text or "optional" in text.lower()
 
 
 def test_skill_md_has_intent_level_trigger_language() -> None:
@@ -73,12 +73,12 @@ def test_skill_md_has_intent_level_trigger_language() -> None:
 
 def test_discover_papers_output_is_paper_list() -> None:
     text = DISCOVER_MD.read_text(encoding="utf-8")
-    assert "candidate" in text.lower() or "paper list" in text.lower()
+    assert "候选" in text or "检索论文" in text
 
 
 def test_find_evidence_output_is_grouped_hits() -> None:
     text = EVIDENCE_MD.read_text(encoding="utf-8")
-    assert "group" in text.lower() or "evidence hit" in text.lower() or "snippet" in text.lower()
+    assert "证据" in text or "group" in text.lower() or "evidence hit" in text.lower()
 
 
 def test_molecules_reference_query_plan() -> None:

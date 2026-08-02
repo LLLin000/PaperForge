@@ -203,7 +203,7 @@ class TestMemoryRestoreProbe:
         assert data["reason"]["code"] == "memory.db_corrupt"
         assert data["action"]["primary"]["verb"] == "restore_backup"
         assert data["action"]["primary"]["command"] == "paperforge memory restore-backup"
-        assert data["action"]["primary"]["destructive"] is True
+        assert data["action"]["primary"]["safety_class"] == "destructive"
         assert data["action"]["primary"]["confirmation_required"] is True
 
     def test_corrupt_db_without_backup_emits_rebuild(self, tmp_path: Path) -> None:
