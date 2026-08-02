@@ -101,6 +101,7 @@ def test_shadow_publish_reader_contract(tmp_path: Path) -> None:
                      (cur.lastrowid,))
         cand.commit()
         cand.close()
+        shadow.seal()
         shadow.verified()
         # Publication barrier (D1): readers close before the swap on Windows
         reader.close()
@@ -355,6 +356,7 @@ def test_publish_uses_reader_barrier(tmp_path: Path) -> None:
         src.close()
         dst.close()
         shadow.building()
+        shadow.seal()
         shadow.verified()
         shadow.publish()
 
@@ -584,6 +586,7 @@ def test_publish_checkpoints_live_before_replace(tmp_path: Path) -> None:
     cand.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
     cand.commit()
     cand.close()
+    shadow.seal()
     shadow.verified()
 
     # Simulate a FAILED swap: os.replace raises → publish must abort and the
@@ -652,3 +655,137 @@ def test_plain_build_model_change_routes_to_shadow(tmp_path: Path) -> None:
     from paperforge.embedding.build_state import read_vector_build_state
     assert not Path(str(live) + ".build").exists()
     assert read_vector_build_state(vault).get("model") == "new-model"
+
+
+# ── Final hardening: P0-3 publish commit-point, P0-4 events, P1-2 busy ──
+
+
+def test_publish_state_set_before_sidecar_cleanup(tmp_path: Path) -> None:
+    """P0-3: after os.replace the build is PUBLISHED even if post-swap
+    sidecar cleanup fails — bookkeeping must not flip a successful publish."""
+    from unittest.mock import patch
+
+    from paperforge.embedding import build_target
+    from paperforge.embedding.build_target import BuildTarget, ShadowBuild
+    from paperforge.memory.db import get_memory_db_path
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault, vec_rows=3)
+    target = BuildTarget(source_path=live, vector_path=Path(str(live) + ".build"))
+    shadow = ShadowBuild(target)
+    shadow.prepare()
+    shadow.building()
+    cand = sqlite3.connect(str(target.vector_path))
+    cand.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    cand.commit()
+    cand.close()
+    shadow.seal()
+    shadow.verified()
+
+    # os.replace succeeds; the post-swap sidecar cleanup (unlink) raises an
+    # OSError.  Real cleanup is best-effort (wrapped), so publish must still
+    # complete with state PUBLISHED — the swap is the commit point and a
+    # leftover old-live sidecar must not flip the outcome.
+    real_replace = build_target.os.replace
+    real_unlink = Path.unlink
+
+    def unlink_fails(self, *a, **k):
+        if str(self).endswith(("-wal", "-shm")):
+            raise OSError("simulated cleanup failure")
+        return real_unlink(self, *a, **k)
+
+    with patch.object(build_target.os, "replace", side_effect=real_replace), \
+         patch.object(Path, "unlink", unlink_fails):
+        shadow.publish()  # must NOT raise — cleanup is best-effort
+    assert shadow.state == shadow.PUBLISHED, (
+        "publish must be marked PUBLISHED at the os.replace commit point"
+    )
+    # New live is in place
+    assert Path(str(live)).exists()
+    shadow.abort()  # must be a no-op, must NOT delete the new live
+    assert Path(str(live)).exists()
+
+
+def test_export_reading_log_no_nameerror(tmp_path: Path) -> None:
+    """P0-4: export_reading_log uses open_live_reader and must not NameError."""
+    from paperforge.memory.db import get_memory_db_path
+    from paperforge.memory.events import export_reading_log
+
+    vault = _make_vault(tmp_path)
+    db_path = get_memory_db_path(vault)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    c = sqlite3.connect(str(db_path))
+    c.execute("CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, citation_key TEXT, title TEXT, year TEXT, first_author TEXT)")
+    c.commit()
+    c.close()
+    result = export_reading_log(vault)
+    assert result == []
+
+
+def test_write_correction_note_blocks_during_shadow(tmp_path: Path) -> None:
+    """P0-4: write_correction_note takes the writer lock — a shadow build
+    holding it blocks the correction write, then succeeds after release."""
+    import threading
+    import time
+
+    from paperforge.memory.db import WriterLock, get_memory_db_path
+    from paperforge.memory.events import write_correction_note
+
+    vault = _make_vault(tmp_path)
+    db_path = get_memory_db_path(vault)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    c = sqlite3.connect(str(db_path))
+    c.execute("CREATE TABLE paper_events (paper_id TEXT, event_type TEXT, payload_json TEXT)")
+    c.commit()
+    c.close()
+
+    lock = WriterLock(vault, timeout=1.0)
+    lock.__enter__()
+    result = {}
+
+    def _write():
+        try:
+            ok = write_correction_note(vault, "P1", "orig", "correction")
+            result["ok"] = ok
+        except Exception as exc:
+            result["err"] = str(exc)
+
+    t = threading.Thread(target=_write)
+    t.start()
+    time.sleep(0.5)
+    assert "ok" not in result and "err" not in result, (
+        "correction write must block while writer lock held"
+    )
+    lock.__exit__(None, None, None)
+    t.join(timeout=10)
+    assert not t.is_alive()
+    assert result.get("ok") is True, result
+
+
+def test_checkpoint_busy_rejects_publish(tmp_path: Path) -> None:
+    """P1-2: a busy/incomplete checkpoint must fail, not proceed."""
+    from unittest.mock import patch
+
+    from paperforge.embedding.build_target import (
+        BuildTargetError,
+        _checkpoint_truncate,
+    )
+
+    db_path = _seed_live_db(_make_vault(tmp_path), vec_rows=2)
+    conn = sqlite3.connect(str(db_path))
+    # Normal checkpoint on an empty/clean DB succeeds (busy=0).
+    _checkpoint_truncate(conn, "candidate")
+
+    # Simulate a busy checkpoint with a fake connection whose wal_checkpoint
+    # returns (1, 10, 5) — busy != 0 must fail the seal/publish.
+    class _FakeCur:
+        def fetchone(self):
+            return (1, 10, 5)
+
+    class _FakeConn:
+        def execute(self, _sql):
+            return _FakeCur()
+
+    with pytest.raises(BuildTargetError, match="checkpoint incomplete"):
+        _checkpoint_truncate(_FakeConn(), "candidate")
+    conn.close()

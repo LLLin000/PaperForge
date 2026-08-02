@@ -3,7 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.db import (
+    WriterLock,
+    get_connection,
+    get_memory_db_path,
+    open_live_reader,
+)
 
 
 def write_reading_note(vault: Path, paper_id: str, section: str,
@@ -63,11 +68,16 @@ def export_reading_log(vault: Path, since: str = "", limit: int = 50) -> list[di
     # Sort DESC by created_at, apply limit
     results.sort(key=lambda x: x["created_at"], reverse=True)
     return results[:limit]
-
-
+    
 def write_correction_note(vault: Path, paper_id: str, original_id: str,
                           correction: str, reason: str = "") -> bool:
-    """Record a correction note for a prior reading_note event."""
+    """Record a correction note for a prior reading_note event.
+
+    Writes paper_events under the global writer lock so a concurrent shadow
+    snapshot/publish cannot swallow this event (the swap replaces the whole
+    live DB).  A lock timeout propagates as a retryable failure instead of
+    silently dropping the event.
+    """
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return False
@@ -77,17 +87,18 @@ def write_correction_note(vault: Path, paper_id: str, original_id: str,
         "correction": correction,
         "reason": reason,
     }
-    conn = get_connection(db_path, read_only=False)
-    try:
-        conn.execute(
-            """INSERT INTO paper_events (paper_id, event_type, payload_json)
-               VALUES (?, 'correction_note', ?)""",
-            (paper_id, json.dumps(payload, ensure_ascii=False)),
-        )
-        conn.commit()
-        return True
-    except Exception:
-        conn.rollback()
-        return False
-    finally:
-        conn.close()
+    with WriterLock(vault, timeout=30):
+        conn = get_connection(db_path, read_only=False)
+        try:
+            conn.execute(
+                """INSERT INTO paper_events (paper_id, event_type, payload_json)
+                   VALUES (?, 'correction_note', ?)""",
+                (paper_id, json.dumps(payload, ensure_ascii=False)),
+            )
+            conn.commit()
+            return True
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()

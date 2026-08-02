@@ -439,11 +439,17 @@ def run(args: argparse.Namespace) -> int:
             args.correction, args.reason or "",
         )
 
-        # Also write to paper_events for FTS (best effort)
-        db_ok = write_correction_note(
-            vault, paper_id, args.correct_id,
-            args.correction, args.reason or "",
-        )
+        # Also write to paper_events for FTS (best effort).  A writer-lock
+        # timeout (shadow rebuild in progress) is transient — report the
+        # JSONL write as success with db_indexed=False instead of failing
+        # the whole command.
+        try:
+            db_ok = write_correction_note(
+                vault, paper_id, args.correct_id,
+                args.correction, args.reason or "",
+            )
+        except Exception:
+            db_ok = False
 
         ok = bool(jsonl_result.get("ok"))
         result = PFResult(
