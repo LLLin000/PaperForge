@@ -93,7 +93,9 @@ def _call_run(
         "_has_body_units_in_db": MagicMock(return_value=False),
         "_has_object_units_in_db": MagicMock(return_value=False),
         "progress_bar": MagicMock(side_effect=lambda x, **kw: x),
-        "ensure_vec_tables": MagicMock(),
+        # Round 7 (P1-2): ensure_vec_tables returns the dimension it used —
+        # the verifier uses it as the expected dimension.
+        "ensure_vec_tables": MagicMock(return_value=1536),
         # Resume gates
         # State bookkeeping
         "mark_vector_build_state": MagicMock(),
@@ -185,6 +187,13 @@ class TestProcessedCount:
                     "INSERT INTO vec_objects_meta(rowid, paper_id, object_units_hash, retrieval_policy_version) VALUES (?, ?, ?, ?)",
                     (3 if key == "k1" else 4, key, "hash_v1", "v1")
                 )
+            # Round 7: a library without vector_identity_version is a legacy
+            # library → routed to shadow rebuild (which would defeat the
+            # resume-skip under test).  Mark it current so resume semantics
+            # are exercised, not the legacy-migration path.
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_identity_version', '1')"
+            )
             conn.commit()
         finally:
             conn.close()

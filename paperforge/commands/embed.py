@@ -126,6 +126,11 @@ logger = logging.getLogger(__name__)
 
 PR9B_MAX_WORKERS = 4
 
+# P0-1: bumped when the persisted embedding identity gains fields — legacy
+# libraries (built before recording) are rebuilt once so endpoint/model/
+# dimension are stored and future comparisons are meaningful.
+VECTOR_IDENTITY_VERSION = 1
+
 
 def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
@@ -235,22 +240,34 @@ def run(args: argparse.Namespace) -> int:
                         file=sys.stderr,
                     )
                 return 1
-            # Build exited: settle to idle (writer lock is free now)
+            # Build exited: settle to idle (writer lock is free now).  Narrow
+            # race: the build may have COMPLETED between the last stop-check
+            # and its exit — don't downgrade a successful build to idle.
             try:
                 with WriterLock(vault, timeout=30):
-                    _current = read_vector_build_state(vault).get("current", state.get("current", 0))
-                    mark_vector_build_state(vault, status="idle", current=_current, pid=0, message="")
+                    _latest = read_vector_build_state(vault)
+                    if _latest.get("status") == "completed" and _latest.get("pid") == 0:
+                        _settled = "completed_before_stop"
+                    else:
+                        _current = _latest.get("current", state.get("current", 0))
+                        mark_vector_build_state(vault, status="idle", current=_current, pid=0, message="")
+                        _settled = "stopped"
             except Exception:
-                pass
+                _settled = "stopped"
             _clear_stop_request(vault)
-            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "stopped"})
+            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": _settled})
         else:
             _clear_stop_request(vault)
             result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "idle"})
         if args.json:
             print(result.to_json())
         else:
-            msg = "Build stopped." if result.data["state"] == "stopped" else "No active build."
+            if result.data["state"] == "stopped":
+                msg = "Build stopped."
+            elif result.data["state"] == "completed_before_stop":
+                msg = "Build already completed before stop request."
+            else:
+                msg = "No active build."
             print(msg)
         return 0
 
@@ -339,6 +356,11 @@ def run(args: argparse.Namespace) -> int:
     _shadow: ShadowBuild | None = None
     _candidate_conn = None
     _rebuild_backup_path: Path | None = None
+    # P1-2: set by the prepare step from the dimension detection that built
+    # the tables; verification MUST use this, not candidate-DDL re-reading.
+    _expected_dim: int = 0
+    # P1-1: per-collection expected vector counts, accumulated per payload.
+    _expected_counts: dict[str, int] = {"fulltext": 0, "body": 0, "objects": 0}
 
     # D2: writer lock acquired ONCE before ANY resume/model checks (they
     # open rw connections and may mutate schema), held through verify and
@@ -416,22 +438,29 @@ def run(args: argparse.Namespace) -> int:
         # after a model/endpoint change would otherwise let ensure_vec_tables
         # resize vec0 in place on the live DB and expose an empty/partial
         # window mid-build.
-        from paperforge.embedding._config import get_api_base_url
+        from paperforge.embedding._config import (
+            DEFAULT_OPENAI_BASE_URL,
+            get_effective_api_base_url,
+        )
 
         _bs = read_vector_build_state(vault)
         _stored_model = _bs.get("model", "")
         _stored_endpoint = _bs.get("vector_provider_endpoint", "")
-        _current_endpoint = get_api_base_url(vault)
+        # P0-1: compare the EFFECTIVE endpoint (empty config = OpenAI
+        # default) with NO truthiness guard — default→custom migration must
+        # trigger shadow, and an empty stored value (old build before
+        # endpoint recording) counts as "different" when a custom endpoint
+        # is now configured.
+        _current_endpoint = get_effective_api_base_url(vault)
+        _stored_endpoint_norm = (_stored_endpoint or DEFAULT_OPENAI_BASE_URL).rstrip("/")
         _embedding_identity_changed = bool(
             _stored_model and _current_model and _stored_model != _current_model
-        ) or bool(
-            _stored_endpoint and _current_endpoint and _stored_endpoint != _current_endpoint
-        )
+        ) or (_stored_endpoint_norm != _current_endpoint)
         if _embedding_identity_changed and not getattr(args, "json", False):
             print(
                 f"Embedding identity changed: "
-                f"{_stored_model}@{_stored_endpoint or '?'} -> "
-                f"{_current_model}@{_current_endpoint or '?'}. Re-embedding all papers."
+                f"{_stored_model}@{_stored_endpoint_norm} -> "
+                f"{_current_model}@{_current_endpoint}. Re-embedding all papers."
             )
         # P0-3/P1-1: a live vector-layout mismatch must route through shadow —
         # an in-place recreate would destroy live vectors + orphan meta rows.
@@ -451,11 +480,23 @@ def run(args: argparse.Namespace) -> int:
                 finally:
                     _lc.close()
             except Exception:
-                _vec_layout_incompatible = False
+                # P0-2: fail-closed — an unreadable layout must route to
+                # shadow, never be treated as compatible.
+                _vec_layout_incompatible = True
+        # Legacy libraries (built before identity recording) have no
+        # vector_identity_version — rebuild them once so endpoint/model are
+        # persisted and future comparisons are meaningful.
+        _identity_version = _bs.get("vector_identity_version", 0)
+        _legacy_identity = bool(
+            _identity_version != VECTOR_IDENTITY_VERSION
+            and _db_path.exists()
+            and _vec_layout_incompatible is False
+        )
         requires_shadow = (
             _force_rebuild
             or _embedding_identity_changed
             or _vec_layout_incompatible
+            or _legacy_identity
         ) and _db_path.exists()
         # P0-2: ANY full shadow rebuild clears the candidate's vector tables —
         # resume hash-skips would leave those papers' vectors missing from the
@@ -497,7 +538,12 @@ def run(args: argparse.Namespace) -> int:
                            "vec_fulltext", "vec_body", "vec_objects"):
                     _candidate_conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
                 ensure_schema(_candidate_conn)
-                ensure_vec_tables(_candidate_conn, vault, allow_recreate=True)
+                # P1-2: the dimension comes FROM the model detection that
+                # actually built the tables — never re-derive it from the
+                # candidate DDL later (that would be self-verification).
+                _expected_dim = ensure_vec_tables(
+                    _candidate_conn, vault, allow_recreate=True
+                )
                 _candidate_conn.commit()
                 _shadow.building()
             except Exception:
@@ -528,7 +574,7 @@ def run(args: argparse.Namespace) -> int:
                            "vec_fulltext", "vec_body", "vec_objects"):
                     _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
                 ensure_schema(_conn)
-                ensure_vec_tables(_conn, vault, allow_recreate=True)
+                _expected_dim = ensure_vec_tables(_conn, vault, allow_recreate=True)
                 _conn.commit()
             except Exception:
                 _conn.close()
@@ -549,6 +595,7 @@ def run(args: argparse.Namespace) -> int:
             pid=_os.getpid(),
             model=_current_model,
             vector_provider_endpoint=_current_endpoint,
+            vector_identity_version=VECTOR_IDENTITY_VERSION,
             mode=get_embed_status(vault)["mode"],
         )
 
@@ -567,7 +614,7 @@ def run(args: argparse.Namespace) -> int:
                 in_flight[fut] = job
 
             def _complete_one(pool, block: bool = True) -> bool:
-                nonlocal processed_count, papers_embedded, chunks_embedded
+                nonlocal processed_count, papers_embedded, chunks_embedded, _expected_counts
                 if not in_flight:
                     return True
                 done, _ = wait(in_flight.keys(), return_when=FIRST_COMPLETED)
@@ -597,6 +644,17 @@ def run(args: argparse.Namespace) -> int:
                     processed_count += 1
                     papers_embedded += 1
                     chunks_embedded += bundle.chunk_count
+                    # P1-1: track per-collection expected counts so the
+                    # verifier can catch body/objects redistribution that a
+                    # total count would miss.
+                    for _p in bundle.payloads:
+                        _coll_key = {
+                            "paperforge_fulltext": "fulltext",
+                            "paperforge_body": "body",
+                            "paperforge_objects": "objects",
+                        }.get(_p.collection_name)
+                        if _coll_key:
+                            _expected_counts[_coll_key] += len(_p.ids)
 
                     print(f"EMBED_PROGRESS:{processed_count}:{total}:{bundle.paper_id}", flush=True)
                     mark_vector_build_state(
@@ -817,30 +875,10 @@ def run(args: argparse.Namespace) -> int:
 
         # Shadow: verify candidate, publish (swap), then mark completed on new live.
         if _shadow is not None:
-            expected = chunks_embedded
-            # D4: dimension must come from the candidate's own vec0 DDL, not the
-            # live DB — a model migration rebuilds candidate at the NEW dimension
-            # while live still reports the old one.
-            _dim = 0
-            try:
-                import re as _re
-                _cand = sqlite3.connect(f"file:{_shadow.target.vector_path.as_posix()}?mode=ro", uri=True)
-                try:
-                    _row = _cand.execute(
-                        "SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'"
-                    ).fetchone()
-                    if _row:
-                        _m = _re.search(r"float\[(\d+)\]", _row[0])
-                        if _m:
-                            _dim = int(_m.group(1))
-                finally:
-                    _cand.close()
-            except Exception:
-                _dim = 0
             # P0-2: write the FINAL build metadata into the candidate BEFORE
             # sealing — once os.replace commits, the new live is already
-            # complete (status/model/endpoint/counts), independent of any
-            # post-publish bookkeeping that might fail.
+            # complete (status/model/endpoint/dimension/identity/counts),
+            # independent of any post-publish bookkeeping that might fail.
             from paperforge.embedding.build_state import _dict_to_build_state
 
             _cand_state = {
@@ -849,7 +887,11 @@ def run(args: argparse.Namespace) -> int:
                 "total": total,
                 "model": _current_model,
                 "vector_provider_endpoint": _current_endpoint,
-                "vector_dimension": _dim,
+                "vector_dimension": _expected_dim,
+                "vector_identity_version": VECTOR_IDENTITY_VERSION,
+                "vector_expected_fulltext": _expected_counts["fulltext"],
+                "vector_expected_body": _expected_counts["body"],
+                "vector_expected_objects": _expected_counts["objects"],
                 "finished_at": _now(),
                 "message": "",
                 "pid": 0,
@@ -863,8 +905,11 @@ def run(args: argparse.Namespace) -> int:
             _shadow.seal()
             report = verify_candidate(
                 _shadow.target.vector_path,
-                dimension=_dim,
-                expected_count=expected,
+                # P1-2: expected dimension comes from the model detection that
+                # built the tables — never re-read from the candidate DDL.
+                dimension=_expected_dim,
+                expected_count=sum(_expected_counts.values()),
+                expected_counts=dict(_expected_counts),
             )
             if not report["ok"]:
                 _shadow.abort()
@@ -902,6 +947,7 @@ def run(args: argparse.Namespace) -> int:
             # model change and re-embeds everything.
             model=_current_model,
             vector_provider_endpoint=_current_endpoint,
+            vector_identity_version=VECTOR_IDENTITY_VERSION,
             mode=get_embed_status(vault)["mode"],
         )
         try:

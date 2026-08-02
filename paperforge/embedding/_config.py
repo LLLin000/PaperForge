@@ -29,9 +29,20 @@ def get_api_key(vault: Path) -> str:
     return api_key
 
 
+DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
+
+
 def get_api_base_url(vault: Path) -> str:
     settings = _read_plugin_settings(vault)
     return os.environ.get("VECTOR_DB_API_BASE", "") or settings.get("vector_db_api_base", "") or ""
+
+
+def get_effective_api_base_url(vault: Path) -> str:
+    """The endpoint the provider ACTUALLY uses — empty config means the
+    OpenAI default.  Identity comparison must use this, not the raw value:
+    a migration from default→custom endpoint otherwise never triggers a
+    shadow rebuild and mixes old/new provider vectors (P0-1)."""
+    return (get_api_base_url(vault) or DEFAULT_OPENAI_BASE_URL).rstrip("/")
 
 
 def get_api_model(vault: Path) -> str:

@@ -5,7 +5,11 @@ from pathlib import Path
 
 import openai
 
-from paperforge.embedding._config import get_api_base_url, get_api_key, get_api_model, get_provider_type
+from paperforge.embedding._config import (
+    get_api_key,
+    get_api_model,
+    get_provider_type,
+)
 from paperforge.embedding.providers.base import EmbeddingProvider
 
 logger = logging.getLogger(__name__)
@@ -27,7 +31,9 @@ class OpenAICompatibleProvider(EmbeddingProvider):
                 "Set VECTOR_DB_API_KEY or OPENAI_API_KEY in .env or plugin settings."
             )
         self._model = get_api_model(vault)
-        base_url = (get_api_base_url(vault) or "https://api.openai.com/v1").rstrip("/")
+        from paperforge.embedding._config import get_effective_api_base_url
+
+        base_url = get_effective_api_base_url(vault)
         self._client = openai.OpenAI(
             api_key=api_key,
             base_url=base_url,
