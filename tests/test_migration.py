@@ -133,7 +133,7 @@ class TestMigrateToWorkspace:
         assert workspace_dir.is_dir(), "Workspace directory should exist"
 
         # Check main note in workspace has same content
-        main_note = workspace_dir / "KEY001 - Test Paper One.md"
+        main_note = workspace_dir / "KEY001.md"
         assert main_note.exists(), "Main note should exist in workspace"
         assert main_note.read_text(encoding="utf-8") == content
 
@@ -181,7 +181,7 @@ class TestMigrateToWorkspace:
         workspace_dir = paths["literature"] / "骨科" / "KEY002 - Paper With Deep Reading"
 
         # Main note preserves the deep-reading section (single source of truth)
-        main_note = workspace_dir / "KEY002 - Paper With Deep Reading.md"
+        main_note = workspace_dir / "KEY002.md"
         main_content = main_note.read_text(encoding="utf-8")
         assert "## \U0001f50d \u7cbe\u8bfb" in main_content, "Main note preserves deep-reading section"
         assert "Pass 1: Overview" in main_content, "deep-reading content preserved"
@@ -286,9 +286,9 @@ class TestMigrateToWorkspace:
         paths = pipeline_paths(vault)
         workspace_dir = paths["literature"] / "骨科" / "LEG001 - Legacy Flat Note"
         assert workspace_dir.is_dir()
-        assert (workspace_dir / "LEG001 - Legacy Flat Note.md").exists()
+        assert (workspace_dir / "LEG001.md").exists()
         assert not (workspace_dir / "deep-reading.md").exists()
-        main_content = (workspace_dir / "LEG001 - Legacy Flat Note.md").read_text(encoding="utf-8")
+        main_content = (workspace_dir / "LEG001.md").read_text(encoding="utf-8")
         assert "## 🔍 精读" in main_content
 
     def test_migrate_promotes_legacy_library_record_flags(self, tmp_path: Path) -> None:
@@ -312,7 +312,7 @@ class TestMigrateToWorkspace:
         count = self._call_migrate(vault)
         assert count == 1
 
-        workspace_note = paths["literature"] / "骨科" / "LEG002 - Legacy Flags" / "LEG002 - Legacy Flags.md"
+        workspace_note = paths["literature"] / "骨科" / "LEG002 - Legacy Flags" / "LEG002.md"
         note_text = workspace_note.read_text(encoding="utf-8")
         assert 'do_ocr: "true"' in note_text
         assert 'analyze: "true"' in note_text
@@ -338,7 +338,7 @@ class TestMigrateToWorkspace:
         count = self._call_migrate(vault)
         assert count == 1
 
-        workspace_note = paths["literature"] / "骨科" / "LEG003 - Legacy False Flags" / "LEG003 - Legacy False Flags.md"
+        workspace_note = paths["literature"] / "骨科" / "LEG003 - Legacy False Flags" / "LEG003.md"
         note_text = workspace_note.read_text(encoding="utf-8")
         assert 'do_ocr: "false"' in note_text
         assert 'analyze: "false"' in note_text
@@ -362,7 +362,7 @@ class TestMigrateToWorkspace:
         count = self._call_migrate(vault)
         assert count == 1
 
-        workspace_note = paths["literature"] / "骨科" / "LEG004 - Noncanonical Legacy Name" / "LEG004 - Noncanonical Legacy Name.md"
+        workspace_note = paths["literature"] / "骨科" / "LEG004 - Noncanonical Legacy Name" / "LEG004.md"
         assert workspace_note.exists()
 
     def test_migrate_reconciles_existing_workspace_flags_from_legacy_records(self, tmp_path: Path) -> None:
@@ -378,7 +378,7 @@ class TestMigrateToWorkspace:
         paths = pipeline_paths(vault)
         workspace_dir = paths["literature"] / "骨科" / "LEG005 - Existing Workspace"
         workspace_dir.mkdir(parents=True, exist_ok=True)
-        workspace_note = workspace_dir / "LEG005 - Existing Workspace.md"
+        workspace_note = workspace_dir / "LEG005.md"
         workspace_note.write_text(content, encoding="utf-8")
 
         records_dir = paths["library_records"] / "骨科"
@@ -465,7 +465,7 @@ class TestBuildEntryWorkspaceWrite:
         entry = self._call_build_entry(vault, mock_build_entry_item, paths, zotero_dir)
 
         # Assert note is written to workspace main_note_path
-        main_note_path = workspace_dir / f"{key} - {title_slug}.md"
+        main_note_path = workspace_dir / f"{key}.md"
         assert main_note_path.exists(), "Note should be written to workspace path"
 
         # Flat note path should NOT exist
@@ -506,7 +506,7 @@ class TestBuildEntryWorkspaceWrite:
         # Phase 38: _build_entry ALWAYS creates workspace dir
         workspace_dir = flat_dir / f"{key} - {title_slug}"
         assert workspace_dir.exists(), "Workspace should be created"
-        ws_note = workspace_dir / f"{key} - {title_slug}.md"
+        ws_note = workspace_dir / f"{key}.md"
         assert ws_note.exists(), "Workspace note should exist"
 
         # Flat path should NOT exist (no legacy flat note was present)
@@ -539,7 +539,7 @@ class TestBuildEntryWorkspaceWrite:
         # Phase 38: workspace dir IS created by _build_entry for new papers
         workspace_dir = lit_dir / f"{key} - {title_slug}"
         assert workspace_dir.exists(), "Workspace dir should be auto-created by _build_entry"
-        ws_note = workspace_dir / f"{key} - {title_slug}.md"
+        ws_note = workspace_dir / f"{key}.md"
         assert ws_note.exists(), "Workspace note should exist"
 
         # Flat path should NOT exist

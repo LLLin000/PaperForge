@@ -38,7 +38,7 @@ class TestAgentSkillDirs:
     def test_has_all_expected_agents(self) -> None:
         expected_agents = {
             "opencode", "claude", "codex", "cursor", "windsurf",
-            "github_copilot", "cline", "augment", "trae",
+            "github_copilot", "cline", "augment", "trae", "gemini",
         }
         assert set(AGENT_SKILL_DIRS.keys()) == expected_agents
 
@@ -309,16 +309,16 @@ def test_headless_setup_claude_skill_directory(tmp_path: Path, monkeypatch: pyte
     )
 
     assert rv == 0, f"claude install failed with code {rv}"
-    skill_dir = tmp_path / ".claude" / "skills" / "literature-qa"
-    assert skill_dir.exists(), f"literature-qa skill dir not created: {skill_dir}"
+    skill_dir = tmp_path / ".claude" / "skills" / "paperforge"
+    assert skill_dir.exists(), f"paperforge skill dir not created: {skill_dir}"
     assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
-    assert (skill_dir / "references" / "chart-reading" / "INDEX.md").exists(), "chart INDEX.md not created"
-    assert (skill_dir / "references" / "deep-subagent.md").exists(), "deep-subagent.md not created"
-    assert (skill_dir / "references" / "paper-qa.md").exists(), "paper-qa.md not created"
+    assert (skill_dir / "atoms" / "chart-reading" / "INDEX.md").exists(), "chart INDEX.md not created"
+    assert (skill_dir / "workflows" / "project-engineering.md").exists(), "project-engineering.md not created"
+    assert (skill_dir / "atoms" / "clarify-user-intent.md").exists(), "clarify-user-intent.md not created"
 
 
 def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """OpenCode deploys literature-qa skill to skills dir; flat commands are bundled in SKILL.md."""
+    """OpenCode deploys paperforge skill to skills dir; flat commands are bundled in SKILL.md."""
     import paperforge.setup_wizard as sw
     from paperforge.setup_wizard import headless_setup
 
@@ -341,13 +341,13 @@ def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytes
     )
 
     assert rv == 0, f"opencode install failed with code {rv}"
-    skill_dir = tmp_path / ".opencode" / "skills" / "literature-qa"
-    assert skill_dir.exists(), f"literature-qa skill dir not created: {skill_dir}"
+    skill_dir = tmp_path / ".opencode" / "skills" / "paperforge"
+    assert skill_dir.exists(), f"paperforge skill dir not created: {skill_dir}"
     assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
 
 
 def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Codex deploys literature-qa skill under .codex/skills."""
+    """Codex deploys paperforge skill under .codex/skills."""
     import paperforge.setup_wizard as sw
     from paperforge.setup_wizard import headless_setup
 
@@ -370,13 +370,13 @@ def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytes
     )
 
     assert rv == 0, f"codex install failed with code {rv}"
-    skill_dir = tmp_path / ".codex" / "skills" / "literature-qa"
-    assert skill_dir.exists(), f"literature-qa skill dir not created: {skill_dir}"
+    skill_dir = tmp_path / ".codex" / "skills" / "paperforge"
+    assert skill_dir.exists(), f"paperforge skill dir not created: {skill_dir}"
     assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
 
 
 def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Cline deploys literature-qa skill under .clinerules."""
+    """Cline deploys paperforge skill under .clinerules."""
     import paperforge.setup_wizard as sw
     from paperforge.setup_wizard import headless_setup
 
@@ -401,9 +401,9 @@ def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.Mon
     assert rv == 0, f"cline install failed with code {rv}"
     clinerules = tmp_path / ".clinerules"
     assert clinerules.exists(), f".clinerules dir not created: {clinerules}"
-    skill_dir = clinerules / "literature-qa"
-    assert skill_dir.exists(), "literature-qa subdir not created under .clinerules"
-    assert (skill_dir / "references" / "deep-subagent.md").exists(), "deep-subagent.md not created"
+    skill_dir = clinerules / "paperforge"
+    assert skill_dir.exists(), "paperforge subdir not created under .clinerules"
+    assert (skill_dir / "workflows" / "project-engineering.md").exists(), "project-engineering.md not created"
 
 
 def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -9,7 +9,7 @@ PLUGIN_MAIN = REPO_ROOT / "paperforge" / "plugin" / "main.js"
 def test_plugin_install_bootstraps_pip_before_setup() -> None:
     """First-time plugin install must install the Python package before setup."""
     source = PLUGIN_MAIN.read_text(encoding="utf-8")
-    assert "python -m paperforge" in source or "'-m', 'paperforge'" in source
+    assert "'-m', 'paperforge'" in source or '"-m", "paperforge"' in source
     assert (
         '"-m", "pip", "install"' in source
         or "-m', 'pip', 'install'" in source
@@ -28,7 +28,11 @@ def test_setup_args_global_vault_before_subcommand() -> None:
     source = PLUGIN_MAIN.read_text(encoding="utf-8")
     # Check that '--vault' appears before 'setup' in the setupArgs array
     vault_pos = source.find("'--vault'")
+    if vault_pos < 0:
+        vault_pos = source.find('"--vault"')
     setup_pos = source.find("'setup'")
+    if setup_pos < 0:
+        setup_pos = source.find('"setup"')
     assert vault_pos > 0 and setup_pos > 0
     assert vault_pos < setup_pos, (
         f"'--vault' (pos {vault_pos}) must appear before 'setup' (pos {setup_pos}) "
@@ -48,7 +52,7 @@ def test_setup_wizard_does_not_fail_if_agents_md_missing() -> None:
     """AGENTS.md is optional for pip-installed package deployments."""
     source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
     assert 'True if not agents_src.exists() else agents_dst.exists()' not in source
-    assert '(vault / "AGENTS.md").exists()' in source
+    assert 'skill_result["agents_md"]' in source or "AGENTS.md source not found" in source
 
 
 def test_setup_wizard_uses_manual_zotero_path_for_checks() -> None:

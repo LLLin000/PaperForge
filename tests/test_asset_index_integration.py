@@ -374,7 +374,7 @@ class TestWorkspacePaths:
 
         workspace_dir = paths["literature"] / "test_domain" / "AAA - Paper A"
         workspace_dir.mkdir(parents=True, exist_ok=True)
-        (workspace_dir / "AAA - Paper A.md").write_text(
+        (workspace_dir / "AAA.md").write_text(
             "---\ntitle: Paper A\nzotero_key: AAA\n---\n\n## 🔍 精读\n\nDone.\n",
             encoding="utf-8",
         )
@@ -383,7 +383,7 @@ class TestWorkspacePaths:
 
         entry = read_index(vault)["items"][0]
         assert entry["deep_reading_path"] == ""
-        assert entry["main_note_path"].endswith("AAA - Paper A.md")
+        assert entry["main_note_path"].endswith("AAA.md")
         assert entry["fulltext_path"] == ""
         assert entry["lifecycle"] == "pdf_ready"
         assert entry["ocr_status"] == "done_incomplete"

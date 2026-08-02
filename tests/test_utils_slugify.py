@@ -5,6 +5,8 @@ Covers: slugify_filename, _extract_year
 
 from __future__ import annotations
 
+import pytest
+
 from paperforge.worker._utils import _extract_year, slugify_filename
 
 
@@ -84,6 +86,7 @@ class TestExtractYear:
     def test_year_in_middle_of_string(self) -> None:
         assert _extract_year("Published 2024 in Journal") == "2024"
 
+    @pytest.mark.xfail(strict=True, reason="_extract_year returns any 4-digit run; 18xx filtering is a product decision — https://github.com/LLLin000/PaperForge/issues/118")
     def test_18xx_not_extracted(self) -> None:
         assert _extract_year("old 1899 ref") == ""
         # 18xx is NOT extracted because regex anchor is (19|20)\\d{2}

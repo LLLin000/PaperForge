@@ -2,6 +2,8 @@
 
 > Principles and execution rules for this project. Detailed how-tos live in `docs/` and project skills.
 
+Stable command entry points: `paperforge search` (metadata/fulltext search), `paperforge status` (pipeline health), `paperforge sync` (Zotero/library sync). Full reference: `docs/COMMANDS.md`.
+
 ---
 
 ## Design Rules

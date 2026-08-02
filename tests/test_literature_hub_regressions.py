@@ -20,7 +20,7 @@ def _run_json(*args: str) -> dict:
         text=True,
         encoding="utf-8",
         errors="replace",
-        timeout=30,
+        timeout=90,  # production vault + real API probes need more than 30s
         check=True,
     )
     return json.loads(result.stdout)
