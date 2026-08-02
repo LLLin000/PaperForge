@@ -5753,7 +5753,9 @@ def normalize_document_structure(
     body_spine = _detect_body_spine(blocks, doc_structure, region_prepass=region_prepass)
 
     # Detect non-body insert clusters on early pages (relative to body length)
-    pw = max((b.get("page_width", 0) or 0) for b in blocks) or 1200
+    # max() over an empty iterable raises BEFORE the `or 1200` fallback can
+    # run — an empty block list (valid input) crashed postprocessing.
+    pw = max(((b.get("page_width", 0) or 0) for b in blocks), default=0) or 1200
     insert_indices = _detect_non_body_insert_clusters(
         blocks,
         body_spine,

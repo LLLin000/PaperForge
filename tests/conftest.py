@@ -196,3 +196,21 @@ def synthetic_paper_paths(e2e_fixture_dir: Path) -> list[tuple[str, Path]]:
         ("paper_b", papers_dir / "paper_b.pdf"),
         ("paper_c", papers_dir / "paper_c.pdf"),
     ]
+
+
+def api_key_available() -> bool:
+    """True when a real embedding API key is reachable (env or repo .env).
+
+    Used to skip true E2E embed tests that require live API calls — CI can
+    opt in by exporting VECTOR_DB_API_KEY / OPENAI_API_KEY.
+    """
+    import os
+
+    if os.environ.get("VECTOR_DB_API_KEY") or os.environ.get("OPENAI_API_KEY"):
+        return True
+    env_file = REPO_ROOT / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            if line.startswith(("VECTOR_DB_API_KEY=", "OPENAI_API_KEY=")) and line.split("=", 1)[1].strip():
+                return True
+    return False

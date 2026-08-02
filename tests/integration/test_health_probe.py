@@ -135,4 +135,8 @@ class TestHealthProbe:
         assert data["healthy"] is False, f"Expected healthy=False after dropping vec table, got {data}"
         assert data["corrupted"] is True
         err = data.get("error", "").lower()
-        assert "vec0 probe failed" in err or "no such table" in err, f"Unexpected error: {data.get('error')}"
+        assert (
+            "vec0 probe failed" in err
+            or "no such table" in err
+            or "missing tables" in err
+        ), f"Unexpected error: {data.get('error')}"

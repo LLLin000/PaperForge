@@ -347,6 +347,15 @@ class TestWriteEncodedPayload:
 
     EMBEDDING_DIM = 1536
 
+    @pytest.fixture(autouse=True)
+    def _pin_dimension(self, monkeypatch):
+        """Pin the detected dimension — these tests exercise the WRITE path
+        and must not trigger a real provider call for dimension detection."""
+        monkeypatch.setattr(
+            "paperforge.embedding.dim_detect.detect_embedding_dim",
+            lambda vault: self.EMBEDDING_DIM,
+        )
+
     def test_writes_to_vec_and_meta_tables(self, tmp_path):
         """write_encoded_payload inserts into vec0 and companion meta tables."""
         from paperforge.memory.db import get_connection, get_memory_db_path
