@@ -111,11 +111,20 @@ def ensure_vec_extension(conn: sqlite3.Connection) -> None:
         pass  # sqlite_vec not installed
 
 
+_reader_lock_depth = threading.local()
+
+
 def open_live_reader(vault: Path, db_path: Path | None = None):
     """Open a read-only connection to the live paperforge.db under the
     publication barrier (D1).  All retrieval/status readers MUST go through
     this entry so a shadow publish's brief reader lock actually quiesces them
     (Windows cannot replace a file another process holds open).
+
+    The barrier is re-entrant per thread: nested readers (a command that
+    opens the DB through several layers) acquire the same thread-level lock
+    once.  A lock *timeout* is NOT a licence to read unlocked — it
+    propagates to the caller, which should treat it as a transient
+    retryable failure (a publish is in progress).
 
     Usage::
 
@@ -123,18 +132,20 @@ def open_live_reader(vault: Path, db_path: Path | None = None):
             ...  # read-only queries
     """
     from contextlib import contextmanager
+    from filelock import FileLock
 
     @contextmanager
     def _reader():
         path = db_path or get_memory_db_path(vault)
+        depth = getattr(_reader_lock_depth, "depth", 0)
         barrier = None
-        try:
-            from filelock import FileLock
-
+        if depth == 0:
+            # First (outermost) reader in this thread takes the file lock.
+            # Timeout raises filelock.Timeout — intentionally NOT caught:
+            # reading without the barrier defeats the publish quiescence.
             barrier = FileLock(str(path) + ".read.lock", timeout=10)
             barrier.acquire()
-        except Exception:
-            barrier = None  # lock unavailable — degrade to unlocked read
+        _reader_lock_depth.depth = depth + 1
         try:
             conn = get_connection(path, read_only=True)
             try:
@@ -142,6 +153,7 @@ def open_live_reader(vault: Path, db_path: Path | None = None):
             finally:
                 conn.close()
         finally:
+            _reader_lock_depth.depth = depth
             if barrier is not None:
                 barrier.release()
 

@@ -207,7 +207,7 @@ def run(args: argparse.Namespace) -> int:
     if sub_cmd == "status":
         try:
             status = get_memory_status(vault)
-            from paperforge.memory.db import get_connection, get_memory_db_path
+            from paperforge.memory.db import get_connection, get_memory_db_path, open_live_reader
             from paperforge.memory.schema import get_schema_version
             from paperforge.memory.state_snapshot import write_memory_runtime
             _last_full_build = ""
@@ -215,18 +215,17 @@ def run(args: argparse.Namespace) -> int:
             _fts_ok = False
             _db_p = get_memory_db_path(vault)
             if _db_p.exists():
-                conn2 = get_connection(_db_p, read_only=True)
-                _row = conn2.execute(
-                    "SELECT value FROM meta WHERE key = 'last_full_build'"
-                ).fetchone()
-                _last_full_build = _row["value"] if _row else ""
-                _schema_ver = get_schema_version(conn2)
-                try:
-                    conn2.execute("SELECT zotero_key FROM papers_fts LIMIT 1")
-                    _fts_ok = True
-                except Exception:
-                    _fts_ok = False
-                conn2.close()
+                with open_live_reader(vault, _db_p) as conn2:
+                    _row = conn2.execute(
+                        "SELECT value FROM meta WHERE key = 'last_full_build'"
+                    ).fetchone()
+                    _last_full_build = _row["value"] if _row else ""
+                    _schema_ver = get_schema_version(conn2)
+                    try:
+                        conn2.execute("SELECT zotero_key FROM papers_fts LIMIT 1")
+                        _fts_ok = True
+                    except Exception:
+                        _fts_ok = False
             write_memory_runtime(
                 vault,
                 paper_count_db=status.get("paper_count_db", 0),

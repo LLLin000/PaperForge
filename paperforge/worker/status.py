@@ -1073,7 +1073,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
 
     # Write memory-runtime-state.json snapshot (JS-First Memory State)
     try:
-        from paperforge.memory.db import get_connection, get_memory_db_path
+        from paperforge.memory.db import open_live_reader, get_connection, get_memory_db_path
         from paperforge.memory.query import get_memory_status
         from paperforge.memory.schema import get_schema_version
         ms = get_memory_status(vault)
@@ -1083,18 +1083,17 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
         _db_p = get_memory_db_path(vault)
         if _db_p.exists():
             try:
-                conn = get_connection(_db_p, read_only=True)
-                _row = conn.execute(
-                    "SELECT value FROM meta WHERE key = 'last_full_build_at'"
-                ).fetchone()
-                if _row:
-                    _last_full_build = _row["value"]
-                _schema_ver_db = get_schema_version(conn)
-                _fts_row = conn.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='paper_fts'"
-                ).fetchone()
-                _fts_ok = _fts_row is not None
-                conn.close()
+                with open_live_reader(vault, _db_p) as conn:
+                    _row = conn.execute(
+                        "SELECT value FROM meta WHERE key = 'last_full_build_at'"
+                    ).fetchone()
+                    if _row:
+                        _last_full_build = _row["value"]
+                    _schema_ver_db = get_schema_version(conn)
+                    _fts_row = conn.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table' AND name='paper_fts'"
+                    ).fetchone()
+                    _fts_ok = _fts_row is not None
             except Exception:
                 pass
         write_memory_runtime(

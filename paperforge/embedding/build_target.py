@@ -163,11 +163,30 @@ class ShadowBuild:
                 conn.close()
         except sqlite3.Error as exc:
             raise BuildTargetError(f"candidate checkpoint failed: {exc}") from exc
+        # P0-3: order matters.  The old live DB may still hold uncheckpointed
+        # commits in its own -wal.  Checkpoint it FIRST so the main file is
+        # self-contained; only then attempt the swap.  If os.replace fails
+        # (Windows, AV, permissions) the old live remains fully recoverable —
+        # never delete its sidecars before the swap succeeded.
+        try:
+            conn = sqlite3.connect(str(live))
+            try:
+                conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            finally:
+                conn.close()
+        except sqlite3.Error as exc:
+            raise BuildTargetError(f"live checkpoint failed: {exc}") from exc
         # D1 reader barrier: readers are short-lived CLI processes; take a
         # brief reader lock so no in-flight reader holds live open during the
-        # swap (Windows cannot replace an open file).
+        # swap (Windows cannot replace an open file).  A timeout here is a
+        # transient failure — propagate it (BuildTargetError below), never
+        # degrade to an unlocked swap.
         barrier = _reader_barrier(self.target.source_path)
         with barrier:
+            os.replace(str(vector), str(live))
+            # Swap succeeded: the old live's sidecars are stale — clean them
+            # up now (best-effort; a leftover -wal of the OLD main file is
+            # harmless once the new live is in place).
             for suffix in ("-wal", "-shm"):
                 p = Path(str(live) + suffix)
                 try:
@@ -175,7 +194,6 @@ class ShadowBuild:
                         p.unlink()
                 except OSError:
                     logger.warning("publish: could not delete %s", p)
-            os.replace(str(vector), str(live))
 
     def __enter__(self) -> "ShadowBuild":
         return self
@@ -276,13 +294,9 @@ def _reader_barrier(live_path: Path):
     the live DB open during the swap.
 
     Readers are short-lived CLI processes; the lock is held only for the
-    ms-scale publish.  Falls back to a no-op if filelock is unavailable.
+    ms-scale publish.  filelock is a hard dependency; a timeout propagates
+    as an exception (the caller aborts the publish) — never swap unlocked.
     """
-    try:
-        from filelock import FileLock
+    from filelock import FileLock
 
-        return FileLock(str(live_path) + ".read.lock", timeout=10)
-    except Exception:
-        import contextlib
-
-        return contextlib.nullcontext()
+    return FileLock(str(live_path) + ".read.lock", timeout=10)

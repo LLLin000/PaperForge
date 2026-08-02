@@ -9,7 +9,7 @@ from paperforge import __version__ as PF_VERSION
 from paperforge.config import paperforge_paths
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
-from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.db import open_live_reader, get_connection, get_memory_db_path
 from paperforge.memory.events import write_correction_note
 from paperforge.memory.permanent import (
     append_correction,
@@ -204,15 +204,12 @@ def lookup_paper_events(vault: Path, key: str) -> dict:
     title = ""
     db_path = get_memory_db_path(vault)
     if db_path.exists():
-        conn = get_connection(db_path, read_only=True)
-        try:
+        with open_live_reader(vault, db_path) as conn:
             row = conn.execute(
                 "SELECT title FROM papers WHERE zotero_key = ?", (key,),
             ).fetchone()
             if row:
                 title = row["title"] or ""
-        finally:
-            conn.close()
 
     entries = []
     for n in notes:
@@ -247,8 +244,7 @@ def _export_from_jsonl(vault: Path, since: str = "", limit: int = 50) -> list[di
     if db_path.exists():
         paper_ids = list(set(n.get("paper_id", "") for n in all_notes if n.get("paper_id")))
         if paper_ids:
-            conn = get_connection(db_path, read_only=True)
-            try:
+            with open_live_reader(vault, db_path) as conn:
                 placeholders = ",".join("?" * len(paper_ids))
                 rows = conn.execute(
                     f"SELECT zotero_key, citation_key, title, year, first_author "
@@ -262,8 +258,6 @@ def _export_from_jsonl(vault: Path, since: str = "", limit: int = 50) -> list[di
                         "year": row["year"],
                         "first_author": row["first_author"],
                     }
-            finally:
-                conn.close()
 
     results = []
     for n in all_notes:

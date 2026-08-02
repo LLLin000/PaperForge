@@ -32,7 +32,7 @@ from paperforge.embedding.builder import (
     write_encoded_payload_to_conn,
 )
 from paperforge.embedding.preflight import _preflight_check
-from paperforge.memory.db import WriterLock, ensure_vec_extension, get_connection, get_memory_db_path
+from paperforge.memory.db import WriterLock, ensure_vec_extension, get_connection, get_memory_db_path, open_live_reader
 from paperforge.memory.schema import ensure_schema
 from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
@@ -45,15 +45,12 @@ def _has_body_units_in_db(vault: Path, key: str) -> bool:
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return False
-    conn = get_connection(db_path, read_only=True)
-    try:
+    with open_live_reader(vault, db_path) as conn:
         cnt = conn.execute(
             "SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1",
             (key,),
         ).fetchone()[0]
         return cnt > 0
-    finally:
-        conn.close()
 
 
 def _has_object_units_in_db(vault: Path, key: str) -> bool:
@@ -61,15 +58,12 @@ def _has_object_units_in_db(vault: Path, key: str) -> bool:
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return False
-    conn = get_connection(db_path, read_only=True)
-    try:
+    with open_live_reader(vault, db_path) as conn:
         cnt = conn.execute(
             "SELECT COUNT(*) FROM object_units WHERE paper_id=? AND indexable=1",
             (key,),
         ).fetchone()[0]
         return cnt > 0
-    finally:
-        conn.close()
 
 
 def _pid_alive(pid: int) -> bool:
@@ -245,376 +239,513 @@ def run(args: argparse.Namespace) -> int:
 
     _current_model = get_api_model(vault)
 
-    if resume:
-        build_state = read_vector_build_state(vault)
-
-        # 门一：stale running state 检测
-        if build_state.get("status") == "running":
-            stale = False
-            pid = build_state.get("pid", 0)
-            if not pid or not _pid_alive(pid):
-                stale = True
-            else:
-                started = build_state.get("started_at", "")
-                if started:
-                    try:
-                        dt = __import__("datetime").datetime.fromisoformat(started)
-                        if (
-                            __import__("datetime").datetime.now(__import__("datetime").timezone.utc) - dt
-                        ).total_seconds() > 43200:
-                            stale = True
-                    except Exception:
-                        pass
-            if stale:
-                msg = "Previous build appears stale (crashed?). Recovering and rebuilding from scratch."
-                print(msg)
-                mark_vector_build_state(vault, status="idle", current=0, pid=0)
-                resume = False
-        # 门二：no vec0 rows → fresh build（不是 error）
-
-        _db_path = get_memory_db_path(vault)
-        _any_rows = False
-        if _db_path.exists():
-            _conn = get_connection(_db_path)
-            try:
-                ensure_vec_extension(_conn)
-                ensure_schema(_conn)
-                for _mt in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
-                    _r = _conn.execute(f"SELECT COUNT(*) AS cnt FROM {_mt}").fetchone()
-                    if _r and _r["cnt"] > 0:
-                        _any_rows = True
-                        break
-            except Exception:
-                pass
-            finally:
-                _conn.close()
-        if not _any_rows:
-            resume = False
-        else:
-            # 门三：过三道门后，正常 model check
-            stored_model = build_state.get("model", "")
-            if stored_model and _current_model and stored_model != _current_model:
-                msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
-                if not getattr(args, "json", False):
-                    print(msg)
-                resume = False
-
-    _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
-    _shadow: ShadowBuild | None = None
-    _candidate_conn = None
-    _rebuild_backup_path: Path | None = None
-
-    # D2: every embed build variant (force / resume / incremental) takes the
-    # cross-process writer lock — a shadow snapshot must not race a memory
-    # build mutating live metadata, and ordinary writes must not interleave
-    # with a publish.  Released on every exit path below.
+    # D2: writer lock acquired ONCE before ANY resume/model checks (they
+    # open rw connections and may mutate schema), held through verify and
+    # publish.  Released by the outer finally on every path.
     _write_lock = WriterLock(vault)
     _write_lock.__enter__()
+    try:
+        if resume:
+            build_state = read_vector_build_state(vault)
 
-    # D5: full rebuilds (force / model change / resume reset) use shadow target.
-    requires_shadow = _force_rebuild and _db_path.exists()
+            # 门一：stale running state 检测
+            if build_state.get("status") == "running":
+                stale = False
+                pid = build_state.get("pid", 0)
+                if not pid or not _pid_alive(pid):
+                    stale = True
+                else:
+                    started = build_state.get("started_at", "")
+                    if started:
+                        try:
+                            dt = __import__("datetime").datetime.fromisoformat(started)
+                            if (
+                                __import__("datetime").datetime.now(__import__("datetime").timezone.utc) - dt
+                            ).total_seconds() > 43200:
+                                stale = True
+                        except Exception:
+                            pass
+                if stale:
+                    msg = "Previous build appears stale (crashed?). Recovering and rebuilding from scratch."
+                    print(msg)
+                    mark_vector_build_state(vault, status="idle", current=0, pid=0)
+                    resume = False
+            # 门二：no vec0 rows → fresh build（不是 error）
 
-    if requires_shadow:
-        # Maintenance mode message (D2b).
-        if not getattr(args, "json", False):
-            print(
-                "Maintenance mode: OCR syncs and memory updates are paused "
-                "until the rebuild completes."
-            )
-        _target = BuildTarget(
-            source_path=_db_path,
-            vector_path=_db_path.with_suffix(".db.build"),
+            _db_path = get_memory_db_path(vault)
+            _any_rows = False
+            if _db_path.exists():
+                _conn = get_connection(_db_path)
+                try:
+                    ensure_vec_extension(_conn)
+                    ensure_schema(_conn)
+                    for _mt in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
+                        _r = _conn.execute(f"SELECT COUNT(*) AS cnt FROM {_mt}").fetchone()
+                        if _r and _r["cnt"] > 0:
+                            _any_rows = True
+                            break
+                except Exception:
+                    pass
+                finally:
+                    _conn.close()
+            if not _any_rows:
+                resume = False
+            else:
+                # 门三：过三道门后，正常 model check
+                stored_model = build_state.get("model", "")
+                if stored_model and _current_model and stored_model != _current_model:
+                    msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
+                    if not getattr(args, "json", False):
+                        print(msg)
+                    resume = False
+
+        _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
+        _shadow: ShadowBuild | None = None
+        _candidate_conn = None
+        _rebuild_backup_path: Path | None = None
+
+        # D5: full rebuilds (force / model change / resume reset) use shadow target.
+        # P1: model change is detected INDEPENDENTLY of --resume — a plain
+        # `embed build` after a config model switch must also route through
+        # the shadow, otherwise ensure_vec_tables would resize vec0 in place
+        # on the live DB and expose an empty/partial window mid-build.
+        _stored_model = read_vector_build_state(vault).get("model", "")
+        _model_changed = bool(
+            _stored_model and _current_model and _stored_model != _current_model
         )
-        _shadow = ShadowBuild(_target)
-        # D6: unconditional stale-candidate cleanup (no build_state dependency)
-        _shadow.cleanup_stale()
-        _shadow.prepare()
-        _candidate_conn = _shadow.candidate_conn()
-        try:
-            # 1. Consistent snapshot: live → candidate via online backup API
+        if _model_changed and not getattr(args, "json", False):
+            print(f"Model changed: {_stored_model} -> {_current_model}. Re-embedding all papers.")
+        requires_shadow = (_force_rebuild or _model_changed) and _db_path.exists()
+
+        if requires_shadow:
+            # Maintenance mode message (D2b).
+            if not getattr(args, "json", False):
+                print(
+                    "Maintenance mode: OCR syncs and memory updates are paused "
+                    "until the rebuild completes."
+                )
+            _target = BuildTarget(
+                source_path=_db_path,
+                vector_path=_db_path.with_suffix(".db.build"),
+            )
+            _shadow = ShadowBuild(_target)
+            # D6: unconditional stale-candidate cleanup (no build_state dependency)
+            _shadow.cleanup_stale()
+            _shadow.prepare()
+            _candidate_conn = _shadow.candidate_conn()
+            try:
+                # 1. Consistent snapshot: live → candidate via online backup API
+                import sqlite3 as _sqlite3
+                _src_conn = _sqlite3.connect(str(_db_path))
+                _dst_conn = _sqlite3.connect(str(_target.vector_path))
+                try:
+                    _src_conn.backup(_dst_conn, pages=64)
+                finally:
+                    _src_conn.close()
+                    _dst_conn.close()
+
+                # 2. Clear vec tables in candidate; recreate at model dim
+                ensure_vec_extension(_candidate_conn)
+                for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
+                           "vec_fulltext", "vec_body", "vec_objects"):
+                    _candidate_conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
+                ensure_schema(_candidate_conn)
+                ensure_vec_tables(_candidate_conn, vault)
+                _candidate_conn.commit()
+                _shadow.building()
+            except Exception:
+                _shadow.abort()
+                if _write_lock:
+                    _write_lock.__exit__(None, None, None)
+                raise
+        elif _force_rebuild:
+            # Conservative in-place rebuild with restorable backup (fallback).
+            # (Shadow build is the default; this is the "inplace" strategy.)
+            import datetime as _dt_mod
+            _ts = _dt_mod.datetime.now(_dt_mod.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            _rebuild_backup_path = _db_path.with_name(f"paperforge.pre-rebuild-{_ts}.db")
+
             import sqlite3 as _sqlite3
             _src_conn = _sqlite3.connect(str(_db_path))
-            _dst_conn = _sqlite3.connect(str(_target.vector_path))
+            _dst_conn = _sqlite3.connect(str(_rebuild_backup_path))
             try:
                 _src_conn.backup(_dst_conn, pages=64)
             finally:
                 _src_conn.close()
                 _dst_conn.close()
 
-            # 2. Clear vec tables in candidate; recreate at model dim
-            ensure_vec_extension(_candidate_conn)
-            for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
-                       "vec_fulltext", "vec_body", "vec_objects"):
-                _candidate_conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
-            ensure_schema(_candidate_conn)
-            ensure_vec_tables(_candidate_conn, vault)
-            _candidate_conn.commit()
-            _shadow.building()
-        except Exception:
-            _shadow.abort()
-            if _write_lock:
-                _write_lock.__exit__(None, None, None)
-            raise
-    elif _force_rebuild:
-        # Conservative in-place rebuild with restorable backup (fallback).
-        # (Shadow build is the default; this is the "inplace" strategy.)
-        import datetime as _dt_mod
-        _ts = _dt_mod.datetime.now(_dt_mod.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        _rebuild_backup_path = _db_path.with_name(f"paperforge.pre-rebuild-{_ts}.db")
-
-        import sqlite3 as _sqlite3
-        _src_conn = _sqlite3.connect(str(_db_path))
-        _dst_conn = _sqlite3.connect(str(_rebuild_backup_path))
-        try:
-            _src_conn.backup(_dst_conn, pages=64)
-        finally:
-            _src_conn.close()
-            _dst_conn.close()
-
-        _conn = get_connection(_db_path)
-        try:
-            ensure_vec_extension(_conn)
-            for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
-                       "vec_fulltext", "vec_body", "vec_objects"):
-                _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
-            ensure_schema(_conn)
-            ensure_vec_tables(_conn, vault)
-            _conn.commit()
-        except Exception:
+            _conn = get_connection(_db_path)
+            try:
+                ensure_vec_extension(_conn)
+                for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
+                           "vec_fulltext", "vec_body", "vec_objects"):
+                    _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
+                ensure_schema(_conn)
+                ensure_vec_tables(_conn, vault)
+                _conn.commit()
+            except Exception:
+                _conn.close()
+                if _rebuild_backup_path and _rebuild_backup_path.exists():
+                    _os.replace(str(_rebuild_backup_path), str(_db_path))
+                raise
             _conn.close()
-            if _rebuild_backup_path and _rebuild_backup_path.exists():
-                _os.replace(str(_rebuild_backup_path), str(_db_path))
-            raise
-        _conn.close()
 
-    mark_vector_build_state(
-        vault,
-        status="running",
-        current=0,
-        total=total,
-        paper_id="",
-        started_at=_now(),
-        finished_at="",
-        message="",
-        pid=_os.getpid(),
-        model=_current_model,
-        mode=get_embed_status(vault)["mode"],
-    )
-
-    try:
-        max_workers = PR9B_MAX_WORKERS
-        window_size = max_workers * 4
-
-        processed_count = 0
-        papers_embedded = 0
-        papers_skipped = 0
-        chunks_embedded = 0
-        in_flight: dict = {}
-
-        def _submit_job(job: PaperEmbeddingJob, pool):
-            fut = pool.submit(encode_paper_job, vault, job)
-            in_flight[fut] = job
-
-        def _complete_one(pool, block: bool = True) -> bool:
-            nonlocal processed_count, papers_embedded, chunks_embedded
-            if not in_flight:
-                return True
-            done, _ = wait(in_flight.keys(), return_when=FIRST_COMPLETED)
-            for fut in done:
-                job = in_flight.pop(fut)
-                try:
-                    bundle = fut.result()
-                except Exception as exc:
-                    mark_vector_build_state(
-                        vault,
-                        status="failed",
-                        message=str(exc),
-                        paper_id=job.paper_id,
-                        pid=0,
-                    )
-                    return False  # abort: worker failure must not mark success
-                if _candidate_conn is not None:
-                    delete_paper_vectors_in_conn(_candidate_conn, bundle.paper_id)
-                    for payload in bundle.payloads:
-                        write_encoded_payload_to_conn(_candidate_conn, payload)
-                    _candidate_conn.commit()
-                else:
-                    delete_paper_vectors(vault, bundle.paper_id)
-                    for payload in bundle.payloads:
-                        write_encoded_payload(vault, payload)
-
-                processed_count += 1
-                papers_embedded += 1
-                chunks_embedded += bundle.chunk_count
-
-                print(f"EMBED_PROGRESS:{processed_count}:{total}:{bundle.paper_id}", flush=True)
-                mark_vector_build_state(
-                    vault,
-                    current=processed_count,
-                    paper_id=bundle.paper_id,
-                    last_update=_now(),
-                )
-            return True
-
-        with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            papers_iter = progress_bar(done_papers, desc="Embedding", disable=args.json)
-            for entry in papers_iter:
-                key = entry.get("zotero_key")
-                if not key:
-                    continue
-
-                # ponytail: check cancellation flag between papers
-                if read_vector_build_state(vault).get("status") == "stopping":
-                    logger.info("Build cancelled at paper %s", key)
-                    break
-
-                has_body = _has_body_units_in_db(vault, key)
-                has_object = _has_object_units_in_db(vault, key)
-
-                if has_body or has_object:
-                    body_units = get_body_units_for_embedding(vault, key) if has_body else []
-                    object_units = get_object_units_for_embedding(vault, key) if has_object else []
-
-                    if resume:
-                        body_ok = not body_units
-                        object_ok = not object_units
-
-                        if body_units:
-                            try:
-
-                                db_path = get_memory_db_path(vault)
-                                conn = get_connection(db_path)
-                                try:
-                                    ensure_vec_extension(conn)
-                                    ensure_schema(conn)
-                                    row = conn.execute(
-                                        "SELECT body_units_hash, retrieval_policy_version FROM vec_body_meta WHERE paper_id = ? LIMIT 1",
-                                        (key,),
-                                    ).fetchone()
-                                    if row:
-                                        current_body_hash = compute_body_units_hash(body_units)
-                                        body_ok = (
-                                            row["body_units_hash"] == current_body_hash
-                                            and row["retrieval_policy_version"] == RETRIEVAL_POLICY_VERSION
-                                        )
-                                finally:
-                                    conn.close()
-                            except Exception as exc:
-                                logger.warning("Resume body_units check failed for %s: %s", key, exc)
-
-                        if object_units:
-                            try:
-
-                                db_path = get_memory_db_path(vault)
-                                conn = get_connection(db_path)
-                                try:
-                                    ensure_vec_extension(conn)
-                                    ensure_schema(conn)
-                                    row = conn.execute(
-                                        "SELECT object_units_hash, retrieval_policy_version FROM vec_objects_meta WHERE paper_id = ? LIMIT 1",
-                                        (key,),
-                                    ).fetchone()
-                                    if row:
-                                        current_obj_hash = compute_object_units_hash(object_units)
-                                        object_ok = (
-                                            row["object_units_hash"] == current_obj_hash
-                                            and row["retrieval_policy_version"] == RETRIEVAL_POLICY_VERSION
-                                        )
-                                finally:
-                                    conn.close()
-                            except Exception as exc:
-                                logger.warning("Resume object_units check failed for %s: %s", key, exc)
-
-                        if body_ok and object_ok:
-                            processed_count += 1
-                            papers_skipped += 1
-                            print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
-                            mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
-                            continue
-
-                    payloads = prepare_payloads_for_entry(vault, key, has_body, has_object, body_units, object_units)
-                else:
-                    fulltext_rel = entry.get("fulltext_path", "")
-                    if not fulltext_rel:
-                        continue
-                    vault / fulltext_rel
-
-                    ocr_root = vault / "System" / "PaperForge" / "ocr" / key
-                    has_files = (ocr_root / "structure" / "blocks.structured.jsonl").exists() and (
-                        ocr_root / "index" / "structure-tree.json"
-                    ).exists()
-                    if has_files and not has_body:
-                        print(
-                            f"Skip {key}: has structured blocks but no body_units in DB. "
-                            f"Run `paperforge memory build` first."
-                        )
-                        continue
-
-                    if resume:
-                        try:
-
-                            db_path = get_memory_db_path(vault)
-                            conn = get_connection(db_path)
-                            try:
-                                ensure_vec_extension(conn)
-                                ensure_schema(conn)
-                                row = conn.execute(
-                                    "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? LIMIT 1", (key,)
-                                ).fetchone()
-                                if row:
-                                    processed_count += 1
-                                    papers_skipped += 1
-                                    print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
-                                    mark_vector_build_state(
-                                        vault, current=processed_count, paper_id=key, last_update=_now()
-                                    )
-                                    continue
-                            finally:
-                                conn.close()
-                        except Exception as exc:
-                            logger.warning("Resume fulltext check failed for %s: %s", key, exc)
-
-                    payloads = prepare_payloads_for_entry(
-                        vault, key, has_body, has_object, [], [], fulltext_rel=fulltext_rel
-                    )
-
-                if not payloads:
-                    processed_count += 1
-                    print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
-                    mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
-                    continue
-
-                job = PaperEmbeddingJob(paper_id=key, payloads=payloads)
-                _submit_job(job, pool)
-
-                if len(in_flight) >= window_size:
-                    ok = _complete_one(pool, block=True)
-                    if not ok:
-                        # P0-5: raise so the unified except handler aborts the
-                        # shadow, closes connections, and releases the lock —
-                        # a bare `return 1` here would leak all three.
-                        raise RuntimeError("Embed worker failed; build aborted")
-
-            while in_flight:
-                ok = _complete_one(pool, block=True)
-                if not ok:
-                    raise RuntimeError("Embed worker failed; build aborted")
-
-    except Exception as e:
-        try:
-            _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
-            _mode = get_embed_status(vault).get("mode", "")
-            _model = get_embed_status(vault).get("model", "")
-        except Exception:
-            _actual = chunks_embedded
-            _mode = ""
-            _model = ""
         mark_vector_build_state(
             vault,
-            status="failed",
-            message=str(e),
-            pid=0,
+            status="running",
+            current=0,
+            total=total,
+            paper_id="",
+            started_at=_now(),
+            finished_at="",
+            message="",
+            pid=_os.getpid(),
+            model=_current_model,
+            mode=get_embed_status(vault)["mode"],
         )
+
+        try:
+            max_workers = PR9B_MAX_WORKERS
+            window_size = max_workers * 4
+
+            processed_count = 0
+            papers_embedded = 0
+            papers_skipped = 0
+            chunks_embedded = 0
+            in_flight: dict = {}
+
+            def _submit_job(job: PaperEmbeddingJob, pool):
+                fut = pool.submit(encode_paper_job, vault, job)
+                in_flight[fut] = job
+
+            def _complete_one(pool, block: bool = True) -> bool:
+                nonlocal processed_count, papers_embedded, chunks_embedded
+                if not in_flight:
+                    return True
+                done, _ = wait(in_flight.keys(), return_when=FIRST_COMPLETED)
+                for fut in done:
+                    job = in_flight.pop(fut)
+                    try:
+                        bundle = fut.result()
+                    except Exception as exc:
+                        mark_vector_build_state(
+                            vault,
+                            status="failed",
+                            message=str(exc),
+                            paper_id=job.paper_id,
+                            pid=0,
+                        )
+                        return False  # abort: worker failure must not mark success
+                    if _candidate_conn is not None:
+                        delete_paper_vectors_in_conn(_candidate_conn, bundle.paper_id)
+                        for payload in bundle.payloads:
+                            write_encoded_payload_to_conn(_candidate_conn, payload)
+                        _candidate_conn.commit()
+                    else:
+                        delete_paper_vectors(vault, bundle.paper_id)
+                        for payload in bundle.payloads:
+                            write_encoded_payload(vault, payload)
+
+                    processed_count += 1
+                    papers_embedded += 1
+                    chunks_embedded += bundle.chunk_count
+
+                    print(f"EMBED_PROGRESS:{processed_count}:{total}:{bundle.paper_id}", flush=True)
+                    mark_vector_build_state(
+                        vault,
+                        current=processed_count,
+                        paper_id=bundle.paper_id,
+                        last_update=_now(),
+                    )
+                return True
+
+            with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                papers_iter = progress_bar(done_papers, desc="Embedding", disable=args.json)
+                for entry in papers_iter:
+                    key = entry.get("zotero_key")
+                    if not key:
+                        continue
+
+                    # ponytail: check cancellation flag between papers
+                    if read_vector_build_state(vault).get("status") == "stopping":
+                        logger.info("Build cancelled at paper %s", key)
+                        break
+
+                    has_body = _has_body_units_in_db(vault, key)
+                    has_object = _has_object_units_in_db(vault, key)
+
+                    if has_body or has_object:
+                        body_units = get_body_units_for_embedding(vault, key) if has_body else []
+                        object_units = get_object_units_for_embedding(vault, key) if has_object else []
+
+                        if resume:
+                            body_ok = not body_units
+                            object_ok = not object_units
+
+                            if body_units:
+                                try:
+
+                                    db_path = get_memory_db_path(vault)
+                                    conn = get_connection(db_path)
+                                    try:
+                                        ensure_vec_extension(conn)
+                                        ensure_schema(conn)
+                                        row = conn.execute(
+                                            "SELECT body_units_hash, retrieval_policy_version FROM vec_body_meta WHERE paper_id = ? LIMIT 1",
+                                            (key,),
+                                        ).fetchone()
+                                        if row:
+                                            current_body_hash = compute_body_units_hash(body_units)
+                                            body_ok = (
+                                                row["body_units_hash"] == current_body_hash
+                                                and row["retrieval_policy_version"] == RETRIEVAL_POLICY_VERSION
+                                            )
+                                    finally:
+                                        conn.close()
+                                except Exception as exc:
+                                    logger.warning("Resume body_units check failed for %s: %s", key, exc)
+
+                            if object_units:
+                                try:
+
+                                    db_path = get_memory_db_path(vault)
+                                    conn = get_connection(db_path)
+                                    try:
+                                        ensure_vec_extension(conn)
+                                        ensure_schema(conn)
+                                        row = conn.execute(
+                                            "SELECT object_units_hash, retrieval_policy_version FROM vec_objects_meta WHERE paper_id = ? LIMIT 1",
+                                            (key,),
+                                        ).fetchone()
+                                        if row:
+                                            current_obj_hash = compute_object_units_hash(object_units)
+                                            object_ok = (
+                                                row["object_units_hash"] == current_obj_hash
+                                                and row["retrieval_policy_version"] == RETRIEVAL_POLICY_VERSION
+                                            )
+                                    finally:
+                                        conn.close()
+                                except Exception as exc:
+                                    logger.warning("Resume object_units check failed for %s: %s", key, exc)
+
+                            if body_ok and object_ok:
+                                processed_count += 1
+                                papers_skipped += 1
+                                print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                                mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
+                                continue
+
+                        payloads = prepare_payloads_for_entry(vault, key, has_body, has_object, body_units, object_units)
+                    else:
+                        fulltext_rel = entry.get("fulltext_path", "")
+                        if not fulltext_rel:
+                            continue
+                        vault / fulltext_rel
+
+                        ocr_root = vault / "System" / "PaperForge" / "ocr" / key
+                        has_files = (ocr_root / "structure" / "blocks.structured.jsonl").exists() and (
+                            ocr_root / "index" / "structure-tree.json"
+                        ).exists()
+                        if has_files and not has_body:
+                            print(
+                                f"Skip {key}: has structured blocks but no body_units in DB. "
+                                f"Run `paperforge memory build` first."
+                            )
+                            continue
+
+                        if resume:
+                            try:
+
+                                db_path = get_memory_db_path(vault)
+                                conn = get_connection(db_path)
+                                try:
+                                    ensure_vec_extension(conn)
+                                    ensure_schema(conn)
+                                    row = conn.execute(
+                                        "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? LIMIT 1", (key,)
+                                    ).fetchone()
+                                    if row:
+                                        processed_count += 1
+                                        papers_skipped += 1
+                                        print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                                        mark_vector_build_state(
+                                            vault, current=processed_count, paper_id=key, last_update=_now()
+                                        )
+                                        continue
+                                finally:
+                                    conn.close()
+                            except Exception as exc:
+                                logger.warning("Resume fulltext check failed for %s: %s", key, exc)
+
+                        payloads = prepare_payloads_for_entry(
+                            vault, key, has_body, has_object, [], [], fulltext_rel=fulltext_rel
+                        )
+
+                    if not payloads:
+                        processed_count += 1
+                        print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                        mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
+                        continue
+
+                    job = PaperEmbeddingJob(paper_id=key, payloads=payloads)
+                    _submit_job(job, pool)
+
+                    if len(in_flight) >= window_size:
+                        ok = _complete_one(pool, block=True)
+                        if not ok:
+                            # P0-5: raise so the unified except handler aborts the
+                            # shadow, closes connections, and releases the lock —
+                            # a bare `return 1` here would leak all three.
+                            raise RuntimeError("Embed worker failed; build aborted")
+
+                while in_flight:
+                    ok = _complete_one(pool, block=True)
+                    if not ok:
+                        raise RuntimeError("Embed worker failed; build aborted")
+
+        except Exception as e:
+            try:
+                _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
+                _mode = get_embed_status(vault).get("mode", "")
+                _model = get_embed_status(vault).get("model", "")
+            except Exception:
+                _actual = chunks_embedded
+                _mode = ""
+                _model = ""
+            mark_vector_build_state(
+                vault,
+                status="failed",
+                message=str(e),
+                pid=0,
+            )
+            write_vector_runtime(vault,
+            enabled=bool(_mode),
+            mode=_mode,
+            model=_model,
+            deps_installed=True,
+            deps_missing=None,
+            py_version=sys.version.split()[0],
+            db_exists=get_memory_db_path(vault).exists(),
+            chunk_count=_actual,
+            body_chunk_count=0,
+            object_chunk_count=0,
+            total_chunks=_actual,
+            build_state=read_vector_build_state(vault),
+            healthy=False, error=str(e), backend="vec0")
+            result = PFResult(
+                ok=False,
+                command="embed build",
+                version=PF_VERSION,
+                error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
+            )
+            print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+            # Shadow: abort candidate, live untouched. In-place: restore backup.
+            if _shadow is not None:
+                _shadow.abort()
+                logger.info("Shadow build aborted; live DB untouched")
+            elif _rebuild_backup_path and _rebuild_backup_path.exists():
+                _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
+                logger.info("Restored paperforge.db from pre-rebuild backup after failed build")
+            elif _rebuild_backup_path:
+                _rebuild_backup_path.unlink(missing_ok=True)
+            if _write_lock:
+                _write_lock.__exit__(None, None, None)
+            return 1
+
+        # Check if we stopped or were cancelled — exit cleanly without marking completed
+        if read_vector_build_state(vault).get("status") == "stopping":
+            logger.info("Build stopped, exiting cleanly")
+            if _shadow is not None:
+                _shadow.abort()
+                logger.info("Shadow build aborted on cancellation; live DB untouched")
+            elif _rebuild_backup_path and _rebuild_backup_path.exists():
+                _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
+                logger.info("Restored paperforge.db from pre-rebuild backup after cancellation")
+            if _write_lock:
+                _write_lock.__exit__(None, None, None)
+            print("EMBED_DONE", flush=True)
+            return 0
+
+        # Shadow: verify candidate, publish (swap), then mark completed on new live.
+        if _shadow is not None:
+            expected = chunks_embedded
+            # D4: dimension must come from the candidate's own vec0 DDL, not the
+            # live DB — a model migration rebuilds candidate at the NEW dimension
+            # while live still reports the old one.
+            _dim = 0
+            try:
+                import re as _re
+                _cand = sqlite3.connect(f"file:{_shadow.target.vector_path.as_posix()}?mode=ro", uri=True)
+                try:
+                    _row = _cand.execute(
+                        "SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'"
+                    ).fetchone()
+                    if _row:
+                        _m = _re.search(r"float\[(\d+)\]", _row[0])
+                        if _m:
+                            _dim = int(_m.group(1))
+                finally:
+                    _cand.close()
+            except Exception:
+                _dim = 0
+            report = verify_candidate(
+                _shadow.target.vector_path,
+                dimension=_dim,
+                expected_count=expected,
+            )
+            if not report["ok"]:
+                _shadow.abort()
+                logger.error("Shadow verify failed: %s", report.get("reason"))
+                if _write_lock:
+                    _write_lock.__exit__(None, None, None)
+                result = PFResult(
+                    ok=False,
+                    command="embed build",
+                    version=PF_VERSION,
+                    error=PFError(
+                        code=ErrorCode.INTERNAL_ERROR,
+                        message=f"Candidate verification failed: {report.get('reason')}",
+                    ),
+                )
+                print(result.to_json() if args.json else result.error.message,
+                      file=sys.stderr if not args.json else sys.stdout)
+                return 1
+            _shadow.verified()
+            _shadow.publish()
+            logger.info("Shadow build published: %s → %s",
+                        _shadow.target.vector_path, _shadow.target.source_path)
+
+        mark_vector_build_state(
+            vault,
+            status="completed",
+            current=total,
+            total=total,
+            finished_at=_now(),
+            message="",
+            pid=0,
+            # Shadow publish swaps live for a candidate whose build_state table
+            # holds pre-build defaults (the live mark above was written before
+            # the swap) — without model/mode the next resume's gate-3 misreads a
+            # model change and re-embeds everything.
+            model=_current_model,
+            mode=get_embed_status(vault)["mode"],
+        )
+        try:
+            _status = get_embed_status(vault)
+            _real_chunks = _status.get("chunk_count", chunks_embedded)
+            _mode = _status.get("mode", "")
+            _model = _status.get("model", "")
+            _body_chunks = _status.get("body_chunk_count", 0)
+            _object_chunks = _status.get("object_chunk_count", 0)
+            _total_chunks = _status.get("total_chunks", 0)
+        except Exception:
+            _real_chunks = chunks_embedded
+            _mode = ""
+            _model = ""
+            _body_chunks = 0
+            _object_chunks = 0
+            _total_chunks = 0
+
         write_vector_runtime(vault,
         enabled=bool(_mode),
         mode=_mode,
@@ -622,21 +753,40 @@ def run(args: argparse.Namespace) -> int:
         deps_installed=True,
         deps_missing=None,
         py_version=sys.version.split()[0],
-        db_exists=get_memory_db_path(vault).exists(),
-        chunk_count=_actual,
-        body_chunk_count=0,
-        object_chunk_count=0,
-        total_chunks=_actual,
+        db_exists=True,
+        chunk_count=_real_chunks,
+        body_chunk_count=_body_chunks,
+        object_chunk_count=_object_chunks,
+        total_chunks=_total_chunks,
         build_state=read_vector_build_state(vault),
-        healthy=False, error=str(e), backend="vec0")
-        result = PFResult(
-            ok=False,
-            command="embed build",
-            version=PF_VERSION,
-            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
-        )
-        print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
-        # Shadow: abort candidate, live untouched. In-place: restore backup.
+        healthy=True, error="", backend="vec0")
+
+        print("EMBED_DONE", flush=True)
+
+        data = {
+            "papers_embedded": papers_embedded,
+            "papers_skipped": papers_skipped,
+            "chunks_embedded": chunks_embedded,
+            "model": get_embed_status(vault)["model"],
+            "mode": get_embed_status(vault)["mode"],
+        }
+        result = PFResult(ok=True, command="embed build", version=PF_VERSION, data=data)
+        if args.json:
+            print(result.to_json())
+        else:
+            skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
+            print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}")
+        # Build succeeded: delete pre-rebuild backup (in-place strategy only)
+        if _rebuild_backup_path and _rebuild_backup_path.exists():
+            _rebuild_backup_path.unlink()
+            logger.info("Deleted pre-rebuild backup after successful rebuild")
+        if _write_lock:
+            _write_lock.__exit__(None, None, None)
+        return 0
+    except Exception as e:
+        # Outer handler: failures outside the inner build loop (resume
+        # checks, shadow prepare, verify, publish, completion bookkeeping)
+        # — abort the candidate / restore the backup, mark failed.
         if _shadow is not None:
             _shadow.abort()
             logger.info("Shadow build aborted; live DB untouched")
@@ -645,138 +795,19 @@ def run(args: argparse.Namespace) -> int:
             logger.info("Restored paperforge.db from pre-rebuild backup after failed build")
         elif _rebuild_backup_path:
             _rebuild_backup_path.unlink(missing_ok=True)
-        if _write_lock:
-            _write_lock.__exit__(None, None, None)
-        return 1
-
-    # Check if we stopped or were cancelled — exit cleanly without marking completed
-    if read_vector_build_state(vault).get("status") == "stopping":
-        logger.info("Build stopped, exiting cleanly")
-        if _shadow is not None:
-            _shadow.abort()
-            logger.info("Shadow build aborted on cancellation; live DB untouched")
-        elif _rebuild_backup_path and _rebuild_backup_path.exists():
-            _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
-            logger.info("Restored paperforge.db from pre-rebuild backup after cancellation")
-        if _write_lock:
-            _write_lock.__exit__(None, None, None)
-        print("EMBED_DONE", flush=True)
-        return 0
-
-    # Shadow: verify candidate, publish (swap), then mark completed on new live.
-    if _shadow is not None:
-        expected = chunks_embedded
-        # D4: dimension must come from the candidate's own vec0 DDL, not the
-        # live DB — a model migration rebuilds candidate at the NEW dimension
-        # while live still reports the old one.
-        _dim = 0
         try:
-            import re as _re
-            _cand = sqlite3.connect(f"file:{_shadow.target.vector_path.as_posix()}?mode=ro", uri=True)
-            try:
-                _row = _cand.execute(
-                    "SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'"
-                ).fetchone()
-                if _row:
-                    _m = _re.search(r"float\[(\d+)\]", _row[0])
-                    if _m:
-                        _dim = int(_m.group(1))
-            finally:
-                _cand.close()
+            mark_vector_build_state(vault, status="failed", message=str(e), pid=0)
         except Exception:
-            _dim = 0
-        report = verify_candidate(
-            _shadow.target.vector_path,
-            dimension=_dim,
-            expected_count=expected,
+            pass
+        result = PFResult(
+            ok=False,
+            command="embed build",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
         )
-        if not report["ok"]:
-            _shadow.abort()
-            logger.error("Shadow verify failed: %s", report.get("reason"))
-            if _write_lock:
-                _write_lock.__exit__(None, None, None)
-            result = PFResult(
-                ok=False,
-                command="embed build",
-                version=PF_VERSION,
-                error=PFError(
-                    code=ErrorCode.INTERNAL_ERROR,
-                    message=f"Candidate verification failed: {report.get('reason')}",
-                ),
-            )
-            print(result.to_json() if args.json else result.error.message,
-                  file=sys.stderr if not args.json else sys.stdout)
-            return 1
-        _shadow.verified()
-        _shadow.publish()
-        logger.info("Shadow build published: %s → %s",
-                    _shadow.target.vector_path, _shadow.target.source_path)
-
-    mark_vector_build_state(
-        vault,
-        status="completed",
-        current=total,
-        total=total,
-        finished_at=_now(),
-        message="",
-        pid=0,
-        # Shadow publish swaps live for a candidate whose build_state table
-        # holds pre-build defaults (the live mark above was written before
-        # the swap) — without model/mode the next resume's gate-3 misreads a
-        # model change and re-embeds everything.
-        model=_current_model,
-        mode=get_embed_status(vault)["mode"],
-    )
-    try:
-        _status = get_embed_status(vault)
-        _real_chunks = _status.get("chunk_count", chunks_embedded)
-        _mode = _status.get("mode", "")
-        _model = _status.get("model", "")
-        _body_chunks = _status.get("body_chunk_count", 0)
-        _object_chunks = _status.get("object_chunk_count", 0)
-        _total_chunks = _status.get("total_chunks", 0)
-    except Exception:
-        _real_chunks = chunks_embedded
-        _mode = ""
-        _model = ""
-        _body_chunks = 0
-        _object_chunks = 0
-        _total_chunks = 0
-
-    write_vector_runtime(vault,
-    enabled=bool(_mode),
-    mode=_mode,
-    model=_model,
-    deps_installed=True,
-    deps_missing=None,
-    py_version=sys.version.split()[0],
-    db_exists=True,
-    chunk_count=_real_chunks,
-    body_chunk_count=_body_chunks,
-    object_chunk_count=_object_chunks,
-    total_chunks=_total_chunks,
-    build_state=read_vector_build_state(vault),
-    healthy=True, error="", backend="vec0")
-
-    print("EMBED_DONE", flush=True)
-
-    data = {
-        "papers_embedded": papers_embedded,
-        "papers_skipped": papers_skipped,
-        "chunks_embedded": chunks_embedded,
-        "model": get_embed_status(vault)["model"],
-        "mode": get_embed_status(vault)["mode"],
-    }
-    result = PFResult(ok=True, command="embed build", version=PF_VERSION, data=data)
-    if args.json:
-        print(result.to_json())
-    else:
-        skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
-        print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}")
-    # Build succeeded: delete pre-rebuild backup (in-place strategy only)
-    if _rebuild_backup_path and _rebuild_backup_path.exists():
-        _rebuild_backup_path.unlink()
-        logger.info("Deleted pre-rebuild backup after successful rebuild")
-    if _write_lock:
-        _write_lock.__exit__(None, None, None)
-    return 0
+        print(result.to_json() if args.json else result.error.message,
+              file=sys.stderr if not args.json else sys.stdout)
+        return 1
+    finally:
+        if _write_lock:
+            _write_lock.__exit__(None, None, None)

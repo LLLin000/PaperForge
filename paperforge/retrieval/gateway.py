@@ -15,7 +15,7 @@ from typing import Any
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.io import read_json
 from paperforge.core.result import PFResult
-from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.db import get_connection, get_memory_db_path, open_live_reader
 
 logger = logging.getLogger(__name__)
 
@@ -93,14 +93,12 @@ def _body_units_fts_exists(vault: Path) -> bool:
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return False
-    conn = get_connection(db_path, read_only=True)
     try:
-        row = conn.execute("SELECT COUNT(*) AS cnt FROM body_units_fts").fetchone()
-        return row["cnt"] > 0
+        with open_live_reader(vault, db_path) as conn:
+            row = conn.execute("SELECT COUNT(*) AS cnt FROM body_units_fts").fetchone()
+            return row["cnt"] > 0
     except Exception:
         return False
-    finally:
-        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -116,16 +114,12 @@ def _resolve_paper_root(vault: Path, query: str) -> Path | None:
     db_path = get_memory_db_path(vault)
     if not db_path or not db_path.exists():
         return None
-    conn = get_connection(db_path, read_only=True)
-    try:
+    with open_live_reader(vault, db_path) as conn:
         entries = lookup_paper(conn, query)
         if entries:
             ocr_root = paperforge_paths(vault)["ocr"]
             return ocr_root / entries[0]["zotero_key"]
-    finally:
-        conn.close()
     return None
-
 
 # ---------------------------------------------------------------------------
 # Intent: paper-lookup
@@ -152,30 +146,30 @@ def _run_paper_lookup(vault: Path, query: str, *, limit: int = 5) -> PFResult:
                 },
             },
         )
-    conn = get_connection(db_path, read_only=True)
     try:
-        entries = lookup_paper(conn, query)
-        limited = entries[:limit]
-        return PFResult(
-            ok=True,
-            command="paper-lookup",
-            version=PF_VERSION,
-            data={
-                "intent": "paper-lookup",
-                "query": query,
-                "results": limited,
-                "count": len(limited),
-                "next_action": None if limited else {
-                    "command": "paperforge content-discovery",
-                    "reason": "Identity lookup exhausted. Try content discovery or narrow with author/year/title fragments.",
+        with open_live_reader(vault, db_path) as conn:
+            entries = lookup_paper(conn, query)
+            limited = entries[:limit]
+            return PFResult(
+                ok=True,
+                command="paper-lookup",
+                version=PF_VERSION,
+                data={
+                    "intent": "paper-lookup",
+                    "query": query,
+                    "results": limited,
+                    "count": len(limited),
+                    "next_action": None if limited else {
+                        "command": "paperforge content-discovery",
+                        "reason": "Identity lookup exhausted. Try content discovery or narrow with author/year/title fragments.",
+                    },
+                    "route_explanation": {
+                        "primary_arm": "lookup_paper",
+                        "matched": len(limited) > 0,
+                        "compatibility_mode": False,
+                    },
                 },
-                "route_explanation": {
-                    "primary_arm": "lookup_paper",
-                    "matched": len(limited) > 0,
-                    "compatibility_mode": False,
-                },
-            },
-        )
+            )
     except Exception as exc:
         logger.exception("paper-lookup failed")
         return PFResult(
@@ -192,8 +186,6 @@ def _run_paper_lookup(vault: Path, query: str, *, limit: int = 5) -> PFResult:
                 },
             },
         )
-    finally:
-        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -225,20 +217,44 @@ def _run_body_unit_discovery(
                 },
             },
         )
-    conn = get_connection(db_path, read_only=True)
     try:
-        fts_query = _tokenize_for_fts(query)
-        rows = conn.execute(
-            """SELECT unit_id, paper_id, section_path, unit_text, rank
-               FROM body_units_fts
-               WHERE body_units_fts MATCH ?
-               ORDER BY rank
-               LIMIT ?""",
-            (fts_query, limit),
-        ).fetchall()
-        results = [dict(r) for r in rows]
-        coverage = _get_body_coverage(conn)
-        if not results:
+        with open_live_reader(vault, db_path) as conn:
+            fts_query = _tokenize_for_fts(query)
+            rows = conn.execute(
+                """SELECT unit_id, paper_id, section_path, unit_text, rank
+                   FROM body_units_fts
+                   WHERE body_units_fts MATCH ?
+                   ORDER BY rank
+                   LIMIT ?""",
+                (fts_query, limit),
+            ).fetchall()
+            results = [dict(r) for r in rows]
+            coverage = _get_body_coverage(conn)
+            if not results:
+                return PFResult(
+                    ok=True,
+                    command="content-discovery",
+                    version=PF_VERSION,
+                    data={
+                        "intent": "content-discovery",
+                        "query": query,
+                        "results": [],
+                        "count": 0,
+                        "coverage": coverage,
+                        "route_explanation": {
+                            "primary_arm": "body_units_fts",
+                            "matched": False,
+                        },
+                        "next_action": {
+                            "command": f"paperforge search {query}",
+                            "reason": (
+                                f"正文检索无匹配。正文索引覆盖 "
+                                f"{coverage['body_papers']}/{coverage['ocr_papers']} 篇 OCR 完成论文。"
+                                f"尝试 paperforge search 进行元数据全文搜索。"
+                            ),
+                        },
+                    },
+                )
             return PFResult(
                 ok=True,
                 command="content-discovery",
@@ -246,43 +262,18 @@ def _run_body_unit_discovery(
                 data={
                     "intent": "content-discovery",
                     "query": query,
-                    "results": [],
-                    "count": 0,
+                    "results": results,
+                    "count": len(results),
                     "coverage": coverage,
                     "route_explanation": {
                         "primary_arm": "body_units_fts",
-                        "matched": False,
-                    },
-                    "next_action": {
-                        "command": f"paperforge search {query}",
-                        "reason": (
-                            f"正文检索无匹配。正文索引覆盖 "
-                            f"{coverage['body_papers']}/{coverage['ocr_papers']} 篇 OCR 完成论文。"
-                            f"尝试 paperforge search 进行元数据全文搜索。"
-                        ),
+                        "fallback_arms": ["vector_retrieve"],
+                        "compatibility_mode": False,
+                        "matched": True,
                     },
                 },
             )
-        return PFResult(
-            ok=True,
-            command="content-discovery",
-            version=PF_VERSION,
-            data={
-                "intent": "content-discovery",
-                "query": query,
-                "results": results,
-                "count": len(results),
-                "coverage": coverage,
-                "route_explanation": {
-                    "primary_arm": "body_units_fts",
-                    "fallback_arms": ["vector_retrieve"],
-                    "compatibility_mode": False,
-                    "matched": True,
-                },
-            },
-        )
     except Exception as exc:
-        coverage = _get_body_coverage(conn)
         return PFResult(
             ok=False,
             command="content-discovery",
@@ -292,15 +283,12 @@ def _run_body_unit_discovery(
                 "query": query,
                 "results": [],
                 "error": str(exc),
-                "coverage": coverage,
                 "route_explanation": {
                     "primary_arm": "body_units_fts",
                     "error": f"fts_query_failed: {exc}",
                 },
             },
         )
-    finally:
-        conn.close()
 
 
 def _run_compat_content_discovery(
@@ -333,13 +321,13 @@ def _run_compat_content_discovery(
                 },
             },
         )
-    conn = get_connection(db_path, read_only=True)
     try:
-        results = search_papers(conn, query, limit=limit)
+        with open_live_reader(vault, db_path) as conn:
+            results = search_papers(conn, query, limit=limit)
 
-        # Secondary arm: vector retrieve if available
-        secondary_arm: str | None = None
-        vector_results = None
+            # Secondary arm: vector retrieve if available
+            secondary_arm: str | None = None
+            vector_results = None
     except Exception as exc:
         return PFResult(
             ok=False,
@@ -392,8 +380,6 @@ def _run_compat_content_discovery(
                 "route_explanation": route_explanation,
             },
         )
-    finally:
-        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -524,84 +510,84 @@ def _run_scoped_fetch(vault: Path, query: str) -> PFResult:
             },
         )
 
-    conn = get_connection(db_path, read_only=True)
     try:
-        entries = lookup_paper(conn, base_query)
-        if not entries:
+        with open_live_reader(vault, db_path) as conn:
+            entries = lookup_paper(conn, base_query)
+            if not entries:
+                return PFResult(
+                    ok=False,
+                    command="scoped-fetch",
+                    version=PF_VERSION,
+                    data={
+                        "intent": "scoped-fetch",
+                        "query": query,
+                        "body_units": [],
+                        "route_explanation": {
+                            "primary_arm": "body_units",
+                            "note": "paper not found",
+                        },
+                    },
+                )
+
+            paper_id = entries[0].get("zotero_key", "")
+
+            if section_filter:
+                rows = conn.execute(
+                    """SELECT unit_id, paper_id, section_path, unit_text,
+                              page_span_json, block_span_json
+                       FROM body_units
+                       WHERE paper_id = ? AND section_path LIKE ?
+                       ORDER BY unit_id""",
+                    (paper_id, f"%{section_filter}%"),
+                ).fetchall()
+            elif node_filter:
+                rows = conn.execute(
+                    """SELECT unit_id, paper_id, section_path, unit_text,
+                              page_span_json, block_span_json
+                       FROM body_units
+                       WHERE paper_id = ? AND unit_id LIKE ?
+                       ORDER BY unit_id""",
+                    (paper_id, f"%{node_filter}%"),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """SELECT unit_id, paper_id, section_path, unit_text,
+                              page_span_json, block_span_json
+                       FROM body_units
+                       WHERE paper_id = ?
+                       ORDER BY unit_id""",
+                    (paper_id,),
+                ).fetchall()
+
+            units = [dict(r) for r in rows]
+
+            # Attach manifest if available
+            manifest_row = conn.execute(
+                "SELECT value FROM meta WHERE key = ?",
+                (f"manifest:{paper_id}",),
+            ).fetchone()
+            manifest_data: dict | None = (
+                json.loads(manifest_row["value"]) if manifest_row else None
+            )
+
             return PFResult(
-                ok=False,
+                ok=True,
                 command="scoped-fetch",
                 version=PF_VERSION,
                 data={
                     "intent": "scoped-fetch",
                     "query": query,
-                    "body_units": [],
+                    "paper_id": paper_id,
+                    "body_units": units,
+                    "count": len(units),
+                    "manifest": manifest_data,
                     "route_explanation": {
                         "primary_arm": "body_units",
-                        "note": "paper not found",
+                        "section_filter": bool(section_filter),
+                        "node_filter": bool(node_filter),
                     },
                 },
             )
-
-        paper_id = entries[0].get("zotero_key", "")
-
-        if section_filter:
-            rows = conn.execute(
-                """SELECT unit_id, paper_id, section_path, unit_text,
-                          page_span_json, block_span_json
-                   FROM body_units
-                   WHERE paper_id = ? AND section_path LIKE ?
-                   ORDER BY unit_id""",
-                (paper_id, f"%{section_filter}%"),
-            ).fetchall()
-        elif node_filter:
-            rows = conn.execute(
-                """SELECT unit_id, paper_id, section_path, unit_text,
-                          page_span_json, block_span_json
-                   FROM body_units
-                   WHERE paper_id = ? AND unit_id LIKE ?
-                   ORDER BY unit_id""",
-                (paper_id, f"%{node_filter}%"),
-            ).fetchall()
-        else:
-            rows = conn.execute(
-                """SELECT unit_id, paper_id, section_path, unit_text,
-                          page_span_json, block_span_json
-                   FROM body_units
-                   WHERE paper_id = ?
-                   ORDER BY unit_id""",
-                (paper_id,),
-            ).fetchall()
-
-        units = [dict(r) for r in rows]
-
-        # Attach manifest if available
-        manifest_row = conn.execute(
-            "SELECT value FROM meta WHERE key = ?",
-            (f"manifest:{paper_id}",),
-        ).fetchone()
-        manifest_data: dict | None = (
-            json.loads(manifest_row["value"]) if manifest_row else None
-        )
-
-        return PFResult(
-            ok=True,
-            command="scoped-fetch",
-            version=PF_VERSION,
-            data={
-                "intent": "scoped-fetch",
-                "query": query,
-                "paper_id": paper_id,
-                "body_units": units,
-                "count": len(units),
-                "manifest": manifest_data,
-                "route_explanation": {
-                    "primary_arm": "body_units",
-                    "section_filter": bool(section_filter),
-                    "node_filter": bool(node_filter),
-                },
-            },
-        )
     except Exception as exc:
         logger.exception("scoped-fetch failed")
         return PFResult(
@@ -618,5 +604,3 @@ def _run_scoped_fetch(vault: Path, query: str) -> PFResult:
                 },
             },
         )
-    finally:
-        conn.close()

@@ -33,15 +33,12 @@ def export_reading_log(vault: Path, since: str = "", limit: int = 50) -> list[di
     db_path = get_memory_db_path(vault)
     paper_cache = {}
     if db_path.exists():
-        conn = get_connection(db_path, read_only=True)
-        try:
-            rows = conn.execute(
-                "SELECT zotero_key, citation_key, title, year, first_author FROM papers"
-            ).fetchall()
-            for r in rows:
-                paper_cache[r["zotero_key"]] = dict(r)
-        finally:
-            conn.close()
+        with open_live_reader(vault, db_path) as conn:
+                rows = conn.execute(
+                    "SELECT zotero_key, citation_key, title, year, first_author FROM papers"
+                ).fetchall()
+                for r in rows:
+                    paper_cache[r["zotero_key"]] = dict(r)
     
     results = []
     for n in notes:
