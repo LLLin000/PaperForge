@@ -7,6 +7,7 @@ recovery. Uses real sqlite3 files — no mocks of the swap itself.
 
 from __future__ import annotations
 
+import argparse
 import json
 import sqlite3
 from pathlib import Path
@@ -508,3 +509,146 @@ def test_build_from_index_acquires_writer_lock(tmp_path: Path) -> None:
     t.join(timeout=15)
     assert not t.is_alive(), "build_from_index should finish after lock release"
     assert result.get("ok"), result
+
+
+# ── Re-review P0-2: barrier timeout propagates, reentrancy ──────────────
+
+
+def test_reader_barrier_timeout_propagates_not_degrade(tmp_path: Path) -> None:
+    """Holding .read.lock must make a reader Timeout — never read unlocked."""
+    from filelock import FileLock, Timeout
+
+    from paperforge.memory.db import get_memory_db_path, open_live_reader
+
+    vault = _make_vault(tmp_path)
+    db_path = get_memory_db_path(vault)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    conn.commit()
+    conn.close()
+
+    blocker = FileLock(str(db_path) + ".read.lock", timeout=0.2)
+    blocker.acquire()
+    try:
+        with pytest.raises(Timeout):
+            with open_live_reader(vault, db_path) as c:
+                c.execute("SELECT 1")
+    finally:
+        blocker.release()
+
+
+def test_reader_barrier_reentrant_nested(tmp_path: Path) -> None:
+    """Nested open_live_reader must not self-deadlock (same thread)."""
+    from paperforge.memory.db import get_memory_db_path, open_live_reader
+
+    vault = _make_vault(tmp_path)
+    db_path = get_memory_db_path(vault)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    conn.commit()
+    conn.close()
+
+    with open_live_reader(vault, db_path) as c1:
+        with open_live_reader(vault, db_path) as c2:
+            assert c1 is not c2
+            assert c2.execute("SELECT 1") is not None
+
+
+def test_publish_checkpoints_live_before_replace(tmp_path: Path) -> None:
+    """P0-3: _publish_files checkpoints the OLD live WAL BEFORE os.replace —
+    a failed swap must leave the old live self-contained (no data loss)."""
+    from unittest.mock import patch
+
+    from paperforge.embedding import build_target
+    from paperforge.embedding.build_target import BuildTarget, ShadowBuild
+    from paperforge.memory.db import get_memory_db_path
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault, vec_rows=3)
+    # Keep the live in WAL mode WITH uncheckpointed data: hold a connection
+    # open so the WAL survives (sqlite auto-checkpoints on close).
+    c = sqlite3.connect(str(live))
+    c.execute("PRAGMA journal_mode=WAL")
+    c.execute("INSERT INTO papers VALUES ('B', 'Paper B')")
+    c.commit()
+    wal_path = Path(str(live) + "-wal")
+    assert wal_path.exists(), "WAL with uncheckpointed commit must exist"
+
+    target = BuildTarget(source_path=live, vector_path=Path(str(live) + ".build"))
+    shadow = ShadowBuild(target)
+    shadow.prepare()
+    shadow.building()
+    cand = sqlite3.connect(str(target.vector_path))
+    cand.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    cand.commit()
+    cand.close()
+    shadow.verified()
+
+    # Simulate a FAILED swap: os.replace raises → publish must abort and the
+    # old live (with its WAL) must still be fully readable.
+    with patch.object(build_target.os, "replace", side_effect=OSError("simulated replace failure")):
+        with pytest.raises(OSError):
+            shadow.publish()
+    c.execute("SELECT COUNT(*) FROM papers").fetchone()
+    assert c.execute("SELECT COUNT(*) FROM papers").fetchone()[0] == 2, (
+        "old live must retain its uncheckpointed commit after failed publish"
+    )
+    assert wal_path.exists(), "old live WAL must survive a failed swap"
+    c.close()
+
+
+def test_plain_build_model_change_routes_to_shadow(tmp_path: Path) -> None:
+    """P1: a plain `embed build` (no --force, no --resume) with a recorded
+    model different from the current config must route through shadow."""
+    from unittest.mock import patch
+
+    from paperforge.commands import embed
+
+    vault = _make_vault(tmp_path)
+    from paperforge.memory.db import get_memory_db_path
+    live = get_memory_db_path(vault)
+    # Full schema (papers with doi etc.) + vec0 at dim 3 + a DIFFERENT model
+    import sqlite_vec
+    c = sqlite3.connect(str(live))
+    c.enable_load_extension(True)
+    sqlite_vec.load(c)
+    from paperforge.memory.schema import ensure_schema
+    ensure_schema(c)
+    c.execute(
+        "INSERT OR REPLACE INTO build_state (key, value) VALUES "
+        "('model', '\"old-model\"'), ('status', '\"completed\"'), ('mode', '\"api\"')"
+    )
+    c.commit()
+    c.close()
+
+    args = argparse.Namespace(
+        vault_path=vault,
+        embed_subcommand="build",
+        json=True,
+        force=False,
+        resume=False,
+    )
+    # Current model differs from recorded — shadow must trigger.  Mock only
+    # the API path so the run reaches the shadow decision without encoding.
+    fake_status = {
+        "mode": "api", "model": "new-model", "db_exists": True, "healthy": True,
+        "chunk_count": 0, "body_chunk_count": 0, "object_chunk_count": 0, "total_chunks": 0,
+        "dimension": 3, "corrupted": False, "error": "", "vector_state": "ready",
+    }
+    with patch("paperforge.embedding._config.get_api_model", return_value="new-model"), \
+         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed, "read_index", return_value={"items": []}), \
+         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch.object(embed, "ensure_vec_tables", return_value=None):
+        rc = embed.run(args)
+    # Empty index: build completes trivially; the point is no crash and the
+    # requires_shadow decision is exercised (force path with shadow prepare
+    # runs against the live DB even with zero papers).
+    assert rc == 0
+    # Shadow must have been triggered: candidate was created AND published
+    # (live replaced — no .build leftover, build_state now records new-model)
+    from paperforge.embedding.build_state import read_vector_build_state
+    assert not Path(str(live) + ".build").exists()
+    assert read_vector_build_state(vault).get("model") == "new-model"

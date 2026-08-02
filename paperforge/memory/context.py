@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.db import open_live_reader, get_connection, get_memory_db_path
 
 
 def _build_collection_tree(conn) -> list[dict]:
@@ -43,51 +43,49 @@ def get_agent_context(vault: Path) -> dict | None:
     if not db_path.exists():
         return None
 
-    conn = get_connection(db_path, read_only=True)
     try:
-        total = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+        with open_live_reader(vault, db_path) as conn:
+            total = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
 
-        domains = {
-            r["domain"]: r["cnt"]
-            for r in conn.execute(
-                "SELECT domain, COUNT(*) as cnt FROM papers GROUP BY domain ORDER BY cnt DESC"
-            ).fetchall()
-        }
+            domains = {
+                r["domain"]: r["cnt"]
+                for r in conn.execute(
+                    "SELECT domain, COUNT(*) as cnt FROM papers GROUP BY domain ORDER BY cnt DESC"
+                ).fetchall()
+            }
 
-        lifecycle_counts = {
-            r["lifecycle"]: r["cnt"]
-            for r in conn.execute(
-                "SELECT lifecycle, COUNT(*) as cnt FROM papers GROUP BY lifecycle"
-            ).fetchall()
-        }
+            lifecycle_counts = {
+                r["lifecycle"]: r["cnt"]
+                for r in conn.execute(
+                    "SELECT lifecycle, COUNT(*) as cnt FROM papers GROUP BY lifecycle"
+                ).fetchall()
+            }
 
-        ocr_counts = {
-            r["ocr_status"]: r["cnt"]
-            for r in conn.execute(
-                "SELECT ocr_status, COUNT(*) as cnt FROM papers GROUP BY ocr_status"
-            ).fetchall()
-        }
+            ocr_counts = {
+                r["ocr_status"]: r["cnt"]
+                for r in conn.execute(
+                    "SELECT ocr_status, COUNT(*) as cnt FROM papers GROUP BY ocr_status"
+                ).fetchall()
+            }
 
-        deep_counts = {
-            r["deep_reading_status"]: r["cnt"]
-            for r in conn.execute(
-                "SELECT deep_reading_status, COUNT(*) as cnt FROM papers GROUP BY deep_reading_status"
-            ).fetchall()
-        }
+            deep_counts = {
+                r["deep_reading_status"]: r["cnt"]
+                for r in conn.execute(
+                    "SELECT deep_reading_status, COUNT(*) as cnt FROM papers GROUP BY deep_reading_status"
+                ).fetchall()
+            }
 
-        collections = _build_collection_tree(conn)
+            collections = _build_collection_tree(conn)
 
-        return {
-            "library": {
-                "paper_count": total,
-                "domain_counts": domains,
-                "lifecycle_counts": lifecycle_counts,
-                "ocr_counts": ocr_counts,
-                "deep_reading_counts": deep_counts,
-            },
-            "collections": collections,
-        }
+            return {
+                "library": {
+                    "paper_count": total,
+                    "domain_counts": domains,
+                    "lifecycle_counts": lifecycle_counts,
+                    "ocr_counts": ocr_counts,
+                    "deep_reading_counts": deep_counts,
+                },
+                "collections": collections,
+            }
     except Exception:
         return None
-    finally:
-        conn.close()

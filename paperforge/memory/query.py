@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 from paperforge.memory.builder import compute_hash
-from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.db import get_connection, get_memory_db_path, open_live_reader
 from paperforge.memory.schema import CURRENT_SCHEMA_VERSION, get_schema_version
 from paperforge.worker.asset_index import read_index
 from paperforge.worker.asset_state import compute_health
@@ -35,20 +35,18 @@ def get_memory_status(vault: Path) -> dict:
     if not db_path.exists():
         return result
 
-    conn = get_connection(db_path, read_only=True)
     try:
-        stored_version = get_schema_version(conn)
-        result["schema_ok"] = stored_version == CURRENT_SCHEMA_VERSION
-        row = conn.execute("SELECT COUNT(*) as cnt FROM papers").fetchone()
-        result["paper_count_db"] = row["cnt"] if row else 0
-        stored_hash_row = conn.execute(
-            "SELECT value FROM meta WHERE key = 'canonical_index_hash'"
-        ).fetchone()
-        stored_hash = stored_hash_row["value"] if stored_hash_row else ""
+        with open_live_reader(vault, db_path) as conn:
+            stored_version = get_schema_version(conn)
+            result["schema_ok"] = stored_version == CURRENT_SCHEMA_VERSION
+            row = conn.execute("SELECT COUNT(*) as cnt FROM papers").fetchone()
+            result["paper_count_db"] = row["cnt"] if row else 0
+            stored_hash_row = conn.execute(
+                "SELECT value FROM meta WHERE key = 'canonical_index_hash'"
+            ).fetchone()
+            stored_hash = stored_hash_row["value"] if stored_hash_row else ""
     except Exception:
         return result
-    finally:
-        conn.close()
 
     envelope = read_index(vault)
     if envelope is not None:
@@ -278,45 +276,42 @@ def get_paper_status(vault: Path, query: str) -> dict | None:
     if not db_path.exists():
         return None
 
-    conn = get_connection(db_path, read_only=True)
-    try:
-        entries = lookup_paper(conn, query)
-        if not entries:
-            return None
+    with open_live_reader(vault, db_path) as conn:
+            entries = lookup_paper(conn, query)
+            if not entries:
+                return None
 
-        # Multiple candidates -> return candidate list only (no full status)
-        if len(entries) > 1:
-            return {
-                "resolved": False,
-                "candidates": [
-                    {
-                        "zotero_key": e.get("zotero_key"),
-                        "title": e.get("title"),
-                        "year": e.get("year"),
-                        "citation_key": e.get("citation_key"),
-                        "lifecycle": e.get("lifecycle"),
-                    }
-                    for e in entries
-                ],
-            }
+            # Multiple candidates -> return candidate list only (no full status)
+            if len(entries) > 1:
+                return {
+                    "resolved": False,
+                    "candidates": [
+                        {
+                            "zotero_key": e.get("zotero_key"),
+                            "title": e.get("title"),
+                            "year": e.get("year"),
+                            "citation_key": e.get("citation_key"),
+                            "lifecycle": e.get("lifecycle"),
+                        }
+                        for e in entries
+                    ],
+                }
 
-        entry = entries[0]
-        assets = get_paper_assets(conn, entry["zotero_key"])
-        entry["health"] = compute_health(entry)
-        entry["assets"] = assets
-        entry["resolved"] = True
+            entry = entries[0]
+            assets = get_paper_assets(conn, entry["zotero_key"])
+            entry["health"] = compute_health(entry)
+            entry["assets"] = assets
+            entry["resolved"] = True
 
-        next_step = entry.get("next_step", "")
-        zk = entry.get("zotero_key", "")
-        if next_step == "/pf-deep":
-            entry["recommended_action"] = f"/pf-deep {zk}"
-        elif next_step == "ocr":
-            entry["recommended_action"] = f"paperforge ocr --key {zk}"
-        elif next_step == "sync":
-            entry["recommended_action"] = "paperforge sync"
-        else:
-            entry["recommended_action"] = None
+            next_step = entry.get("next_step", "")
+            zk = entry.get("zotero_key", "")
+            if next_step == "/pf-deep":
+                entry["recommended_action"] = f"/pf-deep {zk}"
+            elif next_step == "ocr":
+                entry["recommended_action"] = f"paperforge ocr --key {zk}"
+            elif next_step == "sync":
+                entry["recommended_action"] = "paperforge sync"
+            else:
+                entry["recommended_action"] = None
 
-        return entry
-    finally:
-        conn.close()
+            return entry

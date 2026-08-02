@@ -5,7 +5,12 @@ import logging
 import re
 
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
-from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+from paperforge.memory.db import (
+    ensure_vec_extension,
+    get_connection,
+    get_memory_db_path,
+    open_live_reader,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +48,8 @@ _VEC_META_MAP = {
 
 def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True) -> list[dict]:
     """Search chunks via vec0 k-NN on vec_fulltext. Returns list with metadata and similarity scores."""
-    provider = OpenAICompatibleProvider(vault)
-    query_embedding = provider.encode_single(query)
-    n = limit * 3 if expand else limit
-
     db_path = get_memory_db_path(vault)
-    conn = get_connection(db_path, read_only=True)
-    try:
+    with open_live_reader(vault, db_path) as conn:
         ensure_vec_extension(conn)
         q_emb_json = json.dumps(query_embedding)
         rows = conn.execute(
@@ -59,8 +59,6 @@ def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True
                WHERE v.embedding MATCH ? AND v.k = ?""",
             (q_emb_json, n),
         ).fetchall()
-    finally:
-        conn.close()
 
     results = []
     for row in rows:
@@ -157,8 +155,7 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True,
     n = limit * 2 if expand else limit
 
     db_path = get_memory_db_path(vault)
-    conn = get_connection(db_path, read_only=True)
-    try:
+    with open_live_reader(vault, db_path) as conn:
         ensure_vec_extension(conn)
         q_emb_json = json.dumps(q_emb)
 
@@ -217,8 +214,6 @@ def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True,
             if len(merged) >= limit:
                 break
         return merged
-    finally:
-        conn.close()
 def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None = None) -> list[dict]:
     """Hybrid search: BM25 FTS5 + vec0 k-NN with query rewrite.
 
@@ -229,8 +224,7 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
 
     query_variants = do_expand(query)
     db_path = get_memory_db_path(vault)
-    conn = get_connection(db_path, read_only=True)
-    try:
+    with open_live_reader(vault, db_path) as conn:
         ensure_vec_extension(conn)
         bm25_results: list[dict] = _bm25_search(conn, query_variants, limit * 2, paper_id=paper_id)
         try:
@@ -248,8 +242,6 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
             r.update(enrichment)
 
         return fused
-    finally:
-        conn.close()
 def _bm25_search(
     conn: sqlite3.Connection, query_variants: list[str], limit: int, paper_id: str | None = None
 ) -> list[dict]:

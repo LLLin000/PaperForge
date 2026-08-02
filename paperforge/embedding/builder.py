@@ -7,7 +7,7 @@ from pathlib import Path
 
 from paperforge.embedding.dim_detect import ensure_vec_tables
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
-from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+from paperforge.memory.db import open_live_reader, ensure_vec_extension, get_connection, get_memory_db_path
 from paperforge.memory.schema import ensure_schema
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
 
@@ -283,8 +283,7 @@ def get_body_units_for_embedding(vault: Path, key: str) -> list[dict]:
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return []
-    conn = get_connection(db_path, read_only=True)
-    try:
+    with open_live_reader(vault, db_path) as conn:
         rows = conn.execute(
             """SELECT unit_id, paper_id, section_path, section_level,
                       section_title, unit_text, unit_kind, part_ordinal,
@@ -295,8 +294,6 @@ def get_body_units_for_embedding(vault: Path, key: str) -> list[dict]:
             (key,),
         ).fetchall()
         return [dict(r) for r in rows]
-    finally:
-        conn.close()
 
 
 def get_object_units_for_embedding(vault: Path, key: str) -> list[dict]:
@@ -304,8 +301,7 @@ def get_object_units_for_embedding(vault: Path, key: str) -> list[dict]:
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return []
-    conn = get_connection(db_path, read_only=True)
-    try:
+    with open_live_reader(vault, db_path) as conn:
         rows = conn.execute(
             """SELECT unit_id, paper_id, section_path,
                       object_kind, object_label, caption_text, nearby_body_text,
@@ -316,8 +312,6 @@ def get_object_units_for_embedding(vault: Path, key: str) -> list[dict]:
             (key,),
         ).fetchall()
         return [dict(r) for r in rows]
-    finally:
-        conn.close()
 
 
 def embed_object_units(vault: Path, zotero_key: str, object_units: list[dict]) -> int:

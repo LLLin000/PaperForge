@@ -936,20 +936,18 @@ def probe_memory(vault: Path) -> dict[str, Any]:
 
         # Gate 5d: build_state absent (idle / never built / 1.5.15)
         # Check if vec0 already has data (build_state may have been lost)
-        from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
+        from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path, open_live_reader
 
         db_path = get_memory_db_path(vault)
         vec0_has_data = False
         if db_path.exists():
-            conn = get_connection(db_path, read_only=True)
             try:
-                ensure_vec_extension(conn)
-                row = conn.execute("SELECT COUNT(*) AS cnt FROM vec_body_meta LIMIT 1").fetchone()
-                vec0_has_data = bool(row and row["cnt"] > 0)
+                with open_live_reader(vault, db_path) as conn:
+                    ensure_vec_extension(conn)
+                    row = conn.execute("SELECT COUNT(*) AS cnt FROM vec_body_meta LIMIT 1").fetchone()
+                    vec0_has_data = bool(row and row["cnt"] > 0)
             except Exception:
                 pass
-            finally:
-                conn.close()
 
         if vec0_has_data:
             # vec0 has data — build_state was lost, treat as ready

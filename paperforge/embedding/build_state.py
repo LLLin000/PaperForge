@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
-from paperforge.memory.db import get_connection, get_memory_db_path
+from paperforge.memory.db import open_live_reader, get_connection, get_memory_db_path
 from paperforge.memory.schema import ensure_schema
 
 
@@ -94,16 +94,13 @@ def read_vector_build_state(vault: Path) -> dict:
         db_path = get_memory_db_path(vault)
         if not db_path.exists():
             return _default_state()
-        conn = get_connection(db_path, read_only=True)
-    except (FileNotFoundError, sqlite3.OperationalError):
+        with open_live_reader(vault, db_path) as conn:
+            try:
+                rows = conn.execute("SELECT key, value FROM build_state").fetchall()
+            except sqlite3.OperationalError:
+                return _default_state()
+    except (FileNotFoundError, sqlite3.OperationalError, OSError):
         return _default_state()
-
-    try:
-        rows = conn.execute("SELECT key, value FROM build_state").fetchall()
-    except sqlite3.OperationalError:
-        return _default_state()
-    finally:
-        conn.close()
 
     if not rows:
         return _default_state()
