@@ -44,16 +44,22 @@ class BuildTarget:
 
 
 class ShadowBuild:
-    """Lifecycle state machine: NEW → PREPARED → BUILDING → VERIFIED → PUBLISHED.
+    """Lifecycle state machine: NEW → PREPARED → BUILDING → SEALED → VERIFIED → PUBLISHED.
 
-    Any non-PUBLISHED state may transition to ABORTED.  ``publish()`` may
-    only be called from VERIFIED.  ``__exit__`` auto-aborts when not
-    published; after successful publish it must NOT delete the new live DB.
+    Any non-PUBLISHED state may transition to ABORTED.  ``seal()`` freezes
+    the candidate (checkpoint + journal switch) so that ``verify()`` checks
+    exactly the file that will be published.  ``publish()`` may only be
+    called from VERIFIED and marks PUBLISHED immediately after the
+    irreversible os.replace — post-swap bookkeeping can never report the
+    build as failed once the new live DB is in place.  ``__exit__``
+    auto-aborts when not published; after successful publish it must NOT
+    delete the new live DB.
     """
 
     NEW = "new"
     PREPARED = "prepared"
     BUILDING = "building"
+    SEALED = "sealed"
     VERIFIED = "verified"
     PUBLISHED = "published"
     ABORTED = "aborted"
@@ -74,31 +80,50 @@ class ShadowBuild:
         self._require(self.PREPARED, "building")
         self.state = self.BUILDING
 
-    def verified(self) -> None:
-        """Enter VERIFIED — requires all candidate connections closed."""
-        self._require(self.BUILDING, "verified")
+    def seal(self) -> None:
+        """Freeze the candidate: checkpoint WAL + switch to DELETE journal.
+
+        After seal() the candidate is a single self-contained file —
+        exactly what verify_candidate() inspects and publish() swaps.
+        """
+        self._require(self.BUILDING, "seal")
         self.close_candidate_conn()
+        vector = self.target.vector_path
+        try:
+            conn = sqlite3.connect(str(vector))
+            try:
+                _checkpoint_truncate(conn, "candidate")
+                mode = conn.execute("PRAGMA journal_mode=DELETE").fetchone()[0]
+                if str(mode).lower() != "delete":
+                    raise BuildTargetError(
+                        f"candidate journal switch failed: mode={mode}"
+                    )
+                side = Path(str(vector) + "-wal")
+                if side.exists() and side.stat().st_size > 0:
+                    raise BuildTargetError(
+                        f"seal left non-empty WAL: {side.stat().st_size} bytes"
+                    )
+            finally:
+                conn.close()
+        except sqlite3.Error as exc:
+            raise BuildTargetError(f"candidate seal failed: {exc}") from exc
+        self.state = self.SEALED
+
+    def verified(self) -> None:
+        """Enter VERIFIED — requires a sealed candidate."""
+        self._require(self.SEALED, "verified")
         self.state = self.VERIFIED
 
     def publish(self) -> None:
-        """Atomic swap: candidate → live. Only from VERIFIED."""
+        """Atomic swap: candidate → live. Only from VERIFIED.
+
+        ``self.state`` becomes PUBLISHED inside ``_publish_files()``
+        immediately after the irreversible os.replace — any later
+        best-effort bookkeeping failure must NOT let the caller abort the
+        already-published build.
+        """
         self._require(self.VERIFIED, "publish")
         self._publish_files()
-        self.state = self.PUBLISHED
-
-    def abort(self) -> None:
-        """Idempotent abort: delete candidate + sidecars, close conns."""
-        if self.state in (self.PUBLISHED, self.ABORTED):
-            return
-        self.close_candidate_conn()
-        for suffix in ("", "-wal", "-shm"):
-            p = Path(str(self.target.vector_path) + suffix)
-            try:
-                if p.exists():
-                    p.unlink()
-            except OSError:
-                logger.warning("abort: could not delete %s", p)
-        self.state = self.ABORTED
 
     def cleanup_stale(self) -> None:
         """D6: unconditionally delete leftover candidate files.
@@ -139,51 +164,49 @@ class ShadowBuild:
                 f"invalid transition {self.state} → {op} (expected {expected})"
             )
 
+    def abort(self) -> None:
+        """Idempotent abort: delete candidate + sidecars, close conns."""
+        if self.state in (self.PUBLISHED, self.ABORTED):
+            return
+        self.close_candidate_conn()
+        for suffix in ("", "-wal", "-shm"):
+            p = Path(str(self.target.vector_path) + suffix)
+            try:
+                if p.exists():
+                    p.unlink()
+            except OSError:
+                logger.warning("abort: could not delete %s", p)
+        self.state = self.ABORTED
+
     def _publish_files(self) -> None:
         vector = self.target.vector_path
         live = self.target.source_path
         if vector == live:
+            self.state = self.PUBLISHED
             return  # In-place target: nothing to swap
-        # P0-4: checkpoint + journal switch MUST succeed before publish —
-        # if the WAL still holds data and we swap the main file, we publish
-        # a DB missing its latest commits.  Abort, don't swallow.
-        try:
-            conn = sqlite3.connect(str(vector))
-            try:
-                conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-                mode = conn.execute("PRAGMA journal_mode=DELETE").fetchone()[0]
-                if str(mode).lower() != "delete":
-                    raise sqlite3.Error(f"journal switch failed: mode={mode}")
-                side = Path(str(vector) + "-wal")
-                if side.exists() and side.stat().st_size > 0:
-                    raise sqlite3.Error(
-                        f"checkpoint left non-empty WAL: {side.stat().st_size} bytes"
-                    )
-            finally:
-                conn.close()
-        except sqlite3.Error as exc:
-            raise BuildTargetError(f"candidate checkpoint failed: {exc}") from exc
-        # P0-3: order matters.  The old live DB may still hold uncheckpointed
-        # commits in its own -wal.  Checkpoint it FIRST so the main file is
-        # self-contained; only then attempt the swap.  If os.replace fails
-        # (Windows, AV, permissions) the old live remains fully recoverable —
-        # never delete its sidecars before the swap succeeded.
-        try:
-            conn = sqlite3.connect(str(live))
-            try:
-                conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-            finally:
-                conn.close()
-        except sqlite3.Error as exc:
-            raise BuildTargetError(f"live checkpoint failed: {exc}") from exc
         # D1 reader barrier: readers are short-lived CLI processes; take a
         # brief reader lock so no in-flight reader holds live open during the
         # swap (Windows cannot replace an open file).  A timeout here is a
-        # transient failure — propagate it (BuildTargetError below), never
-        # degrade to an unlocked swap.
+        # transient failure — propagate, never degrade to an unlocked swap.
         barrier = _reader_barrier(self.target.source_path)
         with barrier:
+            # P0-3: checkpoint the OLD live FIRST (under the barrier, with all
+            # controlled readers quiesced) so its main file is self-contained
+            # before we touch anything.  If os.replace fails (Windows, AV,
+            # permissions) the old live remains fully recoverable.
+            try:
+                conn = sqlite3.connect(str(live))
+                try:
+                    _checkpoint_truncate(conn, "live")
+                finally:
+                    conn.close()
+            except sqlite3.Error as exc:
+                raise BuildTargetError(f"live checkpoint failed: {exc}") from exc
+            # Irreversible commit point: the swap.  Mark PUBLISHED the moment
+            # os.replace returns — everything after is best-effort cleanup
+            # that must not flip the outcome.
             os.replace(str(vector), str(live))
+            self.state = self.PUBLISHED
             # Swap succeeded: the old live's sidecars are stale — clean them
             # up now (best-effort; a leftover -wal of the OLD main file is
             # harmless once the new live is in place).
@@ -194,7 +217,6 @@ class ShadowBuild:
                         p.unlink()
                 except OSError:
                     logger.warning("publish: could not delete %s", p)
-
     def __enter__(self) -> "ShadowBuild":
         return self
 
@@ -287,6 +309,25 @@ def verify_candidate(
         return _fail(str(exc))
     finally:
         conn.close()
+
+
+def _checkpoint_truncate(conn: sqlite3.Connection, label: str) -> None:
+    """Run wal_checkpoint(TRUNCATE) and VERIFY it actually completed.
+
+    PRAGMA wal_checkpoint returns ``(busy, log_frames, checkpointed)`` and
+    does NOT raise when readers hold the DB — a busy result means the WAL
+    still contains frames that would be lost on a raw file swap.  Any
+    nonzero busy or incomplete frame count must fail the publish.
+    """
+    row = conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+    if row is None:
+        raise BuildTargetError(f"{label} checkpoint returned no result")
+    busy, log_frames, checkpointed = (int(v) for v in row[:3])
+    if busy != 0 or checkpointed != log_frames:
+        raise BuildTargetError(
+            f"{label} checkpoint incomplete: busy={busy}, "
+            f"log={log_frames}, checkpointed={checkpointed}"
+        )
 
 
 def _reader_barrier(live_path: Path):

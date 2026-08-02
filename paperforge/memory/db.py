@@ -75,9 +75,13 @@ def get_connection(db_path: Path, read_only: bool = False) -> sqlite3.Connection
         conn = sqlite3.connect(uri, uri=True)
     else:
         db_path.parent.mkdir(parents=True, exist_ok=True)
+        # Capture freshness BEFORE connect() — sqlite3.connect creates the
+        # file, so a post-connect exists() check would always be True and a
+        # fresh DB would never get its one-time WAL initialization.
+        was_new = not db_path.exists()
         conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
-    if not read_only and not db_path.exists():
+    if not read_only and was_new:
         # Fresh DB: initialize WAL once.  Existing DBs keep their current
         # journal mode — a shadow publish switches live to DELETE (D1) and a
         # later rw connection must NOT flip it back to WAL (which resurrects
@@ -111,7 +115,7 @@ def ensure_vec_extension(conn: sqlite3.Connection) -> None:
         pass  # sqlite_vec not installed
 
 
-_reader_lock_depth = threading.local()
+_reader_lock_depths = threading.local()
 
 
 def open_live_reader(vault: Path, db_path: Path | None = None):
@@ -120,11 +124,13 @@ def open_live_reader(vault: Path, db_path: Path | None = None):
     this entry so a shadow publish's brief reader lock actually quiesces them
     (Windows cannot replace a file another process holds open).
 
-    The barrier is re-entrant per thread: nested readers (a command that
-    opens the DB through several layers) acquire the same thread-level lock
-    once.  A lock *timeout* is NOT a licence to read unlocked — it
-    propagates to the caller, which should treat it as a transient
-    retryable failure (a publish is in progress).
+    The barrier is re-entrant per thread AND per DB path: nested readers of
+    the SAME database (a command that opens it through several layers)
+    acquire the thread-level lock once, while a thread that nests across two
+    different vaults/databases still takes each database's own lock.  A lock
+    *timeout* is NOT a licence to read unlocked — it propagates to the
+    caller, which should treat it as a transient retryable failure (a
+    publish is in progress).
 
     Usage::
 
@@ -137,15 +143,19 @@ def open_live_reader(vault: Path, db_path: Path | None = None):
     @contextmanager
     def _reader():
         path = db_path or get_memory_db_path(vault)
-        depth = getattr(_reader_lock_depth, "depth", 0)
+        key = str(path.resolve())
+        depths: dict[str, int] = getattr(_reader_lock_depths, "depths", {})
+        depth = depths.get(key, 0)
         barrier = None
         if depth == 0:
-            # First (outermost) reader in this thread takes the file lock.
-            # Timeout raises filelock.Timeout — intentionally NOT caught:
-            # reading without the barrier defeats the publish quiescence.
+            # First (outermost) reader of THIS database in this thread takes
+            # the file lock.  Timeout raises filelock.Timeout — intentionally
+            # NOT caught: reading without the barrier defeats the publish
+            # quiescence.
             barrier = FileLock(str(path) + ".read.lock", timeout=10)
             barrier.acquire()
-        _reader_lock_depth.depth = depth + 1
+        depths[key] = depth + 1
+        _reader_lock_depths.depths = depths
         try:
             conn = get_connection(path, read_only=True)
             try:
@@ -153,7 +163,7 @@ def open_live_reader(vault: Path, db_path: Path | None = None):
             finally:
                 conn.close()
         finally:
-            _reader_lock_depth.depth = depth
+            depths[key] = depth
             if barrier is not None:
                 barrier.release()
 

@@ -239,6 +239,13 @@ def run(args: argparse.Namespace) -> int:
 
     _current_model = get_api_model(vault)
 
+    # P0-1: cleanup state initialized BEFORE the lock and the outer try —
+    # resume/model checks may raise, and the outer handler unconditionally
+    # references these (an UnboundLocalError would mask the real error).
+    _shadow: ShadowBuild | None = None
+    _candidate_conn = None
+    _rebuild_backup_path: Path | None = None
+
     # D2: writer lock acquired ONCE before ANY resume/model checks (they
     # open rw connections and may mutate schema), held through verify and
     # publish.  Released by the outer finally on every path.
@@ -299,23 +306,37 @@ def run(args: argparse.Namespace) -> int:
                         print(msg)
                     resume = False
 
+        # P0-2: full rebuild must never honor resume — the candidate's
+        # vector tables are cleared, so a hash-skip would publish a DB
+        # missing those papers' vectors.  Force wins over resume at both the
+        # CLI (mutually exclusive group) and programmatic call sites.
+        if args.force:
+            resume = False
         _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
-        _shadow: ShadowBuild | None = None
-        _candidate_conn = None
-        _rebuild_backup_path: Path | None = None
-
         # D5: full rebuilds (force / model change / resume reset) use shadow target.
-        # P1: model change is detected INDEPENDENTLY of --resume — a plain
-        # `embed build` after a config model switch must also route through
-        # the shadow, otherwise ensure_vec_tables would resize vec0 in place
-        # on the live DB and expose an empty/partial window mid-build.
-        _stored_model = read_vector_build_state(vault).get("model", "")
-        _model_changed = bool(
+        # P1: embedding identity is (provider endpoint, model) — a config
+        # switch of EITHER must route through shadow.  A plain `embed build`
+        # after a model/endpoint change would otherwise let ensure_vec_tables
+        # resize vec0 in place on the live DB and expose an empty/partial
+        # window mid-build.
+        from paperforge.embedding._config import get_api_base_url
+
+        _bs = read_vector_build_state(vault)
+        _stored_model = _bs.get("model", "")
+        _stored_endpoint = _bs.get("vector_provider_endpoint", "")
+        _current_endpoint = get_api_base_url(vault)
+        _embedding_identity_changed = bool(
             _stored_model and _current_model and _stored_model != _current_model
+        ) or bool(
+            _stored_endpoint and _current_endpoint and _stored_endpoint != _current_endpoint
         )
-        if _model_changed and not getattr(args, "json", False):
-            print(f"Model changed: {_stored_model} -> {_current_model}. Re-embedding all papers.")
-        requires_shadow = (_force_rebuild or _model_changed) and _db_path.exists()
+        if _embedding_identity_changed and not getattr(args, "json", False):
+            print(
+                f"Embedding identity changed: "
+                f"{_stored_model}@{_stored_endpoint or '?'} -> "
+                f"{_current_model}@{_current_endpoint or '?'}. Re-embedding all papers."
+            )
+        requires_shadow = (_force_rebuild or _embedding_identity_changed) and _db_path.exists()
 
         if requires_shadow:
             # Maintenance mode message (D2b).
@@ -401,6 +422,7 @@ def run(args: argparse.Namespace) -> int:
             message="",
             pid=_os.getpid(),
             model=_current_model,
+            vector_provider_endpoint=_current_endpoint,
             mode=get_embed_status(vault)["mode"],
         )
 
@@ -688,6 +710,10 @@ def run(args: argparse.Namespace) -> int:
                     _cand.close()
             except Exception:
                 _dim = 0
+        # P1-1: SEAL the candidate (checkpoint + journal switch) BEFORE
+        # verifying — verify_candidate must inspect exactly the file that
+        # publish() will swap, not the WAL-backed logical view.
+            _shadow.seal()
             report = verify_candidate(
                 _shadow.target.vector_path,
                 dimension=_dim,
@@ -728,6 +754,7 @@ def run(args: argparse.Namespace) -> int:
             # the swap) — without model/mode the next resume's gate-3 misreads a
             # model change and re-embeds everything.
             model=_current_model,
+            vector_provider_endpoint=_current_endpoint,
             mode=get_embed_status(vault)["mode"],
         )
         try:
