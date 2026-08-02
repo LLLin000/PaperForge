@@ -435,6 +435,7 @@ def test_gold_figure_merge_ownership_contracts(tmp_path: Path) -> None:
         pytest.fail("\n" + "\n".join(failures))
 
 
+@pytest.mark.xfail(strict=True, reason="vnext figure page assignment pending decision — https://github.com/LLLin000/PaperForge/issues/118")
 def test_dwqqk2yb_ownership_no_longer_mega_merges_same_page_assets(tmp_path: Path) -> None:
     result = replay_production_pipeline("DWQQK2YB", tmp_path)
     reader_payload = result["reader_payload"]

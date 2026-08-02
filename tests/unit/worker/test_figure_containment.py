@@ -62,17 +62,17 @@ class TestClusterBboxesByProximity:
 class TestHighlyOverlapsAnyMatchedRegion:
     def test_drops_when_over_50pct(self):
         fallback = _bbox(100, 100, 300, 300)
-        regions = [("matched", _bbox(120, 120, 280, 280))]
+        regions = [("matched", _bbox(120, 120, 280, 280), "fig1")]
         assert _highly_overlaps_any_matched_region(fallback, regions)
 
     def test_keeps_when_no_overlap(self):
         fallback = _bbox(500, 500, 600, 600)
-        regions = [("matched", _bbox(100, 100, 200, 200))]
+        regions = [("matched", _bbox(100, 100, 200, 200), "fig1")]
         assert not _highly_overlaps_any_matched_region(fallback, regions)
 
     def test_ignores_fallback_tag_regions(self):
         fallback = _bbox(100, 100, 300, 300)
-        regions = [("fallback", _bbox(100, 100, 300, 300))]
+        regions = [("fallback", _bbox(100, 100, 300, 300), "")]
         assert not _highly_overlaps_any_matched_region(fallback, regions)
 
 

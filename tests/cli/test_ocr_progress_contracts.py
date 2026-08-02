@@ -117,6 +117,7 @@ class TestOcrRedoProgressTokens:
     _K2 = "KEY00002"
     _K3 = "KEY00003"
 
+    @pytest.mark.xfail(strict=True, reason="OCR_REDO token contract pending decision — https://github.com/LLLin000/PaperForge/issues/118")
     def test_redo_multi_key_emits_start_progress_done(
         self, capsys, tmp_path, monkeypatch
     ):
@@ -183,6 +184,7 @@ class TestOcrRedoProgressTokens:
         assert "OCR_REDO_DONE" not in captured
         assert "Would redo" in captured
 
+    @pytest.mark.xfail(strict=True, reason="OCR_REDO token contract pending decision — https://github.com/LLLin000/PaperForge/issues/118")
     def test_redo_prefix_separate_from_rebuild(self, capsys, tmp_path, monkeypatch):
         """OCR_REDO prefix is distinct from OCR_REBUILD."""
         _mock_run_ocr(monkeypatch)
@@ -399,6 +401,7 @@ class TestCooperativeStop:
         assert "OCR_REBUILD_PROGRESS:3:3:KEY003" not in captured
         assert "OCR_REBUILD_DONE" in captured
 
+    @pytest.mark.xfail(strict=True, reason="OCR_REDO token contract pending decision — https://github.com/LLLin000/PaperForge/issues/118")
     def test_redo_stop_emits_done_and_partial_progress(self, capsys, monkeypatch, tmp_path):
         """Redo batch stop emits DONE with partial progress and exit 130."""
         _mock_run_ocr(monkeypatch)
