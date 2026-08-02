@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 import sqlite3
 from typing import Optional
@@ -82,6 +83,87 @@ class VectorRebuildRequired(RuntimeError):
     shadow rebuild instead (P0-3)."""
 
 
+@dataclass(frozen=True)
+class VectorLayout:
+    """Single source of truth for vec0 layout checks (P1-1).
+
+    Used by requires_shadow routing, ensure_vec_tables, verify_candidate and
+    status — one contract instead of three drifting ad-hoc checks.
+    """
+
+    tables_complete: bool
+    missing: tuple[str, ...]
+    dimensions: dict[str, int | None]     # vec table -> dim (None = absent/unknown)
+    counts: dict[str, tuple[int, int]]    # vec table -> (vec_rows, meta_rows)
+    compatible: bool
+    reason: str
+
+    @property
+    def total_meta_rows(self) -> int:
+        return sum(mc for _, mc in self.counts.values())
+
+
+VEC_PAIRS: tuple[tuple[str, str], ...] = (
+    ("vec_fulltext", "vec_fulltext_meta"),
+    ("vec_body", "vec_body_meta"),
+    ("vec_objects", "vec_objects_meta"),
+)
+
+
+def inspect_vector_layout(conn, required_dim: int | None = None) -> VectorLayout:
+    """Inspect the six vec/meta tables: presence, per-table dimension, and
+    vec==meta row counts.  Missing tables are NOT silently tolerated when
+    required_dim is given (empty-but-complete schema is legal; absent schema
+    is not)."""
+    import re as _re
+
+    from paperforge.memory.db import ensure_vec_extension
+
+    ensure_vec_extension(conn)
+    missing: list[str] = []
+    dims: dict[str, int | None] = {}
+    counts: dict[str, tuple[int, int]] = {}
+    reasons: list[str] = []
+    for vec, meta in VEC_PAIRS:
+        try:
+            row = conn.execute(
+                f"SELECT sql FROM sqlite_master WHERE name='{vec}' AND type='table'"
+            ).fetchone()
+            if not row:
+                missing.append(vec)
+                dims[vec] = None
+                counts[vec] = (0, 0)
+                continue
+            m = _re.search(r"float\[(\d+)\]", row[0])
+            dims[vec] = int(m.group(1)) if m else None
+            vc = conn.execute(f"SELECT COUNT(*) FROM {vec}").fetchone()[0]
+            mc = conn.execute(f"SELECT COUNT(*) FROM {meta}").fetchone()[0]
+            counts[vec] = (vc, mc)
+            if vc != mc:
+                reasons.append(f"{vec}/{meta} count mismatch {vc} vs {mc}")
+        except Exception as exc:  # noqa: BLE001 — layout check must not crash
+            missing.append(vec)
+            dims[vec] = None
+            counts[vec] = (0, 0)
+            reasons.append(f"{vec} unreadable: {exc}")
+    tables_complete = not missing
+    if missing:
+        reasons.append(f"missing tables: {missing}")
+    if required_dim is not None:
+        for vec in ("vec_fulltext", "vec_body", "vec_objects"):
+            d = dims.get(vec)
+            if d is not None and d != required_dim:
+                reasons.append(f"{vec} dimension {d} != required {required_dim}")
+    return VectorLayout(
+        tables_complete=tables_complete,
+        missing=tuple(missing),
+        dimensions=dims,
+        counts=counts,
+        compatible=not reasons,
+        reason="; ".join(reasons) or "ok",
+    )
+
+
 def ensure_vec_tables(conn, vault: Path, *, allow_recreate: bool = False) -> None:
     """Ensure vec0 virtual tables match the model's dimension.
 
@@ -97,27 +179,22 @@ def ensure_vec_tables(conn, vault: Path, *, allow_recreate: bool = False) -> Non
     # Detect required dimension
     required_dim = detect_embedding_dim(vault)
 
-    # Check existing vec0 tables
-    existing_dim: Optional[int] = None
-    try:
-        # vec0 stores dimension in the table metadata — read via pragma
-        row = conn.execute("SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'").fetchone()
-        if row:
-            import re
-            m = re.search(r"float\[(\d+)\]", row[0])
-            if m:
-                existing_dim = int(m.group(1))
-    except Exception:
-        pass
-
-    if existing_dim == required_dim:
+    layout = inspect_vector_layout(conn, required_dim)
+    if layout.compatible and layout.tables_complete:
         return  # already correct
 
     if not allow_recreate:
-        raise VectorRebuildRequired(
-            f"vec0 dimension {existing_dim} != required {required_dim} — "
-            "in-place recreate would destroy live vectors; shadow rebuild required"
-        )
+        # P1-2: an EMPTY library (no vector rows anywhere) is a first build —
+        # safe to initialize the correct dimension in place under the writer
+        # lock.  Only a library that ALREADY HAS vectors is protected from
+        # in-place recreation (that would destroy them + orphan meta rows).
+        if layout.total_meta_rows == 0:
+            allow_recreate = True
+        else:
+            raise VectorRebuildRequired(
+                f"vector layout incompatible: {layout.reason} — "
+                "in-place recreate would destroy live vectors; shadow rebuild required"
+            )
 
     # Drop and recreate with correct dimension (shadow candidate / fresh DB)
     for name in ("vec_fulltext", "vec_body", "vec_objects"):

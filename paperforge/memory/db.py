@@ -51,7 +51,10 @@ class WriterLock:
         if depth > 0:
             depths[self._key] = depth + 1
             self._local.depths = depths
-            self._acquired = False  # nested: re-entrant, no new file lock
+            # P0-3: do NOT touch self._acquired on re-entry.  A fresh nested
+            # instance starts with _acquired=False; re-entering the SAME
+            # instance must keep its first-acquisition ownership True so the
+            # outermost __exit__ actually releases the file lock.
             return self
         self._lock.acquire()
         self._acquired = True

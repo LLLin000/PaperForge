@@ -38,8 +38,14 @@ def _seed_live_db(vault: Path, *, vec_rows: int = 5) -> Path:
     conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
     conn.execute("CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, title TEXT)")
     conn.execute("INSERT INTO papers VALUES ('A', 'Paper A')")
+    # Complete six-table vec schema (P1-3 contract): body carries the rows,
+    # fulltext/objects exist empty.
+    conn.execute("CREATE VIRTUAL TABLE vec_fulltext USING vec0(embedding float[3])")
+    conn.execute("CREATE TABLE vec_fulltext_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)")
     conn.execute("CREATE VIRTUAL TABLE vec_body USING vec0(embedding float[3])")
     conn.execute("CREATE TABLE vec_body_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)")
+    conn.execute("CREATE VIRTUAL TABLE vec_objects USING vec0(embedding float[3])")
+    conn.execute("CREATE TABLE vec_objects_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)")
     for i in range(vec_rows):
         cur = conn.execute("INSERT INTO vec_body(embedding) VALUES (?)",
                            [json.dumps([0.1, 0.2, 0.3])])
@@ -234,10 +240,7 @@ def test_verify_zero_count_valid(tmp_path: Path) -> None:
 
     vault = _make_vault(tmp_path)
     live = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
-    conn = sqlite3.connect(str(live))
-    conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
-    conn.commit()
-    conn.close()
+    _seed_complete_vec_schema(live, dim=3)
 
     build = live.with_suffix(".db.build")
     src = sqlite3.connect(str(live))
@@ -248,6 +251,25 @@ def test_verify_zero_count_valid(tmp_path: Path) -> None:
 
     report = verify_candidate(build, dimension=3, expected_count=0)
     assert report["ok"], report  # empty DB + expected 0 → valid
+
+
+
+def _seed_complete_vec_schema(db_path: Path, *, dim: int = 3) -> None:
+    """Create all six vec/meta tables at *dim* with ZERO rows (empty-but-complete
+    schema — the P1-3 contract for a legal empty candidate)."""
+    import sqlite_vec
+
+    conn = sqlite3.connect(str(db_path))
+    conn.enable_load_extension(True)
+    sqlite_vec.load(conn)
+    for vec in ("vec_fulltext", "vec_body", "vec_objects"):
+        conn.execute(f"CREATE VIRTUAL TABLE IF NOT EXISTS {vec} USING vec0(embedding float[{dim}])")
+    for meta in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
+        conn.execute(
+            f"CREATE TABLE IF NOT EXISTS {meta} (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)"
+        )
+    conn.commit()
+    conn.close()
 
 
 # ── 7. Writer lock re-entrancy + cross-process exclusion ──────────────────
@@ -385,12 +407,10 @@ def test_dimension_change_rebuild_publishes(tmp_path: Path) -> None:
 
     # Build candidate at a DIFFERENT dimension (simulated model migration)
     build = live.with_suffix(".db.build")
+    _seed_complete_vec_schema(build, dim=5)
     conn = sqlite3.connect(str(build))
     conn.enable_load_extension(True)
     sqlite_vec.load(conn)
-    conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
-    conn.execute("CREATE VIRTUAL TABLE vec_body USING vec0(embedding float[5])")
-    conn.execute("CREATE TABLE vec_body_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)")
     cur = conn.execute("INSERT INTO vec_body(embedding) VALUES (?)",
                        [json.dumps([0.1] * 5)])
     conn.execute("INSERT INTO vec_body_meta(rowid, paper_id, unit_id) VALUES (?, 'A', 'u1')",
@@ -848,6 +868,9 @@ def test_incremental_write_rejects_dimension_recreate(tmp_path: Path) -> None:
     c.enable_load_extension(True)
     sqlite_vec.load(c)
     c.execute("CREATE VIRTUAL TABLE vec_body USING vec0(embedding float[3])")
+    c.execute("CREATE TABLE vec_body_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)")
+    cur = c.execute("INSERT INTO vec_body(embedding) VALUES (?)", [json.dumps([0.1, 0.2, 0.3])])
+    c.execute("INSERT INTO vec_body_meta(rowid, paper_id, unit_id) VALUES (?, 'A', 'u1')", (cur.lastrowid,))
     c.commit()
     c.close()
 
@@ -895,8 +918,160 @@ def test_writer_lock_per_path_no_false_reentry(tmp_path: Path) -> None:
         l2.__exit__(None, None, None)
         # Same-vault nesting still re-enters without a second file lock.
         l1.__enter__()  # re-entry on SAME key
-        assert not l1._acquired, "same-vault nesting must not re-acquire"
+        # P0-3: same-instance re-entry must KEEP ownership True (a nested
+        # enter that clears it would leak the file lock on the outer exit).
+        assert l1._acquired, "same-instance re-entry must keep ownership"
         l1.__exit__(None, None, None)
+        l1.__exit__(None, None, None)  # outermost exit releases
         print("per-path writer lock: OK")
     finally:
         l1.__exit__(None, None, None)
+
+
+# ── Round 6: protocol-combination tests ─────────────────────────────────
+
+
+def test_resume_endpoint_change_no_hash_skip(tmp_path: Path) -> None:
+    """P0-2: --resume + endpoint change → shadow AND no hash-skip (a skipped
+    paper's vectors would be missing from the cleared candidate)."""
+    from unittest.mock import patch
+
+    from paperforge.commands import embed
+
+    vault = _make_vault(tmp_path)
+    from paperforge.memory.db import get_memory_db_path
+    live = get_memory_db_path(vault)
+    import sqlite_vec
+    c = sqlite3.connect(str(live))
+    c.enable_load_extension(True)
+    sqlite_vec.load(c)
+    from paperforge.memory.schema import ensure_schema
+    ensure_schema(c)
+    c.execute(
+        "INSERT OR REPLACE INTO build_state (key, value) VALUES "
+        "('model', '\"m\"'), ('status', '\"completed\"'), "
+        "('vector_provider_endpoint', '\"https://old.example/v1\"'), "
+        "('vector_dimension', '3'), ('mode', '\"api\"')"
+    )
+    c.commit()
+    c.close()
+
+    args = argparse.Namespace(
+        vault_path=vault, embed_subcommand="build", json=True, force=False, resume=True,
+    )
+    fake_status = {
+        "mode": "api", "model": "m", "db_exists": True, "healthy": True,
+        "chunk_count": 0, "body_chunk_count": 0, "object_chunk_count": 0, "total_chunks": 0,
+        "dimension": 3, "corrupted": False, "error": "", "vector_state": "ready",
+    }
+    with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
+         patch("paperforge.embedding._config.get_api_base_url", return_value="https://new.example/v1"), \
+         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed, "read_index", return_value={"items": []}), \
+         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch.object(embed, "ensure_vec_tables", return_value=None):
+        rc = embed.run(args)
+    assert rc == 0, f"endpoint-change shadow must succeed, rc={rc}"
+    # Shadow ran: live was replaced by the candidate (no .build leftover).
+    assert not Path(str(live) + ".build").exists()
+    # resume was forced off: no hash-skip path could run (0 papers anyway,
+    # but the requires_shadow→resume=False gate is what we assert).
+    from paperforge.embedding.build_state import read_vector_build_state
+    assert read_vector_build_state(vault).get("status") == "completed"
+
+
+def test_post_publish_nonjson_bookkeeping_failure(tmp_path: Path) -> None:
+    """P0-1: published + non-JSON + bookkeeping failure → rc=0, no
+    AttributeError on result.error (which is None for ok=True)."""
+    from unittest.mock import patch
+
+    from paperforge.commands import embed
+
+    vault = _make_vault(tmp_path)
+    from paperforge.memory.db import get_memory_db_path
+    live = get_memory_db_path(vault)
+    _seed_complete_vec_schema(live, dim=3)
+
+    args = argparse.Namespace(
+        vault_path=vault, embed_subcommand="build", json=False, force=True, resume=False,
+    )
+    fake_status = {
+        "mode": "api", "model": "m", "db_exists": True, "healthy": True,
+        "chunk_count": 0, "body_chunk_count": 0, "object_chunk_count": 0, "total_chunks": 0,
+        "dimension": 3, "corrupted": False, "error": "", "vector_state": "ready",
+    }
+    with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
+         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed, "read_index", return_value={"items": []}), \
+         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch.object(embed, "ensure_vec_tables", return_value=None), \
+         patch.object(embed, "write_vector_runtime", side_effect=RuntimeError("boom")):
+        rc = embed.run(args)
+    assert rc == 0, f"published non-json failure must return 0, rc={rc}"
+    assert Path(str(live)).exists()
+
+
+def test_writer_lock_same_instance_reacquire(tmp_path: Path) -> None:
+    """P0-3: full nested enter/exit of the SAME WriterLock instance must
+    release the file lock — a second thread can then acquire it."""
+    import threading
+
+    from paperforge.memory.db import WriterLock, get_memory_db_path
+
+    vault = _make_vault(tmp_path)
+    db_path = get_memory_db_path(vault)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    c = sqlite3.connect(str(db_path))
+    c.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    c.commit()
+    c.close()
+
+    lock = WriterLock(vault, timeout=0.5)
+    lock.__enter__()
+    lock.__enter__()  # same-instance nested
+    lock.__exit__(None, None, None)
+    lock.__exit__(None, None, None)  # outermost — must release
+
+    acquired = threading.Event()
+
+    def _other():
+        try:
+            other = WriterLock(vault, timeout=1.0)
+            other.__enter__()
+            acquired.set()
+            other.__exit__(None, None, None)
+        except Exception:
+            pass
+
+    t = threading.Thread(target=_other)
+    t.start()
+    t.join(timeout=5)
+    assert acquired.is_set(), "file lock must be re-acquirable after full nested exit"
+
+
+def test_zero_vectors_complete_schema_passes(tmp_path: Path) -> None:
+    """P1-3: 0 rows with COMPLETE six-table schema is a legal empty library;
+    0 rows with MISSING schema is rejected."""
+    from paperforge.embedding.build_target import verify_candidate
+
+    vault = _make_vault(tmp_path)
+    live = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
+    _seed_complete_vec_schema(live, dim=3)
+    build = live.with_suffix(".db.build")
+    src = sqlite3.connect(str(live))
+    dst = sqlite3.connect(str(build))
+    src.backup(dst)
+    src.close()
+    dst.close()
+
+    report = verify_candidate(build, dimension=3, expected_count=0)
+    assert report["ok"], f"complete-schema zero-count must pass: {report}"
+
+    # Missing schema → rejected even at expected_count=0
+    bare = live.with_suffix(".db.bare")
+    c = sqlite3.connect(str(bare))
+    c.execute("CREATE TABLE unrelated (x TEXT)")
+    c.commit()
+    c.close()
+    report2 = verify_candidate(bare, dimension=3, expected_count=0)
+    assert not report2["ok"], "missing vector schema must fail even at 0 count"

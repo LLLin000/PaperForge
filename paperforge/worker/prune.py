@@ -132,6 +132,21 @@ def prune_orphan_papers(
     if dry_run:
         return {"preview": preview, "deleted": [], "counts": {}}
 
+    # P0-4: the whole destructive pass (OCR dirs + workspace dirs + vectors)
+    # must run under the global writer lock — a shadow build holds it while
+    # reading OCR fulltext, and deleting those files mid-build would break
+    # the worker or produce an inconsistent snapshot.  Locking only the
+    # vector delete (as before) left the file deletions unprotected.
+    from paperforge.memory.db import WriterLock
+
+    with WriterLock(vault):
+        return _prune_orphan_papers_locked(vault, candidates, preview)
+
+
+def _prune_orphan_papers_locked(
+    vault: Path, candidates: list[dict], preview: list[dict]
+) -> dict:
+    """Locked body: caller owns the WriterLock."""
     deleted: list[str] = []
     counts = {"workspace": 0, "ocr": 0, "vectors": 0, "failed": 0}
 
@@ -151,8 +166,8 @@ def prune_orphan_papers(
                     counts["workspace"] += 1
 
             try:
-                from paperforge.embedding._chroma import delete_paper_vectors
-                n = delete_paper_vectors(vault, key)
+                from paperforge.embedding._chroma import _delete_paper_vectors_locked
+                n = _delete_paper_vectors_locked(vault, key)
                 if n > 0:
                     counts["vectors"] += n
             except Exception as vec_err:
