@@ -174,8 +174,20 @@ def inspect_vector_layout(conn, required_dim: int | None = None) -> VectorLayout
             reasons.append(f"{meta} unreadable: {exc}")
             continue
         counts[vec] = (vc, mc)
-        if vc != mc:
-            reasons.append(f"{vec}/{meta} count mismatch {vc} vs {mc}")
+        # NOTE: vec0 COUNT(*) includes deleted rows (rowid tombstones) — a
+        # raw count comparison is meaningless on sqlite-vec.  The reliable
+        # integrity signal is ORPHAN META: a meta row whose vec row is
+        # missing means real corruption (dropped vec table, lost rows).
+        try:
+            orphan = conn.execute(
+                f"SELECT COUNT(*) FROM {meta} m "
+                f"LEFT JOIN {vec} v ON v.rowid = m.rowid WHERE v.rowid IS NULL"
+            ).fetchone()[0]
+            if orphan:
+                reasons.append(f"{meta} has {orphan} orphan rowids")
+        except Exception as exc:  # noqa: BLE001
+            unreadable.append(meta)
+            reasons.append(f"{meta} orphan check unreadable: {exc}")
     tables_complete = not missing
     if missing:
         reasons.append(f"missing tables: {missing}")

@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
+
 from paperforge.embedding.builder import (
     EmbeddingPayload,
     encode_payload,
@@ -19,6 +20,12 @@ from paperforge.embedding.builder import (
     write_encoded_payload,
 )
 from paperforge.embedding.search import merge_retrieve
+
+def _api_key_available() -> bool:
+    """True when a real embedding API key is reachable (env)."""
+    import os
+    return bool(os.environ.get("VECTOR_DB_API_KEY") or os.environ.get("OPENAI_API_KEY"))
+
 
 # Matches the vec0 table schema (floats[1536]) in paperforge/memory/schema.py
 EMBEDDING_DIM = 1536
@@ -147,6 +154,9 @@ _TOPICS: dict[str, str] = {
 
 
 @pytest.mark.e2e_fast
+@pytest.mark.skipif(
+    not _api_key_available(), reason="requires a real embedding API key"
+)
 class TestEmbedRetrieveE2E:
     """E2E tests for embed -> retrieve pipeline."""
 

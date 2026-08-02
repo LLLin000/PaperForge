@@ -36,7 +36,7 @@ if str(REPO_ROOT) not in sys.path:
 def _import_ld_deep(path: Path | None = None) -> Any:
     """Import ld_deep.py using importlib, with Python 3.14 workaround."""
     if path is None:
-        path = REPO_ROOT / "paperforge" / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
+        path = REPO_ROOT / "paperforge" / "skills" / "paperforge" / "scripts" / "pf_deep.py"
 
     # Python 3.14 workaround: dataclasses needs module in sys.modules
     module_name = "_test_ld_deep_module"
@@ -106,10 +106,13 @@ class TestLdDeepImport:
     """Task 3a: ld_deep.py importability from deployed location."""
 
     def test_ld_deep_import_from_deployed(self, test_vault: Path) -> None:
-        """Verify deployed ld_deep.py is importable without PYTHONPATH."""
-        skill_dir = test_vault / ".opencode" / "skills" / "literature-qa" / "scripts"
-        ld_deep_path = skill_dir / "ld_deep.py"
-        assert ld_deep_path.exists(), "ld_deep.py should be deployed"
+        """Verify deployed pf_deep.py is importable without PYTHONPATH."""
+        from paperforge.services.skill_deploy import deploy_skills
+
+        deploy_skills(test_vault, agent_key="opencode", overwrite=True)
+        skill_dir = test_vault / ".opencode" / "skills" / "paperforge" / "scripts"
+        ld_deep_path = skill_dir / "pf_deep.py"
+        assert ld_deep_path.exists(), "pf_deep.py should be deployed"
 
         module = _import_ld_deep(ld_deep_path)
 
@@ -205,7 +208,9 @@ class TestWorkerPathsJson:
 
         paths = paperforge_paths(test_vault)
         assert "worker_script" in paths, "paths should contain worker_script"
-        assert "ld_deep_script" in paths, "paths should contain ld_deep_script"
+        # New contract: the deep-reading script is pf_deep_script (the
+        # ld_deep name was retired with the literature-qa skill rename).
+        assert "pf_deep_script" in paths, "paths should contain pf_deep_script"
 
 
 class TestDocCommandsExecutable:

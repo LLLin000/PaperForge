@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
+
 import paperforge.config
 from paperforge.worker._utils import pipeline_paths as _pp
 EMBEDDING_DIM = 1536  # must match vec0 schema
@@ -29,6 +30,12 @@ from paperforge.embedding.builder import (
 )
 from paperforge.embedding.search import merge_retrieve
 from paperforge.embedding._chroma import delete_paper_vectors
+
+def _api_key_available() -> bool:
+    """True when a real embedding API key is reachable (env)."""
+    import os
+    return bool(os.environ.get("VECTOR_DB_API_KEY") or os.environ.get("OPENAI_API_KEY"))
+
 
 
 
@@ -140,6 +147,9 @@ class TestPayloadPrep:
 # Tests: encode -> write -> retrieve cycle with sqlite-vec
 # ---------------------------------------------------------------------------
 
+@pytest.mark.skipif(
+    not _api_key_available(), reason="requires a real embedding API key"
+)
 class TestEmbedRoundTrip:
     """Integration tests against sqlite-vec tables in paperforge.db."""
 

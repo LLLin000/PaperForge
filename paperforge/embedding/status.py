@@ -50,6 +50,17 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
             row_vo = conn.execute("SELECT COUNT(*) FROM vec_objects_meta WHERE unit_id <> ''").fetchone()
             valid_object = row_vo[0] if row_vo else 0
 
+            # Layout contract (shared with shadow routing / verifier): a vec
+            # table dropped while its meta rows remain is an orphan state —
+            # report unhealthy instead of pretending the counts are fine.
+            from paperforge.embedding.dim_detect import inspect_vector_layout
+
+            _layout = inspect_vector_layout(conn)
+            if not _layout.compatible or not _layout.tables_complete:
+                healthy = False
+                if not error:
+                    error = _layout.reason
+
             # Read dimension from vec0 table DDL
             try:
                 row = conn.execute("SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'").fetchone()

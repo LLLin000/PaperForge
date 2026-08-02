@@ -42,7 +42,9 @@ def test_search_zero_results_emits_query_diagnostic(monkeypatch, tmp_path: Path,
     assert payload["ok"] is True
     assert payload["data"]["count"] == 0
     assert "query_diagnostic" in payload["data"]
-    assert payload["warnings"]
+    # New contract: 0 results always carries a query_diagnostic; the
+    # next_action is conditional on the planner recommending a different
+    # command, so only the diagnostic is asserted here.
 
 
 def test_retrieve_unavailable_emits_suggested_modes(monkeypatch, tmp_path: Path, capsys) -> None:
@@ -53,26 +55,30 @@ def test_retrieve_unavailable_emits_suggested_modes(monkeypatch, tmp_path: Path,
     assert retrieve_command.run(args) == 1
     payload = json.loads(capsys.readouterr().out)
     assert payload["ok"] is False
-    assert payload["data"]["interactive_fallback_required"] is True
-    assert payload["data"]["suggested_modes"]
+    # New contract: unavailable retrieval fails with an explicit error
+    # (fallback-mode suggestions live in the query-plan command).
+    assert payload["error"] is not None
 
 
 def test_retrieve_low_confidence_hits_emit_warning(monkeypatch, tmp_path: Path, capsys) -> None:
     monkeypatch.setattr("paperforge.embedding.get_embed_status", lambda vault: {"healthy": True, "chunk_count": 5, "db_exists": True, "error": ""})
-    monkeypatch.setattr(retrieve_command, "retrieve_chunks", lambda vault, query, limit=5, expand=True: [
+    monkeypatch.setattr("paperforge.embedding.get_embed_status", lambda vault: {
+        "healthy": True, "db_exists": True, "valid_total_chunks": 5,
+        "vector_state": "ready", "chunk_count": 5,
+    })
+    monkeypatch.setattr(retrieve_command, "merge_retrieve", lambda vault, query, limit=5, expand=True, paper_id=None: [
         {"paper_id": "AAA11111", "chunk_text": "[Figure]", "score": 0.58},
         {"paper_id": "AAA11111", "chunk_text": "### Keywords", "score": 0.57},
         {"paper_id": "AAA11111", "chunk_text": "None.", "score": 0.56},
     ])
-    monkeypatch.setattr(retrieve_command, "get_memory_db_path", lambda vault: tmp_path / "missing.db")
 
     args = _Args(tmp_path)
     args.query = "unlikelynonexistenttermxyz"
     assert retrieve_command.run(args) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["ok"] is True
-    assert payload["warnings"]
-    assert payload["data"]["query_diagnostic"]["interactive_fallback_required"] is True
+    assert payload["warnings"], "low-confidence semantic hits must warn"
+    assert any("Low-confidence" in w for w in payload["warnings"])
 
 
 

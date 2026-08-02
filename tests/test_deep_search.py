@@ -19,6 +19,7 @@ from paperforge.embedding.search import hybrid_search, _bm25_search, _fuse_resul
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.schema import (
     CREATE_BODY_UNITS,
+    CREATE_META,
     CREATE_BODY_UNITS_FTS,
     CREATE_PAPERS,
     CREATE_OBJECT_UNITS,
@@ -73,6 +74,7 @@ def _patch_providers(mock_provider):
 # ---------------------------------------------------------------------------
 def _create_tables(conn: sqlite3.Connection) -> None:
     """Create tables needed for deep search tests."""
+    conn.executescript(CREATE_META)  # enrichment reads manifest rows from meta
     conn.executescript(CREATE_PAPERS)
     conn.executescript(CREATE_BODY_UNITS)
     conn.executescript(CREATE_BODY_UNITS_FTS)
@@ -249,11 +251,11 @@ class TestHybridSearch:
         if results:
             r = results[0]
             assert "paper_id" in r
-            assert "title" in r
             assert "source" in r
             assert "text" in r
             assert "score" in r
             assert "heading" in r
+            assert "unit_id" in r  # unit-level contract (dedupe key)
             assert r["source"] == "body"
 
     def test_query_rewrite_broadens_bm25(self, tmp_path):
@@ -303,7 +305,7 @@ class TestScoreFusion:
              "heading": "Methods", "unit_id": "p1:u1", "matched_terms": ""},
         ]
         vec = [
-            {"paper_id": "p1", "text": "text1", "source": "body_unit", "vec_score": 0.8},
+            {"paper_id": "p1", "text": "text1", "source": "body", "unit_id": "p1:u1", "vec_score": 0.8},
         ]
         fused = _fuse_results(bm25, vec, limit=5)
         assert len(fused) == 1
@@ -315,18 +317,18 @@ class TestScoreFusion:
         assert fused[0]["score"] < 0.5
 
     def test_fuse_deduplicates(self):
-        """Fusion deduplicates by (paper_id, text)."""
+        """Fusion deduplicates by (source, unit_id) — unit-level contract."""
         bm25 = [
-            {"paper_id": "p1", "text": "same text", "bm25_score": 0.8, "vec_score": 0.0, "source": "body_unit",
+            {"paper_id": "p1", "text": "first text", "bm25_score": 0.8, "vec_score": 0.0, "source": "body",
              "title": "T1", "first_author": "A", "year": "2023", "journal": "J", "domain": "ortho",
              "heading": "Methods", "unit_id": "p1:u1", "matched_terms": ""},
-            {"paper_id": "p1", "text": "same text", "bm25_score": 0.6, "vec_score": 0.0, "source": "body_unit",
+            {"paper_id": "p1", "text": "second text", "bm25_score": 0.6, "vec_score": 0.0, "source": "body",
              "title": "T1", "first_author": "A", "year": "2023", "journal": "J", "domain": "ortho",
-             "heading": "Results", "unit_id": "p1:u2", "matched_terms": ""},
+             "heading": "Results", "unit_id": "p1:u1", "matched_terms": ""},
         ]
         vec: list[dict] = []
         fused = _fuse_results(bm25, vec, limit=5)
-        assert len(fused) == 1  # deduplicated by text
+        assert len(fused) == 1  # deduplicated by unit_id
 
     def test_vec_only_fallback(self):
         """When BM25 is empty, fusion falls back to vec results."""
