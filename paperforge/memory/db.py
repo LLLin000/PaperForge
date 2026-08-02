@@ -38,26 +38,36 @@ class WriterLock:
         from filelock import FileLock
 
         db_path = get_memory_db_path(vault)
+        self._key = str(db_path.resolve())
         self._lock = FileLock(str(db_path) + ".write.lock", timeout=timeout)
         self._acquired = False
 
     def __enter__(self) -> "WriterLock":
-        depth = getattr(self._local, "depth", 0)
+        # Per-DB-path depth (P1-2): a thread nesting across two different
+        # vaults must take each vault's own file lock — a single shared
+        # counter would treat the second vault as re-entry and skip its lock.
+        depths: dict[str, int] = getattr(self._local, "depths", {})
+        depth = depths.get(self._key, 0)
         if depth > 0:
-            self._local.depth = depth + 1
+            depths[self._key] = depth + 1
+            self._local.depths = depths
             self._acquired = False  # nested: re-entrant, no new file lock
             return self
         self._lock.acquire()
         self._acquired = True
-        self._local.depth = 1
+        depths[self._key] = 1
+        self._local.depths = depths
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
-        depth = getattr(self._local, "depth", 0)
+        depths: dict[str, int] = getattr(self._local, "depths", {})
+        depth = depths.get(self._key, 0)
         if depth > 1:
-            self._local.depth = depth - 1
+            depths[self._key] = depth - 1
+            self._local.depths = depths
             return
-        self._local.depth = 0
+        depths.pop(self._key, None)
+        self._local.depths = depths
         if self._acquired:
             self._lock.release()
             self._acquired = False

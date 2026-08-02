@@ -66,6 +66,35 @@ def _has_object_units_in_db(vault: Path, key: str) -> bool:
         return cnt > 0
 
 
+def _stop_control_path(vault: Path) -> Path:
+    """Control-plane sidecar: stop requests never touch the live DB (P0-5) —
+    a publish swaps the whole DB, and stop must stay usable while the build
+    holds the writer lock."""
+    return get_memory_db_path(vault).with_name("paperforge.embed-control.json")
+
+
+def _stop_requested(vault: Path, build_pid: int) -> bool:
+    """True when a stop request for THIS build process exists."""
+    import json as _json
+
+    p = _stop_control_path(vault)
+    try:
+        if not p.exists():
+            return False
+        data = _json.loads(p.read_text(encoding="utf-8"))
+        return data.get("target_pid", 0) == build_pid and bool(data.get("stop_requested"))
+    except Exception:
+        return False
+
+
+def _clear_stop_request(vault: Path) -> None:
+    p = _stop_control_path(vault)
+    try:
+        p.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
 def _pid_alive(pid: int) -> bool:
     """Check if a process with the given PID is still running (Windows)."""
     if pid <= 0:
@@ -134,9 +163,27 @@ def run(args: argparse.Namespace) -> int:
         pid = state.get("pid", 0)
         _st = state.get("status", "")
         if pid and _st in ("running", "stopping"):
-            mark_vector_build_state(vault, status="stopping", message="Stop requested")
-            # Wait for build process to notice the flag and exit (8s timeout)
+            # P0-5: stop is control-plane — write a sidecar file instead of
+            # touching the live DB (the build holds the writer lock, and a
+            # publish would overwrite an in-DB signal anyway).
+            import json as _json
             import time as _time
+
+            _ctrl = _stop_control_path(vault)
+            try:
+                _ctrl.write_text(
+                    _json.dumps({
+                        "stop_requested": True,
+                        "target_pid": pid,
+                        "requested_at": __import__("datetime").datetime.now(
+                            __import__("datetime").timezone.utc
+                        ).isoformat(),
+                    }),
+                    encoding="utf-8",
+                )
+            except OSError:
+                pass
+            # Wait for build process to notice the sidecar and exit (8s)
             _deadline = _time.time() + 8.0
             while _time.time() < _deadline:
                 if not _pid_alive(pid):
@@ -147,11 +194,17 @@ def run(args: argparse.Namespace) -> int:
                 import signal
                 with contextlib.suppress(Exception):
                     os.kill(pid, signal.SIGTERM)
-            # Settle to idle, preserving progress
-            _current = read_vector_build_state(vault).get("current", state.get("current", 0))
-            mark_vector_build_state(vault, status="idle", current=_current, pid=0, message="")
+            # Settle to idle once the build has exited (writer lock is free)
+            try:
+                with WriterLock(vault, timeout=30):
+                    _current = read_vector_build_state(vault).get("current", state.get("current", 0))
+                    mark_vector_build_state(vault, status="idle", current=_current, pid=0, message="")
+            except Exception:
+                pass
+            _clear_stop_request(vault)
             result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "stopped"})
         else:
+            _clear_stop_request(vault)
             result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "idle"})
         if args.json:
             print(result.to_json())
@@ -252,6 +305,9 @@ def run(args: argparse.Namespace) -> int:
     _write_lock = WriterLock(vault)
     _write_lock.__enter__()
     try:
+        # P0-5: clear any stale stop request (from a previous build) that
+        # does not target this process before starting.
+        _clear_stop_request(vault)
         if resume:
             build_state = read_vector_build_state(vault)
 
@@ -336,7 +392,33 @@ def run(args: argparse.Namespace) -> int:
                 f"{_stored_model}@{_stored_endpoint or '?'} -> "
                 f"{_current_model}@{_current_endpoint or '?'}. Re-embedding all papers."
             )
-        requires_shadow = (_force_rebuild or _embedding_identity_changed) and _db_path.exists()
+        # P0-3: a live vec0 dimension mismatch must route through shadow —
+        # an in-place recreate would destroy live vectors + orphan meta rows.
+        # Compare the live vec_body DDL against the STORED build dimension
+        # (no API probe here — that would add a network call to every build).
+        _vec_layout_incompatible = False
+        _stored_dim = _bs.get("vector_dimension", 0)
+        if _db_path.exists() and _stored_dim:
+            try:
+                import re as _re2
+                _lc = sqlite3.connect(f"file:{_db_path.as_posix()}?mode=ro", uri=True)
+                try:
+                    _row2 = _lc.execute(
+                        "SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'"
+                    ).fetchone()
+                    if _row2:
+                        _m2 = _re2.search(r"float\[(\d+)\]", _row2[0])
+                        if _m2 and int(_m2.group(1)) != int(_stored_dim):
+                            _vec_layout_incompatible = True
+                finally:
+                    _lc.close()
+            except Exception:
+                _vec_layout_incompatible = False
+        requires_shadow = (
+            _force_rebuild
+            or _embedding_identity_changed
+            or _vec_layout_incompatible
+        ) and _db_path.exists()
 
         if requires_shadow:
             # Maintenance mode message (D2b).
@@ -371,7 +453,7 @@ def run(args: argparse.Namespace) -> int:
                            "vec_fulltext", "vec_body", "vec_objects"):
                     _candidate_conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
                 ensure_schema(_candidate_conn)
-                ensure_vec_tables(_candidate_conn, vault)
+                ensure_vec_tables(_candidate_conn, vault, allow_recreate=True)
                 _candidate_conn.commit()
                 _shadow.building()
             except Exception:
@@ -402,7 +484,7 @@ def run(args: argparse.Namespace) -> int:
                            "vec_fulltext", "vec_body", "vec_objects"):
                     _conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
                 ensure_schema(_conn)
-                ensure_vec_tables(_conn, vault)
+                ensure_vec_tables(_conn, vault, allow_recreate=True)
                 _conn.commit()
             except Exception:
                 _conn.close()
@@ -488,8 +570,9 @@ def run(args: argparse.Namespace) -> int:
                     if not key:
                         continue
 
-                    # ponytail: check cancellation flag between papers
-                    if read_vector_build_state(vault).get("status") == "stopping":
+                    # P0-5: cancellation is a control-sidecar check — never
+                    # read live DB status mid-build (it races the publish).
+                    if _stop_requested(vault, _os.getpid()):
                         logger.info("Build cancelled at paper %s", key)
                         break
 
@@ -675,7 +758,7 @@ def run(args: argparse.Namespace) -> int:
             return 1
 
         # Check if we stopped or were cancelled — exit cleanly without marking completed
-        if read_vector_build_state(vault).get("status") == "stopping":
+        if _stop_requested(vault, _os.getpid()):
             logger.info("Build stopped, exiting cleanly")
             if _shadow is not None:
                 _shadow.abort()
@@ -710,9 +793,29 @@ def run(args: argparse.Namespace) -> int:
                     _cand.close()
             except Exception:
                 _dim = 0
-        # P1-1: SEAL the candidate (checkpoint + journal switch) BEFORE
-        # verifying — verify_candidate must inspect exactly the file that
-        # publish() will swap, not the WAL-backed logical view.
+            # P0-2: write the FINAL build metadata into the candidate BEFORE
+            # sealing — once os.replace commits, the new live is already
+            # complete (status/model/endpoint/counts), independent of any
+            # post-publish bookkeeping that might fail.
+            from paperforge.embedding.build_state import _dict_to_build_state
+
+            _cand_state = {
+                "status": "completed",
+                "current": total,
+                "total": total,
+                "model": _current_model,
+                "vector_provider_endpoint": _current_endpoint,
+                "vector_dimension": _dim,
+                "finished_at": _now(),
+                "message": "",
+                "pid": 0,
+                "mode": "api",
+            }
+            _dict_to_build_state(_candidate_conn, _cand_state)
+            _candidate_conn.commit()
+            # P1-1: SEAL the candidate (checkpoint + journal switch) BEFORE
+            # verifying — verify_candidate must inspect exactly the file that
+            # publish() will swap, not the WAL-backed logical view.
             _shadow.seal()
             report = verify_candidate(
                 _shadow.target.vector_path,
@@ -807,13 +910,34 @@ def run(args: argparse.Namespace) -> int:
         if _rebuild_backup_path and _rebuild_backup_path.exists():
             _rebuild_backup_path.unlink()
             logger.info("Deleted pre-rebuild backup after successful rebuild")
+        _clear_stop_request(vault)
         if _write_lock:
             _write_lock.__exit__(None, None, None)
         return 0
     except Exception as e:
-        # Outer handler: failures outside the inner build loop (resume
-        # checks, shadow prepare, verify, publish, completion bookkeeping)
-        # — abort the candidate / restore the backup, mark failed.
+        # P0-2: once PUBLISHED the swap is the commit point — abort() is a
+        # no-op and marking failed would misreport a live new DB.  Any
+        # post-publish bookkeeping failure becomes a success-with-warning.
+        if _shadow is not None and _shadow.state == ShadowBuild.PUBLISHED:
+            logger.exception("Post-publish bookkeeping failed: %s", e)
+            result = PFResult(
+                ok=True,
+                command="embed build",
+                version=PF_VERSION,
+                data={
+                    "papers_embedded": papers_embedded,
+                    "papers_skipped": papers_skipped,
+                    "chunks_embedded": chunks_embedded,
+                    "model": _current_model,
+                    "mode": "api",
+                    "published": True,
+                    "warning": f"Vectors published; bookkeeping incomplete: {e}",
+                },
+            )
+            print(result.to_json() if args.json else result.error.message,
+                  file=sys.stderr if not args.json else sys.stdout)
+            return 0
+        # Only pre-commit failures may abort/restore/mark-failed.
         if _shadow is not None:
             _shadow.abort()
             logger.info("Shadow build aborted; live DB untouched")

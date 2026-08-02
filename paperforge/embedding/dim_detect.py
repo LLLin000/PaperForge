@@ -76,10 +76,19 @@ def detect_embedding_dim(vault: Path, conn: sqlite3.Connection | None = None) ->
     _DETECTED_DIM_KEY = key
     return dim
 
-def ensure_vec_tables(conn, vault: Path) -> None:
-    """Drop and recreate vec0 virtual tables to match the model's dimension.
+class VectorRebuildRequired(RuntimeError):
+    """The live DB's vector layout is incompatible with the current model —
+    an in-place drop would expose an empty/partial window.  Route through a
+    shadow rebuild instead (P0-3)."""
 
-    Safe to call multiple times — only recreates when dimension differs.
+
+def ensure_vec_tables(conn, vault: Path, *, allow_recreate: bool = False) -> None:
+    """Ensure vec0 virtual tables match the model's dimension.
+
+    ``allow_recreate=True`` (shadow candidate, fresh DB) may drop/recreate
+    the vec0 tables.  On the live incremental path (``allow_recreate=False``)
+    a dimension mismatch raises :class:`VectorRebuildRequired` instead of
+    destroying live vectors — the caller must route to a shadow rebuild.
     """
     from paperforge.memory.db import ensure_vec_extension
 
@@ -104,7 +113,13 @@ def ensure_vec_tables(conn, vault: Path) -> None:
     if existing_dim == required_dim:
         return  # already correct
 
-    # Drop and recreate with correct dimension
+    if not allow_recreate:
+        raise VectorRebuildRequired(
+            f"vec0 dimension {existing_dim} != required {required_dim} — "
+            "in-place recreate would destroy live vectors; shadow rebuild required"
+        )
+
+    # Drop and recreate with correct dimension (shadow candidate / fresh DB)
     for name in ("vec_fulltext", "vec_body", "vec_objects"):
         try:
             conn.execute(f"DROP TABLE IF EXISTS \"{name}\"")

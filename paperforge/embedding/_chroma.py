@@ -85,6 +85,19 @@ def delete_paper_vectors_in_conn(conn: sqlite3.Connection, key: str) -> int:
 
 
 def delete_paper_vectors(vault: Path, zotero_key: str) -> int:
+    """Delete a paper's vectors under the global writer lock (P0-4).
+
+    A shadow publish swaps the whole live DB — an unlocked delete could be
+    overwritten by the publish or race the snapshot.
+    """
+    from paperforge.memory.db import WriterLock
+
+    with WriterLock(vault):
+        return _delete_paper_vectors_locked(vault, zotero_key)
+
+
+def _delete_paper_vectors_locked(vault: Path, zotero_key: str) -> int:
+    """Locked body: caller owns the WriterLock."""
     _delete_from_chromadb(vault, zotero_key)
 
     db_path = get_memory_db_path(vault)
@@ -108,11 +121,20 @@ def delete_paper_vectors(vault: Path, zotero_key: str) -> int:
 
 
 def migrate_chroma_to_vec0(vault: Path) -> int:
-    """Copy vectors from existing ChromaDB to vec0 tables.
+    """Copy vectors from existing ChromaDB to vec0 tables under the global
+    writer lock (P0-4) — a shadow publish must not overwrite the migration.
 
     Pure local copy — no API calls. Idempotent: skips papers already
     present in vec0 meta tables. Returns count of vectors migrated.
     """
+    from paperforge.memory.db import WriterLock
+
+    with WriterLock(vault):
+        return _migrate_chroma_to_vec0_locked(vault)
+
+
+def _migrate_chroma_to_vec0_locked(vault: Path) -> int:
+    """Locked body: caller owns the WriterLock."""
     chroma_dir = get_vector_db_path(vault)
     if not chroma_dir.exists():
         return 0
