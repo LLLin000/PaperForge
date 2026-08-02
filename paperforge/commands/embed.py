@@ -96,17 +96,27 @@ def _clear_stop_request(vault: Path) -> None:
 
 
 def _pid_alive(pid: int) -> bool:
-    """Check if a process with the given PID is still running (Windows)."""
+    """Check if a process with the given PID is still running (cross-platform)."""
     if pid <= 0:
         return False
+    if os.name == "nt":
+        try:
+            import subprocess
+            r = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}"],
+                capture_output=True,
+                timeout=5,
+            )
+            return str(pid) in r.stdout.decode("utf-8", errors="replace")
+        except Exception:
+            return False
     try:
-        import subprocess
-        r = subprocess.run(
-            ["tasklist", "/FI", f"PID eq {pid}"],
-            capture_output=True,
-            timeout=5,
-        )
-        return str(pid) in r.stdout.decode("utf-8", errors="replace")
+        os.kill(pid, 0)  # signal 0 = existence probe, no signal sent
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True  # exists but owned by another user
     except Exception:
         return False
 
@@ -171,7 +181,11 @@ def run(args: argparse.Namespace) -> int:
 
             _ctrl = _stop_control_path(vault)
             try:
-                _ctrl.write_text(
+                # P0-5: atomic sidecar write (tmp + os.replace) so a reader
+                # never observes a half-written control file.
+                _ctrl.parent.mkdir(parents=True, exist_ok=True)
+                _tmp = _ctrl.with_name(_ctrl.name + ".tmp")
+                _tmp.write_text(
                     _json.dumps({
                         "stop_requested": True,
                         "target_pid": pid,
@@ -181,6 +195,7 @@ def run(args: argparse.Namespace) -> int:
                     }),
                     encoding="utf-8",
                 )
+                os.replace(str(_tmp), str(_ctrl))
             except OSError:
                 pass
             # Wait for build process to notice the sidecar and exit (8s)
@@ -194,7 +209,33 @@ def run(args: argparse.Namespace) -> int:
                 import signal
                 with contextlib.suppress(Exception):
                     os.kill(pid, signal.SIGTERM)
-            # Settle to idle once the build has exited (writer lock is free)
+            _wait_deadline = _time.time() + 3.0
+            while _time.time() < _wait_deadline:
+                if not _pid_alive(pid):
+                    break
+                _time.sleep(0.2)
+            if _pid_alive(pid):
+                # P0-5: do NOT claim stopped while the build still runs —
+                # keep the sidecar so the build stops at its next checkpoint.
+                result = PFResult(
+                    ok=False,
+                    command="embed stop",
+                    version=PF_VERSION,
+                    error=PFError(
+                        code=ErrorCode.INTERNAL_ERROR,
+                        message=f"Unable to stop embed build (pid {pid} still running)",
+                    ),
+                )
+                if args.json:
+                    print(result.to_json())
+                else:
+                    print(
+                        f"Unable to stop embed build (pid {pid} still running). "
+                        "Stop request left in place.",
+                        file=sys.stderr,
+                    )
+                return 1
+            # Build exited: settle to idle (writer lock is free now)
             try:
                 with WriterLock(vault, timeout=30):
                     _current = read_vector_build_state(vault).get("current", state.get("current", 0))
@@ -392,24 +433,21 @@ def run(args: argparse.Namespace) -> int:
                 f"{_stored_model}@{_stored_endpoint or '?'} -> "
                 f"{_current_model}@{_current_endpoint or '?'}. Re-embedding all papers."
             )
-        # P0-3: a live vec0 dimension mismatch must route through shadow —
+        # P0-3/P1-1: a live vector-layout mismatch must route through shadow —
         # an in-place recreate would destroy live vectors + orphan meta rows.
-        # Compare the live vec_body DDL against the STORED build dimension
-        # (no API probe here — that would add a network call to every build).
+        # Compare the live layout against the STORED build dimension via the
+        # unified inspect_vector_layout contract (six tables + three dims),
+        # without an API probe (that would add a network call to every build).
         _vec_layout_incompatible = False
         _stored_dim = _bs.get("vector_dimension", 0)
         if _db_path.exists() and _stored_dim:
             try:
-                import re as _re2
+                from paperforge.embedding.dim_detect import inspect_vector_layout
+
                 _lc = sqlite3.connect(f"file:{_db_path.as_posix()}?mode=ro", uri=True)
                 try:
-                    _row2 = _lc.execute(
-                        "SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'"
-                    ).fetchone()
-                    if _row2:
-                        _m2 = _re2.search(r"float\[(\d+)\]", _row2[0])
-                        if _m2 and int(_m2.group(1)) != int(_stored_dim):
-                            _vec_layout_incompatible = True
+                    _layout = inspect_vector_layout(_lc, int(_stored_dim))
+                    _vec_layout_incompatible = not _layout.compatible
                 finally:
                     _lc.close()
             except Exception:
@@ -419,6 +457,12 @@ def run(args: argparse.Namespace) -> int:
             or _embedding_identity_changed
             or _vec_layout_incompatible
         ) and _db_path.exists()
+        # P0-2: ANY full shadow rebuild clears the candidate's vector tables —
+        # resume hash-skips would leave those papers' vectors missing from the
+        # published DB (chunks_embedded=0, verifier passes, empty library
+        # published).  Shadow ⇒ resume off, for every trigger, not just force.
+        if requires_shadow:
+            resume = False
 
         if requires_shadow:
             # Maintenance mode message (D2b).
@@ -920,6 +964,7 @@ def run(args: argparse.Namespace) -> int:
         # post-publish bookkeeping failure becomes a success-with-warning.
         if _shadow is not None and _shadow.state == ShadowBuild.PUBLISHED:
             logger.exception("Post-publish bookkeeping failed: %s", e)
+            _warning = f"Vectors published; bookkeeping incomplete: {e}"
             result = PFResult(
                 ok=True,
                 command="embed build",
@@ -931,11 +976,20 @@ def run(args: argparse.Namespace) -> int:
                     "model": _current_model,
                     "mode": "api",
                     "published": True,
-                    "warning": f"Vectors published; bookkeeping incomplete: {e}",
+                    "warning": _warning,
                 },
+                warnings=[_warning],
             )
-            print(result.to_json() if args.json else result.error.message,
-                  file=sys.stderr if not args.json else sys.stdout)
+            # P0-1: ok=True has error=None — never touch result.error.message
+            # on the non-JSON path (AttributeError).
+            if args.json:
+                print(result.to_json())
+            else:
+                print(
+                    f"Embedded {papers_embedded} papers ({chunks_embedded} chunks). "
+                    f"Warning: {_warning}",
+                    file=sys.stderr,
+                )
             return 0
         # Only pre-commit failures may abort/restore/mark-failed.
         if _shadow is not None:

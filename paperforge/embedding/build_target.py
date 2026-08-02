@@ -230,13 +230,22 @@ def verify_candidate(
     *,
     dimension: int,
     expected_count: int,
+    expected_counts: dict[str, int] | None = None,
 ) -> dict:
-    """Run the D4 verification checklist on a candidate DB.
+    """Run the D4 verification checklist on a candidate DB (P1-3 strict).
+
+    Contract: all six vec/meta tables MUST exist (0 rows legal, absent
+    schema is not); per-collection vec == meta == expected count; all three
+    vec0 dimensions equal; no orphan rowids; KNN probe on the first
+    non-empty collection (not hard-coded to vec_body).
 
     Returns ``{"ok": True}`` or ``{"ok": False, "reason": str}``.
     All checks read-only; no connection is left open.
     """
-    import re
+    from paperforge.embedding.dim_detect import (
+        VEC_PAIRS,
+        inspect_vector_layout,
+    )
 
     def _fail(reason: str) -> dict:
         return {"ok": False, "reason": reason}
@@ -256,54 +265,52 @@ def verify_candidate(
         row = conn.execute("PRAGMA integrity_check").fetchone()
         if not row or row[0] != "ok":
             return _fail(f"integrity_check: {row[0] if row else 'no result'}")
-        # 2. dimension per existing vec0 table
-        for name in ("vec_fulltext", "vec_body", "vec_objects"):
-            r = conn.execute(
-                "SELECT sql FROM sqlite_master WHERE name=? AND type='table'", (name,)
-            ).fetchone()
-            if r:
-                m = re.search(r"float\[(\d+)\]", r[0])
-                if not m or int(m.group(1)) != dimension:
-                    return _fail(f"{name} dimension mismatch (expected {dimension})")
-        # 3+4. vec/meta row counts + orphan rowids
-        pairs = [
-            ("vec_fulltext", "vec_fulltext_meta"),
-            ("vec_body", "vec_body_meta"),
-            ("vec_objects", "vec_objects_meta"),
-        ]
+        # 2-4. unified layout contract: six tables present, dimensions equal,
+        # vec == meta per collection, no orphans.
+        layout = inspect_vector_layout(conn, dimension)
+        if not layout.tables_complete:
+            return _fail(f"candidate missing vector tables: {layout.missing}")
+        if not layout.compatible:
+            return _fail(layout.reason)
         total = 0
-        for vec_table, meta_table in pairs:
-            try:
-                vc = conn.execute(f"SELECT COUNT(*) FROM {vec_table}").fetchone()[0]
-                mc = conn.execute(f"SELECT COUNT(*) FROM {meta_table}").fetchone()[0]
-            except sqlite3.OperationalError:
-                continue  # table absent — nothing to count (empty lib is legal)
-            if vc != mc:
-                return _fail(f"{vec_table}/{meta_table} count mismatch: {vc} vs {mc}")
+        for vec_table, meta_table in VEC_PAIRS:
+            vc, mc = layout.counts[vec_table]
+            total += mc
             orphan = conn.execute(
                 f"SELECT COUNT(*) FROM {meta_table} m "
                 f"LEFT JOIN {vec_table} v ON v.rowid = m.rowid WHERE v.rowid IS NULL"
             ).fetchone()[0]
             if orphan:
                 return _fail(f"{meta_table} has {orphan} orphan rowids")
-            total += mc
-        # 5. expected count (0 legal)
-        if total != expected_count:
+        # 5. expected counts (0 legal, but only with complete schema)
+        if expected_counts is not None:
+            for coll, (vec_table, _meta_table) in zip(
+                ("fulltext", "body", "objects"), VEC_PAIRS
+            ):
+                want = expected_counts.get(coll, 0)
+                if layout.counts[vec_table][1] != want:
+                    return _fail(
+                        f"{coll} count {layout.counts[vec_table][1]} != expected {want}"
+                    )
+        elif total != expected_count:
             return _fail(f"vector count {total} != expected {expected_count}")
-        # 6. KNN probe when non-empty
+        # 6. KNN probe on the FIRST non-empty collection (not vec_body)
         if total > 0:
-            d = conn.execute(
-                "SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'"
-            ).fetchone()
-            m = re.search(r"float\[(\d+)\]", d[0]) if d else None
-            dim = int(m.group(1)) if m else dimension
-            zero = json.dumps([0.0] * dim)
+            probe_table = next(
+                (v for v, (vc, _m) in layout.counts.items() if vc > 0),
+                None,
+            )
+            if probe_table is None:
+                return _fail("non-zero total but no non-empty vec table")
+            d = layout.dimensions[probe_table] or dimension
+            zero = json.dumps([0.0] * d)
             try:
                 conn.execute(
-                    "SELECT 1 FROM vec_body WHERE embedding MATCH ? AND k = 1", (zero,)
+                    f"SELECT 1 FROM {probe_table} WHERE embedding MATCH ? AND k = 1",
+                    (zero,),
                 ).fetchone()
             except Exception as exc:
-                return _fail(f"KNN probe failed: {exc}")
+                return _fail(f"KNN probe failed on {probe_table}: {exc}")
         return {"ok": True}
     except sqlite3.Error as exc:
         return _fail(str(exc))
