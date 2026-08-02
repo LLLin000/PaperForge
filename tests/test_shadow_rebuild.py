@@ -1075,3 +1075,146 @@ def test_zero_vectors_complete_schema_passes(tmp_path: Path) -> None:
     c.close()
     report2 = verify_candidate(bare, dimension=3, expected_count=0)
     assert not report2["ok"], "missing vector schema must fail even at 0 count"
+
+
+# ── Round 7: identity normalization + empty-state + verifier wiring ────
+
+
+def test_default_to_custom_endpoint_triggers_shadow(tmp_path: Path) -> None:
+    """P0-1: stored empty endpoint (default OpenAI) + now-custom endpoint
+    must route through shadow — truthiness-guarded comparison missed it."""
+    from unittest.mock import patch
+
+    from paperforge.commands import embed
+
+    vault = _make_vault(tmp_path)
+    from paperforge.memory.db import get_memory_db_path
+    live = get_memory_db_path(vault)
+    _seed_complete_vec_schema(live, dim=3)
+    c = sqlite3.connect(str(live))
+    from paperforge.memory.schema import ensure_schema
+    ensure_schema(c)
+    # Stored: model m, endpoint EMPTY (legacy default), identity version 1
+    c.execute(
+        "INSERT OR REPLACE INTO build_state (key, value) VALUES "
+        "('model', '\"m\"'), ('status', '\"completed\"'), "
+        "('vector_provider_endpoint', '\"\"'), ('vector_dimension', '3'), "
+        "('vector_identity_version', '1'), ('mode', '\"api\"')"
+    )
+    c.commit()
+    c.close()
+
+    args = argparse.Namespace(
+        vault_path=vault, embed_subcommand="build", json=True, force=False, resume=False,
+    )
+    fake_status = {
+        "mode": "api", "model": "m", "db_exists": True, "healthy": True,
+        "chunk_count": 0, "body_chunk_count": 0, "object_chunk_count": 0, "total_chunks": 0,
+        "dimension": 3, "corrupted": False, "error": "", "vector_state": "ready",
+    }
+    with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
+         patch("paperforge.embedding._config.get_effective_api_base_url",
+               return_value="https://custom.example/v1"), \
+         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed, "read_index", return_value={"items": []}), \
+         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch("paperforge.embedding.dim_detect.detect_embedding_dim", return_value=3):
+        rc = embed.run(args)
+    assert rc == 0, f"default→custom endpoint shadow must succeed, rc={rc}"
+    from paperforge.embedding.build_state import read_vector_build_state
+    assert read_vector_build_state(vault).get("vector_provider_endpoint") == "https://custom.example/v1", (
+        "published candidate must record the EFFECTIVE endpoint"
+    )
+
+
+def test_damaged_vec_without_meta_not_empty(tmp_path: Path) -> None:
+    """P0-2: vec rows present but meta missing → has_any_rows True and
+    in-place init is rejected (must NOT be treated as an empty library)."""
+    from paperforge.embedding.dim_detect import (
+        VectorRebuildRequired,
+        ensure_vec_tables,
+        inspect_vector_layout,
+    )
+
+    vault = _make_vault(tmp_path)
+    from paperforge.memory.db import get_memory_db_path
+    live = get_memory_db_path(vault)
+    import sqlite_vec
+    c = sqlite3.connect(str(live))
+    c.enable_load_extension(True)
+    sqlite_vec.load(c)
+    c.execute("CREATE VIRTUAL TABLE vec_body USING vec0(embedding float[3])")
+    cur = c.execute("INSERT INTO vec_body(embedding) VALUES (?)", [json.dumps([0.1, 0.2, 0.3])])
+    # NO vec_body_meta table — damaged state
+    c.commit()
+    c.close()
+
+    conn = sqlite3.connect(str(live))
+    conn.enable_load_extension(True)
+    sqlite_vec.load(conn)
+    layout = inspect_vector_layout(conn, 3)
+    assert layout.has_any_rows, "vec rows without meta must NOT be empty"
+    assert layout.unreadable, "missing meta must be marked unreadable"
+    from unittest.mock import patch
+    from paperforge.embedding import dim_detect
+    with patch.object(dim_detect, "detect_embedding_dim", return_value=3):
+        with pytest.raises(VectorRebuildRequired):
+            ensure_vec_tables(conn, vault, allow_recreate=False)
+    conn.close()
+
+
+def test_per_collection_expected_counts_used(tmp_path: Path) -> None:
+    """P1-1: verify_candidate rejects body/objects redistribution even when
+    the TOTAL matches — the production path now passes expected_counts."""
+    from paperforge.embedding.build_target import verify_candidate
+
+    vault = _make_vault(tmp_path)
+    live = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
+    _seed_complete_vec_schema(live, dim=3)
+    # body 2 rows, objects 0 — total 2
+    c = sqlite3.connect(str(live))
+    c.enable_load_extension(True)
+    import sqlite_vec
+    sqlite_vec.load(c)
+    for _ in range(2):
+        cur = c.execute("INSERT INTO vec_body(embedding) VALUES (?)", [json.dumps([0.1, 0.2, 0.3])])
+        c.execute("INSERT INTO vec_body_meta(rowid, paper_id, unit_id) VALUES (?, 'A', 'u1')", (cur.lastrowid,))
+    c.commit()
+    c.close()
+    build = live.with_suffix(".db.build")
+    src = sqlite3.connect(str(live))
+    dst = sqlite3.connect(str(build))
+    src.backup(dst)
+    src.close()
+    dst.close()
+
+    # Total matches (2) but per-collection wrong: expected body=2 objects=0 vs
+    # caller expecting body=1 objects=1 → must FAIL.
+    report = verify_candidate(
+        build, dimension=3, expected_count=2,
+        expected_counts={"fulltext": 0, "body": 1, "objects": 1},
+    )
+    assert not report["ok"], "per-collection mismatch must fail even at equal total"
+    assert "body count" in report["reason"]
+
+    report2 = verify_candidate(
+        build, dimension=3, expected_count=2,
+        expected_counts={"fulltext": 0, "body": 2, "objects": 0},
+    )
+    assert report2["ok"], report2
+
+
+def test_ensure_vec_tables_returns_dimension(tmp_path: Path) -> None:
+    """P1-2: ensure_vec_tables returns the dimension it used — callers must
+    not re-derive it from candidate DDL (self-verification)."""
+    from paperforge.embedding import dim_detect
+
+    vault = _make_vault(tmp_path)
+    from paperforge.memory.db import get_memory_db_path
+    live = get_memory_db_path(vault)
+    conn = sqlite3.connect(str(live))
+    from unittest.mock import patch
+    with patch.object(dim_detect, "detect_embedding_dim", return_value=1536):
+        dim = dim_detect.ensure_vec_tables(conn, vault, allow_recreate=True)
+    assert dim == 1536, f"expected 1536, got {dim}"
+    conn.close()

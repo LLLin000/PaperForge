@@ -18,10 +18,10 @@ _DETECTED_DIM_KEY: Optional[str] = None
 
 def _dim_cache_key(vault: Path) -> str:
     """Dimension cache key: provider endpoint + model (per #117 D4)."""
-    from paperforge.embedding._config import get_api_base_url, get_api_model
+    from paperforge.embedding._config import get_api_model, get_effective_api_base_url
 
     try:
-        return f"{get_api_base_url(vault)}|{get_api_model(vault)}"
+        return f"{get_effective_api_base_url(vault)}|{get_api_model(vault)}"
     except Exception:
         return f"{vault}"
 
@@ -93,14 +93,26 @@ class VectorLayout:
 
     tables_complete: bool
     missing: tuple[str, ...]
+    unreadable: tuple[str, ...]
     dimensions: dict[str, int | None]     # vec table -> dim (None = absent/unknown)
     counts: dict[str, tuple[int, int]]    # vec table -> (vec_rows, meta_rows)
     compatible: bool
     reason: str
 
     @property
+    def total_vec_rows(self) -> int:
+        return sum(vc for vc, _ in self.counts.values())
+
+    @property
     def total_meta_rows(self) -> int:
         return sum(mc for _, mc in self.counts.values())
+
+    @property
+    def has_any_rows(self) -> bool:
+        """P0-2: EMPTY means vec AND meta are both zero everywhere.  A
+        damaged state (vec has rows but meta is missing/unreadable) is NOT
+        empty — it must never be treated as a fresh library."""
+        return self.total_vec_rows > 0 or self.total_meta_rows > 0
 
 
 VEC_PAIRS: tuple[tuple[str, str], ...] = (
@@ -121,34 +133,54 @@ def inspect_vector_layout(conn, required_dim: int | None = None) -> VectorLayout
 
     ensure_vec_extension(conn)
     missing: list[str] = []
+    unreadable: list[str] = []
     dims: dict[str, int | None] = {}
     counts: dict[str, tuple[int, int]] = {}
     reasons: list[str] = []
     for vec, meta in VEC_PAIRS:
+        # P0-2: vec and meta are read SEPARATELY — a failure reading one must
+        # not zero out the other's already-read count (that would turn a
+        # damaged library into a fake "empty" one).
         try:
             row = conn.execute(
                 f"SELECT sql FROM sqlite_master WHERE name='{vec}' AND type='table'"
             ).fetchone()
-            if not row:
-                missing.append(vec)
-                dims[vec] = None
-                counts[vec] = (0, 0)
-                continue
-            m = _re.search(r"float\[(\d+)\]", row[0])
-            dims[vec] = int(m.group(1)) if m else None
-            vc = conn.execute(f"SELECT COUNT(*) FROM {vec}").fetchone()[0]
-            mc = conn.execute(f"SELECT COUNT(*) FROM {meta}").fetchone()[0]
-            counts[vec] = (vc, mc)
-            if vc != mc:
-                reasons.append(f"{vec}/{meta} count mismatch {vc} vs {mc}")
-        except Exception as exc:  # noqa: BLE001 — layout check must not crash
-            missing.append(vec)
+        except Exception as exc:  # noqa: BLE001
+            unreadable.append(vec)
             dims[vec] = None
             counts[vec] = (0, 0)
             reasons.append(f"{vec} unreadable: {exc}")
+            continue
+        if not row:
+            missing.append(vec)
+            dims[vec] = None
+            counts[vec] = (0, 0)
+            continue
+        m = _re.search(r"float\[(\d+)\]", row[0])
+        dims[vec] = int(m.group(1)) if m else None
+        try:
+            vc = conn.execute(f"SELECT COUNT(*) FROM {vec}").fetchone()[0]
+        except Exception as exc:  # noqa: BLE001
+            unreadable.append(vec)
+            counts[vec] = (0, 0)
+            reasons.append(f"{vec} count unreadable: {exc}")
+            continue
+        try:
+            mc = conn.execute(f"SELECT COUNT(*) FROM {meta}").fetchone()[0]
+        except Exception as exc:  # noqa: BLE001
+            # vec rows exist but meta is broken → damaged, NOT empty.
+            unreadable.append(meta)
+            counts[vec] = (vc, 0)
+            reasons.append(f"{meta} unreadable: {exc}")
+            continue
+        counts[vec] = (vc, mc)
+        if vc != mc:
+            reasons.append(f"{vec}/{meta} count mismatch {vc} vs {mc}")
     tables_complete = not missing
     if missing:
         reasons.append(f"missing tables: {missing}")
+    if unreadable:
+        reasons.append(f"unreadable: {unreadable}")
     if required_dim is not None:
         for vec in ("vec_fulltext", "vec_body", "vec_objects"):
             d = dims.get(vec)
@@ -157,6 +189,7 @@ def inspect_vector_layout(conn, required_dim: int | None = None) -> VectorLayout
     return VectorLayout(
         tables_complete=tables_complete,
         missing=tuple(missing),
+        unreadable=tuple(unreadable),
         dimensions=dims,
         counts=counts,
         compatible=not reasons,
@@ -164,13 +197,17 @@ def inspect_vector_layout(conn, required_dim: int | None = None) -> VectorLayout
     )
 
 
-def ensure_vec_tables(conn, vault: Path, *, allow_recreate: bool = False) -> None:
+def ensure_vec_tables(conn, vault: Path, *, allow_recreate: bool = False) -> int:
     """Ensure vec0 virtual tables match the model's dimension.
 
     ``allow_recreate=True`` (shadow candidate, fresh DB) may drop/recreate
     the vec0 tables.  On the live incremental path (``allow_recreate=False``)
     a dimension mismatch raises :class:`VectorRebuildRequired` instead of
     destroying live vectors — the caller must route to a shadow rebuild.
+
+    Returns the dimension actually in effect — callers MUST use this as
+    the expected dimension for verification (never re-derive it from the
+    candidate DDL, which would be self-verification, P1-2).
     """
     from paperforge.memory.db import ensure_vec_extension
 
@@ -181,20 +218,23 @@ def ensure_vec_tables(conn, vault: Path, *, allow_recreate: bool = False) -> Non
 
     layout = inspect_vector_layout(conn, required_dim)
     if layout.compatible and layout.tables_complete:
-        return  # already correct
+        return required_dim  # already correct
 
     if not allow_recreate:
-        # P1-2: an EMPTY library (no vector rows anywhere) is a first build —
-        # safe to initialize the correct dimension in place under the writer
-        # lock.  Only a library that ALREADY HAS vectors is protected from
-        # in-place recreation (that would destroy them + orphan meta rows).
-        if layout.total_meta_rows == 0:
-            allow_recreate = True
-        else:
+        # P0-2: unreadable tables are unknown/corrupt — never treat them as
+        # empty.  EMPTY means vec AND meta are both zero everywhere; only
+        # that state may be initialized in place (a first build).  Any real
+        # rows mean existing data that an in-place drop would destroy.
+        if layout.unreadable:
+            raise VectorRebuildRequired(
+                f"vector layout unreadable: {layout.reason} — shadow rebuild required"
+            )
+        if layout.has_any_rows:
             raise VectorRebuildRequired(
                 f"vector layout incompatible: {layout.reason} — "
                 "in-place recreate would destroy live vectors; shadow rebuild required"
             )
+        allow_recreate = True
 
     # Drop and recreate with correct dimension (shadow candidate / fresh DB)
     for name in ("vec_fulltext", "vec_body", "vec_objects"):
@@ -206,3 +246,4 @@ def ensure_vec_tables(conn, vault: Path, *, allow_recreate: bool = False) -> Non
         conn.execute(ddl)
 
     logger.info("Recreated vec0 tables with dimension %d", required_dim)
+    return required_dim
