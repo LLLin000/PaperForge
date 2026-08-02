@@ -1421,7 +1421,7 @@ def test_rescue_weak_heading_demoted_to_body() -> None:
 
 
 def test_restore_tail_hold_body_after_heading_like_tail_section() -> None:
-    from paperforge.worker.ocr_document import _restore_numbered_body_from_tail_hold
+    from paperforge.worker.ocr_document import restore_numbered_body_from_tail_hold
 
     blocks = [
         {
@@ -1467,7 +1467,7 @@ def test_restore_tail_hold_body_after_heading_like_tail_section() -> None:
         },
     ]
 
-    _restore_numbered_body_from_tail_hold(blocks)
+    restore_numbered_body_from_tail_hold(blocks)
 
     assert blocks[1]["role"] == "body_paragraph"
     assert blocks[3]["role"] == "body_paragraph"

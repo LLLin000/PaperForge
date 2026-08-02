@@ -154,9 +154,11 @@ def test_fixture_figure_inventory_basic(tmp_path) -> None:
 
     inventory = build_figure_inventory(structured)
 
-    assert isinstance(inventory["official_figure_count"], int)
-    assert isinstance(inventory["figure_legends"], list)
-    assert isinstance(inventory["figure_assets"], list)
+    # vnext contract: matched/unmatched collections replace the old
+    # official_figure_count / figure_legends / figure_assets keys.
+    assert isinstance(inventory["matched_figures"], list)
+    assert isinstance(inventory["unmatched_legends"], list)
+    assert isinstance(inventory["unmatched_assets"], list)
 
 
 def test_fixture_structured_renderer_has_headings_and_body() -> None:
