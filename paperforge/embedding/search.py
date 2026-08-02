@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import logging
 import re
+import sqlite3
+from pathlib import Path
 
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
 from paperforge.memory.db import (
@@ -45,9 +47,11 @@ _VEC_META_MAP = {
 }
 
 
-
 def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True) -> list[dict]:
     """Search chunks via vec0 k-NN on vec_fulltext. Returns list with metadata and similarity scores."""
+    provider = OpenAICompatibleProvider(vault)
+    query_embedding = provider.encode_single(query)
+    n = limit * 3 if expand else limit
     db_path = get_memory_db_path(vault)
     with open_live_reader(vault, db_path) as conn:
         ensure_vec_extension(conn)
@@ -223,12 +227,22 @@ def hybrid_search(vault: Path, query: str, limit: int = 10, paper_id: str | None
     from paperforge.embedding.query_rewrite import expand_query as do_expand
 
     query_variants = do_expand(query)
+    # P1-3: encode the query BEFORE taking the reader lock — a slow provider
+    # call must not hold .read.lock (it stalls other queries and can exceed
+    # the publish barrier's 10s timeout).
+    try:
+        query_embedding = OpenAICompatibleProvider(vault).encode_single(query)
+    except Exception:
+        query_embedding = None
     db_path = get_memory_db_path(vault)
     with open_live_reader(vault, db_path) as conn:
         ensure_vec_extension(conn)
         bm25_results: list[dict] = _bm25_search(conn, query_variants, limit * 2, paper_id=paper_id)
         try:
-            vec_results: list[dict] = _vec_search(conn, vault, query, limit * 2, paper_id=paper_id)
+            vec_results: list[dict] = _vec_search(
+                conn, vault, query, limit * 2, paper_id=paper_id,
+                query_embedding=query_embedding,
+            )
         except Exception:
             vec_results = []
 
@@ -313,17 +327,22 @@ def _bm25_search(
 
 
 def _vec_search(
-    conn: sqlite3.Connection, vault: Path, query: str, limit: int, paper_id: str | None = None
+    conn: sqlite3.Connection, vault: Path, query: str, limit: int, paper_id: str | None = None,
+    *, query_embedding: list[float] | None = None,
 ) -> list[dict]:
     """Run vec0 k-NN on vec_body and vec_objects with unit_id.
 
-    Gracefully returns empty list when vec0 extension or tables are missing.
-    Supports paper-scoped filtering via rowid pre-filter.
+    ``query_embedding`` should be computed OUTSIDE the reader lock (P1-3):
+    a slow provider call must not hold the .read.lock and stall publish or
+    other queries.  Gracefully returns empty list when vec0 extension or
+    tables are missing.  Supports paper-scoped filtering via rowid
+    pre-filter.
     """
     logger = logging.getLogger(__name__)
-    provider = OpenAICompatibleProvider(vault)
-    q_emb = provider.encode_single(query)
-    q_emb_json = json.dumps(q_emb)
+    if query_embedding is None:
+        provider = OpenAICompatibleProvider(vault)
+        query_embedding = provider.encode_single(query)
+    q_emb_json = json.dumps(query_embedding)
 
     results: list[dict] = []
     for vec_table, source in _VEC_SOURCE_MAP.items():

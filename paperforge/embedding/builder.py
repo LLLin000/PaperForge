@@ -228,7 +228,10 @@ def write_encoded_payload(vault: Path, encoded: EncodedPayload):
     db_path = get_memory_db_path(vault)
     conn = get_connection(db_path)
     ensure_vec_extension(conn)
-    ensure_vec_tables(conn, vault)
+    # P0-3: the live incremental path must NEVER drop/recreate vec0 tables —
+    # a dimension mismatch raises VectorRebuildRequired (route to shadow)
+    # instead of destroying live vectors mid-write.
+    ensure_vec_tables(conn, vault, allow_recreate=False)
     ensure_schema(conn)
     try:
         write_encoded_payload_to_conn(conn, encoded)

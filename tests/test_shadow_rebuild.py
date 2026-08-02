@@ -789,3 +789,114 @@ def test_checkpoint_busy_rejects_publish(tmp_path: Path) -> None:
     with pytest.raises(BuildTargetError, match="checkpoint incomplete"):
         _checkpoint_truncate(_FakeConn(), "candidate")
     conn.close()
+
+
+# ── Round 5 hardening: commit semantics, layout routing, lock scoping ──
+
+
+def test_post_publish_bookkeeping_failure_returns_success(tmp_path: Path) -> None:
+    """P0-2: once PUBLISHED, a bookkeeping failure must return rc=0 with
+    published=true — never abort/mark-failed a live new DB."""
+    from unittest.mock import patch
+
+    from paperforge.commands import embed
+
+    vault = _make_vault(tmp_path)
+    from paperforge.memory.db import get_memory_db_path
+    live = get_memory_db_path(vault)
+    import sqlite_vec
+    c = sqlite3.connect(str(live))
+    c.enable_load_extension(True)
+    sqlite_vec.load(c)
+    from paperforge.memory.schema import ensure_schema
+    ensure_schema(c)
+    c.commit()
+    c.close()
+
+    args = argparse.Namespace(
+        vault_path=vault, embed_subcommand="build", json=True, force=True, resume=False,
+    )
+    fake_status = {
+        "mode": "api", "model": "m", "db_exists": True, "healthy": True,
+        "chunk_count": 0, "body_chunk_count": 0, "object_chunk_count": 0, "total_chunks": 0,
+        "dimension": 3, "corrupted": False, "error": "", "vector_state": "ready",
+    }
+    # make mark_vector_build_state fail AFTER publish
+    with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
+         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed, "read_index", return_value={"items": []}), \
+         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch.object(embed, "ensure_vec_tables", return_value=None), \
+         patch.object(embed, "write_vector_runtime", side_effect=RuntimeError("bookkeeping boom")):
+        rc = embed.run(args)
+    assert rc == 0, f"published build must not report failure, rc={rc}"
+    # new live is in place
+    assert not Path(str(live) + ".build").exists()
+    assert Path(str(live)).exists()
+
+
+def test_incremental_write_rejects_dimension_recreate(tmp_path: Path) -> None:
+    """P0-3: live incremental write path must raise VectorRebuildRequired
+    instead of silently dropping live vec0 tables on dimension mismatch."""
+    from paperforge.embedding.dim_detect import VectorRebuildRequired
+    from paperforge.memory.db import get_memory_db_path
+
+    vault = _make_vault(tmp_path)
+    live = get_memory_db_path(vault)
+    import sqlite_vec
+    c = sqlite3.connect(str(live))
+    c.enable_load_extension(True)
+    sqlite_vec.load(c)
+    c.execute("CREATE VIRTUAL TABLE vec_body USING vec0(embedding float[3])")
+    c.commit()
+    c.close()
+
+    from unittest.mock import patch
+
+    from paperforge.embedding import dim_detect
+    with patch.object(dim_detect, "detect_embedding_dim", return_value=1536):
+        conn = sqlite3.connect(str(live))
+        conn.enable_load_extension(True)
+        sqlite_vec.load(conn)
+        try:
+            with pytest.raises(VectorRebuildRequired):
+                dim_detect.ensure_vec_tables(conn, vault, allow_recreate=False)
+        finally:
+            conn.close()
+    # live table untouched
+    c = sqlite3.connect(f"file:{live.as_posix()}?mode=ro", uri=True)
+    row = c.execute("SELECT sql FROM sqlite_master WHERE name='vec_body'").fetchone()
+    assert row and "float[3]" in row[0], "live vec_body must not be recreated"
+    c.close()
+
+
+def test_writer_lock_per_path_no_false_reentry(tmp_path: Path) -> None:
+    """P1-2: WriterLock depth is keyed per DB path — nesting two vaults in
+    one thread takes BOTH file locks."""
+    import threading
+
+    from paperforge.memory.db import WriterLock
+
+    v1 = tmp_path / "a"
+    v2 = tmp_path / "b"
+    (v1 / "System" / "PaperForge" / "indexes").mkdir(parents=True, exist_ok=True)
+    (v2 / "System" / "PaperForge" / "indexes").mkdir(parents=True, exist_ok=True)
+
+    l1 = WriterLock(v1)
+    l2 = WriterLock(v2)
+    l1.__enter__()
+    try:
+        # P1-2: v2's file lock is INDEPENDENT of v1's — it must be
+        # acquirable while v1 is held (a shared depth counter would have
+        # treated v2 as re-entry and skipped its lock, allowing a second
+        # writer into vault B).
+        l2.__enter__()
+        assert l2._acquired, "v2 must take its own file lock"
+        l2.__exit__(None, None, None)
+        # Same-vault nesting still re-enters without a second file lock.
+        l1.__enter__()  # re-entry on SAME key
+        assert not l1._acquired, "same-vault nesting must not re-acquire"
+        l1.__exit__(None, None, None)
+        print("per-path writer lock: OK")
+    finally:
+        l1.__exit__(None, None, None)
