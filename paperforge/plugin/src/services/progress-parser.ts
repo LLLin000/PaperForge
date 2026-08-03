@@ -12,7 +12,12 @@
  * This is the stable plugin boundary contract from the CLI backend.
  */
 
-export type ProgressEventType = "START" | "PROGRESS" | "DONE";
+export type ProgressEventType =
+  | "START"
+  | "PROGRESS"
+  | "DONE"
+  | "PHASE"
+  | "NOTICE";
 
 export interface ProgressEvent {
   prefix: string;
@@ -20,6 +25,8 @@ export interface ProgressEvent {
   total?: number;
   current?: number;
   key?: string;
+  phase?: string;
+  notice?: string;
 }
 
 const KNOWN_PREFIXES = ["EMBED", "OCR_REBUILD", "OCR_REDO", "OCR_RUN"];
@@ -70,6 +77,26 @@ export function processProgressChunk(
         events.push({ prefix, event: "DONE" });
         break;
       }
+
+      // #120 forward-compat: EMBED_PHASE:<phase> and EMBED_NOTICE:<text>.
+      // The backend does not emit these yet — parsing is additive.
+      if (line.startsWith(prefix + "_PHASE:")) {
+        events.push({
+          prefix,
+          event: "PHASE",
+          phase: line.slice(pLen + 7), /* "_PHASE:".length */
+        });
+        break;
+      }
+
+      if (line.startsWith(prefix + "_NOTICE:")) {
+        events.push({
+          prefix,
+          event: "NOTICE",
+          notice: line.slice(pLen + 8), /* "_NOTICE:".length */
+        });
+        break;
+      }
     }
   }
 
@@ -103,6 +130,14 @@ export function parseProgressLine(line: string): ProgressEvent | null {
 
     if (line === prefix + "_DONE" || line.startsWith(prefix + "_DONE:")) {
       return { prefix, event: "DONE" };
+    }
+
+    if (line.startsWith(prefix + "_PHASE:")) {
+      return { prefix, event: "PHASE", phase: line.slice(pLen + 7) };
+    }
+
+    if (line.startsWith(prefix + "_NOTICE:")) {
+      return { prefix, event: "NOTICE", notice: line.slice(pLen + 8) };
     }
   }
 

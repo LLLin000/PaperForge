@@ -146,6 +146,10 @@ def run(args: argparse.Namespace) -> int:
             import openai  # noqa: F401
         except ImportError:
             _dep_missing.append("openai")
+        try:
+            import sqlite_vec  # noqa: F401
+        except ImportError:
+            _dep_missing.append("sqlite_vec")
         write_vector_runtime(vault,
         enabled=bool(status.get("mode", "")),
         mode=status.get("mode", ""),

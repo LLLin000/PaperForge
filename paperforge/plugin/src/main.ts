@@ -39,6 +39,7 @@ export default class PaperForgePlugin extends Plugin {
   private _embedProcess: unknown = null;
   private _embedProgress = { current: 0, total: 0, key: "" };
   private _embedStderr = "";
+  _embedController: import("./services/embed-build-controller").EmbedBuildController | null = null;
   _memoryStatusText: string | null = null;
   private _managedRuntime: ManagedRuntime | null = null;
 
@@ -383,6 +384,10 @@ export default class PaperForgePlugin extends Plugin {
 
   onunload() {
     if (this._pollTimer) clearInterval(this._pollTimer);
+    // #120: kill any in-flight embed build and stop its status poll — a
+    // reload/unload must not orphan the child (UI would lose control).
+    this._embedController?.dispose();
+    this._embedController = null;
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
   }
 

@@ -741,6 +741,10 @@ describe("Memory module detail (Issue #78)", () => {
     expect(button).toBeDefined();
     spawnedProcesses.length = 0;
     button?.click();
+    // #120: force rebuild requires confirmation — confirm the modal the
+    // click opened, then let the controller's env resolution settle.
+    await Promise.resolve();
+    modalOpens.at(-1)?.onConfirm?.();
     await Promise.resolve();
     expect(
       spawnedProcesses.some((process) =>
@@ -952,6 +956,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       },
     } as any;
     (tab as any)._dispatchModuleAction("memory", env);
+    modalOpens.at(-1)?.onConfirm?.();
     await Promise.resolve();
     const es = spawnedProcesses.find((p: { args: string[] }) =>
       p.args.includes("embed")
@@ -1188,6 +1193,9 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     (tab as any)._dispatchMemoryBuild("embed");
+    // #120: force rebuild requires confirmation — simulate the user
+    // confirming so the controller actually spawns.
+    modalOpens.at(-1)?.onConfirm?.();
     await Promise.resolve();
     expect(
       ((tab as any)._capabilityState as any)?.memory?.activity_label
@@ -1203,6 +1211,9 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     noticeCalls.length = 0;
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     (tab as any)._dispatchMemoryBuild("embed");
+    // #120: force rebuild requires confirmation — simulate the user
+    // confirming so the controller actually spawns.
+    modalOpens.at(-1)?.onConfirm?.();
     await Promise.resolve();
     const process = spawnedProcesses.find((p: { args: string[] }) =>
       p.args.includes("embed")
@@ -1216,23 +1227,29 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     expect(messages).toContain("UnboundLocalError: vec0 unavailable");
   });
 
-  it("injects the current secure credential profile into embed builds", () => {
+  it("injects the current secure credential profile into embed builds", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
-    const launch = vi
-      .spyOn(tab as any, "_callPython")
-      .mockReturnValue({} as never);
+    // #120: the controller resolves credentials (buildTargetedEnv) BEFORE
+    // spawning — no more credentialType null-return branch in _callPython.
+    const bridge = await import("../src/services/python-bridge");
+    const envSpy = vi.spyOn(bridge, "buildTargetedEnv");
     (tab as any)._dispatchMemoryBuild("embed");
-    expect(launch).toHaveBeenCalledWith(
-      ["embed", "build", "--force"],
-      expect.objectContaining({ credentialType: "embed", stream: true })
-    );
+    modalOpens.at(-1)?.onConfirm?.();
+    await Promise.resolve();
+    expect(envSpy).toHaveBeenCalled();
+    expect(
+      spawnedProcesses.some((p: { args: string[] }) => p.args.includes("embed"))
+    ).toBe(true);
   });
 
   it("embed parses PROGRESS into activity_progress", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     (tab as any)._dispatchMemoryBuild("embed");
+    // #120: force rebuild requires confirmation — simulate the user
+    // confirming so the controller actually spawns.
+    modalOpens.at(-1)?.onConfirm?.();
     await Promise.resolve();
     spawnedProcesses
       .find((p: { args: string[] }) => p.args.includes("embed"))
