@@ -885,6 +885,32 @@ def probe_memory(vault: Path) -> dict[str, Any]:
 
         # Gate 5a: completed → ready
         if bs_status == "completed":
+            # #119: the vector stack (openai + sqlite-vec) is a hard runtime
+            # requirement for Build Index / Retrieve — a healthy-looking DB
+            # with missing deps must NOT report ready.
+            _dep_missing: list[str] = []
+            try:
+                import openai  # noqa: F401
+            except ImportError:
+                _dep_missing.append("openai")
+            try:
+                import sqlite_vec  # noqa: F401
+            except ImportError:
+                _dep_missing.append("sqlite_vec")
+            if _dep_missing:
+                return build_envelope(
+                    module="memory", capability_state="needs_action", severity="warning",
+                    reason_code="memory.dependencies_missing",
+                    reason_text=f"Smart Retrieval deps missing: {', '.join(_dep_missing)} — reinstall with paperforge[vector]",
+                    user_state=USER_STATE_ACTION_NEEDED, capability_kind=CAPABILITY_OPTIONAL,
+                    notices=[{"kind": "warning", "text": f"Missing: {', '.join(_dep_missing)}. Reinstall the runtime with paperforge[vector]."}],
+                    action_primary=build_action_primary(
+                        action_id="memory.install_vector_deps", verb="install",
+                        label="Install Smart Retrieval dependencies",
+                        command="paperforge setup",
+                    ),
+                    ttl_seconds=TTL_MEMORY,
+                )
             # Quick API key presence check (no API call, just config)
             from paperforge.embedding._config import get_api_key
 

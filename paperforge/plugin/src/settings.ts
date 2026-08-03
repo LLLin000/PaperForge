@@ -52,6 +52,8 @@ import {
   scanBbtDirectChildren,
   runSubprocess,
 } from "./services/python-bridge";
+import { EmbedBuildController } from "./services/embed-build-controller";
+import { deferred } from "./services/deferred";
 import {
   getVectorRuntime,
   getMemoryRuntime,
@@ -1895,86 +1897,122 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const label = kind === "embed" ? "Vector index" : "Memory";
 
     if (kind === "embed") {
-      // Embed build: stream progress
-      this.plugin._embedBuffer = "";
-      this.plugin._embedProgress = { current: 0, total: 0, key: "" };
-      let stderr = "";
-      const child = this._callPython(cliArgs, {
-        credentialType: "embed",
-        stream: true,
-        onData: (data: unknown) => {
-          const text =
-            typeof data === "string"
-              ? data
-              : Buffer.isBuffer(data)
-                ? data.toString("utf-8")
-                : String(data);
-          const { events, buffer } = processProgressChunk(
-            text,
-            this.plugin._embedBuffer ?? ""
-          );
-          this.plugin._embedBuffer = buffer;
-          for (const ev of events) {
-            if (ev.event === "PROGRESS") {
+      // #120: embed lifecycle is owned by EmbedBuildController — the old
+      // path stored _callPython's null return (async credential branch),
+      // making stop / duplicate-start guards / unload cleanup impossible.
+      const resolved = this._resolveRuntimeCommand(vp);
+      if (!resolved) {
+        new Notice(t("retrieval_no_python"));
+        this._probeModule("memory");
+        return;
+      }
+      const startEmbed = () => {
+        const controller = new EmbedBuildController({
+          vaultPath: vp,
+          pythonPath: resolved.path,
+          pythonArgs: resolved.args,
+          resolveEnv: () =>
+            buildTargetedEnv(
+              asPluginForSecrets(this.app),
+              "embed",
+              vectorDbProfile(this.plugin.settings)
+            ),
+          runShort: (args: string[], timeoutMs: number) => {
+            const { promise, resolve } = deferred<{
+              code: number;
+              stdout: string;
+              stderr: string;
+            }>();
+            execFile(
+              resolved.path,
+              [...resolved.args, "-m", "paperforge", "--vault", vp, ...args],
+              { cwd: vp, timeout: timeoutMs, env: paperforgeEnrichedEnv() },
+              (err, stdout, stderr) => {
+                resolve({
+                  code: err ? 1 : 0,
+                  stdout: stdout ?? "",
+                  stderr: stderr ?? "",
+                });
+              }
+            );
+            return promise;
+          },
+          callbacks: {
+            onStateChange: (
+              state,
+              progress,
+              warning,
+              stopResult
+            ) => {
               this.plugin._embedProgress = {
-                current: ev.current || 0,
-                total: ev.total || 0,
-                key: ev.key || "",
+                current: progress.current,
+                total: progress.total,
+                key: progress.key,
               };
               if (envelopes["memory"]) {
-                envelopes["memory"].activity_progress = {
-                  current: ev.current || 0,
-                  total: ev.total || 1,
-                };
+                if (state === "running" || state === "resolving_credentials" || state === "stopping") {
+                  envelopes["memory"].activity_state = "running";
+                  envelopes["memory"].activity_label =
+                    state === "stopping"
+                      ? "Stopping vector build…"
+                      : "Building vector index…";
+                  envelopes["memory"].activity_progress = {
+                    current: progress.current,
+                    total: progress.total || 1,
+                  };
+                } else {
+                  envelopes["memory"].activity_state = "idle";
+                  envelopes["memory"].activity_label = null;
+                  envelopes["memory"].activity_progress = null;
+                }
               }
-            }
-          }
-          this.display();
-        },
-        onStderr: (data: unknown) => {
-          stderr +=
-            typeof data === "string"
-              ? data
-              : Buffer.isBuffer(data)
-                ? data.toString("utf-8")
-                : String(data);
-        },
-        onError: (err: Error) => {
-          this.plugin._embedProcess = null;
-          if (envelopes["memory"]) {
-            envelopes["memory"].activity_state = "idle";
-            envelopes["memory"].activity_label = null;
-            envelopes["memory"].activity_progress = null;
-          }
-          new Notice(label + " build error: " + (err.message || err), 8000);
-          this._probeModule("memory");
-          this.display();
-        },
-        onClose: (code: number | null) => {
-          this.plugin._embedProcess = null;
-          if (envelopes["memory"]) {
-            envelopes["memory"].activity_state = "idle";
-            envelopes["memory"].activity_label = null;
-            envelopes["memory"].activity_progress = null;
-          }
-          if (code === 0) {
-            new Notice(label + " build complete.");
-          } else {
-            const lines = stderr.trim().split(/\r?\n/).filter(Boolean);
-            const diagnostic = lines[lines.length - 1];
-            new Notice(
-              t("sr_build_failed_notice").replace(
-                "{detail}",
-                diagnostic || "exit code " + (code ?? "?")
-              ),
-              8000
-            );
-          }
-          this._probeModule("memory");
-          this.display();
-        },
-      });
-      this.plugin._embedProcess = child;
+              if (state === "success") {
+                new Notice(label + " build complete.");
+              } else if (state === "success_with_warning") {
+                new Notice(
+                  label +
+                    " published with warning: " +
+                    (warning || "bookkeeping incomplete"),
+                  8000
+                );
+              } else if (state === "failed") {
+                new Notice(
+                  t("sr_build_failed_notice").replace(
+                    "{detail}",
+                    warning || "exit code ?"
+                  ),
+                  8000
+                );
+              } else if (state === "idle" && stopResult) {
+                new Notice(
+                  stopResult === "completed_before_stop"
+                    ? "Build already completed before stop request."
+                    : "Build stopped."
+                );
+              }
+              this.display();
+            },
+          },
+        });
+        this.plugin._embedController = controller;
+        // #120: force rebuild requires confirmation (API cost + rebuild
+        // semantics) before the controller starts.
+        const confirmAndStart = () => {
+          new PaperForgeConfirmModal(
+            this.app,
+            {
+              title: "Rebuild vector index",
+              effectLabel:
+                "Force rebuild will call the embedding API (may incur cost) and rebuild all vectors. The current index stays usable until the new one is verified. PDFs, notes and OCR are NOT deleted. You can safely stop the build.",
+              confirmLabel: t("config_confirm"),
+              cancelLabel: t("config_cancel"),
+            },
+            () => void controller.start("--force")
+          ).open();
+        };
+        confirmAndStart();
+      };
+      startEmbed();
     } else {
       // Memory build: timeout-based (no streaming)
       this._callPython(cliArgs, {

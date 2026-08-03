@@ -884,7 +884,10 @@ export class ManagedRuntime {
       } = deferred<void>();
       this._execFile(
         pythonExe,
-        ["-m", "pip", "install", `paperforge==${version}`],
+        // #119: vector extras are REQUIRED for the core feature (openai +
+        // sqlite-vec are optional-dependencies only) — a bare install looks
+        // healthy but crashes on the first Build Index click.
+        ["-m", "pip", "install", `paperforge[vector]==${version}`],
         { timeout: 120000, signal },
         (err) => {
           if (err) pipReject(err);
@@ -913,7 +916,9 @@ export class ManagedRuntime {
       } = deferred<void>();
       this._execFile(
         pythonExe,
-        ["-I", "-c", `import paperforge; print(paperforge.__version__)`],
+        // #119: verify the vector stack too — openai + sqlite_vec are the
+        // runtime requirements for embed build/retrieve.
+        ["-I", "-c", `import paperforge, openai, sqlite_vec; print(paperforge.__version__)`],
         { timeout: 30000, signal },
         (err) => {
           if (err) verifyReject(err);
