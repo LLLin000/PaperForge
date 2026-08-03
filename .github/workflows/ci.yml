@@ -33,6 +33,20 @@ jobs:
         run: python scripts/check_version_sync.py
 
   # ---------------------------------------------------------------------------
+  # L0.5 — Ruff static gate (undefined names etc.)
+  # ---------------------------------------------------------------------------
+  ruff:
+    name: L0.5 — Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff
+      - run: ruff check paperforge --select F401,F821,F822,F823
+
+  # ---------------------------------------------------------------------------
   # L1 — Unit tests (3 OS x 1 Python)
   # ---------------------------------------------------------------------------
   unit-tests:
@@ -72,6 +86,33 @@ jobs:
         working-directory: paperforge/plugin
       - run: npx vitest run --reporter=verbose
         working-directory: paperforge/plugin
+      # #121 (P0-6): a TypeScript compile failure or broken bundle must block
+      # merge — tests alone are not a build gate.
+      - run: npm run typecheck
+        working-directory: paperforge/plugin
+      - run: npm run build
+        working-directory: paperforge/plugin
+
+  # ---------------------------------------------------------------------------
+  # L2 — Release-protocol integration tests (shadow rebuild + retrieval)
+  # ---------------------------------------------------------------------------
+  protocol-tests:
+    name: L2 — Release Protocol Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package with test deps
+        run: pip install -e ".[test]"
+      - name: Run shadow + retrieval protocol tests
+        run: |
+          python -m pytest tests/test_shadow_rebuild.py \
+            tests/test_pr9c_streaming_embed.py \
+            tests/test_deep_search.py \
+            tests/test_query_command_diagnostics.py \
+            -v --tb=short --timeout=90
 
   # ---------------------------------------------------------------------------
   # L4 — E2E + Audit
@@ -98,11 +139,14 @@ jobs:
     name: All Checks Passed
     if: always()
     needs:
+      - version-check
+      - ruff
       - unit-tests
+      - protocol-tests
       - plugin-tests
+      - e2e-tests
     runs-on: ubuntu-latest
     steps:
       - uses: re-actors/alls-green@v1.2.2
         with:
-          allowed-skips: version-check
           jobs: ${{ toJSON(needs) }}
