@@ -1801,88 +1801,150 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     this.plugin._ocrBuffer = "";
     this.plugin._ocrProgress = { current: 0, total: 1, key: "" };
+    this.plugin._ocrStderr = "";
     this.plugin._ocrWasStopped = false;
     this.display();
 
-    const child = this._callPython(cliArgs, {
-      stream: true,
-      onData: (data: unknown) => {
-        const text =
-          typeof data === "string"
-            ? data
-            : Buffer.isBuffer(data)
-              ? data.toString("utf-8")
-              : String(data);
-        const { events, buffer } = processProgressChunk(
-          text,
-          this.plugin._ocrBuffer ?? ""
-        );
-        this.plugin._ocrBuffer = buffer;
-        for (const ev of events) {
-          if (ev.event === "START") {
-            if (this.plugin._ocrProgress) {
-              this.plugin._ocrProgress.total = ev.total || 1;
-            }
-            if (envelopes["ocr"]) {
-              envelopes["ocr"].activity_progress = {
-                current: 0,
-                total: ev.total || 1,
-              };
-            }
-          } else if (ev.event === "PROGRESS") {
-            this.plugin._ocrProgress = {
-              current: ev.current || 0,
-              total: ev.total || 1,
-              key: ev.key || "",
-            };
-            if (envelopes["ocr"]) {
-              envelopes["ocr"].activity_progress = {
+    // #120-fix (release review): Run/Redo OCR needs the PaddleOCR
+    // credential from SecretStorage — paperforgeEnrichedEnv() STRIPS
+    // PADDLEOCR_* prefixes, so a bare spawn has no token and the button
+    // appears dead. Resolve the env FIRST (same pattern as
+    // EmbedBuildController), then spawn synchronously so _ocrProcess is a
+    // real child handle. Rebuild only recomputes derived artifacts from
+    // raw blocks — no remote OCR, no token needed.
+    const needsCredential = mode === "run" || mode === "redo";
+
+    const startOcr = (env: Record<string, string | undefined>) => {
+      const child = this._callPython(cliArgs, {
+        stream: true,
+        env,
+        onStderr: (data: unknown) => {
+          const text =
+            typeof data === "string"
+              ? data
+              : Buffer.isBuffer(data)
+                ? data.toString("utf-8")
+                : String(data);
+          this.plugin._ocrStderr = (
+            (this.plugin._ocrStderr ?? "") + text
+          ).slice(-500);
+        },
+        onData: (data: unknown) => {
+          const text =
+            typeof data === "string"
+              ? data
+              : Buffer.isBuffer(data)
+                ? data.toString("utf-8")
+                : String(data);
+          const { events, buffer } = processProgressChunk(
+            text,
+            this.plugin._ocrBuffer ?? ""
+          );
+          this.plugin._ocrBuffer = buffer;
+          for (const ev of events) {
+            if (ev.event === "START") {
+              if (this.plugin._ocrProgress) {
+                this.plugin._ocrProgress.total = ev.total || 1;
+              }
+              if (envelopes["ocr"]) {
+                envelopes["ocr"].activity_progress = {
+                  current: 0,
+                  total: ev.total || 1,
+                };
+              }
+            } else if (ev.event === "PROGRESS") {
+              this.plugin._ocrProgress = {
                 current: ev.current || 0,
                 total: ev.total || 1,
+                key: ev.key || "",
               };
+              if (envelopes["ocr"]) {
+                envelopes["ocr"].activity_progress = {
+                  current: ev.current || 0,
+                  total: ev.total || 1,
+                };
+              }
             }
           }
-        }
-        this.display();
-      },
-      onError: (err: Error) => {
-        this.plugin._ocrProcess = null;
-        if (envelopes["ocr"]) {
-          envelopes["ocr"].activity_state = "idle";
-          envelopes["ocr"].activity_label = null;
-          envelopes["ocr"].activity_progress = null;
-        }
-        new Notice(t("ocr_error_notice"), 8000);
-        this._probeModule("ocr");
-        this.display();
-      },
-      onClose: (code: number | null) => {
-        this.plugin._ocrProcess = null;
-        if (envelopes["ocr"]) {
-          envelopes["ocr"].activity_state = "idle";
-          envelopes["ocr"].activity_label = null;
-          envelopes["ocr"].activity_progress = null;
-        }
-        if (code === 0) {
+          this.display();
+        },
+        onError: (err: Error) => {
+          this.plugin._ocrProcess = null;
+          if (envelopes["ocr"]) {
+            envelopes["ocr"].activity_state = "idle";
+            envelopes["ocr"].activity_label = null;
+            envelopes["ocr"].activity_progress = null;
+          }
+          new Notice(t("ocr_error_notice"), 8000);
+          this._probeModule("ocr");
+          this.display();
+        },
+        onClose: (code: number | null) => {
+          this.plugin._ocrProcess = null;
+          if (envelopes["ocr"]) {
+            envelopes["ocr"].activity_state = "idle";
+            envelopes["ocr"].activity_label = null;
+            envelopes["ocr"].activity_progress = null;
+          }
+          if (code === 0) {
+            new Notice(
+              mode === "run"
+                ? t("ocr_run_complete")
+                : mode === "rebuild"
+                  ? t("ocr_rebuild_complete")
+                  : t("ocr_redo_complete")
+            );
+          } else if (code === 130 || this.plugin._ocrWasStopped) {
+            this.plugin._ocrWasStopped = false;
+            new Notice(t("ocr_stopped_notice"));
+          } else {
+            // #120-fix: surface the stderr tail so "missing token",
+            // network errors and tracebacks are not swallowed.
+            const detail = (this.plugin._ocrStderr || "").trim().slice(0, 300);
+            new Notice(
+              detail
+                ? t("ocr_failed_notice") + ": " + detail
+                : t("ocr_failed_notice"),
+              8000
+            );
+          }
+          // Terminal re-probe
+          this._probeModule("ocr");
+          this.display();
+        },
+      });
+      this.plugin._ocrProcess = child;
+    };
+
+    if (needsCredential) {
+      void buildTargetedEnv(
+        asPluginForSecrets(this.app),
+        "ocr",
+        vectorDbProfile(this.plugin.settings)
+      )
+        .then((env) => {
+          startOcr(env);
+        })
+        .catch(() => {
+          // Credential resolution failure: never leave the UI stuck
+          // running, never spawn without a token.
+          this.plugin._ocrProcess = null;
+          if (envelopes["ocr"]) {
+            envelopes["ocr"].activity_state = "idle";
+            envelopes["ocr"].activity_label = null;
+            envelopes["ocr"].activity_progress = null;
+          }
           new Notice(
-            mode === "run"
-              ? t("ocr_run_complete")
-              : mode === "rebuild"
-                ? t("ocr_rebuild_complete")
-                : t("ocr_redo_complete")
+            t("ocr_failed_notice") +
+              ": PaddleOCR API token is missing (SecretStorage)",
+            8000
           );
-        } else if (code === 130 || this.plugin._ocrWasStopped) {
-          this.plugin._ocrWasStopped = false;
-          new Notice(t("ocr_stopped_notice"));
-        } else {
-          new Notice(t("ocr_failed_notice"), 8000);
-        }
-        // Terminal re-probe
-        this._probeModule("ocr");
-        this.display();
-      },
-    });
-    this.plugin._ocrProcess = child;
+          this._probeModule("ocr");
+          this.display();
+        });
+    } else {
+      startOcr(paperforgeEnrichedEnv());
+    }
   } /** Dispatch memory build: distinct build vs embed modes, overlay activity, terminal re-probe (Issue #78). */
   _dispatchMemoryBuild(kind: "build" | "embed"): void {
     const vp = (this.app.vault.adapter as any).basePath as string;
