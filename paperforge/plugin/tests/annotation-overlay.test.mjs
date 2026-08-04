@@ -76,6 +76,17 @@ describe('parseAnnotationPositionJson', () => {
         expect(result.rects).toHaveLength(2);
     });
 
+    it('parses real Zotero rect arrays as x1/y1/x2/y2 coordinates', () => {
+        const input = '{"pageIndex":2,"rects":[[220.095,432.09,294.815,440.307],[39.685,421.34,294.803,429.557]]}';
+        const result = parseAnnotationPositionJson(input);
+        expect(result.ok).toBe(true);
+        expect(result.pageIndex).toBe(2);
+        expect(result.rects).toEqual([
+            { x: 220.095, y: 432.09, w: 74.72, h: 8.217 },
+            { x: 39.685, y: 421.34, w: 255.118, h: 8.217 },
+        ]);
+    });
+
     it('returns ok:false for null input', () => {
         const result = parseAnnotationPositionJson(null);
         expect(result.ok).toBe(false);
@@ -486,7 +497,11 @@ describe('buildAnnotationOverlayMarks', () => {
 
     it('skips rows with missing pageIndex', () => {
         const row = makeAnnotationRow({
-            pdfLocation: { sourceAttachmentKey: ATTACH_KEY_MAIN, pageLabel: '1' },
+            pdfLocation: {
+                sourceAttachmentKey: ATTACH_KEY_MAIN,
+                pageLabel: '1',
+                positionJson: '{"rects":[{"x":60.5,"y":72.3,"w":489.2,"h":18.1}]}',
+            },
         });
         delete row.pdfLocation.pageIndex;
         const state = makeReadyState([row]);
@@ -494,6 +509,25 @@ describe('buildAnnotationOverlayMarks', () => {
         expect(result.ok).toBe(true);
         expect(result.marks).toHaveLength(0);
         expect(result.skipped).toBe(1);
+    });
+
+    it('uses pageIndex from Zotero positionJson when the database page_index is missing', () => {
+        const row = makeAnnotationRow({
+            pdfLocation: {
+                sourceAttachmentKey: ATTACH_KEY_MAIN,
+                pageIndex: null,
+                pageLabel: '3',
+                positionJson: '{"pageIndex":2,"rects":[[220.095,432.09,294.815,440.307]]}',
+            },
+        });
+        const state = makeReadyState([row]);
+        const result = buildAnnotationOverlayMarks(state, makePaperEntry(), ACTIVE_PDF_PATH);
+        expect(result.ok).toBe(true);
+        expect(result.status).toBe('rendered');
+        expect(result.skipped).toBe(0);
+        expect(result.marks).toHaveLength(1);
+        expect(result.marks[0].pageIndex).toBe(2);
+        expect(result.marks[0].rects[0]).toEqual({ x: 220.095, y: 432.09, w: 74.72, h: 8.217 });
     });
 
     it('skips rows with negative pageIndex', () => {

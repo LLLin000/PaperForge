@@ -380,6 +380,22 @@ def build_parser() -> argparse.ArgumentParser:
     p_annot_export.add_argument("--paper", metavar="KEY", help="Zotero citation key")
     p_annot_export.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
+    p_annot_create_local = annot_sub.add_parser("create-local", help="Create an Obsidian-local PDF annotation")
+    p_annot_create_local.add_argument("--paper", metavar="KEY", help="Zotero citation key")
+    p_annot_create_local.add_argument("--page-index", type=int, required=True, help="Zero-based PDF page index")
+    p_annot_create_local.add_argument("--page-label", default="", help="Human-readable PDF page label")
+    p_annot_create_local.add_argument("--selected-text", default="", help="Selected text for the annotation")
+    p_annot_create_local.add_argument("--comment", default="", help="Local Obsidian annotation comment")
+    p_annot_create_local.add_argument("--color", default="#ffd400", help="Annotation color")
+    p_annot_create_local.add_argument("--type", default="highlight", help="Annotation type")
+    p_annot_create_local.add_argument("--position-json", required=True, help="PDF position JSON containing pageIndex and rects")
+    p_annot_create_local.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
+    p_annot_update_local = annot_sub.add_parser("update-local", help="Update an Obsidian-local annotation")
+    p_annot_update_local.add_argument("--id", required=True, help="Annotation id")
+    p_annot_update_local.add_argument("--comment", default="", help="Updated local annotation comment")
+    p_annot_update_local.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
     # setup wizard
     p_setup = sub.add_parser("setup", help="Set up PaperForge in a vault (use --headless for non-interactive)")
     p_setup.add_argument(

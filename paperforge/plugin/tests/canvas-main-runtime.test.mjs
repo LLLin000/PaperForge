@@ -18,11 +18,15 @@ import Module from 'node:module';
 const require = createRequire(import.meta.url);
 
 let originalLoad;
+let PaperForgePlugin;
 let PaperForgeReadingCanvasView;
 let VIEW_TYPE_PAPERFORGE_READING_CANVAS;
 let openReadingCanvasForActivePaper;
+let buildAnnotationCreateLocalArgs;
+let mapPageDomRectToPdfRect;
 let markdownRenderCalls;
 let markdownRenderImpl;
+let lastMenu;
 
 /**
  * Global capture for Notice calls during tests.
@@ -32,6 +36,7 @@ const noticeCalls = [];
 function installObsidianStub() {
     originalLoad = Module._load;
     markdownRenderCalls = [];
+    lastMenu = null;
     markdownRenderImpl = async (_app, markdown, el, sourcePath) => {
         markdownRenderCalls.push({ markdown, el, sourcePath });
         const headingMatch = markdown.match(/^#\s+(.+)$/m);
@@ -68,6 +73,30 @@ function installObsidianStub() {
                 Modal: class Modal {},
                 Setting: class Setting {},
                 PluginSettingTab: class PluginSettingTab {},
+                Menu: class Menu {
+                    constructor() {
+                        this.items = [];
+                        this.shown = false;
+                        lastMenu = this;
+                    }
+                    addItem(callback) {
+                        const item = {
+                            title: '',
+                            icon: '',
+                            click: null,
+                            setTitle(title) { this.title = title; return this; },
+                            setIcon(icon) { this.icon = icon; return this; },
+                            onClick(handler) { this.click = handler; return this; },
+                        };
+                        callback(item);
+                        this.items.push(item);
+                        return this;
+                    }
+                    showAtMouseEvent(evt) {
+                        this.shown = true;
+                        this.event = evt;
+                    }
+                },
                 MarkdownRenderer: {
                     render: vi.fn((app, markdown, el, sourcePath, component) => {
                         return markdownRenderImpl(app, markdown, el, sourcePath, component);
@@ -82,9 +111,12 @@ function installObsidianStub() {
     const mainPath = require.resolve('../main.js');
     delete require.cache[mainPath];
     const pluginModule = require('../main.js');
+    PaperForgePlugin = pluginModule;
     PaperForgeReadingCanvasView = pluginModule.__test.PaperForgeReadingCanvasView;
     VIEW_TYPE_PAPERFORGE_READING_CANVAS = pluginModule.__test.VIEW_TYPE_PAPERFORGE_READING_CANVAS;
     openReadingCanvasForActivePaper = pluginModule.__test.openReadingCanvasForActivePaper;
+    buildAnnotationCreateLocalArgs = pluginModule.__test.buildAnnotationCreateLocalArgs;
+    mapPageDomRectToPdfRect = pluginModule.__test.mapPageDomRectToPdfRect;
 }
 
 function uninstallObsidianStub() {
@@ -145,6 +177,10 @@ beforeEach(() => {
 
 afterEach(() => {
     uninstallObsidianStub();
+    try {
+        vi.runOnlyPendingTimers();
+    } catch (_) {}
+    vi.useRealTimers();
     vi.restoreAllMocks();
     document.body.innerHTML = '';
     noticeCalls.length = 0;
@@ -327,26 +363,860 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(view.contentEl.querySelector('[data-anchor-status="unresolved"]')).toBeFalsy();
     });
 
+    it('strips lightweight html tags from annotation quote and comment text', () => {
+        const view = makeCanvasView();
+
+        view._renderNativeAnnotationPanel('PAPER_TAGS', { key: 'PAPER_TAGS' }, {
+            state: 'ready',
+            paperKey: 'PAPER_TAGS',
+            annotations: [{
+                display: {
+                    selectedText: 'plain <b>important</b> quote',
+                    comment: 'comment with </b> dangling tag',
+                    type: 'highlight',
+                    color: '#ffd54f',
+                },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-tags' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const quote = view.contentEl.querySelector('.paperforge-annotation-panel-quote');
+        const comment = view.contentEl.querySelector('.paperforge-annotation-panel-comment');
+        expect(quote.textContent).toBe('plain important quote');
+        expect(comment.textContent).toBe('comment with dangling tag');
+        expect(view.contentEl.textContent).not.toContain('</b>');
+        expect(view.contentEl.textContent).not.toContain('<b>');
+    });
+
+    it('renders color filter chips and lets readers show one annotation color at a time', () => {
+        const view = makeCanvasView();
+
+        view._renderNativeAnnotationPanel('PAPER_COLORS', { key: 'PAPER_COLORS' }, {
+            state: 'ready',
+            paperKey: 'PAPER_COLORS',
+            annotations: [
+                {
+                    display: { selectedText: 'yellow note', type: 'highlight', color: '#ffd400' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: { sourceAnnotationKey: 'ann-yellow' },
+                },
+                {
+                    display: { selectedText: 'red note', type: 'highlight', color: '#ff6666' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 1 },
+                    provenance: { sourceAnnotationKey: 'ann-red' },
+                },
+            ],
+            message: '2 annotation(s) loaded.',
+        });
+
+        const filters = view.contentEl.querySelectorAll('.paperforge-annotation-color-filter');
+        expect(filters.length).toBe(3);
+        expect(view.contentEl.querySelectorAll('.paperforge-annotation-panel-card')).toHaveLength(2);
+
+        const redFilter = Array.from(filters).find((el) => el.getAttribute('data-color-filter') === '#ff6666');
+        redFilter.click();
+
+        const cards = view.contentEl.querySelectorAll('.paperforge-annotation-panel-card');
+        expect(cards).toHaveLength(1);
+        expect(cards[0].textContent).toContain('red note');
+        expect(cards[0].textContent).not.toContain('yellow note');
+    });
+
+    it('keeps annotation color filters pinned while the annotation list scrolls', () => {
+        const view = makeCanvasView();
+
+        view._renderNativeAnnotationPanel('PAPER_PINNED_FILTERS', { key: 'PAPER_PINNED_FILTERS' }, {
+            state: 'ready',
+            paperKey: 'PAPER_PINNED_FILTERS',
+            annotations: [
+                {
+                    display: { selectedText: 'yellow note', type: 'highlight', color: '#ffd400' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: { sourceAnnotationKey: 'ann-yellow' },
+                },
+                {
+                    display: { selectedText: 'red note', type: 'highlight', color: '#ff6666' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 1 },
+                    provenance: { sourceAnnotationKey: 'ann-red' },
+                },
+            ],
+            message: '2 annotation(s) loaded.',
+        });
+
+        const panel = view.contentEl.querySelector('.paperforge-annotation-panel');
+        const chrome = view.contentEl.querySelector('.paperforge-annotation-panel-chrome');
+        const filters = view.contentEl.querySelector('.paperforge-annotation-color-filters');
+        const list = view.contentEl.querySelector('.paperforge-annotation-panel-list');
+
+        expect(panel.style.display).toBe('flex');
+        expect(panel.style.overflow).toBe('hidden');
+        expect(chrome).toBeTruthy();
+        expect(chrome.style.position).toBe('sticky');
+        expect(chrome.style.top).toBe('0px');
+        expect(filters.parentElement).toBe(chrome);
+        expect(list.style.overflowY).toBe('auto');
+        expect(list.style.flex).toBe('1 1 auto');
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('builds create-local CLI args for an Obsidian-owned PDF bbox annotation', () => {
+        const args = buildAnnotationCreateLocalArgs({
+            paperKey: 'PAPER_LOCAL',
+            pageIndex: 2,
+            pageLabel: '3',
+            selectedText: 'local PDF quote',
+            comment: '',
+            color: '#5fb236',
+            type: 'highlight',
+            positionJson: '{"pageIndex":2,"rects":[[10,20,40,30]]}',
+        });
+
+        expect(args).toEqual([
+            '-m', 'paperforge', 'annotation', 'create-local',
+            '--paper', 'PAPER_LOCAL',
+            '--page-index', '2',
+            '--page-label', '3',
+            '--selected-text', 'local PDF quote',
+            '--comment', '',
+            '--color', '#5fb236',
+            '--type', 'highlight',
+            '--position-json', '{"pageIndex":2,"rects":[[10,20,40,30]]}',
+            '--json',
+        ]);
+    });
+
+    it('maps a PDF text selection DOM rect back into Zotero-style PDF bbox coordinates', () => {
+        const page = document.createElement('div');
+        page.setAttribute('data-page-number', '3');
+        page.getBoundingClientRect = vi.fn(() => ({
+            left: 50,
+            top: 100,
+            width: 595.276,
+            height: 790.866,
+            right: 645.276,
+            bottom: 890.866,
+        }));
+
+        const rect = mapPageDomRectToPdfRect({
+            left: 125.038,
+            top: 590.309,
+            width: 219.607,
+            height: 8.217,
+        }, page);
+
+        expect(rect).toEqual([75.038, 292.34, 294.645, 300.557]);
+    });
+
+    it('labels Zotero annotations as locked and Obsidian annotations as local editable rows', () => {
+        const view = makeCanvasView();
+
+        view._renderNativeAnnotationPanel('PAPER_OWNERSHIP', { key: 'PAPER_OWNERSHIP' }, {
+            state: 'ready',
+            paperKey: 'PAPER_OWNERSHIP',
+            annotations: [
+                {
+                    display: { selectedText: 'zotero quote', type: 'highlight', color: '#ffd400' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: { source: 'zotero', isReadonly: true, sourceAnnotationKey: 'ann-zotero' },
+                },
+                {
+                    display: { selectedText: 'local quote', type: 'highlight', color: '#5fb236' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 1 },
+                    provenance: { source: 'obsidian', isReadonly: false, sourceAnnotationKey: 'ann-local' },
+                },
+            ],
+            message: '2 annotation(s) loaded.',
+        });
+
+        const cards = view.contentEl.querySelectorAll('.paperforge-annotation-panel-card');
+        expect(cards[0].getAttribute('data-annotation-source')).toBe('zotero');
+        expect(cards[0].getAttribute('data-readonly')).toBe('true');
+        expect(cards[0].textContent).toContain('Locked');
+        expect(cards[1].getAttribute('data-annotation-source')).toBe('obsidian');
+        expect(cards[1].getAttribute('data-readonly')).toBe('false');
+        expect(cards[1].textContent).toContain('Local');
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('renders local comment editing only when the local annotation card is selected', () => {
+        const view = makeCanvasView();
+
+        view._renderNativeAnnotationPanel('PAPER_LOCAL_EDIT', { key: 'PAPER_LOCAL_EDIT' }, {
+            state: 'ready',
+            paperKey: 'PAPER_LOCAL_EDIT',
+            annotations: [
+                {
+                    display: { selectedText: 'locked quote', comment: 'locked note', type: 'highlight', color: '#ffd400' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: { source: 'zotero', isReadonly: true, sourceAnnotationKey: 'ann-locked' },
+                },
+                {
+                    display: { selectedText: 'local quote', comment: 'editable note', type: 'highlight', color: '#5fb236' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 1 },
+                    provenance: { source: 'obsidian', isReadonly: false, sourceAnnotationKey: 'ann-local-edit' },
+                },
+            ],
+            message: '2 annotation(s) loaded.',
+        });
+
+        const cards = view.contentEl.querySelectorAll('.paperforge-annotation-panel-card');
+        expect(cards[0].querySelector('[data-local-comment-editor]')).toBeFalsy();
+        const editorWrap = cards[1].querySelector('.paperforge-annotation-local-editor');
+        expect(editorWrap).toBeTruthy();
+        expect(editorWrap.hidden).toBe(true);
+        cards[1].setAttribute('aria-selected', 'true');
+        view._syncLocalAnnotationEditorsVisibility();
+        expect(editorWrap.hidden).toBe(false);
+        const editor = cards[1].querySelector('[data-local-comment-editor]');
+        expect(editor).toBeTruthy();
+        expect(editor.value).toBe('editable note');
+        expect(cards[1].querySelector('[data-action="paperforge-save-local-comment"]')).toBeTruthy();
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('saves edited local annotation comments without triggering card navigation', async () => {
+        const view = makeCanvasView();
+        view.app = {
+            vault: { adapter: { basePath: 'C:/vault' } },
+            plugins: { plugins: { paperforge: { settings: {} } } },
+        };
+        view._runUpdateLocalAnnotationComment = vi.fn(async () => ({
+            ok: true,
+            annotation: { id: 'ann-local-save', comment: 'new local note' },
+        }));
+        view._reloadNativeAnnotationPanelAfterLocalCreate = vi.fn(async () => null);
+        view._openPdfForAnnotationRow = vi.fn(() => ({ ok: true, page: 1 }));
+
+        view._renderNativeAnnotationPanel('PAPER_LOCAL_SAVE', { key: 'PAPER_LOCAL_SAVE' }, {
+            state: 'ready',
+            paperKey: 'PAPER_LOCAL_SAVE',
+            annotations: [{
+                display: { selectedText: 'local quote', comment: 'old note', type: 'highlight', color: '#5fb236' },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 1 },
+                provenance: { source: 'obsidian', isReadonly: false, sourceAnnotationKey: 'ann-local-save' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const editor = view.contentEl.querySelector('[data-local-comment-editor]');
+        editor.value = 'new local note';
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        const button = view.contentEl.querySelector('[data-action="paperforge-save-local-comment"]');
+        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await Promise.resolve();
+
+        expect(view._runUpdateLocalAnnotationComment).toHaveBeenCalledWith('ann-local-save', 'new local note');
+        expect(view._openPdfForAnnotationRow).not.toHaveBeenCalled();
+        expect(view._reloadNativeAnnotationPanelAfterLocalCreate).toHaveBeenCalled();
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('opens a PaperForge color menu from a selected PDF region', async () => {
+        const view = makeCanvasView();
+        view._paperKey = 'PAPER_CONTEXT_MENU';
+        const pdfRoot = document.createElement('div');
+        pdfRoot.className = 'pdf-embed';
+        const page = document.createElement('div');
+        page.setAttribute('data-page-number', '4');
+        page.getBoundingClientRect = vi.fn(() => ({
+            left: 10,
+            top: 20,
+            width: 595.276,
+            height: 790.866,
+            right: 605.276,
+            bottom: 810.866,
+        }));
+        pdfRoot.appendChild(page);
+        view.app = {
+            vault: { adapter: { basePath: 'C:/vault' } },
+            plugins: { plugins: { paperforge: { settings: {} } } },
+            workspace: {
+                activeLeaf: { view: { contentEl: pdfRoot, containerEl: pdfRoot } },
+                getLeavesOfType: vi.fn((type) => type === 'pdf'
+                    ? [{ view: { contentEl: pdfRoot, containerEl: pdfRoot } }]
+                    : []),
+            },
+        };
+        vi.spyOn(window, 'getSelection').mockImplementation(() => ({
+            rangeCount: 1,
+            toString: () => 'context menu selected quote',
+            getRangeAt: () => ({
+                getClientRects: () => [{ left: 110, top: 220, width: 160, height: 12 }],
+            }),
+        }));
+        view._runCreateLocalAnnotation = vi.fn(async () => ({ ok: true, annotation: { id: 'obsidian:PAPER_CONTEXT_MENU:1' } }));
+        view._reloadNativeAnnotationPanelAfterLocalCreate = vi.fn(async () => null);
+
+        view._renderNativeAnnotationPanel('PAPER_CONTEXT_MENU', { key: 'PAPER_CONTEXT_MENU' }, {
+            state: 'ready',
+            paperKey: 'PAPER_CONTEXT_MENU',
+            annotations: [],
+            message: '0 annotation(s) loaded.',
+        });
+
+        const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 30, clientY: 40 });
+        pdfRoot.dispatchEvent(event);
+        expect(lastMenu).toBeTruthy();
+        expect(lastMenu.shown).toBe(true);
+        expect(lastMenu.items.map((item) => item.title)).toEqual(['Yellow', 'Red', 'Note', 'Important']);
+
+        lastMenu.items[1].click();
+        await Promise.resolve();
+
+        expect(view._runCreateLocalAnnotation).toHaveBeenCalledTimes(1);
+        expect(view._runCreateLocalAnnotation.mock.calls[0][0]).toMatchObject({
+            paperKey: 'PAPER_CONTEXT_MENU',
+            pageIndex: 3,
+            selectedText: 'context menu selected quote',
+            color: '#ff6666',
+        });
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('builds a local annotation payload from the current PDF text selection', () => {
+        const view = makeCanvasView();
+        view._paperKey = 'PAPER_SELECT';
+        const pdfRoot = document.createElement('div');
+        pdfRoot.className = 'pdf-embed';
+        const page = document.createElement('div');
+        page.setAttribute('data-page-number', '3');
+        page.getBoundingClientRect = vi.fn(() => ({
+            left: 50,
+            top: 100,
+            width: 595.276,
+            height: 790.866,
+            right: 645.276,
+            bottom: 890.866,
+        }));
+        pdfRoot.appendChild(page);
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { contentEl: pdfRoot, containerEl: pdfRoot } },
+                getLeavesOfType: vi.fn((type) => type === 'pdf'
+                    ? [{ view: { contentEl: pdfRoot, containerEl: pdfRoot } }]
+                    : []),
+            },
+        };
+        const selection = {
+            rangeCount: 1,
+            toString: () => 'local PDF quote',
+            getRangeAt: () => ({
+                getClientRects: () => [{
+                    left: 125.038,
+                    top: 590.309,
+                    width: 219.607,
+                    height: 8.217,
+                }],
+            }),
+        };
+
+        const payload = view._buildLocalAnnotationPayloadFromPdfSelection(selection);
+
+        expect(payload).toMatchObject({
+            paperKey: 'PAPER_SELECT',
+            pageIndex: 2,
+            pageLabel: '3',
+            selectedText: 'local PDF quote',
+            color: '#ffd400',
+            type: 'highlight',
+        });
+        expect(JSON.parse(payload.positionJson)).toEqual({
+            pageIndex: 2,
+            rects: [[75.038, 292.34, 294.645, 300.557]],
+        });
+    });
+
+    it('renders an Add Local Annotation button in the pinned annotation controls', () => {
+        const view = makeCanvasView();
+
+        view._renderNativeAnnotationPanel('PAPER_ADD_LOCAL', { key: 'PAPER_ADD_LOCAL' }, {
+            state: 'ready',
+            paperKey: 'PAPER_ADD_LOCAL',
+            annotations: [
+                {
+                    display: { selectedText: 'zotero quote', type: 'highlight', color: '#ffd400' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: { source: 'zotero', isReadonly: true, sourceAnnotationKey: 'ann-zotero' },
+                },
+            ],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const chrome = view.contentEl.querySelector('.paperforge-annotation-panel-chrome');
+        const button = chrome.querySelector('[data-action="paperforge-add-local-annotation"]');
+        expect(button).toBeTruthy();
+        expect(button.textContent).toContain('Add Local');
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('lets readers choose a local annotation color before creating it', () => {
+        const view = makeCanvasView();
+        view._paperKey = 'PAPER_LOCAL_COLOR';
+        const pdfRoot = document.createElement('div');
+        pdfRoot.className = 'pdf-embed';
+        const page = document.createElement('div');
+        page.setAttribute('data-page-number', '1');
+        page.getBoundingClientRect = vi.fn(() => ({
+            left: 0,
+            top: 0,
+            width: 595.276,
+            height: 790.866,
+            right: 595.276,
+            bottom: 790.866,
+        }));
+        pdfRoot.appendChild(page);
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { contentEl: pdfRoot, containerEl: pdfRoot } },
+                getLeavesOfType: vi.fn((type) => type === 'pdf'
+                    ? [{ view: { contentEl: pdfRoot, containerEl: pdfRoot } }]
+                    : []),
+            },
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_LOCAL_COLOR', { key: 'PAPER_LOCAL_COLOR' }, {
+            state: 'ready',
+            paperKey: 'PAPER_LOCAL_COLOR',
+            annotations: [],
+            message: '0 annotation(s) loaded.',
+        });
+
+        const red = view.contentEl.querySelector('[data-local-annotation-color="#ff6666"]');
+        expect(red).toBeTruthy();
+        red.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        const payload = view._buildLocalAnnotationPayloadFromPdfSelection({
+            rangeCount: 1,
+            toString: () => 'red local quote',
+            getRangeAt: () => ({
+                getClientRects: () => [{ left: 40, top: 120, width: 180, height: 12 }],
+            }),
+        });
+
+        expect(payload.color).toBe('#ff6666');
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('lets readers type a local annotation note before creating it', () => {
+        const view = makeCanvasView();
+        view._paperKey = 'PAPER_LOCAL_NOTE';
+        const pdfRoot = document.createElement('div');
+        pdfRoot.className = 'pdf-embed';
+        const page = document.createElement('div');
+        page.setAttribute('data-page-number', '1');
+        page.getBoundingClientRect = vi.fn(() => ({
+            left: 0,
+            top: 0,
+            width: 595.276,
+            height: 790.866,
+            right: 595.276,
+            bottom: 790.866,
+        }));
+        pdfRoot.appendChild(page);
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { contentEl: pdfRoot, containerEl: pdfRoot } },
+                getLeavesOfType: vi.fn((type) => type === 'pdf'
+                    ? [{ view: { contentEl: pdfRoot, containerEl: pdfRoot } }]
+                    : []),
+            },
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_LOCAL_NOTE', { key: 'PAPER_LOCAL_NOTE' }, {
+            state: 'ready',
+            paperKey: 'PAPER_LOCAL_NOTE',
+            annotations: [],
+            message: '0 annotation(s) loaded.',
+        });
+
+        const input = view.contentEl.querySelector('[data-local-annotation-comment]');
+        expect(input).toBeTruthy();
+        input.value = 'my own reading note';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        const payload = view._buildLocalAnnotationPayloadFromPdfSelection({
+            rangeCount: 1,
+            toString: () => 'noted local quote',
+            getRangeAt: () => ({
+                getClientRects: () => [{ left: 40, top: 120, width: 180, height: 12 }],
+            }),
+        });
+
+        expect(payload.comment).toBe('my own reading note');
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('caches the PDF selection on mouse down so clicking Add Local can still create the annotation', async () => {
+        const view = makeCanvasView();
+        view._paperKey = 'PAPER_SELECTION_CACHE';
+        const pdfRoot = document.createElement('div');
+        pdfRoot.className = 'pdf-embed';
+        const page = document.createElement('div');
+        page.setAttribute('data-page-number', '2');
+        page.getBoundingClientRect = vi.fn(() => ({
+            left: 10,
+            top: 20,
+            width: 595.276,
+            height: 790.866,
+            right: 605.276,
+            bottom: 810.866,
+        }));
+        pdfRoot.appendChild(page);
+        view.app = {
+            vault: { adapter: { basePath: 'C:/vault' } },
+            plugins: { plugins: { paperforge: { settings: {} } } },
+            workspace: {
+                activeLeaf: { view: { contentEl: pdfRoot, containerEl: pdfRoot } },
+                getLeavesOfType: vi.fn((type) => type === 'pdf'
+                    ? [{ view: { contentEl: pdfRoot, containerEl: pdfRoot } }]
+                    : []),
+            },
+        };
+        const selected = {
+            rangeCount: 1,
+            toString: () => 'cached local quote',
+            getRangeAt: () => ({
+                getClientRects: () => [{ left: 110, top: 220, width: 160, height: 12 }],
+            }),
+        };
+        const empty = {
+            rangeCount: 0,
+            toString: () => '',
+        };
+        let currentSelection = selected;
+        vi.spyOn(window, 'getSelection').mockImplementation(() => currentSelection);
+        view._runCreateLocalAnnotation = vi.fn(async () => ({ ok: true, annotation: { id: 'obsidian:PAPER_SELECTION_CACHE:1' } }));
+        view._reloadNativeAnnotationPanelAfterLocalCreate = vi.fn(async () => null);
+
+        view._renderNativeAnnotationPanel('PAPER_SELECTION_CACHE', { key: 'PAPER_SELECTION_CACHE' }, {
+            state: 'ready',
+            paperKey: 'PAPER_SELECTION_CACHE',
+            annotations: [],
+            message: '0 annotation(s) loaded.',
+        });
+
+        const button = view.contentEl.querySelector('[data-action="paperforge-add-local-annotation"]');
+        button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        currentSelection = empty;
+        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await Promise.resolve();
+
+        expect(view._runCreateLocalAnnotation).toHaveBeenCalledTimes(1);
+        expect(view._runCreateLocalAnnotation.mock.calls[0][0]).toMatchObject({
+            paperKey: 'PAPER_SELECTION_CACHE',
+            pageIndex: 1,
+            pageLabel: '2',
+            selectedText: 'cached local quote',
+        });
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('keeps the cached PDF selection after typing a local annotation note', async () => {
+        const view = makeCanvasView();
+        view._paperKey = 'PAPER_NOTE_AFTER_SELECT';
+        const pdfRoot = document.createElement('div');
+        pdfRoot.className = 'pdf-embed';
+        const page = document.createElement('div');
+        page.setAttribute('data-page-number', '3');
+        page.getBoundingClientRect = vi.fn(() => ({
+            left: 10,
+            top: 20,
+            width: 595.276,
+            height: 790.866,
+            right: 605.276,
+            bottom: 810.866,
+        }));
+        pdfRoot.appendChild(page);
+        const selected = {
+            rangeCount: 1,
+            toString: () => 'quote before typing note',
+            getRangeAt: () => ({
+                getClientRects: () => [{ left: 110, top: 220, width: 160, height: 12 }],
+            }),
+        };
+        const empty = {
+            rangeCount: 0,
+            toString: () => '',
+        };
+        let currentSelection = selected;
+        vi.spyOn(window, 'getSelection').mockImplementation(() => currentSelection);
+        view.app = {
+            vault: { adapter: { basePath: 'C:/vault' } },
+            plugins: { plugins: { paperforge: { settings: {} } } },
+            workspace: {
+                activeLeaf: { view: { contentEl: pdfRoot, containerEl: pdfRoot } },
+                getLeavesOfType: vi.fn((type) => type === 'pdf'
+                    ? [{ view: { contentEl: pdfRoot, containerEl: pdfRoot } }]
+                    : []),
+            },
+        };
+        view._runCreateLocalAnnotation = vi.fn(async () => ({ ok: true, annotation: { id: 'obsidian:PAPER_NOTE_AFTER_SELECT:1' } }));
+        view._reloadNativeAnnotationPanelAfterLocalCreate = vi.fn(async () => null);
+
+        view._renderNativeAnnotationPanel('PAPER_NOTE_AFTER_SELECT', { key: 'PAPER_NOTE_AFTER_SELECT' }, {
+            state: 'ready',
+            paperKey: 'PAPER_NOTE_AFTER_SELECT',
+            annotations: [],
+            message: '0 annotation(s) loaded.',
+        });
+
+        pdfRoot.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        currentSelection = empty;
+        const input = view.contentEl.querySelector('[data-local-annotation-comment]');
+        input.value = '213';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        const button = view.contentEl.querySelector('[data-action="paperforge-add-local-annotation"]');
+        button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await Promise.resolve();
+
+        expect(view._runCreateLocalAnnotation).toHaveBeenCalledTimes(1);
+        expect(view._runCreateLocalAnnotation.mock.calls[0][0]).toMatchObject({
+            paperKey: 'PAPER_NOTE_AFTER_SELECT',
+            pageIndex: 2,
+            pageLabel: '3',
+            selectedText: 'quote before typing note',
+            comment: '213',
+        });
+        view._clearImportedAnnotationProjectionTimers();
+    });
+
+    it('rendering the annotation panel immediately projects matching highlights into the open fulltext DOM', async () => {
+        const view = makeCanvasView();
+        const activeContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        preview.textContent = [
+            'TROP2 expression marks the first imported yellow annotation.',
+            'The same fulltext contains the second imported yellow annotation.',
+        ].join(' ');
+        activeContainer.appendChild(preview);
+        document.body.appendChild(activeContainer);
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: activeContainer } },
+            },
+        };
+
+        view._renderNativeAnnotationPanel('TROP2KEY', { key: 'TROP2KEY' }, {
+            state: 'ready',
+            paperKey: 'TROP2KEY',
+            annotations: [
+                {
+                    display: {
+                        selectedText: 'first imported yellow annotation',
+                        type: 'highlight',
+                        color: '#ffd400',
+                    },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: { sourceAnnotationKey: 'ann-yellow-1' },
+                },
+                {
+                    display: {
+                        selectedText: 'second imported yellow annotation',
+                        type: 'highlight',
+                        color: '#ffd400',
+                    },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 1 },
+                    provenance: { sourceAnnotationKey: 'ann-yellow-2' },
+                },
+            ],
+            message: '2 annotation(s) loaded.',
+        });
+        await Promise.resolve();
+
+        const marks = Array.from(preview.querySelectorAll('mark.paperforge-imported-annotation-highlight'));
+        expect(marks).toHaveLength(2);
+        expect(marks.map((mark) => mark.textContent)).toEqual([
+            'first imported yellow annotation',
+            'second imported yellow annotation',
+        ]);
+        expect(marks.every((mark) => mark.style.backgroundColor === 'rgb(255, 212, 0)')).toBe(true);
+        expect(marks.map((mark) => mark.getAttribute('data-annotation-id'))).toEqual([
+            'ann-yellow-1',
+            'ann-yellow-2',
+        ]);
+        expect(marks.map((mark) => mark.getAttribute('data-paperforge-annotation-id'))).toEqual([
+            'ann-yellow-1',
+            'ann-yellow-2',
+        ]);
+    });
+
+    it('clicking a card uses annotation identity instead of the first similar text match', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            const fulltextContainer = document.createElement('div');
+            const preview = document.createElement('div');
+            preview.className = 'markdown-preview-view';
+            preview.textContent = [
+                'First similar Ror2 expression fragment should not be selected.',
+                'Second exact Ror2 expression fragment should be selected.',
+            ].join(' ');
+            fulltextContainer.appendChild(preview);
+            document.body.appendChild(fulltextContainer);
+            Element.prototype.scrollIntoView = vi.fn();
+            view.app = {
+                workspace: {
+                    activeLeaf: { view: { containerEl: fulltextContainer } },
+                    getLeavesOfType: vi.fn((type) => type === 'markdown' ? [{ view: { containerEl: fulltextContainer } }] : []),
+                    revealLeaf: vi.fn(),
+                },
+            };
+
+            view._renderNativeAnnotationPanel('PAPER_SIMILAR', { key: 'PAPER_SIMILAR' }, {
+                state: 'ready',
+                paperKey: 'PAPER_SIMILAR',
+                annotations: [
+                    {
+                        display: {
+                            selectedText: 'First similar Ror2 expression fragment',
+                            type: 'highlight',
+                            color: '#ff6666',
+                        },
+                        pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                        provenance: { sourceAnnotationKey: 'ANN_FIRST' },
+                    },
+                    {
+                        display: {
+                            selectedText: 'Second exact Ror2 expression fragment',
+                            type: 'highlight',
+                            color: '#ff6666',
+                        },
+                        pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 1 },
+                        provenance: { sourceAnnotationKey: 'ANN_SECOND' },
+                    },
+                ],
+                message: '2 annotation(s) loaded.',
+            });
+            expect(preview.querySelectorAll('mark.paperforge-imported-annotation-highlight').length, 'imported marks after render').toBe(2);
+
+            const cards = view.contentEl.querySelectorAll('.paperforge-annotation-panel-card');
+            cards[1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await vi.advanceTimersByTimeAsync(160);
+            await Promise.resolve();
+
+            const active = preview.querySelector('mark.paperforge-active-annotation-match');
+            expect(active, preview.innerHTML).toBeTruthy();
+            expect(active.textContent).toBe('Second exact Ror2 expression fragment');
+            expect(active.getAttribute('data-paperforge-annotation-id')).toBe('ANN_SECOND');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('projects highlights into markdown leaves that expose contentEl instead of containerEl', async () => {
+        const view = makeCanvasView();
+        const fulltextContent = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        preview.textContent = 'The TROP2 fulltext pane has a yellow imported highlight.';
+        fulltextContent.appendChild(preview);
+        document.body.appendChild(fulltextContent);
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: view.contentEl } },
+                getLeavesOfType: vi.fn((type) => {
+                    if (type === 'markdown') return [{ view: { contentEl: fulltextContent } }];
+                    return [];
+                }),
+            },
+        };
+
+        view._renderNativeAnnotationPanel('TROP2KEY', { key: 'TROP2KEY' }, {
+            state: 'ready',
+            paperKey: 'TROP2KEY',
+            annotations: [{
+                display: {
+                    selectedText: 'yellow imported highlight',
+                    type: 'highlight',
+                    color: '#ffd400',
+                },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-content-el' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+        await Promise.resolve();
+
+        const mark = preview.querySelector('mark.paperforge-imported-annotation-highlight');
+        expect(mark).toBeTruthy();
+        expect(mark.textContent).toBe('yellow imported highlight');
+        expect(mark.getAttribute('data-annotation-id')).toBe('ann-content-el');
+    });
+
+    it('retries projection when the fulltext DOM appears after annotations load', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            const fulltextContent = document.createElement('div');
+            view.app = {
+                workspace: {
+                    activeLeaf: { view: { containerEl: view.contentEl } },
+                    getLeavesOfType: vi.fn((type) => {
+                        if (type === 'markdown') return [{ view: { contentEl: fulltextContent } }];
+                        return [];
+                    }),
+                },
+            };
+
+            view._renderNativeAnnotationPanel('TROP2KEY', { key: 'TROP2KEY' }, {
+                state: 'ready',
+                paperKey: 'TROP2KEY',
+                annotations: [{
+                    display: {
+                        selectedText: 'late rendered yellow highlight',
+                        type: 'highlight',
+                        color: '#ffd400',
+                    },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: { sourceAnnotationKey: 'ann-late-dom' },
+                }],
+                message: '1 annotation(s) loaded.',
+            });
+
+            const preview = document.createElement('div');
+            preview.className = 'markdown-preview-view';
+            preview.textContent = 'Obsidian rendered a late rendered yellow highlight after the canvas panel.';
+            fulltextContent.appendChild(preview);
+            vi.advanceTimersByTime(260);
+            await Promise.resolve();
+
+            const mark = preview.querySelector('mark.paperforge-imported-annotation-highlight');
+            expect(mark).toBeTruthy();
+            expect(mark.textContent).toBe('late rendered yellow highlight');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('clicking an annotation card rebounds after successful jump feedback', async () => {
         vi.useFakeTimers();
         try {
             const view = makeCanvasView();
-            const activeContainer = document.createElement('div');
-            const preview = document.createElement('div');
-            preview.className = 'markdown-preview-view';
-            preview.textContent = 'The text contains a rebound target.';
-            activeContainer.appendChild(preview);
-            document.body.appendChild(activeContainer);
-            Element.prototype.scrollIntoView = vi.fn();
-            view.app = { workspace: { activeLeaf: { view: { containerEl: activeContainer } } } };
+            view.app = {
+                vault: { getAbstractFileByPath: vi.fn(() => ({ path: '99_System/Zotero/storage/ATTACH/test.pdf' })) },
+                workspace: { openLinkText: vi.fn() },
+            };
+            view._paperEntry = {
+                key: 'PAPER_REBOUND',
+                pdf_path: '[[99_System/Zotero/storage/ATTACH/test.pdf]]',
+                zotero_storage_key: 'ATTACH',
+            };
 
             view._renderNativeAnnotationPanel('PAPER_REBOUND', { key: 'PAPER_REBOUND' }, {
                 state: 'ready',
                 paperKey: 'PAPER_REBOUND',
                 annotations: [{
                     display: { selectedText: 'rebound target', type: 'highlight', color: '#ffd54f' },
-                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
-                    provenance: { sourceAnnotationKey: 'ann-rebound-1' },
+                    pdfLocation: {
+                        sourceAttachmentKey: 'ATTACH',
+                        pageIndex: null,
+                        pageLabel: '1',
+                        sortIndex: 0,
+                        positionJson: '{"pageIndex":0,"rects":[[10,20,40,30]]}',
+                    },
+                    provenance: { source: 'zotero', sourceAttachmentKey: 'ATTACH', sourceAnnotationKey: 'ann-rebound-1' },
                 }],
                 message: '1 annotation(s) loaded.',
             });
@@ -356,13 +1226,284 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
             await Promise.resolve();
 
             expect(card.getAttribute('aria-selected')).toBe('true');
-            expect(card.getAttribute('data-jump-state')).toBe('resolved');
+            expect(card.getAttribute('data-jump-state')).toBe('opened-pdf');
+            expect(view.app.workspace.openLinkText).toHaveBeenCalledWith('99_System/Zotero/storage/ATTACH/test.pdf#page=1', '');
             vi.advanceTimersByTime(901);
             expect(card.getAttribute('aria-selected')).toBe('false');
             expect(card.hasAttribute('data-jump-state')).toBe(false);
         } finally {
             vi.useRealTimers();
         }
+    });
+
+    it('clicking an annotation panel card paints the Zotero color on the matching PDF rect', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            const pdfRoot = document.createElement('div');
+            pdfRoot.className = 'pdf-embed';
+            const page1 = document.createElement('div');
+            page1.setAttribute('data-page-number', '1');
+            page1.style.setProperty('--scale-factor', '2');
+            page1.getBoundingClientRect = vi.fn(() => ({
+                width: 1190,
+                height: 1684,
+                top: 0,
+                left: 0,
+                right: 1190,
+                bottom: 1684,
+            }));
+            pdfRoot.appendChild(page1);
+            const pdfContent = document.createElement('div');
+            pdfContent.appendChild(pdfRoot);
+            view.app = {
+                vault: { getAbstractFileByPath: vi.fn(() => ({ path: '99_System/Zotero/storage/ATTACH/test.pdf' })) },
+                workspace: {
+                    activeLeaf: { view: { contentEl: pdfContent, containerEl: pdfContent } },
+                    getLeavesOfType: vi.fn((type) => type === 'pdf'
+                        ? [{ view: { contentEl: pdfContent, containerEl: pdfContent } }]
+                        : []),
+                    openLinkText: vi.fn(),
+                },
+            };
+            view._paperEntry = {
+                key: 'PAPER_PDF_COLOR',
+                pdf_path: '[[99_System/Zotero/storage/ATTACH/test.pdf]]',
+                zotero_storage_key: 'ATTACH',
+            };
+
+            view._renderNativeAnnotationPanel('PAPER_PDF_COLOR', { key: 'PAPER_PDF_COLOR' }, {
+                state: 'ready',
+                paperKey: 'PAPER_PDF_COLOR',
+                annotations: [{
+                    display: { selectedText: 'colored pdf target', type: 'highlight', color: '#ff6666' },
+                    pdfLocation: {
+                        sourceAttachmentKey: 'ATTACH',
+                        pageIndex: null,
+                        pageLabel: '1',
+                        sortIndex: 0,
+                        positionJson: '{"pageIndex":0,"rects":[[10,20,40,30]]}',
+                    },
+                    provenance: { source: 'zotero', sourceAttachmentKey: 'ATTACH', sourceAnnotationKey: 'ann-pdf-color' },
+                }],
+                message: '1 annotation(s) loaded.',
+            });
+
+            const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+            card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await vi.advanceTimersByTimeAsync(70);
+
+            const mark = page1.querySelector('.paperforge-canvas-pdf-overlay-mark');
+            expect(mark).toBeTruthy();
+            expect(mark.getAttribute('data-paperforge-annotation-id')).toContain('ann-pdf-color');
+            const line = mark.querySelector('.paperforge-canvas-pdf-overlay-line');
+            expect(line).toBeTruthy();
+            expect(mark.style.background).toBe('transparent');
+            expect(line.style.borderBottom).toBe('3px solid rgb(255, 102, 102)');
+            expect(mark.style.left).toBe('20px');
+            expect(mark.style.width).toBe('60px');
+            expect(parseFloat(mark.style.height)).toBeGreaterThanOrEqual(12);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps dense multi-line PDF underlines inside each Zotero bbox', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            const pdfRoot = document.createElement('div');
+            pdfRoot.className = 'pdf-embed';
+            const page7 = document.createElement('div');
+            page7.setAttribute('data-page-number', '7');
+            page7.getBoundingClientRect = vi.fn(() => ({
+                width: 595.276,
+                height: 790.866,
+                top: 0,
+                left: 0,
+                right: 595.276,
+                bottom: 790.866,
+            }));
+            pdfRoot.appendChild(page7);
+            const pdfContent = document.createElement('div');
+            pdfContent.appendChild(pdfRoot);
+            view.app = {
+                vault: { getAbstractFileByPath: vi.fn(() => ({ path: '99_System/Zotero/storage/ATTACH/test.pdf' })) },
+                workspace: {
+                    activeLeaf: { view: { contentEl: pdfContent, containerEl: pdfContent } },
+                    getLeavesOfType: vi.fn((type) => type === 'pdf'
+                        ? [{ view: { contentEl: pdfContent, containerEl: pdfContent } }]
+                        : []),
+                    openLinkText: vi.fn(),
+                },
+            };
+            view._paperEntry = {
+                key: 'PAPER_DENSE_LINES',
+                pdf_path: '[[99_System/Zotero/storage/ATTACH/test.pdf]]',
+                zotero_storage_key: 'ATTACH',
+            };
+
+            view._renderNativeAnnotationPanel('PAPER_DENSE_LINES', { key: 'PAPER_DENSE_LINES' }, {
+                state: 'ready',
+                paperKey: 'PAPER_DENSE_LINES',
+                annotations: [{
+                    display: { selectedText: 'dense Nature target', type: 'highlight', color: '#ffd400' },
+                    pdfLocation: {
+                        sourceAttachmentKey: 'ATTACH',
+                        pageIndex: null,
+                        pageLabel: '7',
+                        sortIndex: 0,
+                        positionJson: '{"pageIndex":6,"rects":[[75.038,292.34,294.645,300.557],[39.685,281.59,294.699,289.807]]}',
+                    },
+                    provenance: { source: 'zotero', sourceAttachmentKey: 'ATTACH', sourceAnnotationKey: 'ann-dense-lines' },
+                }],
+                message: '1 annotation(s) loaded.',
+            });
+
+            const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+            card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await vi.advanceTimersByTimeAsync(70);
+
+            const marks = page7.querySelectorAll('.paperforge-canvas-pdf-overlay-mark');
+            expect(marks).toHaveLength(2);
+            const line = marks[0].querySelector('.paperforge-canvas-pdf-overlay-line');
+            expect(line).toBeTruthy();
+            const firstUnderlineTop = parseFloat(marks[0].style.top) + parseFloat(line.style.top);
+            const firstTextTop = 790.866 - 292.34 - (300.557 - 292.34);
+            const firstTextBottom = firstTextTop + (300.557 - 292.34);
+            const secondTextTop = 790.866 - 281.59 - (289.807 - 281.59);
+            expect(firstUnderlineTop).toBeGreaterThan(firstTextTop);
+            expect(firstUnderlineTop + 3).toBeLessThanOrEqual(firstTextBottom - 1);
+            expect(firstUnderlineTop).toBeLessThan(secondTextTop);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('clicking a PDF overlay mark scrolls to and selects the matching Canvas annotation card', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            const pdfRoot = document.createElement('div');
+            pdfRoot.className = 'pdf-embed';
+            const page1 = document.createElement('div');
+            page1.setAttribute('data-page-number', '1');
+            page1.getBoundingClientRect = vi.fn(() => ({
+                width: 595,
+                height: 842,
+                top: 0,
+                left: 0,
+                right: 595,
+                bottom: 842,
+            }));
+            pdfRoot.appendChild(page1);
+            const pdfContent = document.createElement('div');
+            pdfContent.appendChild(pdfRoot);
+            const canvasLeaf = { view };
+            view.leaf = canvasLeaf;
+            view.app = {
+                vault: { getAbstractFileByPath: vi.fn(() => ({ path: '99_System/Zotero/storage/ATTACH/test.pdf' })) },
+                workspace: {
+                    activeLeaf: { view: { contentEl: pdfContent, containerEl: pdfContent } },
+                    getLeavesOfType: vi.fn((type) => {
+                        if (type === 'pdf') return [{ view: { contentEl: pdfContent, containerEl: pdfContent } }];
+                        if (type === 'paperforge-reading-canvas') return [canvasLeaf];
+                        return [];
+                    }),
+                    revealLeaf: vi.fn(),
+                    openLinkText: vi.fn(),
+                },
+            };
+            view._paperEntry = {
+                key: 'PAPER_PDF_TO_CANVAS',
+                pdf_path: '[[99_System/Zotero/storage/ATTACH/test.pdf]]',
+                zotero_storage_key: 'ATTACH',
+            };
+
+            view._renderNativeAnnotationPanel('PAPER_PDF_TO_CANVAS', { key: 'PAPER_PDF_TO_CANVAS' }, {
+                state: 'ready',
+                paperKey: 'PAPER_PDF_TO_CANVAS',
+                annotations: [ {
+                    display: { selectedText: 'pdf-to-canvas target', type: 'highlight', color: '#ff6666' },
+                    pdfLocation: {
+                        sourceAttachmentKey: 'ATTACH',
+                        pageIndex: null,
+                        pageLabel: '1',
+                        sortIndex: 0,
+                        positionJson: '{"pageIndex":0,"rects":[[10,20,40,30]]}',
+                    },
+                    provenance: { source: 'zotero', sourceAttachmentKey: 'ATTACH', sourceAnnotationKey: 'ann-pdf-to-canvas' },
+                } ],
+                message: '1 annotation(s) loaded.',
+            });
+            const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+            card.scrollIntoView = vi.fn();
+
+            view._openPdfForAnnotationRow(view._annotationPanelRows[0]);
+            await vi.advanceTimersByTimeAsync(70);
+
+            const mark = page1.querySelector('.paperforge-canvas-pdf-overlay-mark');
+            expect(mark).toBeTruthy();
+            expect(parseFloat(mark.style.height)).toBeGreaterThanOrEqual(10);
+            expect(mark.querySelector('.paperforge-canvas-pdf-overlay-line')).toBeTruthy();
+            mark.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            expect(view.app.workspace.revealLeaf).toHaveBeenCalledWith(canvasLeaf);
+            expect(card.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+            expect(card.getAttribute('aria-selected')).toBe('true');
+            expect(card.getAttribute('data-jump-state')).toBe('selected-from-pdf');
+            expect(card.querySelector('.paperforge-annotation-panel-jump-status').textContent).toBe('Selected from PDF.');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not fall back to fulltext matching when a Zotero PDF annotation cannot resolve its PDF', async () => {
+        const view = makeCanvasView();
+        const fulltextContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        preview.textContent = 'This fulltext contains the zotero bbox target text.';
+        fulltextContainer.appendChild(preview);
+        view.app = {
+            vault: { getAbstractFileByPath: vi.fn(() => null) },
+            workspace: {
+                activeLeaf: { view: { containerEl: fulltextContainer } },
+                getLeavesOfType: vi.fn(() => []),
+                openLinkText: vi.fn(),
+            },
+        };
+        view._paperEntry = {
+            key: 'PAPER_STRICT_BBOX',
+            pdf_path: '[[System/Zotero/storage/ATTACH/missing.pdf]]',
+            zotero_storage_key: 'ATTACH',
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_STRICT_BBOX', { key: 'PAPER_STRICT_BBOX' }, {
+            state: 'ready',
+            paperKey: 'PAPER_STRICT_BBOX',
+            annotations: [{
+                display: { selectedText: 'zotero bbox target text', type: 'highlight', color: '#ffd54f' },
+                pdfLocation: {
+                    sourceAttachmentKey: 'ATTACH',
+                    pageIndex: null,
+                    pageLabel: '7',
+                    sortIndex: 0,
+                    positionJson: '{"pageIndex":6,"rects":[[75.038,292.34,294.645,300.557]]}',
+                },
+                provenance: { source: 'zotero', sourceAttachmentKey: 'ATTACH', sourceAnnotationKey: 'ann-strict-bbox' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await Promise.resolve();
+
+        expect(view.app.workspace.openLinkText).not.toHaveBeenCalled();
+        expect(preview.querySelector('mark.paperforge-active-annotation-match')).toBeFalsy();
+        expect(card.getAttribute('data-jump-state')).toBe('unresolved');
+        expect(card.getAttribute('data-jump-reason')).toBe('pdf-file-not-found');
     });
 
     it('clicking an annotation card uses loose matching when punctuation differs from fulltext', () => {
@@ -438,6 +1579,364 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(mark.textContent).toContain('invasive adenocarcinoma models');
         expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
         expect(card.querySelector('.paperforge-annotation-panel-jump-status').textContent).toContain('nearby fragment');
+    });
+
+    it('clicking an annotation card repeatedly scrolls the persisted fulltext mark by annotation identity', async () => {
+        vi.useFakeTimers();
+        const view = makeCanvasView();
+        const activeContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        const mark = document.createElement('mark');
+        mark.className = 'paperforge-annotation-highlight';
+        mark.setAttribute('data-paperforge-annotation-id', 'zotero:3:ATTACH:ANN_REPEAT');
+        mark.textContent = 'already persisted annotation text';
+        preview.appendChild(mark);
+        activeContainer.appendChild(preview);
+        document.body.appendChild(activeContainer);
+        const scrollIntoView = vi.fn();
+        mark.scrollIntoView = scrollIntoView;
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: activeContainer } },
+                getLeavesOfType: vi.fn((type) => type === 'markdown' ? [{ view: { containerEl: activeContainer } }] : []),
+                revealLeaf: vi.fn(),
+                openLinkText: vi.fn(async () => {}),
+            },
+        };
+        view._paperEntry = { key: 'PAPER_REPEAT', fulltext_path: 'paper/fulltext.md' };
+
+        view._renderNativeAnnotationPanel('PAPER_REPEAT', { key: 'PAPER_REPEAT' }, {
+            state: 'ready',
+            paperKey: 'PAPER_REPEAT',
+            annotations: [{
+                display: {
+                    selectedText: 'persisted annotation text with OCR differences',
+                    type: 'highlight',
+                    color: '#ffd54f',
+                },
+                pdfLocation: { pageIndex: 2, pageLabel: '3', sortIndex: 0 },
+                provenance: {
+                    source: 'zotero',
+                    sourceAttachmentKey: 'ATTACH',
+                    sourceAnnotationKey: 'ANN_REPEAT',
+                },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(80);
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(80);
+
+        expect(scrollIntoView.mock.calls.length).toBeGreaterThanOrEqual(4);
+        expect(view.app.workspace.openLinkText).toHaveBeenCalledTimes(2);
+        expect(view.app.workspace.openLinkText).toHaveBeenCalledWith('paper/fulltext.md', '', false);
+        expect(view.app.workspace.revealLeaf).toHaveBeenCalledTimes(2);
+        expect(card.querySelector('.paperforge-annotation-panel-jump-status').textContent).toBe('Opened fulltext and matched.');
+        vi.useRealTimers();
+    });
+
+    it('uses an already-open fulltext leaf instead of reopening the link on every click', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            const canvasContainer = document.createElement('div');
+            canvasContainer.appendChild(view.contentEl);
+            const fulltextContainer = document.createElement('div');
+            const preview = document.createElement('div');
+            preview.className = 'markdown-preview-view';
+            const mark = document.createElement('mark');
+            mark.className = 'paperforge-annotation-highlight';
+            mark.setAttribute('data-paperforge-annotation-id', 'zotero:3:ATTACH:ANN_OPEN_LEAF');
+            mark.textContent = 'already open target';
+            preview.appendChild(mark);
+            fulltextContainer.appendChild(preview);
+            document.body.appendChild(canvasContainer);
+            document.body.appendChild(fulltextContainer);
+            mark.scrollIntoView = vi.fn();
+            const fulltextLeaf = {
+                view: {
+                    file: { path: 'Literature/PAPER/fulltext.md' },
+                    containerEl: fulltextContainer,
+                },
+            };
+            const workspace = {
+                activeLeaf: { view: { containerEl: canvasContainer } },
+                getLeavesOfType: vi.fn((type) => type === 'markdown' ? [fulltextLeaf] : []),
+                revealLeaf: vi.fn((leaf) => {
+                    workspace.activeLeaf = leaf;
+                }),
+                openLinkText: vi.fn(async () => {
+                    throw new Error('should not reopen already-open fulltext');
+                }),
+            };
+            view.app = { workspace };
+            view._paperEntry = { key: 'PAPER', fulltext_path: 'Literature/PAPER/fulltext.md' };
+
+            view._renderNativeAnnotationPanel('PAPER', { key: 'PAPER', fulltext_path: 'Literature/PAPER/fulltext.md' }, {
+                state: 'ready',
+                paperKey: 'PAPER',
+                annotations: [{
+                    display: { selectedText: 'already open target', type: 'highlight', color: '#ffd54f' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: {
+                        source: 'zotero',
+                        sourceAttachmentKey: 'ATTACH',
+                        sourceAnnotationKey: 'ANN_OPEN_LEAF',
+                    },
+                }],
+                message: '1 annotation(s) loaded.',
+            });
+
+            const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+            card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await vi.advanceTimersByTimeAsync(80);
+            card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await vi.advanceTimersByTimeAsync(80);
+
+            expect(workspace.openLinkText).not.toHaveBeenCalled();
+            expect(workspace.revealLeaf).toHaveBeenCalledWith(fulltextLeaf);
+            expect(mark.scrollIntoView.mock.calls.length).toBeGreaterThanOrEqual(4);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('identity lookup works when browser CSS.escape is available', async () => {
+        const originalCss = globalThis.CSS;
+        globalThis.CSS = {
+            escape: vi.fn((value) => String(value).replace(/:/g, '\\:')),
+        };
+        try {
+            const view = makeCanvasView();
+            const activeContainer = document.createElement('div');
+            const preview = document.createElement('div');
+            preview.className = 'markdown-preview-view';
+            const mark = document.createElement('mark');
+            mark.className = 'paperforge-annotation-highlight';
+            mark.setAttribute('data-paperforge-annotation-id', 'zotero:3:ATTACH:ANN_ESC');
+            mark.textContent = 'target text';
+            preview.appendChild(mark);
+            activeContainer.appendChild(preview);
+            document.body.appendChild(activeContainer);
+            mark.scrollIntoView = vi.fn();
+            view.app = { workspace: { activeLeaf: { view: { containerEl: activeContainer } } } };
+
+            const result = view._jumpToRenderedFulltextDom(
+                'selected text that does not match',
+                '#ffd54f',
+                'zotero:3:ATTACH:ANN_ESC'
+            );
+
+            expect(result.ok).toBe(true);
+            expect(mark.scrollIntoView).toHaveBeenCalled();
+        } finally {
+            globalThis.CSS = originalCss;
+        }
+    });
+
+    it('repeated click recenters the fulltext scroll container after the user scrolls away', async () => {
+        vi.useFakeTimers();
+        const view = makeCanvasView();
+        const leafContainer = document.createElement('div');
+        const scrollContainer = document.createElement('div');
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        const spacer = document.createElement('div');
+        spacer.textContent = 'top spacer';
+        const mark = document.createElement('mark');
+        mark.className = 'paperforge-annotation-highlight';
+        mark.setAttribute('data-paperforge-annotation-id', 'zotero:3:ATTACH:ANN_SCROLL');
+        mark.textContent = 'scroll target';
+        preview.appendChild(spacer);
+        preview.appendChild(mark);
+        scrollContainer.appendChild(preview);
+        leafContainer.appendChild(scrollContainer);
+        document.body.appendChild(leafContainer);
+        Object.defineProperty(scrollContainer, 'clientHeight', { value: 200, configurable: true });
+        Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
+        Object.defineProperty(spacer, 'offsetTop', { value: 0, configurable: true });
+        Object.defineProperty(mark, 'offsetTop', { value: 700, configurable: true });
+        mark.scrollIntoView = vi.fn();
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: leafContainer } },
+                getLeavesOfType: vi.fn((type) => type === 'markdown' ? [{ view: { containerEl: leafContainer } }] : []),
+                revealLeaf: vi.fn(),
+            },
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_SCROLL', { key: 'PAPER_SCROLL' }, {
+            state: 'ready',
+            paperKey: 'PAPER_SCROLL',
+            annotations: [{
+                display: { selectedText: 'does not matter', type: 'highlight', color: '#ffd54f' },
+                pdfLocation: { pageIndex: 2, pageLabel: '3', sortIndex: 0 },
+                provenance: {
+                    source: 'zotero',
+                    sourceAttachmentKey: 'ATTACH',
+                    sourceAnnotationKey: 'ANN_SCROLL',
+                },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(80);
+        expect(scrollContainer.scrollTop).toBe(600);
+        scrollContainer.scrollTop = 0;
+
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(80);
+
+        expect(scrollContainer.scrollTop).toBe(600);
+        vi.useRealTimers();
+    });
+
+    it('continues the pending jump when reading preview appears after source-mode fallback', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            const canvasContainer = document.createElement('div');
+            canvasContainer.appendChild(view.contentEl);
+            const fulltextContainer = document.createElement('div');
+            document.body.appendChild(canvasContainer);
+            document.body.appendChild(fulltextContainer);
+            const editor = {
+                getValue: vi.fn(() => 'Before.\nThe late preview target is in the source buffer.\nAfter.'),
+                offsetToPos: vi.fn((offset) => ({ line: 1, ch: offset })),
+                setSelection: vi.fn(),
+                scrollIntoView: vi.fn(),
+                focus: vi.fn(),
+            };
+            const workspaceEvents = new Map();
+            const workspace = {
+                activeLeaf: { view: { containerEl: canvasContainer } },
+                getLeavesOfType: vi.fn((type) => {
+                    if (type === 'markdown') return [{ view: { containerEl: fulltextContainer, editor } }];
+                    return [];
+                }),
+                revealLeaf: vi.fn(),
+                on: vi.fn((eventName, callback) => {
+                    workspaceEvents.set(eventName, callback);
+                    return callback;
+                }),
+                off: vi.fn(),
+            };
+            view.app = { workspace };
+
+            view._renderNativeAnnotationPanel('PAPER_LATE_PREVIEW', { key: 'PAPER_LATE_PREVIEW' }, {
+                state: 'ready',
+                paperKey: 'PAPER_LATE_PREVIEW',
+                annotations: [{
+                    display: { selectedText: 'late preview target', type: 'highlight', color: '#ffd54f' },
+                    pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                    provenance: { sourceAnnotationKey: 'ann-late-preview' },
+                }],
+                message: '1 annotation(s) loaded.',
+            });
+
+            const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+            card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await Promise.resolve();
+            expect(editor.scrollIntoView).toHaveBeenCalledTimes(1);
+
+            const scrollContainer = document.createElement('div');
+            const preview = document.createElement('div');
+            preview.className = 'markdown-preview-view';
+            preview.textContent = 'Now reading mode renders the late preview target.';
+            scrollContainer.appendChild(preview);
+            fulltextContainer.appendChild(scrollContainer);
+            Object.defineProperty(scrollContainer, 'clientHeight', { value: 200, configurable: true });
+            Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
+            const scrollIntoView = vi.fn();
+            Element.prototype.scrollIntoView = scrollIntoView;
+
+            const callback = workspaceEvents.get('layout-change');
+            expect(callback).toBeTruthy();
+            callback();
+            await vi.advanceTimersByTimeAsync(80);
+
+            const mark = preview.querySelector('mark.paperforge-active-annotation-match');
+            expect(mark).toBeTruthy();
+            expect(mark.textContent).toBe('late preview target');
+            expect(scrollIntoView).toHaveBeenCalled();
+            expect(workspace.off).toHaveBeenCalledWith('layout-change', callback);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not consume a click by matching CodeMirror DOM before reading preview exists', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = makeCanvasView();
+            const canvasContainer = document.createElement('div');
+            canvasContainer.appendChild(view.contentEl);
+            const fulltextContainer = document.createElement('div');
+            const cmContent = document.createElement('div');
+            cmContent.className = 'cm-content';
+            cmContent.textContent = 'CodeMirror currently shows the source mode target.';
+            fulltextContainer.appendChild(cmContent);
+            document.body.appendChild(canvasContainer);
+            document.body.appendChild(fulltextContainer);
+            const editor = {
+                getValue: vi.fn(() => 'The editor buffer contains the source mode target.'),
+                offsetToPos: vi.fn((offset) => ({ line: 0, ch: offset })),
+                setSelection: vi.fn(),
+                scrollIntoView: vi.fn(),
+                focus: vi.fn(),
+            };
+            const workspaceEvents = new Map();
+            view.app = {
+                workspace: {
+                    activeLeaf: { view: { containerEl: canvasContainer } },
+                    getLeavesOfType: vi.fn((type) => type === 'markdown'
+                        ? [{ view: { file: { path: 'Literature/PAPER/fulltext.md' }, containerEl: fulltextContainer, editor } }]
+                        : []),
+                    revealLeaf: vi.fn(),
+                    on: vi.fn((eventName, callback) => {
+                        workspaceEvents.set(eventName, callback);
+                        return callback;
+                    }),
+                    off: vi.fn(),
+                },
+            };
+            view._paperEntry = { key: 'PAPER', fulltext_path: 'Literature/PAPER/fulltext.md' };
+
+            const jump = view._jumpToActiveFulltextAnnotation({
+                display: { selectedText: 'source mode target', color: '#ffd54f' },
+                provenance: { sourceAnnotationKey: 'ann-source-mode' },
+            });
+            await vi.advanceTimersByTimeAsync(41);
+            const result = await jump;
+
+            expect(result.ok).toBe(true);
+            expect(result.editor).toBe(editor);
+            expect(cmContent.querySelector('mark.paperforge-active-annotation-match')).toBeFalsy();
+            expect(workspaceEvents.get('layout-change')).toBeTruthy();
+
+            const scrollContainer = document.createElement('div');
+            const preview = document.createElement('div');
+            preview.className = 'markdown-preview-view';
+            preview.textContent = 'Reading mode later shows the source mode target.';
+            scrollContainer.appendChild(preview);
+            fulltextContainer.innerHTML = '';
+            fulltextContainer.appendChild(scrollContainer);
+            Element.prototype.scrollIntoView = vi.fn();
+            workspaceEvents.get('layout-change')();
+            await vi.advanceTimersByTimeAsync(80);
+
+            const mark = preview.querySelector('mark.paperforge-active-annotation-match');
+            expect(mark).toBeTruthy();
+            expect(mark.textContent).toBe('source mode target');
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('clicking an annotation card finds fulltext in another markdown leaf when the canvas leaf is active', () => {
@@ -576,6 +2075,124 @@ describe('Task 2 — setPaperContext and explicit paperKey', () => {
         expect(editor.setSelection).toHaveBeenCalled();
         expect(editor.scrollIntoView).toHaveBeenCalled();
         expect(editor.focus).toHaveBeenCalled();
+        expect(view.app.workspace.revealLeaf).toHaveBeenCalled();
+    });
+
+    it('clicking an annotation card repeatedly recenters the markdown editor selection', async () => {
+        const view = makeCanvasView();
+        const canvasContainer = document.createElement('div');
+        canvasContainer.appendChild(view.contentEl);
+        const fulltextContainer = document.createElement('div');
+        fulltextContainer.appendChild(document.createElement('div'));
+        document.body.appendChild(canvasContainer);
+        document.body.appendChild(fulltextContainer);
+        const editor = {
+            getValue: vi.fn(() => 'Earlier content.\nThe editor buffer contains the repeated annotation target.\nLater content.'),
+            offsetToPos: vi.fn((offset) => {
+                const text = editor.getValue().slice(0, offset);
+                const lines = text.split('\n');
+                return { line: lines.length - 1, ch: lines[lines.length - 1].length };
+            }),
+            setSelection: vi.fn(),
+            setCursor: vi.fn(),
+            scrollIntoView: vi.fn(),
+            focus: vi.fn(),
+        };
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: canvasContainer } },
+                getLeavesOfType: vi.fn((type) => {
+                    if (type === 'markdown') return [{ view: { containerEl: fulltextContainer, editor } }];
+                    return [];
+                }),
+                revealLeaf: vi.fn(),
+            },
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_EDITOR_REPEAT', { key: 'PAPER_EDITOR_REPEAT' }, {
+            state: 'ready',
+            paperKey: 'PAPER_EDITOR_REPEAT',
+            annotations: [{
+                display: { selectedText: 'repeated annotation target', type: 'highlight', color: '#ffd54f' },
+                pdfLocation: { pageIndex: 0, pageLabel: '1', sortIndex: 0 },
+                provenance: { sourceAnnotationKey: 'ann-editor-repeat' },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await Promise.resolve();
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await Promise.resolve();
+
+        expect(editor.setSelection).toHaveBeenCalledTimes(2);
+        expect(editor.scrollIntoView).toHaveBeenCalledTimes(2);
+        expect(view.app.workspace.revealLeaf).toHaveBeenCalledTimes(2);
+    });
+
+    it('editor fallback finds selected text inside persisted mark and html tags', async () => {
+        const view = makeCanvasView();
+        const canvasContainer = document.createElement('div');
+        canvasContainer.appendChild(view.contentEl);
+        const fulltextContainer = document.createElement('div');
+        fulltextContainer.appendChild(document.createElement('div'));
+        document.body.appendChild(canvasContainer);
+        document.body.appendChild(fulltextContainer);
+        const value = [
+            'Before.',
+            '<mark class="paperforge-annotation-highlight" data-paperforge-annotation-id="zotero:3:ATTACH:ANN_HTML" style="background-color: #ffd400;">',
+            'from benign models (Villin1-Cre<sup>ER</sup> Apc<sup>fl/fl</sup>) to invasive adenocarcinoma models',
+            '</mark>',
+            'After.',
+        ].join('\n');
+        const editor = {
+            getValue: vi.fn(() => value),
+            offsetToPos: vi.fn((offset) => {
+                const text = value.slice(0, offset);
+                const lines = text.split('\n');
+                return { line: lines.length - 1, ch: lines[lines.length - 1].length };
+            }),
+            setSelection: vi.fn(),
+            scrollIntoView: vi.fn(),
+            focus: vi.fn(),
+        };
+        view.app = {
+            workspace: {
+                activeLeaf: { view: { containerEl: canvasContainer } },
+                getLeavesOfType: vi.fn((type) => {
+                    if (type === 'markdown') return [{ view: { containerEl: fulltextContainer, editor } }];
+                    return [];
+                }),
+                revealLeaf: vi.fn(),
+            },
+        };
+
+        view._renderNativeAnnotationPanel('PAPER_EDITOR_HTML', { key: 'PAPER_EDITOR_HTML' }, {
+            state: 'ready',
+            paperKey: 'PAPER_EDITOR_HTML',
+            annotations: [{
+                display: {
+                    selectedText: 'from benign models (Villin1–CreER Apcfl/fl) to invasive adenocarcinoma models',
+                    type: 'highlight',
+                    color: '#ffd54f',
+                },
+                pdfLocation: { pageIndex: 2, pageLabel: '3', sortIndex: 0 },
+                provenance: {
+                    source: 'zotero',
+                    sourceAttachmentKey: 'ATTACH',
+                    sourceAnnotationKey: 'ANN_HTML',
+                },
+            }],
+            message: '1 annotation(s) loaded.',
+        });
+
+        const card = view.contentEl.querySelector('.paperforge-annotation-panel-card');
+        card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await Promise.resolve();
+
+        expect(editor.setSelection).toHaveBeenCalled();
+        expect(editor.scrollIntoView).toHaveBeenCalled();
         expect(view.app.workspace.revealLeaf).toHaveBeenCalled();
     });
 
@@ -940,6 +2557,115 @@ describe('Task 4 — Static open method', () => {
         expect(view._loadCanvasModule).not.toHaveBeenCalled();
         expect(view.contentEl.querySelector('[data-canvas-state="annotation-panel"]')).toBeTruthy();
         expect(view.contentEl.textContent).toContain('Reading Canvas');
+    });
+
+    it('plugin unload closes persisted Reading Canvas leaves', () => {
+        const detachLeavesOfType = vi.fn();
+        const plugin = Object.create(PaperForgePlugin.prototype);
+        plugin._pollTimer = null;
+        plugin.app = { workspace: { detachLeavesOfType } };
+
+        plugin.onunload();
+
+        expect(detachLeavesOfType).toHaveBeenCalledWith('paperforge-status');
+        expect(detachLeavesOfType).toHaveBeenCalledWith('paperforge-reading-canvas');
+    });
+
+    it('plugin startup cleanup repeatedly closes restored Reading Canvas leaves around layout restore', () => {
+        vi.useFakeTimers();
+        const detachLeavesOfType = vi.fn();
+        let layoutReadyCallback = null;
+        const plugin = Object.create(PaperForgePlugin.prototype);
+        plugin.app = {
+            workspace: {
+                detachLeavesOfType,
+                onLayoutReady: vi.fn((callback) => {
+                    layoutReadyCallback = callback;
+                }),
+            },
+        };
+
+        plugin._closeRestoredReadingCanvasLeaves();
+        expect(detachLeavesOfType).toHaveBeenCalledWith('paperforge-reading-canvas');
+        detachLeavesOfType.mockClear();
+
+        layoutReadyCallback();
+        expect(detachLeavesOfType).toHaveBeenCalledWith('paperforge-reading-canvas');
+        detachLeavesOfType.mockClear();
+
+        vi.advanceTimersByTime(3000);
+
+        expect(detachLeavesOfType).toHaveBeenCalledWith('paperforge-reading-canvas');
+        expect(detachLeavesOfType.mock.calls.length).toBeGreaterThanOrEqual(3);
+        vi.useRealTimers();
+    });
+
+    it('closes Reading Canvas and opens PaperForge when the active PDF changes to another file', () => {
+        const detachLeavesOfType = vi.fn();
+        const revealLeaf = vi.fn();
+        const statusLeaf = { view: {} };
+        const canvasLeaf = {
+            view: {
+                _paperEntry: {
+                    pdf_path: '[[System/Zotero/storage/ATTACH/current.pdf]]',
+                    zotero_storage_key: 'ATTACH',
+                },
+            },
+        };
+        const plugin = Object.create(PaperForgePlugin.prototype);
+        plugin.app = {
+            workspace: {
+                activeLeaf: { view: { getViewType: () => 'pdf', file: { path: 'System/Zotero/storage/OTHER/other.pdf' } } },
+                getLeavesOfType: vi.fn((type) => {
+                    if (type === 'paperforge-reading-canvas') return [canvasLeaf];
+                    if (type === 'paperforge-status') return [statusLeaf];
+                    if (type === 'pdf') return [{ view: { file: { path: 'System/Zotero/storage/OTHER/other.pdf' } } }];
+                    return [];
+                }),
+                detachLeavesOfType,
+                getRightLeaf: vi.fn(),
+                revealLeaf,
+            },
+        };
+
+        plugin._handleReadingCanvasPdfLifecycle('active-leaf-change');
+
+        expect(detachLeavesOfType).toHaveBeenCalledWith('paperforge-reading-canvas');
+        expect(revealLeaf).toHaveBeenCalledWith(statusLeaf);
+    });
+
+    it('closes Reading Canvas and opens PaperForge when its source PDF leaf is closed', () => {
+        const detachLeavesOfType = vi.fn();
+        const revealLeaf = vi.fn();
+        const statusLeaf = { view: {} };
+        const canvasLeaf = {
+            view: {
+                _paperEntry: {
+                    pdf_path: '[[System/Zotero/storage/ATTACH/current.pdf]]',
+                    zotero_storage_key: 'ATTACH',
+                },
+            },
+        };
+        const plugin = Object.create(PaperForgePlugin.prototype);
+        plugin.app = {
+            workspace: {
+                activeLeaf: { view: { getViewType: () => 'markdown' } },
+                getLeavesOfType: vi.fn((type) => {
+                    if (type === 'paperforge-reading-canvas') return [canvasLeaf];
+                    if (type === 'paperforge-status') return [statusLeaf];
+                    if (type === 'pdf') return [];
+                    return [];
+                }),
+                detachLeavesOfType,
+                getRightLeaf: vi.fn(),
+                revealLeaf,
+            },
+        };
+
+        plugin._handleReadingCanvasPdfLifecycle('layout-change');
+
+        expect(detachLeavesOfType).toHaveBeenCalledWith('paperforge-reading-canvas');
+        expect(revealLeaf).toHaveBeenCalledWith(statusLeaf);
     });
 });
 
@@ -1832,6 +3558,44 @@ describe('ANN13-04 Task 2/3 — Event delegation and lifecycle', () => {
         expect(() => {
             cardEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         }).not.toThrow();
+    });
+
+    it('click on card opens the source PDF page and records a pending annotation jump', () => {
+        const { view, contentEl } = makeCanvasView();
+        view.app.workspace.openLinkText = vi.fn();
+        view.app.vault.getAbstractFileByPath = vi.fn(() => ({ path: '99_System/Zotero/storage/DHBF6HXW/trop2.pdf' }));
+        view._paperEntry = {
+            key: 'A7N8GAHS',
+            pdf_path: '[[99_System/Zotero/storage/DHBF6HXW/trop2.pdf]]',
+            zotero_storage_key: 'DHBF6HXW',
+        };
+        view._vm = {
+            cards: [{
+                id: 'zotero:3:DHBF6HXW:BBK66MB9',
+                sourceAttachmentKey: 'DHBF6HXW',
+                sourceAnnotationKey: 'BBK66MB9',
+                pageIndex: null,
+                pageLabel: '3',
+                positionJson: '{"pageIndex":2,"rects":[[336.815,131.09,561.26,140.431]]}',
+                selectedText: 'from benign models',
+                color: '#ffd400',
+            }],
+        };
+        view._navigationState = { selectedCardId: null, selectedAnchorId: null, selectedGroupId: null, sourceFocusTargetId: null, statusMessage: null, navSource: null };
+        view._initDelegatedEvents(contentEl);
+
+        const cardEl = document.createElement('div');
+        cardEl.setAttribute('data-card-id', 'zotero:3:DHBF6HXW:BBK66MB9');
+        contentEl.appendChild(cardEl);
+
+        cardEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(view.app.workspace.openLinkText).toHaveBeenCalledWith('99_System/Zotero/storage/DHBF6HXW/trop2.pdf#page=3', '');
+        expect(view._pendingPdfAnnotationJump).toMatchObject({
+            annotationId: 'zotero:3:DHBF6HXW:BBK66MB9',
+            pageIndex: 2,
+            color: '#ffd400',
+        });
     });
 
     it('Escape key reduces lifecycle state', () => {

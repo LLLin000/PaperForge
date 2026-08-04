@@ -1,4 +1,4 @@
-const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon, MarkdownRenderer } = require('obsidian');
+const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, Menu, addIcon, MarkdownRenderer } = require('obsidian');
 const { exec, execFile, spawn, execFileSync } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
@@ -4681,6 +4681,39 @@ function buildAnnotationExportArgs(paperKey, extraArgs) {
     return base;
 }
 
+function buildAnnotationCreateLocalArgs(payload, extraArgs) {
+    const p = payload || {};
+    const base = [
+        '-m', 'paperforge', 'annotation', 'create-local',
+        '--paper', String(p.paperKey || ''),
+        '--page-index', String(p.pageIndex != null ? p.pageIndex : 0),
+        '--page-label', String(p.pageLabel || ''),
+        '--selected-text', String(p.selectedText || ''),
+        '--comment', String(p.comment || ''),
+        '--color', String(p.color || '#ffd400'),
+        '--type', String(p.type || 'highlight'),
+        '--position-json', String(p.positionJson || '{}'),
+        '--json',
+    ];
+    if (Array.isArray(extraArgs) && extraArgs.length > 0) {
+        return base.concat(extraArgs);
+    }
+    return base;
+}
+
+function buildAnnotationUpdateLocalArgs(annotationId, comment, extraArgs) {
+    const base = [
+        '-m', 'paperforge', 'annotation', 'update-local',
+        '--id', String(annotationId || ''),
+        '--comment', String(comment || ''),
+        '--json',
+    ];
+    if (Array.isArray(extraArgs) && extraArgs.length > 0) {
+        return base.concat(extraArgs);
+    }
+    return base;
+}
+
 function formatAnnotationImportFailure(result) {
     const r = result || {};
     const combined = [r.stdout || '', r.stderr || ''].join('\n');
@@ -5035,6 +5068,14 @@ function getAnnotationPreview(text, kind) {
     return { text: truncated, kind: kind, truncated: true, expandable: true };
 }
 
+function cleanAnnotationDisplayText(text) {
+    if (text == null) return '';
+    return String(text)
+        .replace(/<\/?(b|strong|i|em|u|mark)>/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 /**
  * Toggle a row ID in the expansion set. Returns a new uiState object.
  */
@@ -5175,6 +5216,32 @@ function parseAnnotationPositionJson(positionJson) {
     var rects = [];
     for (var i = 0; i < parsed.rects.length; i++) {
         var r = parsed.rects[i];
+        if (Array.isArray(r)) {
+            if (r.length < 4) {
+                return { ok: false, rects: [], reason: 'Position data contains an invalid rectangle entry.' };
+            }
+            var x1 = r[0], y1 = r[1], x2 = r[2], y2 = r[3];
+            if (typeof x1 !== 'number' || typeof y1 !== 'number' || typeof x2 !== 'number' || typeof y2 !== 'number') {
+                return { ok: false, rects: [], reason: 'Position data contains a rectangle with non-numeric values.' };
+            }
+            if (!Number.isFinite(x1) || !Number.isFinite(y1) || !Number.isFinite(x2) || !Number.isFinite(y2)) {
+                return { ok: false, rects: [], reason: 'Position data contains a rectangle with non-finite values.' };
+            }
+            var left = Math.min(x1, x2);
+            var top = Math.min(y1, y2);
+            var width = Math.abs(x2 - x1);
+            var height = Math.abs(y2 - y1);
+            if (left < 0 || top < 0 || width < 0 || height < 0) {
+                return { ok: false, rects: [], reason: 'Position data contains a rectangle with negative values.' };
+            }
+            rects.push({
+                x: Math.round(left * 1000) / 1000,
+                y: Math.round(top * 1000) / 1000,
+                w: Math.round(width * 1000) / 1000,
+                h: Math.round(height * 1000) / 1000,
+            });
+            continue;
+        }
         if (typeof r !== 'object' || r === null) {
             return { ok: false, rects: [], reason: 'Position data contains an invalid rectangle entry.' };
         }
@@ -5190,7 +5257,11 @@ function parseAnnotationPositionJson(positionJson) {
         }
         rects.push({ x: x, y: y, w: w, h: h });
     }
-    return { ok: true, rects: rects, reason: null };
+    var parsedPageIndex = parsed.pageIndex;
+    var pageIndex = (typeof parsedPageIndex === 'number' && Number.isFinite(parsedPageIndex) && parsedPageIndex >= 0 && Number.isInteger(parsedPageIndex))
+        ? parsedPageIndex
+        : null;
+    return { ok: true, rects: rects, pageIndex: pageIndex, reason: null };
 }
 
 /**
@@ -5247,12 +5318,15 @@ function buildAnnotationOverlayMarks(annotationState, entry, activePdfPath, opti
         if (!target.ok || !target.path) { skipped++; continue; }
         if (target.path !== activePdfPath) { skipped++; continue; }
         var pdfLoc = row.pdfLocation || {};
+        var position = parseAnnotationPositionJson(pdfLoc.positionJson);
+        if (!position.ok || position.rects.length === 0) { skipped++; continue; }
         var pageIndex = pdfLoc.pageIndex;
+        if (pageIndex == null) {
+            pageIndex = position.pageIndex;
+        }
         if (typeof pageIndex !== 'number' || !Number.isFinite(pageIndex) || pageIndex < 0 || !Number.isInteger(pageIndex)) {
             skipped++; continue;
         }
-        var position = parseAnnotationPositionJson(pdfLoc.positionJson);
-        if (!position.ok || position.rects.length === 0) { skipped++; continue; }
         var display = row.display || {};
         var provenance = row.provenance || {};
         var color = normalizeAnnotationColor(display.color);
@@ -5338,6 +5412,170 @@ function resolveActivePdfPath(entry) {
 }
 
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
+
+function getElementBoxSize(el) {
+    if (!el) return { width: 0, height: 0 };
+    var rect = null;
+    try {
+        rect = typeof el.getBoundingClientRect === 'function' ? el.getBoundingClientRect() : null;
+    } catch (_) {
+        rect = null;
+    }
+    var width = rect && rect.width ? rect.width : (el.clientWidth || el.offsetWidth || 0);
+    var height = rect && rect.height ? rect.height : (el.clientHeight || el.offsetHeight || 0);
+    return { width: width, height: height };
+}
+
+function getElementBoxRect(el) {
+    if (!el) return { left: 0, top: 0, width: 0, height: 0 };
+    var rect = null;
+    try {
+        rect = typeof el.getBoundingClientRect === 'function' ? el.getBoundingClientRect() : null;
+    } catch (_) {
+        rect = null;
+    }
+    if (rect) {
+        return {
+            left: rect.left || 0,
+            top: rect.top || 0,
+            width: rect.width || 0,
+            height: rect.height || 0,
+        };
+    }
+    return {
+        left: 0,
+        top: 0,
+        width: el.clientWidth || el.offsetWidth || 0,
+        height: el.clientHeight || el.offsetHeight || 0,
+    };
+}
+
+function findPdfPageViewportBox(pageEl) {
+    var pageBox = getElementBoxRect(pageEl);
+    var selectors = ['.canvasWrapper', 'canvas', '.textLayer', '.annotationLayer'];
+    var best = null;
+    var bestArea = 0;
+    for (var si = 0; si < selectors.length; si++) {
+        var nodes = [];
+        try {
+            nodes = pageEl && pageEl.querySelectorAll ? pageEl.querySelectorAll(selectors[si]) : [];
+        } catch (_) {
+            nodes = [];
+        }
+        for (var ni = 0; ni < nodes.length; ni++) {
+            var box = getElementBoxRect(nodes[ni]);
+            var area = box.width * box.height;
+            if (box.width > 0 && box.height > 0 && area > bestArea) {
+                best = box;
+                bestArea = area;
+            }
+        }
+    }
+    if (!best) {
+        return { left: 0, top: 0, width: pageBox.width, height: pageBox.height };
+    }
+    return {
+        left: Math.round((best.left - pageBox.left) * 1000) / 1000,
+        top: Math.round((best.top - pageBox.top) * 1000) / 1000,
+        width: best.width,
+        height: best.height,
+    };
+}
+
+function getPdfPageScaleFactor(pageEl) {
+    if (!pageEl) return null;
+    var raw = null;
+    try {
+        raw = pageEl.style && typeof pageEl.style.getPropertyValue === 'function'
+            ? pageEl.style.getPropertyValue('--scale-factor')
+            : null;
+    } catch (_) {
+        raw = null;
+    }
+    if (!raw && typeof getComputedStyle === 'function') {
+        try {
+            raw = getComputedStyle(pageEl).getPropertyValue('--scale-factor');
+        } catch (_) {
+            raw = null;
+        }
+    }
+    var scale = parseFloat(String(raw || '').trim());
+    return Number.isFinite(scale) && scale > 0 ? scale : null;
+}
+
+function inferPdfSourcePageSize(pageEl, viewportBox) {
+    var box = viewportBox || getElementBoxSize(pageEl);
+    var scaleFactor = getPdfPageScaleFactor(pageEl);
+    if (scaleFactor && box.width > 0 && box.height > 0) {
+        return {
+            width: box.width / scaleFactor,
+            height: box.height / scaleFactor,
+        };
+    }
+    var aspect = box.width > 0 && box.height > 0 ? box.height / box.width : null;
+    var candidates = [
+        { width: 595, height: 842 },
+        { width: 595.276, height: 841.89 },
+        { width: 595.276, height: 790.866 },
+        { width: 612, height: 792 },
+    ];
+    var best = candidates[0];
+    if (aspect) {
+        var bestDelta = Infinity;
+        for (var i = 0; i < candidates.length; i++) {
+            var c = candidates[i];
+            var delta = Math.abs((c.height / c.width) - aspect);
+            if (delta < bestDelta) {
+                best = c;
+                bestDelta = delta;
+            }
+        }
+    }
+    return best;
+}
+
+function mapPdfRectToPageDomRect(rect, pageEl) {
+    var box = findPdfPageViewportBox(pageEl);
+    var source = inferPdfSourcePageSize(pageEl, box);
+    var scaleX = box.width > 0 ? box.width / source.width : 1;
+    var scaleY = box.height > 0 ? box.height / source.height : scaleX;
+    return {
+        x: Math.round((box.left + rect.x * scaleX) * 1000) / 1000,
+        y: Math.round((box.top + (source.height - rect.y - rect.h) * scaleY) * 1000) / 1000,
+        w: Math.round(rect.w * scaleX * 1000) / 1000,
+        h: Math.round(rect.h * scaleY * 1000) / 1000,
+    };
+}
+
+function mapPageDomRectToPdfRect(domRect, pageEl) {
+    var pageBox = getElementBoxRect(pageEl);
+    var box = findPdfPageViewportBox(pageEl);
+    var source = inferPdfSourcePageSize(pageEl, box);
+    var scaleX = box.width > 0 ? box.width / source.width : 1;
+    var scaleY = box.height > 0 ? box.height / source.height : scaleX;
+    var left = (domRect.left - pageBox.left - box.left) / scaleX;
+    var topInViewport = (domRect.top - pageBox.top - box.top) / scaleY;
+    var width = domRect.width / scaleX;
+    var height = domRect.height / scaleY;
+    var y = source.height - topInViewport - height;
+    return [
+        Math.round(left * 1000) / 1000,
+        Math.round(y * 1000) / 1000,
+        Math.round((left + width) * 1000) / 1000,
+        Math.round((y + height) * 1000) / 1000,
+    ];
+}
+
+function getPdfUnderlineTop(domRect, strokeWidth) {
+    var y = domRect && typeof domRect.y === 'number' && Number.isFinite(domRect.y) ? domRect.y : 0;
+    var h = domRect && typeof domRect.h === 'number' && Number.isFinite(domRect.h) ? domRect.h : 0;
+    var stroke = typeof strokeWidth === 'number' && Number.isFinite(strokeWidth) && strokeWidth > 0 ? strokeWidth : 2;
+    if (h <= 0) return Math.round(y * 1000) / 1000;
+    var preferred = h * 0.55;
+    var bottomSafe = h - stroke - 1;
+    var inset = Math.max(1, Math.min(preferred, bottomSafe));
+    return Math.round((y + inset) * 1000) / 1000;
+}
 
 let _gitDir = null;
 let _gitDirResolved = false;
@@ -6078,8 +6316,15 @@ function resolveAnnotationPdfTarget(row, entry) {
         }
     }
 
-    // Page conversion (D-08)
+    // Page conversion (D-08). Prefer the database pageIndex, but real Zotero
+    // imports may only carry pageIndex inside position_json.
     var pageIndex = pdfLoc.pageIndex;
+    if (pageIndex == null && typeof pdfLoc.positionJson === 'string') {
+        var parsedPosition = parseAnnotationPositionJson(pdfLoc.positionJson);
+        if (parsedPosition && parsedPosition.ok && parsedPosition.pageIndex != null) {
+            pageIndex = parsedPosition.pageIndex;
+        }
+    }
     var page = null;
     var pageDegraded = false;
 
@@ -6489,6 +6734,47 @@ class PaperForgeStatusView extends ItemView {
         return overlayEntryWorkflowState(this.app, entry);
     }
 
+    _findEntryForResolvedPaper(key, filePath) {
+        if (!key) return null;
+        const indexed = this._findEntry(key);
+        if (indexed) return indexed;
+        return overlayEntryWorkflowState(this.app, this._readPaperMetaEntryForFilePath(filePath, key));
+    }
+
+    _readPaperMetaEntryForFilePath(filePath, expectedKey) {
+        if (!filePath || !this.app || !this.app.vault || !this.app.vault.adapter) return null;
+        const vp = this.app.vault.adapter.basePath;
+        let dir = path.dirname(String(filePath));
+        for (let i = 0; i < 8; i++) {
+            if (!dir || dir === '.' || dir === path.dirname(dir)) break;
+            const base = path.basename(dir);
+            if (expectedKey && !base.toLowerCase().startsWith(String(expectedKey).toLowerCase())) {
+                const parent = path.dirname(dir);
+                if (parent === dir) break;
+                dir = parent;
+                continue;
+            }
+            const metaPath = path.join(vp, dir, 'paper-meta.json');
+            try {
+                if (fs.existsSync(metaPath)) {
+                    const entry = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+                    const entryKey = entry && (entry.zotero_key || entry.key);
+                    if (!expectedKey || String(entryKey).toLowerCase() === String(expectedKey).toLowerCase()) {
+                        if (path.basename(String(filePath)).toLowerCase() === 'fulltext.md') {
+                            entry.fulltext_path = String(filePath);
+                        }
+                        entry.paper_root = entry.paper_root || (dir.replace(/\\/g, '/') + '/');
+                        return entry;
+                    }
+                }
+            } catch (_) {}
+            const parent = path.dirname(dir);
+            if (parent === dir) break;
+            dir = parent;
+        }
+        return null;
+    }
+
     _patchCachedEntry(key, patch) {
         if (!key || !this._cachedItems) return;
         const idx = this._cachedItems.findIndex(item => item.zotero_key === key);
@@ -6814,7 +7100,7 @@ class PaperForgeStatusView extends ItemView {
 
         this._currentDomain = resolved.domain || null;
         this._currentPaperKey = resolved.key || null;
-        this._currentPaperEntry = resolved.key ? this._findEntry(resolved.key) : null;
+        this._currentPaperEntry = resolved.key ? this._findEntryForResolvedPaper(resolved.key, resolved.filePath) : null;
 
         this._switchMode(resolved.mode, resolved.filePath);
 
@@ -7569,6 +7855,11 @@ class PaperForgeStatusView extends ItemView {
                         ? data.imported
                         : (counts.total != null ? counts.total : (data.inserted || 0) + (data.updated || 0));
                     var summary = 'Imported annotations for ' + paperKey + (imported ? ': ' + imported : '') + '.';
+                    var fulltextMarks = data.fulltext_marks || null;
+                    if (fulltextMarks && fulltextMarks.applied != null) {
+                        summary += ' Fulltext: ' + fulltextMarks.applied + ' marked, '
+                            + (fulltextMarks.unresolved || 0) + ' unresolved.';
+                    }
                     this._showMessage('[OK] ' + summary, 'ok');
                     new Notice('[OK] ' + summary, 5000);
                     this.loadAnnotationsForCurrentPaper('import').then(function (newState) {
@@ -7788,7 +8079,7 @@ class PaperForgeStatusView extends ItemView {
             var marksResult = buildAnnotationOverlayMarks(annState, this._currentPaperEntry, currentPdfPath);
             if (marksResult.ok && marksResult.status === 'rendered') {
                 this._renderAnnotationOverlayMarks({
-                    viewerRoot: this._annotationOverlayRootEl ? this._annotationOverlayRootEl.parentElement : null,
+                    viewerRoot: this._findPdfViewerRoot(),
                 }, marksResult.marks);
             }
         }
@@ -7817,6 +8108,13 @@ class PaperForgeStatusView extends ItemView {
             viewerRoot = this._findPdfViewerRoot();
         }
         if (!viewerRoot) return;
+
+        var oldPageOverlays = viewerRoot.querySelectorAll('.paperforge-annotation-overlay-page');
+        for (var oldi = 0; oldi < oldPageOverlays.length; oldi++) {
+            if (oldPageOverlays[oldi].parentNode) {
+                oldPageOverlays[oldi].parentNode.removeChild(oldPageOverlays[oldi]);
+            }
+        }
 
         // Group marks by pageIndex
         var marksByPage = {};
@@ -7857,36 +8155,44 @@ class PaperForgeStatusView extends ItemView {
             // Render each mark on this page
             for (var pmi = 0; pmi < pageMarks.length; pmi++) {
                 var mark = pageMarks[pmi];
-                var rect = mark.rects && mark.rects[0];
+                var rects = Array.isArray(mark.rects) ? mark.rects : [];
+                for (var ri = 0; ri < rects.length; ri++) {
+                var rect = rects[ri];
                 if (!rect) continue;
+                var domRect = mapPdfRectToPageDomRect(rect, pageEl);
 
                 var markEl = document.createElement('div');
                 markEl.className = 'paperforge-annotation-overlay-mark';
                 markEl.setAttribute('data-mark-id', mark.id);
+                markEl.setAttribute('data-mark-rect-index', String(ri));
                 markEl.setAttribute('role', 'button');
                 markEl.setAttribute('tabindex', '0');
                 markEl.setAttribute('aria-label', 'Annotation: ' + (mark.selectedText || '').substring(0, 60));
 
                 markEl.style.cssText = [
                     'position: absolute',
-                    'top: ' + rect.y + 'px',
-                    'left: ' + rect.x + 'px',
-                    'width: ' + rect.w + 'px',
-                    'height: ' + rect.h + 'px',
-                    'background: ' + mark.color,
-                    'opacity: 0.25',
-                    'border-radius: 2px',
+                    'top: ' + getPdfUnderlineTop(domRect, 2) + 'px',
+                    'left: ' + domRect.x + 'px',
+                    'width: ' + domRect.w + 'px',
+                    'height: 0px',
+                    'background: transparent',
+                    'border-bottom: 2px solid ' + mark.color,
+                    'box-shadow: none',
+                    'opacity: 0.95',
+                    'border-radius: 0',
                     'pointer-events: auto',
                     'cursor: pointer',
-                    'transition: opacity 0.15s',
+                    'transition: opacity 0.15s, border-bottom-width 0.15s, box-shadow 0.15s',
                 ].join('; ');
 
                 // Hover highlight
                 markEl.addEventListener('mouseenter', function () {
-                    this.style.opacity = '0.45';
+                    this.style.opacity = '1';
+                    this.style.borderBottomWidth = '3px';
                 });
                 markEl.addEventListener('mouseleave', function () {
-                    this.style.opacity = '0.25';
+                    this.style.opacity = '0.95';
+                    this.style.borderBottomWidth = '2px';
                 });
 
                 // Popover interaction per D-14 — click or keyboard Enter opens read-only detail surface
@@ -7904,6 +8210,7 @@ class PaperForgeStatusView extends ItemView {
                 })(markEl, mark, this);
 
                 pageOverlay.appendChild(markEl);
+                }
             }
         }
     }
@@ -8520,7 +8827,7 @@ class PaperForgeStatusView extends ItemView {
         this._contentEl.empty();
         this._contentEl.addClass('switching');
         this._invalidateIndex();
-        this._currentPaperEntry = this._currentPaperKey ? this._findEntry(this._currentPaperKey) : null;
+        this._currentPaperEntry = this._currentPaperKey ? this._findEntryForResolvedPaper(this._currentPaperKey, this._currentFilePath) : null;
 
         this._renderModeHeader(this._currentMode);
 
@@ -8780,6 +9087,7 @@ class PaperForgeStatusView extends ItemView {
                 // the underlying paper/base context. Avoid rebuilding the whole mode
                 // tree in that case, or transient UI state like discussion expansion resets.
                 if (this._currentMode === nextMode && this._currentFilePath === nextFilePath) {
+                    this._refreshAnnotationOverlay('active-leaf-change');
                     return;
                 }
 
@@ -8855,6 +9163,12 @@ class PaperForgeReadingCanvasView extends ItemView {
         this._annotationLoadSeq = 0;
         this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.IDLE);
         this._pendingCanvasState = null;
+        this._annotationProjectionTimers = [];
+        this._renderedJumpTimers = [];
+        this._renderedJumpSubscribers = [];
+        this._pendingRenderedFulltextJump = null;
+        this._annotationPanelColorFilter = 'all';
+        this._lastNativeAnnotationPanelState = null;
     }
 
     // ── ANN12-02: Runtime source loading ──
@@ -9048,6 +9362,17 @@ class PaperForgeReadingCanvasView extends ItemView {
         panelEl.className = 'paperforge-canvas-startup paperforge-annotation-panel';
         panelEl.setAttribute('data-canvas-state', 'annotation-panel');
         panelEl.setAttribute('data-annotation-state', state.state || 'loading');
+        panelEl.style.display = 'flex';
+        panelEl.style.flexDirection = 'column';
+        panelEl.style.height = '100%';
+        panelEl.style.overflow = 'hidden';
+        var chromeEl = document.createElement('div');
+        chromeEl.className = 'paperforge-annotation-panel-chrome';
+        chromeEl.style.position = 'sticky';
+        chromeEl.style.top = '0';
+        chromeEl.style.zIndex = '3';
+        chromeEl.style.background = 'var(--background-primary)';
+        chromeEl.style.paddingBottom = '8px';
         var titleEl = document.createElement('div');
         titleEl.className = 'paperforge-canvas-identity';
         titleEl.textContent = 'Reading Canvas';
@@ -9058,23 +9383,39 @@ class PaperForgeReadingCanvasView extends ItemView {
         var messageEl = document.createElement('div');
         messageEl.className = 'paperforge-canvas-message';
         messageEl.textContent = state.message || 'Loading annotations...';
-        panelEl.appendChild(titleEl);
-        panelEl.appendChild(messageEl);
+        chromeEl.appendChild(titleEl);
+        chromeEl.appendChild(messageEl);
+        this._renderLocalAnnotationControls(chromeEl, messageEl);
 
         var rows = Array.isArray(state.annotations) ? sortAnnotationsForReadingOrder(state.annotations) : [];
-        if (rows.length > 0) {
+        this._annotationPanelRows = rows;
+        this._lastNativeAnnotationPanelState = state;
+        var visibleRows = this._filterAnnotationPanelRowsByColor(rows);
+        this._renderAnnotationPanelColorFilters(chromeEl, rows);
+        panelEl.appendChild(chromeEl);
+        if (visibleRows.length > 0) {
             var listEl = document.createElement('div');
             listEl.className = 'paperforge-annotation-panel-list';
-            for (var i = 0; i < rows.length; i++) {
-                var row = rows[i] || {};
+            listEl.style.flex = '1 1 auto';
+            listEl.style.minHeight = '0';
+            listEl.style.overflowY = 'auto';
+            listEl.style.paddingRight = '2px';
+            for (var i = 0; i < visibleRows.length; i++) {
+                var row = visibleRows[i] || {};
                 var display = row.display || {};
+                var provenance = row.provenance || {};
                 var loc = row.pdfLocation || {};
+                var annotationId = getAnnotationIdentity(row) || ('annotation-' + i);
+                var isLocalEditable = provenance.source === 'obsidian' && provenance.isReadonly === false;
                 var cardEl = document.createElement('div');
                 cardEl.className = 'paperforge-canvas-card paperforge-annotation-panel-card';
-                cardEl.setAttribute('data-annotation-id', getAnnotationIdentity(row) || ('annotation-' + i));
+                cardEl._paperforgeCanvasView = this;
+                cardEl.setAttribute('data-annotation-id', annotationId);
+                cardEl.setAttribute('data-annotation-source', provenance.source || 'unknown');
+                cardEl.setAttribute('data-readonly', provenance.isReadonly === false ? 'false' : 'true');
                 cardEl.setAttribute('role', 'button');
                 cardEl.setAttribute('tabindex', '0');
-                cardEl.setAttribute('title', 'Jump to annotation in the active fulltext page');
+                cardEl.setAttribute('title', 'Jump to annotation in the source PDF');
                 if (display.color) {
                     cardEl.style.borderLeft = '4px solid ' + display.color;
                 }
@@ -9091,19 +9432,31 @@ class PaperForgeReadingCanvasView extends ItemView {
                     loc.pageLabel ? ('p. ' + loc.pageLabel) : ''
                 ].filter(Boolean).join(' · ');
                 metaEl.appendChild(labelEl);
+                var ownerEl = document.createElement('span');
+                ownerEl.className = 'paperforge-annotation-panel-owner';
+                if (isLocalEditable) {
+                    ownerEl.textContent = 'Local';
+                    ownerEl.setAttribute('data-owner-kind', 'local');
+                } else {
+                    ownerEl.textContent = 'Locked';
+                    ownerEl.setAttribute('data-owner-kind', 'locked');
+                }
+                metaEl.appendChild(ownerEl);
 
                 var quoteEl = document.createElement('div');
                 quoteEl.className = 'paperforge-annotation-panel-quote';
-                quoteEl.textContent = display.selectedText || '(No selected text)';
+                quoteEl.textContent = cleanAnnotationDisplayText(display.selectedText) || '(No selected text)';
                 if (display.color) {
                     quoteEl.style.backgroundColor = this._annotationTint(display.color);
                 }
                 cardEl.appendChild(metaEl);
                 cardEl.appendChild(quoteEl);
-                if (display.comment) {
+                if (isLocalEditable) {
+                    this._renderLocalAnnotationCommentEditor(cardEl, annotationId, display.comment || '');
+                } else if (display.comment) {
                     var commentEl = document.createElement('div');
                     commentEl.className = 'paperforge-annotation-panel-comment';
-                    commentEl.textContent = display.comment;
+                    commentEl.textContent = cleanAnnotationDisplayText(display.comment);
                     cardEl.appendChild(commentEl);
                 }
                 var statusEl = document.createElement('div');
@@ -9117,6 +9470,412 @@ class PaperForgeReadingCanvasView extends ItemView {
         }
 
         contentEl.appendChild(panelEl);
+        this._scheduleImportedAnnotationProjection(rows);
+    }
+
+    _renderLocalAnnotationCommentEditor(cardEl, annotationId, comment) {
+        var editorWrap = document.createElement('div');
+        editorWrap.className = 'paperforge-annotation-local-editor';
+        editorWrap.hidden = true;
+        var stop = function (evt) {
+            evt.stopPropagation();
+        };
+        editorWrap.addEventListener('mousedown', stop);
+        editorWrap.addEventListener('click', stop);
+        editorWrap.addEventListener('keydown', stop);
+
+        var input = document.createElement('textarea');
+        input.className = 'paperforge-annotation-local-editor-input';
+        input.setAttribute('data-local-comment-editor', 'true');
+        input.setAttribute('aria-label', 'Local annotation note');
+        input.rows = 2;
+        input.value = cleanAnnotationDisplayText(comment || '');
+        editorWrap.appendChild(input);
+
+        var footer = document.createElement('div');
+        footer.className = 'paperforge-annotation-local-editor-footer';
+        var statusEl = document.createElement('span');
+        statusEl.className = 'paperforge-annotation-local-editor-status';
+        statusEl.setAttribute('aria-live', 'polite');
+        footer.appendChild(statusEl);
+        var saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'paperforge-annotation-local-editor-save';
+        saveBtn.setAttribute('data-action', 'paperforge-save-local-comment');
+        saveBtn.textContent = 'Save';
+        var self = this;
+        saveBtn.addEventListener('click', function (evt) {
+            evt.preventDefault();
+            evt.stopPropagation();
+            self._saveLocalAnnotationComment(annotationId, input.value || '', saveBtn, statusEl);
+        });
+        footer.appendChild(saveBtn);
+        editorWrap.appendChild(footer);
+        cardEl.appendChild(editorWrap);
+    }
+
+    _syncLocalAnnotationEditorsVisibility() {
+        if (!this.contentEl || !this.contentEl.querySelectorAll) return;
+        var cards = this.contentEl.querySelectorAll('.paperforge-annotation-panel-card');
+        for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            var editor = card.querySelector('.paperforge-annotation-local-editor');
+            if (!editor) continue;
+            editor.hidden = card.getAttribute('aria-selected') !== 'true' && !card.classList.contains('is-active');
+        }
+    }
+
+    async _saveLocalAnnotationComment(annotationId, comment, buttonEl, statusEl) {
+        if (!annotationId) return { ok: false, reason: 'missing-annotation-id' };
+        if (buttonEl) {
+            buttonEl.disabled = true;
+            buttonEl.textContent = 'Saving...';
+        }
+        if (statusEl) statusEl.textContent = 'Saving...';
+        try {
+            var result = await this._runUpdateLocalAnnotationComment(annotationId, comment);
+            if (!result || result.ok === false) {
+                var err = (result && result.message) || 'Local annotation update failed.';
+                if (statusEl) statusEl.textContent = err;
+                new Notice('[!!] ' + err, 5000);
+                return { ok: false, reason: err };
+            }
+            if (statusEl) statusEl.textContent = 'Saved.';
+            new Notice('[OK] Local annotation note saved.', 3000);
+            await this._reloadNativeAnnotationPanelAfterLocalCreate();
+            return result;
+        } finally {
+            if (buttonEl) {
+                buttonEl.disabled = false;
+                buttonEl.textContent = 'Save';
+            }
+        }
+    }
+
+    _filterAnnotationPanelRowsByColor(rows) {
+        var filter = this._annotationPanelColorFilter || 'all';
+        if (!Array.isArray(rows) || filter === 'all') return rows || [];
+        return rows.filter(function (row) {
+            var display = (row && row.display) || {};
+            return String(display.color || 'none').toLowerCase() === String(filter).toLowerCase();
+        });
+    }
+
+    _renderLocalAnnotationControls(chromeEl, messageEl) {
+        var barEl = document.createElement('div');
+        barEl.className = 'paperforge-annotation-local-controls';
+        var colors = ['#ffd400', '#ff6666', '#5fb236', '#e56eee', '#2ea8e5'];
+        if (!this._localAnnotationColor) this._localAnnotationColor = colors[0];
+        var self = this;
+        var swatchesEl = document.createElement('div');
+        swatchesEl.className = 'paperforge-annotation-local-colors';
+        for (var i = 0; i < colors.length; i++) {
+            var color = colors[i];
+            var colorBtn = document.createElement('button');
+            colorBtn.type = 'button';
+            colorBtn.className = 'paperforge-annotation-local-color';
+            colorBtn.setAttribute('data-local-annotation-color', color);
+            colorBtn.setAttribute('aria-label', 'Local annotation color ' + color);
+            colorBtn.setAttribute('aria-pressed', this._localAnnotationColor === color ? 'true' : 'false');
+            colorBtn.style.backgroundColor = color;
+            colorBtn.addEventListener('mousedown', function (evt) {
+                evt.preventDefault();
+            });
+            colorBtn.addEventListener('click', function (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+                self._localAnnotationColor = this.getAttribute('data-local-annotation-color') || colors[0];
+                var buttons = swatchesEl.querySelectorAll('[data-local-annotation-color]');
+                for (var bi = 0; bi < buttons.length; bi++) {
+                    buttons[bi].setAttribute('aria-pressed', buttons[bi] === this ? 'true' : 'false');
+                }
+            });
+            swatchesEl.appendChild(colorBtn);
+        }
+        barEl.appendChild(swatchesEl);
+        var commentInput = document.createElement('input');
+        commentInput.type = 'text';
+        commentInput.className = 'paperforge-annotation-local-comment';
+        commentInput.setAttribute('data-local-annotation-comment', 'true');
+        commentInput.setAttribute('placeholder', 'Note');
+        commentInput.value = this._localAnnotationComment || '';
+        commentInput.addEventListener('input', function () {
+            self._localAnnotationComment = commentInput.value || '';
+        });
+        barEl.appendChild(commentInput);
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'paperforge-annotation-local-add';
+        addBtn.setAttribute('data-action', 'paperforge-add-local-annotation');
+        addBtn.textContent = 'Add Local';
+        addBtn.addEventListener('mousedown', function (evt) {
+            evt.preventDefault();
+            self._captureLocalAnnotationSelection();
+        });
+        addBtn.addEventListener('click', function () {
+            self._createLocalAnnotationFromPdfSelection(addBtn, messageEl);
+        });
+        barEl.appendChild(addBtn);
+        chromeEl.appendChild(barEl);
+        this._installLocalAnnotationSelectionCapture();
+    }
+
+    _applyLocalAnnotationDraftFields(payload) {
+        if (!payload || payload.ok === false) return payload;
+        var next = Object.assign({}, payload);
+        next.comment = this._localAnnotationComment || '';
+        next.color = this._localAnnotationColor || next.color || '#ffd400';
+        return next;
+    }
+
+    _captureLocalAnnotationSelection() {
+        var payload = this._buildLocalAnnotationPayloadFromPdfSelection();
+        if (payload && payload.ok !== false) {
+            this._lastLocalAnnotationSelectionPayload = {
+                payload: this._applyLocalAnnotationDraftFields(payload),
+                capturedAt: Date.now(),
+            };
+        }
+        return payload;
+    }
+
+    _installLocalAnnotationSelectionCapture() {
+        this._removeLocalAnnotationSelectionCapture();
+        var root = this._findActivePdfViewerRootForCanvas();
+        if (!root || typeof root.addEventListener !== 'function') return false;
+        var self = this;
+        var state = { root: root, capture: null, captureSoon: null, timer: null };
+        state.capture = function () {
+            self._captureLocalAnnotationSelection();
+        };
+        state.openMenu = function (evt) {
+            self._captureLocalAnnotationSelection();
+            if (self._openLocalAnnotationSelectionMenu(evt)) {
+                evt.preventDefault();
+                evt.stopPropagation();
+            }
+        };
+        state.captureSoon = function () {
+            if (state.timer) clearTimeout(state.timer);
+            state.timer = setTimeout(function () {
+                state.timer = null;
+                state.capture();
+            }, 0);
+        };
+        root.addEventListener('mouseup', state.capture);
+        root.addEventListener('keyup', state.capture);
+        root.addEventListener('contextmenu', state.openMenu);
+        if (typeof document !== 'undefined' && document.addEventListener) {
+            document.addEventListener('selectionchange', state.captureSoon);
+        }
+        this._localAnnotationSelectionCapture = state;
+        return true;
+    }
+
+    _removeLocalAnnotationSelectionCapture() {
+        var state = this._localAnnotationSelectionCapture;
+        if (!state) return;
+        if (state.timer) clearTimeout(state.timer);
+        if (state.root && typeof state.root.removeEventListener === 'function') {
+            if (state.capture) {
+                state.root.removeEventListener('mouseup', state.capture);
+                state.root.removeEventListener('keyup', state.capture);
+            }
+            if (state.openMenu) {
+                state.root.removeEventListener('contextmenu', state.openMenu);
+            }
+        }
+        if (typeof document !== 'undefined' && document.removeEventListener && state.captureSoon) {
+            document.removeEventListener('selectionchange', state.captureSoon);
+        }
+        this._localAnnotationSelectionCapture = null;
+    }
+
+    _openLocalAnnotationSelectionMenu(evt) {
+        var payload = this._captureLocalAnnotationSelection();
+        if ((!payload || payload.ok === false) && this._lastLocalAnnotationSelectionPayload) {
+            payload = this._lastLocalAnnotationSelectionPayload.payload;
+        }
+        if (!payload || payload.ok === false || typeof Menu !== 'function') return false;
+        var self = this;
+        var menu = new Menu();
+        var colors = [
+            { label: 'Yellow', color: '#ffd400' },
+            { label: 'Red', color: '#ff6666' },
+            { label: 'Note', color: '#2ea8e5' },
+            { label: 'Important', color: '#e56eee' },
+        ];
+        colors.forEach(function (entry) {
+            menu.addItem(function (item) {
+                item.setTitle(entry.label);
+                if (typeof item.setIcon === 'function') item.setIcon('highlighter');
+                item.onClick(function () {
+                    self._localAnnotationColor = entry.color;
+                    self._lastLocalAnnotationSelectionPayload = {
+                        payload: self._applyLocalAnnotationDraftFields(Object.assign({}, payload, { color: entry.color })),
+                        capturedAt: Date.now(),
+                    };
+                    self._createLocalAnnotationFromPdfSelection(null, null);
+                });
+            });
+        });
+        if (typeof menu.showAtMouseEvent === 'function' && evt) {
+            menu.showAtMouseEvent(evt);
+        } else if (typeof menu.showAtPosition === 'function' && evt) {
+            menu.showAtPosition({ x: evt.clientX || 0, y: evt.clientY || 0 });
+        }
+        return true;
+    }
+
+    async _createLocalAnnotationFromPdfSelection(buttonEl, messageEl) {
+        var payload = this._buildLocalAnnotationPayloadFromPdfSelection();
+        if (!payload || payload.ok === false) {
+            var cached = this._lastLocalAnnotationSelectionPayload;
+            var age = cached && cached.capturedAt ? Date.now() - cached.capturedAt : Infinity;
+            if (cached && cached.payload && age < 15000) {
+                payload = this._applyLocalAnnotationDraftFields(cached.payload);
+            }
+        } else {
+            payload = this._applyLocalAnnotationDraftFields(payload);
+        }
+        if (!payload || payload.ok === false) {
+            var reason = payload && payload.reason ? payload.reason : 'missing-pdf-selection';
+            if (messageEl) messageEl.textContent = 'Select text in the open PDF first: ' + reason;
+            new Notice('[!!] Select text in the open PDF first.', 5000);
+            return { ok: false, reason: reason };
+        }
+        if (!payload.paperKey) {
+            if (messageEl) messageEl.textContent = 'No paper key for local annotation.';
+            return { ok: false, reason: 'missing-paper-key' };
+        }
+        if (buttonEl) {
+            buttonEl.disabled = true;
+            buttonEl.textContent = 'Adding...';
+        }
+        try {
+            var result = await this._runCreateLocalAnnotation(payload);
+            if (!result || result.ok === false) {
+                var err = (result && result.message) || 'Local annotation create failed.';
+                if (messageEl) messageEl.textContent = err;
+                new Notice('[!!] ' + err, 5000);
+                return { ok: false, reason: err };
+            }
+            if (messageEl) messageEl.textContent = 'Local annotation added.';
+            new Notice('[OK] Local annotation added.', 3000);
+            this._lastLocalAnnotationSelectionPayload = null;
+            this._localAnnotationComment = '';
+            await this._reloadNativeAnnotationPanelAfterLocalCreate();
+            return result;
+        } finally {
+            if (buttonEl) {
+                buttonEl.disabled = false;
+                buttonEl.textContent = 'Add Local';
+            }
+        }
+    }
+
+    async _runCreateLocalAnnotation(payload) {
+        var vp = this.app && this.app.vault && this.app.vault.adapter && this.app.vault.adapter.basePath;
+        if (!vp) return { ok: false, message: 'Vault adapter is not available.' };
+        var plugin = this.app && this.app.plugins && this.app.plugins.plugins && this.app.plugins.plugins.paperforge;
+        var pyResult = resolvePythonExecutable(vp, plugin && plugin.settings);
+        var args = buildAnnotationCreateLocalArgs(payload, pyResult.extraArgs || []);
+        var result = await runSubprocess(pyResult.path, args, vp, 30000, undefined, paperforgeEnrichedEnv());
+        if (!result || result.exitCode !== 0) {
+            return { ok: false, message: formatAnnotationImportFailure(result), raw: result };
+        }
+        try {
+            var parsed = JSON.parse(result.stdout || '{}');
+            if (!parsed.ok) {
+                return { ok: false, message: parsed.error && parsed.error.message || 'Local annotation create failed.', raw: parsed };
+            }
+            return { ok: true, annotation: parsed.data && parsed.data.annotation, raw: parsed };
+        } catch (err) {
+            return { ok: false, message: 'Could not parse local annotation response.', raw: result };
+        }
+    }
+
+    async _runUpdateLocalAnnotationComment(annotationId, comment) {
+        var vp = this.app && this.app.vault && this.app.vault.adapter && this.app.vault.adapter.basePath;
+        if (!vp) return { ok: false, message: 'Vault adapter is not available.' };
+        var plugin = this.app && this.app.plugins && this.app.plugins.plugins && this.app.plugins.plugins.paperforge;
+        var pyResult = resolvePythonExecutable(vp, plugin && plugin.settings);
+        var args = buildAnnotationUpdateLocalArgs(annotationId, comment, pyResult.extraArgs || []);
+        var result = await runSubprocess(pyResult.path, args, vp, 30000, undefined, paperforgeEnrichedEnv());
+        if (!result || result.exitCode !== 0) {
+            return { ok: false, message: formatAnnotationImportFailure(result), raw: result };
+        }
+        try {
+            var parsed = JSON.parse(result.stdout || '{}');
+            if (!parsed.ok) {
+                return { ok: false, message: parsed.error && parsed.error.message || 'Local annotation update failed.', raw: parsed };
+            }
+            return { ok: true, annotation: parsed.data && parsed.data.annotation, raw: parsed };
+        } catch (err) {
+            return { ok: false, message: 'Could not parse local annotation update response.', raw: result };
+        }
+    }
+
+    async _reloadNativeAnnotationPanelAfterLocalCreate() {
+        var annotationLoader = this._annotationLoader || loadAnnotationsForPaper;
+        if (!this._paperKey || typeof annotationLoader !== 'function') return null;
+        var vp = this.app && this.app.vault && this.app.vault.adapter && this.app.vault.adapter.basePath;
+        if (!vp) return null;
+        var plugin = this.app && this.app.plugins && this.app.plugins.plugins && this.app.plugins.plugins.paperforge;
+        var pyResult = resolvePythonExecutable(vp, plugin && plugin.settings);
+        var state = await annotationLoader({
+            paperKey: this._paperKey,
+            pythonExe: pyResult.path,
+            pythonExtraArgs: pyResult.extraArgs || [],
+            cwd: vp,
+            timeout: 30000,
+            env: paperforgeEnrichedEnv(),
+        });
+        this._renderNativeAnnotationPanel(this._paperKey, this._paperEntry, state);
+        return state;
+    }
+
+    _annotationPanelColorOptions(rows) {
+        var seen = {};
+        var colors = [];
+        for (var i = 0; Array.isArray(rows) && i < rows.length; i++) {
+            var color = rows[i] && rows[i].display && rows[i].display.color;
+            if (!color) continue;
+            var key = String(color).toLowerCase();
+            if (seen[key]) continue;
+            seen[key] = true;
+            colors.push(String(color));
+        }
+        return colors;
+    }
+
+    _renderAnnotationPanelColorFilters(panelEl, rows) {
+        var colors = this._annotationPanelColorOptions(rows);
+        if (colors.length < 2) return;
+        var self = this;
+        var controlsEl = document.createElement('div');
+        controlsEl.className = 'paperforge-annotation-color-filters';
+        var makeButton = function (label, filter, color) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'paperforge-annotation-color-filter';
+            btn.setAttribute('data-color-filter', filter);
+            btn.setAttribute('aria-pressed', (self._annotationPanelColorFilter || 'all') === filter ? 'true' : 'false');
+            btn.textContent = label;
+            if (color) {
+                btn.style.borderLeft = '4px solid ' + color;
+            }
+            btn.addEventListener('click', function () {
+                self._annotationPanelColorFilter = filter;
+                self._renderNativeAnnotationPanel(self._paperKey, self._paperEntry, self._lastNativeAnnotationPanelState || makeAnnotationState(ANNOTATION_LOAD_STATES.READY));
+            });
+            return btn;
+        };
+        controlsEl.appendChild(makeButton('All', 'all', null));
+        for (var i = 0; i < colors.length; i++) {
+            controlsEl.appendChild(makeButton(colors[i], colors[i], colors[i]));
+        }
+        panelEl.appendChild(controlsEl);
     }
 
     _bindAnnotationPanelCard(cardEl, row, statusEl) {
@@ -9126,38 +9885,89 @@ class PaperForgeReadingCanvasView extends ItemView {
                 evt.preventDefault();
                 evt.stopPropagation();
             }
+            var selectedCards = self.contentEl.querySelectorAll('.paperforge-annotation-panel-card[aria-selected="true"]');
+            for (var si = 0; si < selectedCards.length; si++) {
+                if (selectedCards[si] !== cardEl) {
+                    selectedCards[si].setAttribute('aria-selected', 'false');
+                    selectedCards[si].classList.remove('is-active');
+                    selectedCards[si].removeAttribute('data-jump-state');
+                }
+            }
             cardEl.setAttribute('aria-selected', 'true');
             cardEl.setAttribute('data-jump-state', 'pending');
-            if (statusEl) statusEl.textContent = 'Locating annotation...';
-            Promise.resolve(self._jumpToActiveFulltextAnnotation(row)).then(function (result) {
-                if (result && result.ok) {
-                    cardEl.setAttribute('data-jump-state', result.opened ? 'opened' : 'resolved');
-                    cardEl.removeAttribute('data-anchor-status');
-                    cardEl.removeAttribute('data-jump-reason');
-                    if (statusEl) {
-                        var partialText = result.partial ? ' nearby fragment' : '';
-                        statusEl.textContent = result.opened
-                            ? 'Opened fulltext and matched' + partialText + '.'
-                            : 'Matched' + partialText + ' in fulltext.';
-                    }
-                } else {
-                    var reason = (result && result.reason) || 'not-found';
-                    cardEl.setAttribute('data-anchor-status', 'unresolved');
-                    cardEl.setAttribute('data-jump-state', 'unresolved');
-                    cardEl.setAttribute('data-jump-reason', reason);
-                    if (statusEl) statusEl.textContent = 'Not matched: ' + reason;
+            self._syncLocalAnnotationEditorsVisibility();
+            if (statusEl) statusEl.textContent = 'Opening PDF annotation...';
+            var result = self._openPdfForAnnotationRow(row);
+            if (result && result.ok) {
+                cardEl.setAttribute('data-jump-state', 'opened-pdf');
+                cardEl.removeAttribute('data-anchor-status');
+                cardEl.removeAttribute('data-jump-reason');
+                if (statusEl) {
+                    statusEl.textContent = result.page != null
+                        ? 'Opened PDF page ' + result.page + '.'
+                        : 'Opened PDF.';
                 }
-                if (cardEl._paperforgeJumpTimer) clearTimeout(cardEl._paperforgeJumpTimer);
-                cardEl._paperforgeJumpTimer = setTimeout(function () {
-                    cardEl.setAttribute('aria-selected', 'false');
-                    cardEl.removeAttribute('data-jump-state');
-                }, 900);
-            });
+                self._scheduleAnnotationPanelCardRebound(cardEl);
+            } else if (self._rowHasPdfAnnotationLocation(row)) {
+                var pdfReason = (result && result.reason) || 'pdf-bbox-unavailable';
+                cardEl.setAttribute('data-anchor-status', 'unresolved');
+                cardEl.setAttribute('data-jump-state', 'unresolved');
+                cardEl.setAttribute('data-jump-reason', pdfReason);
+                if (statusEl) statusEl.textContent = 'PDF annotation not available: ' + pdfReason;
+                self._scheduleAnnotationPanelCardRebound(cardEl);
+            } else {
+                Promise.resolve(self._jumpToActiveFulltextAnnotation(row)).then(function (fallbackResult) {
+                    if (fallbackResult && fallbackResult.ok) {
+                        cardEl.setAttribute('data-jump-state', fallbackResult.opened ? 'opened' : 'resolved');
+                        cardEl.removeAttribute('data-anchor-status');
+                        cardEl.removeAttribute('data-jump-reason');
+                        if (statusEl) {
+                            var partialText = fallbackResult.partial ? ' nearby fragment' : '';
+                            statusEl.textContent = fallbackResult.opened
+                                ? 'Opened fulltext and matched' + partialText + '.'
+                                : 'Matched' + partialText + ' in fulltext.';
+                        }
+                    } else {
+                        var reason = (result && result.reason) || (fallbackResult && fallbackResult.reason) || 'pdf-not-found';
+                        cardEl.setAttribute('data-anchor-status', 'unresolved');
+                        cardEl.setAttribute('data-jump-state', 'unresolved');
+                        cardEl.setAttribute('data-jump-reason', reason);
+                        if (statusEl) statusEl.textContent = 'PDF not opened: ' + reason;
+                    }
+                    self._scheduleAnnotationPanelCardRebound(cardEl);
+                });
+                return;
+            }
         }
         cardEl.addEventListener('click', activate);
         cardEl.addEventListener('keydown', function (evt) {
             if (evt.key === 'Enter' || evt.key === ' ') activate(evt);
         });
+    }
+
+    _rowHasPdfAnnotationLocation(row) {
+        if (!row) return false;
+        var loc = row.pdfLocation || {};
+        if (loc.positionJson == null) return false;
+        var parsed = parseAnnotationPositionJson(loc.positionJson);
+        return !!(parsed && parsed.ok && parsed.rects && parsed.rects.length > 0);
+    }
+
+    _scheduleAnnotationPanelCardRebound(cardEl) {
+        if (!cardEl) return;
+        if (cardEl.getAttribute('data-readonly') === 'false') {
+            this._syncLocalAnnotationEditorsVisibility();
+            return;
+        }
+        if (cardEl._paperforgeJumpTimer) clearTimeout(cardEl._paperforgeJumpTimer);
+        cardEl._paperforgeJumpTimer = setTimeout(function () {
+            cardEl.setAttribute('aria-selected', 'false');
+            cardEl.removeAttribute('data-jump-state');
+            var view = cardEl._paperforgeCanvasView;
+            if (view && typeof view._syncLocalAnnotationEditorsVisibility === 'function') {
+                view._syncLocalAnnotationEditorsVisibility();
+            }
+        }, 900);
     }
 
     _annotationTint(color) {
@@ -9177,64 +9987,221 @@ class PaperForgeReadingCanvasView extends ItemView {
         if (!selectedText.trim()) {
             return { ok: false, reason: 'missing-selected-text' };
         }
-        var domJump = this._jumpToRenderedFulltextDom(selectedText, display.color);
+        var annotationId = this._getFulltextAnnotationMarkId(row);
+        var focusPromise = this._focusFulltextBeforeAnnotationJump();
+        var focusedFulltext = focusPromise ? await focusPromise : false;
+        var domJump = this._jumpToRenderedFulltextDom(selectedText, display.color, annotationId, { previewOnly: true });
         if (domJump && domJump.ok) {
+            if (focusedFulltext) domJump.opened = true;
             return domJump;
         }
         var editorJump = this._jumpToMarkdownEditorBuffer(selectedText);
         if (editorJump && editorJump.ok) {
-            this._scheduleRenderedFulltextMark(selectedText, display.color);
+            this._scheduleRenderedFulltextMark(selectedText, display.color, annotationId);
             return editorJump;
         }
-        var openedJump = await this._openFulltextAndJump(selectedText, display.color);
+        var openedJump = await this._openFulltextAndJump(selectedText, display.color, annotationId);
         if (openedJump && openedJump.ok) return openedJump;
         return openedJump || { ok: false, reason: 'text-not-found' };
     }
 
-    _jumpToRenderedFulltextDom(selectedText, color) {
-        var roots = this._getActiveFulltextRoots();
+    _focusFulltextBeforeAnnotationJump() {
+        var entry = this._paperEntry || {};
+        var pathValue = entry.fulltext_path || entry.fulltext_md_path || '';
+        var workspace = this.app && this.app.workspace;
+        if (!pathValue || !workspace) {
+            return null;
+        }
+        var self = this;
+        return (async function () {
+            try {
+                var existingLeaf = self._findOpenMarkdownLeafByPath(pathValue);
+                if (existingLeaf) {
+                    if (typeof workspace.revealLeaf === 'function') workspace.revealLeaf(existingLeaf);
+                    await self._delay(40);
+                    return true;
+                }
+                if (typeof workspace.openLinkText !== 'function') return false;
+                await workspace.openLinkText(pathValue, '', false);
+                await self._delay(40);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        })();
+    }
+
+    _findOpenMarkdownLeafByPath(pathValue) {
+        if (!pathValue || !this.app || !this.app.workspace || typeof this.app.workspace.getLeavesOfType !== 'function') {
+            return null;
+        }
+        var target = this._normalizeVaultPath(pathValue);
+        var leaves = this.app.workspace.getLeavesOfType('markdown') || [];
+        for (var i = 0; i < leaves.length; i++) {
+            var leaf = leaves[i];
+            var path = this._getMarkdownLeafPath(leaf);
+            if (path && this._normalizeVaultPath(path) === target) return leaf;
+        }
+        return null;
+    }
+
+    _getMarkdownLeafPath(leaf) {
+        var view = leaf && leaf.view;
+        if (!view) return '';
+        if (view.file && view.file.path) return view.file.path;
+        if (view.state && view.state.file) return view.state.file;
+        if (typeof view.getState === 'function') {
+            try {
+                var state = view.getState() || {};
+                if (state.file) return state.file;
+            } catch (_) {}
+        }
+        if (typeof leaf.getViewState === 'function') {
+            try {
+                var viewState = leaf.getViewState() || {};
+                if (viewState.state && viewState.state.file) return viewState.state.file;
+            } catch (_) {}
+        }
+        return '';
+    }
+
+    _normalizeVaultPath(pathValue) {
+        return String(pathValue || '').replace(/\\/g, '/').replace(/^\/+/, '').toLowerCase();
+    }
+
+    _jumpToRenderedFulltextDom(selectedText, color, annotationId) {
+        var options = arguments.length > 3 && arguments[3] ? arguments[3] : {};
+        var roots = this._getActiveFulltextRoots(options);
         if (!roots.length) {
             return { ok: false, reason: 'missing-active-fulltext-root' };
         }
         for (var i = 0; i < roots.length; i++) {
             var root = roots[i];
             this._clearActiveFulltextAnnotationMarks(root);
-            var mark = this._highlightFirstTextMatchInRoot(root, selectedText, color);
+            var mark = this._findExistingImportedAnnotationMark(root, selectedText, annotationId);
             if (mark) {
-                if (typeof mark.scrollIntoView === 'function') {
-                    mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+                mark.classList.add('paperforge-active-annotation-match');
+                mark.style.boxShadow = '0 0 0 2px rgba(35, 131, 226, 0.35)';
+            } else {
+                mark = this._highlightFirstTextMatchInRoot(root, selectedText, color, {
+                    className: 'paperforge-active-annotation-match',
+                    active: true,
+                });
+            }
+            if (mark) {
+                this._forceScrollAnnotationTarget(root, mark);
                 return { ok: true, mark: mark, partial: !!mark._paperforgePartialMatch };
             }
         }
         return { ok: false, reason: 'dom-text-not-found' };
     }
 
+    _forceScrollAnnotationTarget(root, mark) {
+        // PaperForge annotation jump fix: reveal + double-scroll on every click.
+        this._revealMarkdownLeafForRoot(root);
+        if (!mark || typeof mark.scrollIntoView !== 'function') return;
+        this._centerMarkInScrollContainer(root, mark);
+        mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var self = this;
+        setTimeout(function () {
+            self._centerMarkInScrollContainer(root, mark);
+            if (mark && typeof mark.scrollIntoView === 'function') {
+                mark.scrollIntoView({ behavior: 'auto', block: 'center' });
+            }
+        }, 30);
+    }
+
+    _centerMarkInScrollContainer(root, mark) {
+        var scroller = this._findScrollContainer(root, mark);
+        if (!scroller) return false;
+        var top = this._offsetTopWithin(mark, scroller);
+        var nextTop = Math.max(0, Math.round(top - (scroller.clientHeight || 0) / 2));
+        scroller.scrollTop = nextTop;
+        return true;
+    }
+
+    _findScrollContainer(root, mark) {
+        var node = mark && mark.parentElement;
+        while (node && node !== document.body) {
+            if (node !== mark && node.clientHeight && node.scrollHeight && node.scrollHeight > node.clientHeight) {
+                return node;
+            }
+            node = node.parentElement;
+        }
+        if (root && root.clientHeight && root.scrollHeight && root.scrollHeight > root.clientHeight) {
+            return root;
+        }
+        return null;
+    }
+
+    _offsetTopWithin(el, ancestor) {
+        var top = 0;
+        var node = el;
+        while (node && node !== ancestor) {
+            top += node.offsetTop || 0;
+            node = node.offsetParent || node.parentElement;
+        }
+        return top;
+    }
+
+    _revealMarkdownLeafForRoot(root) {
+        var workspace = this.app && this.app.workspace;
+        if (!workspace || typeof workspace.getLeavesOfType !== 'function' || typeof workspace.revealLeaf !== 'function') {
+            return;
+        }
+        var leaves = workspace.getLeavesOfType('markdown') || [];
+        for (var i = 0; i < leaves.length; i++) {
+            var view = leaves[i] && leaves[i].view;
+            if (!view) continue;
+            if (view.containerEl === root || view.contentEl === root) {
+                workspace.revealLeaf(leaves[i]);
+                return;
+            }
+            if (view.containerEl && view.containerEl.contains && view.containerEl.contains(root)) {
+                workspace.revealLeaf(leaves[i]);
+                return;
+            }
+            if (view.contentEl && view.contentEl.contains && view.contentEl.contains(root)) {
+                workspace.revealLeaf(leaves[i]);
+                return;
+            }
+        }
+    }
+
     _delay(ms) {
         return new Promise(function (resolve) { setTimeout(resolve, ms); });
     }
 
-    async _openFulltextAndJump(selectedText, color) {
+    async _openFulltextAndJump(selectedText, color, annotationId) {
         var entry = this._paperEntry || {};
         var pathValue = entry.fulltext_path || entry.fulltext_md_path || '';
-        if (!pathValue || !this.app || !this.app.workspace || typeof this.app.workspace.openLinkText !== 'function') {
+        if (!pathValue || !this.app || !this.app.workspace) {
             return { ok: false, reason: 'fulltext-not-open-and-no-path' };
         }
-        try {
-            await this.app.workspace.openLinkText(pathValue, '', false);
-        } catch (err) {
-            return { ok: false, reason: 'open-fulltext-failed', error: (err && err.message) || String(err) };
+        var existingLeaf = this._findOpenMarkdownLeafByPath(pathValue);
+        if (existingLeaf) {
+            if (typeof this.app.workspace.revealLeaf === 'function') {
+                this.app.workspace.revealLeaf(existingLeaf);
+            }
+        } else if (typeof this.app.workspace.openLinkText !== 'function') {
+            return { ok: false, reason: 'fulltext-not-open-and-no-path' };
+        } else {
+            try {
+                await this.app.workspace.openLinkText(pathValue, '', false);
+            } catch (err) {
+                return { ok: false, reason: 'open-fulltext-failed', error: (err && err.message) || String(err) };
+            }
         }
         for (var i = 0; i < 5; i++) {
             await this._delay(i === 0 ? 60 : 160);
-            var domJump = this._jumpToRenderedFulltextDom(selectedText, color);
+            var domJump = this._jumpToRenderedFulltextDom(selectedText, color, annotationId, { previewOnly: true });
             if (domJump && domJump.ok) {
                 domJump.opened = true;
                 return domJump;
             }
             var editorJump = this._jumpToMarkdownEditorBuffer(selectedText);
             if (editorJump && editorJump.ok) {
-                this._scheduleRenderedFulltextMark(selectedText, color);
+                this._scheduleRenderedFulltextMark(selectedText, color, annotationId);
                 editorJump.opened = true;
                 return editorJump;
             }
@@ -9242,13 +10209,125 @@ class PaperForgeReadingCanvasView extends ItemView {
         return { ok: false, reason: 'opened-fulltext-text-not-found' };
     }
 
-    _scheduleRenderedFulltextMark(selectedText, color) {
+    _scheduleRenderedFulltextMark(selectedText, color, annotationId) {
         var self = this;
-        [80, 220, 520, 900].forEach(function (delay) {
-            setTimeout(function () {
-                self._jumpToRenderedFulltextDom(selectedText, color);
-            }, delay);
+        this._clearRenderedFulltextJumpWatch();
+        this._pendingRenderedFulltextJump = { selectedText: selectedText, color: color, annotationId: annotationId };
+        var attempt = function () {
+            if (!self._pendingRenderedFulltextJump) return;
+            var result = self._jumpToRenderedFulltextDom(selectedText, color, annotationId, { previewOnly: true });
+            if (result && result.ok) self._clearRenderedFulltextJumpWatch();
+        };
+        [80, 220, 520, 900, 1500, 2400, 4000, 6500, 10000].forEach(function (delay) {
+            var timer = setTimeout(attempt, delay);
+            self._renderedJumpTimers.push(timer);
         });
+        var workspace = this.app && this.app.workspace;
+        if (workspace && typeof workspace.on === 'function') {
+            ['layout-change', 'active-leaf-change', 'file-open'].forEach(function (eventName) {
+                try {
+                    var ref = workspace.on(eventName, function () {
+                        var timer = setTimeout(attempt, 40);
+                        self._renderedJumpTimers.push(timer);
+                    });
+                    self._renderedJumpSubscribers.push({ event: eventName, ref: ref });
+                } catch (_) {}
+            });
+        }
+        this._renderedJumpTimers.push(setTimeout(function () {
+            self._clearRenderedFulltextJumpWatch();
+        }, 15000));
+    }
+
+    _clearRenderedFulltextJumpWatch() {
+        if (this._renderedJumpTimers) {
+            for (var i = 0; i < this._renderedJumpTimers.length; i++) {
+                clearTimeout(this._renderedJumpTimers[i]);
+            }
+        }
+        this._renderedJumpTimers = [];
+        var workspace = this.app && this.app.workspace;
+        if (workspace && typeof workspace.off === 'function' && this._renderedJumpSubscribers) {
+            for (var j = 0; j < this._renderedJumpSubscribers.length; j++) {
+                var sub = this._renderedJumpSubscribers[j];
+                try {
+                    workspace.off(sub.event, sub.ref);
+                } catch (_) {}
+            }
+        }
+        this._renderedJumpSubscribers = [];
+        this._pendingRenderedFulltextJump = null;
+    }
+
+    _scheduleImportedAnnotationProjection(rows) {
+        this._clearImportedAnnotationProjectionTimers();
+        var self = this;
+        var snapshot = Array.isArray(rows) ? rows.slice() : [];
+        this._projectImportedAnnotationsToOpenFulltext(snapshot);
+        [120, 260, 600, 1200].forEach(function (delay) {
+            var timer = setTimeout(function () {
+                self._projectImportedAnnotationsToOpenFulltext(snapshot);
+            }, delay);
+            self._annotationProjectionTimers.push(timer);
+        });
+    }
+
+    _clearImportedAnnotationProjectionTimers() {
+        if (!this._annotationProjectionTimers) {
+            this._annotationProjectionTimers = [];
+            return;
+        }
+        for (var i = 0; i < this._annotationProjectionTimers.length; i++) {
+            clearTimeout(this._annotationProjectionTimers[i]);
+        }
+        this._annotationProjectionTimers = [];
+    }
+
+    _projectImportedAnnotationsToOpenFulltext(rows) {
+        var annotations = Array.isArray(rows) ? rows : [];
+        if (!annotations.length) return { applied: 0, unresolved: annotations.length };
+        var roots = this._getActiveFulltextRoots();
+        var applied = 0;
+        var unresolved = 0;
+        for (var r = 0; r < roots.length; r++) {
+            var root = roots[r];
+            var activeIds = {};
+            var activeMarks = root.querySelectorAll ? root.querySelectorAll('mark.paperforge-active-annotation-match[data-paperforge-annotation-id], mark.paperforge-active-annotation-match[data-annotation-id]') : [];
+            for (var ai = 0; ai < activeMarks.length; ai++) {
+                var activeId = activeMarks[ai].getAttribute('data-paperforge-annotation-id') || activeMarks[ai].getAttribute('data-annotation-id');
+                if (activeId) activeIds[activeId] = true;
+            }
+            if (activeMarks.length > 0) {
+                applied += activeMarks.length;
+                continue;
+            }
+            this._clearImportedFulltextAnnotationMarks(root);
+            for (var i = 0; i < annotations.length; i++) {
+                var row = annotations[i] || {};
+                var display = row.display || {};
+                var selectedText = display.selectedText ? String(display.selectedText) : '';
+                if (!selectedText.trim()) {
+                    unresolved++;
+                    continue;
+                }
+                var mark = this._highlightFirstTextMatchInRoot(root, selectedText, display.color, {
+                    className: 'paperforge-imported-annotation-highlight',
+                    annotationId: this._getFulltextAnnotationMarkId(row) || getAnnotationIdentity(row) || ('annotation-' + i),
+                    imported: true,
+                });
+                if (mark) {
+                    var markId = mark.getAttribute('data-paperforge-annotation-id') || mark.getAttribute('data-annotation-id');
+                    if (markId && activeIds[markId]) {
+                        mark.classList.add('paperforge-active-annotation-match');
+                        mark.style.boxShadow = '0 0 0 2px rgba(35, 131, 226, 0.35)';
+                    }
+                    applied++;
+                } else {
+                    unresolved++;
+                }
+            }
+        }
+        return { applied: applied, unresolved: unresolved };
     }
 
     _getMarkdownCandidateLeaves() {
@@ -9313,15 +10392,24 @@ class PaperForgeReadingCanvasView extends ItemView {
     }
 
     _getActiveFulltextRoots() {
+        var options = arguments.length > 0 && arguments[0] ? arguments[0] : {};
+        var previewOnly = !!options.previewOnly;
         var roots = [];
         var seen = [];
         var self = this;
         function addRoot(container) {
             if (!container || seen.indexOf(container) !== -1) return;
             if (self.contentEl && container.contains && container.contains(self.contentEl)) return;
-            var root = container.querySelector
-                ? (container.querySelector('.markdown-preview-view, .markdown-reading-view, .cm-content, .markdown-source-view, .workspace-leaf-content') || container)
-                : container;
+            var root = container;
+            if (container.querySelector) {
+                if (previewOnly) {
+                    root = container.matches && container.matches('.markdown-preview-view, .markdown-reading-view')
+                        ? container
+                        : container.querySelector('.markdown-preview-view, .markdown-reading-view');
+                } else {
+                    root = container.querySelector('.markdown-preview-view, .markdown-reading-view, .cm-content, .markdown-source-view, .workspace-leaf-content') || container;
+                }
+            }
             if (!root || seen.indexOf(root) !== -1) return;
             if (self.contentEl && root.contains && root.contains(self.contentEl)) return;
             seen.push(root);
@@ -9332,17 +10420,23 @@ class PaperForgeReadingCanvasView extends ItemView {
             ? this.app.workspace.activeLeaf.view
             : null;
         addRoot(activeView && activeView.containerEl);
+        addRoot(activeView && activeView.contentEl);
 
         var workspace = this.app && this.app.workspace;
         if (workspace && typeof workspace.getLeavesOfType === 'function') {
             var markdownLeaves = workspace.getLeavesOfType('markdown') || [];
             for (var i = 0; i < markdownLeaves.length; i++) {
-                addRoot(markdownLeaves[i] && markdownLeaves[i].view && markdownLeaves[i].view.containerEl);
+                var view = markdownLeaves[i] && markdownLeaves[i].view;
+                addRoot(view && view.containerEl);
+                addRoot(view && view.contentEl);
             }
         }
 
         if (document && document.querySelectorAll) {
-            var domRoots = document.querySelectorAll('.markdown-preview-view, .markdown-reading-view, .cm-content');
+            var selector = previewOnly
+                ? '.markdown-preview-view, .markdown-reading-view'
+                : '.markdown-preview-view, .markdown-reading-view, .cm-content';
+            var domRoots = document.querySelectorAll(selector);
             for (var j = 0; j < domRoots.length; j++) addRoot(domRoots[j]);
         }
         return roots;
@@ -9350,6 +10444,26 @@ class PaperForgeReadingCanvasView extends ItemView {
 
     _clearActiveFulltextAnnotationMarks(root) {
         var marks = root.querySelectorAll ? root.querySelectorAll('mark.paperforge-active-annotation-match') : [];
+        for (var i = 0; i < marks.length; i++) {
+            var mark = marks[i];
+            if (mark.classList && (
+                mark.classList.contains('paperforge-imported-annotation-highlight')
+                || mark.classList.contains('paperforge-annotation-highlight')
+            )) {
+                mark.classList.remove('paperforge-active-annotation-match');
+                mark.style.boxShadow = '';
+                continue;
+            }
+            var parent = mark.parentNode;
+            if (!parent) continue;
+            while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+            parent.removeChild(mark);
+            if (parent.normalize) parent.normalize();
+        }
+    }
+
+    _clearImportedFulltextAnnotationMarks(root) {
+        var marks = root.querySelectorAll ? root.querySelectorAll('mark.paperforge-imported-annotation-highlight') : [];
         for (var i = 0; i < marks.length; i++) {
             var mark = marks[i];
             var parent = mark.parentNode;
@@ -9500,7 +10614,40 @@ class PaperForgeReadingCanvasView extends ItemView {
         return { text: normalized.trim(), map: map };
     }
 
-    _highlightFirstTextMatchInRoot(root, selectedText, color) {
+    _getFulltextAnnotationMarkId(row) {
+        if (!row) return '';
+        var p = row.provenance || {};
+        if (p.source === 'zotero' && p.sourceAnnotationKey) {
+            return [
+                'zotero',
+                p.sourceLibraryId || p.libraryId || '3',
+                p.sourceAttachmentKey || '',
+                p.sourceAnnotationKey,
+            ].join(':');
+        }
+        return getAnnotationIdentity(row);
+    }
+
+    _findExistingImportedAnnotationMark(root, selectedText, annotationId) {
+        if (annotationId && root && root.querySelector) {
+            var escaped = typeof CSS !== 'undefined' && CSS.escape
+                ? CSS.escape(annotationId)
+                : String(annotationId).replace(/["\\]/g, '\\$&');
+            var byId = root.querySelector('mark[data-paperforge-annotation-id="' + escaped + '"]');
+            if (!byId) byId = root.querySelector('mark[data-annotation-id="' + escaped + '"]');
+            if (byId) return byId;
+        }
+        var marks = root && root.querySelectorAll ? root.querySelectorAll('mark.paperforge-imported-annotation-highlight, mark.paperforge-annotation-highlight') : [];
+        var candidates = this._buildSelectedTextMatchCandidates(selectedText);
+        for (var i = 0; i < marks.length; i++) {
+            var text = marks[i].textContent || '';
+            if (this._findMatchInPlainText(text, candidates)) return marks[i];
+        }
+        return null;
+    }
+
+    _highlightFirstTextMatchInRoot(root, selectedText, color, options) {
+        var opts = options || {};
         var doc = root.ownerDocument || document;
         var candidates = this._buildSelectedTextMatchCandidates(selectedText);
         if (!candidates.length) return null;
@@ -9516,10 +10663,16 @@ class PaperForgeReadingCanvasView extends ItemView {
         range.setStart(startMap.node, startMap.start);
         range.setEnd(endMap.node, endMap.end);
         var mark = doc.createElement('mark');
-        mark.className = 'paperforge-active-annotation-match';
+        mark.className = opts.className || 'paperforge-active-annotation-match';
         if (match.partial) mark.setAttribute('data-match-kind', 'fragment');
-        mark.style.backgroundColor = this._annotationTint(color || '#ffd54f');
-        mark.style.boxShadow = '0 0 0 2px rgba(35, 131, 226, 0.35)';
+        if (opts.annotationId) {
+            mark.setAttribute('data-paperforge-annotation-id', opts.annotationId);
+            mark.setAttribute('data-annotation-id', opts.annotationId);
+        }
+        mark.style.backgroundColor = opts.imported ? (color || '#ffd54f') : this._annotationTint(color || '#ffd54f');
+        if (opts.active !== false && !opts.imported) {
+            mark.style.boxShadow = '0 0 0 2px rgba(35, 131, 226, 0.35)';
+        }
         var fragment = range.extractContents();
         mark.appendChild(fragment);
         range.insertNode(mark);
@@ -9704,6 +10857,9 @@ class PaperForgeReadingCanvasView extends ItemView {
 
     async onClose() {
         this._cleanupNavigation();
+        this._removeLocalAnnotationSelectionCapture();
+        this._clearImportedAnnotationProjectionTimers();
+        this._clearRenderedFulltextJumpWatch();
         this._canvasLoadSeq++;
         this._annotationLoadSeq++;
         if (this._sessionController) {
@@ -10100,6 +11256,7 @@ class PaperForgeReadingCanvasView extends ItemView {
             var navCard = Object.assign({ cardId: card.id }, card);
             var nextState = nav.reduceCardSelection(this._navigationState || nav.createInitialNavState(), navCard);
             this._applyCardNavigationState(nextState);
+            this._openPdfForAnnotationCard(card);
             var anchorFocus = this.contentEl.querySelector(
                 '[data-anchor-id="' + this._escapeSelectorValue(cardId) + '"][data-anchor-status="exact"]'
             );
@@ -10185,6 +11342,336 @@ class PaperForgeReadingCanvasView extends ItemView {
         if (this.app && this.app.workspace && this.app.workspace.openLinkText) {
             this.app.workspace.openLinkText(linkText, '');
         }
+    }
+
+    _annotationRowFromCanvasCard(card) {
+        if (!card) return null;
+        return {
+            display: {
+                selectedText: card.selectedText || '',
+                comment: card.comment || '',
+                pageLabel: card.pageLabel || '',
+                type: card.type || 'annotation',
+                color: card.color || null,
+            },
+            provenance: {
+                source: card.source || 'zotero',
+                isReadonly: card.readOnly !== false,
+                sourceAttachmentKey: card.sourceAttachmentKey || '',
+                sourceAnnotationKey: card.sourceAnnotationKey || card.id || '',
+            },
+            pdfLocation: {
+                sourceAttachmentKey: card.sourceAttachmentKey || '',
+                sourceAnnotationKey: card.sourceAnnotationKey || card.id || '',
+                pageIndex: card.pageIndex != null ? card.pageIndex : null,
+                pageLabel: card.pageLabel || '',
+                positionJson: card.positionJson != null ? card.positionJson : null,
+            },
+            raw: {},
+        };
+    }
+
+    _openPdfForAnnotationCard(card) {
+        var row = this._annotationRowFromCanvasCard(card);
+        var result = this._openPdfForAnnotationRow(row, card && card.id);
+        if (result && result.ok && card && card.color) {
+            this._pendingPdfAnnotationJump.color = card.color;
+        }
+        return result;
+    }
+
+    _openPdfForAnnotationRow(row, annotationId) {
+        if (!row || !this._paperEntry) return { ok: false, reason: 'missing-annotation-pdf-context' };
+        var target = resolveAnnotationPdfTarget(row, this._paperEntry);
+        if (!target.ok || !target.path) return target;
+
+        var vault = this.app && this.app.vault;
+        if (vault && typeof vault.getAbstractFileByPath === 'function' && !vault.getAbstractFileByPath(target.path)) {
+            return { ok: false, reason: 'pdf-file-not-found', path: target.path };
+        }
+
+        var position = parseAnnotationPositionJson(row.pdfLocation.positionJson);
+        var pageIndex = target.page != null ? target.page - 1 : (position.ok ? position.pageIndex : null);
+        var display = row.display || {};
+        this._pendingPdfAnnotationJump = {
+            annotationId: annotationId || getAnnotationIdentity(row),
+            row: row,
+            pageIndex: pageIndex,
+            color: display.color || null,
+            pdfPath: target.path,
+            requestedAt: Date.now(),
+        };
+
+        if (this.app && this.app.workspace && typeof this.app.workspace.openLinkText === 'function') {
+            this.app.workspace.openLinkText(target.linkText, '');
+        }
+        this._schedulePdfAnnotationOverlayRefresh();
+        return Object.assign({ ok: true }, target);
+    }
+
+    _schedulePdfAnnotationOverlayRefresh() {
+        var self = this;
+        var attempts = [60, 180, 420, 900, 1600];
+        for (var i = 0; i < attempts.length; i++) {
+            setTimeout(function () {
+                self._tryRenderPdfOverlayFromCanvasCards();
+                self._activatePendingPdfAnnotationJump();
+            }, attempts[i]);
+        }
+    }
+
+    _findActivePdfViewerRootForCanvas() {
+        var workspace = this.app && this.app.workspace;
+        var leaves = [];
+        if (workspace && workspace.activeLeaf) leaves.push(workspace.activeLeaf);
+        if (workspace && typeof workspace.getLeavesOfType === 'function') {
+            try {
+                var pdfLeaves = workspace.getLeavesOfType('pdf') || [];
+                for (var i = 0; i < pdfLeaves.length; i++) leaves.push(pdfLeaves[i]);
+            } catch (_) {}
+        }
+        for (var li = 0; li < leaves.length; li++) {
+            var view = leaves[li] && leaves[li].view;
+            var contentEl = view && (view.contentEl || view.containerEl);
+            if (!contentEl) continue;
+            if (contentEl.matches && contentEl.matches('.pdf-embed, .pdf-viewer, .pdf-container')) return contentEl;
+            var root = contentEl.querySelector && contentEl.querySelector('.pdf-embed, .pdf-viewer, .pdf-container');
+            if (root) return root;
+            var canvas = contentEl.querySelector && contentEl.querySelector('canvas');
+            if (canvas) return contentEl;
+        }
+        return null;
+    }
+
+    _buildLocalAnnotationPayloadFromPdfSelection(selection) {
+        var sel = selection || (typeof window !== 'undefined' && window.getSelection ? window.getSelection() : null);
+        var selectedText = sel && typeof sel.toString === 'function' ? sel.toString().trim() : '';
+        if (!sel || !sel.rangeCount || !selectedText) {
+            return { ok: false, reason: 'missing-pdf-selection' };
+        }
+        var range = sel.getRangeAt(0);
+        if (!range || typeof range.getClientRects !== 'function') {
+            return { ok: false, reason: 'missing-selection-rects' };
+        }
+        var viewerRoot = this._findActivePdfViewerRootForCanvas();
+        if (!viewerRoot) return { ok: false, reason: 'missing-pdf-viewer' };
+        var rects = Array.from(range.getClientRects ? range.getClientRects() : [])
+            .filter(function (rect) { return rect && rect.width > 1 && rect.height > 1; });
+        if (!rects.length) return { ok: false, reason: 'empty-selection-rects' };
+        var pages = viewerRoot.querySelectorAll ? viewerRoot.querySelectorAll('[data-page-number]') : [];
+        var firstPage = null;
+        var firstPageNumber = null;
+        var pdfRects = [];
+        for (var ri = 0; ri < rects.length; ri++) {
+            var rect = rects[ri];
+            var centerX = rect.left + rect.width / 2;
+            var centerY = rect.top + rect.height / 2;
+            var pageEl = null;
+            for (var pi = 0; pi < pages.length; pi++) {
+                var pageBox = getElementBoxRect(pages[pi]);
+                if (centerX >= pageBox.left && centerX <= pageBox.left + pageBox.width
+                    && centerY >= pageBox.top && centerY <= pageBox.top + pageBox.height) {
+                    pageEl = pages[pi];
+                    break;
+                }
+            }
+            if (!pageEl) continue;
+            var pageNumber = parseInt(pageEl.getAttribute('data-page-number') || '0', 10);
+            if (!Number.isFinite(pageNumber) || pageNumber <= 0) continue;
+            if (!firstPage) {
+                firstPage = pageEl;
+                firstPageNumber = pageNumber;
+            }
+            if (pageEl !== firstPage) continue;
+            pdfRects.push(mapPageDomRectToPdfRect(rect, pageEl));
+        }
+        if (!firstPage || !pdfRects.length) return { ok: false, reason: 'selection-page-not-found' };
+        var pageIndex = firstPageNumber - 1;
+        return {
+            paperKey: this._paperKey || (this._paperEntry && (this._paperEntry.key || this._paperEntry.zotero_key)) || '',
+            pageIndex: pageIndex,
+            pageLabel: String(firstPageNumber),
+            selectedText: selectedText,
+            comment: this._localAnnotationComment || '',
+            color: this._localAnnotationColor || '#ffd400',
+            type: 'highlight',
+            positionJson: JSON.stringify({ pageIndex: pageIndex, rects: pdfRects }),
+        };
+    }
+
+    _tryRenderPdfOverlayFromCanvasCards() {
+        if (!this._paperEntry) return false;
+        var pending = this._pendingPdfAnnotationJump || {};
+        var activePdfPath = pending.pdfPath || null;
+        if (!activePdfPath) {
+            var pdfTarget = resolveActivePdfPath(this._paperEntry);
+            activePdfPath = pdfTarget.ok ? pdfTarget.path : null;
+        }
+        if (!activePdfPath) return false;
+        var rows = [];
+        if (this._vm && Array.isArray(this._vm.cards)) {
+            rows = this._vm.cards.map((card) => this._annotationRowFromCanvasCard(card)).filter(Boolean);
+        } else if (Array.isArray(this._annotationPanelRows) && this._annotationPanelRows.length) {
+            rows = this._annotationPanelRows;
+        } else if (pending.row) {
+            rows = [pending.row];
+        }
+        if (!rows.length) return false;
+        var marksResult = buildAnnotationOverlayMarks({
+            state: 'ready',
+            paperKey: this._paperKey,
+            annotations: rows,
+        }, this._paperEntry, activePdfPath);
+        if (!marksResult.ok || marksResult.marks.length === 0) return false;
+        var viewerRoot = this._findActivePdfViewerRootForCanvas();
+        if (!viewerRoot) return false;
+        this._renderPdfOverlayMarksForCanvas(viewerRoot, marksResult.marks, pending.annotationId || null);
+        return true;
+    }
+
+    _renderPdfOverlayMarksForCanvas(viewerRoot, marks, activeId) {
+        if (!viewerRoot || !Array.isArray(marks)) return;
+        var old = viewerRoot.querySelectorAll('.paperforge-canvas-pdf-overlay-page');
+        for (var oi = 0; oi < old.length; oi++) old[oi].remove();
+        for (var mi = 0; mi < marks.length; mi++) {
+            var mark = marks[mi];
+            var pageNum = mark.pageIndex + 1;
+            var pageEl = viewerRoot.querySelector('[data-page-number="' + pageNum + '"]');
+            if (!pageEl) continue;
+            var overlay = pageEl.querySelector('.paperforge-canvas-pdf-overlay-page');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'paperforge-canvas-pdf-overlay-page';
+                overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:12;overflow:hidden';
+                pageEl.style.position = 'relative';
+                pageEl.appendChild(overlay);
+            }
+            for (var ri = 0; ri < mark.rects.length; ri++) {
+                var rect = mapPdfRectToPageDomRect(mark.rects[ri], pageEl);
+                var strokeWidth = mark.id === activeId ? 3 : 2;
+                var underlineTop = getPdfUnderlineTop(rect, strokeWidth);
+                var hitboxHeight = Math.max(12, strokeWidth + 8);
+                var markEl = document.createElement('div');
+                markEl.className = 'paperforge-canvas-pdf-overlay-mark';
+                if (mark.id === activeId) markEl.className += ' is-active';
+                markEl.setAttribute('data-paperforge-annotation-id', mark.id);
+                markEl.style.cssText = [
+                    'position:absolute',
+                    'left:' + rect.x + 'px',
+                    'top:' + Math.max(0, underlineTop - (hitboxHeight / 2)) + 'px',
+                    'width:' + rect.w + 'px',
+                    'height:' + hitboxHeight + 'px',
+                    'background:transparent',
+                    'border:0',
+                    'box-shadow:none',
+                    'opacity:' + (mark.id === activeId ? '1' : '0.95'),
+                    'outline:1px solid transparent',
+                    'border-radius:0',
+                    'pointer-events:auto',
+                    'cursor:pointer',
+                ].join(';');
+                markEl.setAttribute('role', 'button');
+                markEl.setAttribute('tabindex', '0');
+                markEl.setAttribute('aria-label', 'Select annotation in Reading Canvas');
+                var lineEl = document.createElement('div');
+                lineEl.className = 'paperforge-canvas-pdf-overlay-line';
+                lineEl.style.cssText = [
+                    'position:absolute',
+                    'left:0',
+                    'right:0',
+                    'top:' + Math.round((hitboxHeight / 2) * 1000) / 1000 + 'px',
+                    'height:0',
+                    'border-bottom:' + strokeWidth + 'px solid ' + mark.color,
+                    'pointer-events:none',
+                ].join(';');
+                markEl.appendChild(lineEl);
+                (function (self, annotationId) {
+                    markEl.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        self._focusAnnotationPanelCardFromPdfMark(annotationId);
+                    });
+                    markEl.addEventListener('keydown', function (event) {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            self._focusAnnotationPanelCardFromPdfMark(annotationId);
+                        }
+                    });
+                })(this, mark.id);
+                overlay.appendChild(markEl);
+            }
+        }
+    }
+
+    _focusAnnotationPanelCardFromPdfMark(annotationId) {
+        if (!annotationId || !this.contentEl) return false;
+        var workspace = this.app && this.app.workspace;
+        if (workspace && typeof workspace.revealLeaf === 'function') {
+            var targetLeaf = this.leaf || null;
+            if (!targetLeaf && typeof workspace.getLeavesOfType === 'function') {
+                try {
+                    var leaves = workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE_READING_CANVAS) || [];
+                    for (var li = 0; li < leaves.length; li++) {
+                        if (leaves[li] && leaves[li].view === this) {
+                            targetLeaf = leaves[li];
+                            break;
+                        }
+                    }
+                    if (!targetLeaf && leaves.length) targetLeaf = leaves[0];
+                } catch (_) {}
+            }
+            if (targetLeaf) {
+                try { workspace.revealLeaf(targetLeaf); } catch (_) {}
+            }
+        }
+
+        var selector = '.paperforge-annotation-panel-card[data-annotation-id="' + this._escapeSelectorValue(annotationId) + '"]';
+        var card = this.contentEl.querySelector(selector);
+        if (!card && this._annotationPanelColorFilter && this._annotationPanelColorFilter !== 'all') {
+            this._annotationPanelColorFilter = 'all';
+            this._renderNativeAnnotationPanel(this._paperKey, this._paperEntry, this._lastNativeAnnotationPanelState || this._annotationState);
+            card = this.contentEl.querySelector(selector);
+        }
+        if (!card) return false;
+
+        var cards = this.contentEl.querySelectorAll('.paperforge-annotation-panel-card[aria-selected="true"]');
+        for (var ci = 0; ci < cards.length; ci++) {
+            cards[ci].setAttribute('aria-selected', 'false');
+            cards[ci].classList.remove('is-active');
+            if (cards[ci].getAttribute('data-jump-state') === 'selected-from-pdf') {
+                cards[ci].removeAttribute('data-jump-state');
+            }
+        }
+        card.setAttribute('aria-selected', 'true');
+        card.setAttribute('data-jump-state', 'selected-from-pdf');
+        card.classList.add('is-active');
+        this._syncLocalAnnotationEditorsVisibility();
+        var statusEl = card.querySelector('.paperforge-annotation-panel-jump-status');
+        if (statusEl) statusEl.textContent = 'Selected from PDF.';
+        if (typeof card.scrollIntoView === 'function') {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return true;
+    }
+
+    _activatePendingPdfAnnotationJump() {
+        var pending = this._pendingPdfAnnotationJump;
+        if (!pending || !pending.annotationId) return false;
+        var viewerRoot = this._findActivePdfViewerRootForCanvas();
+        if (!viewerRoot) return false;
+        var selector = '[data-paperforge-annotation-id="' + this._escapeSelectorValue(pending.annotationId) + '"]';
+        var mark = viewerRoot.querySelector(selector);
+        if (!mark) return false;
+        mark.classList.add('is-active');
+        mark.style.opacity = '1';
+        mark.style.boxShadow = 'none';
+        var line = mark.querySelector ? mark.querySelector('.paperforge-canvas-pdf-overlay-line') : null;
+        if (line) line.style.borderBottomWidth = '3px';
+        if (typeof mark.scrollIntoView === 'function') {
+            mark.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        }
+        return true;
     }
 
     _applyCardNavigationState(nextState) {
@@ -12513,11 +14000,14 @@ module.exports = class PaperForgePlugin extends Plugin {
         this._embedProcess = null;
         this._embedProgress = { current: 0, total: 0, key: '' };
         this._embedStderr = '';
+        this._readingCanvasPdfLifecycleTimer = null;
         // Clean stale path fields from plugin data.json (migrated to paperforge.json)
         this.saveSettings();
         T = (langFromApp(this.app) === 'zh') ? LANG.zh : LANG.en;
         this.registerView(VIEW_TYPE_PAPERFORGE, (leaf) => new PaperForgeStatusView(leaf));
         this.registerView(VIEW_TYPE_PAPERFORGE_READING_CANVAS, (leaf) => new PaperForgeReadingCanvasView(leaf));
+        this._closeRestoredReadingCanvasLeaves();
+        this._registerReadingCanvasPdfLifecycleGuard();
 
         try { addIcon(PF_ICON_ID, PF_RIBBON_SVG); } catch (_) {}
         this.addRibbonIcon(PF_ICON_ID, 'PaperForge Dashboard', () => PaperForgeStatusView.open(this));
@@ -12581,6 +14071,119 @@ module.exports = class PaperForgePlugin extends Plugin {
                 execFile(py.path, args, { cwd: vp, timeout: 60000, windowsHide: true }, () => {});
             }
         })();
+    }
+
+    _closeRestoredReadingCanvasLeaves() {
+        const workspace = this.app && this.app.workspace;
+        if (!workspace || typeof workspace.detachLeavesOfType !== 'function') return;
+        const close = () => {
+            try {
+                workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE_READING_CANVAS);
+            } catch (_) {}
+        };
+        close();
+        if (typeof workspace.onLayoutReady === 'function') {
+            workspace.onLayoutReady(close);
+        } else {
+            setTimeout(close, 0);
+        }
+        [250, 1000, 3000].forEach((delay) => setTimeout(close, delay));
+    }
+
+    _registerReadingCanvasPdfLifecycleGuard() {
+        const workspace = this.app && this.app.workspace;
+        if (!workspace || typeof workspace.on !== 'function') return;
+        const schedule = (reason) => {
+            if (this._readingCanvasPdfLifecycleTimer) clearTimeout(this._readingCanvasPdfLifecycleTimer);
+            this._readingCanvasPdfLifecycleTimer = setTimeout(() => {
+                this._readingCanvasPdfLifecycleTimer = null;
+                this._handleReadingCanvasPdfLifecycle(reason);
+            }, 150);
+        };
+        ['active-leaf-change', 'layout-change', 'file-open'].forEach((eventName) => {
+            try {
+                const ref = workspace.on(eventName, () => schedule(eventName));
+                if (typeof this.registerEvent === 'function') this.registerEvent(ref);
+            } catch (_) {}
+        });
+    }
+
+    _normalizeVaultPdfPath(pathValue) {
+        return String(pathValue || '').replace(/\\/g, '/').replace(/^\/+/, '').toLowerCase();
+    }
+
+    _pdfPathFromLeaf(leaf) {
+        const view = leaf && leaf.view;
+        if (!view) return null;
+        const candidates = [
+            view.file && view.file.path,
+            view.state && view.state.file,
+            typeof view.getState === 'function' ? (view.getState() || {}).file : null,
+        ];
+        for (const candidate of candidates) {
+            if (candidate && /\.pdf($|#)/i.test(String(candidate))) return String(candidate).split('#')[0];
+        }
+        return null;
+    }
+
+    _targetPdfPathFromReadingCanvasView(view) {
+        if (!view || !view._paperEntry) return null;
+        const resolved = resolveActivePdfPath(view._paperEntry);
+        return resolved && resolved.ok ? resolved.path : null;
+    }
+
+    _openPaperForgeMainAfterCanvasClose() {
+        const workspace = this.app && this.app.workspace;
+        if (!workspace) return;
+        try {
+            if (typeof workspace.getLeavesOfType === 'function') {
+                const leaves = workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE) || [];
+                if (leaves.length && typeof workspace.revealLeaf === 'function') {
+                    workspace.revealLeaf(leaves[0]);
+                    return;
+                }
+            }
+            PaperForgeStatusView.open(this);
+        } catch (_) {}
+    }
+
+    _handleReadingCanvasPdfLifecycle(reason) {
+        const workspace = this.app && this.app.workspace;
+        if (!workspace || typeof workspace.getLeavesOfType !== 'function') return false;
+        const canvasLeaves = workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE_READING_CANVAS) || [];
+        if (!canvasLeaves.length) return false;
+        const targetPaths = canvasLeaves
+            .map((leaf) => this._targetPdfPathFromReadingCanvasView(leaf && leaf.view))
+            .filter(Boolean)
+            .map((p) => this._normalizeVaultPdfPath(p));
+        if (!targetPaths.length) return false;
+
+        const pdfLeaves = workspace.getLeavesOfType('pdf') || [];
+        const pdfPaths = pdfLeaves
+            .map((leaf) => this._pdfPathFromLeaf(leaf))
+            .filter(Boolean)
+            .map((p) => this._normalizeVaultPdfPath(p));
+        const activePdf = this._pdfPathFromLeaf(workspace.activeLeaf);
+        const activePdfNorm = activePdf ? this._normalizeVaultPdfPath(activePdf) : null;
+        const matchesTarget = (candidate) => targetPaths.indexOf(candidate) !== -1;
+
+        let shouldClose = false;
+        if (activePdfNorm && !matchesTarget(activePdfNorm)) {
+            shouldClose = true;
+        } else if (pdfPaths.length === 0) {
+            shouldClose = true;
+        } else if (!pdfPaths.some(matchesTarget)) {
+            shouldClose = true;
+        }
+        if (!shouldClose) return false;
+
+        try {
+            if (typeof workspace.detachLeavesOfType === 'function') {
+                workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE_READING_CANVAS);
+            }
+        } catch (_) {}
+        this._openPaperForgeMainAfterCanvasClose();
+        return true;
     }
 
     _autoUpdate() {
@@ -12815,6 +14418,7 @@ module.exports = class PaperForgePlugin extends Plugin {
     onunload() {
         if (this._pollTimer) clearInterval(this._pollTimer);
         this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
+        this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE_READING_CANVAS);
     }
 
     async loadSettings() {
@@ -12866,6 +14470,8 @@ if (typeof module !== 'undefined' && module.exports) {
         buildPaperPdfCandidates,
         resolveAnnotationPdfTarget,
         formatAnnotationImportFailure,
+        buildAnnotationCreateLocalArgs,
+        buildAnnotationUpdateLocalArgs,
         // OVLY: Overlay helpers (Phase 8, Plan 03)
         DEFAULT_OVERLAY_HIGHLIGHT_COLOR,
         createDefaultAnnotationOverlayState,
@@ -12873,6 +14479,7 @@ if (typeof module !== 'undefined' && module.exports) {
         normalizeAnnotationColor,
         buildAnnotationOverlayMarks,
         resolveActivePdfPath,
+        mapPageDomRectToPdfRect,
     };
 }
 

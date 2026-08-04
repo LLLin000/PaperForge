@@ -1,9 +1,9 @@
----
+﻿---
 gsd_state_version: 1.0
 milestone: annotation v0.3
 milestone_name: milestone
-status: ANN15 complete — focused automated gate PASS, safety audit PASS, live harness PENDING (conditional)
-stopped_at: ANN15 execution complete
+status: All 4 plans executed 鈥?navigation reducers, fallback eligibility, DOM hooks, runtime integration
+stopped_at: Phase ANN15 context gathered
 last_updated: "2026-07-08T09:00:00.000Z"
 last_activity: "2026-07-08 -- ANN15 execution complete: all 4 plans executed, 7 PASS / 2 PENDING"
 progress:
@@ -21,11 +21,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-02)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Phase ANN15 — Canvas Verification Gate and Live Harness Record
+**Current focus:** Phase ANN15 鈥?Canvas Verification Gate and Live Harness Record
 
 ## Current Position
 
-Phase: ANN15 (Canvas Verification Gate and Live Harness Record) — CONDITIONALLY COMPLETE
+Phase: ANN15 (Canvas Verification Gate and Live Harness Record) 鈥?CONDITIONALLY COMPLETE
 Plan: 4 of 4 (all executed)
 Status: Focused automated gate PASS (24 cmd, 761/761 tests). Safety audit PASS (0 blockers, legacy allowlist). Live harness PENDING (no Obsidian GUI). Final report documents conditional completion with live-harness caveat.
 Last activity: 2026-07-08 -- ANN15 execution complete: all 4 plans executed
@@ -45,20 +45,20 @@ Last activity: 2026-07-08 -- ANN15 execution complete: all 4 plans executed
 |-----------|--------|--------|-------|
 | annotation v0.1 | Annotation Phases 1-4 | Complete | Backend/CLI annotation import, storage, and export foundation. |
 | annotation v0.2 | Annotation Phases 5-9 | Mostly complete | Automated display-layer gate passed; live Obsidian native PDF overlay harness remains pending. |
-| annotation v0.3 | Annotation Phases 10-15 | CONDITIONALLY COMPLETE | All 6 phases executed. Focused automated gate and safety audit PASS. Live Obsidian and native PDF overlay remain PENDING. |
+| annotation v0.3 | Annotation Phases 10-15 | Planning | Visual Reading Canvas requirements and roadmap defined. |
 
 ## Accumulated Context
 
 ### Decisions
 
-- [ANN12-01 executed]: Source surface model uses strict priority: fulltext_path → note_path → source-unavailable, with D-17 path/file diagnostics.
-- [ANN12-01 executed]: Anchor resolution is conservative: exact requires exactly 1 normalized whitespace-collapse match; ambiguous/missing/short → page-level or unresolved.
+- [ANN12-01 executed]: Source surface model uses strict priority: fulltext_path 鈫?note_path 鈫?source-unavailable, with D-17 path/file diagnostics.
+- [ANN12-01 executed]: Anchor resolution is conservative: exact requires exactly 1 normalized whitespace-collapse match; ambiguous/missing/short 鈫?page-level or unresolved.
 - [ANN12-01 executed]: Paper identity mismatch between card and source model triggers page-level downgrade with reason (T-ANN12-01-S mitigation).
 - [ANN12-01 executed]: sourceModel carries paperKey for downstream identity checks.
 - [ANN12-02 executed]: Runtime source loading (_loadCanvasSourceInputs, _readVaultText) with stale-load guard and path/file/error diagnostics.
 - [ANN12-02 executed]: Five rendering helpers (renderCanvasSourceSurface, renderSourceBlock, renderExactAnchorText, renderPageLevelAnchorMarker, renderUnresolvedAnchorStatus) exported via canvas/index.js.
-- [ANN12-02 executed]: All user-facing source/anchor/annotation text uses textContent/text nodes — verified with `innerHTML`-ban in plan gate and static scan.
-- [ANN12-02 executed]: CSS namespaced under .paperforge-reading-canvas-view with 7 classes for source surface, blocks, header, unavailable state, exact highlight, page-level marker, and unresolved status — no connector classes, SVG geometry, or native PDF selectors in ANN12 files.
+- [ANN12-02 executed]: All user-facing source/anchor/annotation text uses textContent/text nodes 鈥?verified with `innerHTML`-ban in plan gate and static scan.
+- [ANN12-02 executed]: CSS namespaced under .paperforge-reading-canvas-view with 7 classes for source surface, blocks, header, unavailable state, exact highlight, page-level marker, and unresolved status 鈥?no connector classes, SVG geometry, or native PDF selectors in ANN12 files.
 - [ANN12-02 executed]: 12 zh/en scoped i18n keys added to i18n.js for source labels, source-unavailable copy, anchor status copy, and downgrade reasons.
 - [ANN12-02 executed]: Canvas view type string centralized in a const (avoid duplicated literal string drift).
 
@@ -79,13 +79,13 @@ Recent decisions affecting current work:
 - [annotation v0.3]: Keep v0.3 MVP read-only: no local annotation editing, Zotero write-back, persistent freeform layout, or AI-generated cards.
 - [annotation v0.3]: Use existing Obsidian ItemView/CommonJS/plugin test stack plus plain DOM/SVG; do not add React/Svelte, D3/Cytoscape, PDF.js, Obsidian `.canvas` persistence, or new Python APIs for MVP.
 - [annotation v0.3]: Connector lines are evidence claims and must appear only for focused card-anchor pairs with confirmed PaperForge-owned geometry.
-- [ANN10-01 executed]: Canvas context resolution uses `entry.key` as authoritative paper identity — no live global `_currentPaperKey` drift.
-- [ANN10-01 executed]: Annotation wrapper delegates to v0.2 `loadAnnotationsForPaper` — no new CLI/subprocess/DB contract in `src/canvas/*`.
+- [ANN10-01 executed]: Canvas context resolution uses `entry.key` as authoritative paper identity 鈥?no live global `_currentPaperKey` drift.
+- [ANN10-01 executed]: Annotation wrapper delegates to v0.2 `loadAnnotationsForPaper` 鈥?no new CLI/subprocess/DB contract in `src/canvas/*`.
 - [ANN10-01 executed]: Session controller owns fixed paperKey at construction; stale-guard uses monotonic load sequence.
 - [ANN10-01 executed]: Shell render dispatch explicitly lists all 10 handled states; default renders idle placeholder for unrecognized states.
-- [ANN10-01 executed]: All user-facing canvas text uses `textContent` — verified with XSS payload test.
-- [ANN10-01 executed]: Controller test helpers use `makeV02Loader()` + `createCanvasAnnotationLoader` wrapper pattern — avoids raw `{ loadForPaper }` mock bypass.
-- [ANN11-02 executed]: Card DOM rendering uses textContent for all annotation-derived fields — verified with XSS payload strings
+- [ANN10-01 executed]: All user-facing canvas text uses `textContent` 鈥?verified with XSS payload test.
+- [ANN10-01 executed]: Controller test helpers use `makeV02Loader()` + `createCanvasAnnotationLoader` wrapper pattern 鈥?avoids raw `{ loadForPaper }` mock bypass.
+- [ANN11-02 executed]: Card DOM rendering uses textContent for all annotation-derived fields 鈥?verified with XSS payload strings
 - [ANN11-02 executed]: Missing selected text and comment values render explicit quiet placeholders with CSS `--empty` modifier classes
 - [ANN11-02 executed]: Refreshing state preserves existing visible cards; stale state shows a warning banner alongside stale cards
 - [ANN11-02 executed]: CSS uses max-height + overflow: hidden + gradient fade pseudo-element for long text truncation (not line-clamp which has inconsistent CJK support)
@@ -110,24 +110,24 @@ None yet.
 ### Blockers/Concerns
 
 - **v0.2 live Obsidian native PDF overlay harness pending**: v0.3 can proceed because it does not depend on native PDF internals as the canvas foundation, but final verification must not claim native overlay reliability without the harness.
-- **ANN15 live Obsidian behavior PENDING**: All live-harness checklist steps remain PENDING because the executing agent cannot launch the Obsidian GUI. A future operator must execute LIVE-HARNESS.md before live confidence can be claimed.
+- ~~**Shipped-source module boundary**: Phase 10 must confirm whether `main.js` can require `src/canvas/*` modules in the Obsidian runtime; if not, temporary inlining requires parity/runtime tests.~~ **RESOLVED**: `node --check main.js` passes and runtime tests using `require('./src/canvas')` prove the full module delegation works. No inlining debt.
+- **Fulltext/source anchoring uncertainty**: Phase 12 may need focused research if central fulltext/formal-note source shapes vary more than current docs imply.
+- **Connector precision risk**: Phase 14 must hide connectors for page-only, unresolved, stale, or unmeasured anchors.
 - **Known baseline failures**: full non-focused test suites may still include unrelated baseline issues; v0.3 verification should keep focused gates explicit.
 
 ## Session Continuity
 
-Last session: 2026-07-08T09:00:00.000Z
-Stopped at: ANN15 execution complete — v0.3 conditionally complete
-Resume file: .planning/phases/ANN15/ANN15-VERIFICATION.md
+Last session: 2026-07-07T08:44:00.000Z
+Stopped at: Phase ANN15 context gathered
+Resume file: .planning/phases/ANN15-canvas-verification-gate-and-live-harness-record/ANN15-CONTEXT.md
+Next phase: Phase ANN13 - Bidirectional Navigation and Fallback Paths
 
 ## Next Suggested Command
 
-v0.3 milestone is conditionally complete. To claim full completion, a future operator with Obsidian GUI access should:
+Begin planning for next phase:
 
-1. Read `.planning/phases/ANN15/LIVE-HARNESS.md`
-2. Execute the Canvas-first manual checklist in Obsidian
-3. Update `LIVE-HARNESS.md` with actual observations
-4. Re-run ANN15-04 to produce a final VERIFICATION.md with live-confirmed PASS statuses
+`/gsd-plan-phase ANN13`
 
 ---
 
-*Updated: 2026-07-08* — Phase ANN15 complete: focused automated gate PASS, safety audit PASS, live harness PENDING (conditional)
+*Updated: 2026-07-06* 鈥?Phase ANN12 complete (both plans executed: source surface + anchor resolver contracts; runtime loading + rendering + CSS)

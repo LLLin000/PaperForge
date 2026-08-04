@@ -129,6 +129,109 @@ class TestAnnotationCommandContract:
         # Import without --paper is an error (data=None), that's valid PFResult
 
 
+class TestAnnotationCreateLocalContract:
+    """``annotation create-local --json`` creates Obsidian-owned annotations only."""
+
+    def test_create_local_writes_obsidian_read_write_annotation(self, vault_builder):
+        vault = vault_builder.build("minimal")
+        position_json = '{"pageIndex":2,"rects":[[10,20,40,30]]}'
+
+        result = _invoke_cli(vault, [
+            "annotation", "create-local",
+            "--paper", "PAPER_LOCAL",
+            "--page-index", "2",
+            "--page-label", "3",
+            "--selected-text", "local PDF quote",
+            "--comment", "my Obsidian note",
+            "--color", "#5fb236",
+            "--position-json", position_json,
+            "--json",
+        ])
+
+        assert result.returncode == 0, result.stderr
+        envelope = json.loads(result.stdout)
+        assert envelope["ok"] is True
+        assert envelope["command"] == "annotation.create-local"
+        ann = envelope["data"]["annotation"]
+        assert ann["id"].startswith("obsidian:PAPER_LOCAL:")
+        assert ann["paper_id"] == "PAPER_LOCAL"
+        assert ann["source"] == "obsidian"
+        assert ann["is_readonly"] is False
+        assert ann["sync_state"] == "local"
+        assert ann["page_index"] == 2
+        assert ann["page_label"] == "3"
+        assert ann["selected_text"] == "local PDF quote"
+        assert ann["comment"] == "my Obsidian note"
+        assert ann["color"] == "#5fb236"
+        assert ann["position_json"] == position_json
+
+        exported = _invoke_cli(vault, [
+            "annotation", "export", "--paper", "PAPER_LOCAL", "--json"
+        ])
+        export_data = json.loads(exported.stdout)["data"]
+        assert export_data["total"] == 1
+        assert export_data["annotations"][0]["id"] == ann["id"]
+        assert export_data["annotations"][0]["source"] == "obsidian"
+        assert export_data["annotations"][0]["is_readonly"] is False
+
+    def test_update_local_edits_obsidian_comment(self, vault_builder):
+        vault = vault_builder.build("minimal")
+        create = _invoke_cli(vault, [
+            "annotation", "create-local",
+            "--paper", "PAPER_LOCAL",
+            "--page-index", "0",
+            "--selected-text", "local editable quote",
+            "--comment", "old note",
+            "--position-json", '{"pageIndex":0,"rects":[[10,20,40,30]]}',
+            "--json",
+        ])
+        assert create.returncode == 0, create.stderr
+        annotation_id = json.loads(create.stdout)["data"]["annotation"]["id"]
+
+        result = _invoke_cli(vault, [
+            "annotation", "update-local",
+            "--id", annotation_id,
+            "--comment", "updated note from Obsidian",
+            "--json",
+        ])
+
+        assert result.returncode == 0, result.stderr
+        envelope = json.loads(result.stdout)
+        assert envelope["ok"] is True
+        assert envelope["command"] == "annotation.update-local"
+        assert envelope["data"]["annotation"]["id"] == annotation_id
+        assert envelope["data"]["annotation"]["comment"] == "updated note from Obsidian"
+
+        exported = _invoke_cli(vault, [
+            "annotation", "export", "--paper", "PAPER_LOCAL", "--json"
+        ])
+        assert json.loads(exported.stdout)["data"]["annotations"][0]["comment"] == "updated note from Obsidian"
+
+    def test_update_local_rejects_locked_zotero_annotation(self, vault_builder):
+        vault = vault_builder.build("minimal")
+        db_path = vault / "System" / "PaperForge" / "indexes" / "annotations.db"
+        _seed_annotations_db(db_path)
+
+        result = _invoke_cli(vault, [
+            "annotation", "update-local",
+            "--id", "zotero:1:ATTACH_A:ANNOT_1",
+            "--comment", "should not overwrite Zotero",
+            "--json",
+        ])
+
+        assert result.returncode == 1
+        envelope = json.loads(result.stdout)
+        assert envelope["ok"] is False
+        assert envelope["command"] == "annotation.update-local"
+        assert envelope["error"]["code"] == "VALIDATION_ERROR"
+
+        exported = _invoke_cli(vault, [
+            "annotation", "export", "--paper", "PAPER_A", "--json"
+        ])
+        ann = json.loads(exported.stdout)["data"]["annotations"][0]
+        assert ann["comment"] == "comment A1"
+
+
 # ---------------------------------------------------------------------------
 # Import success contracts
 # ---------------------------------------------------------------------------

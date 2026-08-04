@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRequire } from 'node:module';
 import Module from 'node:module';
+import fs from 'node:fs';
 
 const require = createRequire(import.meta.url);
 
@@ -249,6 +250,67 @@ afterEach(() => {
     uninstallObsidianStub();
     vi.restoreAllMocks();
     document.body.innerHTML = '';
+});
+
+// ── Paper identity fallback ──
+
+describe('Paper identity fallback', () => {
+    it('falls back to paper-meta entry when active fulltext key is missing from canonical index', () => {
+        const view = makeRuntimeView({
+            paperKey: null,
+            paperEntry: null,
+            app: makeStubApp(),
+        });
+        const activeFile = {
+            extension: 'md',
+            path: '4.Paper/Literature/肿瘤可塑性/BPQ8CXXR - ROR2 Regulates Cellular Plasticity/fulltext.md',
+        };
+        view.app.workspace.getActiveFile = vi.fn(() => activeFile);
+        view.app.metadataCache = view.app.metadataCache || {};
+        view.app.metadataCache.getFileCache = vi.fn(() => null);
+        view._getCachedIndex = vi.fn(() => []);
+        view._readPaperMetaEntryForFilePath = vi.fn(() => ({
+            zotero_key: 'BPQ8CXXR',
+            title: 'ROR2 Regulates Cellular Plasticity',
+            fulltext_path: activeFile.path,
+            ocr_status: 'done',
+        }));
+        view._switchMode = vi.fn();
+        view.loadAnnotationsForCurrentPaper.mockResolvedValue(null);
+
+        view._detectAndSwitch();
+
+        expect(view._currentPaperKey).toBe('BPQ8CXXR');
+        expect(view._currentPaperEntry).toMatchObject({
+            zotero_key: 'BPQ8CXXR',
+            fulltext_path: activeFile.path,
+        });
+        expect(view._switchMode).toHaveBeenCalledWith('paper', activeFile.path);
+        expect(view._readPaperMetaEntryForFilePath).toHaveBeenCalledWith(activeFile.path, 'BPQ8CXXR');
+    });
+
+    it('uses active fulltext path over stale or mojibake fulltext_path from paper-meta fallback', () => {
+        const view = makeRuntimeView({ paperKey: null, paperEntry: null, app: makeStubApp() });
+        view.app.vault.adapter.basePath = 'C:/vault';
+        const activePath = '4.Paper/Literature/肿瘤可塑性/BPQ8CXXR - ROR2/fulltext.md';
+        const originalExists = fs.existsSync;
+        const originalRead = fs.readFileSync;
+        fs.existsSync = vi.fn(() => true);
+        fs.readFileSync = vi.fn(() => JSON.stringify({
+            zotero_key: 'BPQ8CXXR',
+            title: 'ROR2',
+            fulltext_path: '4.Paper/Literature/鑲跨槫鍙/fulltext.md',
+        }));
+        try {
+            const entry = view._readPaperMetaEntryForFilePath(activePath, 'BPQ8CXXR');
+
+            expect(entry.fulltext_path).toBe(activePath);
+            expect(entry.paper_root).toBe('4.Paper/Literature/肿瘤可塑性/BPQ8CXXR - ROR2/');
+        } finally {
+            fs.existsSync = originalExists;
+            fs.readFileSync = originalRead;
+        }
+    });
 });
 
 // ── Test 1: Bounded list container and compact rows (D-04, D-05) ──

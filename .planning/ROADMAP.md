@@ -13,7 +13,7 @@ The milestone deliberately stays read-only. It reuses v0.2 annotation bridge/lis
 - [ ] **Phase ANN12: Controlled Reading Surface and Source Anchors** - Render a PaperForge-owned central source surface with exact, page-level, and unresolved anchors.
 - [x] **Phase ANN13: Bidirectional Navigation and Fallback Paths** - Connect cards and source anchors through focus/scroll behavior while preserving v0.2 PDF navigation fallback.
 - [ ] **Phase ANN14: Focused Connector Layer and Visual Polish** - Draw guarded focused connectors and harden responsive/readable canvas presentation.
-- [ ] **Phase ANN15: Canvas Verification Gate and Live Harness Record** - Prove automated canvas behavior, preserve v0.2 gates, and record live Obsidian confidence.
+- [x] **Phase ANN15: Canvas Verification Gate and Live Harness Record** - Prove automated canvas behavior, preserve v0.2 gates, and record live Obsidian confidence.
 
 ## Phase Details
 

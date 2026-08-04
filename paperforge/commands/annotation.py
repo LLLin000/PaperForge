@@ -7,10 +7,13 @@ namespace with PFResult JSON output.
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sqlite3
 import traceback
+import uuid
 from pathlib import Path
+from datetime import datetime, timezone
 
 from paperforge import __version__
 from paperforge.annotation.db import get_annotations_db_path
@@ -21,6 +24,7 @@ from paperforge.annotation.importer import (
     import_zotero_annotations_for_paper,
     ImportResult,
 )
+from paperforge.annotation.fulltext_mark import apply_imported_annotations_to_fulltext
 from paperforge.annotation.zotero_normalize import normalize_zotero_annotation
 from paperforge.annotation.zotero_probe import (
     fetch_zotero_item_annotations,
@@ -32,6 +36,11 @@ from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 
 logger = logging.getLogger(__name__)
+
+
+def _utc_now_iso() -> str:
+    """Return a compact UTC timestamp for local annotation rows."""
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 # ---------------------------------------------------------------------------
@@ -372,6 +381,11 @@ def _cmd_import(args: argparse.Namespace) -> int:
                     attachment_item_id=attachment_item_id,
                     attachment_item_key=attachment_item_key,
                 )
+                fulltext_marks = apply_imported_annotations_to_fulltext(
+                    vault=Path(vault),
+                    paper_key=paper_key,
+                    annotations_db_path=annotations_db_path,
+                )
 
                 if json_output:
                     result = _success(
@@ -383,6 +397,7 @@ def _cmd_import(args: argparse.Namespace) -> int:
                             "attachment_key": attachment_item_key,
                             "source": "zotero",
                             "counts": _counts_to_json(import_result),
+                            "fulltext_marks": fulltext_marks,
                         },
                     )
                     print(result.to_json())
@@ -395,6 +410,15 @@ def _cmd_import(args: argparse.Namespace) -> int:
                     f"{counts.unchanged} unchanged, {counts.stale} stale, "
                     f"{counts.skipped} skipped"
                 )
+                print(
+                    "Fulltext marks: "
+                    f"{fulltext_marks.get('applied', 0)} applied, "
+                    f"{fulltext_marks.get('unresolved', 0)} unresolved"
+                )
+                if fulltext_marks.get("fulltext_path"):
+                    print(f"  {fulltext_marks['fulltext_path']}")
+                elif fulltext_marks.get("error"):
+                    print(f"  {fulltext_marks['error']}")
                 return 0
 
             finally:
@@ -449,6 +473,20 @@ def _open_annotations_db(args: argparse.Namespace) -> sqlite3.Connection | None:
         return conn
     except (FileNotFoundError, sqlite3.OperationalError, sqlite3.DatabaseError):
         return None
+
+
+def _open_writable_annotations_db(args: argparse.Namespace) -> sqlite3.Connection:
+    """Open annotations.db for local writes and ensure the schema exists."""
+    vault = getattr(args, "vault_path", None)
+    if not vault:
+        raise AnnotationImportError("Missing vault path for local annotation write")
+    db_path = get_annotations_db_path(vault)
+    from paperforge.annotation.db import get_annotations_connection
+    from paperforge.annotation.schema import ensure_schema
+
+    conn = get_annotations_connection(db_path, read_only=False)
+    ensure_schema(conn)
+    return conn
 
 
 def _require_paper(args: argparse.Namespace, command: str) -> int | None:
@@ -773,6 +811,209 @@ def _cmd_export(args: argparse.Namespace) -> int:
         return 1
 
 
+def _cmd_create_local(args: argparse.Namespace) -> int:
+    """Handle ``paperforge annotation create-local``."""
+    json_output = getattr(args, "json", False)
+    command = "annotation.create-local"
+
+    try:
+        error = _require_paper(args, command)
+        if error is not None:
+            return error
+
+        paper_key = getattr(args, "paper", None)
+        page_index = getattr(args, "page_index", None)
+        position_json = getattr(args, "position_json", None) or ""
+        try:
+            parsed_position = json.loads(position_json)
+        except json.JSONDecodeError as exc:
+            result = _error(
+                command=command,
+                code=ErrorCode.VALIDATION_ERROR,
+                message=f"Invalid --position-json: {exc}",
+                details={"field": "position_json"},
+                suggestions=["Pass Zotero-style PDF position JSON with pageIndex and rects."],
+            )
+            print(result.to_json() if json_output else result.error.message)
+            return 1
+        if not isinstance(parsed_position, dict) or not isinstance(parsed_position.get("rects"), list) or not parsed_position["rects"]:
+            result = _error(
+                command=command,
+                code=ErrorCode.VALIDATION_ERROR,
+                message="Invalid --position-json: expected a JSON object with non-empty rects.",
+                details={"field": "position_json"},
+                suggestions=["Create local annotations from a concrete PDF selection bbox."],
+            )
+            print(result.to_json() if json_output else result.error.message)
+            return 1
+        if page_index is None or page_index < 0:
+            result = _error(
+                command=command,
+                code=ErrorCode.VALIDATION_ERROR,
+                message="--page-index must be a non-negative integer.",
+                details={"field": "page_index"},
+            )
+            print(result.to_json() if json_output else result.error.message)
+            return 1
+
+        now = _utc_now_iso()
+        annotation_id = f"obsidian:{paper_key}:{uuid.uuid4().hex}"
+        row = {
+            "id": annotation_id,
+            "paper_id": paper_key,
+            "source": "obsidian",
+            "source_library_id": "",
+            "source_annotation_key": annotation_id,
+            "source_attachment_key": "",
+            "source_parent_key": paper_key,
+            "source_modified_at": "",
+            "type": getattr(args, "type", None) or "highlight",
+            "page_index": page_index,
+            "page_label": getattr(args, "page_label", None) or str(page_index + 1),
+            "selected_text": getattr(args, "selected_text", None) or "",
+            "comment": getattr(args, "comment", None) or "",
+            "color": getattr(args, "color", None) or "#ffd400",
+            "sort_index": f"local:{now}:{annotation_id}",
+            "tags_json": "[]",
+            "position_json": position_json,
+            "selector_json": "{}",
+            "sync_state": "local",
+            "is_readonly": 0,
+            "created_at": now,
+            "updated_at": now,
+            "deleted_at": None,
+        }
+
+        conn = _open_writable_annotations_db(args)
+        try:
+            conn.execute(
+                """INSERT INTO annotations (
+                    id, paper_id, source, source_library_id,
+                    source_annotation_key, source_attachment_key, source_parent_key,
+                    source_modified_at, type, page_index, page_label,
+                    selected_text, comment, color, sort_index, tags_json,
+                    position_json, selector_json, sync_state, is_readonly,
+                    created_at, updated_at, deleted_at
+                ) VALUES (
+                    :id, :paper_id, :source, :source_library_id,
+                    :source_annotation_key, :source_attachment_key, :source_parent_key,
+                    :source_modified_at, :type, :page_index, :page_label,
+                    :selected_text, :comment, :color, :sort_index, :tags_json,
+                    :position_json, :selector_json, :sync_state, :is_readonly,
+                    :created_at, :updated_at, :deleted_at
+                )""",
+                row,
+            )
+            conn.commit()
+            saved = conn.execute(
+                "SELECT * FROM annotations WHERE id = ?",
+                (annotation_id,),
+            ).fetchone()
+        finally:
+            conn.close()
+
+        exported = _rows_to_export([saved])[0] if saved is not None else row
+        if json_output:
+            print(_success(command=command, data={"annotation": exported}).to_json())
+            return 0
+        print(f"Created local annotation {annotation_id}")
+        return 0
+    except Exception as exc:
+        logger.exception("Error creating local annotation")
+        if json_output:
+            print(_error(
+                command=command,
+                code=ErrorCode.INTERNAL_ERROR,
+                message=f"创建本地批注时出错: {exc}",
+                details={"exception": repr(exc)},
+            ).to_json())
+            return 1
+        print(f"Error: {exc}", file=__import__("sys").stderr)
+        return 1
+
+
+def _cmd_update_local(args: argparse.Namespace) -> int:
+    """Handle ``paperforge annotation update-local``."""
+    json_output = getattr(args, "json", False)
+    command = "annotation.update-local"
+
+    try:
+        annotation_id = getattr(args, "id", None) or ""
+        if not annotation_id:
+            result = _error(
+                command=command,
+                code=ErrorCode.VALIDATION_ERROR,
+                message="Missing --id parameter.",
+                details={"missing": "--id"},
+                suggestions=["Pass the Obsidian-local annotation id to update."],
+            )
+            print(result.to_json() if json_output else result.error.message)
+            return 1
+
+        conn = _open_writable_annotations_db(args)
+        try:
+            row = conn.execute(
+                "SELECT * FROM annotations WHERE id = ? AND deleted_at IS NULL",
+                (annotation_id,),
+            ).fetchone()
+            if row is None:
+                result = _error(
+                    command=command,
+                    code=ErrorCode.VALIDATION_ERROR,
+                    message="Local annotation not found.",
+                    details={"id": annotation_id},
+                    suggestions=["Refresh annotations and retry from a visible Local card."],
+                )
+                print(result.to_json() if json_output else result.error.message)
+                return 1
+            if row["source"] != "obsidian" or bool(row["is_readonly"]):
+                result = _error(
+                    command=command,
+                    code=ErrorCode.VALIDATION_ERROR,
+                    message="Only Obsidian-local annotations can be edited here.",
+                    details={
+                        "id": annotation_id,
+                        "source": row["source"],
+                        "is_readonly": bool(row["is_readonly"]),
+                    },
+                    suggestions=["Edit Zotero-owned annotations in Zotero, then import again."],
+                )
+                print(result.to_json() if json_output else result.error.message)
+                return 1
+
+            now = _utc_now_iso()
+            conn.execute(
+                "UPDATE annotations SET comment = ?, updated_at = ?, sync_state = ? WHERE id = ?",
+                (getattr(args, "comment", None) or "", now, "local", annotation_id),
+            )
+            conn.commit()
+            saved = conn.execute(
+                "SELECT * FROM annotations WHERE id = ?",
+                (annotation_id,),
+            ).fetchone()
+        finally:
+            conn.close()
+
+        exported = _rows_to_export([saved])[0]
+        if json_output:
+            print(_success(command=command, data={"annotation": exported}).to_json())
+            return 0
+        print(f"Updated local annotation {annotation_id}")
+        return 0
+    except Exception as exc:
+        logger.exception("Error updating local annotation")
+        if json_output:
+            print(_error(
+                command=command,
+                code=ErrorCode.INTERNAL_ERROR,
+                message=f"更新本地批注时出错: {exc}",
+                details={"exception": repr(exc)},
+            ).to_json())
+            return 1
+        print(f"Error: {exc}", file=__import__("sys").stderr)
+        return 1
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -789,6 +1030,8 @@ def run(args: argparse.Namespace) -> int:
         "list": _cmd_list,
         "status": _cmd_status,
         "export": _cmd_export,
+        "create-local": _cmd_create_local,
+        "update-local": _cmd_update_local,
     }
 
     handler = dispatch.get(sub)

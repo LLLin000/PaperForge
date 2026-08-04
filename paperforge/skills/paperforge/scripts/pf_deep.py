@@ -1297,6 +1297,81 @@ def _read_json(path: Path) -> dict:
         return {}
 
 
+def _find_formal_note_for_key(vault: Path, zotero_key: str) -> Path | None:
+    """Find the formal literature note that owns a Zotero key."""
+    literature_root = _paperforge_paths(vault)["literature"]
+    if not literature_root.exists():
+        return None
+
+    key_pattern = re.compile(rf'^\s*zotero_key:\s*["\']?{re.escape(zotero_key)}["\']?\s*$', re.MULTILINE)
+    fallback: Path | None = None
+    for candidate in literature_root.rglob("*.md"):
+        if candidate.name in {"fulltext.md", "deep-reading.md", "discussion.md"}:
+            continue
+        if candidate.name == f"{zotero_key}.md" or candidate.name.startswith(f"{zotero_key} -"):
+            fallback = candidate
+        try:
+            text = candidate.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if key_pattern.search(text):
+            return candidate
+    return fallback
+
+
+def _upsert_frontmatter_field(content: str, key: str, value: str) -> str:
+    """Update or add a single frontmatter field, creating frontmatter if needed."""
+    try:
+        from paperforge.adapters.obsidian_frontmatter import update_frontmatter_field
+
+        updated = update_frontmatter_field(content, key, value)
+        if updated != content or content.startswith("---"):
+            return updated
+    except Exception:
+        pass
+
+    if not content.startswith("---"):
+        return f"---\n{key}: {value}\n---\n\n{content}"
+
+    closing = content.find("\n---", 4)
+    if closing == -1:
+        return f"---\n{key}: {value}\n---\n\n{content}"
+    return content[:closing].rstrip() + f"\n{key}: {value}" + content[closing:]
+
+
+def mark_deep_reading(vault: Path, zotero_key: str, status: str = "done") -> dict:
+    """Synchronize deep-reading completion status to the formal note and index."""
+    result: dict = {
+        "status": "error",
+        "message": "",
+        "zotero_key": zotero_key,
+        "deep_reading_status": status,
+        "formal_note": None,
+        "index_refreshed": False,
+    }
+
+    formal_note = _find_formal_note_for_key(vault, zotero_key)
+    if formal_note is None:
+        result["message"] = f"[ERROR] Formal note not found for {zotero_key}. Run paperforge sync first."
+        return result
+
+    before = formal_note.read_text(encoding="utf-8")
+    after = _upsert_frontmatter_field(before, "deep_reading_status", status)
+    formal_note.write_text(after, encoding="utf-8")
+    result["formal_note"] = str(formal_note)
+
+    try:
+        from paperforge.worker.asset_index import refresh_index_entry
+
+        result["index_refreshed"] = bool(refresh_index_entry(vault, zotero_key))
+    except Exception as exc:
+        result["index_refresh_error"] = str(exc)
+
+    result["status"] = "ok"
+    result["message"] = f"[OK] deep_reading_status={status} for {zotero_key}"
+    return result
+
+
 def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> dict:
     """Automate all mechanical pre-reading steps for /pf-deep.
 
@@ -1598,6 +1673,12 @@ def main() -> int:
     prepare_parser.add_argument("--force", action="store_true", help="Re-run even if deep_reading_status=done")
     prepare_parser.add_argument("--format", choices=["json", "table"], default="json", help="Output format")
 
+    mark_parser = subparsers.add_parser("mark", help="Mark a paper's deep-reading status in formal note frontmatter")
+    mark_parser.add_argument("--vault", type=Path, default=None, help="Path to the vault root (auto-detected if omitted)")
+    mark_parser.add_argument("--key", required=True, help="Zotero key")
+    mark_parser.add_argument("--status", choices=["pending", "done"], default="done", help="Deep-reading status to write")
+    mark_parser.add_argument("--format", choices=["json", "table"], default="json", help="Output format")
+
     map_parser = subparsers.add_parser("figure-map", help="Build caption-driven figure/table map from OCR fulltext")
     map_parser.add_argument("fulltext", type=Path, help="OCR fulltext markdown path")
     map_parser.add_argument("--key", default="", help="Zotero key for output metadata")
@@ -1618,13 +1699,21 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    if args.command in ("prepare", "queue"):
+    if args.command in ("prepare", "queue", "mark"):
         if args.vault is None:
             from paperforge.config import resolve_vault as _resolve_vault
             args.vault = _resolve_vault(Path.cwd())
 
     if args.command == "prepare":
         result = prepare_deep_reading(args.vault, args.key, force=args.force)
+        if args.format == "json":
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            print(result.get("message", "Unknown result"))
+        return 0 if result["status"] == "ok" else 1
+
+    if args.command == "mark":
+        result = mark_deep_reading(args.vault, args.key, status=args.status)
         if args.format == "json":
             print(json.dumps(result, ensure_ascii=False, indent=2))
         else:

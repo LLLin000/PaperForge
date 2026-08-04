@@ -3334,3 +3334,125 @@
         display: none;
     }
 }
+.paperforge-annotation-local-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 0;
+}
+
+.paperforge-annotation-local-colors {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.paperforge-annotation-local-color {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 50%;
+    padding: 0;
+}
+
+.paperforge-annotation-local-color[aria-pressed="true"] {
+    box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--color-accent);
+}
+
+.paperforge-annotation-local-comment {
+    flex: 1 1 140px;
+    min-width: 0;
+    min-height: 28px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+    line-height: 1.2;
+    padding: 4px 8px;
+}
+
+.paperforge-annotation-local-add {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background: var(--interactive-normal);
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+    line-height: 1.2;
+    min-height: 28px;
+    padding: 4px 10px;
+}
+
+.paperforge-annotation-local-add:hover {
+    background: var(--interactive-hover);
+}
+
+.paperforge-annotation-local-add:disabled {
+    opacity: 0.65;
+    cursor: progress;
+}
+
+.paperforge-annotation-panel-owner {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.2;
+    margin-left: 8px;
+    padding: 1px 6px;
+}
+
+.paperforge-annotation-panel-owner[data-owner-kind="local"] {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.paperforge-annotation-local-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.paperforge-annotation-local-editor-input {
+    width: 100%;
+    min-height: 52px;
+    resize: vertical;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+    line-height: 1.35;
+    padding: 6px 8px;
+}
+
+.paperforge-annotation-local-editor-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.paperforge-annotation-local-editor-status {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.2;
+}
+
+.paperforge-annotation-local-editor-save {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background: var(--interactive-normal);
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+    line-height: 1.2;
+    min-height: 26px;
+    padding: 3px 10px;
+}
+
+.paperforge-annotation-local-editor-save:hover {
+    background: var(--interactive-hover);
+}

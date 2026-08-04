@@ -1329,7 +1329,13 @@ function resolveAnnotationPdfTarget(row, entry) {
     }
 
     // ── Page conversion (D-08) ──
-    const pageIndex = pdfLoc.pageIndex;
+    let pageIndex = pdfLoc.pageIndex;
+    if (pageIndex == null && typeof pdfLoc.positionJson === 'string') {
+        const parsedPosition = parseAnnotationPositionJson(pdfLoc.positionJson);
+        if (parsedPosition && parsedPosition.ok && parsedPosition.pageIndex != null) {
+            pageIndex = parsedPosition.pageIndex;
+        }
+    }
     let page = null;
     let pageDegraded = false;
 
@@ -1428,6 +1434,41 @@ function parseAnnotationPositionJson(positionJson) {
     var rects = [];
     for (var i = 0; i < parsed.rects.length; i++) {
         var r = parsed.rects[i];
+        if (Array.isArray(r)) {
+            if (r.length < 4) {
+                return { ok: false, rects: [], reason: 'Position data contains an invalid rectangle entry.' };
+            }
+
+            var x1 = r[0];
+            var y1 = r[1];
+            var x2 = r[2];
+            var y2 = r[3];
+
+            if (typeof x1 !== 'number' || typeof y1 !== 'number' || typeof x2 !== 'number' || typeof y2 !== 'number') {
+                return { ok: false, rects: [], reason: 'Position data contains a rectangle with non-numeric values.' };
+            }
+
+            if (!Number.isFinite(x1) || !Number.isFinite(y1) || !Number.isFinite(x2) || !Number.isFinite(y2)) {
+                return { ok: false, rects: [], reason: 'Position data contains a rectangle with non-finite values.' };
+            }
+
+            var left = Math.min(x1, x2);
+            var top = Math.min(y1, y2);
+            var width = Math.abs(x2 - x1);
+            var height = Math.abs(y2 - y1);
+
+            if (left < 0 || top < 0 || width < 0 || height < 0) {
+                return { ok: false, rects: [], reason: 'Position data contains a rectangle with negative values.' };
+            }
+
+            rects.push({
+                x: Math.round(left * 1000) / 1000,
+                y: Math.round(top * 1000) / 1000,
+                w: Math.round(width * 1000) / 1000,
+                h: Math.round(height * 1000) / 1000,
+            });
+            continue;
+        }
         if (typeof r !== 'object' || r === null) {
             return { ok: false, rects: [], reason: 'Position data contains an invalid rectangle entry.' };
         }
@@ -1452,7 +1493,11 @@ function parseAnnotationPositionJson(positionJson) {
         rects.push({ x: x, y: y, w: w, h: h });
     }
 
-    return { ok: true, rects: rects, reason: null };
+    var parsedPageIndex = parsed.pageIndex;
+    var pageIndex = (typeof parsedPageIndex === 'number' && Number.isFinite(parsedPageIndex) && parsedPageIndex >= 0 && Number.isInteger(parsedPageIndex))
+        ? parsedPageIndex
+        : null;
+    return { ok: true, rects: rects, pageIndex: pageIndex, reason: null };
 }
 
 /**
@@ -1556,17 +1601,20 @@ function buildAnnotationOverlayMarks(annotationState, entry, activePdfPath, opti
             continue;
         }
 
-        // Step 3: Require valid pageIndex
+        // Step 3: Parse positionJson (D-12)
         var pdfLoc = row.pdfLocation || {};
-        var pageIndex = pdfLoc.pageIndex;
-        if (typeof pageIndex !== 'number' || !Number.isFinite(pageIndex) || pageIndex < 0 || !Number.isInteger(pageIndex)) {
+        var position = parseAnnotationPositionJson(pdfLoc.positionJson);
+        if (!position.ok || position.rects.length === 0) {
             skipped++;
             continue;
         }
 
-        // Step 4: Parse positionJson (D-12)
-        var position = parseAnnotationPositionJson(pdfLoc.positionJson);
-        if (!position.ok || position.rects.length === 0) {
+        // Step 4: Use database pageIndex, falling back to Zotero positionJson.
+        var pageIndex = pdfLoc.pageIndex;
+        if (pageIndex == null) {
+            pageIndex = position.pageIndex;
+        }
+        if (typeof pageIndex !== 'number' || !Number.isFinite(pageIndex) || pageIndex < 0 || !Number.isInteger(pageIndex)) {
             skipped++;
             continue;
         }

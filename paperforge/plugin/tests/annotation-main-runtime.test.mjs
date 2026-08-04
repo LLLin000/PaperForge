@@ -385,7 +385,13 @@ describe('Task 1 — DOM insertion point', () => {
         const view = makeRuntimeView({ app, paperKey: 'PAPER_A' });
         const button = document.createElement('button');
         view._callPython = vi.fn((command, opts) => {
-            opts.onClose(0, JSON.stringify({ ok: true, data: { inserted: 2, updated: 1 } }), '');
+            opts.onClose(0, JSON.stringify({
+                ok: true,
+                data: {
+                    counts: { total: 2 },
+                    fulltext_marks: { applied: 2, unresolved: 0 },
+                },
+            }), '');
         });
 
         view._importAnnotationsForPaper('PAPER_A', button);
@@ -395,6 +401,10 @@ describe('Task 1 — DOM insertion point', () => {
             expect.objectContaining({ timeout: 60000 })
         );
         expect(button.disabled).toBe(false);
+        expect(view._showMessage).toHaveBeenCalledWith(
+            expect.stringContaining('Fulltext: 2 marked, 0 unresolved'),
+            'ok'
+        );
         expect(view.loadAnnotationsForCurrentPaper).toHaveBeenCalledWith('import');
     });
 
@@ -1033,11 +1043,252 @@ describe('Overlay lifecycle — state, attach, teardown', () => {
         expect(view._annotationOverlayState.status).toBe('idle');
     });
 
+    it('_refreshAnnotationOverlay renders real Zotero rects on their PDF page', () => {
+        const app = makeStubApp();
+        const pdfRoot = document.createElement('div');
+        pdfRoot.className = 'pdf-embed';
+        const page1 = document.createElement('div');
+        page1.setAttribute('data-page-number', '1');
+        const page3 = document.createElement('div');
+        page3.setAttribute('data-page-number', '3');
+        page3.style.setProperty('--scale-factor', '1.25');
+        page3.getBoundingClientRect = vi.fn(() => ({
+            width: 744.095,
+            height: 1052.363,
+            top: 0,
+            left: 0,
+            right: 744.095,
+            bottom: 1052.363,
+        }));
+        pdfRoot.appendChild(page1);
+        pdfRoot.appendChild(page3);
+        const contentEl = document.createElement('div');
+        contentEl.appendChild(pdfRoot);
+        app.workspace.activeLeaf = { view: { contentEl, containerEl: contentEl } };
+
+        const row = {
+            display: {
+                selectedText: 'from benign models',
+                comment: '',
+                pageLabel: '3',
+                type: 'highlight',
+                color: '#ffd400',
+            },
+            provenance: {
+                source: 'zotero',
+                isReadonly: true,
+                sourceAttachmentKey: 'DHBF6HXW',
+                sourceAnnotationKey: 'BBK66MB9',
+            },
+            pdfLocation: {
+                sourceAttachmentKey: 'DHBF6HXW',
+                pageIndex: null,
+                pageLabel: '3',
+                positionJson: '{"pageIndex":2,"rects":[[336.815,131.09,561.26,140.431]]}',
+            },
+        };
+        const view = makeRuntimeView({
+            app,
+            paperKey: 'A7N8GAHS',
+            paperEntry: {
+                zotero_key: 'A7N8GAHS',
+                pdf_path: '[[99_System/Zotero/storage/DHBF6HXW/trop2.pdf]]',
+                zotero_storage_key: 'DHBF6HXW',
+            },
+            annotationState: {
+                state: 'ready',
+                paperKey: 'A7N8GAHS',
+                annotations: [row],
+            },
+        });
+
+        view._refreshAnnotationOverlay('test');
+
+        const mark = page3.querySelector('.paperforge-annotation-overlay-mark');
+        expect(mark).toBeTruthy();
+        expect(mark.getAttribute('data-mark-id')).toContain('BBK66MB9');
+        expect(mark.style.background).toBe('transparent');
+        expect(mark.style.borderBottom).toBe('2px solid rgb(255, 212, 0)');
+        expect(mark.style.left).toBe('421.019px');
+        expect(mark.style.top).toBe('883.246px');
+        expect(mark.style.width).toBe('280.556px');
+        expect(mark.style.height).toBe('0px');
+        expect(page1.querySelector('.paperforge-annotation-overlay-mark')).toBeFalsy();
+    });
+
+    it('_refreshAnnotationOverlay maps Zotero rects against the rendered PDF canvas box', () => {
+        const app = makeStubApp();
+        const pdfRoot = document.createElement('div');
+        pdfRoot.className = 'pdf-embed';
+        const page7 = document.createElement('div');
+        page7.setAttribute('data-page-number', '7');
+        page7.getBoundingClientRect = vi.fn(() => ({
+            width: 640,
+            height: 850,
+            top: 100,
+            left: 50,
+            right: 690,
+            bottom: 950,
+        }));
+        const canvasWrapper = document.createElement('div');
+        canvasWrapper.className = 'canvasWrapper';
+        canvasWrapper.getBoundingClientRect = vi.fn(() => ({
+            width: 595.276,
+            height: 790.866,
+            top: 124,
+            left: 72,
+            right: 667.276,
+            bottom: 914.866,
+        }));
+        page7.appendChild(canvasWrapper);
+        pdfRoot.appendChild(page7);
+        const contentEl = document.createElement('div');
+        contentEl.appendChild(pdfRoot);
+        app.workspace.activeLeaf = { view: { contentEl, containerEl: contentEl } };
+
+        const row = {
+            display: {
+                selectedText: 'Furthermore, an arrangement of tumour cell types',
+                comment: '',
+                pageLabel: '7',
+                type: 'highlight',
+                color: '#ff6666',
+            },
+            provenance: {
+                source: 'zotero',
+                isReadonly: true,
+                sourceAttachmentKey: '7DS8G3LI',
+                sourceAnnotationKey: 'UV5C9XQ3',
+            },
+            pdfLocation: {
+                sourceAttachmentKey: '7DS8G3LI',
+                pageIndex: null,
+                pageLabel: '7',
+                positionJson: '{"pageIndex":6,"rects":[[75.038,292.34,294.645,300.557]]}',
+            },
+        };
+        const view = makeRuntimeView({
+            app,
+            paperKey: 'ZUVJ3HEN',
+            paperEntry: {
+                zotero_key: 'ZUVJ3HEN',
+                pdf_path: '[[System/Zotero/storage/7DS8G3LI/paper.pdf]]',
+                zotero_storage_key: '7DS8G3LI',
+            },
+            annotationState: {
+                state: 'ready',
+                paperKey: 'ZUVJ3HEN',
+                annotations: [row],
+            },
+        });
+
+        view._refreshAnnotationOverlay('test');
+
+        const mark = page7.querySelector('.paperforge-annotation-overlay-mark');
+        expect(mark).toBeTruthy();
+        expect(mark.style.left).toBe('97.038px');
+        expect(mark.style.top).toBe('518.828px');
+        expect(mark.style.width).toBe('219.607px');
+    });
+
+    it('_refreshAnnotationOverlay renders every bbox rect for a multi-line annotation', () => {
+        const app = makeStubApp();
+        const pdfRoot = document.createElement('div');
+        pdfRoot.className = 'pdf-embed';
+        const page3 = document.createElement('div');
+        page3.setAttribute('data-page-number', '3');
+        page3.getBoundingClientRect = vi.fn(() => ({
+            width: 595.276,
+            height: 790.866,
+            top: 0,
+            left: 0,
+            right: 595.276,
+            bottom: 790.866,
+        }));
+        pdfRoot.appendChild(page3);
+        const contentEl = document.createElement('div');
+        contentEl.appendChild(pdfRoot);
+        app.workspace.activeLeaf = { view: { contentEl, containerEl: contentEl } };
+
+        const row = {
+            display: {
+                selectedText: 'multi line local quote',
+                comment: '',
+                pageLabel: '3',
+                type: 'highlight',
+                color: '#ff6666',
+            },
+            provenance: {
+                source: 'obsidian',
+                isReadonly: false,
+                sourceAttachmentKey: 'ATTACH',
+                sourceAnnotationKey: 'obsidian:LOCAL:1',
+            },
+            pdfLocation: {
+                sourceAttachmentKey: 'ATTACH',
+                pageIndex: 2,
+                pageLabel: '3',
+                positionJson: '{"pageIndex":2,"rects":[[100,700,300,708],[80,686,360,694]]}',
+            },
+        };
+        const view = makeRuntimeView({
+            app,
+            paperKey: 'LOCAL',
+            paperEntry: {
+                zotero_key: 'LOCAL',
+                pdf_path: '[[System/Zotero/storage/ATTACH/paper.pdf]]',
+                zotero_storage_key: 'ATTACH',
+            },
+            annotationState: {
+                state: 'ready',
+                paperKey: 'LOCAL',
+                annotations: [row],
+            },
+        });
+
+        view._refreshAnnotationOverlay('test');
+
+        const marks = page3.querySelectorAll('.paperforge-annotation-overlay-mark');
+        expect(marks).toHaveLength(2);
+        expect(Array.from(marks).map((mark) => mark.getAttribute('data-mark-id'))).toEqual([
+            'obsidian:LOCAL:1',
+            'obsidian:LOCAL:1',
+        ]);
+    });
+
 });
 
 // ── Popover interaction (Phase 8, Plan 04) ──
 
 describe('Popover interaction — show, close, keyboard, read-only', () => {
+
+    it('refreshes annotation overlay when active leaf changes without changing paper context', () => {
+        vi.useFakeTimers();
+        try {
+            let activeLeafHandler = null;
+            const app = makeStubApp();
+            app.workspace.on = vi.fn((eventName, handler) => {
+                if (eventName === 'active-leaf-change') activeLeafHandler = handler;
+                return handler;
+            });
+            app.vault.on = vi.fn((_eventName, handler) => handler);
+            const view = makeRuntimeView({ app, paperKey: 'PAPER_A' });
+            view._resolveModeForFile = vi.fn(() => ({ mode: 'paper', filePath: 'Paper.md' }));
+            view._detectAndSwitch = vi.fn();
+            view._refreshAnnotationOverlay = vi.fn();
+
+            view._setupEventSubscriptions();
+            expect(activeLeafHandler).toBeTruthy();
+
+            activeLeafHandler();
+            vi.advanceTimersByTime(301);
+
+            expect(view._detectAndSwitch).not.toHaveBeenCalled();
+            expect(view._refreshAnnotationOverlay).toHaveBeenCalledWith('active-leaf-change');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
 
     function makeMarkData(overrides) {
         var o = overrides || {};

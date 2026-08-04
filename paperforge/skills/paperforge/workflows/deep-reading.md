@@ -154,6 +154,18 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" validate-note "<formal_note_path>" --ful
 
 ---
 
+### Step 7: Mark Status
+
+After validation passes, synchronize completion to the formal note frontmatter and canonical index:
+
+```bash
+$PYTHON "$SKILL_DIR/scripts/pf_deep.py" mark --key <zotero_key> --vault "$VAULT" --status done
+```
+
+This is required; do not record deep-reading completion only in a memory file.
+
+---
+
 ## Callout 格式规则
 
 - `> [!important]` — 每个 main finding
