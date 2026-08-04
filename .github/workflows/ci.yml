@@ -135,6 +135,31 @@ jobs:
   # ---------------------------------------------------------------------------
   # Merge gate
   # ---------------------------------------------------------------------------
+  # #120-fix: OCR release-regression — the #118 fixes live in files the
+  # unit/protocol jobs do not collect (progress contracts, object emission,
+  # real-paper regressions, slugify); a future regression there must not
+  # merge. Fast (<90s): runs the touched files + redo/rebuild neighbors.
+  ocr-regression:
+    name: L2.5 — OCR Release Regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package with test deps
+        run: pip install -e ".[test,vector]"
+      - name: Run OCR release-regression tests
+        run: |
+          python -m pytest \
+            tests/cli/test_ocr_progress_contracts.py \
+            tests/test_ocr_objects.py \
+            tests/test_ocr_real_paper_regressions.py \
+            tests/test_ocr_redo.py \
+            tests/test_ocr_rebuild.py \
+            tests/test_utils_slugify.py \
+            -q --tb=short --timeout=120
+
   alls-green:
     name: All Checks Passed
     if: always()
@@ -143,6 +168,7 @@ jobs:
       - ruff
       - unit-tests
       - protocol-tests
+      - ocr-regression
       - plugin-tests
       - e2e-tests
     runs-on: ubuntu-latest

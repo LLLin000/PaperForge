@@ -289,8 +289,10 @@ export function buildRuntimeInstallCommand(
   extraArgs: string[]
 ): InstallCommand {
   if (extraArgs === undefined) extraArgs = [];
-  const pypiPkg = `paperforge==${version}`;
-  const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@${version}`;
+  // #120-fix (P0-2): always install with vector extras — bare paperforge
+  // leaves Build Index broken (missing openai/sqlite_vec).
+  const pypiPkg = `paperforge[vector]==${version}`;
+  const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@${version}#subdirectory=.&extras=vector`;
   const pypiArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", pypiPkg];
   const gitArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", gitUrl];
   return {
