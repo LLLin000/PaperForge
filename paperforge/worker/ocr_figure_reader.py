@@ -440,6 +440,13 @@ def _collect_reader_eligible_inputs(normalized: dict) -> list[dict]:
     eligible: list[dict] = []
     seen_legends: set[tuple[int | str | None, int | str | None]] = set()
 
+    # #122: figure numbers already materialized from matched_figures must
+    # not be re-materialized from unmatched_legends — a same-numbered
+    # caption outside the match set is a duplicate/ghost (DWQQK2YB: the
+    # Figure 4 caption on p36 re-appears as a second EXACT_MATCH with no
+    # assets even though the real Figure 4 lives on p41).
+    matched_numbers: set[int] = set()
+
     for source_name in ("matched_figures", "held_figures", "ambiguous_figures"):
         for item in normalized.get(source_name, []):
             legend_id = (item.get("page"), item.get("legend_block_id"))
@@ -449,11 +456,18 @@ def _collect_reader_eligible_inputs(normalized: dict) -> list[dict]:
                 continue
             seen_legends.add(legend_id)
             eligible.append({"kind": "legend", "source": source_name, "item": item})
+            if source_name == "matched_figures":
+                num = item.get("figure_number")
+                if num is not None:
+                    matched_numbers.add(int(num))
 
     for item in normalized.get("unmatched_legends", []):
         legend_id = (item.get("page"), item.get("legend_block_id"))
         if legend_id in seen_legends:
             continue
+        num = item.get("figure_number")
+        if num is not None and int(num) in matched_numbers:
+            continue  # same-numbered caption already matched — skip ghost
         if not _passes_formal_legend_gate(item):
             continue
         seen_legends.add(legend_id)

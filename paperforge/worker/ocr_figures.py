@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import contextlib
 import itertools
 import re
@@ -29,6 +31,8 @@ _FRONTMATTER_VISUAL_VETO = (
     "visual abstract",
 )
 
+
+logger = logging.getLogger(__name__)
 
 def _has_frontmatter_visual_veto(text: str) -> bool:
     lower = " ".join(text.lower().split())
@@ -3177,6 +3181,80 @@ def _infer_missing_main_figure_numbers(
     return inventory
 
 
+def _suppress_ghost_matched_figures(
+    matched: list[dict], structured_blocks: list[dict]
+) -> tuple[list[dict], list[dict]]:
+    """#122: dominated 0-asset ghost suppression at inventory emission.
+
+    A matched_figures entry with zero assets cannot represent a real
+    figure when the same figure_number group owns assets, and an entry
+    whose legend block's caption text carries a DIFFERENT figure number
+    than entry.figure_number is an identity mismatch (DWQQK2YB: an entry
+    claiming Figure 4 whose legend block is the Figure 3 caption).
+
+    Rules (conservative — never picks a winner between asset-owning
+    entries, never touches a lone 0-asset entry):
+      1. within a figure_number group, if ANY entry owns assets, entries
+         with zero asset_block_ids are suppressed;
+      2. a 0-asset entry whose (page, legend_block_id) caption text
+         resolves to a figure number != entry.figure_number is
+         suppressed (identity mismatch).
+
+    Returns (kept, suppressed); suppressed entries are kept for debug
+    diagnostics.
+    """
+    if not matched:
+        return [], []
+
+    # Effective figure number: explicit field wins; otherwise infer from
+    # the entry's own caption text (a 0-asset entry with figure_number=None
+    # whose text reads "Fig. 4." is still a dominated ghost when figure 4
+    # owns assets — DWQQK2YB).
+    def _eff_num(m: dict) -> int | None:
+        num = m.get("figure_number")
+        if num is not None:
+            return int(num)
+        text = str(m.get("text") or m.get("caption_text") or "")
+        inferred = _extract_figure_number(text)
+        return inferred
+
+    by_number: dict[int, list[int]] = {}
+    for i, m in enumerate(matched):
+        eff = _eff_num(m)
+        if eff is not None:
+            by_number.setdefault(eff, []).append(i)
+
+    block_text_by_id: dict[tuple[int, str], str] = {}
+    for b in structured_blocks:
+        block_text_by_id[
+            (int(b.get("page", 0) or 0), str(b.get("block_id", "")))
+        ] = str(b.get("text", "") or "")
+
+    kept: list[dict] = []
+    suppressed: list[dict] = []
+    for i, m in enumerate(matched):
+        assets = m.get("asset_block_ids") or []
+        num = m.get("figure_number")
+        eff = _eff_num(m)
+        ghost = False
+
+        if eff is not None and not assets:
+            group = by_number.get(eff, [])
+            if any(matched[j].get("asset_block_ids") for j in group if j != i):
+                ghost = True  # rule 1: dominated 0-asset entry
+
+        if not ghost and num is not None and not assets:
+            legend_id = str(m.get("legend_block_id", "") or "")
+            page = int(m.get("page", 0) or 0)
+            block_text = block_text_by_id.get((page, legend_id), "")
+            block_num = _extract_figure_number(block_text)
+            if block_num is not None and block_num != int(num):
+                ghost = True  # rule 2: identity mismatch
+
+        (suppressed if ghost else kept).append(m)
+    return kept, suppressed
+
+
 def build_figure_inventory(
     structured_blocks: list[dict], page_width: float = 1200, page_pdf_lines_by_page: dict[int, list[dict]] | None = None
 ) -> dict[str, Any]:
@@ -3241,9 +3319,22 @@ def build_figure_inventory_vnext(
     )
     matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
 
+    # #122: suppress dominated 0-asset / identity-mismatched ghosts at the
+    # final emission seam — matched_figures must not carry entries that a
+    # same-numbered asset-owning entry supersedes, and consumers keyed by
+    # figure_number must not be shadowed by a ghost.
+    kept_matches, suppressed_matches = _suppress_ghost_matched_figures(
+        state.matches, structured_blocks
+    )
+    if suppressed_matches:
+        logger.info(
+            "Figure inventory: suppressed %d ghost matched entries (issue #122)",
+            len(suppressed_matches),
+        )
+
     result = {
         "pipeline_mode": "vnext",
-        "matched_figures": state.matches,
+        "matched_figures": kept_matches,
         "ambiguous_figures": [],
         "unmatched_legends": [
             b for b in candidate_index.deduped_legends if str(b.get("block_id", "")) not in matched_ids
