@@ -7,6 +7,7 @@ from pathlib import Path
 from collections.abc import Callable
 
 from paperforge.core.io import read_json, write_json
+from paperforge.worker.ocr_render import RenderOutput
 
 logger = logging.getLogger(__name__)
 

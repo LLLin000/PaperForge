@@ -244,7 +244,9 @@ describe("renderActionButton", () => {
     });
     expect(btn.getAttribute("disabled")).toBe("true");
     expect(btn.className).toContain("pf-action-btn--disabled");
-    btn.dispatchEvent(new MouseEvent("click"));
+    // .click() (not dispatchEvent) — jsdom's dispatchEvent bypasses the
+    // disabled attribute, but .click() respects it like a real browser.
+    btn.click();
     expect(clicked).toBe(false);
   });
 
@@ -258,7 +260,9 @@ describe("renderActionButton", () => {
     });
     expect(btn.textContent).toBe("…");
     expect(btn.className).toContain("pf-action-btn--loading");
-    btn.dispatchEvent(new MouseEvent("click"));
+    // .click() (not dispatchEvent) — jsdom's dispatchEvent bypasses the
+    // disabled attribute, but .click() respects it like a real browser.
+    btn.click();
     expect(clicked).toBe(false);
   });
 

@@ -998,9 +998,12 @@ describe("_ensureManagedRuntime canonical root delegation (Defect 1)", () => {
     // First call creates the cached runtime — capture it
     const rt = tab._ensureManagedRuntime();
 
-    // ManagedRuntime's defaults (with mocked os.homedir=/home/user, platform=win32):
+    // ManagedRuntime's defaults (with mocked os.homedir=/home/user).
+    // Triplet comes from process.platform/process.arch (ManagedRuntime reads
+    // process, not the os module) — assert dynamically so this passes on any
+    // runner (Linux CI failed with hardcoded win32-x64).
     expect(rt.rootDir).toBe("/home/user/.paperforge/runtime");
-    expect(rt.triplet).toBe("win32-x64");
+    expect(rt.triplet).toBe(`${process.platform}-${process.arch}`);
 
     // Verify singleton caching works
     expect(tab._ensureManagedRuntime()).toBe(rt);
@@ -1380,6 +1383,9 @@ describe("Issue #77: Help→Overview focus restoration in real DOM", () => {
     // Now simulate return to Overview (as if user clicked the tab button)
     tab._navMemory = { destination: "overview" };
     tab.activeTab = "overview";
+    // Re-render overview (the topbar click handler calls display(); the test
+    // previously skipped it, so no module cards existed to focus).
+    tab.display();
     const firstCardBtn =
       containerEl.querySelector<HTMLElement>(".pf-cc-module-card");
     expect(firstCardBtn).toBeTruthy();
