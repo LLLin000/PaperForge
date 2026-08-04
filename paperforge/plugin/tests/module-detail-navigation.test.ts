@@ -188,9 +188,10 @@ vi.mock("child_process", () => {
     },
     execFileSync: () => "Python 3.11.0",
     exec: () => {},
-    spawn: (_path: string, args: string[], _opts: Record<string, unknown>) => {
+    spawn: (_path: string, args: string[], opts: Record<string, unknown>) => {
       const self = {
         args: [...args],
+        env: (opts?.env ?? {}) as Record<string, string | undefined>,
         stdout: {
           on: (_ev: string, cb: (data: unknown) => void) => {
             self.onData = cb;
@@ -238,7 +239,13 @@ vi.mock("../src/services/python-bridge", () => ({
   resolvePythonExecutable: () => ({ path: "/usr/bin/python3", extraArgs: [] }),
   buildRuntimeInstallCommand: () => "pip install",
   paperforgeEnrichedEnv: () => ({}),
-  buildTargetedEnv: async () => ({}),
+  buildTargetedEnv: async (app: unknown, type: string) =>
+    type === "ocr"
+      ? {
+          PADDLEOCR_API_KEY: "sk-test-paddle",
+          PADDLEOCR_API_TOKEN: "sk-test-paddle",
+        }
+      : {},
   scanBbtUnderProfiles: () => [],
   scanBbtDirectChildren: () => [],
   runSubprocess: () => {},
@@ -809,7 +816,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(msgs.toLowerCase()).toMatch(/unknown|bogus/);
   });
 
-  it("run + paperforge ocr run -> spawns ['ocr', 'run']", () => {
+  it("run + paperforge ocr run -> spawns ['ocr', 'run']", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
     const env = {
@@ -833,6 +840,8 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       },
     } as any;
     (tab as any)._dispatchModuleAction("ocr", env);
+    // OCR runs resolve SecretStorage credentials before spawning.
+    await Promise.resolve();
     const last = spawnedProcesses[spawnedProcesses.length - 1];
     expect(last.args).toContain("run");
     expect(last.args).not.toContain("rebuild");
@@ -867,7 +876,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(last.args).toContain("--all");
   });
 
-  it("redo -> spawns redo args", () => {
+  it("redo -> spawns redo args", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
     const env = {
@@ -897,6 +906,8 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(modalOpens[0].effectLabel).toBe("OCR artifacts");
     expect(spawnedProcesses.length).toBe(0);
     if (modalOpens[0].onConfirm) modalOpens[0].onConfirm();
+    // redo resolves credentials before spawning.
+    await Promise.resolve();
     expect(spawnedProcesses[spawnedProcesses.length - 1].args).toContain(
       "redo"
     );
@@ -1100,11 +1111,13 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
 
 // ════════════════════════════════ 5. _dispatchOcrAction ══════════════
 describe("_dispatchOcrAction lifecycle (Issue #78)", () => {
-  it("assigns _ocrProcess, sets activity overlay", () => {
+  it("assigns _ocrProcess, sets activity overlay", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
     spawnedProcesses.length = 0;
     (tab as any)._dispatchOcrAction("run");
+    // Credentials resolve before spawn (SecretStorage async).
+    await Promise.resolve();
     // Verify spawn was called with correct args
     expect(spawnedProcesses.length).toBeGreaterThan(0);
     expect(spawnedProcesses[0].args).toContain("run");
@@ -1126,7 +1139,7 @@ describe("_dispatchOcrAction lifecycle (Issue #78)", () => {
     expect((tab.plugin as any)._ocrProgress.current).toBe(5);
   });
 
-  it("clears activity and re-probes on close/error/stop", () => {
+  it("clears activity and re-probes on close/error/stop", async () => {
     const probes: string[] = [];
     const tab = makeTab();
     (tab as any)._probeModule = (mod: string) => {
@@ -1134,6 +1147,7 @@ describe("_dispatchOcrAction lifecycle (Issue #78)", () => {
     };
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
     (tab as any)._dispatchOcrAction("run");
+    await Promise.resolve();
     spawnedProcesses[spawnedProcesses.length - 1]?.onClose?.(0);
     expect((tab.plugin as any)._ocrProcess).toBeNull();
     expect(probes).toContain("ocr");
@@ -1142,7 +1156,7 @@ describe("_dispatchOcrAction lifecycle (Issue #78)", () => {
     );
   });
 
-  it("exact CLI args: run/rebuild/redo", () => {
+  it("exact CLI args: run/rebuild/redo", async () => {
     for (const [mode, expected] of [
       ["run", "run"],
       ["rebuild", "rebuild"],
@@ -1152,13 +1166,14 @@ describe("_dispatchOcrAction lifecycle (Issue #78)", () => {
       (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
       spawnedProcesses.length = 0;
       (tab as any)._dispatchOcrAction(mode);
+      if (mode !== "rebuild") await Promise.resolve();
       expect(spawnedProcesses[0].args).toContain(expected);
       if (mode === "rebuild")
         expect(spawnedProcesses[0].args).toContain("--all");
     }
   });
 
-  it("does not change capability_state/severity during activity", () => {
+  it("does not change capability_state/severity during activity", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = {
       ocr: {
@@ -1168,6 +1183,7 @@ describe("_dispatchOcrAction lifecycle (Issue #78)", () => {
       },
     };
     (tab as any)._dispatchOcrAction("run");
+    await Promise.resolve();
     const e = (tab as any)._capabilityState as any;
     expect(e?.ocr?.capability_state).toBe("needs_action");
     expect(e?.ocr?.severity).toBe("warning");
@@ -1533,5 +1549,80 @@ describe("Library sync failure probe (Issue #78)", () => {
     expect(probeCall).toBeDefined();
     const lastOpIdx = probeCall!.args.indexOf("--last-operation-exit-code");
     expect(probeCall!.args[lastOpIdx + 1]).toBe("1");
+  });
+});
+
+// ════════════════════════════════ 5b. OCR credential injection ══════════════
+describe("_dispatchOcrAction credential injection (release review)", () => {
+  it("run injects PADDLEOCR_* env from SecretStorage into spawn", async () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    spawnedProcesses.length = 0;
+    (tab as any)._dispatchOcrAction("run");
+    await Promise.resolve();
+    expect(spawnedProcesses.length).toBe(1);
+    expect(spawnedProcesses[0].env).toEqual(
+      expect.objectContaining({
+        PADDLEOCR_API_KEY: "sk-test-paddle",
+        PADDLEOCR_API_TOKEN: "sk-test-paddle",
+      })
+    );
+  });
+
+  it("redo injects PADDLEOCR_* env as well", async () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    spawnedProcesses.length = 0;
+    (tab as any)._dispatchOcrAction("redo");
+    await Promise.resolve();
+    expect(spawnedProcesses[0].env).toEqual(
+      expect.objectContaining({
+        PADDLEOCR_API_KEY: "sk-test-paddle",
+      })
+    );
+  });
+
+  it("rebuild does NOT inject PADDLEOCR_* env", () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    spawnedProcesses.length = 0;
+    (tab as any)._dispatchOcrAction("rebuild");
+    const env = spawnedProcesses[0].env as Record<string, unknown>;
+    expect(env.PADDLEOCR_API_KEY).toBeUndefined();
+    expect(env.PADDLEOCR_API_TOKEN).toBeUndefined();
+  });
+
+  it("_ocrProcess is a real child after credential resolution", async () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    (tab as any)._dispatchOcrAction("run");
+    // Before resolution there is NO child (async branch) — the old
+    // credentialType path returned null and lost the handle.
+    expect((tab.plugin as any)._ocrProcess).toBeNull();
+    await Promise.resolve();
+    expect((tab.plugin as any)._ocrProcess).toBeTruthy();
+  });
+
+  it("credential resolution failure resets activity and shows notice", async () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    (tab as any)._capabilityState.ocr.activity_state = "running";
+    (tab as any)._probeModule = () => {}; // avoid probe overwriting activity
+    const bridge = await import("../src/services/python-bridge");
+    const spy = vi
+      .spyOn(bridge, "buildTargetedEnv")
+      .mockRejectedValue(new Error("secret unavailable"));
+    try {
+      (tab as any)._dispatchOcrAction("run");
+      await Promise.resolve();
+      await Promise.resolve();
+    } finally {
+      spy.mockRestore();
+    }
+    expect(spawnedProcesses.length).toBe(0);
+    expect(((tab as any)._capabilityState as any).ocr.activity_state).toBe(
+      "idle"
+    );
+    expect(noticeCalls.length).toBeGreaterThan(0);
   });
 });
