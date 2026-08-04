@@ -766,9 +766,9 @@
     "body_zone": {
       "status": "ACCEPT",
       "block_ids": [
+        "p2:8",
         "p2:11",
         "p2:",
-        "p2:8",
         "p2:9",
         "p2:10"
       ],
@@ -14300,9 +14300,9 @@
     "body_zone": {
       "status": "ACCEPT",
       "block_ids": [
+        "p2:8",
         "p2:11",
         "p2:",
-        "p2:8",
         "p2:9",
         "p2:10"
       ],
