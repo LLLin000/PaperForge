@@ -902,7 +902,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                     module="memory", capability_state="needs_action", severity="warning",
                     reason_code="memory.dependencies_missing",
                     reason_text=f"Smart Retrieval deps missing: {', '.join(_dep_missing)} — reinstall with paperforge[vector]",
-                    user_state=USER_STATE_ACTION_NEEDED, capability_kind=CAPABILITY_OPTIONAL,
+                    user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                     notices=[{"kind": "warning", "text": f"Missing: {', '.join(_dep_missing)}. Reinstall the runtime with paperforge[vector]."}],
                     action_primary=build_action_primary(
                         action_id="memory.install_vector_deps", verb="install",

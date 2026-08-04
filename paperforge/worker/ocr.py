@@ -8,6 +8,8 @@ import re
 import shutil
 from datetime import datetime, timezone
 from json import JSONDecodeError
+from typing import Callable
+
 from pathlib import Path
 
 import fitz

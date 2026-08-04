@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
+import sqlite3
 from pathlib import Path
 
 from paperforge.embedding.dim_detect import ensure_vec_tables

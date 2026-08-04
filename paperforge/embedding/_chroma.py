@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sqlite3
 from pathlib import Path
 
 from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path
