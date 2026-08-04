@@ -247,7 +247,13 @@ def _crop_asset_from_pdf(
             import fitz
         except ImportError:
             return False
-        created_doc = fitz.open(str(pdf_path))
+        try:
+            created_doc = fitz.open(str(pdf_path))
+        except Exception:
+            # #118: unreadable/corrupt PDF must not kill the whole redo/rebuild
+            # batch — degrade to a cropless object note (was_cropped=False)
+            # and let the caller's failed_keys bookkeeping report the paper.
+            return False
         doc = created_doc
 
     try:

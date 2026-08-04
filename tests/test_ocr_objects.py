@@ -150,11 +150,18 @@ def test_stabilize_object_wikilink_uses_correct_relative_path() -> None:
     assert "![](../../assets/figures/figure_001.jpg)" in md
 
 
-@pytest.mark.xfail(strict=True, reason="vnext cluster-crop behavior pending decision — https://github.com/LLLin000/PaperForge/issues/118")
-def test_unresolved_cluster_object_emission(tmp_path: Path) -> None:
+def test_unresolved_cluster_object_emission(tmp_path: Path, monkeypatch) -> None:
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
     render_root = tmp_path / "render"
+
+    # A real crop can't happen without a PDF, so stub the crop helper to
+    # succeed — the contract under test is: a resolved cluster emits ONE
+    # object note referencing the whole-cluster crop (vnext keeps that).
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_objects._crop_asset_from_pdf",
+        lambda *a, **k: True,
+    )
     asset_root = tmp_path / "assets"
 
     figure_inventory: dict[str, Any] = {
@@ -593,7 +600,6 @@ def test_extract_objects_cache_hit_does_not_eager_open_shared_pdf(tmp_path: Path
     assert (tmp_path / "assets" / "figures" / "figure_001.jpg").exists()
 
 
-@pytest.mark.xfail(strict=True, reason="task-level PDF fault tolerance pending decision — https://github.com/LLLin000/PaperForge/issues/118")
 def test_extract_objects_pdf_open_failure_still_writes_markdown(tmp_path: Path, monkeypatch) -> None:
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
