@@ -2155,6 +2155,121 @@ def _find_notes_by_key(lit_root: Path | None) -> dict[str, Path]:
     return notes
 
 
+def _redo_one_paper_transaction(
+    vault: Path,
+    key: str,
+    note_file: Path,
+    *,
+    ocr_root: Path | None,
+    lit_root: Path | None,
+    paths: dict,
+    verbose: bool = False,
+) -> str:
+    """Run one paper's redo as a transaction. Returns "success" or "failed".
+
+    Snapshot (note text, ocr_dir, workspace fulltexts) -> mutate (delete,
+    note=pending, run OCR) -> validate (meta done) -> commit (note done,
+    index refresh, drop snapshot) or rollback (restore OCR dir, workspace
+    fulltexts, note and index). Any exception mid-cycle rolls back too, so
+    a crash can never leave a paper with deleted output and no OCR result
+    (issue #123).
+    """
+    import tempfile as _tempfile
+
+    try:
+        original_text = note_file.read_text(encoding="utf-8")
+    except Exception:
+        logger.warning("Redo: cannot read note for %s, counting as failed", key)
+        return "failed"
+
+    # -- Guard: nopdf papers must not be touched --
+    meta_path = ocr_root / key / "meta.json" if ocr_root else None
+    _existing_meta = read_json(meta_path) if meta_path and meta_path.exists() else {}
+    if str(_existing_meta.get("ocr_status", "") or "").strip().lower() == "nopdf":
+        logger.warning("Redo: %s is nopdf - cannot redo (missing PDF), skipping", key)
+        return "failed"
+
+    ocr_dir = ocr_root / key if ocr_root else None
+
+    # ---- 1. Snapshot ----
+    snap_dir: Path | None = None
+    if ocr_dir and ocr_dir.exists():
+        snap_dir = Path(_tempfile.mkdtemp(prefix=f"paperforge-redo-{key}-"))
+        shutil.copytree(str(ocr_dir), str(snap_dir / "ocr"), symlinks=True)
+    wf_snap: list[tuple[Path, bytes]] = []
+    for wf in _workspace_fulltext_candidates(lit_root, key):
+        try:
+            wf_snap.append((wf, wf.read_bytes()))
+        except Exception:
+            logger.warning("Redo: cannot snapshot workspace fulltext %s", wf)
+
+    def _rollback() -> None:
+        if ocr_dir and ocr_dir.exists():
+            shutil.rmtree(ocr_dir)
+        if snap_dir is not None:
+            _src = snap_dir / "ocr"
+            if _src.exists():
+                # copytree requires the destination to NOT exist; the
+                # partial new output was already removed above.
+                shutil.copytree(str(_src), str(ocr_dir), symlinks=True)
+        for wf, content in wf_snap:
+            try:
+                wf.parent.mkdir(parents=True, exist_ok=True)
+                wf.write_bytes(content)
+            except Exception:
+                logger.warning("Redo: cannot restore workspace fulltext %s", wf)
+        try:
+            note_file.write_text(original_text, encoding="utf-8")
+        except Exception:
+            logger.warning("Redo: cannot restore note for %s", key)
+        try:
+            refresh_index_entry(vault, key)
+        except Exception:
+            logger.warning("Redo: cannot refresh index for %s after rollback", key)
+
+    def _drop_snapshot() -> None:
+        if snap_dir is not None and snap_dir.exists():
+            shutil.rmtree(snap_dir, ignore_errors=True)
+
+    # ---- 2. Mutate ----
+    try:
+        for wf, _content in wf_snap:
+            wf.unlink(missing_ok=True)
+        if ocr_dir and ocr_dir.exists():
+            shutil.rmtree(ocr_dir)
+
+        pending_text = _rewrite_note_fields(
+            original_text,
+            do_ocr=True, ocr_status="pending", fulltext_md_path="", ocr_redo=True,
+        )
+        note_file.write_text(pending_text, encoding="utf-8")
+
+        _paper_exit = run_ocr(vault, verbose=verbose, no_progress=True, selected_keys={key})
+
+        # ---- 3. Validate ----
+        meta = read_json(meta_path) if meta_path and meta_path.exists() else {}
+        status, _error = validate_ocr_meta(paths, meta) if meta else ("pending", "")
+        ocr_ok = (status == "done") and (_paper_exit == 0)
+    except Exception:
+        logger.exception("Redo: transaction error for %s - rolling back", key)
+        _rollback()
+        _drop_snapshot()
+        return "failed"
+
+    # ---- 4. Commit or rollback ----
+    if ocr_ok:
+        current_text = note_file.read_text(encoding="utf-8")
+        current_text = _rewrite_note_fields(current_text, ocr_status="done", ocr_redo=False)
+        note_file.write_text(current_text, encoding="utf-8")
+        refresh_index_entry(vault, key)
+        _drop_snapshot()
+        return "success"
+
+    _rollback()
+    _drop_snapshot()
+    return "failed"
+
+
 def redo_papers_for_keys(
     vault: Path,
     keys: list[str],
@@ -2163,26 +2278,18 @@ def redo_papers_for_keys(
     progress_callback: Callable[[str], None] | None = None,
     stop_check: Callable[[], bool] | None = None,
 ) -> dict:
-    """Redo specific papers: full artifact delete + OCR run + post-check.
+    """Redo specific papers as independent per-paper transactions.
 
-    Processes papers sequentially so per-paper progress and cooperative
-    stop are natural. Each paper goes through:
-      1. Delete derived artifacts and workspace fulltexts
-      2. Rewrite note as pending
-      3. Run OCR for this single paper
-      4. Check result, update note, refresh index
+    Each paper is processed by _redo_one_paper_transaction: snapshot ->
+    mutate -> validate -> commit/rollback. A failure (bad exit code,
+    missing meta, or an exception anywhere in the cycle) restores the OCR
+    directory, workspace fulltexts and the note, then the next paper
+    proceeds. stop_check is honored at paper boundaries; the in-flight
+    paper commits or rolls back before the loop continues (paper-boundary
+    cooperative stop, issue #123).
 
-    Args:
-        vault: Vault root.
-        keys: Zotero citation keys to redo.
-        verbose: Log additional details.
-        progress_callback: Called with key after each paper's cycle completes.
-        stop_check: Called before each paper; return True to stop.
-
-    Returns:
-        dict with success_keys, failed_keys, exit_code.
+    progress_callback fires only after commit/rollback for that paper.
     """
-    import tempfile as _tempfile
     from paperforge.worker._utils import pipeline_paths
 
     paths = pipeline_paths(vault)
@@ -2208,87 +2315,18 @@ def redo_papers_for_keys(
                 progress_callback(key)
             continue
 
-        try:
-            original_text = note_file.read_text(encoding="utf-8")
-        except Exception:
-            logger.warning("Redo: cannot read note for %s, counting as failed", key)
-            failed_keys.append(key)
-            if progress_callback is not None:
-                progress_callback(key)
-            _ocr_exit_code = 1
-            continue
-
-        # ── Guard: nopdf papers must not be touched ──
-        meta_path = ocr_root / key / "meta.json" if ocr_root else None
-        _existing_meta = read_json(meta_path) if meta_path and meta_path.exists() else {}
-        if str(_existing_meta.get("ocr_status", "") or "").strip().lower() == "nopdf":
-            logger.warning("Redo: %s is nopdf — cannot redo (missing PDF), skipping", key)
-            failed_keys.append(key)
-            _ocr_exit_code = 1
-            if progress_callback is not None:
-                progress_callback(key)
-            continue
-
-        # ── Phase 1: backup key artifacts before deletion ──
-        _backup_dir: Path | None = None
-        ocr_dir = ocr_root / key if ocr_root else None
-        if ocr_dir and ocr_dir.exists():
-            # Create temp backup of the entire ocr_dir
-            _backup_dir = Path(_tempfile.mkdtemp(prefix=f"paperforge-redo-{key}-"))
-            _backup_target = _backup_dir / key
-            shutil.copytree(str(ocr_dir), str(_backup_target), symlinks=True)
-
-            # Delete workspace fulltext references and ocr artifacts
-            for wf in _workspace_fulltext_candidates(lit_root, key):
-                wf.unlink(missing_ok=True)
-            shutil.rmtree(ocr_dir)
-
-        # ── Phase 2: rewrite note as pending ──
-        text = _rewrite_note_fields(
-            original_text,
-            do_ocr=True, ocr_status="pending", fulltext_md_path="", ocr_redo=True,
+        outcome = _redo_one_paper_transaction(
+            vault, key, note_file,
+            ocr_root=ocr_root, lit_root=lit_root, paths=paths,
+            verbose=verbose,
         )
-        note_file.write_text(text, encoding="utf-8")
-
-        # ── Phase 3: run OCR for this paper ──
-        _paper_exit = run_ocr(vault, verbose=verbose, no_progress=True, selected_keys={key})
-        if _paper_exit != 0:
-            _ocr_exit_code = _paper_exit
-
-        # ── Phase 4: post-OCR check ──
-        meta_path = ocr_root / key / "meta.json" if ocr_root else None
-        meta = read_json(meta_path) if meta_path and meta_path.exists() else {}
-        status, _error = validate_ocr_meta(paths, meta) if meta else ("pending", "")
-
-        current_text = note_file.read_text(encoding="utf-8")
-        current_text = _rewrite_note_fields(current_text, ocr_status=status)
-        if status == "done":
-            current_text = _rewrite_note_fields(current_text, ocr_redo=False)
+        if outcome == "success":
             success_keys.append(key)
-            # Clean up backup on success
-            if _backup_dir is not None and _backup_dir.exists():
-                shutil.rmtree(_backup_dir)
         else:
-            current_text = _rewrite_note_fields(current_text, ocr_redo=True)
             failed_keys.append(key)
             _ocr_exit_code = _ocr_exit_code or 1
-            # Restore backup on failure
-            if _backup_dir is not None and _backup_dir.exists():
-                _backup_target = _backup_dir / key
-                if _backup_target.exists() and ocr_root:
-                    # Remove the failed ocr output
-                    if ocr_dir.exists():
-                        shutil.rmtree(ocr_dir)
-                    # Restore original
-                    shutil.copytree(str(_backup_target), str(ocr_dir), symlinks=True)
-                # Clean up backup
-                shutil.rmtree(_backup_dir)
-        note_file.write_text(current_text, encoding="utf-8")
-        refresh_index_entry(vault, key)
-        # #118: per-paper progress token — the main loop never called
-        # progress_callback (only the early-return branches did), so a
-        # multi-key redo streamed START/DONE with no PROGRESS and the
-        # frontend progress bar sat at 0/N.
+
+        # Callback only after commit/rollback completed.
         if progress_callback is not None:
             progress_callback(key)
 
@@ -2299,24 +2337,19 @@ def redo_papers_for_keys(
     }
 
 
+def discover_redo_keys(vault: Path, *, verbose: bool = False) -> list[tuple[str, Path, str]]:
+    """Scan for papers with ocr_redo: true. Pure discovery - no file changes.
 
-def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False, no_progress: bool = False) -> int:
-    """Scan for papers with ocr_redo: true, reset and immediately rerun OCR.
-
-    Spec 2.6: paperforge ocr redo [--dry-run]
+    Returns sorted [(key, note_file, note_text)] deduplicated by key.
     """
-    from paperforge.adapters.obsidian_frontmatter import (
-        extract_preserved_ocr_redo,
-    )
+    from paperforge.adapters.obsidian_frontmatter import extract_preserved_ocr_redo
+
+    from paperforge.worker._utils import pipeline_paths
 
     paths = pipeline_paths(vault)
-    ocr_root = paths.get("ocr")
     lit_root = paths.get("literature")
-
     if not lit_root or not lit_root.exists():
-        if verbose:
-            logger.info("No literature directory found, nothing to redo")
-        return 0
+        return []
 
     redo_entry_map: dict[str, tuple[Path, str]] = {}
     for note_file in sorted(lit_root.rglob("*.md")):
@@ -2340,70 +2373,52 @@ def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False, n
         if existing is None or note_file.name == f"{zotero_key}.md":
             redo_entry_map[zotero_key] = (note_file, text)
 
-    redo_entries = [(key, note_file, text) for key, (note_file, text) in sorted(redo_entry_map.items())]
+    return [(key, note_file, text) for key, (note_file, text) in sorted(redo_entry_map.items())]
 
-    if not redo_entries:
+
+def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False, no_progress: bool = False) -> int:
+    """Scan for papers with ocr_redo: true, reset and immediately rerun OCR.
+
+    Spec 2.6: paperforge ocr redo [--dry-run]
+
+    Unified executor (issue #123): discovery is read-only; the destructive
+    delete + OCR cycle runs through redo_papers_for_keys, whose per-paper
+    transactions snapshot and restore OCR dir, workspace fulltexts and the
+    note on any failure. no_progress is accepted for CLI compatibility but
+    redo transactions already run OCR with progress suppressed (same as the
+    keyed path).
+    """
+    from paperforge.worker._utils import pipeline_paths
+
+    paths = pipeline_paths(vault)
+    lit_root = paths.get("literature")
+
+    if not lit_root or not lit_root.exists():
+        if verbose:
+            logger.info("No literature directory found, nothing to redo")
+        return 0
+
+    entries = discover_redo_keys(vault, verbose=verbose)
+    if not entries:
         print("No papers with ocr_redo: true found", flush=True)
         return 0
 
-    print(f"Found {len(redo_entries)} paper(s) with ocr_redo: true:", flush=True)
-    for zotero_key, note_file, _text in redo_entries:
+    print(f"Found {len(entries)} paper(s) with ocr_redo: true:", flush=True)
+    for zotero_key, note_file, _text in entries:
         print(f"  {zotero_key}  ({note_file.parent.name})", flush=True)
 
     if dry_run:
         print("\nDry-run mode: no changes made. Run without --dry-run to rerun OCR.", flush=True)
         return 0
 
-    reset_keys = []
-    for zotero_key, note_file, text in redo_entries:
-        for workspace_fulltext in _workspace_fulltext_candidates(lit_root, zotero_key):
-            workspace_fulltext.unlink(missing_ok=True)
-            if verbose:
-                logger.info("Deleted workspace fulltext for %s", zotero_key)
-        ocr_dir = ocr_root / zotero_key if ocr_root else None
-        if ocr_dir and ocr_dir.exists():
-            shutil.rmtree(ocr_dir)
-            if verbose:
-                logger.info("Deleted OCR directory for %s", zotero_key)
+    keys = [k for k, _n, _t in entries]
+    result = redo_papers_for_keys(vault, keys, verbose=verbose)
 
-        text = _rewrite_note_fields(
-            text,
-            do_ocr=True,
-            ocr_status="pending",
-            fulltext_md_path="",
-            ocr_redo=True,
-        )
-        note_file.write_text(text, encoding="utf-8")
-        reset_keys.append(zotero_key)
-
-    print(f"Reset {len(reset_keys)} paper(s): {', '.join(reset_keys)}", flush=True)
-    print("Launching OCR immediately for reset papers...", flush=True)
-
-    exit_code = run_ocr(vault, verbose=verbose, no_progress=no_progress, selected_keys=set(reset_keys))
-
-    success_keys: list[str] = []
-    failed_keys: list[str] = []
-    for zotero_key, note_file, _original_text in redo_entries:
-        current_text = note_file.read_text(encoding="utf-8")
-        meta_path = ocr_root / zotero_key / "meta.json" if ocr_root else None
-        meta = read_json(meta_path) if meta_path and meta_path.exists() else {}
-        status, _error = validate_ocr_meta(paths, meta) if meta else ("pending", "")
-        current_text = _rewrite_note_fields(current_text, ocr_status=status)
-        if status == "done":
-            current_text = _rewrite_note_fields(current_text, ocr_redo=False)
-            success_keys.append(zotero_key)
-        else:
-            current_text = _rewrite_note_fields(current_text, ocr_redo=True)
-            failed_keys.append(zotero_key)
-        note_file.write_text(current_text, encoding="utf-8")
-        refresh_index_entry(vault, zotero_key)
-
-    if success_keys:
-        print(f"Redo OCR done={len(success_keys)}: {', '.join(success_keys)}", flush=True)
-    if failed_keys:
-        print(f"Redo OCR pending/failed={len(failed_keys)}: {', '.join(failed_keys)}", flush=True)
-    return exit_code
-
+    if result["success_keys"]:
+        print(f"Redo OCR done={len(result['success_keys'])}: {', '.join(result['success_keys'])}", flush=True)
+    if result["failed_keys"]:
+        print(f"Redo OCR pending/failed={len(result['failed_keys'])}: {', '.join(result['failed_keys'])}", flush=True)
+    return result["exit_code"]
 
 
 def run_ocr(
