@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from pathlib import Path
 from paperforge.worker.ocr_render import RenderOutput
 
@@ -36,23 +37,30 @@ def test_derived_rebuild_excludes_raw_upgradable_papers() -> None:
     assert selected == ["A"]
 
 
-def test_resolve_source_pdf_fallback_stale_path() -> None:
-    from pathlib import Path
+_PROD_VAULT = Path(r"D:\L\OB\Literature-hub")
 
+
+@pytest.mark.skipif(
+    not _PROD_VAULT.exists(),
+    reason="requires the owner's production vault (D:\L\OB\Literature-hub)",
+)
+def test_resolve_source_pdf_fallback_stale_path() -> None:
     from paperforge.worker.ocr_rebuild import _resolve_source_pdf_for_rebuild
 
-    vault = Path(r"D:\L\OB\Literature-hub")
+    vault = _PROD_VAULT
     meta = {"source_pdf": ""}  # empty path
     result = _resolve_source_pdf_for_rebuild(vault, "SAN9AYVR", meta)
     assert result is not None and result.exists(), f"Fallback failed: {result}"
 
 
+@pytest.mark.skipif(
+    not _PROD_VAULT.exists(),
+    reason="requires the owner's production vault (D:\L\OB\Literature-hub)",
+)
 def test_resolve_source_pdf_stale_missing() -> None:
-    from pathlib import Path
-
     from paperforge.worker.ocr_rebuild import _resolve_source_pdf_for_rebuild
 
-    vault = Path(r"D:\L\OB\Literature-hub")
+    vault = _PROD_VAULT
     meta = {"source_pdf": r"D:\nonexistent\path.pdf"}
     result = _resolve_source_pdf_for_rebuild(vault, "SAN9AYVR", meta)
     assert result is not None and result.exists(), f"Fallback failed for stale key: {result}"
