@@ -962,6 +962,10 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       p.args.includes("embed")
     );
     expect(es?.args).toContain("--force");
+    // #120-fix (P0-1): the controller spawns the FULL CLI base — a bare
+    // `python embed build` would die with "can't open file 'embed'".
+    // This assertion guards the argv prefix so the regression stays dead.
+    expect(es?.args.join(" ")).toContain("-m paperforge --vault");
   });
 
   it("destructive opens modal with correct effect label", () => {

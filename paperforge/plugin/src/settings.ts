@@ -479,14 +479,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const args = ["-m", "pip", "install", "--upgrade"];
       if (process.platform !== "win32") args.push("--user");
       try {
+        // #120-fix (P0-2): Setup Journey must install the same vector
+        // extras as ManagedRuntime — a bare paperforge install makes the
+        // first Build Index fail with missing openai/sqlite_vec.
         await this._runSetupPython([
           ...args,
-          `paperforge==${this.plugin.manifest.version}`,
+          `paperforge[vector]==${this.plugin.manifest.version}`,
         ]);
       } catch {
         await this._runSetupPython([
           ...args,
-          `git+https://github.com/LLLin000/PaperForge.git@v${this.plugin.manifest.version}`,
+          `git+https://github.com/LLLin000/PaperForge.git@v${this.plugin.manifest.version}#subdirectory=.&extras=vector`,
         ]);
       }
     };
@@ -1883,12 +1886,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   } /** Dispatch memory build: distinct build vs embed modes, overlay activity, terminal re-probe (Issue #78). */
   _dispatchMemoryBuild(kind: "build" | "embed"): void {
     const vp = (this.app.vault.adapter as any).basePath as string;
-    // Set activity overlay on Memory
+    // Set activity overlay on Memory — the embed branch defers this to the
+    // controller's onStateChange so a cancelled confirmation modal never
+    // leaves the card stuck on "Building vector index…".
     const envelopes = this._capabilityState ?? {};
-    if (envelopes["memory"]) {
+    if (kind !== "embed" && envelopes["memory"]) {
       envelopes["memory"].activity_state = "running";
-      envelopes["memory"].activity_label =
-        kind === "embed" ? "Building vector index…" : "Building memory…";
+      envelopes["memory"].activity_label = "Building memory…";
     }
     this.display();
 
@@ -1897,6 +1901,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const label = kind === "embed" ? "Vector index" : "Memory";
 
     if (kind === "embed") {
+      // #120-fix (P1-2): never stack a second controller while one is
+      // mid-flight — the busy getter is per-instance, so the guard lives
+      // here, at the only creation site.
+      if (this.plugin._embedController?.busy) {
+        new Notice("Vector build already in progress.");
+        return;
+      }
       // #120: embed lifecycle is owned by EmbedBuildController — the old
       // path stored _callPython's null return (async credential branch),
       // making stop / duplicate-start guards / unload cleanup impossible.
@@ -1907,10 +1918,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         return;
       }
       const startEmbed = () => {
+        // #120-fix: the controller spawns `python pythonArgs embed build`
+        // directly — without the module prefix the child would be
+        // `python embed ...` (can't open file 'embed'). _resolveRuntimeCommand
+        // returns bare `{path, args: []}`, so the full CLI base is built
+        // here, matching the runShort invocation below.
+        const baseCliArgs = [
+          ...resolved.args,
+          "-m",
+          "paperforge",
+          "--vault",
+          vp,
+        ];
         const controller = new EmbedBuildController({
           vaultPath: vp,
           pythonPath: resolved.path,
-          pythonArgs: resolved.args,
+          pythonArgs: baseCliArgs,
           resolveEnv: () =>
             buildTargetedEnv(
               asPluginForSecrets(this.app),
@@ -1938,19 +1961,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             return promise;
           },
           callbacks: {
-            onStateChange: (
-              state,
-              progress,
-              warning,
-              stopResult
-            ) => {
+            onStateChange: (state, progress, warning, stopResult) => {
               this.plugin._embedProgress = {
                 current: progress.current,
                 total: progress.total,
                 key: progress.key,
               };
               if (envelopes["memory"]) {
-                if (state === "running" || state === "resolving_credentials" || state === "stopping") {
+                if (
+                  state === "running" ||
+                  state === "resolving_credentials" ||
+                  state === "stopping"
+                ) {
                   envelopes["memory"].activity_state = "running";
                   envelopes["memory"].activity_label =
                     state === "stopping"

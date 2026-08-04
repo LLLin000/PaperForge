@@ -50,8 +50,16 @@ jobs:
 
       - name: Verify wheel imports vector stack
         run: |
-          python -m pip install --force-reinstall --no-deps dist/*.whl
-          python -c "import paperforge, openai, sqlite_vec; print('vector deps ok:', paperforge.__version__)"
+          # #120-fix (P0-3): --no-deps + bare import always fails on a
+          # clean runner — openai/sqlite_vec/chromadb live in the vector
+          # extras, not in base deps. Install the wheel WITH extras into
+          # an isolated venv so the smoke proves wheel installability,
+          # extras metadata, and the vector runtime all at once.
+          WHEEL="$(ls dist/*.whl | head -1)"
+          python -m venv /tmp/paperforge-release-smoke
+          /tmp/paperforge-release-smoke/bin/python -m pip install --quiet "${WHEEL}[vector]"
+          /tmp/paperforge-release-smoke/bin/python -I -c \
+            "import paperforge, openai, sqlite_vec; print('vector deps ok:', paperforge.__version__)"
 
       # ── Gate 3: plugin tests + typecheck + bundle build.
       - name: Install plugin deps
@@ -97,18 +105,20 @@ jobs:
           PRERELEASE="${{ steps.release_type.outputs.prerelease }}"
           PRERELEASE_FLAG=""
           if [ "$PRERELEASE" = "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
-          # Do NOT delete an existing release — the version/tag gate makes a
-          # re-run a genuine re-run, and gh release create fails loudly.
-          gh release create "${{ github.ref_name }}" \
-            --title "${{ github.ref_name }}" \
-            --generate-notes \
-            $PRERELEASE_FLAG \
-            paperforge/plugin/main.js \
-            paperforge/plugin/styles.css \
-            paperforge/plugin/manifest.json \
-            paperforge/plugin/versions.json \
-            dist/*.whl \
-            dist/*.tar.gz
+          # #120-fix (P1-4): idempotent rerun — a failure after release
+          # create must not deadlock the rerun on "release already exists".
+          if ! gh release view "${{ github.ref_name }}" > /dev/null 2>&1; then
+            gh release create "${{ github.ref_name }}" \
+              --title "${{ github.ref_name }}" \
+              --generate-notes \
+              $PRERELEASE_FLAG \
+              paperforge/plugin/main.js \
+              paperforge/plugin/styles.css \
+              paperforge/plugin/manifest.json \
+              paperforge/plugin/versions.json \
+              dist/*.whl \
+              dist/*.tar.gz
+          fi
           # Attach a checksum so consumers can verify artifact provenance.
           sha256sum paperforge/plugin/main.js paperforge/plugin/styles.css \
             paperforge/plugin/manifest.json paperforge/plugin/versions.json \

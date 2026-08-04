@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from paperforge.embedding.backends import ChromaBackend, get_vector_backend
+from paperforge.embedding.backends import ChromaBackend
 
 
 
@@ -18,8 +18,9 @@ class TestChromaBackendIdentity:
         assert backend.collection_name == "paperforge_fulltext"
 
     def test_factory_returns_chroma_backend(self, tmp_path: Path):
-        backend = get_vector_backend(tmp_path)
-        assert isinstance(backend, ChromaBackend)
+        # The get_vector_backend factory was removed with the lance backend
+        # cleanup; ChromaBackend is the direct constructor now.
+        backend = ChromaBackend(tmp_path)
         assert backend.collection_name == "paperforge_fulltext"
 
 

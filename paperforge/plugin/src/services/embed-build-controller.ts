@@ -138,6 +138,10 @@ export class EmbedBuildController {
           this._progress.key = ev.key || "";
         } else if (ev.event === "DONE") {
           this._progress.current = this._progress.total;
+        } else if (ev.event === "NOTICE" && ev.notice) {
+          // #120-fix (P1-1): backend EMBED_NOTICE tokens (published with
+          // warning etc.) must reach the UI, not vanish in the stream.
+          this._warning = ev.notice;
         }
       }
       this._emit();
@@ -160,10 +164,16 @@ export class EmbedBuildController {
       this._progress.current = this._progress.total;
       if (code === 0) {
         // The backend reports post-publish bookkeeping failures as rc=0
-        // with a warning (published=true + warnings[]) — surface them.
+        // with the warning on stderr (non-JSON mode) or via EMBED_NOTICE —
+        // surface them instead of silently showing a clean success.
+        const stderrTail = (this._stderr || "").trim().slice(0, 300);
+        if (!this._warning && stderrTail) {
+          this._warning = stderrTail;
+        }
         this._setState(this._warning ? "success_with_warning" : "success");
       } else {
-        this._warning = (this._stderr || "").slice(0, 300) || `exit code ${code}`;
+        this._warning =
+          (this._stderr || "").slice(0, 300) || `exit code ${code}`;
         this._setState("failed");
       }
       this._stderr = "";

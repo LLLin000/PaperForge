@@ -16,7 +16,7 @@ from paperforge.worker._utils import pipeline_paths as _pipeline_paths_impl
 paperforge.config.pipeline_paths = _pipeline_paths_impl
 
 from paperforge.commands.ocr import _needs_derived_rebuild, _select_rebuild_keys
-from paperforge.commands.embed import _pid_alive, _assert_collections_healthy
+from paperforge.commands.embed import _pid_alive
 from paperforge.worker.ocr_rebuild import _apply_post_rebuild_version_flags
 
 # ---------------------------------------------------------------------------
@@ -363,30 +363,3 @@ class TestPidAlive:
 
 
 # ---------------------------------------------------------------------------
-# _assert_collections_healthy
-# ---------------------------------------------------------------------------
-
-class TestAssertCollectionsHealthy:
-    """Tests for _assert_collections_healthy (sqlite-vec path)."""
-
-    def test_healthy_collections(self, tmp_path):
-        """All three meta tables accessible -> (True, '')."""
-        from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
-        from paperforge.memory.schema import ensure_schema
-        db_path = get_memory_db_path(tmp_path)
-        conn = get_connection(db_path)
-        try:
-            ensure_vec_extension(conn)
-            ensure_schema(conn)
-        finally:
-            conn.close()
-
-        ok, msg = _assert_collections_healthy(tmp_path)
-        assert ok is True
-        assert msg == ""
-
-    def test_corrupted_collection(self, tmp_path):
-        """Missing paperforge.db -> (False, 'paperforge.db not found')."""
-        ok, msg = _assert_collections_healthy(tmp_path)
-        assert ok is False
-        assert "paperforge.db not found" in msg

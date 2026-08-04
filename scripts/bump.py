@@ -23,6 +23,11 @@ FILES_TO_UPDATE = {
     "plugin_manifest": ROOT / "paperforge" / "plugin" / "manifest.json",
     "root_manifest": ROOT / "manifest.json",
 }
+# versions.json is a map of released version -> minAppVersion; the version
+# gate (scripts/check_version_sync.py) requires the canonical version to be
+# present, so a bump must add a row here too (reuse the current manifest's
+# minAppVersion until the manifest itself is bumped).
+VERSIONS_JSON = ROOT / "paperforge" / "plugin" / "versions.json"
 
 
 def read_current_version() -> str:
@@ -76,6 +81,24 @@ def main():
     for key, path in FILES_TO_UPDATE.items():
         update_file(path, old_ver, new_ver, args.dry_run)
 
+    # versions.json: add `new_ver -> <current minAppVersion>` row so the
+    # version-sync gate passes on the tag; manifest.json's minAppVersion is
+    # read before it gets rewritten below? No — read it BEFORE updating.
+    import json as _json
+
+    manifest = _json.loads(FILES_TO_UPDATE["plugin_manifest"].read_text(encoding="utf-8"))
+    min_app = manifest.get("minAppVersion", "1.0.0")
+    vj = _json.loads(VERSIONS_JSON.read_text(encoding="utf-8"))
+    vj[new_ver] = min_app
+    if args.dry_run:
+        print(f"  WOULD update versions.json: {new_ver} → {min_app}")
+    else:
+        VERSIONS_JSON.write_text(
+            _json.dumps(vj, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(f"  versions.json: {new_ver} → {min_app}")
+
     if args.dry_run:
         print("\nDry run — no changes made.")
         return
@@ -85,7 +108,7 @@ def main():
         return
 
     # Git add + commit + tag
-    staged = [str(FILES_TO_UPDATE[k]) for k in FILES_TO_UPDATE]
+    staged = [str(FILES_TO_UPDATE[k]) for k in FILES_TO_UPDATE] + [str(VERSIONS_JSON)]
     run(["git", "add"] + staged)
     run(["git", "commit", "-m", f"bump: {old_ver} -> {new_ver}"])
 
