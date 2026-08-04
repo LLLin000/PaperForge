@@ -159,8 +159,13 @@ ocr_status: done
         monkeypatch.undo()
 
     content = note.read_text(encoding="utf-8")
+    # #123: the transaction executor ROLLS BACK the note to its original
+    # state on failure (owner acceptance: restore OCR dir + workspace
+    # fulltexts + original note). ocr_redo: true survives so the scan
+    # retries the paper next time; the status is the pre-redo "done",
+    # not a stuck "pending".
     assert "ocr_redo: true" in content
-    assert 'ocr_status: "pending"' in content
+    assert "ocr_status: done" in content
 
 
 def test_ocr_redo_rebuilds_phase1_artifacts(tmp_path: Path) -> None:

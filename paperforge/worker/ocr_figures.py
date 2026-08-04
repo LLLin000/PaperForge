@@ -3218,6 +3218,12 @@ def _suppress_ghost_matched_figures(
         inferred = _extract_figure_number(text)
         return inferred
 
+    def _owns_assets(m: dict) -> bool:
+        # vnext entries carry assets either as asset_block_ids (block ids)
+        # or matched_assets (dict list) — check both contracts so entries
+        # with real assets are never treated as 0-asset ghosts.
+        return bool(m.get("asset_block_ids")) or bool(m.get("matched_assets"))
+
     by_number: dict[int, list[int]] = {}
     for i, m in enumerate(matched):
         eff = _eff_num(m)
@@ -3233,17 +3239,17 @@ def _suppress_ghost_matched_figures(
     kept: list[dict] = []
     suppressed: list[dict] = []
     for i, m in enumerate(matched):
-        assets = m.get("asset_block_ids") or []
+        has_assets = _owns_assets(m)
         num = m.get("figure_number")
         eff = _eff_num(m)
         ghost = False
 
-        if eff is not None and not assets:
+        if eff is not None and not has_assets:
             group = by_number.get(eff, [])
-            if any(matched[j].get("asset_block_ids") for j in group if j != i):
+            if any(_owns_assets(matched[j]) for j in group if j != i):
                 ghost = True  # rule 1: dominated 0-asset entry
 
-        if not ghost and num is not None and not assets:
+        if not ghost and num is not None and not has_assets:
             legend_id = str(m.get("legend_block_id", "") or "")
             page = int(m.get("page", 0) or 0)
             block_text = block_text_by_id.get((page, legend_id), "")
