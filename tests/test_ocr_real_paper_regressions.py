@@ -67,11 +67,20 @@ def _iter_expected_object_ownership(expectations: dict) -> list[tuple[str, dict]
 
 def _reader_figure_index(reader_payload: dict) -> tuple[dict[int, dict], dict[int, dict]]:
     normalized = reader_payload.get("normalized_inputs", {})
-    matched = {
-        int(item["figure_number"]): item
-        for item in normalized.get("matched_figures", [])
-        if item.get("figure_number") is not None
-    }
+    # A figure may span pages as several matched entries (cross-page
+    # continuation is by design). Dict-comprehension order would keep the
+    # LAST entry, which can be a zero-asset ghost; keep the entry that
+    # actually owns assets instead (issue #118).
+    matched: dict[int, dict] = {}
+    for item in normalized.get("matched_figures", []):
+        if item.get("figure_number") is None:
+            continue
+        num = int(item["figure_number"])
+        prev = matched.get(num)
+        if prev is None or len(item.get("asset_block_ids") or []) > len(
+            prev.get("asset_block_ids") or []
+        ):
+            matched[num] = item
     ambiguous = {
         int(item["figure_number"]): item
         for item in normalized.get("ambiguous_figures", [])
@@ -435,7 +444,7 @@ def test_gold_figure_merge_ownership_contracts(tmp_path: Path) -> None:
         pytest.fail("\n" + "\n".join(failures))
 
 
-@pytest.mark.xfail(strict=True, reason="vnext figure page assignment pending decision — https://github.com/LLLin000/PaperForge/issues/118")
+
 def test_dwqqk2yb_ownership_no_longer_mega_merges_same_page_assets(tmp_path: Path) -> None:
     result = replay_production_pipeline("DWQQK2YB", tmp_path)
     reader_payload = result["reader_payload"]

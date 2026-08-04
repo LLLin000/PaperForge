@@ -2285,6 +2285,12 @@ def redo_papers_for_keys(
                 shutil.rmtree(_backup_dir)
         note_file.write_text(current_text, encoding="utf-8")
         refresh_index_entry(vault, key)
+        # #118: per-paper progress token — the main loop never called
+        # progress_callback (only the early-return branches did), so a
+        # multi-key redo streamed START/DONE with no PROGRESS and the
+        # frontend progress bar sat at 0/N.
+        if progress_callback is not None:
+            progress_callback(key)
 
     return {
         "success_keys": success_keys,
