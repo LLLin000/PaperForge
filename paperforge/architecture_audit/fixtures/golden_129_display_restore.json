@@ -1,0 +1,111 @@
+{
+  "contract": {
+    "schema_version": 1,
+    "asset_groups": [
+      "library",
+      "ocr_raw",
+      "ocr_derived",
+      "retrieval",
+      "vectors"
+    ],
+    "publication_units": [
+      {
+        "unit_id": "ocr_derived.generation",
+        "asset_group": "ocr_derived",
+        "publication_authority": "ocr.publisher",
+        "authorized_writers": [
+          "ocr.postprocess",
+          "ocr.rebuild",
+          "ocr.legacy_backfill"
+        ]
+      }
+    ],
+    "operations": [
+      "display_restore"
+    ],
+    "rules": [
+      {
+        "rule_id": "canonical_writer.restore",
+        "kind": "canonical_writer",
+        "subject": "ocr_derived.generation",
+        "lifecycle": "planned",
+        "enforcement": "blocking",
+        "effective_after": {
+          "issue": "#129"
+        },
+        "description": "UI restore must never be able to pass as full OCR restoration; structural restore is a separate designed operation"
+      },
+      {
+        "rule_id": "signal.drift_state",
+        "kind": "signal_consumer",
+        "subject": "fulltext_drift_state",
+        "lifecycle": "active",
+        "enforcement": "advisory",
+        "description": "display-vs-structure divergence must be surfaced"
+      }
+    ],
+    "exceptions": []
+  },
+  "survey": {
+    "schema_version": 1,
+    "scope": "paperforge/plugin",
+    "coverage": [
+      {
+        "extractor": "python_ast",
+        "status": "complete"
+      },
+      {
+        "extractor": "typescript",
+        "status": "complete"
+      }
+    ],
+    "facts": [
+      {
+        "kind": "canonical_write",
+        "unit_id": "ocr_derived.generation",
+        "actor_kind": "ui",
+        "via_publication_protocol": false,
+        "evidence": {
+          "file": "paperforge/plugin/src/services/version-history.ts",
+          "file_digest": "sha256:c2bf252146ddc4ebaacaef8ad8426f9f27acbaf3140c4ba95e18a3659e3ccc76",
+          "symbol": "restoreVersion",
+          "line_start": 162,
+          "line_end": 185,
+          "extractor": "typescript",
+          "epistemic_status": "observed_static",
+          "confidence": "exact"
+        }
+      },
+      {
+        "kind": "signal",
+        "signal_id": "fulltext_drift_state",
+        "producer": "worker.ocr_maintenance",
+        "consumer_kind": "code",
+        "has_code_consumer": true,
+        "evidence": {
+          "file": "paperforge/worker/ocr_maintenance.py",
+          "file_digest": "sha256:7293aba0abacc1b00085938a65f60c7b398e99f9407fb379df3229aab7da0f06",
+          "symbol": "build_ocr_health",
+          "line_start": 60,
+          "line_end": 90,
+          "extractor": "python_ast",
+          "epistemic_status": "observed_static",
+          "confidence": "exact"
+        }
+      }
+    ],
+    "source_digest": "sha256:da6844f116d9c53b021806bb8cd0fa44febadf23b58530530081cc2d815fb618",
+    "parse_errors": [],
+    "excluded_roots": [],
+    "run_metadata": {
+      "repository_revision": "1f02281b",
+      "repository_dirty": false,
+      "tool_version": "1.0.0",
+      "extractor_versions": {
+        "python_ast": "1",
+        "typescript": "1"
+      },
+      "generated_at": "2026-08-05T00:00:00Z"
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "contract": {
+    "schema_version": 1,
+    "asset_groups": [
+      "library",
+      "ocr_raw",
+      "ocr_derived",
+      "retrieval",
+      "vectors"
+    ],
+    "publication_units": [],
+    "operations": [
+      "sync",
+      "probe_status",
+      "embed_build_resume"
+    ],
+    "rules": [
+      {
+        "rule_id": "remote_intent.sync_followup",
+        "kind": "remote_intent",
+        "subject": "sync",
+        "lifecycle": "planned",
+        "enforcement": "blocking",
+        "effective_after": {
+          "issue": "#127"
+        },
+        "accepted_intent_modes": [
+          "direct_invocation",
+          "ui_modal",
+          "explicit_flag",
+          "interactive_prompt"
+        ],
+        "description": "sync may run local memory build automatically but must not launch remote embedding implicitly"
+      },
+      {
+        "rule_id": "query.side_effect_free",
+        "kind": "query_side_effect",
+        "subject": "probe_status",
+        "lifecycle": "active",
+        "enforcement": "blocking",
+        "description": "status queries must not mutate business facts"
+      }
+    ],
+    "exceptions": []
+  },
+  "survey": {
+    "schema_version": 1,
+    "scope": "paperforge",
+    "coverage": [
+      {
+        "extractor": "python_ast",
+        "status": "complete"
+      }
+    ],
+    "facts": [
+      {
+        "kind": "effect",
+        "operation_id": "sync",
+        "effect_kind": "remote_operation",
+        "intent_mode": "implicit",
+        "evidence": {
+          "file": "paperforge/commands/sync.py",
+          "file_digest": "sha256:c7f2c990138e46f3b1099f80eb48f4f09bf488f5a503f764b7f64930e83f7be6",
+          "symbol": "run",
+          "line_start": 93,
+          "line_end": 96,
+          "extractor": "python_ast",
+          "epistemic_status": "observed_static",
+          "confidence": "exact"
+        }
+      },
+      {
+        "kind": "effect",
+        "operation_id": "sync",
+        "effect_kind": "remote_operation",
+        "intent_mode": "implicit",
+        "evidence": {
+          "file": "paperforge/commands/sync.py",
+          "file_digest": "sha256:c7f2c990138e46f3b1099f80eb48f4f09bf488f5a503f764b7f64930e83f7be6",
+          "symbol": "run",
+          "line_start": 117,
+          "line_end": 121,
+          "extractor": "python_ast",
+          "epistemic_status": "observed_static",
+          "confidence": "exact"
+        }
+      }
+    ],
+    "source_digest": "sha256:0112617977db5fb54cd46c0d6c9f6da13bb6945b5b8c162578385c08f4efc180",
+    "parse_errors": [],
+    "excluded_roots": [],
+    "run_metadata": {
+      "repository_revision": "1f02281b",
+      "repository_dirty": false,
+      "tool_version": "1.0.0",
+      "extractor_versions": {
+        "python_ast": "1",
+        "typescript": "1"
+      },
+      "generated_at": "2026-08-05T00:00:00Z"
+    }
+  }
+}
