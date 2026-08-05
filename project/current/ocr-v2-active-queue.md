@@ -1,6 +1,20 @@
 # OCR-v2 Active Queue
 > Status: OCR-v2 is stable; real `D:\L\Med\test` visual audit repairs are deployed, including a complete four-stage Setup Journey with in-flow Foundation, Library, and optional-capability configuration. Release remains explicitly deferred pending owner acceptance.
-> Last updated: 2026-07-26
+> Last updated: 2026-08-05
+
+## 2026-08-05: Mandatory triage checkpoint (per #130)
+
+Architecture Audit Slices A+B (#131/#132) accepted and closed; #125 administratively closed; all open issues re-read and classified. Resulting queue:
+
+- **#127 — sole `ready-for-agent`** (system-wide `PFResult.next_actions` cost/follow-up policy). This is the next implementation work.
+- **#126** — blocked by #127 (OCR Workspace closure consumes the `next_actions` contract; 4 PRs).
+- **#129** — blocked by #126 (display restore vs structural restore via #126 publication-marker protocol).
+- **#99** — owner decision (redo-safety path reconfirmation after #129); stays blocked.
+- **#81** — owner decision (release gate; N+1 code verified, no release authorized).
+- **#82** — deferred (N+2 deletion needs a probe-capable N+1 package + support window).
+- **#94–#105 (Wayfinder)** — frozen; children deferred post-release (#95 workspace surface owned by #126; #101 progress contract overlaps #126; #102 redo-backup theme revisited with #99). No child agent-ready.
+- **#63** — deferred (parent of closed #64; resume only as a new issue).
+- **#133/#134** — deferred post-RC (architecture collectors/HTML+CI gate).
 
 ## Current checkpoint
 
