@@ -71,6 +71,19 @@ class TestStableIds:
         base = finding_id("rule.a", ["unit.x"], ["run"])
         assert base != finding_id("rule.b", ["unit.x"], ["run"])
         assert base != finding_id("rule.a", ["unit.y"], ["run"])
+    def test_finding_id_keeps_subject_and_evidence_boundaries(self):
+        assert finding_id("rule", ["a"], ["b"]) != finding_id("rule", ["a", "b"], [])
+
+    def test_finding_id_includes_evidence_file_identity(self):
+        first = finding_id("rule", ["unit"], [{"file": "a.py", "symbol": "run"}])
+        second = finding_id("rule", ["unit"], [{"file": "b.py", "symbol": "run"}])
+        assert first != second
+
+    def test_ordered_scope_is_not_sorted_by_generic_canonicalizer(self):
+        first = canonical_json({"scope": ["stop", "execution"]})
+        second = canonical_json({"scope": ["execution", "stop"]})
+        assert first != second
+
 
     def test_stable_id_is_deterministic_and_prefixed(self):
         first = stable_id("finding", "a", "b")

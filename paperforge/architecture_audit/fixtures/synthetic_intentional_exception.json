@@ -25,7 +25,8 @@
         "exception_id": "exc.probe.write",
         "rule_id": "query.no_business_mutation",
         "subject": "probe_status",
-        "rationale": "diagnostic cache write is declared disposable"
+        "rationale": "diagnostic cache write is declared disposable",
+        "review_condition": "revisit when probe cache persistence changes"
       }
     ]
   },

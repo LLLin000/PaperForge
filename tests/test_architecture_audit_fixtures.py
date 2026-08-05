@@ -7,7 +7,7 @@ against the schema and reconcile to the documented semantic outcomes.
 from __future__ import annotations
 
 from paperforge.architecture_audit import AssessmentStatus, RuleStatus, reconcile
-from paperforge.architecture_audit.fixtures import FIXTURE_NAMES, load_fixture
+from paperforge.architecture_audit.fixtures import FIXTURE_NAMES, load_fixture, load_fixture_dict
 
 
 class TestFixtureIntegrity:
@@ -109,16 +109,19 @@ class TestSyntheticOutcomes:
 
 class TestGoldenOutcomes:
     def test_126_planned_contract_rules_produce_planned_gaps(self):
-        """#126 target behavior is declared but not yet effective; the current
-        unit authority rule is active and satisfied by the observed single
-        authority."""
+        """#126 target behavior is declared but not yet effective.
+
+        The fixed revision has no observable publication-authority seam, so the
+        active authority rule remains unresolved instead of copying Contract
+        intent into Survey facts.
+        """
         contract, survey = load_fixture("golden_126_ocr_rebuild")
         audit = reconcile(contract, survey)
         statuses = {f.rule_id: f.rule_status for f in audit.content.findings}
         assert statuses["remote_intent.embed_resume"] is RuleStatus.PLANNED_GAP
         assert statuses["publication.hash_marker"] is RuleStatus.PLANNED_GAP
         assert statuses["signal.rebuild_progress"] is RuleStatus.PLANNED_GAP
-        assert "publication.authority" not in statuses  # satisfied, not a finding
+        assert statuses["publication.authority"] is RuleStatus.UNRESOLVED
 
     def test_127_observed_implicit_embed_is_declared_planned_gap(self):
         """The sync fire-and-forget embed is observed as implicit; the policy
@@ -135,3 +138,40 @@ class TestGoldenOutcomes:
         statuses = {f.rule_id: f.rule_status for f in audit.content.findings}
         assert statuses["canonical_writer.restore"] is RuleStatus.PLANNED_GAP
         assert "signal.drift_state" not in statuses  # active + satisfied
+
+
+
+class TestGoldenEvidenceVerification:
+    def test_pinned_evidence_files_symbols_ranges_and_aggregate_digest(self):
+        import hashlib
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1]
+        names = (
+            "golden_126_ocr_rebuild",
+            "golden_127_sync_embed",
+            "golden_129_display_restore",
+        )
+        for name in names:
+            payload = load_fixture_dict(name)
+            pairs = set()
+            for fact in payload["survey"]["facts"]:
+                evidence_items = []
+                if fact.get("evidence"):
+                    evidence_items.append(fact["evidence"])
+                evidence_items.extend(fact.get("consumer_evidence", []))
+                for evidence in evidence_items:
+                    path = root / evidence["file"]
+                    assert path.is_file(), (name, evidence["file"])
+                    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                    assert digest == evidence["file_digest"].removeprefix("sha256:"), (name, evidence["file"])
+                    lines = path.read_text(encoding="utf-8").splitlines()
+                    selected = lines[evidence["line_start"] - 1:evidence["line_end"]]
+                    assert any(evidence["symbol"] in line for line in selected), (
+                        name,
+                        evidence["symbol"],
+                    )
+                    pairs.add((evidence["file"], evidence["file_digest"]))
+            aggregate = "\n".join(f"{file}\n{digest}" for file, digest in sorted(pairs))
+            expected = "sha256:" + hashlib.sha256(aggregate.encode("utf-8")).hexdigest()
+            assert payload["survey"]["source_digest"] == expected, name

@@ -15,7 +15,12 @@ import json
 from importlib import resources
 from typing import Any
 
-from paperforge.architecture_audit.layers import ArchitectureContract, ArchitectureSurvey
+from paperforge.architecture_audit.layers import (
+    ArchitectureContract,
+    ArchitectureSurvey,
+    validate_contract,
+    validate_survey,
+)
 
 FIXTURE_NAMES = (
     "synthetic_query_side_effect",
@@ -45,7 +50,8 @@ def load_fixture_dict(name: str) -> dict[str, Any]:
 def load_fixture(name: str) -> tuple[ArchitectureContract, ArchitectureSurvey]:
     """Load a fixture as validated Contract + Survey layers."""
     payload = load_fixture_dict(name)
-    return (
-        ArchitectureContract.from_dict(payload["contract"]),
-        ArchitectureSurvey.from_dict(payload["survey"]),
-    )
+    contract = ArchitectureContract.from_dict(payload["contract"])
+    survey = ArchitectureSurvey.from_dict(payload["survey"])
+    validate_contract(contract)
+    validate_survey(survey)
+    return contract, survey

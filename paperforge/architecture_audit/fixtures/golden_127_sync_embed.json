@@ -1,19 +1,10 @@
 {
   "contract": {
     "schema_version": 1,
-    "asset_groups": [
-      "library",
-      "ocr_raw",
-      "ocr_derived",
-      "retrieval",
-      "vectors"
-    ],
+    "asset_groups": ["library", "ocr_raw", "ocr_derived", "retrieval", "vectors"],
     "publication_units": [],
-    "operations": [
-      "sync",
-      "probe_status",
-      "embed_build_resume"
-    ],
+    "operations": ["sync", "probe_status", "embed_build_resume"],
+    "required_extractors": ["python_ast"],
     "rules": [
       {
         "rule_id": "remote_intent.sync_followup",
@@ -21,15 +12,8 @@
         "subject": "sync",
         "lifecycle": "planned",
         "enforcement": "blocking",
-        "effective_after": {
-          "issue": "#127"
-        },
-        "accepted_intent_modes": [
-          "direct_invocation",
-          "ui_modal",
-          "explicit_flag",
-          "interactive_prompt"
-        ],
+        "effective_after": {"issue": "#127"},
+        "accepted_intent_modes": ["direct_invocation", "ui_modal", "explicit_flag", "interactive_prompt"],
         "description": "sync may run local memory build automatically but must not launch remote embedding implicitly"
       },
       {
@@ -46,12 +30,7 @@
   "survey": {
     "schema_version": 1,
     "scope": "paperforge",
-    "coverage": [
-      {
-        "extractor": "python_ast",
-        "status": "complete"
-      }
-    ],
+    "coverage": [{"extractor": "python_ast", "status": "complete"}],
     "facts": [
       {
         "kind": "effect",
@@ -61,8 +40,8 @@
         "evidence": {
           "file": "paperforge/commands/sync.py",
           "file_digest": "sha256:c7f2c990138e46f3b1099f80eb48f4f09bf488f5a503f764b7f64930e83f7be6",
-          "symbol": "run",
-          "line_start": 93,
+          "symbol": "subprocess.Popen",
+          "line_start": 92,
           "line_end": 96,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
@@ -77,8 +56,8 @@
         "evidence": {
           "file": "paperforge/commands/sync.py",
           "file_digest": "sha256:c7f2c990138e46f3b1099f80eb48f4f09bf488f5a503f764b7f64930e83f7be6",
-          "symbol": "run",
-          "line_start": 117,
+          "symbol": "subprocess.Popen",
+          "line_start": 116,
           "line_end": 121,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
@@ -86,17 +65,14 @@
         }
       }
     ],
-    "source_digest": "sha256:0112617977db5fb54cd46c0d6c9f6da13bb6945b5b8c162578385c08f4efc180",
+    "source_digest": "sha256:213998f6a5ba669b62daa5febfdfd2b77fb26a8f26227cf16578b7ff74ff16e7",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
       "repository_revision": "1f02281b",
       "repository_dirty": false,
       "tool_version": "1.0.0",
-      "extractor_versions": {
-        "python_ast": "1",
-        "typescript": "1"
-      },
+      "extractor_versions": {"python_ast": "1"},
       "generated_at": "2026-08-05T00:00:00Z"
     }
   }

@@ -26,7 +26,9 @@ from paperforge.architecture_audit.layers import (
     Assessment,
     AssessmentStatus,
     AuditContent,
+    AuthorityRole,
     CanonicalWriteFact,
+    CoverageEntry,
     CoverageStatus,
     DeterministicAudit,
     EffectFact,
@@ -44,7 +46,10 @@ from paperforge.architecture_audit.layers import (
     SignalConsumerKind,
     SignalFact,
     UnitAuthorityFact,
+    _review_projection_digest,
+    validate_audit,
     validate_contract,
+    validate_report_view,
     validate_review,
     validate_survey,
 )
@@ -75,15 +80,39 @@ def _facts_of(survey: ArchitectureSurvey, kind: type) -> list[Any]:
     return [fact for fact in survey.facts if isinstance(fact, kind)]
 
 
-def _absence_is_observed(survey: ArchitectureSurvey) -> bool:
-    """Absence of facts counts as satisfaction only when required coverage is complete."""
-    required = [c for c in survey.coverage if c.required]
-    return all(c.status is CoverageStatus.COMPLETE for c in required) if required else True
+def _required_coverage(contract: ArchitectureContract, survey: ArchitectureSurvey) -> tuple[CoverageEntry, ...]:
+    """Return explicit coverage rows, including missing contract requirements."""
+    rows = {entry.extractor: entry for entry in survey.coverage if entry.required}
+    if contract.required_extractors:
+        return tuple(
+            rows.get(
+                extractor,
+                CoverageEntry(
+                    extractor=extractor,
+                    status=CoverageStatus.UNAVAILABLE,
+                    required=True,
+                    diagnostics=("missing coverage row",),
+                ),
+            )
+            for extractor in contract.required_extractors
+        )
+    return tuple(rows.values())
+
+
+def _absence_is_observed(contract: ArchitectureContract, survey: ArchitectureSurvey) -> bool:
+    """Absence is meaningful only after at least one required extractor completed."""
+    coverage = _required_coverage(contract, survey)
+    return bool(coverage) and not survey.parse_errors and all(
+        entry.status is CoverageStatus.COMPLETE for entry in coverage
+    )
 
 
 def _evidence_of(fact: Any) -> list[Evidence]:
     evidence = getattr(fact, "evidence", None)
-    return [evidence] if evidence is not None else []
+    result = [evidence] if evidence is not None else []
+    consumer_evidence = getattr(fact, "consumer_evidence", ())
+    result.extend(consumer_evidence)
+    return result
 
 
 def _forbidden_query_effects(rule: Rule, survey: ArchitectureSurvey) -> tuple[list[EffectFact], list[EffectFact]]:
@@ -114,12 +143,36 @@ def _write_facts(rule: Rule, survey: ArchitectureSurvey) -> list[CanonicalWriteF
 
 
 def _role_facts(rule: Rule, survey: ArchitectureSurvey) -> list[RoleAuthorityFact]:
-    role = rule.scope[0] if rule.scope else ""
+    role = rule.authority_role or (rule.scope[0] if rule.scope else "")
     return [
         fact
         for fact in survey.facts
         if isinstance(fact, RoleAuthorityFact) and fact.operation_id == rule.subject and fact.role == role
     ]
+
+def _declared_role_authority(
+    contract: ArchitectureContract,
+    operation_id: str,
+    role: str,
+) -> tuple[str, ...] | None:
+    declared: list[str] = []
+    for operation in contract.operations:
+        if operation.operation_id != operation_id:
+            continue
+        for authority in operation.authorities:
+            if authority.role.value == role:
+                declared.append(authority.authority_id)
+            if role == AuthorityRole.OBSERVER.value:
+                declared.extend(authority.observers)
+            elif role == AuthorityRole.DELEGATED_EXECUTOR.value:
+                declared.extend(authority.delegated_executors)
+        break
+    identities = tuple(dict.fromkeys(declared))
+    return identities or None
+
+
+def _declared_unit(contract: ArchitectureContract, unit_id: str):
+    return next((unit for unit in contract.publication_units if unit.unit_id == unit_id), None)
 
 
 # ---------------------------------------------------------------- rule evaluation
@@ -135,7 +188,7 @@ def _evaluate_rule(
     if rule.kind is RuleKind.QUERY_SIDE_EFFECT:
         violations, effects = _forbidden_query_effects(rule, survey)
         if not effects:
-            if _absence_is_observed(survey):
+            if _absence_is_observed(contract, survey):
                 return RuleStatus.SATISFIED, "no observed side effects", []
             return RuleStatus.UNRESOLVED, "no effect facts and coverage incomplete", []
         if violations:
@@ -151,7 +204,7 @@ def _evaluate_rule(
         accepted = set(rule.accepted_intent_modes or DEFAULT_ACCEPTED_INTENT_MODES)
         remote = _remote_facts(rule, survey)
         if not remote:
-            if _absence_is_observed(survey):
+            if _absence_is_observed(contract, survey):
                 return RuleStatus.SATISFIED, "no remote operations observed", []
             return RuleStatus.UNRESOLVED, "no remote-operation facts and coverage incomplete", []
         violations = [fact for fact in remote if fact.intent_mode not in accepted]
@@ -168,7 +221,7 @@ def _evaluate_rule(
         required = set(rule.required_consumer_kinds or DEFAULT_REQUIRED_CONSUMER_KINDS)
         signals = _signal_facts(rule, survey)
         if not signals:
-            if _absence_is_observed(survey):
+            if _absence_is_observed(contract, survey):
                 return RuleStatus.SATISFIED, "no signals observed", []
             return RuleStatus.UNRESOLVED, "no signal facts and coverage incomplete", []
         orphans = [fact for fact in signals if fact.consumer_kind in required and not fact.has_code_consumer]
@@ -184,9 +237,7 @@ def _evaluate_rule(
     if rule.kind is RuleKind.PUBLICATION_AUTHORITY:
         units = _unit_facts(rule, survey)
         if not units:
-            if _absence_is_observed(survey):
-                return RuleStatus.SATISFIED, "no unit authority facts observed", []
-            return RuleStatus.UNRESOLVED, "no unit authority facts and coverage incomplete", []
+            return RuleStatus.UNRESOLVED, "no unit authority facts observed", []
         declared = next(
             (u.publication_authority for u in contract.publication_units if u.unit_id == rule.subject),
             None,
@@ -212,40 +263,92 @@ def _evaluate_rule(
 
     if rule.kind is RuleKind.ROLE_AUTHORITY:
         facts = _role_facts(rule, survey)
+        role = rule.authority_role or (rule.scope[0] if rule.scope else "?")
         if not facts:
-            role = rule.scope[0] if rule.scope else "?"
-            if _absence_is_observed(survey):
-                return RuleStatus.SATISFIED, f"no {role} authority facts observed", []
-            return RuleStatus.UNRESOLVED, f"no {role} authority facts and coverage incomplete", []
+            return RuleStatus.UNRESOLVED, f"no {role} authority facts observed", []
+        declared = _declared_role_authority(contract, rule.subject, role)
+        if declared is None:
+            return RuleStatus.UNRESOLVED, f"no declared {role} authority for operation {rule.subject}", []
+        multi_valued = role in {
+            AuthorityRole.OBSERVER.value,
+            AuthorityRole.DELEGATED_EXECUTOR.value,
+        }
         for fact in facts:
-            if len(fact.authorities) != 1:
+            if not fact.authorities:
+                return (
+                    RuleStatus.VIOLATED,
+                    f"operation {fact.operation_id} role {fact.role!r} has no authorities",
+                    _evidence_of(fact),
+                )
+            if not multi_valued and len(fact.authorities) != 1:
                 count = len(fact.authorities)
                 return (
                     RuleStatus.VIOLATED,
                     f"operation {fact.operation_id} role {fact.role!r} has {count} authorities; exactly one required",
                     _evidence_of(fact),
                 )
-        return RuleStatus.SATISFIED, "one authority per role", [e for fact in facts for e in _evidence_of(fact)]
+            if multi_valued:
+                observed = set(fact.authorities)
+                declared_set = set(declared)
+                if observed != declared_set:
+                    missing = sorted(declared_set - observed)
+                    unexpected = sorted(observed - declared_set)
+                    return (
+                        RuleStatus.VIOLATED,
+                        f"operation {fact.operation_id} role {fact.role!r} authorities differ from declared "
+                        f"{declared!r}; missing={missing!r}, unexpected={unexpected!r}",
+                        _evidence_of(fact),
+                    )
+            elif fact.authorities[0] not in declared:
+                return (
+                    RuleStatus.VIOLATED,
+                    f"operation {fact.operation_id} role {fact.role!r} observed authority "
+                    f"{fact.authorities[0]!r} differs from declared {declared!r}",
+                    _evidence_of(fact),
+                )
+        return RuleStatus.SATISFIED, "observed authorities match the declaration", [
+            e for fact in facts for e in _evidence_of(fact)
+        ]
 
     if rule.kind is RuleKind.CANONICAL_WRITER:
         writes = _write_facts(rule, survey)
         if not writes:
-            if _absence_is_observed(survey):
+            if _absence_is_observed(contract, survey):
                 return RuleStatus.SATISFIED, "no canonical writes observed", []
             return RuleStatus.UNRESOLVED, "no canonical-write facts and coverage incomplete", []
-        ui_writes = [fact for fact in writes if fact.actor_kind == "ui"]
-        if ui_writes:
-            return RuleStatus.VIOLATED, "UI directly writes a canonical publication unit", [
-                e for fact in ui_writes for e in _evidence_of(fact)
+        unit = _declared_unit(contract, rule.subject)
+        violations: list[CanonicalWriteFact] = []
+        messages: list[str] = []
+        for fact in writes:
+            writer = fact.writer_id or fact.actor_kind
+            if fact.actor_kind == "ui":
+                violations.append(fact)
+                messages.append("UI directly writes a publication unit")
+            if unit is not None and unit.authorized_writers and writer not in unit.authorized_writers:
+                violations.append(fact)
+                messages.append(f"writer {writer!r} is not authorized")
+            if unit is not None and not fact.via_publication_protocol:
+                violations.append(fact)
+                messages.append("write bypasses the publication protocol")
+            if (
+                unit is not None
+                and fact.publication_authority is not None
+                and fact.publication_authority != unit.publication_authority
+            ):
+                violations.append(fact)
+                messages.append("write uses a different publication authority")
+        if violations:
+            return RuleStatus.VIOLATED, "; ".join(sorted(set(messages))), [
+                e for fact in violations for e in _evidence_of(fact)
             ]
-        return RuleStatus.SATISFIED, "canonical writes originate from backend actors", [
+        return RuleStatus.SATISFIED, "all canonical writes use authorized protocol writers", [
             e for fact in writes for e in _evidence_of(fact)
         ]
 
     if rule.kind is RuleKind.PUBLICATION_MARKER:
         writes = _write_facts(rule, survey)
         if not writes:
-            if _absence_is_observed(survey):
+            if _absence_is_observed(contract, survey):
                 return RuleStatus.SATISFIED, "no canonical writes observed", []
             return RuleStatus.UNRESOLVED, "no canonical-write facts and coverage incomplete", []
         bypass = [fact for fact in writes if not fact.via_publication_protocol]
@@ -258,7 +361,10 @@ def _evaluate_rule(
         ]
 
     if rule.kind is RuleKind.COVERAGE_COMPLETE:
-        incomplete = [c for c in survey.coverage if c.required and c.status is not CoverageStatus.COMPLETE]
+        incomplete = [
+            c for c in _required_coverage(contract, survey)
+            if c.status is not CoverageStatus.COMPLETE
+        ]
         if incomplete:
             names = ", ".join(sorted({f"{c.extractor}={c.status.value}" for c in incomplete}))
             return RuleStatus.VIOLATED, f"required coverage incomplete: {names}", []
@@ -270,15 +376,33 @@ def _evaluate_rule(
 # ---------------------------------------------------------------- assessment
 
 
-def _assess(survey: ArchitectureSurvey, findings: list[Finding], failed_reasons: list[str]) -> Assessment:
+def _assess(
+    contract: ArchitectureContract,
+    survey: ArchitectureSurvey,
+    findings: list[Finding],
+    failed_reasons: list[str],
+) -> Assessment:
+    coverage = _required_coverage(contract, survey)
+    failed_reasons.extend(
+        f"{entry.extractor}_coverage_failed"
+        for entry in coverage
+        if entry.status is CoverageStatus.FAILED
+    )
+    failed_reasons.extend(f"parse_error: {error}" for error in survey.parse_errors)
     if failed_reasons:
-        return Assessment(status=AssessmentStatus.FAILED, gate_eligible=False, reasons=tuple(failed_reasons))
-    incomplete = [c for c in survey.coverage if c.required and c.status is not CoverageStatus.COMPLETE]
+        return Assessment(
+            status=AssessmentStatus.FAILED,
+            gate_eligible=False,
+            reasons=tuple(sorted(set(failed_reasons))),
+        )
+    incomplete = [entry for entry in coverage if entry.status is not CoverageStatus.COMPLETE]
+    if not coverage:
+        incomplete = [CoverageEntry(extractor="coverage", status=CoverageStatus.UNAVAILABLE)]
     if incomplete:
         return Assessment(
             status=AssessmentStatus.INCOMPLETE,
             gate_eligible=False,
-            reasons=tuple(sorted({f"{c.extractor}_coverage_{c.status.value}" for c in incomplete})),
+            reasons=tuple(sorted({f"{entry.extractor}_coverage_{entry.status.value}" for entry in incomplete})),
         )
     if findings:
         return Assessment(status=AssessmentStatus.FINDINGS, gate_eligible=True)
@@ -350,27 +474,32 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
 
         coverage_rows.append(RuleCoverage(rule_id=rule.rule_id, evaluated=True, status=status, reason=message))
 
-        if status in (RuleStatus.VIOLATED, RuleStatus.EXCEPTION_APPLIED):
+        if status in (RuleStatus.VIOLATED, RuleStatus.EXCEPTION_APPLIED, RuleStatus.UNRESOLVED):
             severity = (
                 "blocking"
                 if rule.enforcement is EnforcementMode.BLOCKING
                 else "advisory" if rule.enforcement is EnforcementMode.ADVISORY else "informational"
             )
-            findings.append(Finding(
-                finding_id=finding_id(
-                    rule.rule_id,
-                    [rule.subject, *rule.scope],
-                    [e.symbol for e in evidence],
-                ),
-                rule_id=rule.rule_id,
-                subject=rule.subject,
-                rule_status=status,
-                severity=severity,
-                message=message,
-                evidence=tuple(evidence),
-            ))
+            finding_subjects = [rule.subject, *rule.scope]
+            if rule.authority_role:
+                finding_subjects.append(f"authority_role:{rule.authority_role}")
+            findings.append(
+                Finding(
+                    finding_id=finding_id(
+                        rule.rule_id,
+                        finding_subjects,
+                        [{"file": e.file, "symbol": e.symbol} for e in evidence],
+                    ),
+                    rule_id=rule.rule_id,
+                    subject=rule.subject,
+                    rule_status=status,
+                    severity=severity,
+                    message=message,
+                    evidence=tuple(dict.fromkeys(evidence)),
+                )
+            )
 
-    assessment = _assess(survey, findings, failed_reasons)
+    assessment = _assess(contract, survey, findings, failed_reasons)
     content = AuditContent(
         reconciler_version=RECONCILER_VERSION,
         bound_contract_digest=sha256_digest(canonical_json(contract.to_dict())),
@@ -378,7 +507,7 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
         findings=tuple(findings),
         rule_coverage=tuple(coverage_rows),
         assessment=assessment,
-        coverage=tuple(survey.coverage),
+        coverage=tuple(_required_coverage(contract, survey)),
     )
     return DeterministicAudit(
         schema_version=SCHEMA_VERSION,
@@ -392,9 +521,10 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
 
 
 def compose(audit: DeterministicAudit, review: ArchitectureReview | None = None) -> ArchitectureReportView:
-    """Read-only projection. Rejects a Review not bound to this exact Audit."""
+    """Read-only projection. Rejects tampered audits and stale Reviews."""
+    validate_audit(audit)
     if review is not None:
-        validate_review(review)
+        validate_review(review, audit)
         mismatches = []
         if review.audit_digest != audit.semantic_digest:
             mismatches.append("audit_digest")
@@ -407,13 +537,23 @@ def compose(audit: DeterministicAudit, review: ArchitectureReview | None = None)
         if mismatches:
             raise DigestMismatch("review not bound to this audit: " + ", ".join(mismatches))
 
-    return ArchitectureReportView(
+    view = ArchitectureReportView(
         schema_version=SCHEMA_VERSION,
         audit_digest=audit.semantic_digest,
-        review_digest=semantic_digest(review.semantic_content()) if review is not None else None,
+        review_digest=(
+            _review_projection_digest(
+                review.adjudications,
+                review.semantic_findings,
+                review.evidence_requests,
+            )
+            if review is not None
+            else None
+        ),
         assessment=audit.content.assessment,
         deterministic_findings=audit.content.findings,
         review_adjudications=review.adjudications if review is not None else (),
         semantic_findings=review.semantic_findings if review is not None else (),
         evidence_requests=review.evidence_requests if review is not None else (),
     )
+    validate_report_view(view, audit)
+    return view
