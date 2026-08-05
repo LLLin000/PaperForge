@@ -45,7 +45,7 @@
         "via_publication_protocol": false,
         "evidence": {
           "file": "paperforge/plugin/src/services/version-history.ts",
-          "file_digest": "sha256:deadbeef",
+          "file_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
           "symbol": "restoreVersion",
           "line_start": 162,
           "line_end": 185,
@@ -55,7 +55,7 @@
         }
       }
     ],
-    "source_digest": "sha256:1111",
+    "source_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {

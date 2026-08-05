@@ -45,7 +45,7 @@
         "via_publication_protocol": false,
         "evidence": {
           "file": "paperforge/worker/ocr_rebuild.py",
-          "file_digest": "sha256:deadbeef",
+          "file_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
           "symbol": "run_derived_rebuild",
           "line_start": 210,
           "line_end": 260,
@@ -55,7 +55,7 @@
         }
       }
     ],
-    "source_digest": "sha256:1111",
+    "source_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {

@@ -8,6 +8,9 @@ Assessment precedence (#131): failed > incomplete > findings > clean.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
+from dataclasses import fields, is_dataclass
+from enum import Enum
 from typing import Any
 
 from paperforge.architecture_audit.canonical import (
@@ -47,6 +50,7 @@ from paperforge.architecture_audit.layers import (
     SignalFact,
     UnitAuthorityFact,
     _review_projection_digest,
+    _rule_entity_metas,
     validate_audit,
     validate_contract,
     validate_report_view,
@@ -80,23 +84,57 @@ def _facts_of(survey: ArchitectureSurvey, kind: type) -> list[Any]:
     return [fact for fact in survey.facts if isinstance(fact, kind)]
 
 
+def _stable_failure_digest(value: Any) -> str:
+    """Hash malformed layer values without object-address-dependent repr output."""
+    def normalize(item: Any) -> Any:
+        if item is None or isinstance(item, (bool, float, int, str)):
+            return item
+        if isinstance(item, Enum):
+            return {
+                "enum": f"{type(item).__module__}.{type(item).__qualname__}",
+                "value": normalize(item.value),
+            }
+        if is_dataclass(item) and not isinstance(item, type):
+            return {
+                "dataclass": f"{type(item).__module__}.{type(item).__qualname__}",
+                "fields": {field.name: normalize(getattr(item, field.name)) for field in fields(item)},
+            }
+        if isinstance(item, Mapping):
+            pairs = [(normalize(key), normalize(entry)) for key, entry in item.items()]
+            return {"mapping": sorted(pairs, key=canonical_json)}
+        if isinstance(item, (list, tuple)):
+            return [normalize(entry) for entry in item]
+        if isinstance(item, (set, frozenset)):
+            return sorted((normalize(entry) for entry in item), key=canonical_json)
+        return {"type": f"{type(item).__module__}.{type(item).__qualname__}"}
+
+    return sha256_digest(canonical_json(normalize(value)))
+
 def _required_coverage(contract: ArchitectureContract, survey: ArchitectureSurvey) -> tuple[CoverageEntry, ...]:
-    """Return explicit coverage rows, including missing contract requirements."""
-    rows = {entry.extractor: entry for entry in survey.coverage if entry.required}
-    if contract.required_extractors:
-        return tuple(
-            rows.get(
-                extractor,
-                CoverageEntry(
-                    extractor=extractor,
-                    status=CoverageStatus.UNAVAILABLE,
-                    required=True,
-                    diagnostics=("missing coverage row",),
-                ),
-            )
-            for extractor in contract.required_extractors
+    """Return the union of contract-required and survey-required coverage."""
+    rows = {entry.extractor: entry for entry in survey.coverage}
+    required_names = set(contract.required_extractors)
+    required_names.update(entry.extractor for entry in survey.coverage if entry.required)
+    result: list[CoverageEntry] = []
+    for extractor in sorted(required_names):
+        entry = rows.get(
+            extractor,
+            CoverageEntry(
+                extractor=extractor,
+                status=CoverageStatus.UNAVAILABLE,
+                required=True,
+                diagnostics=("missing coverage row",),
+            ),
         )
-    return tuple(rows.values())
+        if not entry.required:
+            entry = CoverageEntry(
+                extractor=entry.extractor,
+                status=entry.status,
+                required=True,
+                diagnostics=entry.diagnostics,
+            )
+        result.append(entry)
+    return tuple(result)
 
 
 def _absence_is_observed(contract: ArchitectureContract, survey: ArchitectureSurvey) -> bool:
@@ -143,7 +181,7 @@ def _write_facts(rule: Rule, survey: ArchitectureSurvey) -> list[CanonicalWriteF
 
 
 def _role_facts(rule: Rule, survey: ArchitectureSurvey) -> list[RoleAuthorityFact]:
-    role = rule.authority_role or (rule.scope[0] if rule.scope else "")
+    role = rule.authority_role or ""
     return [
         fact
         for fact in survey.facts
@@ -173,6 +211,29 @@ def _declared_role_authority(
 
 def _declared_unit(contract: ArchitectureContract, unit_id: str):
     return next((unit for unit in contract.publication_units if unit.unit_id == unit_id), None)
+
+def _effective_lifecycle(rule: Rule, contract: ArchitectureContract) -> LifecycleStatus:
+    lifecycles = [rule.lifecycle, *(meta.lifecycle for meta in _rule_entity_metas(rule, contract))]
+    if LifecycleStatus.DEPRECATED in lifecycles:
+        return LifecycleStatus.DEPRECATED
+    if LifecycleStatus.PLANNED in lifecycles:
+        return LifecycleStatus.PLANNED
+    return LifecycleStatus.ACTIVE
+
+
+def _effective_enforcement(rule: Rule, contract: ArchitectureContract) -> EnforcementMode:
+    modes = [
+        rule.enforcement,
+        *(meta.enforcement for meta in _rule_entity_metas(rule, contract) if meta.enforcement is not None),
+    ]
+    return max(
+        modes,
+        key={
+            EnforcementMode.OBSERVE: 0,
+            EnforcementMode.ADVISORY: 1,
+            EnforcementMode.BLOCKING: 2,
+        }.__getitem__,
+    )
 
 
 # ---------------------------------------------------------------- rule evaluation
@@ -224,10 +285,19 @@ def _evaluate_rule(
             if _absence_is_observed(contract, survey):
                 return RuleStatus.SATISFIED, "no signals observed", []
             return RuleStatus.UNRESOLVED, "no signal facts and coverage incomplete", []
-        orphans = [fact for fact in signals if fact.consumer_kind in required and not fact.has_code_consumer]
+        orphans = [
+            fact
+            for fact in signals
+            if fact.consumer_kind in required
+            and (
+                not fact.has_code_consumer
+                or fact.consumer is None
+                or not fact.consumer_evidence
+            )
+        ]
         if orphans:
             ids = ", ".join(sorted({fact.signal_id for fact in orphans}))
-            return RuleStatus.VIOLATED, f"signals without required code consumer: {ids}", [
+            return RuleStatus.VIOLATED, f"signals without auditable required consumer: {ids}", [
                 e for fact in orphans for e in _evidence_of(fact)
             ]
         return RuleStatus.SATISFIED, "all signals have consumers for their declared kind", [
@@ -263,7 +333,7 @@ def _evaluate_rule(
 
     if rule.kind is RuleKind.ROLE_AUTHORITY:
         facts = _role_facts(rule, survey)
-        role = rule.authority_role or (rule.scope[0] if rule.scope else "?")
+        role = rule.authority_role or "?"
         if not facts:
             return RuleStatus.UNRESOLVED, f"no {role} authority facts observed", []
         declared = _declared_role_authority(contract, rule.subject, role)
@@ -361,10 +431,10 @@ def _evaluate_rule(
         ]
 
     if rule.kind is RuleKind.COVERAGE_COMPLETE:
-        incomplete = [
-            c for c in _required_coverage(contract, survey)
-            if c.status is not CoverageStatus.COMPLETE
-        ]
+        required = _required_coverage(contract, survey)
+        if not required:
+            return RuleStatus.UNRESOLVED, "no required extractor coverage declared", []
+        incomplete = [c for c in required if c.status is not CoverageStatus.COMPLETE]
         if incomplete:
             names = ", ".join(sorted({f"{c.extractor}={c.status.value}" for c in incomplete}))
             return RuleStatus.VIOLATED, f"required coverage incomplete: {names}", []
@@ -408,6 +478,35 @@ def _assess(
         return Assessment(status=AssessmentStatus.FINDINGS, gate_eligible=True)
     return Assessment(status=AssessmentStatus.CLEAN, gate_eligible=True)
 
+def _failed_coverage(
+    contract: ArchitectureContract,
+    survey: ArchitectureSurvey,
+) -> tuple[CoverageEntry, ...]:
+    """Normalize malformed input coverage, preserving contract-required rows."""
+    rows: dict[str, CoverageEntry] = {}
+    for entry in survey.coverage:
+        if entry.extractor not in rows:
+            rows[entry.extractor] = CoverageEntry(
+                extractor=entry.extractor,
+                status=CoverageStatus.FAILED,
+                required=True,
+                diagnostics=tuple(dict.fromkeys((*entry.diagnostics, "validation failed"))),
+            )
+    required_names = set(contract.required_extractors)
+    required_names.update(entry.extractor for entry in survey.coverage if entry.required)
+    for extractor in required_names:
+        rows.setdefault(
+            extractor,
+            CoverageEntry(
+                extractor=extractor,
+                status=CoverageStatus.FAILED,
+                required=True,
+                diagnostics=("validation failed",),
+            ),
+        )
+    return tuple(rows[name] for name in sorted(rows))
+
+
 
 # ---------------------------------------------------------------- reconcile
 
@@ -424,10 +523,18 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
         validate_contract(contract)
         validate_survey(survey)
     except ArchitectureError as exc:
+        try:
+            contract_digest = sha256_digest(canonical_json(contract.to_dict()))
+        except (AttributeError, TypeError, ValueError):
+            contract_digest = _stable_failure_digest(contract)
+        try:
+            survey_digest = semantic_digest(survey.semantic_content())
+        except (AttributeError, TypeError, ValueError):
+            survey_digest = _stable_failure_digest(survey)
         content = AuditContent(
             reconciler_version=RECONCILER_VERSION,
-            bound_contract_digest=sha256_digest(canonical_json(contract.to_dict())),
-            bound_survey_digest=semantic_digest(survey.semantic_content()),
+            bound_contract_digest=contract_digest,
+            bound_survey_digest=survey_digest,
             findings=(),
             rule_coverage=(),
             assessment=Assessment(
@@ -435,7 +542,7 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
                 gate_eligible=False,
                 reasons=(f"validation_failed: {exc}",),
             ),
-            coverage=tuple(survey.coverage),
+            coverage=_failed_coverage(contract, survey),
         )
         return DeterministicAudit(
             schema_version=SCHEMA_VERSION,
@@ -449,11 +556,12 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
     failed_reasons: list[str] = []
 
     for rule in contract.rules:
-        if rule.lifecycle is LifecycleStatus.DEPRECATED:
+        lifecycle = _effective_lifecycle(rule, contract)
+        if lifecycle is LifecycleStatus.DEPRECATED:
             coverage_rows.append(RuleCoverage(rule_id=rule.rule_id, evaluated=False, reason="deprecated"))
             continue
 
-        if rule.lifecycle is LifecycleStatus.PLANNED:
+        if lifecycle is LifecycleStatus.PLANNED:
             coverage_rows.append(RuleCoverage(rule_id=rule.rule_id, evaluated=False, reason="planned"))
             findings.append(Finding(
                 finding_id=finding_id(rule.rule_id, [rule.subject], []),
@@ -474,30 +582,32 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
 
         coverage_rows.append(RuleCoverage(rule_id=rule.rule_id, evaluated=True, status=status, reason=message))
 
-        if status in (RuleStatus.VIOLATED, RuleStatus.EXCEPTION_APPLIED, RuleStatus.UNRESOLVED):
-            severity = (
-                "blocking"
-                if rule.enforcement is EnforcementMode.BLOCKING
-                else "advisory" if rule.enforcement is EnforcementMode.ADVISORY else "informational"
+        if status not in (RuleStatus.VIOLATED, RuleStatus.EXCEPTION_APPLIED, RuleStatus.UNRESOLVED):
+            continue
+        enforcement = _effective_enforcement(rule, contract)
+        severity = (
+            "blocking"
+            if enforcement is EnforcementMode.BLOCKING
+            else "advisory" if enforcement is EnforcementMode.ADVISORY else "informational"
+        )
+        finding_subjects = [rule.subject, *rule.scope]
+        if rule.authority_role:
+            finding_subjects.append(f"authority_role:{rule.authority_role}")
+        findings.append(
+            Finding(
+                finding_id=finding_id(
+                    rule.rule_id,
+                    finding_subjects,
+                    [{"file": e.file, "symbol": e.symbol} for e in evidence],
+                ),
+                rule_id=rule.rule_id,
+                subject=rule.subject,
+                rule_status=status,
+                severity=severity,
+                message=message,
+                evidence=tuple(dict.fromkeys(evidence)),
             )
-            finding_subjects = [rule.subject, *rule.scope]
-            if rule.authority_role:
-                finding_subjects.append(f"authority_role:{rule.authority_role}")
-            findings.append(
-                Finding(
-                    finding_id=finding_id(
-                        rule.rule_id,
-                        finding_subjects,
-                        [{"file": e.file, "symbol": e.symbol} for e in evidence],
-                    ),
-                    rule_id=rule.rule_id,
-                    subject=rule.subject,
-                    rule_status=status,
-                    severity=severity,
-                    message=message,
-                    evidence=tuple(dict.fromkeys(evidence)),
-                )
-            )
+        )
 
     assessment = _assess(contract, survey, findings, failed_reasons)
     content = AuditContent(
@@ -546,7 +656,9 @@ def compose(audit: DeterministicAudit, review: ArchitectureReview | None = None)
                 review.semantic_findings,
                 review.evidence_requests,
             )
-            if review is not None
+            if review is not None and (
+                review.adjudications or review.semantic_findings or review.evidence_requests
+            )
             else None
         ),
         assessment=audit.content.assessment,
