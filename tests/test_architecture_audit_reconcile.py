@@ -26,12 +26,17 @@ from paperforge.architecture_audit import (
 ASSET_GROUPS = ("library", "ocr_derived", "retrieval", "vectors")
 
 
-def _contract(rules: list[dict], units: tuple[dict, ...] = (), exceptions: tuple[dict, ...] = ()) -> ArchitectureContract:
+def _contract(
+    rules: list[dict],
+    units: tuple[dict, ...] = (),
+    exceptions: tuple[dict, ...] = (),
+    operations: tuple[str | dict, ...] | None = None,
+) -> ArchitectureContract:
     return ArchitectureContract.from_dict({
         "schema_version": SCHEMA_VERSION,
         "asset_groups": list(ASSET_GROUPS),
         "publication_units": list(units),
-        "operations": ["sync", "probe_status", "ocr_rebuild"],
+        "operations": list(operations or ("sync", "probe_status", "ocr_rebuild")),
         "rules": rules,
         "exceptions": list(exceptions),
     })
@@ -231,12 +236,20 @@ class TestPublicationAuthority:
         finding = _finding(audit, "r1")
         assert finding.rule_status is RuleStatus.VIOLATED
         assert "differs from declared" in finding.message
-
-
 class TestRoleAuthority:
     def test_one_authority_per_role_satisfies(self):
         audit = reconcile(
-            _contract([_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",))]),
+            _contract(
+                [_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",))],
+                operations=(
+                    "sync",
+                    "probe_status",
+                    {
+                        "operation_id": "ocr_rebuild",
+                        "authorities": [{"role": "stop", "authority_id": "plugin.controller"}],
+                    },
+                ),
+            ),
             _survey(({"operation_id": "ocr_rebuild", "role": "stop",
                       "authorities": ("plugin.controller",),
                       "evidence": _evidence("stop", 40)},)),
@@ -245,18 +258,101 @@ class TestRoleAuthority:
 
     def test_two_stop_authorities_violate(self):
         audit = reconcile(
-            _contract([_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",))]),
+            _contract(
+                [_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",))],
+                operations=(
+                    "sync",
+                    "probe_status",
+                    {
+                        "operation_id": "ocr_rebuild",
+                        "authorities": [{"role": "stop", "authority_id": "plugin.controller"}],
+                    },
+                ),
+            ),
             _survey(({"operation_id": "ocr_rebuild", "role": "stop",
                       "authorities": ("plugin.controller", "settings.view"),
                       "evidence": _evidence("stop", 40)},)),
         )
         assert _finding(audit, "r1").rule_status is RuleStatus.VIOLATED
 
+    def test_missing_declared_authority_is_unresolved(self):
+        audit = reconcile(
+            _contract([_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",))]),
+            _survey(({"operation_id": "ocr_rebuild", "role": "stop",
+                      "authorities": ("plugin.controller",),
+                      "evidence": _evidence("stop", 40)},)),
+        )
+        finding = _finding(audit, "r1")
+        assert finding.rule_status is RuleStatus.UNRESOLVED
+        assert "no declared stop authority" in finding.message
+
+
+    @pytest.mark.parametrize(
+        ("role", "authority"),
+        (("observer", "terminal"), ("delegated_executor", "worker")),
+    )
+    def test_declared_observer_and_delegated_executor_sets_satisfy(self, role, authority):
+        audit = reconcile(
+            _contract(
+                [_rule(kind="role_authority", subject="ocr_rebuild", scope=(role,))],
+                operations=(
+                    "sync",
+                    "probe_status",
+                    {
+                        "operation_id": "ocr_rebuild",
+                        "authorities": [{
+                            "role": "stop",
+                            "authority_id": "plugin.controller",
+                            "observers": ["terminal"],
+                            "delegated_executors": ["worker"],
+                        }],
+                    },
+                ),
+            ),
+            _survey(({
+                "operation_id": "ocr_rebuild",
+                "role": role,
+                "authorities": (authority,),
+                "evidence": _evidence(role, 40),
+            },)),
+        )
+        assert _coverage(audit, "r1") is RuleStatus.SATISFIED
+
+
+    def test_multi_valued_role_requires_complete_declared_set(self):
+        audit = reconcile(
+            _contract(
+                [_rule(kind="role_authority", subject="ocr_rebuild", scope=("observer",))],
+                operations=(
+                    "sync",
+                    "probe_status",
+                    {
+                        "operation_id": "ocr_rebuild",
+                        "authorities": [{
+                            "role": "stop",
+                            "authority_id": "plugin.controller",
+                            "observers": ["terminal", "ops"],
+                        }],
+                    },
+                ),
+            ),
+            _survey(({
+                "operation_id": "ocr_rebuild",
+                "role": "observer",
+                "authorities": ("terminal",),
+                "evidence": _evidence("observer", 40),
+            },)),
+        )
+        finding = _finding(audit, "r1")
+        assert finding.rule_status is RuleStatus.VIOLATED
+        assert "missing" in finding.message
+
 
 class TestCanonicalWriter:
     def test_ui_write_violates(self):
         audit = reconcile(
-            _contract([_rule(kind="canonical_writer", subject="ocr_derived.generation")]),
+            _contract([_rule(kind="canonical_writer", subject="ocr_derived.generation")],
+                      units=(TestPublicationAuthority.UNIT,)),
             _survey(({"unit_id": "ocr_derived.generation", "actor_kind": "ui",
                       "via_publication_protocol": False,
                       "evidence": _evidence("restoreVersion", 162)},)),
@@ -265,7 +361,8 @@ class TestCanonicalWriter:
 
     def test_backend_write_satisfies(self):
         audit = reconcile(
-            _contract([_rule(kind="canonical_writer", subject="ocr_derived.generation")]),
+            _contract([_rule(kind="canonical_writer", subject="ocr_derived.generation")],
+                      units=(TestPublicationAuthority.UNIT,)),
             _survey(({"unit_id": "ocr_derived.generation", "actor_kind": "worker",
                       "via_publication_protocol": True,
                       "evidence": _evidence("publish", 30)},)),
@@ -276,7 +373,8 @@ class TestCanonicalWriter:
 class TestPublicationMarker:
     def test_bypass_violates(self):
         audit = reconcile(
-            _contract([_rule(kind="publication_marker", subject="ocr_derived.generation")]),
+            _contract([_rule(kind="publication_marker", subject="ocr_derived.generation")],
+                      units=(TestPublicationAuthority.UNIT,)),
             _survey(({"unit_id": "ocr_derived.generation", "actor_kind": "worker",
                       "via_publication_protocol": False,
                       "evidence": _evidence("run_derived_rebuild", 210)},)),
@@ -285,7 +383,8 @@ class TestPublicationMarker:
 
     def test_protocol_write_satisfies(self):
         audit = reconcile(
-            _contract([_rule(kind="publication_marker", subject="ocr_derived.generation")]),
+            _contract([_rule(kind="publication_marker", subject="ocr_derived.generation")],
+                      units=(TestPublicationAuthority.UNIT,)),
             _survey(({"unit_id": "ocr_derived.generation", "actor_kind": "worker",
                       "via_publication_protocol": True,
                       "evidence": _evidence("publish", 30)},)),
@@ -329,7 +428,11 @@ class TestLifecycle:
         )
         excepted = reconcile(
             _contract([_rule()], exceptions=({
-                "exception_id": "e1", "rule_id": "r1", "subject": "probe_status", "rationale": "declared",
+                "exception_id": "e1",
+                "rule_id": "r1",
+                "subject": "probe_status",
+                "rationale": "declared",
+                "review_condition": "revisit after probe contract changes",
             },)),
             _survey(({"operation_id": "probe_status", "effect_kind": "business_mutation",
                       "evidence": _evidence()},)),
@@ -455,8 +558,15 @@ class TestDigestBinding:
             compose(audit, wrong_version)
 
     def test_compose_accepts_bound_review(self):
-        contract = _contract([_rule(kind="coverage_complete", subject="")])
-        audit = reconcile(contract, _survey(()))
+        contract = _contract([_rule()])
+        audit = reconcile(
+            contract,
+            _survey(({
+                "operation_id": "probe_status",
+                "effect_kind": "business_mutation",
+                "evidence": _evidence(),
+            },)),
+        )
         review = ArchitectureReview(
             schema_version=SCHEMA_VERSION,
             reviewer_type="agent",
@@ -466,9 +576,9 @@ class TestDigestBinding:
             reconciler_version="1.0.0",
             adjudications=(
                 Adjudication(
-                    finding_id="finding:none",
+                    finding_id=audit.content.findings[0].finding_id,
                     adjudication=AdjudicationKind.CONFIRMED,
-                    rationale="nothing to confirm",
+                    rationale="confirmed against deterministic evidence",
                     epistemic_status=EpistemicStatus.INFERRED,
                 ),
             ),
@@ -478,7 +588,7 @@ class TestDigestBinding:
         assert view.review_digest is not None
         assert len(view.review_adjudications) == 1
         # view is a projection; source records are untouched
-        assert len(audit.content.findings) == 0
+        assert len(audit.content.findings) == 1
         assert len(review.adjudications) == 1
 
     def test_compose_without_review_produces_deterministic_view(self):
@@ -488,3 +598,283 @@ class TestDigestBinding:
         second = compose(audit)
         assert first.to_dict() == second.to_dict()
         assert first.review_digest is None
+
+    def test_report_view_cannot_rewrite_deterministic_content(self):
+        from dataclasses import replace
+
+        from paperforge.architecture_audit import ArchitectureError, validate_report_view
+
+        audit = reconcile(
+            _contract([_rule()]),
+            _survey(({
+                "operation_id": "probe_status",
+                "effect_kind": "business_mutation",
+                "evidence": _evidence(),
+            },)),
+        )
+        tampered = replace(compose(audit), deterministic_findings=())
+        with pytest.raises(ArchitectureError):
+            validate_report_view(tampered, audit)
+    def test_standalone_report_view_rejects_tampered_review_projection(self):
+        from dataclasses import replace
+
+        from paperforge.architecture_audit import ArchitectureError, validate_report_view
+
+        audit = reconcile(
+            _contract([_rule()]),
+            _survey(({
+                "operation_id": "probe_status",
+                "effect_kind": "business_mutation",
+                "evidence": _evidence(),
+            },)),
+        )
+        review = ArchitectureReview(
+            schema_version=SCHEMA_VERSION,
+            reviewer_type="agent",
+            contract_digest=audit.content.bound_contract_digest,
+            survey_digest=audit.content.bound_survey_digest,
+            audit_digest=audit.semantic_digest,
+            reconciler_version="1.0.0",
+            adjudications=(
+                Adjudication(
+                    finding_id=audit.content.findings[0].finding_id,
+                    adjudication=AdjudicationKind.CONFIRMED,
+                    rationale="confirmed against deterministic evidence",
+                    epistemic_status=EpistemicStatus.INFERRED,
+                ),
+            ),
+        )
+        view = compose(audit, review)
+        tampered = replace(view, review_adjudications=())
+        with pytest.raises(ArchitectureError, match="review digest"):
+            validate_report_view(tampered)
+
+    def test_finding_id_includes_explicit_authority_role(self):
+        survey = _survey(({
+            "operation_id": "ocr_rebuild",
+            "role": "stop",
+            "authorities": ("plugin.controller", "settings.view"),
+            "evidence": _evidence("stop", 40),
+        },))
+        first = reconcile(
+            _contract([_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",), authority_role="stop")]),
+            survey,
+        )
+        second = reconcile(
+            _contract([_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",), authority_role="execution")]),
+            survey,
+        )
+        assert _finding(first, "r1").finding_id != _finding(second, "r1").finding_id
+
+
+
+class TestCoverageAndFailureSemantics:
+    def test_empty_coverage_is_incomplete_not_clean(self):
+        audit = reconcile(_contract([_rule()]), _survey((), coverage=()))
+        assert audit.content.assessment.status is AssessmentStatus.INCOMPLETE
+        assert audit.content.assessment.gate_eligible is False
+
+    def test_parse_error_is_failed(self):
+        survey = _survey(())
+        survey = ArchitectureSurvey.from_dict({
+            **survey.to_dict(),
+            "parse_errors": ["python parser failed"],
+        })
+        audit = reconcile(_contract([_rule()]), survey)
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        assert audit.content.assessment.gate_eligible is False
+
+    def test_failed_coverage_is_failed_not_incomplete(self):
+        audit = reconcile(
+            _contract([_rule(kind="coverage_complete", subject="")]),
+            _survey((), coverage=({"extractor": "python_ast", "status": "failed"},)),
+        )
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+
+    def test_missing_declared_extractor_is_incomplete(self):
+        from dataclasses import replace
+
+        contract = replace(_contract([_rule()]), required_extractors=("typescript",))
+        audit = reconcile(contract, _survey(()))
+        assert audit.content.assessment.status is AssessmentStatus.INCOMPLETE
+        assert "typescript_coverage_unavailable" in audit.content.assessment.reasons
+
+
+class TestDeclaredAuthoritySemantics:
+    def test_role_authority_must_match_declared_authority(self):
+        contract = ArchitectureContract.from_dict({
+            **_contract([_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",))]).to_dict(),
+            "operations": [{
+                "operation_id": "ocr_rebuild",
+                "authorities": [{"role": "stop", "authority_id": "controller.stop"}],
+            }],
+        })
+        audit = reconcile(
+            contract,
+            _survey(({
+                "operation_id": "ocr_rebuild",
+                "role": "stop",
+                "authorities": ("settings.view",),
+                "evidence": _evidence("stop", 40),
+            },)),
+        )
+        assert _finding(audit, "r1").rule_status is RuleStatus.VIOLATED
+        assert "differs from declared" in _finding(audit, "r1").message
+
+    def test_rogue_writer_violates_even_when_backend(self):
+        unit = {
+            "unit_id": "ocr_derived.generation",
+            "asset_group": "ocr_derived",
+            "publication_authority": "ocr.publisher",
+            "authorized_writers": ["approved.writer"],
+        }
+        audit = reconcile(
+            _contract([_rule(kind="canonical_writer", subject=unit["unit_id"])], units=(unit,)),
+            _survey(({
+                "unit_id": unit["unit_id"],
+                "actor_kind": "worker",
+                "writer_id": "rogue.writer",
+                "via_publication_protocol": True,
+                "evidence": _evidence("publish", 30),
+            },)),
+        )
+        assert _finding(audit, "r1").rule_status is RuleStatus.VIOLATED
+
+
+class TestLayerValidation:
+    def test_compose_rejects_tampered_audit_content(self):
+        from dataclasses import replace
+
+        from paperforge.architecture_audit import ArchitectureError, validate_audit
+
+        audit = reconcile(_contract([_rule()]), _survey(({
+            "operation_id": "probe_status",
+            "effect_kind": "business_mutation",
+            "evidence": _evidence(),
+        },)))
+        tampered = replace(audit, content=replace(audit.content, findings=()))
+        with pytest.raises(ArchitectureError, match="semantic_digest"):
+            validate_audit(tampered)
+        with pytest.raises(ArchitectureError):
+            compose(tampered)
+
+    def test_compose_rejects_review_unknown_finding(self):
+        from paperforge.architecture_audit import ArchitectureError
+
+        audit = reconcile(_contract([_rule()]), _survey(({
+            "operation_id": "probe_status",
+            "effect_kind": "business_mutation",
+            "evidence": _evidence(),
+        },)))
+        review = ArchitectureReview(
+            schema_version=SCHEMA_VERSION,
+            reviewer_type="agent",
+            contract_digest=audit.content.bound_contract_digest,
+            survey_digest=audit.content.bound_survey_digest,
+            audit_digest=audit.semantic_digest,
+            reconciler_version="1.0.0",
+            adjudications=(
+                Adjudication(
+                    finding_id="finding:unknown",
+                    adjudication=AdjudicationKind.CONFIRMED,
+                    rationale="not in audit",
+                    epistemic_status=EpistemicStatus.INFERRED,
+                ),
+            ),
+        )
+        with pytest.raises(ArchitectureError, match="unknown finding_id"):
+            compose(audit, review)
+
+    def test_review_cannot_embed_observed_evidence(self):
+        from paperforge.architecture_audit import ArchitectureError, Confidence, Evidence, SemanticFinding
+
+        audit = reconcile(_contract([_rule()]), _survey(({
+            "operation_id": "probe_status",
+            "effect_kind": "business_mutation",
+            "evidence": _evidence(),
+        },)))
+        review = ArchitectureReview(
+            schema_version=SCHEMA_VERSION,
+            reviewer_type="agent",
+            contract_digest=audit.content.bound_contract_digest,
+            survey_digest=audit.content.bound_survey_digest,
+            audit_digest=audit.semantic_digest,
+            reconciler_version="1.0.0",
+            semantic_findings=(
+                SemanticFinding(
+                    finding_id="review:new",
+                    message="agent claim",
+                    epistemic_status=EpistemicStatus.INFERRED,
+                    evidence=(Evidence(
+                        file="paperforge/commands/sync.py",
+                        file_digest="sha256:x",
+                        symbol="run",
+                        line_start=1,
+                        line_end=2,
+                        extractor="python_ast",
+                        epistemic_status=EpistemicStatus.OBSERVED_STATIC,
+                        confidence=Confidence.HIGH,
+                    ),),
+                ),
+            ),
+        )
+        with pytest.raises(ArchitectureError, match="evidence epistemic status"):
+            compose(audit, review)
+
+    def test_unknown_role_authority_fact_fails_validation(self):
+        audit = reconcile(
+            _contract([_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",))]),
+            _survey(({
+                "operation_id": "ocr_rebuild",
+                "role": "typo",
+                "authorities": ("plugin.controller",),
+                "evidence": _evidence("stop", 40),
+            },)),
+        )
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        assert any(reason.startswith("validation_failed: unknown authority role") for reason in audit.content.assessment.reasons)
+
+    def test_standalone_review_allows_unbound_evidence_references(self):
+        from paperforge.architecture_audit import SemanticFinding, validate_review
+
+        review = ArchitectureReview(
+            schema_version=SCHEMA_VERSION,
+            reviewer_type="agent",
+            contract_digest="sha256:contract",
+            survey_digest="sha256:survey",
+            audit_digest="sha256:audit",
+            reconciler_version="1.0.0",
+            semantic_findings=(
+                SemanticFinding(
+                    finding_id="review:external",
+                    message="needs evidence",
+                    epistemic_status=EpistemicStatus.INFERRED,
+                    evidence_ids=("evidence:external",),
+                ),
+            ),
+        )
+        validate_review(review)
+
+    def test_standalone_report_rejects_unknown_adjudication(self):
+        from dataclasses import replace
+
+        from paperforge.architecture_audit import ArchitectureError, validate_report_view
+
+        audit = reconcile(_contract([_rule()]), _survey(({
+            "operation_id": "probe_status",
+            "effect_kind": "business_mutation",
+            "evidence": _evidence(),
+        },)))
+        tampered = replace(
+            compose(audit),
+            review_adjudications=(
+                Adjudication(
+                    finding_id="finding:unknown",
+                    adjudication=AdjudicationKind.CONFIRMED,
+                    rationale="not in deterministic findings",
+                    epistemic_status=EpistemicStatus.INFERRED,
+                ),
+            ),
+        )
+        with pytest.raises(ArchitectureError, match="adjudicates unknown finding"):
+            validate_report_view(tampered)

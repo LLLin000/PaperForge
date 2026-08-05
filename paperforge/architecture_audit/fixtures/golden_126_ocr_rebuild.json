@@ -25,6 +25,7 @@
       "memory_build",
       "embed_build_resume"
     ],
+    "required_extractors": ["python_ast"],
     "rules": [
       {
         "rule_id": "remote_intent.embed_resume",
@@ -32,9 +33,7 @@
         "subject": "embed_build_resume",
         "lifecycle": "planned",
         "enforcement": "blocking",
-        "effective_after": {
-          "issue": "#126"
-        },
+        "effective_after": {"issue": "#126"},
         "accepted_intent_modes": [
           "direct_invocation",
           "ui_modal",
@@ -49,9 +48,7 @@
         "subject": "ocr_derived.generation",
         "lifecycle": "planned",
         "enforcement": "blocking",
-        "effective_after": {
-          "issue": "#126"
-        },
+        "effective_after": {"issue": "#126"},
         "description": "derived publication uses pending marker + atomic result-hash.txt"
       },
       {
@@ -68,9 +65,7 @@
         "subject": "OCR_REBUILD_PROGRESS",
         "lifecycle": "planned",
         "enforcement": "blocking",
-        "effective_after": {
-          "issue": "#126"
-        },
+        "effective_after": {"issue": "#126"},
         "description": "every rebuild emits START/RESULT/PROGRESS/DONE"
       }
     ],
@@ -80,29 +75,19 @@
     "schema_version": 1,
     "scope": "paperforge",
     "coverage": [
-      {
-        "extractor": "python_ast",
-        "status": "complete"
-      }
+      {"extractor": "python_ast", "status": "complete"}
     ],
     "facts": [
       {
-        "kind": "unit_authority",
-        "unit_id": "ocr_derived.generation",
-        "publication_authorities": [
-          "ocr.publisher"
-        ],
-        "authorized_writers": [
-          "ocr.postprocess",
-          "ocr.rebuild",
-          "ocr.legacy_backfill"
-        ],
+        "kind": "effect",
+        "operation_id": "ocr_rebuild",
+        "effect_kind": "materialization_build",
         "evidence": {
           "file": "paperforge/worker/ocr_rebuild.py",
           "file_digest": "sha256:4e564b0894edc7218408a09474966c6bb0ee73884f19571682ce6244ddc0f3ab",
           "symbol": "run_derived_rebuild_for_keys",
-          "line_start": 180,
-          "line_end": 300,
+          "line_start": 616,
+          "line_end": 663,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
           "confidence": "exact"
@@ -112,47 +97,28 @@
         "kind": "canonical_write",
         "unit_id": "ocr_derived.generation",
         "actor_kind": "worker",
+        "writer_id": "ocr.rebuild",
         "via_publication_protocol": false,
         "evidence": {
           "file": "paperforge/worker/ocr_rebuild.py",
           "file_digest": "sha256:4e564b0894edc7218408a09474966c6bb0ee73884f19571682ce6244ddc0f3ab",
           "symbol": "run_derived_rebuild_for_keys",
-          "line_start": 180,
-          "line_end": 300,
-          "extractor": "python_ast",
-          "epistemic_status": "observed_static",
-          "confidence": "exact"
-        }
-      },
-      {
-        "kind": "signal",
-        "signal_id": "OCR_REBUILD_RESULT",
-        "producer": "worker.ocr_rebuild",
-        "consumer_kind": "code",
-        "has_code_consumer": true,
-        "evidence": {
-          "file": "paperforge/worker/ocr_rebuild.py",
-          "file_digest": "sha256:4e564b0894edc7218408a09474966c6bb0ee73884f19571682ce6244ddc0f3ab",
-          "symbol": "_emit_progress_token",
-          "line_start": 320,
-          "line_end": 340,
+          "line_start": 616,
+          "line_end": 663,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
           "confidence": "exact"
         }
       }
     ],
-    "source_digest": "sha256:0ba15a790618b608321704bd7d96f147effa32de33e6769d5224178a838e356f",
+    "source_digest": "sha256:0c9f91cf18ab36aa43d5c7c2f00fd6869c5cf6f46b7bc4b0e722e336262d1f2d",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
       "repository_revision": "1f02281b",
       "repository_dirty": false,
       "tool_version": "1.0.0",
-      "extractor_versions": {
-        "python_ast": "1",
-        "typescript": "1"
-      },
+      "extractor_versions": {"python_ast": "1"},
       "generated_at": "2026-08-05T00:00:00Z"
     }
   }

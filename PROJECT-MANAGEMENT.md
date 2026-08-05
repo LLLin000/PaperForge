@@ -1,5 +1,6 @@
-> **Branch:** `master` | **Last Updated:** 2026-08-04
-> **Active work:** Release gate complete. **#117 atomic shadow rebuild closed** (7 GPT rounds, 9/10); **89-failure cleanup done** (0 failed / 2596 passed / 7 xfailed locally, 25 errors = Windows sandbox locks only); **release-gate P0-2…P0-7 landed** as #119/#120/#121 and closed; **CI green on master for the first time since 1.5.15** (9/9 jobs: version-sync, ruff, unit×3, protocol, plugin tests+typecheck+build, e2e, alls-green). **Next: #118 OCR behavior decisions (7 xfails), then P0-1 version bump at owner's release time.**
+> **Branch:** `master` | **Last Updated:** 2026-08-05
+>
+> **Active work:** Architecture Audit Slice A (#131) is implemented and verified; final review passed; commit and owner acceptance remain. Release publication remains owner-controlled. **Next:** commit the #131 repair, record owner acceptance, manually promote #132, then run the mandatory open-issue triage before #127.
 >
 > ---
 >
@@ -44,7 +45,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 </br>
 | Suite | Result |
 |-------|--------|
-| Architecture Audit Slice A (#131) | **72/72 focused passed; ruff clean; full suite 2724 passed / 0 failed / 25 pre-existing sandbox-lock errors** ✅ |
+| Architecture Audit Slice A (#131) | **101/101 focused passed; Ruff clean; full suite 2756 passed / 292 skipped / 25 pre-existing Windows sandbox-lock errors (no test failures)** ✅ |
 | Full OCR regression suite | **1278 passed, 8 pre-existing failures, 275 skipped** ✅ |
 | Focused merge suite (v3 + tail settlement + writeback + appendix numbering + rendering) | **105 passed, 0 failed** ✅ |
 | Layer 2 quality + feedback tests | **22 passed, 0 failed** ✅ (17 quality + 5 feedback) |
@@ -131,6 +132,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 33 | — | OCR maintenance canonical per-row action model | Fix | Added `maintenanceActionForRow()` for `display_action`→verb routing, `maintenanceActionRequiresConfirmation()` redo confirmation gate, batch-action filtering by canonical verb, and cache-manifest preservation. Batch actions now follow the canonical backend action instead of raw `can_rebuild`/`can_redo` booleans; destructive redo requires user confirmation; cache refresh preserves the backend manifest. | `d7b0a527` |
 | 34 | — | Setup/config paths had conflicting precedence, duplicate engines, dropped user paths, and false-success exits | Migration/prefactor | Unified CLI dispatch on `SetupPlan`; v2-only writes with v1 read fallback; complete path forwarding; visible deprecation; non-zero required-step failures | `af849699`, `7b747423`, `906b3caf` |
 | 35 | — | Agent sessions could bypass the Matt issue lifecycle, fan out writers, cross worktree boundaries, or release after stale verification | Workflow guard | Added sticky Matt rules plus a project hook that blocks parallel writer batches, cross-worktree mutations, and commit/merge/push/PR/issue-close operations until a recognized verification command succeeds after the latest mutation. | — |
+| 49 | — | Architecture Audit Slice A — contract, schemas, canonical evidence, and pure reconciliation (#131) | Architecture contract | Added five immutable layers, validated entity metadata and authority declarations including observer/delegated sets, semantic digests and stable finding IDs, source-complete golden fixtures, report-projection digest integrity, and a pure reconciler with explicit failed/incomplete/findings/clean assessment precedence. | — |
 
 
 | 36 | — | Maintenance probe: backend-derived rows, privacy-safe local draft, accessible destructive confirmation (#80) | Feature | Implementation in Issue #80 worktree. Backend-focused gate 77/77; plugin full suite 381/382 (pre-existing capability-state test expecting help.stale but receiving help.invalid_response); typecheck/build clean; production bundle 264.4KB; Obsidian 1.12.7 smoke 730/768 with actionable-only rows, keyboard Enter, accessible destructive confirmation with exact backend effect, focus trap/restoration, owned inert cleanup, redacted editable issue draft, no token input/auto-open, explicit GitHub open only, URL re-redaction, no horizontal overflow. | — |
@@ -183,7 +185,7 @@ Smart Retrieval now preserves the backend’s `memory.index_stale → rebuild_in
 Remaining legacy OCR issues (carried forward):
 ## 4. Active Queue
 
-0. ⏳ **[Architecture Audit #131](https://github.com/LLLin000/PaperForge/issues/131)** — implemented (`paperforge/architecture_audit/`), 72/72 focused, full suite green; commit and closeout pending.
+0. ⏳ **[Architecture Audit #131](https://github.com/LLLin000/PaperForge/issues/131)** — implementation complete; 101/101 focused tests and Ruff pass; full suite 2756 passed / 292 skipped / 25 known Windows sandbox-lock errors; final review PASS; commit and owner acceptance pending.
 1. ⏳ **[#132 Architecture Review Skill overlay](https://github.com/LLLin000/PaperForge/issues/132)** — next `ready-for-agent` after #131 is accepted; then the mandatory open-issue triage checkpoint before #127.
 2. 🔒 **[Execution queue](https://github.com/LLLin000/PaperForge/issues/130)** — hard gate: only one `ready-for-agent` at a time. Order: #131 → #132 → triage → #127 → #126 → #129 → #99 → RC → #133 → #134. Legacy #94–#105 and #125-closeout are blocked pending triage.
 3. ✅ **[Control Center target-state Map #94](https://github.com/LLLin000/PaperForge/issues/94)** — four prototypes, current `DESIGN.md`, and complete FE/BE mapping are reconciled, independently reviewed, repaired, and browser-verified.
@@ -231,7 +233,7 @@ Remaining legacy OCR issues (carried forward):
 - [x] Preserve Smart Retrieval’s stale-index rebuild action in the UI; derive Agent availability from deployed skills and suppress only migration warnings resolved by an active secure profile.
 - [ ] Implement Wave 1 issues #97, #99, and #100; run issue-specific backend/plugin gates and real Obsidian smoke before any deployment.
 - [x] Split architecture-audit epic #130 into slices #131–#134 and enforce the execution queue (one `ready-for-agent`).
-- [ ] Implement #131 (done — commit/closeout pending), then accept it and promote #132 to `ready-for-agent`; after #132, run the mandatory open-issue triage checkpoint recorded in #130.
+- [ ] Implement #131 (code complete — final review passed; commit/acceptance pending), then accept it and promote #132 to `ready-for-agent`; after #132, run the mandatory open-issue triage checkpoint recorded in #130.
 - [ ] Keep #127/#126/#129/#99 blocked until the triage checkpoint completes; never implement a `blocked` issue.
 
 ## 5. Key File Map
@@ -421,7 +423,9 @@ Remaining legacy OCR issues (carried forward):
 | 2026-08-05 | Architecture audit is five immutable layers with one pure reconciler owned by #131 | Deterministic observation (Survey), deterministic policy results (Audit), and Agent/Human judgment (Review) must never mix; Review binds Contract+Survey+Audit digests and reconciler version; collectors (#133) call #131's reconciler and never reimplement rules. |
 | 2026-08-05 | Enforce one `ready-for-agent` issue; downstream issues stay `blocked` until the prerequisite is accepted | Closing a prerequisite does not auto-unblock; the next issue is manually promoted. This prevents a sprawling epic (#130) from becoming a single agent task and keeps the product lane (#127\u2192#126\u2192#129\u2192#99) ahead of architecture tooling (#133/#134). |
 | 2026-08-05 | Assessment precedence is failed > incomplete > findings > clean; gate_eligible marks coverage-complete audits only | #134 consumes one authoritative top-level outcome instead of reinterpreting coverage; planned gaps never block, deterministic violations do when blocking + active. |
-
+| 2026-08-05 | Golden evidence is repository-relative and source-complete | Every cited evidence file now carries the `paperforge/` prefix, golden source digests aggregate all cited file/digest pairs, and tests verify file hashes, symbols, and line ranges. |
+| 2026-08-05 | Validate authority identity and report projections | Contract-declared publication/role authorities—including observer/delegated sets—must match observed identities; wrapper evidence and report-projection digests are validated at layer boundaries. |
+| 2026-08-05 | Multi-valued authorities use exact declared sets | Observer/delegated-executor roles are set-valued; accepting a partial observed set would hide missing lifecycle participants, so reconciliation reports missing and unexpected identities. |
 ---
 
 ## 7. Agent Instructions
@@ -562,6 +566,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-08-05 | #125 canonical abstract island | Enforced one canonical abstract for headingless OCR documents: page-contiguous abstract islands, selection by distance to body transition, rejected-island disposition (following → body flow, preceding → frontmatter/zone evidence, ambiguous → fail closed). No text matching, no page caps, no confidence thresholds; renderer unchanged. Corpus blast radius measured: 11/398 fallback papers. | §2-6 |
 | 2026-08-05 | #125 canonical abstract island | Implemented PRD #125: headingless documents with multiple page-disjoint abstract islands now select ONE canonical island nearest the body transition; rejected post-islands demote to body_paragraph (content preserved), pre-islands use frontmatter zone evidence; ambiguous cases fail closed with audit evidence. Z75FY7KR late-body order restored end-to-end. Tests: 247 focused + 2652 full passed / 0 failed (25 sandbox-lock errors baseline); corpus differential 398 fallback papers: exactly 11 multi-island papers changed, 388 single-island unchanged, 24 non-canonical blocks disposed (22 body_paragraph + 2 wrapper frontmatter_noise). | §2-6 | `2401f5c8`: OCR token fail-closed (frontend checks resolved env, backend rc includes blocked/error — no more false "OCR complete"); headless setup + wizard install paperforge[vector]; all 4 git fallbacks → PEP 508 `paperforge[vector] @ git+...`; _ocrStarting dup-start guard; publish.yml uploads all assets --clobber (rerun-safe) + waits for same-SHA All Checks Passed before PyPI. Tests: 421 plugin, 198 python regression, CI 10/10. |
 | 2026-08-05 | #130 epic split + queue gates + #131 Slice A implementation | Published architecture-audit epic #130 with slices #131–#134 after external review (epistemic separation, publication authority, digest binding, assessment taxonomy). Enforced hard execution queue: only #131 `ready-for-agent`; #132/#127/#126/#129/#99/#133/#134 `blocked` with unblock criteria in #130; legacy #94–#105 blocked pending triage; #125 flagged needs-triage (implemented, closeout pending). Implemented #131: `paperforge/architecture_audit/` — five immutable layers (Contract/Survey/DeterministicAudit/Review/View), canonical serialization + semantic digests (run metadata excluded), stable deterministic finding IDs, pure reconciliation engine (rule_status + assessment clean|findings|incomplete|failed precedence, offline lifecycle), digest-bound compose, 8 synthetic + 3 golden evidence fixtures (real sha256 digests, repo-relative paths). Two-axis review found and fixed: authority identity check, fixture path prefix, aggregated source digest. Tests: 72/72 focused; full suite 2724 passed / 0 failed / 25 pre-existing sandbox-lock errors; ruff clean. | §2-6 |
+| 2026-08-05 | #131 Slice A repair and verification | Repaired authority identity semantics, repository-relative evidence paths, source-complete golden digests, immutable metadata/expanded entity validators, audit/review validation, and standalone layer validation; added exact observer/delegated authority-set reconciliation and report-projection digest validation. Focused architecture tests: 101 passed; Ruff clean. Full Python suite: 2756 passed / 292 skipped / 25 known Windows sandbox-lock errors. Final two-axis re-review PASS; commit and owner acceptance pending. | §2.1–§4 |
 
 ## 9. Historical Detail Archive
 
