@@ -53,11 +53,15 @@ class RuntimeInstaller:
 
         if self.version:
             tag = self.version.removeprefix("v") if self.version else self.version
-            pypi_spec = f"paperforge=={self.version}"
-            git_spec = f"git+https://github.com/LLLin000/PaperForge.git@{tag}"
+            # #120-fix (review): vector extras are required for Smart
+            # Retrieval — bare paperforge leaves Build Index broken, and
+            # fragment extras (#extras=vector) is not pip's direct-reference
+            # syntax; the PEP 508 form is name[extra] @ git+url.
+            pypi_spec = f"paperforge[vector]=={self.version}"
+            git_spec = f"paperforge[vector] @ git+https://github.com/LLLin000/PaperForge.git@{tag}"
         else:
-            pypi_spec = "paperforge"
-            git_spec = "git+https://github.com/LLLin000/PaperForge.git"
+            pypi_spec = "paperforge[vector]"
+            git_spec = "paperforge[vector] @ git+https://github.com/LLLin000/PaperForge.git"
 
         ok, stdout, stderr = self._pip_install(pypi_spec)
         if not ok:

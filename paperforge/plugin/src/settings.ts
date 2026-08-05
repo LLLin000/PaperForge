@@ -489,7 +489,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       } catch {
         await this._runSetupPython([
           ...args,
-          `git+https://github.com/LLLin000/PaperForge.git@v${this.plugin.manifest.version}#subdirectory=.&extras=vector`,
+          `paperforge[vector] @ git+https://github.com/LLLin000/PaperForge.git@v${this.plugin.manifest.version}`,
         ]);
       }
     };
@@ -1773,8 +1773,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   } /** Dispatch OCR action with exact CLI args, progress tracking, cooperative stop (Issue #78). */
   _dispatchOcrAction(mode: "run" | "rebuild" | "redo"): void {
     const vp = (this.app.vault.adapter as any).basePath as string;
+    // #120-fix (review): credential resolution is async — during that
+    // window _ocrProcess is still null and a second click would start a
+    // second remote OCR. Guard the whole window.
+    if (this.plugin._ocrStarting || this.plugin._ocrProcess) {
+      new Notice("OCR is already running.");
+      return;
+    }
+    this.plugin._ocrStarting = true;
     const resolved = this._resolveRuntimeCommand(vp);
     if (!resolved) {
+      this.plugin._ocrStarting = false;
       new Notice(t("runtime_not_available") || "No Python runtime available");
       return;
     }
@@ -1869,6 +1878,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this.display();
         },
         onError: (err: Error) => {
+          this.plugin._ocrStarting = false;
           this.plugin._ocrProcess = null;
           if (envelopes["ocr"]) {
             envelopes["ocr"].activity_state = "idle";
@@ -1880,6 +1890,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this.display();
         },
         onClose: (code: number | null) => {
+          this.plugin._ocrStarting = false;
           this.plugin._ocrProcess = null;
           if (envelopes["ocr"]) {
             envelopes["ocr"].activity_state = "idle";
@@ -1923,11 +1934,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         vectorDbProfile(this.plugin.settings)
       )
         .then((env) => {
+          // Fail closed: a missing token must NOT start OCR — the backend
+          // would mark every paper "blocked" yet exit 0 and the UI would
+          // claim success. buildTargetedEnv resolves to the base env when
+          // SecretStorage has no credential, so check it here.
+          const hasToken = Boolean(
+            env && (env.PADDLEOCR_API_KEY || env.PADDLEOCR_API_TOKEN)
+          );
+          if (!hasToken) {
+            throw new Error("PaddleOCR API token is missing (SecretStorage)");
+          }
           startOcr(env);
         })
-        .catch(() => {
+        .catch((err: Error) => {
           // Credential resolution failure: never leave the UI stuck
           // running, never spawn without a token.
+          this.plugin._ocrStarting = false;
           this.plugin._ocrProcess = null;
           if (envelopes["ocr"]) {
             envelopes["ocr"].activity_state = "idle";
@@ -1936,7 +1958,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           }
           new Notice(
             t("ocr_failed_notice") +
-              ": PaddleOCR API token is missing (SecretStorage)",
+              ": " +
+              (err && err.message
+                ? err.message
+                : "PaddleOCR API token is missing (SecretStorage)"),
             8000
           );
           this._probeModule("ocr");

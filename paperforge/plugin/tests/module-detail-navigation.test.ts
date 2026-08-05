@@ -1626,3 +1626,55 @@ describe("_dispatchOcrAction credential injection (release review)", () => {
     expect(noticeCalls.length).toBeGreaterThan(0);
   });
 });
+
+describe("_dispatchOcrAction fail-closed (release review)", () => {
+  it("empty credential env does NOT spawn and shows missing-token notice", async () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    (tab as any)._probeModule = () => {};
+    const bridge = await import("../src/services/python-bridge");
+    const spy = vi.spyOn(bridge, "buildTargetedEnv").mockResolvedValue({}); // SecretStorage empty → base env, no token
+    try {
+      (tab as any)._dispatchOcrAction("run");
+      await Promise.resolve();
+      await Promise.resolve();
+    } finally {
+      spy.mockRestore();
+    }
+    expect(spawnedProcesses.length).toBe(0);
+    expect(((tab as any)._capabilityState as any).ocr.activity_state).toBe(
+      "idle"
+    );
+    expect((tab.plugin as any)._ocrStarting).toBe(false);
+    const msgs = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
+    expect(msgs).toContain("token is missing");
+  });
+
+  it("second dispatch while starting is rejected", async () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    const bridge = await import("../src/services/python-bridge");
+    let release: (v: Record<string, string | undefined>) => void = () => {};
+    const pending = new Promise<Record<string, string | undefined>>((res) => {
+      release = res;
+    });
+    const spy = vi.spyOn(bridge, "buildTargetedEnv").mockReturnValue(pending);
+    try {
+      (tab as any)._dispatchOcrAction("run");
+      // first call is in-flight (resolving credentials) — no child yet
+      expect((tab.plugin as any)._ocrStarting).toBe(true);
+      (tab as any)._dispatchOcrAction("run"); // second click
+      expect(spawnedProcesses.length).toBe(0);
+      release({
+        PADDLEOCR_API_KEY: "sk-test-paddle",
+        PADDLEOCR_API_TOKEN: "sk-test-paddle",
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+    } finally {
+      spy.mockRestore();
+    }
+    // only ONE spawn despite two clicks
+    expect(spawnedProcesses.length).toBe(1);
+  });
+});

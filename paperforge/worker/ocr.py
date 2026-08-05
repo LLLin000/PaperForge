@@ -2916,4 +2916,6 @@ def run_ocr(
     except Exception as e:
         logger.error("Post-OCR index refresh failed: %s", e)
     print(f"ocr: updated {changed} records")
-    return 1 if pending_keys else 0
+    # Fail closed: blocked (e.g. invalid/missing API token) and error items
+    # are NOT a successful run — the frontend shows "OCR complete" on rc 0.
+    return 1 if (pending_keys or failed_count) else 0
