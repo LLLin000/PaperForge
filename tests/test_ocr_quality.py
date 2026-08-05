@@ -14,6 +14,7 @@ def test_a1_all_indicators_have_correct_shape() -> None:
         "figure_table_integrity",
         "metadata_frontmatter_quality",
         "confidence_and_fallbacks",
+        "abstract_structure",
     }
 
     for name, ind in indicators.items():
@@ -392,3 +393,39 @@ def test_c1_confidence_fallbacks_yellow_when_degraded() -> None:
     ind = _normalize_confidence_fallbacks(health)
     assert ind["status"] == "yellow"
     assert ind["evidence"] == ["degraded_mode_active=True", "span_coverage_quality=good", "Degraded mode active"]
+
+
+def test_c2_abstract_structure_green_for_single_island() -> None:
+    from paperforge.worker.ocr_quality import _normalize_abstract_structure
+
+    ind = _normalize_abstract_structure({"abstract_island_count": 1, "abstract_span_status": "ACCEPT"})
+    assert ind["status"] == "green"
+    assert ind["signals"]["abstract_island_count"] == 1
+
+
+def test_c3_abstract_structure_yellow_for_resolved_multi_island() -> None:
+    from paperforge.worker.ocr_quality import _normalize_abstract_structure
+
+    ind = _normalize_abstract_structure(
+        {
+            "abstract_island_count": 2,
+            "abstract_span_status": "ACCEPT",
+            "abstract_span_mode": "headingless_canonical_island",
+        }
+    )
+    assert ind["status"] == "yellow"
+    assert "Multiple abstract islands resolved to one canonical island" in ind["evidence"]
+
+
+def test_c4_abstract_structure_yellow_for_ambiguous_fail_closed() -> None:
+    from paperforge.worker.ocr_quality import _normalize_abstract_structure
+
+    ind = _normalize_abstract_structure(
+        {
+            "abstract_island_count": 2,
+            "abstract_span_status": "HOLD",
+            "abstract_span_mode": "headingless_ambiguous",
+        }
+    )
+    assert ind["status"] == "yellow"
+    assert "Ambiguous headingless abstract islands" in ind["evidence"][-1]

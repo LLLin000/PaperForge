@@ -200,6 +200,44 @@ def _normalize_confidence_fallbacks(health: dict) -> dict[str, Any]:
     return _make_indicator("green", "applicable", signals, evidence)
 
 
+def _normalize_abstract_structure(health: dict) -> dict[str, Any]:
+    """Normalize abstract island count and resolution evidence.
+
+    A document must have exactly one canonical abstract. Multi-island
+    headingless documents that resolved to a canonical island are yellow
+    (corrected but audit-worthy); ambiguous multi-island documents fail closed
+    with no abstract section (yellow, evidence explains why); everything else
+    is green. No composite score and no readiness-policy consumption — this is
+    a standalone signal for diagnostics and future policy use.
+    """
+    island_count = int(health.get("abstract_island_count", 1) or 1)
+    span_status = str(health.get("abstract_span_status") or "")
+    span_mode = str(health.get("abstract_span_mode") or "")
+
+    signals = {
+        "abstract_island_count": island_count,
+        "abstract_span_status": span_status,
+        "abstract_span_mode": span_mode,
+    }
+    evidence = [f"{key}={value}" for key, value in signals.items()]
+
+    if island_count > 1 and span_mode == "headingless_ambiguous":
+        return _make_indicator(
+            "yellow",
+            "applicable",
+            signals,
+            evidence + ["Ambiguous headingless abstract islands — none promoted, seeds disposed by zone evidence"],
+        )
+    if island_count > 1:
+        return _make_indicator(
+            "yellow",
+            "applicable",
+            signals,
+            evidence + ["Multiple abstract islands resolved to one canonical island"],
+        )
+    return _make_indicator("green", "applicable", signals, evidence)
+
+
 def build_quality_indicators(
     *,
     health: dict,
@@ -226,6 +264,7 @@ def build_quality_indicators(
             "figure_table_integrity": _normalize_figure_table_integrity(health, figure_inventory, table_inventory),
             "metadata_frontmatter_quality": _normalize_metadata_frontmatter_quality(health, resolved_metadata),
             "confidence_and_fallbacks": _normalize_confidence_fallbacks(health),
+            "abstract_structure": _normalize_abstract_structure(health),
         },
         "developer_diagnostics": developer_diagnostics,
     }

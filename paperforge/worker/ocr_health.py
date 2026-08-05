@@ -198,6 +198,14 @@ def build_ocr_health(
     reference_zone_status = str(reference_zone.get("status") or "")
     reference_item_count = sum(1 for b in structured_blocks if b.get("role") == "reference_item")
     references_found = reference_zone_status == "ACCEPT" or reference_item_count > 0
+    abstract_span = (
+        (doc_structure or {}).get("abstract_span", {})
+        if isinstance(doc_structure, dict)
+        else getattr(doc_structure, "abstract_span", None) or {}
+    )
+    abstract_span_status = str(abstract_span.get("status") or "")
+    abstract_span_mode = str(abstract_span.get("selection_mode") or abstract_span.get("stop_reason") or "")
+    abstract_island_count = int(abstract_span.get("island_count") or 1)
     figure_caption_count = sum(1 for b in structured_blocks if b.get("role") == "figure_caption")
     table_caption_count = sum(1 for b in structured_blocks if b.get("role") == "table_caption")
 
@@ -341,6 +349,9 @@ def build_ocr_health(
         "blocks_count": raw_blocks_count,
         "section_heading_count": section_heading_count,
         "abstract_found": abstract_found,
+        "abstract_span_status": abstract_span_status,
+        "abstract_span_mode": abstract_span_mode,
+        "abstract_island_count": abstract_island_count,
         "references_found": references_found,
         "figure_caption_count": figure_caption_count,
         "figure_asset_count": figure_asset_count,

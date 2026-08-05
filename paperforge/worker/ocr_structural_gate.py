@@ -100,6 +100,10 @@ def _group_abstract_islands(blocks: list[dict], duplicate_ids: set[str]) -> list
     adjacent-page seeds stay connected; a page gap > 1 starts a new island.
     Returns list of islands, each a list of (block_index, artifact_block_id).
     """
+    # ponytail: page-gap threshold of 1 page; a PDF with a cover sheet between
+    # abstract pages would split one abstract into two islands, which then
+    # fails closed (no hoisting) rather than mis-assigning. Upgrade path:
+    # connect islands whose intermediate pages contain only non-body blocks.
     islands: list[list[tuple[int, str | int | None]]] = []
     current: list[tuple[int, str | int | None]] | None = None
     prev_page: int | None = None
@@ -512,6 +516,10 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
             # entirely before the boundary are preferred; only when none exist
             # (e.g. "1. ABSTRACT" itself captured as body start) fall back to
             # post-boundary islands by distance.
+            # ponytail: single-axis selection (distance to body start) with a
+            # pre-boundary preference; tie/absent-boundary fails closed rather
+            # than guessing. Upgrade path: fuse in zone/style-family evidence
+            # if the corpus ever surfaces a tied multi-island ambiguity.
             pre_boundary = [island for island in islands if island[-1][0] < boundary_idx]
             candidates = pre_boundary or islands
             distances = [_island_distance(island, boundary_idx) for island in candidates]
@@ -537,10 +545,12 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
                     "body_block_ids": chosen_ids,
                     "excluded_support_block_ids": [],
                     "status": "ACCEPT",
-                    "stop_reason": "headingless_single_island",
+                    "stop_reason": "headingless_canonical_island",
                     "confidence": 0.8,
-                    "selection_mode": "headingless_single_island",
+                    "selection_mode": "headingless_canonical_island",
                     "island_count": len(islands),
+                    "body_start_block_id": body_start_id,
+                    "canonical_choice_distance": best,
                     "preceding_rejected_block_ids": preceding,
                     "following_rejected_block_ids": following,
                 }

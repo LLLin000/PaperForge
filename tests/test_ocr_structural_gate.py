@@ -310,11 +310,13 @@ def test_headingless_multi_island_selects_nearest_pre_boundary_island() -> None:
     span = build_document_abstract_span(blocks, {"body_start_block_id": 12})
 
     assert span["status"] == "ACCEPT"
-    assert span["stop_reason"] == "headingless_single_island"
-    assert span["selection_mode"] == "headingless_single_island"
+    assert span["stop_reason"] == "headingless_canonical_island"
+    assert span["selection_mode"] == "headingless_canonical_island"
     assert span["island_count"] == 3
     # canonical island = page-3 true abstract, wrapper and late body rejected
     assert span["body_block_ids"] == [8, 9]
+    assert span["body_start_block_id"] == 12
+    assert span["canonical_choice_distance"] == 1
     assert span["preceding_rejected_block_ids"] == ["wrap"]
     assert span["following_rejected_block_ids"] == [3, 5]
 

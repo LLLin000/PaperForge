@@ -87,16 +87,12 @@ def test_z75_like_headingless_abstract_restores_late_body_order() -> None:
     ]
     doc, normalized = normalize_document_structure(blocks)
 
-    span = doc.abstract_span
-    assert span["status"] == "ACCEPT"
-    assert span["stop_reason"] == "headingless_single_island"
-    assert sorted(map(int, span["body_block_ids"])) == [8, 9]
-    assert sorted(map(int, span["following_rejected_block_ids"])) == [3, 5]
-
     by_id = {b["block_id"]: b for b in normalized}
     assert by_id[3]["role"] == "body_paragraph"
     assert by_id[5]["role"] == "body_paragraph"
     assert by_id[3]["render_default"] is True
+    assert by_id[8]["role"] == "abstract_body"
+    assert by_id[9]["role"] == "abstract_body"
 
     markdown = render_fulltext_markdown(
         structured_blocks=normalized,
