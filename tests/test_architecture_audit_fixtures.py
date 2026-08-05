@@ -1,0 +1,137 @@
+"""#131 Slice A — fixture validation: synthetic scenarios and golden evidence chains.
+
+Golden fixtures record repository revision and source digests of the observed
+files; issue text supplies declared intent only. All fixtures must validate
+against the schema and reconcile to the documented semantic outcomes.
+"""
+from __future__ import annotations
+
+from paperforge.architecture_audit import AssessmentStatus, RuleStatus, reconcile
+from paperforge.architecture_audit.fixtures import FIXTURE_NAMES, load_fixture
+
+
+class TestFixtureIntegrity:
+    def test_every_fixture_validates_and_reconciles(self):
+        """All 11 fixtures load, validate through reconcile, and produce a digest."""
+        for name in FIXTURE_NAMES:
+            contract, survey = load_fixture(name)
+            audit = reconcile(contract, survey)
+            assert audit.semantic_digest.startswith("sha256:")
+            assert audit.content.bound_contract_digest.startswith("sha256:")
+            assert audit.content.bound_survey_digest.startswith("sha256:")
+
+    def test_golden_fixtures_record_revision_and_source_digests(self):
+        from paperforge.architecture_audit.fixtures import load_fixture_dict
+
+        expected_revision = "1f02281b"
+        for name in ("golden_126_ocr_rebuild", "golden_127_sync_embed", "golden_129_display_restore"):
+            payload = load_fixture_dict(name)
+            run_metadata = payload["survey"]["run_metadata"]
+            assert run_metadata["repository_revision"] == expected_revision
+            assert run_metadata["repository_dirty"] is False
+            assert payload["survey"]["source_digest"].startswith("sha256:")
+            for fact in payload["survey"]["facts"]:
+                evidence = fact.get("evidence")
+                if evidence:
+                    assert evidence["file_digest"].startswith("sha256:")
+
+    def test_golden_fixtures_have_no_agent_authored_observed_facts(self):
+        """Survey evidence epistemic status must be observed_static; inferred
+        claims are a Review-layer concept and never appear in a Survey."""
+        for name in ("golden_126_ocr_rebuild", "golden_127_sync_embed", "golden_129_display_restore"):
+            _, survey = load_fixture(name)
+            for fact in survey.facts:
+                evidence = getattr(fact, "evidence", None)
+                assert evidence is None or evidence.epistemic_status.value == "observed_static"
+
+    def test_golden_evidence_paths_are_repository_relative(self):
+        """Evidence.file must be a POSIX repo-relative path a consumer can reopen."""
+        from paperforge.architecture_audit.fixtures import load_fixture_dict
+
+        for name in ("golden_126_ocr_rebuild", "golden_127_sync_embed", "golden_129_display_restore"):
+            payload = load_fixture_dict(name)
+            for fact in payload["survey"]["facts"]:
+                evidence = fact.get("evidence")
+                if not evidence:
+                    continue
+                file = evidence["file"]
+                assert not file.startswith(("/", "\\")), (name, file)
+                assert "\\" not in file, (name, file)
+                assert file.startswith(("paperforge/", "tests/", "fixtures/")), (name, file)
+
+
+class TestSyntheticOutcomes:
+    def test_query_side_effect_violated(self):
+        _, survey = load_fixture("synthetic_query_side_effect")
+        audit = reconcile(load_fixture("synthetic_query_side_effect")[0], survey)
+        finding = next(f for f in audit.content.findings)
+        assert finding.rule_status is RuleStatus.VIOLATED
+        assert audit.content.assessment.status is AssessmentStatus.FINDINGS
+
+    def test_unmatched_signal_violated(self):
+        contract, survey = load_fixture("synthetic_unmatched_signal")
+        audit = reconcile(contract, survey)
+        assert audit.content.findings[0].rule_status is RuleStatus.VIOLATED
+
+    def test_ui_canonical_write_violated(self):
+        contract, survey = load_fixture("synthetic_ui_canonical_write")
+        audit = reconcile(contract, survey)
+        assert audit.content.findings[0].rule_status is RuleStatus.VIOLATED
+
+    def test_implicit_remote_followup_violated(self):
+        contract, survey = load_fixture("synthetic_implicit_remote_followup")
+        audit = reconcile(contract, survey)
+        assert audit.content.findings[0].rule_status is RuleStatus.VIOLATED
+
+    def test_publication_bypass_violated(self):
+        contract, survey = load_fixture("synthetic_publication_bypass")
+        audit = reconcile(contract, survey)
+        assert audit.content.findings[0].rule_status is RuleStatus.VIOLATED
+
+    def test_planned_gap_fixture(self):
+        contract, survey = load_fixture("synthetic_planned_gap")
+        audit = reconcile(contract, survey)
+        assert audit.content.findings[0].rule_status is RuleStatus.PLANNED_GAP
+        assert audit.content.assessment.gate_eligible is True
+
+    def test_intentional_exception_applied(self):
+        contract, survey = load_fixture("synthetic_intentional_exception")
+        audit = reconcile(contract, survey)
+        assert audit.content.findings[0].rule_status is RuleStatus.EXCEPTION_APPLIED
+
+    def test_partial_coverage_incomplete(self):
+        contract, survey = load_fixture("synthetic_partial_coverage")
+        audit = reconcile(contract, survey)
+        assert audit.content.assessment.status is AssessmentStatus.INCOMPLETE
+        assert audit.content.assessment.gate_eligible is False
+        assert "typescript_coverage_unavailable" in audit.content.assessment.reasons
+
+
+class TestGoldenOutcomes:
+    def test_126_planned_contract_rules_produce_planned_gaps(self):
+        """#126 target behavior is declared but not yet effective; the current
+        unit authority rule is active and satisfied by the observed single
+        authority."""
+        contract, survey = load_fixture("golden_126_ocr_rebuild")
+        audit = reconcile(contract, survey)
+        statuses = {f.rule_id: f.rule_status for f in audit.content.findings}
+        assert statuses["remote_intent.embed_resume"] is RuleStatus.PLANNED_GAP
+        assert statuses["publication.hash_marker"] is RuleStatus.PLANNED_GAP
+        assert statuses["signal.rebuild_progress"] is RuleStatus.PLANNED_GAP
+        assert "publication.authority" not in statuses  # satisfied, not a finding
+
+    def test_127_observed_implicit_embed_is_declared_planned_gap(self):
+        """The sync fire-and-forget embed is observed as implicit; the policy
+        rule is planned, so the audit reports a planned gap rather than a
+        confirmed violation — the distinction the layer split exists for."""
+        contract, survey = load_fixture("golden_127_sync_embed")
+        audit = reconcile(contract, survey)
+        assert audit.content.findings[0].rule_id == "remote_intent.sync_followup"
+        assert audit.content.findings[0].rule_status is RuleStatus.PLANNED_GAP
+
+    def test_129_ui_restore_write_is_planned_gap_and_drift_signal_satisfied(self):
+        contract, survey = load_fixture("golden_129_display_restore")
+        audit = reconcile(contract, survey)
+        statuses = {f.rule_id: f.rule_status for f in audit.content.findings}
+        assert statuses["canonical_writer.restore"] is RuleStatus.PLANNED_GAP
+        assert "signal.drift_state" not in statuses  # active + satisfied

@@ -1,0 +1,55 @@
+{
+  "contract": {
+    "schema_version": 1,
+    "asset_groups": [
+      "library",
+      "ocr_derived"
+    ],
+    "publication_units": [],
+    "operations": [
+      "probe_status",
+      "sync",
+      "ocr_rebuild"
+    ],
+    "rules": [
+      {
+        "rule_id": "coverage.required_complete",
+        "kind": "coverage_complete",
+        "subject": "",
+        "lifecycle": "active",
+        "enforcement": "blocking"
+      }
+    ],
+    "exceptions": []
+  },
+  "survey": {
+    "schema_version": 1,
+    "scope": "tests/fixtures",
+    "coverage": [
+      {
+        "extractor": "python",
+        "status": "complete"
+      },
+      {
+        "extractor": "typescript",
+        "status": "unavailable",
+        "diagnostics": [
+          "TS_COMPILER_UNAVAILABLE"
+        ]
+      }
+    ],
+    "facts": [],
+    "source_digest": "sha256:1111",
+    "parse_errors": [],
+    "excluded_roots": [],
+    "run_metadata": {
+      "repository_revision": "fixture",
+      "repository_dirty": false,
+      "tool_version": "1.0.0",
+      "extractor_versions": {
+        "python_ast": "1"
+      },
+      "generated_at": "2026-08-05T00:00:00Z"
+    }
+  }
+}
