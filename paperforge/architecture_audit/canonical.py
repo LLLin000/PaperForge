@@ -47,7 +47,7 @@ def _id_of(item: Any) -> str | None:
 # Lists named by these keys are sequences, not sets.  In particular, Rule.scope
 # has historically carried an ordered role selector; sorting every list would
 # make two contracts with different reconciliation behavior share a digest.
-_ORDERED_LIST_KEYS = frozenset({"scope"})
+_ORDERED_LIST_KEYS = frozenset({"scope", "argument_roles"})
 
 
 def _canonical(value: Any, *, key: str | None = None) -> Any:
@@ -72,12 +72,13 @@ def _canonical(value: Any, *, key: str | None = None) -> Any:
     return value
 
 
-def _list_sort_key(item: Any) -> tuple[bool, str]:
-    """Canonical list order: domain-id items by id, others by canonical JSON."""
+def _list_sort_key(item: Any) -> tuple[bool, str, str]:
+    """Canonical list order: domain-id items by id, then full JSON."""
+    canonical = json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     domain_id = _id_of(item)
     if domain_id is not None:
-        return (False, domain_id)
-    return (True, json.dumps(item, ensure_ascii=False, sort_keys=True))
+        return (False, domain_id, canonical)
+    return (True, "", canonical)
 
 
 

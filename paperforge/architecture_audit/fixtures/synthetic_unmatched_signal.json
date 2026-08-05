@@ -40,7 +40,7 @@
         "has_code_consumer": false,
         "evidence": {
           "file": "paperforge/worker/events.py",
-          "file_digest": "sha256:deadbeef",
+          "file_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
           "symbol": "emit",
           "line_start": 12,
           "line_end": 12,
@@ -50,7 +50,7 @@
         }
       }
     ],
-    "source_digest": "sha256:1111",
+    "source_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {

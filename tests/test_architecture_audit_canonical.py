@@ -29,6 +29,16 @@ class TestCanonicalJson:
         assert first == second
 
 
+    def test_same_domain_ids_use_canonical_tie_breaker(self):
+        first = canonical_json({"facts": [{"id": "sync", "line": 116}, {"id": "sync", "line": 92}]})
+        second = canonical_json({"facts": [{"id": "sync", "line": 92}, {"id": "sync", "line": 116}]})
+        assert first == second
+
+    def test_wrapper_argument_roles_preserve_parameter_order(self):
+        path_argv = canonical_json({"argument_roles": ["path", "argv"]})
+        argv_path = canonical_json({"argument_roles": ["argv", "path"]})
+        assert path_argv != argv_path
+
 class TestSemanticDigest:
     def test_identical_content_identical_digest(self):
         content = {"findings": [{"id": "f1", "status": "violated"}]}

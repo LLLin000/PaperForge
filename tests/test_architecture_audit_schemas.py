@@ -35,7 +35,7 @@ def _base_survey_payload() -> dict:
         "scope": "paperforge",
         "coverage": [{"extractor": "python_ast", "status": "complete"}],
         "facts": [],
-        "source_digest": "sha256:abc",
+        "source_digest": "sha256:" + "0" * 64,
         "parse_errors": [],
         "excluded_roots": [],
         "run_metadata": {},
@@ -60,7 +60,7 @@ class TestRoundTrip:
             "signal_id": "OCR_DONE",
             "producer": "worker.ocr",
             "consumer_kind": "code",
-            "has_code_consumer": True,
+            "has_code_consumer": False,
         }]
         survey = ArchitectureSurvey.from_dict(payload)
         validate_survey(survey)
@@ -72,9 +72,9 @@ class TestRoundTrip:
         payload = {
             "schema_version": SCHEMA_VERSION,
             "reviewer_type": "agent",
-            "contract_digest": "sha256:a",
-            "survey_digest": "sha256:b",
-            "audit_digest": "sha256:c",
+            "contract_digest": "sha256:" + "a" * 64,
+            "survey_digest": "sha256:" + "b" * 64,
+            "audit_digest": "sha256:" + "c" * 64,
             "reconciler_version": "1.0.0",
             "adjudications": [],
             "semantic_findings": [],
@@ -180,7 +180,7 @@ class TestEvidenceIdentity:
 
         base = {
             "file": "a.py",
-            "file_digest": "sha256:x",
+            "file_digest": "sha256:" + "0" * 64,
             "symbol": "run",
             "line_start": 1,
             "line_end": 2,
@@ -205,6 +205,14 @@ class TestSurveyValidation:
         with pytest.raises(ArchitectureError):
             validate_survey(ArchitectureSurvey.from_dict(payload))
 
+    def test_short_sha256_is_rejected(self):
+        from paperforge.architecture_audit import ArchitectureSurvey, validate_survey
+
+        payload = _base_survey_payload()
+        payload["source_digest"] = "sha256:short"
+        with pytest.raises(ArchitectureError, match="64 lowercase hex"):
+            validate_survey(ArchitectureSurvey.from_dict(payload))
+
     def test_survey_fact_cannot_carry_inferred_epistemic_status(self):
         from paperforge.architecture_audit import ArchitectureSurvey, validate_survey
 
@@ -214,7 +222,7 @@ class TestSurveyValidation:
             "operation_id": "sync",
             "effect_kind": "remote_operation",
             "evidence": {
-                "file": "a.py", "file_digest": "sha256:x", "symbol": "run",
+                "file": "a.py", "file_digest": "sha256:" + "0" * 64, "symbol": "run",
                 "line_start": 1, "line_end": 2, "extractor": "python_ast",
                 "epistemic_status": "inferred", "confidence": "high",
             },
@@ -235,9 +243,9 @@ class TestReviewImmutability:
         review = ArchitectureReview(
             schema_version=SCHEMA_VERSION,
             reviewer_type="agent",
-            contract_digest="sha256:c",
-            survey_digest="sha256:s",
-            audit_digest="sha256:a",
+            contract_digest="sha256:" + "a" * 64,
+            survey_digest="sha256:" + "b" * 64,
+            audit_digest="sha256:" + "c" * 64,
             reconciler_version="1.0.0",
             adjudications=(
                 Adjudication(
@@ -263,9 +271,9 @@ class TestReviewImmutability:
         review = ArchitectureReview(
             schema_version=SCHEMA_VERSION,
             reviewer_type="agent",
-            contract_digest="sha256:c",
-            survey_digest="sha256:s",
-            audit_digest="sha256:a",
+            contract_digest="sha256:" + "a" * 64,
+            survey_digest="sha256:" + "b" * 64,
+            audit_digest="sha256:" + "c" * 64,
             reconciler_version="1.0.0",
             adjudications=(
                 Adjudication(
@@ -327,6 +335,21 @@ class TestExpandedSchema:
         with pytest.raises(ArchitectureError, match="review_condition"):
             validate_contract(ArchitectureContract.from_dict(payload))
 
+
+    def test_role_authority_requires_consistent_explicit_selector(self):
+        from paperforge.architecture_audit import ArchitectureContract
+
+        payload = _base_contract_payload()
+        payload["rules"] = [{
+            "rule_id": "r1",
+            "kind": "role_authority",
+            "subject": "probe_status",
+            "scope": ["stop"],
+            "authority_role": "execution",
+        }]
+        with pytest.raises(ArchitectureError, match="disagree"):
+            ArchitectureContract.from_dict(payload)
+
     def test_unresolved_fact_keeps_observed_evidence_on_separate_axis(self):
         from paperforge.architecture_audit import ArchitectureSurvey, validate_survey
 
@@ -339,7 +362,7 @@ class TestExpandedSchema:
             "possible_effects": ["remote_operation"],
             "evidence": {
                 "file": "paperforge/commands/sync.py",
-                "file_digest": "sha256:x",
+                "file_digest": "sha256:" + "0" * 64,
                 "symbol": "dynamic_call",
                 "line_start": 1,
                 "line_end": 2,

@@ -6,6 +6,8 @@ Review digest binding contract.
 """
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from paperforge.architecture_audit import (
@@ -31,6 +33,7 @@ def _contract(
     units: tuple[dict, ...] = (),
     exceptions: tuple[dict, ...] = (),
     operations: tuple[str | dict, ...] | None = None,
+    required_extractors: tuple[str, ...] = (),
 ) -> ArchitectureContract:
     return ArchitectureContract.from_dict({
         "schema_version": SCHEMA_VERSION,
@@ -39,6 +42,7 @@ def _contract(
         "operations": list(operations or ("sync", "probe_status", "ocr_rebuild")),
         "rules": rules,
         "exceptions": list(exceptions),
+        "required_extractors": list(required_extractors),
     })
 
 
@@ -60,6 +64,7 @@ def _infer_fact_kind(fact: dict) -> str:
 def _survey(
     facts: tuple = (),
     coverage: tuple[dict, ...] = ({"extractor": "python_ast", "status": "complete"},),
+    schema_version: int = SCHEMA_VERSION,
 ) -> ArchitectureSurvey:
     normalized = []
     for fact in facts:
@@ -67,11 +72,11 @@ def _survey(
         entry.setdefault("kind", _infer_fact_kind(entry))
         normalized.append(entry)
     return ArchitectureSurvey.from_dict({
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": schema_version,
         "scope": "paperforge",
         "coverage": list(coverage),
         "facts": normalized,
-        "source_digest": "sha256:abc",
+        "source_digest": "sha256:" + "0" * 64,
         "parse_errors": [],
         "excluded_roots": [],
         "run_metadata": {},
@@ -81,7 +86,7 @@ def _survey(
 def _evidence(symbol: str = "run", line: int = 10) -> dict:
     return {
         "file": "commands/sync.py",
-        "file_digest": "sha256:deadbeef",
+        "file_digest": "sha256:" + "0" * 64,
         "symbol": symbol,
         "line_start": line,
         "line_end": line + 2,
@@ -177,6 +182,16 @@ class TestSignalConsumer:
         )
         assert _finding(audit, "r1").rule_status is RuleStatus.VIOLATED
 
+
+    def test_true_code_signal_requires_auditable_consumer(self):
+        audit = reconcile(
+            _contract([_rule(kind="signal_consumer", subject="OCR_DONE")]),
+            _survey(({"signal_id": "OCR_DONE", "producer": "worker.ocr",
+                      "consumer_kind": "code", "has_code_consumer": True,
+                      "evidence": _evidence("emit", 12)},)),
+        )
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        assert not audit.content.findings
     def test_human_terminal_signal_needs_no_code_consumer(self):
         audit = reconcile(
             _contract([_rule(kind="signal_consumer", subject="OCR_SUMMARY")]),
@@ -348,6 +363,14 @@ class TestRoleAuthority:
         assert "missing" in finding.message
 
 
+
+    def test_role_rule_serializes_authority_role_without_legacy_scope(self):
+        contract = _contract([_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",))])
+        rule = contract.rules[0]
+        assert rule.authority_role == "stop"
+        assert rule.scope == ()
+        assert "scope" not in rule.to_dict()
+        assert rule.to_dict()["authority_role"] == "stop"
 class TestCanonicalWriter:
     def test_ui_write_violates(self):
         audit = reconcile(
@@ -406,6 +429,29 @@ class TestCoverageComplete:
         assert audit.content.assessment.gate_eligible is False
         assert "typescript_coverage_unavailable" in audit.content.assessment.reasons
 
+    def test_contract_and_survey_required_coverage_are_unioned(self):
+        from dataclasses import replace
+
+        contract = replace(_contract([_rule(kind="coverage_complete", subject="")]), required_extractors=("python_ast",))
+        audit = reconcile(
+            contract,
+            _survey((), coverage=(
+                {"extractor": "python_ast", "status": "complete"},
+                {"extractor": "typescript", "status": "failed", "required": True},
+            )),
+        )
+        assert [entry.extractor for entry in audit.content.coverage] == ["python_ast", "typescript"]
+        assert _finding(audit, "r1").rule_status is RuleStatus.VIOLATED
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+
+    def test_coverage_rule_without_required_rows_is_unresolved(self):
+        audit = reconcile(
+            _contract([_rule(kind="coverage_complete", subject="")]),
+            _survey((), coverage=({"extractor": "typescript", "status": "complete", "required": False},)),
+        )
+        assert _finding(audit, "r1").rule_status is RuleStatus.UNRESOLVED
+        assert audit.content.assessment.status is AssessmentStatus.INCOMPLETE
+
 
 # ---------------------------------------------------------------- lifecycle and exceptions
 
@@ -449,6 +495,45 @@ class TestLifecycle:
         assert coverage.evaluated is False
         assert audit.content.assessment.status is AssessmentStatus.CLEAN
 
+    def test_planned_subject_entity_requires_planned_rule(self):
+        contract = _contract(
+            [_rule(
+                kind="remote_intent",
+                subject="sync",
+                accepted_intent_modes=["direct_invocation"],
+            )],
+            operations=(
+                {
+                    "operation_id": "sync",
+                    "meta": {"lifecycle": "planned", "effective_after": {"issue": "#127"}},
+                },
+                "probe_status",
+                "ocr_rebuild",
+            ),
+        )
+        audit = reconcile(contract, _survey(()))
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        assert any("must be planned" in reason for reason in audit.content.assessment.reasons)
+
+    def test_entity_enforcement_cannot_be_weakened_by_rule(self):
+        contract = _contract(
+            [_rule(enforcement="observe")],
+            operations=(
+                "sync",
+                {
+                    "operation_id": "probe_status",
+                    "meta": {"enforcement": "advisory"},
+                },
+                "ocr_rebuild",
+            ),
+        )
+        audit = reconcile(
+            contract,
+            _survey(({"operation_id": "probe_status", "effect_kind": "business_mutation",
+                      "evidence": _evidence()},)),
+        )
+        assert _finding(audit, "r1").severity == "advisory"
+
 
 class TestSeverity:
     def test_blocking_violation_severity(self):
@@ -485,6 +570,41 @@ class TestAssessment:
         assert audit.content.assessment.gate_eligible is False
         assert any("validation_failed" in reason for reason in audit.content.assessment.reasons)
         assert audit.semantic_digest.startswith("sha256:")
+
+    def test_invalid_authority_role_produces_failed_assessment(self):
+        audit = reconcile(
+            _contract([_rule(kind="role_authority", authority_role="not_a_role")]),
+            _survey(()),
+        )
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        assert any("unknown authority role" in reason for reason in audit.content.assessment.reasons)
+
+    def test_failed_assessment_preserves_contract_required_coverage(self):
+        audit = reconcile(
+            _contract([], required_extractors=("typescript",)),
+            _survey(schema_version=999),
+        )
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        coverage = {entry.extractor: entry for entry in audit.content.coverage}
+        assert set(coverage) == {"python_ast", "typescript"}
+        assert all(entry.required and entry.status.value == "failed" for entry in coverage.values())
+
+    def test_invalid_manual_enforcement_produces_failed_assessment(self):
+        contract = _contract([_rule()])
+        contract = replace(contract, rules=(replace(contract.rules[0], enforcement="typo"),))
+        audit = reconcile(contract, _survey(()))
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        assert any("invalid enforcement" in reason for reason in audit.content.assessment.reasons)
+
+    def test_failed_digest_is_deterministic_for_unknown_objects(self):
+        def malformed_contract():
+            contract = _contract([_rule()])
+            return replace(contract, rules=(replace(contract.rules[0], enforcement=object()),))
+
+        first = reconcile(malformed_contract(), _survey(()))
+        second = reconcile(malformed_contract(), _survey(()))
+        assert first.content.bound_contract_digest == second.content.bound_contract_digest
+        assert first.semantic_digest == second.semantic_digest
 
     def test_clean_when_no_findings_and_complete_coverage(self):
         audit = reconcile(_contract([_rule(kind="coverage_complete", subject="")]), _survey(()))
@@ -649,6 +769,37 @@ class TestDigestBinding:
         with pytest.raises(ArchitectureError, match="review digest"):
             validate_report_view(tampered)
 
+    def test_report_view_rejects_missing_review_digest(self):
+        from dataclasses import replace
+
+        from paperforge.architecture_audit import ArchitectureError
+
+        audit = reconcile(
+            _contract([_rule()]),
+            _survey(({"operation_id": "probe_status", "effect_kind": "business_mutation",
+                      "evidence": _evidence()},)),
+        )
+        review = ArchitectureReview(
+            schema_version=SCHEMA_VERSION,
+            reviewer_type="agent",
+            contract_digest=audit.content.bound_contract_digest,
+            survey_digest=audit.content.bound_survey_digest,
+            audit_digest=audit.semantic_digest,
+            reconciler_version="1.0.0",
+            adjudications=(
+                Adjudication(
+                    finding_id=audit.content.findings[0].finding_id,
+                    adjudication=AdjudicationKind.CONFIRMED,
+                    rationale="confirmed",
+                    epistemic_status=EpistemicStatus.INFERRED,
+                ),
+            ),
+        )
+        tampered = replace(compose(audit, review), review_digest=None)
+        with pytest.raises(ArchitectureError, match="presence mismatch"):
+            from paperforge.architecture_audit import validate_report_view
+            validate_report_view(tampered)
+
     def test_finding_id_includes_explicit_authority_role(self):
         survey = _survey(({
             "operation_id": "ocr_rebuild",
@@ -661,7 +812,7 @@ class TestDigestBinding:
             survey,
         )
         second = reconcile(
-            _contract([_rule(kind="role_authority", subject="ocr_rebuild", scope=("stop",), authority_role="execution")]),
+            _contract([_rule(kind="role_authority", subject="ocr_rebuild", authority_role="execution")]),
             survey,
         )
         assert _finding(first, "r1").finding_id != _finding(second, "r1").finding_id
@@ -698,6 +849,16 @@ class TestCoverageAndFailureSemantics:
         audit = reconcile(contract, _survey(()))
         assert audit.content.assessment.status is AssessmentStatus.INCOMPLETE
         assert "typescript_coverage_unavailable" in audit.content.assessment.reasons
+
+    def test_duplicate_coverage_validation_failure_can_compose(self):
+        survey = _survey((), coverage=(
+            {"extractor": "python_ast", "status": "complete"},
+            {"extractor": "python_ast", "status": "complete"},
+        ))
+        audit = reconcile(_contract([_rule()]), survey)
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        assert len(audit.content.coverage) == 1
+        assert compose(audit).assessment.status is AssessmentStatus.FAILED
 
 
 class TestDeclaredAuthoritySemantics:
@@ -807,7 +968,7 @@ class TestLayerValidation:
                     epistemic_status=EpistemicStatus.INFERRED,
                     evidence=(Evidence(
                         file="paperforge/commands/sync.py",
-                        file_digest="sha256:x",
+                        file_digest="sha256:" + "1" * 64,
                         symbol="run",
                         line_start=1,
                         line_end=2,
@@ -840,9 +1001,9 @@ class TestLayerValidation:
         review = ArchitectureReview(
             schema_version=SCHEMA_VERSION,
             reviewer_type="agent",
-            contract_digest="sha256:contract",
-            survey_digest="sha256:survey",
-            audit_digest="sha256:audit",
+            contract_digest="sha256:" + "a" * 64,
+            survey_digest="sha256:" + "b" * 64,
+            audit_digest="sha256:" + "c" * 64,
             reconciler_version="1.0.0",
             semantic_findings=(
                 SemanticFinding(
@@ -859,22 +1020,23 @@ class TestLayerValidation:
         from dataclasses import replace
 
         from paperforge.architecture_audit import ArchitectureError, validate_report_view
+        from paperforge.architecture_audit.layers import _review_projection_digest
 
         audit = reconcile(_contract([_rule()]), _survey(({
             "operation_id": "probe_status",
             "effect_kind": "business_mutation",
             "evidence": _evidence(),
         },)))
+        unknown = Adjudication(
+            finding_id="finding:unknown",
+            adjudication=AdjudicationKind.CONFIRMED,
+            rationale="not in deterministic findings",
+            epistemic_status=EpistemicStatus.INFERRED,
+        )
         tampered = replace(
             compose(audit),
-            review_adjudications=(
-                Adjudication(
-                    finding_id="finding:unknown",
-                    adjudication=AdjudicationKind.CONFIRMED,
-                    rationale="not in deterministic findings",
-                    epistemic_status=EpistemicStatus.INFERRED,
-                ),
-            ),
+            review_digest=_review_projection_digest((unknown,), (), ()),
+            review_adjudications=(unknown,),
         )
         with pytest.raises(ArchitectureError, match="adjudicates unknown finding"):
             validate_report_view(tampered)

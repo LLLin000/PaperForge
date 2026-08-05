@@ -13,6 +13,7 @@ Review can never mutate Survey facts or deterministic findings.
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
@@ -22,6 +23,8 @@ from typing import Any
 from paperforge.architecture_audit.canonical import semantic_digest
 
 SCHEMA_VERSION = 1
+
+_SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 # ---------------------------------------------------------------- enums
 
@@ -260,15 +263,14 @@ class KnownGap:
 @dataclass(frozen=True)
 class ContractEntityMeta:
     lifecycle: LifecycleStatus = LifecycleStatus.ACTIVE
-    enforcement: EnforcementMode = EnforcementMode.BLOCKING
+    enforcement: EnforcementMode | None = None
     effective_after: EffectiveAfter | None = None
     known_gap: KnownGap | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        out: dict[str, Any] = {
-            "lifecycle": self.lifecycle.value,
-            "enforcement": self.enforcement.value,
-        }
+        out: dict[str, Any] = {"lifecycle": self.lifecycle.value}
+        if self.enforcement is not None:
+            out["enforcement"] = self.enforcement.value
         if self.effective_after is not None:
             out["effective_after"] = self.effective_after.to_dict()
         if self.known_gap is not None:
@@ -280,7 +282,7 @@ class ContractEntityMeta:
         data = data or {}
         return cls(
             lifecycle=LifecycleStatus(data.get("lifecycle", "active")),
-            enforcement=EnforcementMode(data.get("enforcement", "blocking")),
+            enforcement=EnforcementMode(data["enforcement"]) if data.get("enforcement") else None,
             effective_after=(
                 EffectiveAfter.from_dict(data["effective_after"])
                 if data.get("effective_after")
@@ -292,7 +294,7 @@ class ContractEntityMeta:
     def is_default(self) -> bool:
         return (
             self.lifecycle is LifecycleStatus.ACTIVE
-            and self.enforcement is EnforcementMode.BLOCKING
+            and self.enforcement is None
             and self.effective_after is None
             and self.known_gap is None
         )
@@ -460,7 +462,7 @@ class Rule:
             "lifecycle": self.lifecycle.value,
             "enforcement": self.enforcement.value,
         }
-        if self.scope:
+        if self.scope and self.kind is not RuleKind.ROLE_AUTHORITY:
             out["scope"] = list(self.scope)
         if self.description:
             out["description"] = self.description
@@ -480,10 +482,19 @@ class Rule:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Rule:
+        kind = RuleKind(data["kind"])
         scope = tuple(data.get("scope", []))
+        authority_role = data.get("authority_role")
+        if kind is RuleKind.ROLE_AUTHORITY:
+            if len(scope) > 1:
+                raise ArchitectureError("ROLE_AUTHORITY scope may contain only one legacy role selector")
+            if authority_role is not None and scope and scope[0] != authority_role:
+                raise ArchitectureError("ROLE_AUTHORITY scope and authority_role disagree")
+            authority_role = authority_role or (scope[0] if scope else None)
+            scope = ()
         return cls(
             rule_id=data["rule_id"],
-            kind=RuleKind(data["kind"]),
+            kind=kind,
             subject=data["subject"],
             scope=scope,
             description=data.get("description", ""),
@@ -493,7 +504,7 @@ class Rule:
                 EffectiveAfter.from_dict(data["effective_after"]) if data.get("effective_after") else None
             ),
             known_gap=KnownGap.from_dict(data["known_gap"]) if data.get("known_gap") else None,
-            authority_role=data.get("authority_role") or (scope[0] if scope else None),
+            authority_role=authority_role,
             allowed_query_effects=tuple(EffectKind(e) for e in data.get("allowed_query_effects", [])),
             accepted_intent_modes=tuple(IntentMode(m) for m in data.get("accepted_intent_modes", [])),
             required_consumer_kinds=tuple(
@@ -1438,7 +1449,16 @@ def _require(condition: bool, message: str) -> None:
         raise ArchitectureError(message)
 
 
+def _is_sha256(value: Any) -> bool:
+    return isinstance(value, str) and _SHA256_RE.fullmatch(value) is not None
+
+
 def _validate_meta(meta: ContractEntityMeta, label: str) -> None:
+    _require(isinstance(meta.lifecycle, LifecycleStatus), f"{label}: invalid lifecycle")
+    _require(
+        meta.enforcement is None or isinstance(meta.enforcement, EnforcementMode),
+        f"{label}: invalid enforcement",
+    )
     if meta.lifecycle is LifecycleStatus.PLANNED and meta.effective_after is None and meta.known_gap is None:
         raise ArchitectureError(f"{label}: planned entity must declare effective_after or known_gap")
     if meta.known_gap is not None and not meta.known_gap.rationale.strip():
@@ -1458,7 +1478,7 @@ def _validate_evidence(evidence: Evidence, *, review: bool = False) -> None:
     _require(not evidence.file.startswith(("/", "\\")), f"evidence file must be relative: {evidence.file!r}")
     _require("\\" not in evidence.file, f"evidence file must use POSIX separators: {evidence.file!r}")
     _require(".." not in evidence.file.split("/"), f"evidence file escapes repository: {evidence.file!r}")
-    _require(evidence.file_digest.startswith("sha256:"), "evidence file_digest must be sha256:<hex>")
+    _require(_is_sha256(evidence.file_digest), "evidence file_digest must match sha256:<64 lowercase hex>")
     _require(bool(evidence.symbol), "evidence symbol must not be empty")
     _require(evidence.line_start > 0 and evidence.line_end >= evidence.line_start, "invalid evidence line range")
     _require(bool(evidence.extractor), "evidence extractor must not be empty")
@@ -1479,6 +1499,61 @@ def _evidence_values(value: Any) -> list[Evidence]:
         elif isinstance(item, tuple):
             result.extend(e for e in item if isinstance(e, Evidence))
     return result
+
+def _rule_entity_metas(rule: Rule, contract: ArchitectureContract) -> tuple[ContractEntityMeta, ...]:
+    unit_rule_kinds = {
+        RuleKind.PUBLICATION_AUTHORITY,
+        RuleKind.CANONICAL_WRITER,
+        RuleKind.PUBLICATION_MARKER,
+    }
+    operation_rule_kinds = {
+        RuleKind.QUERY_SIDE_EFFECT,
+        RuleKind.REMOTE_INTENT,
+        RuleKind.ROLE_AUTHORITY,
+    }
+    if rule.kind in unit_rule_kinds:
+        unit = next((unit for unit in contract.publication_units if unit.unit_id == rule.subject), None)
+        if unit is None:
+            return ()
+        metas = [unit.meta]
+        if rule.kind is RuleKind.PUBLICATION_AUTHORITY:
+            metas.append(unit.authority_meta)
+        return tuple(metas)
+    if rule.kind not in operation_rule_kinds:
+        return ()
+    operation = next((item for item in contract.operations if item.operation_id == rule.subject), None)
+    if operation is None:
+        return ()
+    metas = [operation.meta]
+    if rule.kind is RuleKind.ROLE_AUTHORITY and rule.authority_role:
+        for authority in operation.authorities:
+            matches_role = authority.role.value == rule.authority_role
+            matches_observer = (
+                rule.authority_role == AuthorityRole.OBSERVER.value
+                and bool(authority.observers)
+            )
+            matches_delegate = (
+                rule.authority_role == AuthorityRole.DELEGATED_EXECUTOR.value
+                and bool(authority.delegated_executors)
+            )
+            if matches_role or matches_observer or matches_delegate:
+                metas.append(authority.meta)
+    return tuple(metas)
+
+
+def _validate_rule_entity_lifecycle(rule: Rule, contract: ArchitectureContract) -> None:
+    for meta in _rule_entity_metas(rule, contract):
+        if meta.lifecycle is LifecycleStatus.PLANNED:
+            _require(
+                rule.lifecycle is LifecycleStatus.PLANNED,
+                f"rule {rule.rule_id} must be planned when its subject entity is planned",
+            )
+        elif meta.lifecycle is LifecycleStatus.DEPRECATED:
+            _require(
+                rule.lifecycle is not LifecycleStatus.ACTIVE,
+                f"rule {rule.rule_id} cannot be active when its subject entity is deprecated",
+            )
+
 
 def _validate_rule_subject(rule: Rule, contract: ArchitectureContract) -> None:
     unit_rule_kinds = {
@@ -1585,6 +1660,21 @@ def validate_contract(contract: ArchitectureContract) -> None:
     rule_ids = [r.rule_id for r in contract.rules]
     _require(len(set(rule_ids)) == len(rule_ids), "duplicate rule_id in contract")
     for rule in contract.rules:
+        _require(isinstance(rule.kind, RuleKind), f"rule {rule.rule_id}: invalid rule kind")
+        _require(isinstance(rule.lifecycle, LifecycleStatus), f"rule {rule.rule_id}: invalid lifecycle")
+        _require(isinstance(rule.enforcement, EnforcementMode), f"rule {rule.rule_id}: invalid enforcement")
+        _require(
+            all(isinstance(effect, EffectKind) for effect in rule.allowed_query_effects),
+            f"rule {rule.rule_id}: invalid allowed query effect",
+        )
+        _require(
+            all(isinstance(mode, IntentMode) for mode in rule.accepted_intent_modes),
+            f"rule {rule.rule_id}: invalid accepted intent mode",
+        )
+        _require(
+            all(isinstance(kind, SignalConsumerKind) for kind in rule.required_consumer_kinds),
+            f"rule {rule.rule_id}: invalid required consumer kind",
+        )
         _validate_rule_subject(rule, contract)
         if IntentMode.IMPLICIT in rule.accepted_intent_modes:
             raise ArchitectureError(f"rule {rule.rule_id}: IMPLICIT is never an accepted intent mode")
@@ -1594,8 +1684,20 @@ def validate_contract(contract: ArchitectureContract) -> None:
             raise ArchitectureError(f"rule {rule.rule_id}: known_gap rationale must not be empty")
         if rule.kind is RuleKind.REMOTE_INTENT and not rule.accepted_intent_modes:
             raise ArchitectureError(f"rule {rule.rule_id}: REMOTE_INTENT requires accepted_intent_modes")
-        if rule.kind is RuleKind.ROLE_AUTHORITY and rule.authority_role is not None:
-            AuthorityRole(rule.authority_role)
+        if rule.kind is RuleKind.ROLE_AUTHORITY:
+            _require(rule.authority_role is not None, f"rule {rule.rule_id}: ROLE_AUTHORITY requires authority_role")
+            if rule.scope:
+                _require(
+                    len(rule.scope) == 1 and rule.scope[0] == rule.authority_role,
+                    f"rule {rule.rule_id}: scope and authority_role disagree",
+                )
+            try:
+                AuthorityRole(rule.authority_role)
+            except ValueError as exc:
+                raise ArchitectureError(
+                    f"rule {rule.rule_id}: unknown authority role {rule.authority_role!r}"
+                ) from exc
+        _validate_rule_entity_lifecycle(rule, contract)
 
     exception_ids = [e.exception_id for e in contract.exceptions]
     _require(len(set(exception_ids)) == len(exception_ids), "duplicate exception_id in contract")
@@ -1620,8 +1722,14 @@ def validate_survey(survey: ArchitectureSurvey) -> None:
     extractors = [c.extractor for c in survey.coverage]
     _require(all(extractors), "coverage extractor must not be empty")
     _require(len(set(extractors)) == len(extractors), "duplicate coverage extractor in survey")
-    _require(survey.source_digest.startswith("sha256:"), "survey source_digest must be sha256:<hex>")
+    _require(_is_sha256(survey.source_digest), "survey source_digest must match sha256:<64 lowercase hex>")
     for fact in survey.facts:
+        if isinstance(fact, SignalFact) and fact.consumer_kind is SignalConsumerKind.CODE:
+            has_auditable_consumer = bool(fact.consumer and fact.consumer_evidence)
+            _require(
+                fact.has_code_consumer == has_auditable_consumer,
+                "code signal consumer requires matching consumer identity and evidence",
+            )
         if isinstance(fact, RoleAuthorityFact):
             try:
                 AuthorityRole(fact.role)
@@ -1652,8 +1760,8 @@ def validate_audit(audit: DeterministicAudit) -> None:
     _require(audit.schema_version == SCHEMA_VERSION, f"unsupported audit schema_version: {audit.schema_version}")
     content = audit.content
     _require(content.reconciler_version, "audit reconciler_version must not be empty")
-    _require(content.bound_contract_digest.startswith("sha256:"), "audit contract digest must be sha256:<hex>")
-    _require(content.bound_survey_digest.startswith("sha256:"), "audit survey digest must be sha256:<hex>")
+    _require(_is_sha256(content.bound_contract_digest), "audit contract digest must match sha256:<64 lowercase hex>")
+    _require(_is_sha256(content.bound_survey_digest), "audit survey digest must match sha256:<64 lowercase hex>")
     _require(
         audit.semantic_digest == semantic_digest(content.to_dict()),
         "audit semantic_digest does not match content",
@@ -1683,7 +1791,7 @@ def validate_review(review: ArchitectureReview, audit: DeterministicAudit | None
         ("survey_digest", review.survey_digest),
         ("audit_digest", review.audit_digest),
     ):
-        _require(value.startswith("sha256:"), f"review {name} must be sha256:<hex>")
+        _require(_is_sha256(value), f"audit {name} must match sha256:<64 lowercase hex>")
     deterministic_ids: set[str] = set()
     evidence_ids: set[str] = set()
     if audit is not None:
@@ -1735,9 +1843,16 @@ def validate_review(review: ArchitectureReview, audit: DeterministicAudit | None
 
 def validate_report_view(view: ArchitectureReportView, audit: DeterministicAudit | None = None) -> None:
     _require(view.schema_version == SCHEMA_VERSION, f"unsupported report view schema_version: {view.schema_version}")
-    _require(view.audit_digest.startswith("sha256:"), "report view audit digest must be sha256:<hex>")
+    _require(_is_sha256(view.audit_digest), "report view audit digest must match sha256:<64 lowercase hex>")
+    has_review_payload = bool(
+        view.review_adjudications or view.semantic_findings or view.evidence_requests
+    )
+    _require(
+        (view.review_digest is not None) == has_review_payload,
+        "report view review digest/payload presence mismatch",
+    )
     if view.review_digest is not None:
-        _require(view.review_digest.startswith("sha256:"), "report view review digest must be sha256:<hex>")
+        _require(_is_sha256(view.review_digest), "report view review digest must match sha256:<64 lowercase hex>")
         _require(
             view.review_digest
             == _review_projection_digest(

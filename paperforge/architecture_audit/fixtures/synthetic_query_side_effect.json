@@ -38,7 +38,7 @@
         "effect_kind": "business_mutation",
         "evidence": {
           "file": "paperforge/commands/probe.py",
-          "file_digest": "sha256:deadbeef",
+          "file_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
           "symbol": "probe.run",
           "line_start": 40,
           "line_end": 44,
@@ -48,7 +48,7 @@
         }
       }
     ],
-    "source_digest": "sha256:1111",
+    "source_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
