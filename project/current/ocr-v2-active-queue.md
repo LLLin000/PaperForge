@@ -12,7 +12,7 @@ Architecture Audit Slices A+B (#131/#132) accepted and closed; #125 administrati
 - **#99** — owner decision (redo-safety path reconfirmation after #129); stays blocked.
 - **#81** — owner decision (release gate; N+1 code verified, no release authorized).
 - **#82** — deferred (N+2 deletion needs a probe-capable N+1 package + support window).
-- **#94–#105 (Wayfinder)** — frozen; children deferred post-release (#95 workspace surface owned by #126; #101 progress contract overlaps #126; #102 redo-backup theme revisited with #99). No child agent-ready.
+- **#94–#105 (Wayfinder)** — frozen; children deferred post-release (#95 workspace surface owned by #126, verified at #126 acceptance; **#101 superseded→#126** progress contract; **#102 superseded→#99** backup strategy). No child agent-ready.
 - **#63** — deferred (parent of closed #64; resume only as a new issue).
 - **#133/#134** — deferred post-RC (architecture collectors/HTML+CI gate).
 
