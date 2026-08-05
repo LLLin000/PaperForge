@@ -776,8 +776,8 @@ def headless_setup(
         else:
             from paperforge import __version__ as _pv
 
-            install_target = [f"paperforge=={_pv}"]
-            git_target = [f"git+https://github.com/LLLin000/PaperForge.git@{_pv}"]
+            install_target = [f"paperforge[vector]=={_pv}"]
+            git_target = [f"paperforge[vector] @ git+https://github.com/LLLin000/PaperForge.git@{_pv}"]
             result = subprocess.run(
                 [sys.executable, "-m", "pip", "install", "--upgrade"] + install_target,
                 capture_output=True,

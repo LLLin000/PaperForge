@@ -573,3 +573,59 @@ def test_postprocess_writes_role_index(tmp_path: Path) -> None:
     _, _, _, _ = postprocess_ocr_result(vault, "IDX001", [])
 
     assert (ocr_dir / "index" / "role-index.json").exists()
+
+
+def test_ocr_run_all_blocked_returns_nonzero(tmp_path, monkeypatch):
+    """Release review P0-1: invalid/missing token marks papers blocked —
+    the CLI must exit non-zero so the frontend never shows success."""
+    from paperforge.worker import ocr as ocr_worker
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    lit = vault / "Resources" / "Literature" / "test_domain"
+    lit.mkdir(parents=True)
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+
+    note = lit / "BLOCK001.md"
+    note.write_text(
+        """---
+zotero_key: "BLOCK001"
+title: "T"
+ocr_status: "pending"
+do_ocr: true
+---
+""",
+        encoding="utf-8",
+    )
+
+    # queue row: PDF present, token absent -> blocked branch
+    monkeypatch.setattr(
+        ocr_worker,
+        "sync_ocr_queue",
+        lambda _paths, _target_rows: [
+            {
+                "zotero_key": "BLOCK001",
+                "queue_status": "blocked",
+                "pdf_path": "C:/fake/BLOCK001.pdf",
+                "has_pdf": True,
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        "paperforge.pdf_resolver.resolve_pdf_path",
+        lambda _p, _h, _v, _z: tmp_path / "BLOCK001.pdf",
+    )
+    # dev machine has a token in HKCU registry — force the no-token path
+    monkeypatch.setattr(ocr_worker, "_resolve_paddleocr_token", lambda _v: "")
+    monkeypatch.setattr(
+        ocr_worker, "_sync",
+        type("S", (), {
+            "run_selection_sync": staticmethod(lambda v: None),
+            "run_index_refresh": staticmethod(lambda v: None),
+        })(),
+    )
+    monkeypatch.setattr(ocr_worker, "refresh_index_entry", lambda _v, _k: None)
+
+    rc = ocr_worker.run_ocr(vault, verbose=False, no_progress=True, selected_keys={"BLOCK001"})
+    assert rc == 1, f"blocked-only run must exit non-zero, got {rc}"

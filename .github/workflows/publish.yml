@@ -42,6 +42,33 @@ jobs:
             exit 1
           fi
 
+      # ── Gate 1.5: wait for the SAME SHA's full CI (alls-green) before
+      # touching PyPI — a tag pushed alongside the bump commit must not
+      # publish while unit/protocol/OCR/plugin suites are still running
+      # (review P0-5).
+      - name: Wait for All Checks Passed on this SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          SHA="${{ github.sha }}"
+          for i in $(seq 1 60); do
+            GREEN=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" \
+              --jq '[.check_runs[] | select(.name == "All Checks Passed")][0].conclusion' 2>/dev/null || echo "missing")
+            if [ "$GREEN" = "success" ]; then
+              echo "All Checks Passed: success on $SHA"
+              exit 0
+            fi
+            if [ "$GREEN" = "failure" ] || [ "$GREEN" = "cancelled" ] || [ "$GREEN" = "timed_out" ]; then
+              echo "::error::All Checks Passed: $GREEN on $SHA — refusing to publish"
+              exit 1
+            fi
+            echo "waiting for CI on $SHA (attempt $i/60, state=$GREEN)..."
+            sleep 15
+          done
+          echo "::error::All Checks Passed did not finish within 15 minutes on $SHA"
+          exit 1
+
       # ── Gate 2: Python package builds + imports with vector extras.
       - name: Build Python package
         run: |
@@ -111,16 +138,19 @@ jobs:
             gh release create "${{ github.ref_name }}" \
               --title "${{ github.ref_name }}" \
               --generate-notes \
-              $PRERELEASE_FLAG \
-              paperforge/plugin/main.js \
-              paperforge/plugin/styles.css \
-              paperforge/plugin/manifest.json \
-              paperforge/plugin/versions.json \
-              dist/*.whl \
-              dist/*.tar.gz
+              $PRERELEASE_FLAG
           fi
-          # Attach a checksum so consumers can verify artifact provenance.
+          # #120-fix (review): upload ALL assets with --clobber — a rerun
+          # after a mid-upload failure must backfill every missing asset,
+          # not just the checksum.
           sha256sum paperforge/plugin/main.js paperforge/plugin/styles.css \
             paperforge/plugin/manifest.json paperforge/plugin/versions.json \
             dist/*.whl dist/*.tar.gz > checksums.txt
-          gh release upload "${{ github.ref_name }}" checksums.txt --clobber
+          gh release upload "${{ github.ref_name }}" --clobber \
+            paperforge/plugin/main.js \
+            paperforge/plugin/styles.css \
+            paperforge/plugin/manifest.json \
+            paperforge/plugin/versions.json \
+            dist/*.whl \
+            dist/*.tar.gz \
+            checksums.txt
