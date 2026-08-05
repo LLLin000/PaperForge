@@ -295,6 +295,110 @@ def test_abstract_body_without_span_is_not_verified_accept() -> None:
     assert decision.role == "abstract_body"
 
 
+def test_headingless_multi_island_selects_nearest_pre_boundary_island() -> None:
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    blocks = [
+        {"page": 1, "block_id": "wrap", "seed_role": "abstract_body", "text": "Journal navigation page."},
+        {"page": 3, "block_id": 8, "seed_role": "abstract_body", "text": "Background: true abstract."},
+        {"page": 3, "block_id": 9, "seed_role": "abstract_body", "text": "Results: true abstract."},
+        {"page": 4, "block_id": 12, "seed_role": "section_heading", "text": "Introduction"},
+        {"page": 13, "block_id": 3, "seed_role": "abstract_body", "text": "Endothelial autophagy mislabeled."},
+        {"page": 13, "block_id": 4, "seed_role": "subsection_heading", "text": "Cunps@CMCS-PCA Hydrogel Mainly Depended"},
+        {"page": 13, "block_id": 5, "seed_role": "abstract_body", "text": "As diabetic wounds mislabeled."},
+    ]
+    span = build_document_abstract_span(blocks, {"body_start_block_id": 12})
+
+    assert span["status"] == "ACCEPT"
+    assert span["stop_reason"] == "headingless_single_island"
+    assert span["selection_mode"] == "headingless_single_island"
+    assert span["island_count"] == 3
+    # canonical island = page-3 true abstract, wrapper and late body rejected
+    assert span["body_block_ids"] == [8, 9]
+    assert span["preceding_rejected_block_ids"] == ["wrap"]
+    assert span["following_rejected_block_ids"] == [3, 5]
+
+
+def test_headingless_multi_island_without_body_start_holds_all() -> None:
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    blocks = [
+        {"page": 1, "block_id": "a1", "seed_role": "abstract_body", "text": "First island."},
+        {"page": 7, "block_id": "a2", "seed_role": "abstract_body", "text": "Second island."},
+    ]
+    span = build_document_abstract_span(blocks, {})
+
+    assert span["status"] == "HOLD"
+    assert span["stop_reason"] == "headingless_ambiguous_islands"
+    assert span["selection_mode"] == "headingless_ambiguous"
+    assert span["body_block_ids"] == []
+    assert sorted(span["rejected_abstract_block_ids"]) == ["a1", "a2"]
+
+
+def test_headingless_single_island_keeps_missing_fallback() -> None:
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    blocks = [
+        {"page": 1, "block_id": "a", "seed_role": "abstract_body", "text": "Only abstract island."},
+        {"page": 1, "block_id": "intro", "seed_role": "section_heading", "text": "Introduction"},
+    ]
+    span = build_document_abstract_span(blocks, {"body_start_block_id": "intro"})
+
+    assert span["status"] == "MISSING"
+    assert span["stop_reason"] == "missing_heading"
+    assert span["island_count"] == 1
+
+
+def test_gate_disposes_following_rejected_island_as_body() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    decision = resolve_verified_role(
+        {"block_id": "b", "page": 13, "role": "unassigned", "seed_role": "abstract_body", "text": "Late mislabeled body.", "zone": "body_zone"},
+        RoleGateContext(abstract_span={"status": "ACCEPT", "body_block_ids": [], "following_rejected_block_ids": ["b"]}),
+    )
+
+    assert decision.role == "body_paragraph"
+    assert decision.status == "ACCEPT"
+    assert decision.render_default is True
+
+
+def test_gate_disposes_preceding_rejected_island_by_zone() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    wrapper = resolve_verified_role(
+        {"block_id": "w", "page": 1, "role": "unassigned", "seed_role": "abstract_body", "text": "Wrapper text.", "zone": "frontmatter_main_zone"},
+        RoleGateContext(abstract_span={"status": "ACCEPT", "body_block_ids": [], "preceding_rejected_block_ids": ["w"]}),
+    )
+    assert wrapper.role == "frontmatter_noise"
+    assert wrapper.render_default is False
+
+    bodyish = resolve_verified_role(
+        {"block_id": "p", "page": 3, "role": "unassigned", "seed_role": "abstract_body", "text": "Early body.", "zone": "body_zone"},
+        RoleGateContext(abstract_span={"status": "ACCEPT", "body_block_ids": [], "preceding_rejected_block_ids": ["p"]}),
+    )
+    assert bodyish.role == "body_paragraph"
+    assert bodyish.render_default is True
+
+
+def test_gate_ambiguous_rejected_island_fails_closed_by_zone() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    span = {"status": "HOLD", "body_block_ids": [], "rejected_abstract_block_ids": ["f", "b"]}
+    fm = resolve_verified_role(
+        {"block_id": "f", "role": "unassigned", "seed_role": "abstract_body", "text": "Frontmatter.", "zone": "frontmatter_side_zone"},
+        RoleGateContext(abstract_span=span),
+    )
+    assert fm.role == "frontmatter_noise"
+    assert fm.render_default is False
+
+    body = resolve_verified_role(
+        {"block_id": "b", "role": "unassigned", "seed_role": "abstract_body", "text": "Body.", "zone": "body_zone"},
+        RoleGateContext(abstract_span=span),
+    )
+    assert body.role == "body_paragraph"
+    assert body.render_default is True
+
+
 def test_section_heading_without_heading_artifact_is_not_verified_accept() -> None:
     from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
 

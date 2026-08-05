@@ -93,6 +93,37 @@ def _page_bid(block: dict) -> str:
     return f"p{int(block.get('page', 0) or 0)}:{block.get('block_id')}"
 
 
+def _group_abstract_islands(blocks: list[dict], duplicate_ids: set[str]) -> list[list[tuple[int, str | int | None]]]:
+    """Cluster abstract_body seeds into page-contiguous islands.
+
+    Same-page seeds stay one island even when other blocks lie between them;
+    adjacent-page seeds stay connected; a page gap > 1 starts a new island.
+    Returns list of islands, each a list of (block_index, artifact_block_id).
+    """
+    islands: list[list[tuple[int, str | int | None]]] = []
+    current: list[tuple[int, str | int | None]] | None = None
+    prev_page: int | None = None
+    for idx, block in enumerate(blocks):
+        if block.get("seed_role") != "abstract_body":
+            continue
+        page = int(block.get("page", 0) or 0)
+        if current is None or (prev_page is not None and page - prev_page > 1):
+            current = []
+            islands.append(current)
+        current.append((idx, _artifact_block_id(block, duplicate_ids)))
+        prev_page = page
+    return islands
+
+
+def _island_distance(island: list[tuple[int, str | int | None]], boundary_idx: int) -> int:
+    """Document-order distance from an island's index span to the body boundary."""
+    lo = island[0][0]
+    hi = island[-1][0]
+    if lo <= boundary_idx <= hi:
+        return 0
+    return min(abs(boundary_idx - lo), abs(boundary_idx - hi))
+
+
 def _artifact_membership_contains(block: dict, ids: set) -> bool:
     block_id = _bid(block)
     if block_id in ids:
@@ -232,6 +263,62 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
         span = context.abstract_span or {}
         if _artifact_membership_contains(block, set(span.get("body_block_ids", []))):
             return accept_role("abstract_body", seed_role, "abstract_span_body", ["abstract body matched span"])
+        if _artifact_membership_contains(block, set(span.get("following_rejected_block_ids", []))):
+            # Islands after the canonical abstract are body content mislabeled
+            # by OCR; demote to body flow unconditionally to preserve content.
+            return VerifiedRoleDecision(
+                role="body_paragraph",
+                status="ACCEPT",
+                source="abstract_island_rejected_body",
+                evidence=["abstract seed in non-canonical island after the canonical abstract demoted to body flow"],
+                seed_role=seed_role,
+                render_default=True,
+            )
+        if _artifact_membership_contains(block, set(span.get("preceding_rejected_block_ids", []))):
+            # Islands before the canonical abstract are publisher wrappers or
+            # navigation pages; use zone evidence so they stay out of the body.
+            zone = str(block.get("zone") or "")
+            if zone.startswith(("frontmatter", "publisher", "correspondence", "affiliation")):
+                return VerifiedRoleDecision(
+                    role="frontmatter_noise",
+                    status="ACCEPT",
+                    source="abstract_island_rejected_frontmatter",
+                    evidence=["abstract seed in non-canonical island before the canonical abstract "
+                    "kept out of abstract and body"],
+                    seed_role=seed_role,
+                    render_default=False,
+                )
+            return VerifiedRoleDecision(
+                role="body_paragraph",
+                status="ACCEPT",
+                source="abstract_island_rejected_body",
+                evidence=["abstract seed in non-canonical island before the canonical abstract demoted to body flow"],
+                seed_role=seed_role,
+                render_default=True,
+            )
+        if _artifact_membership_contains(block, set(span.get("rejected_abstract_block_ids", []))):
+            # Ambiguous headingless case: no reliable body transition. Fail
+            # closed by zone evidence — frontmatter-adjacent stays out of body,
+            # everything else stays visible in original position.
+            zone = str(block.get("zone") or "")
+            if zone.startswith(("frontmatter", "publisher", "correspondence", "affiliation")):
+                return VerifiedRoleDecision(
+                    role="frontmatter_noise",
+                    status="ACCEPT",
+                    source="abstract_island_rejected_frontmatter",
+                    evidence=["ambiguous headingless abstract seed in frontmatter-adjacent zone kept "
+                    "out of abstract and body"],
+                    seed_role=seed_role,
+                    render_default=False,
+                )
+            return VerifiedRoleDecision(
+                role="body_paragraph",
+                status="ACCEPT",
+                source="abstract_island_rejected_body",
+                evidence=["ambiguous headingless abstract seed demoted to body flow to preserve content and order"],
+                seed_role=seed_role,
+                render_default=True,
+            )
         if span.get("status") == "MISSING":
             return accept_role(
                 "abstract_body", seed_role, "abstract_span_missing_fallback",
@@ -392,13 +479,85 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
         None,
     )
     if heading_index is None:
+        # Headingless structured abstract (e.g. Dove Press "Background:/Results:").
+        # OCR abstract_body seeds may include mislabeled body or wrapper blocks.
+        # A document has at most one canonical abstract island; when multiple
+        # page-disjoint islands exist, pick the one nearest the body transition
+        # and reject the rest (gate assigns them safe roles). Single-island
+        # documents keep the legacy MISSING fallback unchanged.
+        islands = _group_abstract_islands(blocks, duplicate_ids)
+        if len(islands) <= 1:
+            return {
+                "heading_block_id": None,
+                "body_block_ids": [],
+                "excluded_support_block_ids": [],
+                "status": "MISSING",
+                "stop_reason": "missing_heading",
+                "confidence": 0.0,
+                "island_count": len(islands),
+            }
+        if body_start_id is not None:
+            boundary_idx = next(
+                (
+                    idx
+                    for idx, block in enumerate(blocks)
+                    if block.get("block_id") == body_start_id or _artifact_block_id(block, duplicate_ids) == body_start_id
+                ),
+                None,
+            )
+        else:
+            boundary_idx = None
+        if boundary_idx is not None:
+            # A canonical abstract must sit before the body transition. Islands
+            # entirely before the boundary are preferred; only when none exist
+            # (e.g. "1. ABSTRACT" itself captured as body start) fall back to
+            # post-boundary islands by distance.
+            pre_boundary = [island for island in islands if island[-1][0] < boundary_idx]
+            candidates = pre_boundary or islands
+            distances = [_island_distance(island, boundary_idx) for island in candidates]
+            best = min(distances)
+            if distances.count(best) == 1:
+                chosen = candidates[distances.index(best)]
+                chosen_ids = [block_id for _, block_id in chosen]
+                chosen_lo = chosen[0][0]
+                preceding = [
+                    block_id
+                    for island in islands
+                    if island[-1][0] < chosen_lo
+                    for _, block_id in island
+                ]
+                following = [
+                    block_id
+                    for island in islands
+                    if island[0][0] > chosen[-1][0]
+                    for _, block_id in island
+                ]
+                return {
+                    "heading_block_id": None,
+                    "body_block_ids": chosen_ids,
+                    "excluded_support_block_ids": [],
+                    "status": "ACCEPT",
+                    "stop_reason": "headingless_single_island",
+                    "confidence": 0.8,
+                    "selection_mode": "headingless_single_island",
+                    "island_count": len(islands),
+                    "preceding_rejected_block_ids": preceding,
+                    "following_rejected_block_ids": following,
+                }
+        # No reliable body transition or tied selection: fail closed. No island
+        # is promoted to abstract; every seed is listed as rejected so the gate
+        # gives it an explicit, content-preserving role instead of hoisting it.
+        rejected = [block_id for island in islands for _, block_id in island]
         return {
             "heading_block_id": None,
             "body_block_ids": [],
             "excluded_support_block_ids": [],
-            "status": "MISSING",
-            "stop_reason": "missing_heading",
+            "status": "HOLD",
+            "stop_reason": "headingless_ambiguous_islands",
             "confidence": 0.0,
+            "selection_mode": "headingless_ambiguous",
+            "island_count": len(islands),
+            "rejected_abstract_block_ids": rejected,
         }
     body_ids: list = []
     excluded: list = []
