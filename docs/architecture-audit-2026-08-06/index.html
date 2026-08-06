@@ -46,29 +46,29 @@
   <h1>PaperForge 架构审计报告</h1>
   <div class="sub">Architecture Audit · 2026-08-06 · 五层模型 + 真实证据 + 确定性诊断（v2：诚实覆盖）</div>
   <div class="meta">
-    <span>revision <b>b009fe7598b4d77a19ba71ca8595f05bfcf75ea3</b></span>
+    <span>revision <b>3fb4a01bcdfb79a04bf0590ad7010fccbf6b1894</b></span>
     <span>dirty <b>true</b></span>
-    <span>audit <span class="digest">sha256:1db9fbcc7bfcd90c006298c73abb57509eed8b45c07e3729477f680deba4d252</span></span>
+    <span>audit <span class="digest">sha256:29d019008f4428833344ad03ab420b5aac47ba4624846b33c57b9660d1f8c905</span></span>
     <span>contract <span class="digest">sha256:af09f13321648918fd2a04fa588e7c101414e4f4a85c8b47cc79c3f782f1942f</span></span>
-    <span>survey <span class="digest">sha256:56f68974647b640711e3e4998a9f63eeba124348a086c8179ea3f5ae3e34b685</span></span>
+    <span>survey <span class="digest">sha256:c3ea3718232e612f0dbbc55fb1528bb39ad570a59b95c370425ac320d0dbe3f5</span></span>
     <span>review <span class="digest">sha256:32e85b7d2dbfc19f0f3120bbd77f6771a8e22f620a37acfd1d64bbc999b6228b</span></span>
     <span>reconciler 1.0.0</span>
   </div>
 
 
     <div class="banner">
-      <span class="big" style="color:#94a3b8">incomplete · gate 不可用</span>
+      <span class="big" style="color:#94a3b8">failed · gate 不可用</span>
       <span class="sub">确定性评估 · 11 条发现
       （8 unresolved ·
        1 violated ·
        2 planned gap）<br>
-      原因：python_ast_coverage_unavailable · typescript_compiler_coverage_unavailable · repository_dirty</span>
+      原因：python_ast_coverage_unavailable · repository_dirty · typescript_compiler_coverage_unavailable</span>
     </div>
 
   <h2>1 · 五层不可变模型</h2>
   <div class="grid"><div class='layer-card'><div class='layer-name'>ArchitectureContract</div><div class='layer-desc'>声明意图：规则、发布单元、生命周期</div><div><span class='badge'>11 rules</span></div></div>
 <div class='layer-card'><div class='layer-name'>ArchitectureSurvey</div><div class='layer-desc'>确定性观察：证据 + digest（人工/测试支撑）</div><div><span class='badge'>extractors 1/3</span></div></div>
-<div class='layer-card'><div class='layer-name'>DeterministicAudit</div><div class='layer-desc'>纯 reconciliation：rule_status + assessment</div><div><span class='badge'>incomplete</span></div></div>
+<div class='layer-card'><div class='layer-name'>DeterministicAudit</div><div class='layer-desc'>纯 reconciliation：rule_status + assessment</div><div><span class='badge'>failed</span></div></div>
 <div class='layer-card'><div class='layer-name'>ArchitectureReview</div><div class='layer-desc'>维护者注解层（inferred/unresolved）</div><div><span class='badge'>maintainer_annotation</span></div></div>
 <div class='layer-card'><div class='layer-name'>ArchitectureReportView</div><div class='layer-desc'>只读组合投影（本页）</div><div><span class='badge'>review bound ✓</span></div></div></div>
 

@@ -1,12 +1,13 @@
 {
   "schema_version": 1,
-  "audit_digest": "sha256:1db9fbcc7bfcd90c006298c73abb57509eed8b45c07e3729477f680deba4d252",
+  "audit_digest": "sha256:29d019008f4428833344ad03ab420b5aac47ba4624846b33c57b9660d1f8c905",
   "review_digest": "sha256:32e85b7d2dbfc19f0f3120bbd77f6771a8e22f620a37acfd1d64bbc999b6228b",
   "assessment": {
-    "status": "incomplete",
+    "status": "failed",
     "gate_eligible": false,
     "reasons": [
       "python_ast_coverage_unavailable",
+      "repository_dirty",
       "typescript_compiler_coverage_unavailable"
     ]
   },

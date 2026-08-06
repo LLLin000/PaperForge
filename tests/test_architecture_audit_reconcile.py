@@ -65,6 +65,7 @@ def _survey(
     facts: tuple = (),
     coverage: tuple[dict, ...] = ({"extractor": "python_ast", "status": "complete"},),
     schema_version: int = SCHEMA_VERSION,
+    repository_state: dict | None = None,
 ) -> ArchitectureSurvey:
     normalized = []
     for fact in facts:
@@ -80,6 +81,7 @@ def _survey(
         "parse_errors": [],
         "excluded_roots": [],
         "run_metadata": {},
+        **({"repository_state": repository_state} if repository_state else {}),
     })
 
 
@@ -638,6 +640,37 @@ class TestAssessment:
                               {"extractor": "typescript", "status": "unavailable"})),
         )
         assert _finding(audit, "r1").rule_status is RuleStatus.UNRESOLVED
+
+    def test_dirty_repository_forces_gate_closed(self):
+        """#130 review: dirty repository state is semantic (bound into the
+        survey digest) and the Audit is its single authority — a dirty tree
+        cannot be independently reproduced, so the assessment is failed."""
+        audit = reconcile(
+            _contract([_rule(kind="coverage_complete", subject="")]),
+            _survey((), repository_state={"revision": "abc123", "dirty": True}),
+        )
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        assert audit.content.assessment.gate_eligible is False
+        assert "repository_dirty" in audit.content.assessment.reasons
+
+    def test_dirty_reports_coverage_reasons_too(self):
+        audit = reconcile(
+            _contract([_rule(kind="coverage_complete", subject="")]),
+            _survey((), repository_state={"revision": "abc123", "dirty": True},
+                    coverage=({"extractor": "python_ast", "status": "complete"},
+                              {"extractor": "typescript", "status": "unavailable"})),
+        )
+        assert audit.content.assessment.status is AssessmentStatus.FAILED
+        assert "repository_dirty" in audit.content.assessment.reasons
+        assert any("typescript_coverage_unavailable" in r for r in audit.content.assessment.reasons)
+
+    def test_clean_repository_keeps_gate_open(self):
+        audit = reconcile(
+            _contract([_rule(kind="coverage_complete", subject="")]),
+            _survey((), repository_state={"revision": "abc123", "dirty": False}),
+        )
+        assert audit.content.assessment.status is AssessmentStatus.CLEAN
+        assert audit.content.assessment.gate_eligible is True
 
 
 # ---------------------------------------------------------------- digests and binding

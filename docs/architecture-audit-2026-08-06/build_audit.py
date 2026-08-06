@@ -254,9 +254,12 @@ SURVEY = {
     "source_digest": "",
     "parse_errors": [],
     "excluded_roots": [],
+    "repository_state": {
+        "revision": "pending",
+        "dirty": True,
+        "dirty_diff_digest": "pending",
+    },
     "run_metadata": {
-        "repository_revision": "pending",
-        "repository_dirty": True,
         "tool_version": "1.0.0",
         "extractor_versions": {"manual_contract_trace": "1", "python_ast": "unavailable", "typescript_compiler": "unavailable"},
         "generated_at": "2026-08-06T00:00:00Z",
@@ -329,8 +332,15 @@ def adjudication_rationale(rule_id: str) -> str:
 
 def main() -> int:
     rev, dirty = git_rev()
-    SURVEY["run_metadata"]["repository_revision"] = rev
-    SURVEY["run_metadata"]["repository_dirty"] = dirty
+    diff_digest = ""
+    if dirty:
+        diff = subprocess.run(["git", "diff"], capture_output=True, text=True, cwd=REPO).stdout
+        diff_digest = "sha256:" + hashlib.sha256(diff.encode("utf-8")).hexdigest()
+    SURVEY["repository_state"] = {
+        "revision": rev,
+        "dirty": dirty,
+        "dirty_diff_digest": diff_digest,
+    }
 
     pairs = set()
     for fact in SURVEY["facts"]:
@@ -363,17 +373,12 @@ def main() -> int:
     validate_review(review, audit)
     view = compose(audit, review)
 
-    reasons = list(audit.content.assessment.reasons)
-    gate_eligible = audit.content.assessment.gate_eligible
-    if dirty:
-        reasons.append("repository_dirty")
-        gate_eligible = False
     summary = {
         "revision": rev,
         "dirty": dirty,
         "assessment": audit.content.assessment.status.value,
-        "gate_eligible": gate_eligible,
-        "reasons": reasons,
+        "gate_eligible": audit.content.assessment.gate_eligible,
+        "reasons": list(audit.content.assessment.reasons),
         "findings": [
             {
                 "rule_id": f.rule_id, "subject": f.subject,
