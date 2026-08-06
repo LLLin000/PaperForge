@@ -530,10 +530,16 @@ def _run_ocr_rebuild(
 ) -> int:
     """Rebuild OCR-derived artifacts from existing raw blocks.
 
-    Progress tokens (multi-key non-dry-run only):
+    #126 progress contract — every non-dry-run rebuild (including a single
+    explicit key) emits the full token sequence:
       OCR_REBUILD_START:{total}
       OCR_REBUILD_PROGRESS:{current}:{total}:{key}
-      OCR_REBUILD_DONE
+      OCR_REBUILD_RESULT:{key}:ok|failed|skipped
+      OCR_REBUILD_DONE:{success}:{failed}:{skipped}
+
+    Exit codes: all requested keys succeeded → 0; any failed/skipped requested
+    key → 1; user stop → 130; --all with nothing needing rebuild → 0; explicit
+    keys with no candidates → 1.
     """
     from paperforge.worker.ocr_maintenance import collect_maintenance_rows
     from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
@@ -543,13 +549,13 @@ def _run_ocr_rebuild(
 
     if not selected:
         print("No papers matched for rebuild.")
-        return 0
+        # #126: an explicit key list that cannot enter rebuild is a failure.
+        return 1 if keys else 0
 
     if resume:
         print("Note: OCR rebuild resume is now version/artifact based; .done markers are ignored.")
 
     total = len(selected)
-    batch = total > 1 and not dry_run
 
     if dry_run:
         print(f"Would rebuild {total} paper(s):")
@@ -560,23 +566,23 @@ def _run_ocr_rebuild(
 
     from paperforge.worker._progress import progress_bar
 
-    if batch:
-        print(f"OCR_REBUILD_START:{total}", flush=True)
-        _count = 0
-        def _on_progress(key: str) -> None:
-            nonlocal _count
-            _count += 1
-            print(f"OCR_REBUILD_PROGRESS:{_count}:{total}:{key}", flush=True)
-        # Force sequential for cooperative stop; parallel pool can't stop mid-batch
-        parallel_workers = 0
-        _is_stopped, _restore_signal = _make_cooperative_stop()
-        def _stop_check() -> bool:
-            return _is_stopped()
-    else:
-        _on_progress = None  # type: ignore[assignment]
-        _is_stopped = lambda: False
-        _restore_signal = lambda: None
-        _stop_check = None
+    print(f"OCR_REBUILD_START:{total}", flush=True)
+    _count = 0
+
+    def _on_progress(key: str, result: dict) -> None:
+        nonlocal _count
+        _count += 1
+        status = result.get("status", "unknown")
+        print(f"OCR_REBUILD_PROGRESS:{_count}:{total}:{key}", flush=True)
+        print(f"OCR_REBUILD_RESULT:{key}:{status}", flush=True)
+
+    # Force sequential for cooperative stop; the parallel path now stops
+    # between chunks (#126 G5), but serial remains the CLI default.
+    parallel_workers = 0
+    _is_stopped, _restore_signal = _make_cooperative_stop()
+
+    def _stop_check() -> bool:
+        return _is_stopped()
 
     try:
         result = run_derived_rebuild_for_keys(
@@ -586,15 +592,23 @@ def _run_ocr_rebuild(
             on_progress=_on_progress,
             stop_check=_stop_check,
         )
-        count = result.get("rebuild_count", 0)
-        print(f"Done. Rebuilt {count} paper(s).")
-        if batch:
-            print(f"OCR_REBUILD_DONE", flush=True)
+        success_count = len(result["success_keys"])
+        failed_count = len(result["failed_keys"])
+        skipped_count = len(result["skipped"])
+        print(f"Done. Rebuilt {success_count} paper(s).", flush=True)
+        print(
+            f"OCR_REBUILD_DONE:{success_count}:{failed_count}:{skipped_count}",
+            flush=True,
+        )
     finally:
         _restore_signal()
 
-    _real_stop = batch and _is_stopped() and _count < total
-    return 130 if _real_stop else 0
+    _real_stop = _is_stopped() and _count < total
+    if _real_stop:
+        return 130
+    if failed_count or skipped_count:
+        return 1
+    return 0
 
 
 

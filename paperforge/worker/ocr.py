@@ -1812,6 +1812,12 @@ def render_page_blocks(
 
 
 def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tuple[int, str, str, str]:
+    from paperforge.worker.ocr_hash import (
+        clear_result_hash_pending,
+        create_result_hash_pending,
+        publish_ocr_result_hash,
+    )
+
     paths = pipeline_paths(vault)
     ocr_root = paths["ocr"] / key
     json_dir = ocr_root / "json"
@@ -1821,6 +1827,9 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     json_dir.mkdir(parents=True, exist_ok=True)
     images_dir.mkdir(parents=True, exist_ok=True)
     page_cache_dir.mkdir(parents=True, exist_ok=True)
+    # #126: publication marker BEFORE any derived mutation — failure mid-way
+    # leaves it so the memory layer never consumes half-built artifacts.
+    create_result_hash_pending(ocr_root)
     page_num = 0
     meta = read_json(meta_path) if meta_path.exists() else {}
     from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
@@ -2109,6 +2118,11 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     markdown_path = str(fulltext_path.relative_to(paths["vault"])).replace("\\", "/") if page_num else ""
     json_path = str((json_dir / "result.json").relative_to(paths["vault"])).replace("\\", "/")
     fulltext_md_path = str(fulltext_path.resolve())
+
+    # #126: verified success — publish the canonical hash, then clear the
+    # publication marker (commit point). Missing artifacts leave the marker.
+    if publish_ocr_result_hash(ocr_root) is not None:
+        clear_result_hash_pending(ocr_root)
     return (page_num, markdown_path, json_path, fulltext_md_path)
 
 
