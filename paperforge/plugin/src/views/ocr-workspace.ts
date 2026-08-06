@@ -123,21 +123,26 @@ export class OcrWorkspaceView extends ItemView {
       const items: any[] = index?.items ?? [];
       // First paint reads ONLY canonical index fields — no per-paper
       // meta.json reads, no per-paper backups/ scans on the main thread.
+      // #126 review: preserve backend-enriched fields (pipelineVersion,
+      // enriched status) across in-place reloads — do not regress them to
+      // index defaults after a rebuild/restore.
+      const prevByKey = new Map(this.papers.map((p) => [p.key, p]));
       this.papers = [];
       for (const item of items) {
         const key = item.zotero_key;
         if (!key) continue;
+        const prev = prevByKey.get(key);
         this.papers.push({
           key,
           title: item.title ?? key,
-          status: item.ocr_status ?? "pending",
-          pipelineVersion: "",
-          lastRun: item.ocr_time ?? "",
-          hasBackup: false,
+          status: prev?.status ?? item.ocr_status ?? "pending",
+          pipelineVersion: prev?.pipelineVersion ?? "",
+          lastRun: prev?.lastRun ?? item.ocr_time ?? "",
+          hasBackup: prev?.hasBackup ?? false,
           authors: item.authors?.join?.(", ") ?? "",
           year: item.year ?? "",
-          pages: "",
-          backupCount: 0,
+          pages: prev?.pages ?? "",
+          backupCount: prev?.backupCount ?? 0,
           fulltextPath: item.fulltext_path ?? "",
         });
       }
