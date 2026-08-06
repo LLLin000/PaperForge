@@ -35,6 +35,8 @@ interface OcrPaper {
   backupCount: number;
   /** #126: vault-relative fulltext path from the canonical index. */
   fulltextPath: string;
+  /** #129: RAW ocr_finished_at timestamp (never display-formatted). */
+  ocrFinishedAt: string;
 }
 
 /* ── View ── */
@@ -148,6 +150,7 @@ export class OcrWorkspaceView extends ItemView {
           pages: prev?.pages ?? "",
           backupCount: prev?.backupCount ?? 0,
           fulltextPath: item.fulltext_path ?? "",
+          ocrFinishedAt: prev?.ocrFinishedAt ?? item.ocr_time ?? "",
         });
       }
     } catch {
@@ -726,7 +729,7 @@ export class OcrWorkspaceView extends ItemView {
           () => {
             this._loadPapers().then(() => this._render());
           },
-          paper.lastRun
+          paper.ocrFinishedAt
         );
         modal.open();
         return;
@@ -782,7 +785,7 @@ export class OcrWorkspaceView extends ItemView {
         () => {
           this._loadPapers().then(() => this._render());
         },
-        paper.lastRun
+        paper.ocrFinishedAt
       );
       modal.open();
     });
