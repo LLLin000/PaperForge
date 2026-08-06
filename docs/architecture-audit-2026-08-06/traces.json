@@ -1,58 +1,136 @@
 [
   {
     "name": "sync → memory → embed",
-    "status": "ok",
     "steps": [
-      "CLI sync (direct invocation)",
-      "svc.run(): zotero sync + index",
-      "_attach_next_actions: memory.build local / embed.resume remote",
-      "terminal: local only · json: no follow-up · plugin: confirmed embed"
+      {
+        "step_id": "sync.1",
+        "description": "CLI sync (direct invocation)",
+        "status": "unresolved",
+        "evidence_ids": []
+      },
+      {
+        "step_id": "sync.2",
+        "description": "svc.run(): zotero sync + index",
+        "status": "unresolved",
+        "evidence_ids": []
+      },
+      {
+        "step_id": "sync.3",
+        "description": "terminal runner executes automatic-local memory.build",
+        "status": "observed",
+        "evidence_ids": [
+          "evidence:34e16ba8a9fad599"
+        ]
+      },
+      {
+        "step_id": "sync.4",
+        "description": "plugin confirmation for embed.resume (remote)",
+        "status": "unresolved",
+        "evidence_ids": []
+      }
     ],
-    "evidence": [
-      "evidence:ced43920a12e6648",
-      "evidence:34e16ba8a9fad599"
-    ]
+    "status": "partial"
   },
   {
     "name": "ocr rebuild → publication → memory",
-    "status": "ok",
     "steps": [
-      "ocr rebuild (keys/--all)",
-      "START/PROGRESS/RESULT/DONE tokens per key",
-      "result-hash.pending → phases → publish + clear (commit point)",
-      "memory build on successKeys>0 · embed resume confirmed"
+      {
+        "step_id": "rebuild.1",
+        "description": "ocr rebuild (keys/--all)",
+        "status": "unresolved",
+        "evidence_ids": []
+      },
+      {
+        "step_id": "rebuild.2",
+        "description": "START/PROGRESS/RESULT/DONE tokens per key",
+        "status": "observed",
+        "evidence_ids": [
+          "evidence:9462c4cb423cc555"
+        ]
+      },
+      {
+        "step_id": "rebuild.3",
+        "description": "result-hash.pending created before mutation",
+        "status": "observed",
+        "evidence_ids": [
+          "evidence:f36fd972e1f3a906"
+        ]
+      },
+      {
+        "step_id": "rebuild.4",
+        "description": "publish + clear on verified success (commit point)",
+        "status": "observed",
+        "evidence_ids": [
+          "evidence:dfac26b76b7090d1"
+        ]
+      },
+      {
+        "step_id": "rebuild.5",
+        "description": "memory build on successKeys>0 · confirmed embed resume",
+        "status": "unresolved",
+        "evidence_ids": []
+      }
     ],
-    "evidence": [
-      "evidence:9462c4cb423cc555",
-      "evidence:7a75373d118e3703",
-      "evidence:6ce174204d0d926b"
-    ]
+    "status": "partial"
   },
   {
     "name": "version restore (display only)",
-    "status": "ok",
     "steps": [
-      "restore 恢复展示全文文本",
-      "confirmation: display-only boundary",
-      "copy versions/<label>/fulltext.md → render/",
-      "provenance + drift override (DRIFTED if older)"
+      {
+        "step_id": "restore.1",
+        "description": "restore 恢复展示全文文本 + confirmation",
+        "status": "unresolved",
+        "evidence_ids": []
+      },
+      {
+        "step_id": "restore.2",
+        "description": "copy versions/<label>/fulltext.md → render/ only",
+        "status": "observed",
+        "evidence_ids": [
+          "evidence:9962b81d0aa5d138"
+        ]
+      },
+      {
+        "step_id": "restore.3",
+        "description": "provenance + drift override (DRIFTED if older)",
+        "status": "observed",
+        "evidence_ids": [
+          "evidence:69f1fcf046b9dcf9"
+        ]
+      }
     ],
-    "evidence": [
-      "evidence:9962b81d0aa5d138",
-      null
-    ]
+    "status": "partial"
   },
   {
     "name": "redo (internal only)",
-    "status": "ok",
     "steps": [
-      "CLI ocr redo (maintainers)",
-      "transaction snapshot → mutate → validate → commit/rollback",
-      "crash-orphan recovery from paperforge-redo-*",
-      "no user-facing entry (ribbon/command/probe/maintenance)"
+      {
+        "step_id": "redo.1",
+        "description": "CLI ocr redo (maintainers)",
+        "status": "unresolved",
+        "evidence_ids": []
+      },
+      {
+        "step_id": "redo.2",
+        "description": "transaction snapshot → mutate → validate → commit/rollback",
+        "status": "unresolved",
+        "evidence_ids": []
+      },
+      {
+        "step_id": "redo.3",
+        "description": "crash-orphan recovery from paperforge-redo-*",
+        "status": "observed",
+        "evidence_ids": [
+          "evidence:e5b1973ab94d241b"
+        ]
+      },
+      {
+        "step_id": "redo.4",
+        "description": "no user-facing entry (ribbon/command/probe/maintenance)",
+        "status": "unresolved",
+        "evidence_ids": []
+      }
     ],
-    "evidence": [
-      "evidence:e5b1973ab94d241b"
-    ]
+    "status": "partial"
   }
 ]

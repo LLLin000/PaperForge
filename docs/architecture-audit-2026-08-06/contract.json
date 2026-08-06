@@ -94,7 +94,9 @@
     "restore_display"
   ],
   "required_extractors": [
-    "manual_contract_trace"
+    "manual_contract_trace",
+    "python_ast",
+    "typescript_compiler"
   ],
   "rules": [
     {

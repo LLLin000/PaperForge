@@ -238,6 +238,26 @@ def _effective_enforcement(rule: Rule, contract: ArchitectureContract) -> Enforc
 
 # ---------------------------------------------------------------- rule evaluation
 
+# #130 review B2: rules that assert universal/negative properties over the
+# whole codebase (all remote ops carry intent, all signals consumed, no UI
+# writer, all writes via protocol) cannot conclude satisfied from partial
+# facts while required coverage is incomplete — the unseen callsites may
+# violate. Only enumeration-complete audits may conclude on them.
+_ENUMERATION_KINDS = (
+    RuleKind.QUERY_SIDE_EFFECT,
+    RuleKind.REMOTE_INTENT,
+    RuleKind.SIGNAL_CONSUMER,
+    RuleKind.CANONICAL_WRITER,
+    RuleKind.PUBLICATION_MARKER,
+    RuleKind.PUBLICATION_AUTHORITY,
+    RuleKind.ROLE_AUTHORITY,
+)
+
+
+def _required_coverage_complete(contract: ArchitectureContract, survey: ArchitectureSurvey) -> bool:
+    coverage = _required_coverage(contract, survey)
+    return bool(coverage) and all(entry.status is CoverageStatus.COMPLETE for entry in coverage)
+
 
 def _evaluate_rule(
     rule: Rule,
@@ -245,6 +265,9 @@ def _evaluate_rule(
     survey: ArchitectureSurvey,
 ) -> tuple[RuleStatus, str, list[Evidence]]:
     """Evaluate one active rule against observed facts. Returns (status, message, evidence)."""
+
+    if rule.kind in _ENUMERATION_KINDS and not _required_coverage_complete(contract, survey):
+        return RuleStatus.UNRESOLVED, "coverage incomplete: cannot enumerate all callsites", []
 
     if rule.kind is RuleKind.QUERY_SIDE_EFFECT:
         violations, effects = _forbidden_query_effects(rule, survey)
