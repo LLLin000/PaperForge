@@ -2169,6 +2169,58 @@ def _find_notes_by_key(lit_root: Path | None) -> dict[str, Path]:
     return notes
 
 
+def recover_redo_orphans(vault: Path) -> int:
+    """#99-B: recover papers interrupted mid-redo from their transaction
+    snapshots.
+
+    `_redo_one_paper_transaction` snapshots the paper's ocr dir to a
+    `paperforge-redo-<key>-*` tempdir BEFORE deleting it. A crash between
+    mutate and commit leaves the live ocr dir deleted (or half-written with
+    `ocr_status=pending`) and the previous output only in the snapshot.
+    This scan restores such papers; snapshots left behind by completed
+    transactions are cleaned up.
+
+    Returns the number of papers restored.
+    """
+    import tempfile as _tempfile
+
+    from paperforge.worker._utils import pipeline_paths
+    from paperforge.worker.ocr_artifacts import artifact_paths_for_root
+
+    ocr_root = pipeline_paths(vault)["ocr"]
+    tmp = Path(_tempfile.gettempdir())
+    restored = 0
+    cleaned = 0
+    for snap in sorted(tmp.glob("paperforge-redo-*-*")):
+        if not snap.is_dir():
+            continue
+        # name: paperforge-redo-{key}-{random-suffix}
+        rest = snap.name[len("paperforge-redo-"):]
+        key = rest.rsplit("-", 1)[0]
+        artifacts = artifact_paths_for_root(ocr_root, key)
+        ocr_dir = artifacts.paper_root
+        snap_ocr = snap / "ocr"
+        if not snap_ocr.exists():
+            continue
+        meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
+        status = str(meta.get("ocr_status", "") or "").strip().lower()
+        interrupted = (not ocr_dir.exists()) or status == "pending"
+        if interrupted:
+            if ocr_dir.exists():
+                shutil.rmtree(ocr_dir)
+            shutil.copytree(str(snap_ocr), str(ocr_dir), symlinks=True)
+            restored += 1
+            logger.warning(
+                "Redo orphan recovered for %s from %s (status=%s)",
+                key, snap, status or "missing",
+            )
+        shutil.rmtree(snap, ignore_errors=True)
+        cleaned += 1
+    if restored or cleaned:
+        logger.info("Redo orphans: %d restored, %d cleaned", restored, cleaned)
+    return restored
+
+
 def _redo_one_paper_transaction(
     vault: Path,
     key: str,

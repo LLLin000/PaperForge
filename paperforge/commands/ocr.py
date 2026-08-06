@@ -291,6 +291,11 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
 
     Cooperative stop: SIGINT sets flag checked between papers.
     """
+    # #99-B: recover interrupted redo transactions before starting new work.
+    from paperforge.worker.ocr import recover_redo_orphans
+
+    recover_redo_orphans(vault)
+
     from paperforge.worker.ocr import ocr_redo_papers, redo_papers_for_keys
 
     if not keys:
