@@ -34,10 +34,11 @@ flowchart LR
 
 ### Contract gaps vs issue #127
 
-- **G1 (P0, missing from issue):** `sync --dry-run` in text mode triggers memory build + paid embed build. Dry-run must be side-effect-free (no memory build, no embed spawn, no orphan-state write? — at minimum no remote work). The json branch already guards; the text branch does not. Fix belongs to #127: dry-run is a canonical `requires_confirmation`/cost-zero path.
+- **G1 (CORRECTED 2026-08-05 — not a live P0):** `sync --dry-run` **already returns before `svc.run()`** (`commands/sync.py:39-52`, both json and text branches), so it never reaches `build_from_index` or the embed spawn. Downgraded to a **regression-test requirement**: the dry-run early-return must be covered so a future refactor cannot silently re-enable follow-ups. (Initial analysis read only the `run()` tail and missed the early return — external review caught it.)
 - **G2 (missing):** the follow-up logic is duplicated across both branches; the #127 `next_actions` cutover must replace both sites in one pass (single producer seam) or the text branch will drift.
 - **G3 (unresolved by issue):** `build_from_index` is synchronous local work (no API cost) but O(n) and unconditional on the text branch. #127 must decide its `next_actions` entry: `{action: memory_build, automatic: true, cost: local}` vs keeping it inline. Issue text only discusses the embed follow-up.
 - **G4 (missing):** `OCR_RUN` is declared in the plugin progress parser (`paperforge/plugin/src/services/progress-parser.ts:32` KNOWN_PREFIXES) but no backend emitter exists — dead contract; cleanup candidate for #126/#101.
+- **G12 (external review, adopted):** #127 contract hardened — `cost`/`impact`/`confirmation` split axes (remote_possible or destructive ⇒ never automatic, ⇒ confirmation required); execution ownership (command core produces only, CLI runner executes automatic-local inline, `--json` prints once with no follow-up, plugin is the only executor); typed `action_id` allowlist (never free-form command strings); scope/dedupe/loop-guard/partial-outcome invariants. See #127 body "Contract hardening".
 
 ## 2. Trace B — OCR rebuild/redo → derived publication → downstream (issue #126)
 
@@ -119,11 +120,17 @@ flowchart LR
 
 | Issue | Change |
 |---|---|
-| #127 | Add G1 (dry-run must be side-effect-free, text branch), G2 (single next_actions producer seam replacing both spawn sites), G3 (memory build `next_actions` entry decision) |
-| #126 | Add G5 (parallel-path Stop), G6 (result-hash reader update in same PR as writer), G7 (P0 fix sites + root cause; use `ocrDir` helper) |
-| #129 | Add G8 (restore render snapshot vs fulltext-only scope), G9 (restore provenance persistence) |
-| #99 | Add scope-refresh note: transactional redo exists (#123); rewrite remaining scope (unification, crash-orphan recovery, backup strategy) before implementation |
-| #102 | Add G11 note: pre-rebuild backup applies to in-place path only (deferred issue, context only) |
+| #127 | Add G1 regression test (dry-run early-return exists), G2 (single next_actions producer seam replacing both spawn sites), G3 (memory build `next_actions` entry decision), G12 (contract hardening: cost/impact/confirmation split, execution ownership, typed action_id allowlist, safety invariants, PR A–D split) |
+| #126 | Add G5 (parallel-path Stop), G6 (result-hash reader update in same PR as writer), G7 (P0 fix sites + root cause; use `ocrDir` helper); **LOCKED**: colon wire format (no `|`), wire tokens carry key only (titles from paper map), OCR START/DONE for single and batch |
+| #129 | Add G8 (restore fulltext-only, locked), G9 (restore provenance persistence) |
+| #99 | Add scope-refresh note: transactional redo exists (#123); rewrite remaining scope (unification, crash-orphan recovery, backup strategy); **split into #99-A/B/C implementation units** |
+| #102 | Add G11 note: pre-rebuild backup applies to in-place path only (closed SUPERSEDED → absorbed into #99) |
+| #82 | HARD GATE banner (N+1 published + clean-venv verified + migration window + owner activation); label `ready-for-human` → `blocked` |
+| #94 | Live current-state table at top of the map body |
+| #63 | Frozen parent-contract banner (canonical implementations #127/#126/#120) |
+| #95/#97/#103 | Deferred with code-check notes at #126 acceptance (redo premise fixed; pipeline version/probe likely implemented) |
+| #105 | Deferred; split A–D before any activation |
+| #134 | CI rule allowlist decision noted (post-RC) |
 
 ## 6. Verified source inventory (appendices)
 
