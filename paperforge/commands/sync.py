@@ -1,6 +1,7 @@
 """Sync command — unified sync through SyncService."""
 
 import argparse
+import contextlib
 import inspect
 import logging
 
@@ -66,7 +67,7 @@ def run(args: argparse.Namespace) -> int:
     }
     try:
         sig = inspect.signature(svc.run)
-        accepted = {name for name in sig.parameters.keys() if name != "self"}
+        accepted = {name for name in sig.parameters if name != "self"}
         filtered_kwargs = {k: v for k, v in run_kwargs.items() if k in accepted}
     except Exception:
         filtered_kwargs = run_kwargs
@@ -78,51 +79,81 @@ def run(args: argparse.Namespace) -> int:
         for w in result.warnings:
             print(f"[WARN] {w}")
 
+    # #127: the command core only produces follow-ups; it never executes
+    # remote/destructive work. JSON mode prints the final PFResult exactly
+    # once and performs no follow-up; the terminal runner may execute
+    # automatic-local actions inline (see _run_terminal_followups).
+    if result.ok and not index_only and not selection_only:
+        _attach_next_actions(result)
+
     if json_output:
         print(result.to_json())
-        if result.ok and not dry_run and not index_only and not selection_only:
-            try:
-                from paperforge.memory.builder import build_from_index
-                build_from_index(vault)
-            except Exception:
-                pass
-            try:
-                import subprocess
-                import sys
-                subprocess.Popen(
-                    [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
-                    cwd=str(vault),
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-                )
-            except Exception:
-                pass
         return 0
 
     if not result.ok:
         return 1
 
+    _run_terminal_followups(vault, result)
+    return 0
+
+
+def _attach_next_actions(result: PFResult) -> None:
+    """Append the canonical follow-up actions for a successful full sync.
+
+    - memory.build: automatic, local, mutating — executors may run it inline.
+    - embed.resume: remote-possible, mutating — never automatic, always
+      requires confirmation (the sync command must not silently spend API
+      cost on embedding).
+    """
+    from paperforge.core.next_actions import (
+        NextActionScope,
+        build_next_action,
+        next_actions_to_dicts,
+    )
+
+    result.next_actions = next_actions_to_dicts((
+        build_next_action(
+            "memory.build",
+            reason="library index changed after sync",
+            scope=NextActionScope(kind="all"),
+        ),
+        build_next_action(
+            "embed.resume",
+            reason="changed papers need vector embeddings",
+            scope=NextActionScope(kind="all"),
+        ),
+    ))
+
+
+def _run_terminal_followups(vault, result: PFResult) -> None:
+    """Terminal runner policy: execute automatic-local actions inline, never
+    execute remote/destructive work, and surface what needs confirmation."""
+    from paperforge.core.next_actions import (
+        automatic_local_actions,
+        next_actions_from_dicts,
+        remote_or_destructive_actions,
+    )
+
+    actions = next_actions_from_dicts(result.next_actions)
+    for action in automatic_local_actions(actions):
+        if action.action_id == "memory.build":
+            _run_memory_build(vault)
+    for action in remote_or_destructive_actions(actions):
+        print(
+            f"[INFO] follow-up '{action.action_id}' needs confirmation "
+            f"({action.cost}, {action.impact}); run it explicitly or from the plugin."
+        )
+
+
+def _run_memory_build(vault) -> None:
     try:
         from paperforge.memory.builder import build_from_index
+
         counts = build_from_index(vault)
         tag = " (fast)" if counts.get("hash_match") else ""
         print(f"memory: {counts.get('papers_indexed', 0)} papers{tag}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — local follow-up failure must not fail sync
         print(f"memory: deferred ({e})")
-
-    try:
-        import subprocess
-        import sys
-        subprocess.Popen(
-            [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
-            cwd=str(vault),
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-        )
-    except Exception:
-        pass
-
-    return 0
 
 
 def _write_orphan_state(vault, result: PFResult) -> None:
@@ -130,16 +161,12 @@ def _write_orphan_state(vault, result: PFResult) -> None:
     items = preview.get("preview", []) if isinstance(preview, dict) else []
     orphan_path = vault / "System" / "PaperForge" / "indexes" / "sync-orphan-state.json"
     if not items:
-        try:
+        with contextlib.suppress(Exception):
             orphan_path.unlink(missing_ok=True)
-        except Exception:
-            pass
         return
 
     import json as _json
 
     orphan_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
+    with contextlib.suppress(Exception):
         orphan_path.write_text(_json.dumps({"orphans": items, "count": len(items)}, indent=2), encoding="utf-8")
-    except Exception:
-        pass

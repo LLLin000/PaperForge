@@ -13,6 +13,7 @@ import {
 } from "./constants";
 import { t, setLanguage } from "./i18n";
 import { PaperForgeSettingTab } from "./settings";
+import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import {
@@ -39,7 +40,9 @@ export default class PaperForgePlugin extends Plugin {
   private _embedProcess: unknown = null;
   private _embedProgress = { current: 0, total: 0, key: "" };
   private _embedStderr = "";
-  _embedController: import("./services/embed-build-controller").EmbedBuildController | null = null;
+  _embedController:
+    | import("./services/embed-build-controller").EmbedBuildController
+    | null = null;
   _memoryStatusText: string | null = null;
   private _managedRuntime: ManagedRuntime | null = null;
 
@@ -228,16 +231,29 @@ export default class PaperForgePlugin extends Plugin {
       return;
     }
 
-    const cmd = `"${pyCmd.path}" ${pyCmd.args.join(" ")} -m paperforge --vault "${vaultPath}" sync`;
-
-    exec(
-      cmd,
-      { timeout: 120000, encoding: "utf-8" },
-      (err, _stdout, _stderr) => {
+    execFile(
+      pyCmd.path,
+      [
+        ...pyCmd.args,
+        "-m",
+        "paperforge",
+        "--vault",
+        vaultPath,
+        "sync",
+        "--json",
+      ],
+      { timeout: 120000, encoding: "utf-8", cwd: vaultPath, windowsHide: true },
+      (err, stdout, _stderr) => {
         this._autoSyncRunning = false;
         this._memoryStatusText = null;
         if (!err) {
           this._lastSyncTime = new Date().toLocaleTimeString();
+          // #127: consume next_actions instead of hidden fire-and-forget work.
+          void orchestrateFromSync(stdout, {
+            app: this.app,
+            vaultPath,
+            resolveCommand: (v) => this._getPythonCommand(),
+          });
         }
         try {
           const exportsDir = resolveVaultPaths(vaultPath).exportsDir;
@@ -250,7 +266,7 @@ export default class PaperForgePlugin extends Plugin {
             );
           });
           this._lastExportMtime = newest;
-        } catch (_e) {}
+        } catch {}
       }
     );
   }

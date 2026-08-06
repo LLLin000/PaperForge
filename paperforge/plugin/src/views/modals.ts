@@ -1424,6 +1424,75 @@ export class PaperForgeConfirmModal extends Modal {
   }
 }
 
+/* ── Next Action Confirm Modal (#127 PR C) ── */
+
+export class NextActionConfirmModal extends Modal {
+  private _actionTitle: string;
+  private _actionBody: string;
+  private _resolve: (ok: boolean) => void;
+  private _settled = false;
+  private _boundKeydown!: (e: KeyboardEvent) => void;
+
+  constructor(
+    app: App,
+    actionTitle: string,
+    actionBody: string,
+    resolve: (ok: boolean) => void
+  ) {
+    super(app);
+    this._actionTitle = actionTitle;
+    this._actionBody = actionBody;
+    this._resolve = resolve;
+  }
+
+  private _settle(ok: boolean): void {
+    if (this._settled) return;
+    this._settled = true;
+    this._resolve(ok);
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.addClass("paperforge-modal");
+    contentEl.addClass("paperforge-confirm-modal");
+    contentEl.setAttr("role", "alertdialog");
+    contentEl.setAttr("aria-modal", "true");
+
+    contentEl.createEl("h2", { text: this._actionTitle });
+    contentEl.createEl("div", {
+      cls: "paperforge-confirm-effect",
+      text: this._actionBody,
+    });
+
+    const btnRow = contentEl.createEl("div", {
+      cls: "paperforge-confirm-actions",
+    });
+    const cancelBtn = btnRow.createEl("button", {
+      text: t("next_action_cancel") || "Later",
+    });
+    cancelBtn.addEventListener("click", () => this.close());
+
+    const confirmBtn = btnRow.createEl("button", {
+      cls: "mod-warning",
+      text: t("next_action_confirm") || "Run",
+    });
+    confirmBtn.addEventListener("click", () => {
+      this._settle(true);
+      this.close();
+    });
+
+    this._boundKeydown = (e: KeyboardEvent) =>
+      _trapFocus(contentEl as unknown as HTMLElement, e);
+    contentEl.addEventListener("keydown", this._boundKeydown);
+    cancelBtn.focus();
+  }
+
+  onClose() {
+    this._settle(false);
+    this.contentEl.empty();
+  }
+}
+
 /* ── OCR Issue Draft Modal (Issue #80) ── */
 
 export interface IssueDraftFields {
