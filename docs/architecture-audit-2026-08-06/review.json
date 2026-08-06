@@ -2,8 +2,8 @@
   "schema_version": 1,
   "reviewer_type": "maintainer_annotation",
   "contract_digest": "sha256:af09f13321648918fd2a04fa588e7c101414e4f4a85c8b47cc79c3f782f1942f",
-  "survey_digest": "sha256:c3ea3718232e612f0dbbc55fb1528bb39ad570a59b95c370425ac320d0dbe3f5",
-  "audit_digest": "sha256:29d019008f4428833344ad03ab420b5aac47ba4624846b33c57b9660d1f8c905",
+  "survey_digest": "sha256:bf21ce3712f877686bf7a5db34c6d916f8009f2675ce23f6b3501f8bd4fdfea2",
+  "audit_digest": "sha256:00a8c003b2bfc2af668fd70ff245f541e2c61f47b4dff664a5e586e8ee3bd2f7",
   "reconciler_version": "1.0.0",
   "adjudications": [
     {

@@ -131,7 +131,7 @@ def banner(data: ReportData) -> str:
 def meta_row(data: ReportData) -> str:
     content = data.audit.get("content", {})
     spans = [
-        ("audit", content.get("bound_contract_digest", "")),
+        ("audit", data.audit.get("semantic_digest", "")),
         ("contract", content.get("bound_contract_digest", "")),
         ("survey", content.get("bound_survey_digest", "")),
         ("reconciler", content.get("reconciler_version", "")),
