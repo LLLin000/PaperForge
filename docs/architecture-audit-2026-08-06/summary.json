@@ -1,0 +1,56 @@
+{
+  "assessment": "findings",
+  "gate_eligible": true,
+  "reasons": [],
+  "findings": [
+    {
+      "rule_id": "signal.ocr_run_dead_contract",
+      "subject": "OCR_RUN",
+      "status": "violated",
+      "severity": "advisory",
+      "message": "signals without auditable required consumer: OCR_RUN",
+      "finding_id": "finding:99fefad31ff9dd44",
+      "evidence": [
+        {
+          "file": "paperforge/plugin/src/services/progress-parser.ts",
+          "symbol": "OCR_RUN",
+          "lines": "2-5"
+        }
+      ]
+    },
+    {
+      "rule_id": "retrieval.v2",
+      "subject": "",
+      "status": "planned_gap",
+      "severity": "informational",
+      "message": "declared but not yet effective",
+      "finding_id": "finding:495bdc972b0a2204",
+      "evidence": []
+    },
+    {
+      "rule_id": "collectors.deterministic",
+      "subject": "",
+      "status": "planned_gap",
+      "severity": "informational",
+      "message": "declared but not yet effective",
+      "finding_id": "finding:e99c7d822b2eaeea",
+      "evidence": []
+    }
+  ],
+  "coverage": [
+    {
+      "extractor": "python_ast",
+      "status": "complete"
+    },
+    {
+      "extractor": "typescript",
+      "status": "complete"
+    }
+  ],
+  "digests": {
+    "audit": "sha256:5cd57e14011dda254d01c8886d61089bbb5275a8c09b144c2b95bf6737b8d68f",
+    "contract": "sha256:48d4dba2797ce97111ae3e3570aeac3e75dc3f82e0a05af87872759eff67ad95",
+    "survey": "sha256:2a21344aec78d1d8adfa997fed67bd2784216a701f1bfbeaad3b60e26e7b66b1",
+    "reconciler": "1.0.0"
+  }
+}
