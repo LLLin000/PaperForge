@@ -1,5 +1,12 @@
 import { scanVersions, restoreVersion } from "../services/version-history";
-import { ItemView, WorkspaceLeaf, Notice, Modal, MarkdownRenderer, Component } from "obsidian";
+import {
+  ItemView,
+  WorkspaceLeaf,
+  Notice,
+  Modal,
+  MarkdownRenderer,
+  Component,
+} from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import { execFile } from "child_process";
@@ -7,6 +14,7 @@ import { VIEW_TYPE_OCR_WORKSPACE } from "../constants";
 import { t } from "../i18n";
 import { resolveVaultPaths } from "../services/memory-state";
 import { resolveRuntimeCommand } from "../services/managed-runtime";
+import type { OcrProcessOutcome } from "../services/ocr-process-controller";
 
 /* ── OcrPaper interface ── */
 
@@ -21,6 +29,8 @@ interface OcrPaper {
   year: string;
   pages: string;
   backupCount: number;
+  /** #126: vault-relative fulltext path from the canonical index. */
+  fulltextPath: string;
 }
 
 /* ── View ── */
@@ -115,6 +125,7 @@ export class OcrWorkspaceView extends ItemView {
           year: item.year ?? "",
           pages: meta.page_count ? String(meta.page_count) : "",
           backupCount,
+          fulltextPath: item.fulltext_path ?? "",
         });
       }
     } catch {
@@ -544,24 +555,64 @@ export class OcrWorkspaceView extends ItemView {
     });
     fulltextBtn.addEventListener("click", () => this._openFulltext(paper.key));
 
-    // Restore backup — uses version-history service
+    // Restore backup — lazy availability on detail open: formal version
+    // history first, legacy backups/ fallback second (#126 PR C).
     const restoreBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
-      text: t("ocr_ws_detail_restore_backup"),
+      text: t("ocr_ws_restore_checking") || "Checking versions…",
     });
-    restoreBtn.disabled = !paper.hasBackup;
+    restoreBtn.disabled = true;
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    const paths = resolveVaultPaths(vp);
+    const restoreKey = paper.key;
+    const hasFormalVersions = (() => {
+      try {
+        const versions = scanVersions(vp, paper.key);
+        return versions && versions.versions.length > 0;
+      } catch {
+        return false;
+      }
+    })();
+    let hasLegacyBackups = false;
+    if (!hasFormalVersions) {
+      const backupsDir = path.join(paths.ocrDir, paper.key, "backups");
+      try {
+        hasLegacyBackups =
+          fs
+            .readdirSync(backupsDir)
+            .filter((f: string) => f.startsWith("fulltext.pre-rebuild"))
+            .length > 0;
+      } catch {}
+    }
+    const restoreAvailable = hasFormalVersions || hasLegacyBackups;
+    if (this.selectedKey === restoreKey) {
+      // race protection: only apply when the same detail is still open
+      restoreBtn.disabled = !restoreAvailable;
+      restoreBtn.setText(t("ocr_ws_detail_restore_backup") || "Restore Backup");
+      if (!restoreAvailable) {
+        restoreBtn.title =
+          t("ocr_ws_restore_unavailable") || "No backup versions available";
+      }
+    }
     restoreBtn.addEventListener("click", () => {
-      const self = this;
-      const vp = (self.app.vault.adapter as any).basePath as string;
-      const paths = resolveVaultPaths(vp);
       // Try version manifest first
       const versions = scanVersions(vp, paper.key);
       if (versions && versions.versions.length > 0) {
         const modal = new VersionRestoreModal(
-          self.app, vp, paper.key,
-          versions.versions.map(v => ({label:v.label,created_at:v.created_at,source:v.source,renderer_version:v.renderer_version,fulltext_size:v.fulltext_size})),
+          this.app,
+          vp,
+          paper.key,
+          versions.versions.map((v) => ({
+            label: v.label,
+            created_at: v.created_at,
+            source: v.source,
+            renderer_version: v.renderer_version,
+            fulltext_size: v.fulltext_size,
+          })),
           versions.currentLabel,
-          () => { self._loadPapers().then(() => self._render()); }
+          () => {
+            this._loadPapers().then(() => this._render());
+          }
         );
         modal.open();
         return;
@@ -572,28 +623,62 @@ export class OcrWorkspaceView extends ItemView {
         new Notice("No backup versions available");
         return;
       }
-      const backupFiles = fs.readdirSync(backupsDir)
-        .filter(f => f.startsWith("fulltext.pre-rebuild"))
+      const backupFiles = fs
+        .readdirSync(backupsDir)
+        .filter((f) => f.startsWith("fulltext.pre-rebuild"))
         .sort();
       if (backupFiles.length === 0) {
         new Notice("No backup versions available");
         return;
       }
-      const backupEntries = backupFiles.map(f => {
+      const backupEntries = backupFiles.map((f) => {
         const ts = f.replace("fulltext.pre-rebuild.", "").replace(/\.md$/, "");
-        const iso = ts.length >= 16
-          ? ts.slice(0,4) + "-" + ts.slice(4,6) + "-" + ts.slice(6,8) + "T" + ts.slice(9,11) + ":" + ts.slice(11,13) + ":" + ts.slice(13,15) + "Z"
-          : ts;
+        const iso =
+          ts.length >= 16
+            ? ts.slice(0, 4) +
+              "-" +
+              ts.slice(4, 6) +
+              "-" +
+              ts.slice(6, 8) +
+              "T" +
+              ts.slice(9, 11) +
+              ":" +
+              ts.slice(11, 13) +
+              ":" +
+              ts.slice(13, 15) +
+              "Z"
+            : ts;
         let size = 0;
-        try { size = fs.statSync(path.join(backupsDir, f)).size; } catch {}
-        return { label: "backup-" + ts, created_at: iso, source: "pre-rebuild", fulltext_size: size };
+        try {
+          size = fs.statSync(path.join(backupsDir, f)).size;
+        } catch {}
+        return {
+          label: "backup-" + ts,
+          created_at: iso,
+          source: "pre-rebuild",
+          fulltext_size: size,
+        };
       });
       const modal = new VersionRestoreModal(
-        self.app, vp, paper.key,
-        backupEntries, "",
-        () => { self._loadPapers().then(() => self._render()); }
+        this.app,
+        vp,
+        paper.key,
+        backupEntries,
+        "",
+        () => {
+          this._loadPapers().then(() => this._render());
+        }
       );
       modal.open();
+    });
+
+    // Single-paper rebuild (#126 PR C) — the batch bar is no longer required.
+    const rebuildBtn = actions.createEl("button", {
+      cls: "pf-btn pf-btn-warning",
+      text: t("ocr_ws_detail_rebuild") || "Rebuild this paper",
+    });
+    rebuildBtn.addEventListener("click", () => {
+      this._runRebuild([paper.key]);
     });
 
     // Re-extract — runs paperforge ocr redo <key>
@@ -623,26 +708,129 @@ export class OcrWorkspaceView extends ItemView {
     return { path: run.command, args: [...run.args] };
   }
 
-
   private _runRebuild(keys: string[]): void {
-    const pyCmd = this._resolvePython();
-    if (!pyCmd) {
+    const controller = this.plugin?.ocrProcessController;
+    if (!controller) {
       new Notice("Runtime not ready");
       return;
     }
-    const vp = (this.app.vault.adapter as any).basePath as string;
     this.running = true;
     this.progress = { current: 0, total: keys.length, paperKey: "" };
     this._render();
+    controller
+      .start("rebuild", {
+        keys,
+        callbacks: {
+          onProgress: (current: number, total: number, key: string) => {
+            this.progress = { current, total, paperKey: key };
+            this._refreshTable();
+          },
+        },
+      })
+      .then((outcome: OcrProcessOutcome) => {
+        this.running = false;
+        if (outcome.ok) {
+          new Notice(t("ocr_rebuild_complete") || "Rebuild completed");
+        } else if (outcome.stopped) {
+          new Notice(t("ocr_stopped_notice") || "Rebuild stopped");
+        } else {
+          const failed = outcome.failedKeys.join(", ");
+          new Notice(
+            (t("ocr_rebuild_partial") || "Rebuild finished with failures") +
+              (failed ? ": " + failed : ""),
+            8000
+          );
+        }
+        // #126: index refresh chain — successful papers (even under partial
+        // failure or stop) get a local memory build, then a confirmed embed.
+        if (outcome.successKeys.length > 0) {
+          this._runIndexRefreshChain(outcome.successKeys.length);
+        }
+        this._loadPapers().then(() => this._render());
+      })
+      .catch((err: Error) => {
+        this.running = false;
+        new Notice(
+          (t("ocr_error_notice") || "OCR error") +
+            ": " +
+            (err?.message || String(err))
+        );
+        this._render();
+      });
+  }
+
+  /**
+   * #126: after any rebuild with successful papers — local memory build
+   * (never implicit API cost), then a user-confirmed embed resume.
+   */
+  private _runIndexRefreshChain(successCount: number): void {
+    const pyCmd = this._resolvePython();
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    if (!pyCmd) {
+      new Notice("Runtime not ready for memory refresh");
+      return;
+    }
+    const memoryLabel =
+      t("ocr_ws_memory_refresh") || "Updating local text index…";
+    new Notice(memoryLabel);
     execFile(
       pyCmd.path,
-      [...pyCmd.args, "-m", "paperforge", "ocr", "rebuild", ...keys],
-      { cwd: vp, timeout: 600000 },
+      [...pyCmd.args, "-m", "paperforge", "memory", "build"],
+      { cwd: vp, timeout: 120000, windowsHide: true },
       (err: any) => {
-        this.running = false;
-        if (err) new Notice("Rebuild failed: " + (err.message || err));
-        else new Notice("Rebuild completed");
-        this._loadPapers().then(() => this._render());
+        if (err) {
+          // #126: a failed memory build blocks the embed prompt and is
+          // retryable — never claim the index was updated.
+          new Notice(
+            (t("ocr_ws_memory_refresh_failed") || "检索刷新失败，可稍后重试") +
+              ": " +
+              (err?.message || String(err)),
+            8000
+          );
+          return;
+        }
+        new Notice(
+          (t("ocr_ws_index_updated") || "正文索引已更新，语义索引需要刷新") +
+            ` (${successCount} paper(s))`
+        );
+        // Embed resume requires explicit confirmation — remote API cost.
+        const embedLabel = t("ocr_ws_embed_confirm") || "确认向量嵌入";
+        const embedBody =
+          t("ocr_ws_embed_confirm_body") ||
+          "为变更论文重建向量可能调用付费 API，是否继续？";
+        const modal = new Modal(this.app);
+        modal.contentEl.createEl("h2", { text: embedLabel });
+        modal.contentEl.createEl("div", { text: embedBody });
+        const row = modal.contentEl.createDiv({
+          cls: "pf-ocr-ws-detail-actions",
+        });
+        const later = row.createEl("button", {
+          cls: "pf-btn pf-btn-secondary",
+          text: t("next_action_cancel") || "Later",
+        });
+        later.addEventListener("click", () => modal.close());
+        const run = row.createEl("button", {
+          cls: "mod-warning",
+          text: t("next_action_confirm") || "Run",
+        });
+        run.addEventListener("click", () => {
+          modal.close();
+          execFile(
+            pyCmd.path,
+            [...pyCmd.args, "-m", "paperforge", "embed", "build", "--resume"],
+            { cwd: vp, timeout: 600000, windowsHide: true },
+            (embedErr: any) => {
+              new Notice(
+                embedErr
+                  ? (t("ocr_error_notice") || "Embed failed") +
+                      ": " +
+                      (embedErr?.message || String(embedErr))
+                  : t("ocr_ws_embed_done") || "向量嵌入完成"
+              );
+            }
+          );
+        });
+        modal.open();
       }
     );
   }
@@ -652,30 +840,60 @@ export class OcrWorkspaceView extends ItemView {
     this._render();
   }
 
+  /**
+   * #126 P0: resolve and open a paper's fulltext from the canonical index
+   * path (vault-relative) when present, else `ocrDir/<key>/fulltext.md`.
+   * Never re-join `vp`/`PaperForge` onto `systemDir` (which already
+   * contains `PaperForge`).
+   */
   private _openFulltext(key: string): void {
     const vp = (this.app.vault.adapter as any).basePath as string;
     const paths = resolveVaultPaths(vp);
-    const fulltextPath = path.join(
+    const paper = this.papers.find((p) => p.key === key);
+
+    const fulltextPath = resolvePaperFulltextPath(
       vp,
-      paths.systemDir,
-      "PaperForge",
-      "ocr",
+      paper?.fulltextPath ?? "",
       key,
-      "fulltext.md"
+      paths.ocrDir,
+      fs.existsSync
     );
-    if (!fs.existsSync(fulltextPath)) {
-      new Notice("Fulltext not found");
+    if (!fulltextPath) {
+      new Notice(t("ocr_ws_fulltext_not_found") || "Fulltext not found");
       return;
     }
+
     const file = this.app.vault.getAbstractFileByPath(
-      path.relative(vp, fulltextPath).replace(/\\/g, "/")
+      path.relative(vp, fulltextPath).replace(/\\/g, "/").replace(/^\//, "")
     );
     if (file) {
       (this.app.workspace as any).getLeaf().openFile(file);
     } else {
-      new Notice("Fulltext not found in vault");
+      new Notice(
+        t("ocr_ws_fulltext_not_found") || "Fulltext not found in vault"
+      );
     }
   }
+}
+
+/**
+ * #126 P0: canonical fulltext resolution — index path first, ocrDir fallback.
+ * Pure (injectable fs exists) so the double-`PaperForge` regression is testable.
+ */
+export function resolvePaperFulltextPath(
+  vaultPath: string,
+  fulltextPathFromIndex: string,
+  key: string,
+  ocrDir: string,
+  exists: (p: string) => boolean = fs.existsSync
+): string | null {
+  if (fulltextPathFromIndex) {
+    const candidate = path.join(vaultPath, fulltextPathFromIndex);
+    if (exists(candidate)) return candidate;
+  }
+  const fallback = path.join(ocrDir, key, "fulltext.md");
+  if (exists(fallback)) return fallback;
+  return null;
 }
 
 /* ── Helpers ── */
@@ -689,7 +907,6 @@ function statusClass(status: string): string {
   return "";
 }
 /* ── Version Restore Modal ── */
-
 
 function statusLabel(status: string): string {
   if (status === "done") return t("ocr_ws_status_done") || "Processed";
@@ -718,20 +935,33 @@ interface VersionEntry {
   fulltext_size: number;
 }
 
-function versionContentPath(ocrDir: string, key: string, label: string): string {
+function versionContentPath(
+  ocrDir: string,
+  key: string,
+  label: string
+): string {
   if (label.startsWith("backup-")) {
     const ts = label.slice("backup-".length);
-    return path.join(ocrDir, key, "backups", "fulltext.pre-rebuild." + ts + ".md");
+    return path.join(
+      ocrDir,
+      key,
+      "backups",
+      "fulltext.pre-rebuild." + ts + ".md"
+    );
   }
   return path.join(ocrDir, key, "versions", label, "fulltext.md");
 }
 
-function diffParagraphs(textA: string, textB: string): { type: "added" | "removed" | "unchanged"; text: string }[] {
+function diffParagraphs(
+  textA: string,
+  textB: string
+): { type: "added" | "removed" | "unchanged"; text: string }[] {
   const split = (t: string) => t.split(/\n\n+/).filter(Boolean);
   const pa = split(textA);
   const pb = split(textB);
   const max = Math.max(pa.length, pb.length);
-  const result: { type: "added" | "removed" | "unchanged"; text: string }[] = [];
+  const result: { type: "added" | "removed" | "unchanged"; text: string }[] =
+    [];
   for (let i = 0; i < max; i++) {
     const a = i < pa.length ? pa[i] : "";
     const b = i < pb.length ? pb[i] : "";
@@ -758,7 +988,14 @@ export class VersionRestoreModal extends Modal {
   private contentCache: Map<string, string> = new Map();
   private mdComponent: Component;
 
-  constructor(app: any, vaultPath: string, paperKey: string, versions: VersionEntry[], currentLabel: string, onRestored?: () => void) {
+  constructor(
+    app: any,
+    vaultPath: string,
+    paperKey: string,
+    versions: VersionEntry[],
+    currentLabel: string,
+    onRestored?: () => void
+  ) {
     super(app);
     this.vaultPath = vaultPath;
     this.paperKey = paperKey;
@@ -795,8 +1032,16 @@ export class VersionRestoreModal extends Modal {
     } catch {}
 
     // Cache current render content
-    const curPath = path.join(this.ocrDir, this.paperKey, "render", "fulltext.md");
-    try { if (fs.existsSync(curPath)) this.contentCache.set("__current__", fs.readFileSync(curPath, "utf-8")); } catch {}
+    const curPath = path.join(
+      this.ocrDir,
+      this.paperKey,
+      "render",
+      "fulltext.md"
+    );
+    try {
+      if (fs.existsSync(curPath))
+        this.contentCache.set("__current__", fs.readFileSync(curPath, "utf-8"));
+    } catch {}
 
     this.renderAll();
   }
@@ -810,18 +1055,31 @@ export class VersionRestoreModal extends Modal {
     const preview = layout.createDiv({ cls: "pf-vr-preview" });
 
     // ── Sidebar ──
-    sidebar.createEl("div", { cls: "pf-vr-sidebar-title", text: t("ocr_ws_restore_versions") || "Versions" });
+    sidebar.createEl("div", {
+      cls: "pf-vr-sidebar-title",
+      text: t("ocr_ws_restore_versions") || "Versions",
+    });
     const timeline = sidebar.createDiv({ cls: "pf-vr-timeline" });
     this.versions.forEach((ver, i) => {
       const date = new Date(ver.created_at).toLocaleDateString();
       const entry = timeline.createDiv({
-        cls: "pf-vr-entry" + (i === this.selectedIdx ? " pf-vr-entry--active" : "") + (ver.label === this.currentLabel ? " pf-vr-entry--current" : ""),
+        cls:
+          "pf-vr-entry" +
+          (i === this.selectedIdx ? " pf-vr-entry--active" : "") +
+          (ver.label === this.currentLabel ? " pf-vr-entry--current" : ""),
         attr: { "data-idx": String(i) },
       });
       entry.createEl("span", { cls: "pf-vr-entry-label", text: ver.label });
       entry.createEl("span", { cls: "pf-vr-entry-date", text: date });
-      if (ver.label === this.currentLabel) entry.createEl("span", { cls: "pf-vr-entry-badge", text: t("ocr_ws_restore_current") || "current" });
-      entry.addEventListener("click", () => { this.selectedIdx = i; this.renderAll(); });
+      if (ver.label === this.currentLabel)
+        entry.createEl("span", {
+          cls: "pf-vr-entry-badge",
+          text: t("ocr_ws_restore_current") || "current",
+        });
+      entry.addEventListener("click", () => {
+        this.selectedIdx = i;
+        this.renderAll();
+      });
     });
 
     // ── Preview ──
@@ -833,16 +1091,44 @@ export class VersionRestoreModal extends Modal {
     const actionsDiv = toolbar.createDiv({ cls: "pf-vr-actions" });
 
     const date = new Date(ver.created_at).toLocaleString();
-    const sizeStr = ver.fulltext_size > 1024 ? (ver.fulltext_size / 1024).toFixed(0) + "KB" : ver.fulltext_size + "B";
-    info.innerHTML = "<strong>" + ver.label + "</strong>" + (isCurrent ? " <span class=\"pf-vr-current-tag\">" + (t("ocr_ws_restore_current") || "current") + "</span>" : "") + "<br><span class=\"pf-vr-info-meta\">" + date + " · " + ver.source + " · " + sizeStr + (ver.renderer_version ? " · renderer v" + ver.renderer_version : "") + "</span>";
+    const sizeStr =
+      ver.fulltext_size > 1024
+        ? (ver.fulltext_size / 1024).toFixed(0) + "KB"
+        : ver.fulltext_size + "B";
+    info.innerHTML =
+      "<strong>" +
+      ver.label +
+      "</strong>" +
+      (isCurrent
+        ? ' <span class="pf-vr-current-tag">' +
+          (t("ocr_ws_restore_current") || "current") +
+          "</span>"
+        : "") +
+      '<br><span class="pf-vr-info-meta">' +
+      date +
+      " · " +
+      ver.source +
+      " · " +
+      sizeStr +
+      (ver.renderer_version ? " · renderer v" + ver.renderer_version : "") +
+      "</span>";
 
     const contentArea = preview.createDiv({ cls: "pf-vr-content" });
     const diffArea = preview.createDiv({ cls: "pf-vr-diff" });
-    MarkdownRenderer.render(this.app, this.getContent(ver.label), contentArea, this.vaultPath, this.mdComponent);
+    MarkdownRenderer.render(
+      this.app,
+      this.getContent(ver.label),
+      contentArea,
+      this.vaultPath,
+      this.mdComponent
+    );
     diffArea.style.display = "none";
 
     if (!isCurrent) {
-      const compareBtn = actionsDiv.createEl("button", { cls: "btn-secondary pf-vr-btn", text: t("ocr_ws_restore_compare") || "Compare with current" });
+      const compareBtn = actionsDiv.createEl("button", {
+        cls: "btn-secondary pf-vr-btn",
+        text: t("ocr_ws_restore_compare") || "Compare with current",
+      });
       compareBtn.addEventListener("click", () => {
         const textA = this.getContent("__current__");
         const textB = this.getContent(ver.label);
@@ -850,20 +1136,52 @@ export class VersionRestoreModal extends Modal {
         diffArea.style.display = "block";
         diffArea.empty();
         const hdr = diffArea.createEl("div", { cls: "pf-vr-diff-header" });
-        hdr.setText((t("ocr_ws_restore_diff_title") || "Changes from current").replace("{v}", ver.label));
+        hdr.setText(
+          (t("ocr_ws_restore_diff_title") || "Changes from current").replace(
+            "{v}",
+            ver.label
+          )
+        );
         const body = diffArea.createEl("div", { cls: "pf-vr-diff-body" });
         const diffs = diffParagraphs(textA, textB);
         for (const d of diffs) {
-          const line = body.createEl("div", { cls: "pf-vr-diff-line pf-vr-diff-" + d.type });
-          line.createEl("span", { cls: "pf-vr-diff-prefix", text: d.type === "added" ? "+ " : d.type === "removed" ? "\u2212 " : "  " });
-          line.createEl("span", { cls: "pf-vr-diff-text", text: d.text.slice(0, 200) + (d.text.length > 200 ? "\u2026" : "") });
+          const line = body.createEl("div", {
+            cls: "pf-vr-diff-line pf-vr-diff-" + d.type,
+          });
+          line.createEl("span", {
+            cls: "pf-vr-diff-prefix",
+            text:
+              d.type === "added"
+                ? "+ "
+                : d.type === "removed"
+                  ? "\u2212 "
+                  : "  ",
+          });
+          line.createEl("span", {
+            cls: "pf-vr-diff-text",
+            text: d.text.slice(0, 200) + (d.text.length > 200 ? "\u2026" : ""),
+          });
         }
-        if (diffs.length === 0) body.createEl("div", { cls: "pf-vr-diff-empty", text: t("ocr_ws_restore_no_diff") || "No differences" });
-        const backBtn = diffArea.createEl("button", { cls: "btn-secondary pf-vr-btn", text: t("ocr_ws_restore_back") || "Back" });
-        backBtn.addEventListener("click", () => { contentArea.style.display = "block"; diffArea.style.display = "none"; diffArea.empty(); });
+        if (diffs.length === 0)
+          body.createEl("div", {
+            cls: "pf-vr-diff-empty",
+            text: t("ocr_ws_restore_no_diff") || "No differences",
+          });
+        const backBtn = diffArea.createEl("button", {
+          cls: "btn-secondary pf-vr-btn",
+          text: t("ocr_ws_restore_back") || "Back",
+        });
+        backBtn.addEventListener("click", () => {
+          contentArea.style.display = "block";
+          diffArea.style.display = "none";
+          diffArea.empty();
+        });
       });
 
-      const restoreBtn = actionsDiv.createEl("button", { cls: "btn-primary pf-vr-btn", text: t("ocr_ws_restore_btn") || "Restore this version" });
+      const restoreBtn = actionsDiv.createEl("button", {
+        cls: "btn-primary pf-vr-btn",
+        text: t("ocr_ws_restore_btn") || "Restore this version",
+      });
       restoreBtn.addEventListener("click", () => this.doRestore(ver));
     }
   }
@@ -876,11 +1194,14 @@ export class VersionRestoreModal extends Modal {
       const target = path.join(targetDir, "fulltext.md");
       try {
         if (fs.existsSync(source)) {
-          if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+          if (!fs.existsSync(targetDir))
+            fs.mkdirSync(targetDir, { recursive: true });
           fs.copyFileSync(source, target);
           ok = true;
         }
-      } catch (e) { console.warn("[PaperForge] Restore backup failed:", e); }
+      } catch (e) {
+        console.warn("[PaperForge] Restore backup failed:", e);
+      }
     } else {
       ok = restoreVersion(this.vaultPath, this.paperKey, ver.label);
     }
@@ -893,7 +1214,9 @@ export class VersionRestoreModal extends Modal {
     }
   }
   onClose() {
-    try { this.contentEl.empty(); } catch {}
+    try {
+      this.contentEl.empty();
+    } catch {}
     this.contentCache.clear();
     this.mdComponent.unload();
   }
