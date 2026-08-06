@@ -113,6 +113,8 @@ ignore = ["B904"]  # raise-within-try is intentional in many worker error paths
 "scripts/consistency_audit.py" = ["SIM110", "SIM102"]
 "scripts/welcome.py" = ["E501"]
 "scripts/validate_setup.py" = ["E501"]
+# HTML template embeds CSS/HTML as long single lines by design
+"paperforge/architecture_audit/report/render_html.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
