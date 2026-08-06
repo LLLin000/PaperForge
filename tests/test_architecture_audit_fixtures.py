@@ -23,8 +23,14 @@ class TestFixtureIntegrity:
     def test_golden_fixtures_record_revision_and_source_digests(self):
         from paperforge.architecture_audit.fixtures import load_fixture_dict
 
-        expected_revision = "1f02281b"
-        for name in ("golden_126_ocr_rebuild", "golden_127_sync_embed", "golden_129_display_restore"):
+        # golden_126/129 still pin the #125-era observation; golden_127 was
+        # re-observed after #127 reworked commands/sync.py (7372383b).
+        expected_revisions = {
+            "golden_126_ocr_rebuild": "1f02281b",
+            "golden_127_sync_embed": "7372383b",
+            "golden_129_display_restore": "1f02281b",
+        }
+        for name, expected_revision in expected_revisions.items():
             payload = load_fixture_dict(name)
             run_metadata = payload["survey"]["run_metadata"]
             assert run_metadata["repository_revision"] == expected_revision
