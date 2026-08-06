@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "content": {
+    "reconciler_version": "1.0.0",
+    "bound_contract_digest": "sha256:48d4dba2797ce97111ae3e3570aeac3e75dc3f82e0a05af87872759eff67ad95",
+    "bound_survey_digest": "sha256:2a21344aec78d1d8adfa997fed67bd2784216a701f1bfbeaad3b60e26e7b66b1",
+    "findings": [
+      {
+        "finding_id": "finding:99fefad31ff9dd44",
+        "rule_id": "signal.ocr_run_dead_contract",
+        "subject": "OCR_RUN",
+        "rule_status": "violated",
+        "severity": "advisory",
+        "message": "signals without auditable required consumer: OCR_RUN",
+        "evidence": [
+          {
+            "evidence_id": "evidence:b481e1cfb0bd5030",
+            "file": "paperforge/plugin/src/services/progress-parser.ts",
+            "file_digest": "sha256:a37e2d4d60c64e02cc779de48ee8e2bd823d2fa2fd737447a75f37c09a44ad10",
+            "symbol": "OCR_RUN",
+            "line_start": 2,
+            "line_end": 5,
+            "extractor": "manual_audit",
+            "epistemic_status": "observed_static",
+            "confidence": "exact"
+          }
+        ]
+      },
+      {
+        "finding_id": "finding:495bdc972b0a2204",
+        "rule_id": "retrieval.v2",
+        "subject": "",
+        "rule_status": "planned_gap",
+        "severity": "informational",
+        "message": "declared but not yet effective"
+      },
+      {
+        "finding_id": "finding:e99c7d822b2eaeea",
+        "rule_id": "collectors.deterministic",
+        "subject": "",
+        "rule_status": "planned_gap",
+        "severity": "informational",
+        "message": "declared but not yet effective"
+      }
+    ],
+    "rule_coverage": [
+      {
+        "rule_id": "query.side_effect_free",
+        "evaluated": true,
+        "status": "satisfied",
+        "reason": "no observed side effects"
+      },
+      {
+        "rule_id": "remote_intent.sync_followup",
+        "evaluated": true,
+        "status": "satisfied",
+        "reason": "all remote operations carry accepted intent"
+      },
+      {
+        "rule_id": "signal.has_consumer",
+        "evaluated": true,
+        "status": "satisfied",
+        "reason": "all signals have consumers for their declared kind"
+      },
+      {
+        "rule_id": "signal.ocr_run_dead_contract",
+        "evaluated": true,
+        "status": "violated",
+        "reason": "signals without auditable required consumer: OCR_RUN"
+      },
+      {
+        "rule_id": "publication.uses_protocol",
+        "evaluated": true,
+        "status": "satisfied",
+        "reason": "all canonical writes use the publication protocol"
+      },
+      {
+        "rule_id": "canonical.no_ui_writer",
+        "evaluated": true,
+        "status": "satisfied",
+        "reason": "all canonical writes use authorized protocol writers"
+      },
+      {
+        "rule_id": "restore.display_only",
+        "evaluated": true,
+        "status": "satisfied",
+        "reason": "all canonical writes use the publication protocol"
+      },
+      {
+        "rule_id": "coverage.required_complete",
+        "evaluated": true,
+        "status": "satisfied",
+        "reason": "all required extractor coverage complete"
+      },
+      {
+        "rule_id": "retrieval.v2",
+        "evaluated": false,
+        "reason": "planned"
+      },
+      {
+        "rule_id": "collectors.deterministic",
+        "evaluated": false,
+        "reason": "planned"
+      }
+    ],
+    "assessment": {
+      "status": "findings",
+      "gate_eligible": true
+    },
+    "coverage": [
+      {
+        "extractor": "python_ast",
+        "status": "complete"
+      },
+      {
+        "extractor": "typescript",
+        "status": "complete"
+      }
+    ]
+  },
+  "run_metadata": {},
+  "semantic_digest": "sha256:5cd57e14011dda254d01c8886d61089bbb5275a8c09b144c2b95bf6737b8d68f"
+}

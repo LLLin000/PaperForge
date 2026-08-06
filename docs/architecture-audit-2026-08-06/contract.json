@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "asset_groups": [
+    "library",
+    "ocr_raw",
+    "ocr_derived",
+    "retrieval",
+    "vectors"
+  ],
+  "publication_units": [
+    {
+      "unit_id": "ocr_derived.generation",
+      "asset_group": "ocr_derived",
+      "publication_authority": "ocr.publisher",
+      "authorized_writers": [
+        "ocr.postprocess",
+        "ocr.rebuild",
+        "ocr.legacy_backfill"
+      ]
+    }
+  ],
+  "operations": [
+    "sync",
+    "probe_status",
+    "ocr_run",
+    "ocr_rebuild",
+    "ocr_redo",
+    "embed_build_resume",
+    "memory_build",
+    "restore_display"
+  ],
+  "required_extractors": [
+    "python_ast",
+    "typescript"
+  ],
+  "rules": [
+    {
+      "rule_id": "query.side_effect_free",
+      "kind": "query_side_effect",
+      "subject": "probe_status",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "status queries must not mutate business facts"
+    },
+    {
+      "rule_id": "remote_intent.sync_followup",
+      "kind": "remote_intent",
+      "subject": "sync",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "accepted_intent_modes": [
+        "direct_invocation",
+        "ui_modal",
+        "explicit_flag",
+        "interactive_prompt"
+      ],
+      "description": "sync declares next_actions only; remote follow-ups require explicit intent (#127)"
+    },
+    {
+      "rule_id": "signal.has_consumer",
+      "kind": "signal_consumer",
+      "subject": "OCR_REBUILD_PROGRESS",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "rebuild progress signals have a code consumer (#126)"
+    },
+    {
+      "rule_id": "signal.ocr_run_dead_contract",
+      "kind": "signal_consumer",
+      "subject": "OCR_RUN",
+      "lifecycle": "active",
+      "enforcement": "advisory",
+      "description": "OCR_RUN is declared in the plugin parser but has no backend emitter (#126 G4)"
+    },
+    {
+      "rule_id": "publication.uses_protocol",
+      "kind": "publication_marker",
+      "subject": "ocr_derived.generation",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "derived publications go through the result-hash pending protocol (#126)"
+    },
+    {
+      "rule_id": "canonical.no_ui_writer",
+      "kind": "canonical_writer",
+      "subject": "ocr_derived.generation",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "UI must not write canonical OCR state"
+    },
+    {
+      "rule_id": "restore.display_only",
+      "kind": "publication_marker",
+      "subject": "ocr_derived.generation",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "display restore never implies structural rollback (#129)"
+    },
+    {
+      "rule_id": "coverage.required_complete",
+      "kind": "coverage_complete",
+      "subject": "",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "required extractor coverage is complete"
+    },
+    {
+      "rule_id": "retrieval.v2",
+      "kind": "coverage_complete",
+      "subject": "",
+      "lifecycle": "planned",
+      "enforcement": "blocking",
+      "effective_after": {
+        "issue": "#105"
+      },
+      "known_gap": {
+        "issue": "#105",
+        "rationale": "three-intent retrieval deferred post-release"
+      },
+      "description": "structure-aware retrieval v2"
+    },
+    {
+      "rule_id": "collectors.deterministic",
+      "kind": "coverage_complete",
+      "subject": "",
+      "lifecycle": "planned",
+      "enforcement": "blocking",
+      "effective_after": {
+        "issue": "#133"
+      },
+      "known_gap": {
+        "issue": "#133",
+        "rationale": "deterministic collectors deferred until RC acceptance"
+      },
+      "description": "deterministic collectors feed the #131 reconciler"
+    }
+  ],
+  "exceptions": []
+}
