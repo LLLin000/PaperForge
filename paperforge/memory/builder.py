@@ -577,25 +577,29 @@ def _full_rebuild(
 
 def _resolve_ocr_result_hash(paper_dir: Path) -> str:
     """Resolve OCR result hash with 3-level fallback.
-    
+
     1. index/result-hash.txt (fastest, preferred)
     2. SHA-256 of structured artifacts (structure/blocks.structured.jsonl,
        index/structure-tree.json, index/role-index.json)
     3. meta.json derived_version hash
+
+    #126: while `index/result-hash.pending` exists, neither the stale Level-1
+    file nor the paper's half-built artifacts may be trusted — the reader
+    returns "" so the memory layer skips the paper entirely.
     """
+    from paperforge.worker.ocr_hash import compute_ocr_result_hash, has_result_hash_pending
+
+    # #126: publication marker supersedes both stale Level 1 and Level 2.
+    if has_result_hash_pending(paper_dir):
+        return ""
     # Level 1: explicit result-hash.txt
     rp = paper_dir / "index" / "result-hash.txt"
     if rp.exists():
         return rp.read_text(encoding="utf-8").strip()
-    # Level 2: hash of structured artifacts
-    h = hashlib.sha256()
-    for rel in ["structure/blocks.structured.jsonl", "index/structure-tree.json",
-                 "index/role-index.json"]:
-        p = paper_dir / rel
-        if p.exists():
-            h.update(p.read_bytes())
-    if h.hexdigest() != hashlib.sha256(b"").hexdigest():
-        return h.hexdigest()
+    # Level 2: canonical hash of structured artifacts (missing artifact → None)
+    canonical = compute_ocr_result_hash(paper_dir)
+    if canonical is not None:
+        return canonical
     # Level 3: meta.json derived_version
     meta_p = paper_dir / "meta.json"
     if meta_p.exists():
@@ -700,6 +704,14 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
         paper_dir = ocr_root / key
         tree_path = paper_dir / "index" / "structure-tree.json"
         blocks_path = paper_dir / "structure" / "blocks.structured.jsonl"
+
+        # #126: a pending publication marker means rebuild is mid-flight or
+        # failed — never consume half-built artifacts, never clear this
+        # paper's previous published state.
+        from paperforge.worker.ocr_hash import has_result_hash_pending
+
+        if has_result_hash_pending(paper_dir):
+            continue
 
         # Check if paper has any stored derived state (manifest, units, vectors)
         has_derived_state = conn.execute(

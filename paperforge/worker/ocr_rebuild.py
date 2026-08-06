@@ -155,6 +155,11 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     from paperforge.worker._utils import pipeline_paths, read_jsonl
     from paperforge.worker.ocr import validate_ocr_meta
     from paperforge.worker.ocr_artifacts import artifact_paths_for_root
+    from paperforge.worker.ocr_hash import (
+        clear_result_hash_pending,
+        create_result_hash_pending,
+        publish_ocr_result_hash,
+    )
 
     ocr_root = pipeline_paths(vault)["ocr"]
     artifacts = artifact_paths_for_root(ocr_root, key)
@@ -164,6 +169,11 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         return {"key": key, "status": "skipped", "reason": "no_paper_dir"}
     if not artifacts.blocks_raw.exists():
         return {"key": key, "status": "skipped", "reason": "no_raw_blocks"}
+
+    # #126: publication marker BEFORE any derived mutation — a crash or failure
+    # between phases leaves the marker so the memory layer never consumes
+    # half-built artifacts. Only a verified publish clears it.
+    create_result_hash_pending(paper_root)
 
     all_raw_blocks = list(read_jsonl(artifacts.blocks_raw))
     ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
@@ -589,28 +599,65 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     )
 
     _phase5_finalize(resolved, structured, rendered, span_meta_patch, health_overall=health_overall)
+
+    # #126: verified success — publish the canonical hash, then clear the
+    # publication marker (commit point). Missing artifacts leave the marker.
+    if publish_ocr_result_hash(paper_root) is not None:
+        clear_result_hash_pending(paper_root)
     return {"key": key, "status": "ok"}
 def _run_parallel_rebuild(
     vault: Path, keys: list[str], workers: int,
     on_progress: Callable[[str], None] | None = None,
+    stop_check: Callable[[], bool] | None = None,
 ) -> list[dict]:
-    """Run rebuild in parallel using a process pool."""
+    """Run rebuild in parallel using a chunked process pool.
+
+    #126 (G5): work is submitted in chunks of `workers` so stop_check can
+    take effect between chunks; in-flight futures always finish.
+    """
     from concurrent.futures import ProcessPoolExecutor, as_completed
 
     results: list[dict] = []
     with ProcessPoolExecutor(max_workers=workers) as executor:
-        futures = {executor.submit(_rebuild_one_paper, vault, k): k for k in keys}
-        for future in as_completed(futures):
-            key = futures[future]
-            try:
-                result = future.result()
-                results.append(result)
-            except Exception as e:
-                results.append({"key": key, "status": "failed", "error": str(e)})
-            if on_progress is not None:
-                on_progress(key)
+        for start in range(0, len(keys), workers):
+            if stop_check is not None and stop_check():
+                break
+            chunk = keys[start:start + workers]
+            futures = {executor.submit(_rebuild_one_paper, vault, k): k for k in chunk}
+            for future in as_completed(futures):
+                key = futures[future]
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as e:
+                    result = {"key": key, "status": "failed", "error": str(e)}
+                    results.append(result)
+                if on_progress is not None:
+                    on_progress(key, result)
     return results
 
+
+def _aggregate_rebuild_results(
+    keys: list[str], results: list[dict],
+) -> dict:
+    """Normalize per-key results into the structured result contract."""
+    done = {result["key"] for result in results}
+    success_keys = [r["key"] for r in results if r.get("status") == "ok"]
+    failed_keys = [r["key"] for r in results if r.get("status") == "failed"]
+    skipped = [
+        {"key": r["key"], "reason": r.get("reason", "stopped")}
+        for r in results
+        if r.get("status") == "skipped"
+    ]
+    # keys never started (user stop between chunks/papers)
+    skipped.extend({"key": key, "reason": "stopped"} for key in keys if key not in done)
+    return {
+        "success_keys": success_keys,
+        "failed_keys": failed_keys,
+        "skipped": skipped,
+        "results": results,
+        "rebuild_count": len(success_keys),
+    }
 
 
 def run_derived_rebuild_for_keys(
@@ -619,7 +666,7 @@ def run_derived_rebuild_for_keys(
     progress_bar=None,
     checkpoint_dir: Path | None = None,
     parallel: int = 4,
-    on_progress: Callable[[str], None] | None = None,
+    on_progress: Callable[[str, dict] | None, None] | None = None,
     stop_check: Callable[[], bool] | None = None,
 ) -> dict:
     """Run derived-layer rebuild for the given paper keys without raw OCR rerun.
@@ -627,8 +674,9 @@ def run_derived_rebuild_for_keys(
     Rebuilds: structured blocks, metadata, figure/table inventories, objects,
     render outputs, and health — from stored raw blocks only.
 
-    Note: checkpoint_dir / .done.<key> markers are no longer used; kept for
-    backward compatibility.
+    Returns the structured result contract (#126):
+    ``{"success_keys", "failed_keys", "skipped": [{key, reason}], "results",
+    "rebuild_count"}``.
 
     Args:
         vault: Vault root path.
@@ -636,31 +684,34 @@ def run_derived_rebuild_for_keys(
         progress_bar: Optional progress bar wrapper (tqdm-style).
         checkpoint_dir: Deprecated, kept for backward compatibility.
         parallel: Number of parallel workers (0 = serial). Default 4.
-        on_progress: Optional callback called with key after each paper completes.
+        on_progress: Optional callback called with (key, result) after each
+            paper completes.
         stop_check: Optional callable returning True if stop was requested.
-            Checked before starting the next paper (serial path only).
+            Checked before each paper (serial) or chunk (parallel).
     """
     if not keys:
-        return {"rebuild_count": 0}
+        return _aggregate_rebuild_results(keys, [])
 
     workers = int(parallel) if parallel else 0
 
     if workers > 0 and len(keys) > 1:
-        # Parallel path: does not support stop_check — all futures submitted at once.
-        results = _run_parallel_rebuild(vault, keys, workers, on_progress=on_progress)
-        return {"rebuild_count": sum(1 for r in results if r.get("status") == "ok")}
+        results = _run_parallel_rebuild(vault, keys, workers,
+                                        on_progress=on_progress, stop_check=stop_check)
+        return _aggregate_rebuild_results(keys, results)
 
-    rebuilt_count = 0
+    results: list[dict] = []
     keys_iter = progress_bar(keys, desc="OCR rebuild") if progress_bar else keys
     for key in keys_iter:
         if stop_check is not None and stop_check():
             break
-        result = _rebuild_one_paper(vault, key)
-        if result.get("status") == "ok":
-            rebuilt_count += 1
+        try:
+            result = _rebuild_one_paper(vault, key)
+        except Exception as exc:  # noqa: BLE001 — per-key failure is a result, not a crash
+            result = {"key": key, "status": "failed", "error": str(exc)}
+        results.append(result)
         if on_progress is not None:
-            on_progress(key)
-    return {"rebuild_count": rebuilt_count}
+            on_progress(key, result)
+    return _aggregate_rebuild_results(keys, results)
 
 
 

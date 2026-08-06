@@ -3,13 +3,14 @@
 Tests the streaming progress token contract defined in issue #64:
 - OCR_REBUILD_START:{total}
 - OCR_REBUILD_PROGRESS:{current}:{total}:{key}
-- OCR_REBUILD_DONE
+- OCR_REBUILD_RESULT:{key}:ok|failed|skipped
+- OCR_REBUILD_DONE:{success}:{failed}:{skipped}
 - OCR_REDO_START:{total}
 - OCR_REDO_PROGRESS:{current}:{total}:{key}
 - OCR_REDO_DONE
 
-Batch mode only (multiple keys). Single-key calls remain silent.
-Dry-run must not emit progress tokens.
+#126: every non-dry-run rebuild, including a single explicit key, emits the
+full token sequence. Dry-run must not emit progress tokens.
 """
 
 from __future__ import annotations
@@ -248,8 +249,14 @@ class TestOcrRebuildProgressTokens:
             on_progress = kwargs.get("on_progress")
             if on_progress:
                 for k in _keys:
-                    on_progress(k)
-            return {"rebuild_count": len(_keys)}
+                    on_progress(k, {"key": k, "status": "ok"})
+            return {
+                "success_keys": list(_keys),
+                "failed_keys": [],
+                "skipped": [],
+                "results": [{"key": k, "status": "ok"} for k in _keys],
+                "rebuild_count": len(_keys),
+            }
 
         monkeypatch.setattr(
             "paperforge.worker.ocr_rebuild.run_derived_rebuild_for_keys",
@@ -278,10 +285,16 @@ class TestOcrRebuildProgressTokens:
         assert progress_lines[0] == "OCR_REBUILD_PROGRESS:1:3:KEY001"
         assert progress_lines[1] == "OCR_REBUILD_PROGRESS:2:3:KEY002"
         assert progress_lines[2] == "OCR_REBUILD_PROGRESS:3:3:KEY003"
-        assert lines[-1] == "OCR_REBUILD_DONE", f"Last token: {lines}"
+        assert lines[-1] == "OCR_REBUILD_DONE:3:0:0", f"Last token: {lines}"
+        result_lines = [l for l in lines if "OCR_REBUILD_RESULT" in l]
+        assert result_lines == [
+            "OCR_REBUILD_RESULT:KEY001:ok",
+            "OCR_REBUILD_RESULT:KEY002:ok",
+            "OCR_REBUILD_RESULT:KEY003:ok",
+        ]
 
-    def test_rebuild_single_key_no_tokens(self, capsys, monkeypatch, tmp_path):
-        """Single rebuild key emits no progress tokens."""
+    def test_rebuild_single_key_emits_full_contract(self, capsys, monkeypatch, tmp_path):
+        """#126: a single explicit rebuild key emits the full token sequence."""
         vault = _make_minimal_vault(tmp_path)
         key = "KEY001"
         self._setup_mock_selection_and_worker(vault, [key], monkeypatch)
@@ -292,9 +305,11 @@ class TestOcrRebuildProgressTokens:
 
         assert rc == 0
         captured = capsys.readouterr().out
-        assert "OCR_REBUILD_START" not in captured
-        assert "OCR_REBUILD_PROGRESS" not in captured
-        assert "OCR_REBUILD_DONE" not in captured
+        lines = [l for l in captured.split("\n") if l.strip()]
+        assert lines[0] == "OCR_REBUILD_START:1"
+        assert "OCR_REBUILD_PROGRESS:1:1:KEY001" in lines
+        assert "OCR_REBUILD_RESULT:KEY001:ok" in lines
+        assert lines[-1] == "OCR_REBUILD_DONE:1:0:0"
 
     def test_rebuild_dry_run_no_tokens(self, capsys, monkeypatch, tmp_path):
         """Dry-run rebuild emits no progress tokens."""
@@ -374,9 +389,10 @@ class TestCooperativeStop:
         # Simulate what _run_ocr_rebuild does for batch
         print("OCR_REBUILD_START:3")
         count = [0]
-        def _on_progress(key):
+        def _on_progress(key, result):
             count[0] += 1
             print(f"OCR_REBUILD_PROGRESS:{count[0]}:3:{key}")
+            print(f"OCR_REBUILD_RESULT:{key}:{result.get('status')}")
 
         result = run_derived_rebuild_for_keys(
             vault, keys,
@@ -386,20 +402,28 @@ class TestCooperativeStop:
             stop_check=_stop_check,
         )
         print(f"Done. Rebuilt {result['rebuild_count']} paper(s).")
-        print("OCR_REBUILD_DONE")
+        done = result
+        print(
+            f"OCR_REBUILD_DONE:{len(done['success_keys'])}:"
+            f"{len(done['failed_keys'])}:{len(done['skipped'])}"
+        )
 
         captured = capsys.readouterr().out
         lines = [l for l in captured.split("\n") if l.strip()]
 
-        # Only first key should have been processed
+        # Only first key should have been processed; the rest are skipped (stopped)
         assert result["rebuild_count"] == 1
         assert call_count[0] == 1
-        # Should still emit DONE
+        assert result["success_keys"] == ["KEY001"]
+        assert [s["key"] for s in result["skipped"]] == ["KEY002", "KEY003"]
+        assert all(s["reason"] == "stopped" for s in result["skipped"])
+        # Should still emit DONE with counts
         assert "OCR_REBUILD_START:3" in captured
         assert "OCR_REBUILD_PROGRESS:1:3:KEY001" in captured
         assert "OCR_REBUILD_PROGRESS:2:3:KEY002" not in captured
         assert "OCR_REBUILD_PROGRESS:3:3:KEY003" not in captured
-        assert "OCR_REBUILD_DONE" in captured
+        assert "OCR_REBUILD_RESULT:KEY001:ok" in captured
+        assert "OCR_REBUILD_DONE:1:0:2" in captured
 
 
     def test_redo_stop_emits_done_and_partial_progress(self, capsys, monkeypatch, tmp_path):
