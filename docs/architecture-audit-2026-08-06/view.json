@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "audit_digest": "sha256:bdac203965845fd66d3085f6d5068392dbd2cb850bf9bb89e2c25dfd903688b2",
+  "review_digest": "sha256:972aab6037a459c89f7ce855700c35020a99089b122dd0082473da758131ab40",
+  "assessment": {
+    "status": "incomplete",
+    "gate_eligible": false,
+    "reasons": [
+      "python_ast_coverage_unavailable",
+      "typescript_compiler_coverage_unavailable"
+    ]
+  },
+  "deterministic_findings": [
+    {
+      "finding_id": "finding:ee33c90ba2eeb8a6",
+      "rule_id": "query.side_effect_free",
+      "subject": "probe_status",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "no effect facts and coverage incomplete"
+    },
+    {
+      "finding_id": "finding:83faa89330b9ba9b",
+      "rule_id": "publication.authority_ocr_display",
+      "subject": "ocr_display.fulltext",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "no unit authority facts observed"
+    },
+    {
+      "finding_id": "finding:4df2507da70902d6",
+      "rule_id": "publication.authority_retrieval",
+      "subject": "retrieval.units",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "no unit authority facts observed"
+    },
+    {
+      "finding_id": "finding:1f3c124ad5bb8599",
+      "rule_id": "coverage.required_complete",
+      "subject": "",
+      "rule_status": "violated",
+      "severity": "blocking",
+      "message": "required coverage incomplete: python_ast=unavailable, typescript_compiler=unavailable"
+    },
+    {
+      "finding_id": "finding:495bdc972b0a2204",
+      "rule_id": "retrieval.v2",
+      "subject": "",
+      "rule_status": "planned_gap",
+      "severity": "informational",
+      "message": "declared but not yet effective"
+    },
+    {
+      "finding_id": "finding:e99c7d822b2eaeea",
+      "rule_id": "collectors.deterministic",
+      "subject": "",
+      "rule_status": "planned_gap",
+      "severity": "informational",
+      "message": "declared but not yet effective"
+    }
+  ],
+  "review_adjudications": [
+    {
+      "finding_id": "finding:ee33c90ba2eeb8a6",
+      "adjudication": "needs_evidence",
+      "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:83faa89330b9ba9b",
+      "adjudication": "needs_evidence",
+      "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:4df2507da70902d6",
+      "adjudication": "needs_evidence",
+      "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+      "epistemic_status": "unresolved"
+    }
+  ],
+  "semantic_findings": [
+    {
+      "finding_id": "review:ocr_run_removed",
+      "message": "OCR_RUN 死契约已移除（progress-parser 不再声明该前缀）；确认当前无后端发射方，删除是安全清理",
+      "epistemic_status": "inferred"
+    },
+    {
+      "finding_id": "review:coverage_honest",
+      "message": "本报告证据为人工/测试支撑（extractor 标注 source）；python_ast/typescript_compiler 收集器在 #133 前标记 unavailable，gate 不可用是刻意保守",
+      "epistemic_status": "inferred"
+    },
+    {
+      "finding_id": "review:transaction_evidence_gap",
+      "message": "事务/Stop/崩溃恢复等 blocking 性质仅有单元测试支撑（observed_static + test extractor），尚无 observed_runtime 事实；建议在 #133 阶段补充集成观测",
+      "epistemic_status": "inferred"
+    }
+  ],
+  "evidence_requests": [
+    {
+      "request_id": "req:unit_authority_facts",
+      "subject": "publication_authority",
+      "question": "为 library/ocr_raw/retrieval/vectors 各发布单元记录 unit-authority 观察事实（collector 或显式清单）"
+    },
+    {
+      "request_id": "req:runtime_transaction_evidence",
+      "subject": "ocr_derived.generation",
+      "question": "故障注入/集成测试证明：中途失败 pending 保留、memory 跳过、旧 units/vectors 不清除（observed_runtime）"
+    }
+  ]
+}

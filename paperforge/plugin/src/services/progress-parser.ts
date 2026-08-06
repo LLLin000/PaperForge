@@ -1,5 +1,5 @@
 /**
- * Shared progress token parser — handles EMBED, OCR_REBUILD, OCR_REDO, OCR_RUN
+ * Shared progress token parser — handles EMBED, OCR_REBUILD, OCR_REDO
  * tokens across arbitrary stdout chunks.
  *
  * Token formats:
@@ -7,7 +7,7 @@
  *   {PREFIX}_PROGRESS:{current}:{total}:{key}
  *   {PREFIX}_DONE
  *
- * PREFIX in: EMBED, OCR_REBUILD, OCR_REDO, OCR_RUN
+ * PREFIX in: EMBED, OCR_REBUILD, OCR_REDO
  *
  * This is the stable plugin boundary contract from the CLI backend.
  */
@@ -36,7 +36,7 @@ export interface ProgressEvent {
   notice?: string;
 }
 
-const KNOWN_PREFIXES = ["EMBED", "OCR_REBUILD", "OCR_REDO", "OCR_RUN"];
+const KNOWN_PREFIXES = ["EMBED", "OCR_REBUILD", "OCR_REDO"];
 
 /**
  * Parse an arbitrarily chunked stdout stream for progress tokens.

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "reviewer_type": "maintainer_annotation",
+  "contract_digest": "sha256:aa03356d2ce06037d2efd524f3a74fd0436f028a2066272255b1cd5436ee064f",
+  "survey_digest": "sha256:a5124125552a20d36a9ef931ed5b677b169ed6ff54ae2b2067fdbde6e0fd8ab8",
+  "audit_digest": "sha256:bdac203965845fd66d3085f6d5068392dbd2cb850bf9bb89e2c25dfd903688b2",
+  "reconciler_version": "1.0.0",
+  "adjudications": [
+    {
+      "finding_id": "finding:ee33c90ba2eeb8a6",
+      "adjudication": "needs_evidence",
+      "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:83faa89330b9ba9b",
+      "adjudication": "needs_evidence",
+      "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:4df2507da70902d6",
+      "adjudication": "needs_evidence",
+      "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+      "epistemic_status": "unresolved"
+    }
+  ],
+  "semantic_findings": [
+    {
+      "finding_id": "review:ocr_run_removed",
+      "message": "OCR_RUN 死契约已移除（progress-parser 不再声明该前缀）；确认当前无后端发射方，删除是安全清理",
+      "epistemic_status": "inferred"
+    },
+    {
+      "finding_id": "review:coverage_honest",
+      "message": "本报告证据为人工/测试支撑（extractor 标注 source）；python_ast/typescript_compiler 收集器在 #133 前标记 unavailable，gate 不可用是刻意保守",
+      "epistemic_status": "inferred"
+    },
+    {
+      "finding_id": "review:transaction_evidence_gap",
+      "message": "事务/Stop/崩溃恢复等 blocking 性质仅有单元测试支撑（observed_static + test extractor），尚无 observed_runtime 事实；建议在 #133 阶段补充集成观测",
+      "epistemic_status": "inferred"
+    }
+  ],
+  "evidence_requests": [
+    {
+      "request_id": "req:unit_authority_facts",
+      "subject": "publication_authority",
+      "question": "为 library/ocr_raw/retrieval/vectors 各发布单元记录 unit-authority 观察事实（collector 或显式清单）"
+    },
+    {
+      "request_id": "req:runtime_transaction_evidence",
+      "subject": "ocr_derived.generation",
+      "question": "故障注入/集成测试证明：中途失败 pending 保留、memory 跳过、旧 units/vectors 不清除（observed_runtime）"
+    }
+  ],
+  "rationale": "维护者注解层：确定性 findings 之外的语义判断（已修复项、覆盖边界、证据缺口）全部收口在本 overlay，不进入 View 的 deterministic 投影",
+  "run_metadata": {
+    "model": "manual-maintainer-annotation",
+    "created_at": "2026-08-06T00:00:00Z"
+  }
+}
