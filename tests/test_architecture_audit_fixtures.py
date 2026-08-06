@@ -28,7 +28,7 @@ class TestFixtureIntegrity:
         expected_revisions = {
             "golden_126_ocr_rebuild": "dea041db",
             "golden_127_sync_embed": "7372383b",
-            "golden_129_display_restore": "2b4dca8d",
+            "golden_129_display_restore": "1a1bb895",
         }
         for name, expected_revision in expected_revisions.items():
             payload = load_fixture_dict(name)

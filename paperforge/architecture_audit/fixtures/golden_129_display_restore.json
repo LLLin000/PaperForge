@@ -99,7 +99,7 @@
         "consumer_evidence": [
           {
             "file": "paperforge/plugin/src/services/ocr-maintenance-ui.ts",
-            "file_digest": "sha256:6f65bde51f0f434310de02e5d4ebeafcf37edc4ab0d3a3c87cd0c22eb8d13639",
+            "file_digest": "sha256:4b5bab709509f1a5352824450963e28d3480e5838e6e38f1733196a46c13db5c",
             "symbol": "categorizeMaintenanceRow",
             "line_start": 104,
             "line_end": 150,
@@ -110,11 +110,11 @@
         ]
       }
     ],
-    "source_digest": "sha256:669750c08e5cfe22364af00ee3e7083dd78aff64e2fd668ab6cf7e92811de565",
+    "source_digest": "sha256:6bac0a5b8034960d05db43e9ed51b165ec28054a7f36d31e8e671b19f92ab7a7",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
-      "repository_revision": "2b4dca8d",
+      "repository_revision": "1a1bb895",
       "repository_dirty": false,
       "tool_version": "1.0.0",
       "extractor_versions": {
