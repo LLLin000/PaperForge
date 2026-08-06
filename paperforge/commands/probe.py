@@ -575,46 +575,26 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
 
     # ── Priority: redo > run > rebuild_derived > investigate ──
 
-    # Failures → needs_action with redo (user-visible failure + maintenance eligible)
+    # Failures → needs_action (no redo primary: redo is internal-only per #99)
     if has_failed:
         return build_envelope(module="ocr", capability_state="needs_action", severity="warning",
         reason_code="ocr.quality_failures",
-        reason_text="Some OCR outputs have failed — redo required",
+        reason_text="Some OCR outputs have failed",
         user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
         maintenance_eligible=True, user_visible_failure=True,
         user_impact="Failed OCR papers cannot be read or searched until reprocessed",
-        action_primary=build_action_primary(
-            action_id="ocr.redo",
-            verb="redo", label="Redo OCR", command="paperforge ocr redo",
-            safety_class=SAFETY_DESTRUCTIVE,
-            replacement_facts=["Existing OCR derived artifacts for failed papers"],
-            preservation_facts=["Raw images and PDFs"],
-            interruptible=True,
-            confirmation_required=True,
-            confirmation_prompt="This will delete existing OCR output for failed papers and re-run OCR. This cannot be undone. Proceed?",
-            scope="selection",
-        ),
+        action_primary=None,
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
-    # Redo candidates → needs_action
+    # Redo candidates → needs_action (no redo primary: redo is internal-only per #99)
     if has_redo:
         return build_envelope(module="ocr", capability_state="needs_action", severity="warning",
         reason_code="ocr.redo_needed",
-        reason_text="Some OCR outputs need redo — re-run from raw images",
+        reason_text="Some OCR outputs need reprocessing",
         user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
         maintenance_eligible=True,
-        action_primary=build_action_primary(
-            action_id="ocr.redo",
-            verb="redo", label="Redo OCR", command="paperforge ocr redo",
-            safety_class=SAFETY_DESTRUCTIVE,
-            replacement_facts=["Existing OCR derived artifacts for selected papers"],
-            preservation_facts=["Raw images and PDFs"],
-            interruptible=True,
-            confirmation_required=True,
-            confirmation_prompt="This will delete existing OCR output for selected papers and re-run OCR. This cannot be undone. Proceed?",
-            scope="selection",
-        ),
+        action_primary=None,
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 

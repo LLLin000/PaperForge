@@ -844,8 +844,8 @@ class TestOcrPriorityOrdering:
         assert data["reason"]["code"] == "ocr.artifacts_stale"
         assert data["action"]["primary"]["verb"] == "rebuild_derived"
 
-    def test_redo_overrides_pending(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Redo + pending rows -> redo action, NOT run."""
+    def test_redo_never_emitted_as_user_action(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """#99 owner decision: redo is internal-only — no ocr.redo primary."""
         from paperforge.commands import probe as probe_mod
         (tmp_path / "paperforge.json").write_text(
             json.dumps({"system_dir": "99_System"}), encoding="utf-8",
@@ -862,10 +862,10 @@ class TestOcrPriorityOrdering:
             lambda v: [FakeRedoPendingRow()])
 
         data = probe_mod.probe_ocr(tmp_path)
-        # Redo (retry_ocr) beats pending (run)
         assert data["capability_state"] == "needs_action"
         assert data["reason"]["code"] == "ocr.quality_failures"
-        assert data["action"]["primary"]["verb"] == "redo"
+        primary = data["action"]["primary"]
+        assert primary is None or primary.get("verb") != "redo"
 
 
 
@@ -987,8 +987,8 @@ class TestOcrQualityUnacceptable:
         assert data["action"]["primary"]["command"] == "paperforge ocr issue-draft"
         assert data["action"]["primary"]["safety_class"] == "safe"
 
-    def test_dead_end_does_not_override_redo(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-        """redo still takes priority over dead-end."""
+    def test_failed_rows_emit_no_redo_primary(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """#99: failed rows keep needs_action but never expose a redo action."""
         (tmp_path / "paperforge.json").write_text(json.dumps({"system_dir": "99_System"}), encoding="utf-8")
         class RedoRow:
             status = "failed"
@@ -999,7 +999,8 @@ class TestOcrQualityUnacceptable:
             lambda v: [RedoRow()])
         from paperforge.commands.probe import probe_ocr
         data = probe_ocr(tmp_path)
-        assert data["action"]["primary"]["verb"] == "redo"
+        primary = data["action"]["primary"]
+        assert primary is None or primary.get("verb") != "redo"
 
 
     def test_quality_unacceptable_scope_count_matches_dead_rows(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
