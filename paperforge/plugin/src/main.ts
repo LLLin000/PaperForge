@@ -14,6 +14,7 @@ import {
 import { t, setLanguage } from "./i18n";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
+import { OcrProcessController } from "./services/ocr-process-controller";
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import {
@@ -43,6 +44,8 @@ export default class PaperForgePlugin extends Plugin {
   _embedController:
     | import("./services/embed-build-controller").EmbedBuildController
     | null = null;
+  /** #126 PR B: the single OCR process controller shared by Settings and Workspace. */
+  ocrProcessController!: OcrProcessController;
   _memoryStatusText: string | null = null;
   private _managedRuntime: ManagedRuntime | null = null;
 
@@ -75,6 +78,32 @@ export default class PaperForgePlugin extends Plugin {
       // Runtime UI exposes repair/install actions; plugin loading must continue.
     }
     setLanguage(this.app, this.settings.language);
+
+    // #126 PR B: one OCR process controller for Settings and Workspace —
+    // run/redo resolve the Paddle credential (fail closed when missing),
+    // rebuild never requires it.
+    this.ocrProcessController = new OcrProcessController({
+      vaultPath: (this.app.vault.adapter as any).basePath as string,
+      resolveCommand: () => this._getPythonCommand(),
+      resolveEnv: async () => {
+        const env = await buildTargetedEnv(
+          {
+            app: { secretStorage: (this.app as any).secretStorage },
+            saveData: async () => {},
+          },
+          "ocr",
+          {
+            baseUrl: this.settings.vector_db_api_base,
+            model: this.settings.vector_db_api_model,
+          }
+        );
+        if (!(env?.PADDLEOCR_API_KEY || env?.PADDLEOCR_API_TOKEN)) {
+          throw new Error("PaddleOCR API token is missing (SecretStorage)");
+        }
+        return env;
+      },
+      needsCredential: (mode) => mode === "run" || mode === "redo",
+    });
 
     this.registerView(
       VIEW_TYPE_PAPERFORGE,

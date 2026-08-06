@@ -85,6 +85,7 @@ import {
   type VectorDbCredentialProfile,
 } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
+import type { OcrProcessOutcome } from "./services/ocr-process-controller";
 
 // ── SecretStorage credential adapter (Issue #79) ──
 
@@ -1771,31 +1772,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       5000
     );
     this._probeModule(mod);
-  } /** Dispatch OCR action with exact CLI args, progress tracking, cooperative stop (Issue #78). */
+  } /** Dispatch OCR action through the shared OcrProcessController (#126 PR B). */
   _dispatchOcrAction(mode: "run" | "rebuild" | "redo"): void {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    // #120-fix (review): credential resolution is async — during that
-    // window _ocrProcess is still null and a second click would start a
-    // second remote OCR. Guard the whole window.
-    if (this.plugin._ocrStarting || this.plugin._ocrProcess) {
+    const controller = this.plugin.ocrProcessController;
+    if (controller.isRunning) {
       new Notice("OCR is already running.");
       return;
     }
-    this.plugin._ocrStarting = true;
-    const resolved = this._resolveRuntimeCommand(vp);
-    if (!resolved) {
-      this.plugin._ocrStarting = false;
-      new Notice(t("runtime_not_available") || "No Python runtime available");
-      return;
-    }
 
-    // Map mode to exact CLI args
-    const cliArgs: string[] =
-      mode === "run"
-        ? ["ocr", "run"]
-        : mode === "rebuild"
-          ? ["ocr", "rebuild", "--all"]
-          : ["ocr", "redo"];
     const labelMap: Record<string, string> = {
       run: "Running OCR…",
       rebuild: "Rebuilding OCR derived artifacts…",
@@ -1815,162 +1799,67 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this.plugin._ocrWasStopped = false;
     this.display();
 
-    // #120-fix (release review): Run/Redo OCR needs the PaddleOCR
-    // credential from SecretStorage — paperforgeEnrichedEnv() STRIPS
-    // PADDLEOCR_* prefixes, so a bare spawn has no token and the button
-    // appears dead. Resolve the env FIRST (same pattern as
-    // EmbedBuildController), then spawn synchronously so _ocrProcess is a
-    // real child handle. Rebuild only recomputes derived artifacts from
-    // raw blocks — no remote OCR, no token needed.
-    const needsCredential = mode === "run" || mode === "redo";
-
-    const startOcr = (env: Record<string, string | undefined>) => {
-      const child = this._callPython(cliArgs, {
-        stream: true,
-        env,
-        onStderr: (data: unknown) => {
-          const text =
-            typeof data === "string"
-              ? data
-              : Buffer.isBuffer(data)
-                ? data.toString("utf-8")
-                : String(data);
-          this.plugin._ocrStderr = (
-            (this.plugin._ocrStderr ?? "") + text
-          ).slice(-500);
-        },
-        onData: (data: unknown) => {
-          const text =
-            typeof data === "string"
-              ? data
-              : Buffer.isBuffer(data)
-                ? data.toString("utf-8")
-                : String(data);
-          const { events, buffer } = processProgressChunk(
-            text,
-            this.plugin._ocrBuffer ?? ""
-          );
-          this.plugin._ocrBuffer = buffer;
-          for (const ev of events) {
-            if (ev.event === "START") {
-              if (this.plugin._ocrProgress) {
-                this.plugin._ocrProgress.total = ev.total || 1;
-              }
-              if (envelopes["ocr"]) {
-                envelopes["ocr"].activity_progress = {
-                  current: 0,
-                  total: ev.total || 1,
-                };
-              }
-            } else if (ev.event === "PROGRESS") {
-              this.plugin._ocrProgress = {
-                current: ev.current || 0,
-                total: ev.total || 1,
-                key: ev.key || "",
-              };
-              if (envelopes["ocr"]) {
-                envelopes["ocr"].activity_progress = {
-                  current: ev.current || 0,
-                  total: ev.total || 1,
-                };
-              }
-            }
-          }
-          this.display();
-        },
-        onError: (err: Error) => {
-          this.plugin._ocrStarting = false;
-          this.plugin._ocrProcess = null;
-          if (envelopes["ocr"]) {
-            envelopes["ocr"].activity_state = "idle";
-            envelopes["ocr"].activity_label = null;
-            envelopes["ocr"].activity_progress = null;
-          }
-          new Notice(t("ocr_error_notice"), 8000);
-          this._probeModule("ocr");
-          this.display();
-        },
-        onClose: (code: number | null) => {
-          this.plugin._ocrStarting = false;
-          this.plugin._ocrProcess = null;
-          if (envelopes["ocr"]) {
-            envelopes["ocr"].activity_state = "idle";
-            envelopes["ocr"].activity_label = null;
-            envelopes["ocr"].activity_progress = null;
-          }
-          if (code === 0) {
-            new Notice(
-              mode === "run"
-                ? t("ocr_run_complete")
-                : mode === "rebuild"
-                  ? t("ocr_rebuild_complete")
-                  : t("ocr_redo_complete")
-            );
-          } else if (code === 130 || this.plugin._ocrWasStopped) {
-            this.plugin._ocrWasStopped = false;
-            new Notice(t("ocr_stopped_notice"));
-          } else {
-            // #120-fix: surface the stderr tail so "missing token",
-            // network errors and tracebacks are not swallowed.
-            const detail = (this.plugin._ocrStderr || "").trim().slice(0, 300);
-            new Notice(
-              detail
-                ? t("ocr_failed_notice") + ": " + detail
-                : t("ocr_failed_notice"),
-              8000
-            );
-          }
-          // Terminal re-probe
-          this._probeModule("ocr");
-          this.display();
-        },
-      });
-      this.plugin._ocrProcess = child;
+    const completeNotice: Record<string, string> = {
+      run: t("ocr_run_complete"),
+      rebuild: t("ocr_rebuild_complete"),
+      redo: t("ocr_redo_complete"),
     };
 
-    if (needsCredential) {
-      void buildTargetedEnv(
-        asPluginForSecrets(this.app),
-        "ocr",
-        vectorDbProfile(this.plugin.settings)
-      )
-        .then((env) => {
-          // Fail closed: a missing token must NOT start OCR — the backend
-          // would mark every paper "blocked" yet exit 0 and the UI would
-          // claim success. buildTargetedEnv resolves to the base env when
-          // SecretStorage has no credential, so check it here.
-          const hasToken = Boolean(
-            env && (env.PADDLEOCR_API_KEY || env.PADDLEOCR_API_TOKEN)
-          );
-          if (!hasToken) {
-            throw new Error("PaddleOCR API token is missing (SecretStorage)");
-          }
-          startOcr(env);
-        })
-        .catch((err: Error) => {
-          // Credential resolution failure: never leave the UI stuck
-          // running, never spawn without a token.
-          this.plugin._ocrStarting = false;
-          this.plugin._ocrProcess = null;
-          if (envelopes["ocr"]) {
-            envelopes["ocr"].activity_state = "idle";
-            envelopes["ocr"].activity_label = null;
-            envelopes["ocr"].activity_progress = null;
-          }
+    controller
+      .start(mode, {
+        all: mode === "rebuild",
+        callbacks: {
+          onProgress: (current: number, total: number, key: string) => {
+            this.plugin._ocrProgress = { current, total, key };
+            if (envelopes["ocr"]) {
+              envelopes["ocr"].activity_progress = { current, total };
+            }
+            this.display();
+          },
+          onNotice: (message: string) => new Notice(message, 8000),
+        },
+      })
+      .then((outcome: OcrProcessOutcome) => {
+        if (envelopes["ocr"]) {
+          envelopes["ocr"].activity_state = "idle";
+          envelopes["ocr"].activity_label = null;
+          envelopes["ocr"].activity_progress = null;
+        }
+        if (outcome.ok) {
+          new Notice(completeNotice[mode] || "OCR completed");
+        } else if (outcome.stopped) {
+          this.plugin._ocrWasStopped = false;
+          new Notice(t("ocr_stopped_notice"));
+        } else {
+          // #126: surface the failing keys instead of claiming success.
+          const failed = outcome.failedKeys.join(", ");
+          const detail =
+            outcome.skippedKeys.length > 0
+              ? `${failed ? failed + " " : ""}(${outcome.skippedKeys.length} skipped)`
+              : failed;
           new Notice(
-            t("ocr_failed_notice") +
-              ": " +
-              (err && err.message
-                ? err.message
-                : "PaddleOCR API token is missing (SecretStorage)"),
+            t("ocr_failed_notice") + (detail ? ": " + detail : ""),
             8000
           );
-          this._probeModule("ocr");
-          this.display();
-        });
-    } else {
-      startOcr(paperforgeEnrichedEnv());
-    }
+        }
+        this._probeModule("ocr");
+        this.display();
+      })
+      .catch((err: Error) => {
+        if (envelopes["ocr"]) {
+          envelopes["ocr"].activity_state = "idle";
+          envelopes["ocr"].activity_label = null;
+          envelopes["ocr"].activity_progress = null;
+        }
+        new Notice(
+          t("ocr_failed_notice") +
+            ": " +
+            (err?.message || t("ocr_error_notice")),
+          8000
+        );
+        this._probeModule("ocr");
+        this.display();
+      });
   } /** Dispatch memory build: distinct build vs embed modes, overlay activity, terminal re-probe (Issue #78). */
   _dispatchMemoryBuild(kind: "build" | "embed"): void {
     const vp = (this.app.vault.adapter as any).basePath as string;

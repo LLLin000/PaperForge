@@ -15,6 +15,7 @@
 export type ProgressEventType =
   | "START"
   | "PROGRESS"
+  | "RESULT"
   | "DONE"
   | "PHASE"
   | "NOTICE";
@@ -25,6 +26,12 @@ export interface ProgressEvent {
   total?: number;
   current?: number;
   key?: string;
+  /** #126: OCR_REBUILD_RESULT:<key>:ok|failed|skipped */
+  resultStatus?: string;
+  /** #126: OCR_REBUILD_DONE:<success>:<failed>:<skipped> */
+  success?: number;
+  failed?: number;
+  skipped?: number;
   phase?: string;
   notice?: string;
 }
@@ -73,8 +80,30 @@ export function processProgressChunk(
         break;
       }
 
+      if (line.startsWith(prefix + "_RESULT:")) {
+        // #126: {PREFIX}_RESULT:<key>:ok|failed|skipped — key never contains
+        // the protocol separator; status is the final field.
+        const rest = line.slice(pLen + 8); /* "_RESULT:".length */
+        const parts = rest.split(":");
+        events.push({
+          prefix,
+          event: "RESULT",
+          key: parts[0] ?? "",
+          resultStatus: parts[1] ?? "",
+        });
+        break;
+      }
+
       if (line === prefix + "_DONE" || line.startsWith(prefix + "_DONE:")) {
-        events.push({ prefix, event: "DONE" });
+        const rest = line.slice(pLen + 6); /* "_DONE:".length */
+        const parts = rest.split(":");
+        events.push({
+          prefix,
+          event: "DONE",
+          success: parseInt(parts[0], 10) || 0,
+          failed: parseInt(parts[1], 10) || 0,
+          skipped: parseInt(parts[2], 10) || 0,
+        });
         break;
       }
 
@@ -84,7 +113,7 @@ export function processProgressChunk(
         events.push({
           prefix,
           event: "PHASE",
-          phase: line.slice(pLen + 7), /* "_PHASE:".length */
+          phase: line.slice(pLen + 7) /* "_PHASE:".length */,
         });
         break;
       }
@@ -93,7 +122,7 @@ export function processProgressChunk(
         events.push({
           prefix,
           event: "NOTICE",
-          notice: line.slice(pLen + 8), /* "_NOTICE:".length */
+          notice: line.slice(pLen + 8) /* "_NOTICE:".length */,
         });
         break;
       }
@@ -128,8 +157,25 @@ export function parseProgressLine(line: string): ProgressEvent | null {
       };
     }
 
+    if (line.startsWith(prefix + "_RESULT:")) {
+      const parts = line.slice(pLen + 8).split(":");
+      return {
+        prefix,
+        event: "RESULT",
+        key: parts[0] ?? "",
+        resultStatus: parts[1] ?? "",
+      };
+    }
+
     if (line === prefix + "_DONE" || line.startsWith(prefix + "_DONE:")) {
-      return { prefix, event: "DONE" };
+      const parts = line.slice(pLen + 6).split(":");
+      return {
+        prefix,
+        event: "DONE",
+        success: parseInt(parts[0], 10) || 0,
+        failed: parseInt(parts[1], 10) || 0,
+        skipped: parseInt(parts[2], 10) || 0,
+      };
     }
 
     if (line.startsWith(prefix + "_PHASE:")) {
