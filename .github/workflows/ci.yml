@@ -131,6 +131,19 @@ jobs:
         run: python -m pytest tests/e2e/ -m e2e -v --tb=short --timeout=120
       - name: Run audit tests
         run: python -m pytest tests/audit/ -m audit -v --tb=short --timeout=120
+      - name: Architecture deterministic gate (#134)
+        # Consumes DeterministicAudit only. Review/HTML never affect exit
+        # status. Allowlist stays empty until rules are reviewed low-FP;
+        # ineligible audits (e.g. missing TS compiler) are reported skipped
+        # with machine-readable reasons, never silently all-clear.
+        run: |
+          python -m paperforge.architecture_audit.collectors.orchestrator \
+            --root . \
+            --contract docs/architecture-audit-2026-08-06/contract.json \
+            --out /tmp/pf-architecture-audit
+          python -m paperforge.architecture_audit.report.gate \
+            --audit /tmp/pf-architecture-audit/audit.json \
+            --json
 
   # ---------------------------------------------------------------------------
   # Merge gate
