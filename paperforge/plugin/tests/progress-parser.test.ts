@@ -12,7 +12,10 @@ import {
 
 describe("processProgressChunk", () => {
   it("parses OCR_REBUILD_START:total", () => {
-    const { events, buffer } = processProgressChunk("OCR_REBUILD_START:5\n", "");
+    const { events, buffer } = processProgressChunk(
+      "OCR_REBUILD_START:5\n",
+      ""
+    );
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
       prefix: "OCR_REBUILD",
@@ -25,7 +28,7 @@ describe("processProgressChunk", () => {
   it("parses OCR_REBUILD_PROGRESS:current:total:key", () => {
     const { events, buffer } = processProgressChunk(
       "OCR_REBUILD_PROGRESS:1:5:some-key\n",
-      "",
+      ""
     );
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
@@ -44,6 +47,9 @@ describe("processProgressChunk", () => {
     expect(events[0]).toEqual({
       prefix: "OCR_REBUILD",
       event: "DONE",
+      success: 0,
+      failed: 0,
+      skipped: 0,
     });
   });
 
@@ -64,13 +70,18 @@ describe("processProgressChunk", () => {
       total: 3,
       key: "key-1",
     });
-    expect(events[2]).toEqual({ prefix: "OCR_REDO", event: "DONE" });
+    expect(events[2]).toEqual({
+      prefix: "OCR_REDO",
+      event: "DONE",
+      success: 0,
+      failed: 0,
+      skipped: 0,
+    });
     expect(buffer).toBe("");
   });
 
   it("parses EMBED tokens for backward compatibility", () => {
-    const chunk =
-      "EMBED_START:10\nEMBED_PROGRESS:2:10:paper-abc\nEMBED_DONE\n";
+    const chunk = "EMBED_START:10\nEMBED_PROGRESS:2:10:paper-abc\nEMBED_DONE\n";
     const { events, buffer } = processProgressChunk(chunk, "");
     expect(events).toHaveLength(3);
     expect(events[0]).toEqual({ prefix: "EMBED", event: "START", total: 10 });
@@ -81,14 +92,20 @@ describe("processProgressChunk", () => {
       total: 10,
       key: "paper-abc",
     });
-    expect(events[2]).toEqual({ prefix: "EMBED", event: "DONE" });
+    expect(events[2]).toEqual({
+      prefix: "EMBED",
+      event: "DONE",
+      success: 0,
+      failed: 0,
+      skipped: 0,
+    });
     expect(buffer).toBe("");
   });
 
   it("buffers an incomplete last line", () => {
     const { events, buffer } = processProgressChunk(
       "OCR_REBUILD_PROGRESS:1:5:",
-      "",
+      ""
     );
     expect(events).toHaveLength(0);
     expect(buffer).toBe("OCR_REBUILD_PROGRESS:1:5:");
@@ -114,7 +131,7 @@ describe("processProgressChunk", () => {
   it("passes through non-token lines silently and keeps buffer", () => {
     const { events, buffer } = processProgressChunk(
       "normal stdout line\nanother\n",
-      "",
+      ""
     );
     expect(events).toHaveLength(0);
     expect(buffer).toBe("");
@@ -125,7 +142,11 @@ describe("processProgressChunk", () => {
       "info: starting\nOCR_REBUILD_START:2\nsome log\nOCR_REBUILD_PROGRESS:1:2:k1\nmore output\nOCR_REBUILD_DONE\ndone\n";
     const { events, buffer } = processProgressChunk(chunk, "");
     expect(events).toHaveLength(3);
-    expect(events[0]).toEqual({ prefix: "OCR_REBUILD", event: "START", total: 2 });
+    expect(events[0]).toEqual({
+      prefix: "OCR_REBUILD",
+      event: "START",
+      total: 2,
+    });
     expect(events[1]).toEqual({
       prefix: "OCR_REBUILD",
       event: "PROGRESS",
@@ -133,7 +154,13 @@ describe("processProgressChunk", () => {
       total: 2,
       key: "k1",
     });
-    expect(events[2]).toEqual({ prefix: "OCR_REBUILD", event: "DONE" });
+    expect(events[2]).toEqual({
+      prefix: "OCR_REBUILD",
+      event: "DONE",
+      success: 0,
+      failed: 0,
+      skipped: 0,
+    });
     expect(buffer).toBe("");
   });
 
@@ -209,6 +236,9 @@ describe("processProgressChunk", () => {
     expect(second.events[0]).toEqual({
       prefix: "EMBED",
       event: "DONE",
+      success: 0,
+      failed: 0,
+      skipped: 0,
     });
     expect(second.buffer).toBe("");
   });
@@ -216,10 +246,14 @@ describe("processProgressChunk", () => {
     // First chunk: START is complete, PROGRESS line is split without trailing \n
     const first = processProgressChunk(
       "log line\nEMBED_START:2\nmore log\nEMBED_PROGRESS:1:2:",
-      "",
+      ""
     );
     expect(first.events).toHaveLength(1);
-    expect(first.events[0]).toEqual({ prefix: "EMBED", event: "START", total: 2 });
+    expect(first.events[0]).toEqual({
+      prefix: "EMBED",
+      event: "START",
+      total: 2,
+    });
     // Buffer holds only the last incomplete fragment
     expect(first.buffer).toBe("EMBED_PROGRESS:1:2:");
 
@@ -227,26 +261,51 @@ describe("processProgressChunk", () => {
     const second = processProgressChunk("k1\nEMBED_DONE\n", first.buffer);
     expect(second.events).toHaveLength(2);
     expect(second.events[0]).toEqual({
-      prefix: "EMBED", event: "PROGRESS",
-      current: 1, total: 2, key: "k1",
+      prefix: "EMBED",
+      event: "PROGRESS",
+      current: 1,
+      total: 2,
+      key: "k1",
     });
-    expect(second.events[1]).toEqual({ prefix: "EMBED", event: "DONE" });
+    expect(second.events[1]).toEqual({
+      prefix: "EMBED",
+      event: "DONE",
+      success: 0,
+      failed: 0,
+      skipped: 0,
+    });
     expect(second.buffer).toBe("");
   });
 
   it("parses all EMBED tokens across chunk boundaries", () => {
     const first = processProgressChunk("EMBED_START:2\nEMBED_PR", "");
     expect(first.events).toHaveLength(1);
-    expect(first.events[0]).toEqual({ prefix: "EMBED", event: "START", total: 2 });
+    expect(first.events[0]).toEqual({
+      prefix: "EMBED",
+      event: "START",
+      total: 2,
+    });
     expect(first.buffer).toBe("EMBED_PR");
 
-    const second = processProgressChunk("OGRESS:1:2:k1\nEMBED_DONE\n", first.buffer);
+    const second = processProgressChunk(
+      "OGRESS:1:2:k1\nEMBED_DONE\n",
+      first.buffer
+    );
     expect(second.events).toHaveLength(2);
     expect(second.events[0]).toEqual({
-      prefix: "EMBED", event: "PROGRESS",
-      current: 1, total: 2, key: "k1",
+      prefix: "EMBED",
+      event: "PROGRESS",
+      current: 1,
+      total: 2,
+      key: "k1",
     });
-    expect(second.events[1]).toEqual({ prefix: "EMBED", event: "DONE" });
+    expect(second.events[1]).toEqual({
+      prefix: "EMBED",
+      event: "DONE",
+      success: 0,
+      failed: 0,
+      skipped: 0,
+    });
     expect(second.buffer).toBe("");
   });
 });
@@ -276,6 +335,9 @@ describe("parseProgressLine", () => {
     expect(parseProgressLine("EMBED_DONE")).toEqual({
       prefix: "EMBED",
       event: "DONE",
+      success: 0,
+      failed: 0,
+      skipped: 0,
     });
   });
 
