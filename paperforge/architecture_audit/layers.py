@@ -1009,6 +1009,37 @@ def fact_from_dict(data: dict[str, Any]) -> SurveyFact:
 
 
 @dataclass(frozen=True)
+class RepositoryState:
+    """Reproducibility state of the surveyed tree (semantic — part of the
+    survey digest). Dirty state affects gate eligibility, so it must be bound
+    into the deterministic chain, never left in run_metadata only."""
+
+    revision: str = ""
+    dirty: bool = False
+    dirty_diff_digest: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {"revision": self.revision, "dirty": self.dirty}
+        if self.dirty_diff_digest:
+            out["dirty_diff_digest"] = self.dirty_diff_digest
+        return out
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any] | None) -> RepositoryState:
+        if not data:
+            return cls()
+        return cls(
+            revision=str(data.get("revision", "")),
+            dirty=bool(data.get("dirty", False)),
+            dirty_diff_digest=str(data.get("dirty_diff_digest", "")),
+        )
+
+
+    def is_default(self) -> bool:
+        return not self.dirty and not self.revision and not self.dirty_diff_digest
+
+
+@dataclass(frozen=True)
 class ArchitectureSurvey:
     schema_version: int
     scope: str
@@ -1018,6 +1049,8 @@ class ArchitectureSurvey:
     parse_errors: tuple[str, ...] = ()
     excluded_roots: tuple[str, ...] = ()
     wrapper_summaries: tuple[WrapperSummary, ...] = ()
+    # reproducibility state (semantic — binds dirty into the digest chain)
+    repository_state: RepositoryState = field(default_factory=RepositoryState)
     # execution-only metadata (never part of semantic digest)
     run_metadata: Mapping[str, Any] = field(default_factory=dict)
 
@@ -1037,6 +1070,8 @@ class ArchitectureSurvey:
         }
         if self.wrapper_summaries:
             out["wrapper_summaries"] = [w.to_dict() for w in self.wrapper_summaries]
+        if not self.repository_state.is_default():
+            out["repository_state"] = self.repository_state.to_dict()
         return out
 
     @classmethod
@@ -1052,11 +1087,13 @@ class ArchitectureSurvey:
             wrapper_summaries=tuple(
                 WrapperSummary.from_dict(w) for w in data.get("wrapper_summaries", [])
             ),
+            repository_state=RepositoryState.from_dict(data.get("repository_state")),
             run_metadata=dict(data.get("run_metadata", {})),
         )
 
     def semantic_content(self) -> dict[str, Any]:
-        """Semantic payload: coverage, facts, source identity. Excludes run_metadata."""
+        """Semantic payload: coverage, facts, source identity, repo state.
+        Excludes run_metadata."""
         out: dict[str, Any] = {
             "schema_version": self.schema_version,
             "scope": self.scope,
@@ -1068,6 +1105,8 @@ class ArchitectureSurvey:
         }
         if self.wrapper_summaries:
             out["wrapper_summaries"] = [w.to_dict() for w in self.wrapper_summaries]
+        if not self.repository_state.is_default():
+            out["repository_state"] = self.repository_state.to_dict()
         return out
 
 

@@ -482,6 +482,25 @@ def _assess(
         if entry.status is CoverageStatus.FAILED
     )
     failed_reasons.extend(f"parse_error: {error}" for error in survey.parse_errors)
+    incomplete = [entry for entry in coverage if entry.status is not CoverageStatus.COMPLETE]
+    if not coverage:
+        incomplete = [CoverageEntry(extractor="coverage", status=CoverageStatus.UNAVAILABLE)]
+    # #130 review: repository dirtiness is semantic (bound via
+    # survey.repository_state) and forces the gate closed — the Audit is the
+    # single authority; View/Summary/HTML only project it. A dirty tree
+    # cannot be independently reproduced, so the assessment is failed and
+    # every contributing reason is reported together.
+    if survey.repository_state.dirty:
+        reasons = ["repository_dirty"]
+        reasons.extend(
+            f"{entry.extractor}_coverage_{entry.status.value}" for entry in incomplete
+        )
+        reasons.extend(failed_reasons)
+        return Assessment(
+            status=AssessmentStatus.FAILED,
+            gate_eligible=False,
+            reasons=tuple(sorted(set(reasons))),
+        )
     if failed_reasons:
         return Assessment(
             status=AssessmentStatus.FAILED,

@@ -215,8 +215,6 @@
   "parse_errors": [],
   "excluded_roots": [],
   "run_metadata": {
-    "repository_revision": "b009fe7598b4d77a19ba71ca8595f05bfcf75ea3",
-    "repository_dirty": true,
     "tool_version": "1.0.0",
     "extractor_versions": {
       "manual_contract_trace": "1",
@@ -224,5 +222,10 @@
       "typescript_compiler": "unavailable"
     },
     "generated_at": "2026-08-06T00:00:00Z"
+  },
+  "repository_state": {
+    "revision": "3fb4a01bcdfb79a04bf0590ad7010fccbf6b1894",
+    "dirty": true,
+    "dirty_diff_digest": "sha256:17f17c08f077195115e73bcc4a89e9f4c765c7fea8fe3b748e1a77c24db37bfa"
   }
 }
