@@ -204,7 +204,7 @@ export function restoreVersion(
       fs.mkdirSync(targetDir, { recursive: true });
     }
     fs.copyFileSync(sourcePath, targetPath);
-    _persistRestoreProvenance(root, paperKey, {
+    persistRestoreProvenance(root, paperKey, {
       label,
       restored_at: new Date().toISOString(),
       version_created_at: versionCreatedAt,
@@ -216,7 +216,7 @@ export function restoreVersion(
 }
 
 /** #129 G9: persist the restore event so drift is explainable, not silent. */
-function _persistRestoreProvenance(
+export function persistRestoreProvenance(
   ocrRootPath: string,
   paperKey: string,
   provenance: RestoreProvenance

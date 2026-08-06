@@ -1,4 +1,8 @@
-import { scanVersions, restoreVersion } from "../services/version-history";
+import {
+  scanVersions,
+  restoreVersion,
+  persistRestoreProvenance,
+} from "../services/version-history";
 import {
   ItemView,
   WorkspaceLeaf,
@@ -1343,6 +1347,13 @@ export class VersionRestoreModal extends Modal {
             fs.mkdirSync(targetDir, { recursive: true });
           fs.copyFileSync(source, target);
           ok = true;
+          // #129: legacy backup restores must record provenance too —
+          // version_created_at derives from the backup timestamp.
+          persistRestoreProvenance(this.ocrDir, this.paperKey, {
+            label: ver.label,
+            restored_at: new Date().toISOString(),
+            version_created_at: ver.created_at,
+          });
         }
       } catch (e) {
         console.warn("[PaperForge] Restore backup failed:", e);
@@ -1358,11 +1369,18 @@ export class VersionRestoreModal extends Modal {
     if (ok) {
       new Notice(t("ocr_ws_detail_restore_done").replace("{label}", ver.label));
       // #129: warn when the restored display version predates the current
-      // structured state — a rebuild is needed to re-sync structure.
-      if (this.paperFinishedAt && ver.created_at < this.paperFinishedAt) {
+      // structured state — a rebuild is needed to re-sync structure. Compare
+      // as Dates so display-formatted timestamps cannot corrupt the check.
+      const restoredAt = new Date(ver.created_at).getTime();
+      const finishedAt = new Date(this.paperFinishedAt).getTime();
+      if (
+        Number.isFinite(restoredAt) &&
+        Number.isFinite(finishedAt) &&
+        restoredAt < finishedAt
+      ) {
         new Notice(
           t("ocr_ws_restore_stale_notice") ||
-            "该版本早于当前结构状态；如需结构一致请重建此论文",
+            "This version predates the current structured state; rebuild the paper to re-sync structure",
           8000
         );
       }
