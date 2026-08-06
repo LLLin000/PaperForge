@@ -1,0 +1,58 @@
+[
+  {
+    "name": "sync → memory → embed",
+    "status": "ok",
+    "steps": [
+      "CLI sync (direct invocation)",
+      "svc.run(): zotero sync + index",
+      "_attach_next_actions: memory.build local / embed.resume remote",
+      "terminal: local only · json: no follow-up · plugin: confirmed embed"
+    ],
+    "evidence": [
+      "evidence:ced43920a12e6648",
+      "evidence:34e16ba8a9fad599"
+    ]
+  },
+  {
+    "name": "ocr rebuild → publication → memory",
+    "status": "ok",
+    "steps": [
+      "ocr rebuild (keys/--all)",
+      "START/PROGRESS/RESULT/DONE tokens per key",
+      "result-hash.pending → phases → publish + clear (commit point)",
+      "memory build on successKeys>0 · embed resume confirmed"
+    ],
+    "evidence": [
+      "evidence:9462c4cb423cc555",
+      "evidence:7a75373d118e3703",
+      "evidence:6ce174204d0d926b"
+    ]
+  },
+  {
+    "name": "version restore (display only)",
+    "status": "ok",
+    "steps": [
+      "restore 恢复展示全文文本",
+      "confirmation: display-only boundary",
+      "copy versions/<label>/fulltext.md → render/",
+      "provenance + drift override (DRIFTED if older)"
+    ],
+    "evidence": [
+      "evidence:9962b81d0aa5d138",
+      null
+    ]
+  },
+  {
+    "name": "redo (internal only)",
+    "status": "ok",
+    "steps": [
+      "CLI ocr redo (maintainers)",
+      "transaction snapshot → mutate → validate → commit/rollback",
+      "crash-orphan recovery from paperforge-redo-*",
+      "no user-facing entry (ribbon/command/probe/maintenance)"
+    ],
+    "evidence": [
+      "evidence:e5b1973ab94d241b"
+    ]
+  }
+]

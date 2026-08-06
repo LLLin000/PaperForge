@@ -3,14 +3,25 @@
   "scope": "paperforge",
   "coverage": [
     {
-      "extractor": "python_ast",
+      "extractor": "manual_contract_trace",
       "status": "complete",
       "required": true
     },
     {
-      "extractor": "typescript",
-      "status": "complete",
-      "required": true
+      "extractor": "python_ast",
+      "status": "unavailable",
+      "required": true,
+      "diagnostics": [
+        "#133 collector not implemented; manual trace only"
+      ]
+    },
+    {
+      "extractor": "typescript_compiler",
+      "status": "unavailable",
+      "required": true,
+      "diagnostics": [
+        "#133 collector not implemented; manual trace only"
+      ]
     }
   ],
   "facts": [
@@ -25,7 +36,7 @@
         "symbol": "_attach_next_actions",
         "line_start": 87,
         "line_end": 94,
-        "extractor": "manual_audit",
+        "extractor": "test:test_sync_next_actions",
         "epistemic_status": "observed_static",
         "confidence": "exact"
       }
@@ -39,8 +50,8 @@
         "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
         "symbol": "_run_terminal_followups",
         "line_start": 85,
-        "line_end": 90,
-        "extractor": "manual_audit",
+        "line_end": 92,
+        "extractor": "test:test_sync_next_actions",
         "epistemic_status": "observed_static",
         "confidence": "exact"
       }
@@ -54,8 +65,8 @@
         "file_digest": "sha256:99d025cf43103b824604e7105c8cf56230807f9fab8efb1af8db02099aa0c1f9",
         "symbol": "OCR_REBUILD_RESULT",
         "line_start": 545,
-        "line_end": 547,
-        "extractor": "manual_audit",
+        "line_end": 552,
+        "extractor": "test:test_ocr_progress_contracts",
         "epistemic_status": "observed_static",
         "confidence": "exact"
       }
@@ -72,41 +83,23 @@
         "file_digest": "sha256:99d025cf43103b824604e7105c8cf56230807f9fab8efb1af8db02099aa0c1f9",
         "symbol": "OCR_REBUILD_RESULT",
         "line_start": 545,
-        "line_end": 547,
-        "extractor": "manual_audit",
+        "line_end": 552,
+        "extractor": "test:test_ocr_progress_contracts",
         "epistemic_status": "observed_static",
         "confidence": "exact"
       },
       "consumer_evidence": [
         {
           "file": "paperforge/plugin/src/services/progress-parser.ts",
-          "file_digest": "sha256:a37e2d4d60c64e02cc779de48ee8e2bd823d2fa2fd737447a75f37c09a44ad10",
-          "symbol": "OCR_RUN",
+          "file_digest": "sha256:2de4e65f0151edaa10ca39a05888b2cf410553d16494dafc2577ce84ff6e3723",
+          "symbol": "OCR_REBUILD",
           "line_start": 2,
-          "line_end": 5,
-          "extractor": "manual_audit",
+          "line_end": 9,
+          "extractor": "test:progress-parser",
           "epistemic_status": "observed_static",
           "confidence": "exact"
         }
       ]
-    },
-    {
-      "kind": "signal",
-      "signal_id": "OCR_RUN",
-      "consumer_kind": "code",
-      "has_code_consumer": false,
-      "producer": null,
-      "consumer": null,
-      "evidence": {
-        "file": "paperforge/plugin/src/services/progress-parser.ts",
-        "file_digest": "sha256:a37e2d4d60c64e02cc779de48ee8e2bd823d2fa2fd737447a75f37c09a44ad10",
-        "symbol": "OCR_RUN",
-        "line_start": 2,
-        "line_end": 5,
-        "extractor": "manual_audit",
-        "epistemic_status": "observed_static",
-        "confidence": "exact"
-      }
     },
     {
       "kind": "canonical_write",
@@ -119,8 +112,8 @@
         "file_digest": "sha256:df9785622816acfdb45f7e5a577e8c650c235e99e3f4e2e6e82efcba37baa04e",
         "symbol": "publish_ocr_result_hash",
         "line_start": 12,
-        "line_end": 21,
-        "extractor": "manual_audit",
+        "line_end": 19,
+        "extractor": "test:test_ocr_hash_contract",
         "epistemic_status": "observed_static",
         "confidence": "exact"
       }
@@ -137,21 +130,67 @@
         "symbol": "create_result_hash_pending",
         "line_start": 53,
         "line_end": 60,
-        "extractor": "manual_audit",
+        "extractor": "test:test_ocr_hash_contract",
+        "epistemic_status": "observed_static",
+        "confidence": "exact"
+      }
+    },
+    {
+      "kind": "canonical_write",
+      "unit_id": "ocr_display.fulltext",
+      "actor_kind": "worker",
+      "writer_id": "version_history.restore",
+      "via_publication_protocol": true,
+      "evidence": {
+        "file": "paperforge/plugin/src/services/version-history.ts",
+        "file_digest": "sha256:9eb83e41a90c598524d8949b4f875ffcd4aa317e4a3029e77ff31ea771cbe36d",
+        "symbol": "restoreVersion",
+        "line_start": 4,
+        "line_end": 11,
+        "extractor": "test:version-restore-semantics",
+        "epistemic_status": "observed_static",
+        "confidence": "exact"
+      },
+      "consumer_evidence": [
+        {
+          "file": "paperforge/plugin/src/services/version-history.ts",
+          "file_digest": "sha256:9eb83e41a90c598524d8949b4f875ffcd4aa317e4a3029e77ff31ea771cbe36d",
+          "symbol": "persistRestoreProvenance",
+          "line_start": 207,
+          "line_end": 214,
+          "extractor": "test:version-restore-semantics",
+          "epistemic_status": "observed_static",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "kind": "effect",
+      "operation_id": "ocr_redo",
+      "effect_kind": "materialization_build",
+      "evidence": {
+        "file": "paperforge/worker/ocr.py",
+        "file_digest": "sha256:9559fca269585829aed1e1b5724bf3443549ac107fd4bff54a90a0a713f8a592",
+        "symbol": "recover_redo_orphans",
+        "line_start": 2172,
+        "line_end": 2179,
+        "extractor": "test:test_redo_orphan_recovery",
         "epistemic_status": "observed_static",
         "confidence": "exact"
       }
     }
   ],
-  "source_digest": "sha256:8e096feffa92adcaabe2d4d8d2e89d4171f152bafa30ca54ba5b6a1a481641cb",
+  "source_digest": "sha256:3c4fbffde7924821f6157740db095f145769bf434c88bea7b831c40ac363c0c8",
   "parse_errors": [],
   "excluded_roots": [],
   "run_metadata": {
-    "repository_revision": "HEAD",
+    "repository_revision": "e94895a1d9f55cbb467f12fab96f198f1e68b2c4",
     "repository_dirty": true,
     "tool_version": "1.0.0",
     "extractor_versions": {
-      "manual_audit": "1"
+      "manual_contract_trace": "1",
+      "python_ast": "unavailable",
+      "typescript_compiler": "unavailable"
     },
     "generated_at": "2026-08-06T00:00:00Z"
   }

@@ -9,6 +9,30 @@
   ],
   "publication_units": [
     {
+      "unit_id": "library.formal_note",
+      "asset_group": "library",
+      "publication_authority": "sync.publisher",
+      "authorized_writers": [
+        "sync.writer"
+      ]
+    },
+    {
+      "unit_id": "library.formal_index",
+      "asset_group": "library",
+      "publication_authority": "index.publisher",
+      "authorized_writers": [
+        "asset_index.writer"
+      ]
+    },
+    {
+      "unit_id": "ocr_raw.provider_result",
+      "asset_group": "ocr_raw",
+      "publication_authority": "ocr.publisher",
+      "authorized_writers": [
+        "ocr.provider"
+      ]
+    },
+    {
       "unit_id": "ocr_derived.generation",
       "asset_group": "ocr_derived",
       "publication_authority": "ocr.publisher",
@@ -16,6 +40,46 @@
         "ocr.postprocess",
         "ocr.rebuild",
         "ocr.legacy_backfill"
+      ]
+    },
+    {
+      "unit_id": "ocr_display.fulltext",
+      "asset_group": "ocr_derived",
+      "publication_authority": "version_history.authority",
+      "authorized_writers": [
+        "version_history.restore"
+      ]
+    },
+    {
+      "unit_id": "retrieval.units",
+      "asset_group": "retrieval",
+      "publication_authority": "memory.publisher",
+      "authorized_writers": [
+        "memory.builder"
+      ]
+    },
+    {
+      "unit_id": "retrieval.fts",
+      "asset_group": "retrieval",
+      "publication_authority": "memory.publisher",
+      "authorized_writers": [
+        "memory.builder"
+      ]
+    },
+    {
+      "unit_id": "vectors.candidate_generation",
+      "asset_group": "vectors",
+      "publication_authority": "embed.publisher",
+      "authorized_writers": [
+        "embed.builder"
+      ]
+    },
+    {
+      "unit_id": "vectors.live_generation",
+      "asset_group": "vectors",
+      "publication_authority": "embed.publisher",
+      "authorized_writers": [
+        "embed.publisher"
       ]
     }
   ],
@@ -30,8 +94,7 @@
     "restore_display"
   ],
   "required_extractors": [
-    "python_ast",
-    "typescript"
+    "manual_contract_trace"
   ],
   "rules": [
     {
@@ -65,14 +128,6 @@
       "description": "rebuild progress signals have a code consumer (#126)"
     },
     {
-      "rule_id": "signal.ocr_run_dead_contract",
-      "kind": "signal_consumer",
-      "subject": "OCR_RUN",
-      "lifecycle": "active",
-      "enforcement": "advisory",
-      "description": "OCR_RUN is declared in the plugin parser but has no backend emitter (#126 G4)"
-    },
-    {
       "rule_id": "publication.uses_protocol",
       "kind": "publication_marker",
       "subject": "ocr_derived.generation",
@@ -90,11 +145,27 @@
     },
     {
       "rule_id": "restore.display_only",
-      "kind": "publication_marker",
-      "subject": "ocr_derived.generation",
+      "kind": "canonical_writer",
+      "subject": "ocr_display.fulltext",
       "lifecycle": "active",
       "enforcement": "blocking",
-      "description": "display restore never implies structural rollback (#129)"
+      "description": "restore writes ONLY ocr_display.fulltext (render/fulltext.md) via the version-history service; never blocks/tree/role-index/units/vectors; records provenance and drift (#129)"
+    },
+    {
+      "rule_id": "publication.authority_ocr_display",
+      "kind": "publication_authority",
+      "subject": "ocr_display.fulltext",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "display fulltext has exactly one publication authority (version_history.authority)"
+    },
+    {
+      "rule_id": "publication.authority_retrieval",
+      "kind": "publication_authority",
+      "subject": "retrieval.units",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "retrieval units have exactly one publication authority (memory.publisher)"
     },
     {
       "rule_id": "coverage.required_complete",
