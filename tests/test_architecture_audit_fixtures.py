@@ -26,7 +26,7 @@ class TestFixtureIntegrity:
         # golden_126/129 still pin the #125-era observation; golden_127 was
         # re-observed after #127 reworked commands/sync.py (7372383b).
         expected_revisions = {
-            "golden_126_ocr_rebuild": "1f02281b",
+            "golden_126_ocr_rebuild": "dea041db",
             "golden_127_sync_embed": "7372383b",
             "golden_129_display_restore": "1f02281b",
         }

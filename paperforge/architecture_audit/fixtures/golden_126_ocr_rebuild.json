@@ -25,7 +25,9 @@
       "memory_build",
       "embed_build_resume"
     ],
-    "required_extractors": ["python_ast"],
+    "required_extractors": [
+      "python_ast"
+    ],
     "rules": [
       {
         "rule_id": "remote_intent.embed_resume",
@@ -33,7 +35,9 @@
         "subject": "embed_build_resume",
         "lifecycle": "planned",
         "enforcement": "blocking",
-        "effective_after": {"issue": "#126"},
+        "effective_after": {
+          "issue": "#126"
+        },
         "accepted_intent_modes": [
           "direct_invocation",
           "ui_modal",
@@ -48,7 +52,9 @@
         "subject": "ocr_derived.generation",
         "lifecycle": "planned",
         "enforcement": "blocking",
-        "effective_after": {"issue": "#126"},
+        "effective_after": {
+          "issue": "#126"
+        },
         "description": "derived publication uses pending marker + atomic result-hash.txt"
       },
       {
@@ -65,7 +71,9 @@
         "subject": "OCR_REBUILD_PROGRESS",
         "lifecycle": "planned",
         "enforcement": "blocking",
-        "effective_after": {"issue": "#126"},
+        "effective_after": {
+          "issue": "#126"
+        },
         "description": "every rebuild emits START/RESULT/PROGRESS/DONE"
       }
     ],
@@ -75,7 +83,10 @@
     "schema_version": 1,
     "scope": "paperforge",
     "coverage": [
-      {"extractor": "python_ast", "status": "complete"}
+      {
+        "extractor": "python_ast",
+        "status": "complete"
+      }
     ],
     "facts": [
       {
@@ -84,10 +95,10 @@
         "effect_kind": "materialization_build",
         "evidence": {
           "file": "paperforge/worker/ocr_rebuild.py",
-          "file_digest": "sha256:4e564b0894edc7218408a09474966c6bb0ee73884f19571682ce6244ddc0f3ab",
+          "file_digest": "sha256:de27f367e6642fb5e1b146f8e4cfdbafe1d2ebbaea58fb2226625d7956b89d4b",
           "symbol": "run_derived_rebuild_for_keys",
-          "line_start": 616,
-          "line_end": 663,
+          "line_start": 663,
+          "line_end": 718,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
           "confidence": "exact"
@@ -101,24 +112,26 @@
         "via_publication_protocol": false,
         "evidence": {
           "file": "paperforge/worker/ocr_rebuild.py",
-          "file_digest": "sha256:4e564b0894edc7218408a09474966c6bb0ee73884f19571682ce6244ddc0f3ab",
+          "file_digest": "sha256:de27f367e6642fb5e1b146f8e4cfdbafe1d2ebbaea58fb2226625d7956b89d4b",
           "symbol": "run_derived_rebuild_for_keys",
-          "line_start": 616,
-          "line_end": 663,
+          "line_start": 663,
+          "line_end": 718,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
           "confidence": "exact"
         }
       }
     ],
-    "source_digest": "sha256:0c9f91cf18ab36aa43d5c7c2f00fd6869c5cf6f46b7bc4b0e722e336262d1f2d",
+    "source_digest": "sha256:da7c4bff31c50d23492a2613e4c182e28688d01b599c5790935f9e94af7b5335",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
-      "repository_revision": "1f02281b",
+      "repository_revision": "dea041db",
       "repository_dirty": false,
       "tool_version": "1.0.0",
-      "extractor_versions": {"python_ast": "1"},
+      "extractor_versions": {
+        "python_ast": "1"
+      },
       "generated_at": "2026-08-05T00:00:00Z"
     }
   }
