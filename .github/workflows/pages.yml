@@ -1,0 +1,55 @@
+name: Architecture Report Pages
+
+# Deploys the live architecture audit report to GitHub Pages.
+# The report is regenerated at HEAD on every relevant push, so the published
+# revision/dirty metadata always matches the deployed tree. The HTML is a
+# disposable ArchitectureReportView — this page never gates releases (see
+# #134: CI gate consumes DeterministicAudit only).
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/architecture-audit-2026-08-06/**"
+      - "paperforge/architecture_audit/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Regenerate the audit report at HEAD
+        # build_audit.py imports paperforge.architecture_audit via repo path
+        # (stdlib only) and writes survey/audit/review/view/traces/summary;
+        # render_html.py emits the self-contained index.html.
+        run: |
+          python docs/architecture-audit-2026-08-06/build_audit.py
+          python docs/architecture-audit-2026-08-06/render_html.py
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/architecture-audit-2026-08-06
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
