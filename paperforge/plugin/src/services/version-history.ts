@@ -1,8 +1,27 @@
+/**
+ * Version-history service — DISPLAY-fulltext versioning (#129).
+ *
+ * Restore semantics are display-only: `restoreVersion()` copies
+ * `versions/<label>/fulltext.md` → `render/fulltext.md`. It NEVER restores
+ * structure (`blocks.structured.jsonl`), indexes (structure-tree/role-index),
+ * memory units, or vectors. The UI labels this "恢复展示全文文本" and the
+ * confirmation dialog states the boundary explicitly.
+ *
+ * Restore provenance ({label, restored_at, version_created_at}) is persisted
+ * into `ocr/<key>/meta.json` so the backend can surface display-vs-structure
+ * drift as a derived state.
+ */
 import * as fs from "fs";
 import * as path from "path";
 import { resolveVaultPaths } from "./memory-state";
 
 // ── Types ──
+
+export interface RestoreProvenance {
+  label: string;
+  restored_at: string;
+  version_created_at: string;
+}
 
 export interface VersionEntry {
   label: string;
@@ -157,12 +176,16 @@ export function listPapersWithBackups(vaultPath: string): PaperVersionInfo[] {
 
 /**
  * Restore a specific version's fulltext.md to the render/ directory.
+ * DISPLAY-ONLY (#129): structure, indexes, memory units, and vectors are
+ * never touched. On success, restore provenance is persisted to the paper's
+ * meta.json so the backend can derive display-vs-structure drift.
  * Returns true on success, false on failure.
  */
 export function restoreVersion(
   vaultPath: string,
   paperKey: string,
-  label: string
+  label: string,
+  versionCreatedAt = ""
 ): boolean {
   const root = ocrRoot(vaultPath);
   const sourcePath = path.join(
@@ -181,9 +204,33 @@ export function restoreVersion(
       fs.mkdirSync(targetDir, { recursive: true });
     }
     fs.copyFileSync(sourcePath, targetPath);
+    _persistRestoreProvenance(root, paperKey, {
+      label,
+      restored_at: new Date().toISOString(),
+      version_created_at: versionCreatedAt,
+    });
     return true;
   } catch {
     return false;
+  }
+}
+
+/** #129 G9: persist the restore event so drift is explainable, not silent. */
+function _persistRestoreProvenance(
+  ocrRootPath: string,
+  paperKey: string,
+  provenance: RestoreProvenance
+): void {
+  try {
+    const metaPath = path.join(ocrRootPath, paperKey, "meta.json");
+    const meta = fs.existsSync(metaPath)
+      ? JSON.parse(fs.readFileSync(metaPath, "utf-8"))
+      : {};
+    meta.restore_provenance = provenance;
+    fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2), "utf-8");
+  } catch {
+    // Provenance is best-effort metadata; a failed write must not fail the
+    // restore itself.
   }
 }
 
