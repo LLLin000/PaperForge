@@ -4,13 +4,11 @@
   "coverage": [
     {
       "extractor": "manual_contract_trace",
-      "status": "complete",
-      "required": true
+      "status": "complete"
     },
     {
       "extractor": "python_ast",
       "status": "unavailable",
-      "required": true,
       "diagnostics": [
         "#133 collector not implemented; manual trace only"
       ]
@@ -18,7 +16,6 @@
     {
       "extractor": "typescript_compiler",
       "status": "unavailable",
-      "required": true,
       "diagnostics": [
         "#133 collector not implemented; manual trace only"
       ]
@@ -28,24 +25,9 @@
     {
       "kind": "effect",
       "operation_id": "sync",
-      "effect_kind": "remote_operation",
-      "intent_mode": "explicit_flag",
-      "evidence": {
-        "file": "paperforge/commands/sync.py",
-        "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
-        "symbol": "_attach_next_actions",
-        "line_start": 87,
-        "line_end": 94,
-        "extractor": "test:test_sync_next_actions",
-        "epistemic_status": "observed_static",
-        "confidence": "exact"
-      }
-    },
-    {
-      "kind": "effect",
-      "operation_id": "sync",
       "effect_kind": "materialization_build",
       "evidence": {
+        "evidence_id": "evidence:34e16ba8a9fad599",
         "file": "paperforge/commands/sync.py",
         "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
         "symbol": "_run_terminal_followups",
@@ -61,6 +43,7 @@
       "operation_id": "ocr_rebuild",
       "effect_kind": "materialization_build",
       "evidence": {
+        "evidence_id": "evidence:9462c4cb423cc555",
         "file": "paperforge/commands/ocr.py",
         "file_digest": "sha256:99d025cf43103b824604e7105c8cf56230807f9fab8efb1af8db02099aa0c1f9",
         "symbol": "OCR_REBUILD_RESULT",
@@ -74,11 +57,12 @@
     {
       "kind": "signal",
       "signal_id": "OCR_REBUILD_PROGRESS",
+      "producer": "ocr.rebuild",
       "consumer_kind": "code",
       "has_code_consumer": true,
-      "producer": "ocr.rebuild",
       "consumer": "paperforge-plugin",
       "evidence": {
+        "evidence_id": "evidence:9462c4cb423cc555",
         "file": "paperforge/commands/ocr.py",
         "file_digest": "sha256:99d025cf43103b824604e7105c8cf56230807f9fab8efb1af8db02099aa0c1f9",
         "symbol": "OCR_REBUILD_RESULT",
@@ -90,8 +74,9 @@
       },
       "consumer_evidence": [
         {
+          "evidence_id": "evidence:db778788b595ddf5",
           "file": "paperforge/plugin/src/services/progress-parser.ts",
-          "file_digest": "sha256:2de4e65f0151edaa10ca39a05888b2cf410553d16494dafc2577ce84ff6e3723",
+          "file_digest": "sha256:2e4e7ea40125c326a0fbc4d518c80b753aa44d0139e4a8dce6856f5755a8805e",
           "symbol": "OCR_REBUILD",
           "line_start": 2,
           "line_end": 9,
@@ -105,14 +90,15 @@
       "kind": "canonical_write",
       "unit_id": "ocr_derived.generation",
       "actor_kind": "worker",
-      "writer_id": "ocr.rebuild",
       "via_publication_protocol": true,
+      "writer_id": "ocr.rebuild",
       "evidence": {
-        "file": "paperforge/worker/ocr_hash.py",
-        "file_digest": "sha256:df9785622816acfdb45f7e5a577e8c650c235e99e3f4e2e6e82efcba37baa04e",
-        "symbol": "publish_ocr_result_hash",
-        "line_start": 12,
-        "line_end": 19,
+        "evidence_id": "evidence:f36fd972e1f3a906",
+        "file": "paperforge/worker/ocr_rebuild.py",
+        "file_digest": "sha256:de27f367e6642fb5e1b146f8e4cfdbafe1d2ebbaea58fb2226625d7956b89d4b",
+        "symbol": "create_result_hash_pending(paper_root)",
+        "line_start": 176,
+        "line_end": 176,
         "extractor": "test:test_ocr_hash_contract",
         "epistemic_status": "observed_static",
         "confidence": "exact"
@@ -122,14 +108,51 @@
       "kind": "canonical_write",
       "unit_id": "ocr_derived.generation",
       "actor_kind": "worker",
-      "writer_id": "ocr.postprocess",
       "via_publication_protocol": true,
+      "writer_id": "ocr.rebuild",
       "evidence": {
-        "file": "paperforge/worker/ocr_hash.py",
-        "file_digest": "sha256:df9785622816acfdb45f7e5a577e8c650c235e99e3f4e2e6e82efcba37baa04e",
-        "symbol": "create_result_hash_pending",
-        "line_start": 53,
-        "line_end": 60,
+        "evidence_id": "evidence:dfac26b76b7090d1",
+        "file": "paperforge/worker/ocr_rebuild.py",
+        "file_digest": "sha256:de27f367e6642fb5e1b146f8e4cfdbafe1d2ebbaea58fb2226625d7956b89d4b",
+        "symbol": "publish_ocr_result_hash(paper_root)",
+        "line_start": 605,
+        "line_end": 606,
+        "extractor": "test:test_ocr_hash_contract",
+        "epistemic_status": "observed_static",
+        "confidence": "exact"
+      }
+    },
+    {
+      "kind": "canonical_write",
+      "unit_id": "ocr_derived.generation",
+      "actor_kind": "worker",
+      "via_publication_protocol": true,
+      "writer_id": "ocr.postprocess",
+      "evidence": {
+        "evidence_id": "evidence:8ca719d61bb42b77",
+        "file": "paperforge/worker/ocr.py",
+        "file_digest": "sha256:9559fca269585829aed1e1b5724bf3443549ac107fd4bff54a90a0a713f8a592",
+        "symbol": "create_result_hash_pending(ocr_root)",
+        "line_start": 1832,
+        "line_end": 1832,
+        "extractor": "test:test_ocr_hash_contract",
+        "epistemic_status": "observed_static",
+        "confidence": "exact"
+      }
+    },
+    {
+      "kind": "canonical_write",
+      "unit_id": "ocr_derived.generation",
+      "actor_kind": "worker",
+      "via_publication_protocol": true,
+      "writer_id": "ocr.postprocess",
+      "evidence": {
+        "evidence_id": "evidence:dba64135d3d8ed52",
+        "file": "paperforge/worker/ocr.py",
+        "file_digest": "sha256:9559fca269585829aed1e1b5724bf3443549ac107fd4bff54a90a0a713f8a592",
+        "symbol": "publish_ocr_result_hash(ocr_root)",
+        "line_start": 2124,
+        "line_end": 2125,
         "extractor": "test:test_ocr_hash_contract",
         "epistemic_status": "observed_static",
         "confidence": "exact"
@@ -139,9 +162,10 @@
       "kind": "canonical_write",
       "unit_id": "ocr_display.fulltext",
       "actor_kind": "worker",
-      "writer_id": "version_history.restore",
       "via_publication_protocol": true,
+      "writer_id": "version_history.restore",
       "evidence": {
+        "evidence_id": "evidence:9962b81d0aa5d138",
         "file": "paperforge/plugin/src/services/version-history.ts",
         "file_digest": "sha256:9eb83e41a90c598524d8949b4f875ffcd4aa317e4a3029e77ff31ea771cbe36d",
         "symbol": "restoreVersion",
@@ -150,25 +174,32 @@
         "extractor": "test:version-restore-semantics",
         "epistemic_status": "observed_static",
         "confidence": "exact"
-      },
-      "consumer_evidence": [
-        {
-          "file": "paperforge/plugin/src/services/version-history.ts",
-          "file_digest": "sha256:9eb83e41a90c598524d8949b4f875ffcd4aa317e4a3029e77ff31ea771cbe36d",
-          "symbol": "persistRestoreProvenance",
-          "line_start": 207,
-          "line_end": 214,
-          "extractor": "test:version-restore-semantics",
-          "epistemic_status": "observed_static",
-          "confidence": "exact"
-        }
-      ]
+      }
+    },
+    {
+      "kind": "canonical_write",
+      "unit_id": "ocr_display.fulltext",
+      "actor_kind": "worker",
+      "via_publication_protocol": true,
+      "writer_id": "version_history.restore",
+      "evidence": {
+        "evidence_id": "evidence:69f1fcf046b9dcf9",
+        "file": "paperforge/plugin/src/services/version-history.ts",
+        "file_digest": "sha256:9eb83e41a90c598524d8949b4f875ffcd4aa317e4a3029e77ff31ea771cbe36d",
+        "symbol": "persistRestoreProvenance",
+        "line_start": 207,
+        "line_end": 214,
+        "extractor": "test:version-restore-semantics",
+        "epistemic_status": "observed_static",
+        "confidence": "exact"
+      }
     },
     {
       "kind": "effect",
       "operation_id": "ocr_redo",
       "effect_kind": "materialization_build",
       "evidence": {
+        "evidence_id": "evidence:e5b1973ab94d241b",
         "file": "paperforge/worker/ocr.py",
         "file_digest": "sha256:9559fca269585829aed1e1b5724bf3443549ac107fd4bff54a90a0a713f8a592",
         "symbol": "recover_redo_orphans",
@@ -180,11 +211,11 @@
       }
     }
   ],
-  "source_digest": "sha256:3c4fbffde7924821f6157740db095f145769bf434c88bea7b831c40ac363c0c8",
+  "source_digest": "sha256:ee09ad1174297851792fbb9f2ad6a15757a8407b74d24798febf80ab9cd33bb8",
   "parse_errors": [],
   "excluded_roots": [],
   "run_metadata": {
-    "repository_revision": "e94895a1d9f55cbb467f12fab96f198f1e68b2c4",
+    "repository_revision": "b009fe7598b4d77a19ba71ca8595f05bfcf75ea3",
     "repository_dirty": true,
     "tool_version": "1.0.0",
     "extractor_versions": {

@@ -82,6 +82,10 @@ def review_rows() -> str:
 
 
 def coverage_rows() -> str:
+    # N3/B1: requiredness is Contract-owned — the Survey/Summary must never
+    # contradict it.
+    contract = load("contract.json")
+    required = set(contract.get("required_extractors", []))
     rows = []
     for c in AUDIT["content"]["coverage"]:
         state = c["status"]
@@ -89,7 +93,7 @@ def coverage_rows() -> str:
         rows.append(
             f"<tr><td><code>{c['extractor']}</code></td>"
             f"<td><span class='badge' style='color:{color};border-color:{color}'>{state}</span></td>"
-            f"<td>{'required' if c.get('required') else 'optional'}</td>"
+            f"<td>{'required' if c['extractor'] in required else 'optional'}</td>"
             f"<td>{'；'.join(c.get('diagnostics', []))}</td></tr>"
         )
     return "\n".join(rows)
@@ -115,17 +119,22 @@ def evidence_table() -> str:
 
 
 def traces() -> str:
+    colors = {"ok": "#16a34a", "partial": "#d97706", "violated": "#dc2626"}
     out = []
     for tr in TRACES:
-        steps = "".join(f"<div class='step'>{s}</div>" for s in tr["steps"])
-        ev_ids = "".join(
-            f"<span class='tag'>{e}</span>" for e in tr["evidence"] if e
-        ) or "<span class='sub'>no evidence bound</span>"
+        color = colors.get(tr.get("status", "partial"), "#6b7280")
+        steps = ""
+        for s in tr["steps"]:
+            ev_ids = "".join(f"<span class='tag'>{e}</span>" for e in s.get("evidence_ids", [])) or "<span class='sub'>无证据</span>"
+            steps += (
+                f"<div class='step'><b>{s['step_id']}</b> · {s['description']} "
+                f"<span class='badge' style='color:{color};border-color:{color}'>{s['status']}</span>"
+                f"<div class='ev'>{ev_ids}</div></div>"
+            )
         out.append(
             f"<div class='trace-card'><div class='trace-title'>{tr['name']} "
-            f"<span class='badge' style='color:#16a34a;border-color:#16a34a'>{tr['status']}</span></div>"
-            f"<div class='steps'>{steps}</div>"
-            f"<div class='ev'>evidence: {ev_ids}</div></div>"
+            f"<span class='badge' style='color:{color};border-color:{color}'>{tr.get('status', 'partial')}</span></div>"
+            f"<div class='steps'>{steps}</div></div>"
         )
     return "\n".join(out)
 
@@ -178,6 +187,7 @@ def banner() -> str:
       <span class="big" style="color:{color}">{label}</span>
       <span class="sub">确定性评估 · {len(SUMMARY['findings'])} 条发现
       （{sum(1 for f in SUMMARY['findings'] if f['status']=='unresolved')} unresolved ·
+       {sum(1 for f in SUMMARY['findings'] if f['status']=='violated')} violated ·
        {sum(1 for f in SUMMARY['findings'] if f['status']=='planned_gap')} planned gap）<br>
       原因：{reasons}</span>
     </div>"""

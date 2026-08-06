@@ -2,8 +2,8 @@
   "schema_version": 1,
   "content": {
     "reconciler_version": "1.0.0",
-    "bound_contract_digest": "sha256:aa03356d2ce06037d2efd524f3a74fd0436f028a2066272255b1cd5436ee064f",
-    "bound_survey_digest": "sha256:a5124125552a20d36a9ef931ed5b677b169ed6ff54ae2b2067fdbde6e0fd8ab8",
+    "bound_contract_digest": "sha256:af09f13321648918fd2a04fa588e7c101414e4f4a85c8b47cc79c3f782f1942f",
+    "bound_survey_digest": "sha256:56f68974647b640711e3e4998a9f63eeba124348a086c8179ea3f5ae3e34b685",
     "findings": [
       {
         "finding_id": "finding:ee33c90ba2eeb8a6",
@@ -11,7 +11,47 @@
         "subject": "probe_status",
         "rule_status": "unresolved",
         "severity": "blocking",
-        "message": "no effect facts and coverage incomplete"
+        "message": "coverage incomplete: cannot enumerate all callsites"
+      },
+      {
+        "finding_id": "finding:a7b74c528f656249",
+        "rule_id": "remote_intent.sync_followup",
+        "subject": "sync",
+        "rule_status": "unresolved",
+        "severity": "blocking",
+        "message": "coverage incomplete: cannot enumerate all callsites"
+      },
+      {
+        "finding_id": "finding:fae132c775801cab",
+        "rule_id": "signal.has_consumer",
+        "subject": "OCR_REBUILD_PROGRESS",
+        "rule_status": "unresolved",
+        "severity": "blocking",
+        "message": "coverage incomplete: cannot enumerate all callsites"
+      },
+      {
+        "finding_id": "finding:b249b9c2b9384122",
+        "rule_id": "publication.uses_protocol",
+        "subject": "ocr_derived.generation",
+        "rule_status": "unresolved",
+        "severity": "blocking",
+        "message": "coverage incomplete: cannot enumerate all callsites"
+      },
+      {
+        "finding_id": "finding:50159616d8796115",
+        "rule_id": "canonical.no_ui_writer",
+        "subject": "ocr_derived.generation",
+        "rule_status": "unresolved",
+        "severity": "blocking",
+        "message": "coverage incomplete: cannot enumerate all callsites"
+      },
+      {
+        "finding_id": "finding:71061559412fdd9f",
+        "rule_id": "restore.display_only",
+        "subject": "ocr_display.fulltext",
+        "rule_status": "unresolved",
+        "severity": "blocking",
+        "message": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "finding_id": "finding:83faa89330b9ba9b",
@@ -19,7 +59,7 @@
         "subject": "ocr_display.fulltext",
         "rule_status": "unresolved",
         "severity": "blocking",
-        "message": "no unit authority facts observed"
+        "message": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "finding_id": "finding:4df2507da70902d6",
@@ -27,7 +67,7 @@
         "subject": "retrieval.units",
         "rule_status": "unresolved",
         "severity": "blocking",
-        "message": "no unit authority facts observed"
+        "message": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "finding_id": "finding:1f3c124ad5bb8599",
@@ -59,49 +99,49 @@
         "rule_id": "query.side_effect_free",
         "evaluated": true,
         "status": "unresolved",
-        "reason": "no effect facts and coverage incomplete"
+        "reason": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "rule_id": "remote_intent.sync_followup",
         "evaluated": true,
-        "status": "satisfied",
-        "reason": "all remote operations carry accepted intent"
+        "status": "unresolved",
+        "reason": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "rule_id": "signal.has_consumer",
         "evaluated": true,
-        "status": "satisfied",
-        "reason": "all signals have consumers for their declared kind"
+        "status": "unresolved",
+        "reason": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "rule_id": "publication.uses_protocol",
         "evaluated": true,
-        "status": "satisfied",
-        "reason": "all canonical writes use the publication protocol"
+        "status": "unresolved",
+        "reason": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "rule_id": "canonical.no_ui_writer",
         "evaluated": true,
-        "status": "satisfied",
-        "reason": "all canonical writes use authorized protocol writers"
+        "status": "unresolved",
+        "reason": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "rule_id": "restore.display_only",
         "evaluated": true,
-        "status": "satisfied",
-        "reason": "all canonical writes use authorized protocol writers"
+        "status": "unresolved",
+        "reason": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "rule_id": "publication.authority_ocr_display",
         "evaluated": true,
         "status": "unresolved",
-        "reason": "no unit authority facts observed"
+        "reason": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "rule_id": "publication.authority_retrieval",
         "evaluated": true,
         "status": "unresolved",
-        "reason": "no unit authority facts observed"
+        "reason": "coverage incomplete: cannot enumerate all callsites"
       },
       {
         "rule_id": "coverage.required_complete",
@@ -150,5 +190,5 @@
     ]
   },
   "run_metadata": {},
-  "semantic_digest": "sha256:bdac203965845fd66d3085f6d5068392dbd2cb850bf9bb89e2c25dfd903688b2"
+  "semantic_digest": "sha256:1db9fbcc7bfcd90c006298c73abb57509eed8b45c07e3729477f680deba4d252"
 }

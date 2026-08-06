@@ -611,8 +611,10 @@ class TestAssessment:
         assert audit.content.assessment.status is AssessmentStatus.CLEAN
         assert audit.content.assessment.gate_eligible is True
 
-    def test_incomplete_wins_over_findings(self):
-        """Precedence: incomplete beats findings when required coverage is missing."""
+    def test_incomplete_coverage_makes_universal_rules_unresolved(self):
+        """#130 review B2: with required coverage incomplete, a universal rule
+        cannot conclude violated OR satisfied from partial facts — the unseen
+        callsites may violate. It becomes unresolved, and incomplete beats it."""
         audit = reconcile(
             _contract([_rule(), _rule(rule_id="r2", kind="coverage_complete", subject="")]),
             _survey(({"operation_id": "probe_status", "effect_kind": "business_mutation",
@@ -620,9 +622,22 @@ class TestAssessment:
                     coverage=({"extractor": "python_ast", "status": "complete"},
                               {"extractor": "typescript", "status": "partial"})),
         )
-        assert _finding(audit, "r1").rule_status is RuleStatus.VIOLATED
+        assert _finding(audit, "r1").rule_status is RuleStatus.UNRESOLVED
+        assert "cannot enumerate" in _finding(audit, "r1").message
         assert audit.content.assessment.status is AssessmentStatus.INCOMPLETE
         assert audit.content.assessment.gate_eligible is False
+
+    def test_universal_rule_satisfied_requires_complete_coverage(self):
+        """Even a clearly satisfied universal rule must not be satisfied while
+        required coverage is incomplete."""
+        audit = reconcile(
+            _contract([_rule(kind="query_side_effect", subject="probe_status")]),
+            _survey(({"operation_id": "probe_status", "effect_kind": "disposable_snapshot",
+                      "evidence": _evidence()},),
+                    coverage=({"extractor": "python_ast", "status": "complete"},
+                              {"extractor": "typescript", "status": "unavailable"})),
+        )
+        assert _finding(audit, "r1").rule_status is RuleStatus.UNRESOLVED
 
 
 # ---------------------------------------------------------------- digests and binding

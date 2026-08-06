@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "audit_digest": "sha256:bdac203965845fd66d3085f6d5068392dbd2cb850bf9bb89e2c25dfd903688b2",
-  "review_digest": "sha256:972aab6037a459c89f7ce855700c35020a99089b122dd0082473da758131ab40",
+  "audit_digest": "sha256:1db9fbcc7bfcd90c006298c73abb57509eed8b45c07e3729477f680deba4d252",
+  "review_digest": "sha256:32e85b7d2dbfc19f0f3120bbd77f6771a8e22f620a37acfd1d64bbc999b6228b",
   "assessment": {
     "status": "incomplete",
     "gate_eligible": false,
@@ -17,7 +17,47 @@
       "subject": "probe_status",
       "rule_status": "unresolved",
       "severity": "blocking",
-      "message": "no effect facts and coverage incomplete"
+      "message": "coverage incomplete: cannot enumerate all callsites"
+    },
+    {
+      "finding_id": "finding:a7b74c528f656249",
+      "rule_id": "remote_intent.sync_followup",
+      "subject": "sync",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "coverage incomplete: cannot enumerate all callsites"
+    },
+    {
+      "finding_id": "finding:fae132c775801cab",
+      "rule_id": "signal.has_consumer",
+      "subject": "OCR_REBUILD_PROGRESS",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "coverage incomplete: cannot enumerate all callsites"
+    },
+    {
+      "finding_id": "finding:b249b9c2b9384122",
+      "rule_id": "publication.uses_protocol",
+      "subject": "ocr_derived.generation",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "coverage incomplete: cannot enumerate all callsites"
+    },
+    {
+      "finding_id": "finding:50159616d8796115",
+      "rule_id": "canonical.no_ui_writer",
+      "subject": "ocr_derived.generation",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "coverage incomplete: cannot enumerate all callsites"
+    },
+    {
+      "finding_id": "finding:71061559412fdd9f",
+      "rule_id": "restore.display_only",
+      "subject": "ocr_display.fulltext",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "coverage incomplete: cannot enumerate all callsites"
     },
     {
       "finding_id": "finding:83faa89330b9ba9b",
@@ -25,7 +65,7 @@
       "subject": "ocr_display.fulltext",
       "rule_status": "unresolved",
       "severity": "blocking",
-      "message": "no unit authority facts observed"
+      "message": "coverage incomplete: cannot enumerate all callsites"
     },
     {
       "finding_id": "finding:4df2507da70902d6",
@@ -33,7 +73,7 @@
       "subject": "retrieval.units",
       "rule_status": "unresolved",
       "severity": "blocking",
-      "message": "no unit authority facts observed"
+      "message": "coverage incomplete: cannot enumerate all callsites"
     },
     {
       "finding_id": "finding:1f3c124ad5bb8599",
@@ -64,19 +104,49 @@
     {
       "finding_id": "finding:ee33c90ba2eeb8a6",
       "adjudication": "needs_evidence",
-      "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+      "rationale": "probe/status callsites have not been fully enumerated by a collector (#133); current effect facts cannot prove the query is side-effect free",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:a7b74c528f656249",
+      "adjudication": "needs_evidence",
+      "rationale": "remote follow-up execution/confirmation chain is not fully enumerated; declaration facts do not prove intent on execution",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:fae132c775801cab",
+      "adjudication": "needs_evidence",
+      "rationale": "signal producers/consumers are not fully enumerated; partial observations cannot prove all signals are consumed",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:b249b9c2b9384122",
+      "adjudication": "needs_evidence",
+      "rationale": "publication writer callsites are not fully enumerated (postprocess/rebuild/backfill/memory); helper presence does not prove every writer obeys the protocol",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:50159616d8796115",
+      "adjudication": "needs_evidence",
+      "rationale": "UI-writer absence cannot be proven while callsites are not fully enumerated",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:71061559412fdd9f",
+      "adjudication": "needs_evidence",
+      "rationale": "display-only write scope cannot be proven while TypeScript callsites are not fully enumerated",
       "epistemic_status": "unresolved"
     },
     {
       "finding_id": "finding:83faa89330b9ba9b",
       "adjudication": "needs_evidence",
-      "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+      "rationale": "unit authority facts are not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
       "epistemic_status": "unresolved"
     },
     {
       "finding_id": "finding:4df2507da70902d6",
       "adjudication": "needs_evidence",
-      "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+      "rationale": "unit authority facts are not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
       "epistemic_status": "unresolved"
     }
   ],

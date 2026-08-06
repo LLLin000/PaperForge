@@ -100,7 +100,7 @@ CONTRACT = {
         "sync", "probe_status", "ocr_run", "ocr_rebuild", "ocr_redo",
         "embed_build_resume", "memory_build", "restore_display",
     ],
-    "required_extractors": ["manual_contract_trace"],
+    "required_extractors": ["manual_contract_trace", "python_ast", "typescript_compiler"],
     "rules": [
         {
             "rule_id": "query.side_effect_free", "kind": "query_side_effect",
@@ -181,18 +181,14 @@ SURVEY = {
     "schema_version": SCHEMA_VERSION,
     "scope": "paperforge",
     "coverage": [
-        {"extractor": "manual_contract_trace", "status": "complete", "required": True},
-        {"extractor": "python_ast", "status": "unavailable", "required": True,
+        {"extractor": "manual_contract_trace", "status": "complete",
+         "diagnostics": ()},
+        {"extractor": "python_ast", "status": "unavailable",
          "diagnostics": ("#133 collector not implemented; manual trace only",)},
-        {"extractor": "typescript_compiler", "status": "unavailable", "required": True,
+        {"extractor": "typescript_compiler", "status": "unavailable",
          "diagnostics": ("#133 collector not implemented; manual trace only",)},
     ],
     "facts": [
-        {
-            "kind": "effect", "operation_id": "sync", "effect_kind": "remote_operation",
-            "intent_mode": "explicit_flag",
-            "evidence": evidence("paperforge/commands/sync.py", "_attach_next_actions", extractor="test:test_sync_next_actions"),
-        },
         {
             "kind": "effect", "operation_id": "sync", "effect_kind": "materialization_build",
             "evidence": evidence("paperforge/commands/sync.py", "_run_terminal_followups", extractor="test:test_sync_next_actions"),
@@ -211,18 +207,44 @@ SURVEY = {
         {
             "kind": "canonical_write", "unit_id": "ocr_derived.generation",
             "actor_kind": "worker", "writer_id": "ocr.rebuild", "via_publication_protocol": True,
-            "evidence": evidence("paperforge/worker/ocr_hash.py", "publish_ocr_result_hash", extractor="test:test_ocr_hash_contract"),
+            "evidence": {"file": "paperforge/worker/ocr_rebuild.py",
+                         "file_digest": sha("paperforge/worker/ocr_rebuild.py"),
+                         "symbol": "create_result_hash_pending(paper_root)", "line_start": 176, "line_end": 176,
+                         "extractor": "test:test_ocr_hash_contract", "epistemic_status": "observed_static", "confidence": "exact"},
+        },
+        {
+            "kind": "canonical_write", "unit_id": "ocr_derived.generation",
+            "actor_kind": "worker", "writer_id": "ocr.rebuild", "via_publication_protocol": True,
+            "evidence": {"file": "paperforge/worker/ocr_rebuild.py",
+                         "file_digest": sha("paperforge/worker/ocr_rebuild.py"),
+                         "symbol": "publish_ocr_result_hash(paper_root)", "line_start": 605, "line_end": 606,
+                         "extractor": "test:test_ocr_hash_contract", "epistemic_status": "observed_static", "confidence": "exact"},
         },
         {
             "kind": "canonical_write", "unit_id": "ocr_derived.generation",
             "actor_kind": "worker", "writer_id": "ocr.postprocess", "via_publication_protocol": True,
-            "evidence": evidence("paperforge/worker/ocr_hash.py", "create_result_hash_pending", extractor="test:test_ocr_hash_contract"),
+            "evidence": {"file": "paperforge/worker/ocr.py",
+                         "file_digest": sha("paperforge/worker/ocr.py"),
+                         "symbol": "create_result_hash_pending(ocr_root)", "line_start": 1832, "line_end": 1832,
+                         "extractor": "test:test_ocr_hash_contract", "epistemic_status": "observed_static", "confidence": "exact"},
+        },
+        {
+            "kind": "canonical_write", "unit_id": "ocr_derived.generation",
+            "actor_kind": "worker", "writer_id": "ocr.postprocess", "via_publication_protocol": True,
+            "evidence": {"file": "paperforge/worker/ocr.py",
+                         "file_digest": sha("paperforge/worker/ocr.py"),
+                         "symbol": "publish_ocr_result_hash(ocr_root)", "line_start": 2124, "line_end": 2125,
+                         "extractor": "test:test_ocr_hash_contract", "epistemic_status": "observed_static", "confidence": "exact"},
         },
         {
             "kind": "canonical_write", "unit_id": "ocr_display.fulltext",
             "actor_kind": "worker", "writer_id": "version_history.restore", "via_publication_protocol": True,
             "evidence": evidence("paperforge/plugin/src/services/version-history.ts", "restoreVersion", extractor="test:version-restore-semantics"),
-            "consumer_evidence": [evidence("paperforge/plugin/src/services/version-history.ts", "persistRestoreProvenance", extractor="test:version-restore-semantics")],
+        },
+        {
+            "kind": "canonical_write", "unit_id": "ocr_display.fulltext",
+            "actor_kind": "worker", "writer_id": "version_history.restore", "via_publication_protocol": True,
+            "evidence": evidence("paperforge/plugin/src/services/version-history.ts", "persistRestoreProvenance", extractor="test:version-restore-semantics"),
         },
         {
             "kind": "effect", "operation_id": "ocr_redo", "effect_kind": "materialization_build",
@@ -250,14 +272,7 @@ REVIEW = {
     "survey_digest": "bound",
     "audit_digest": "bound",
     "reconciler_version": "bound",
-    "adjudications": [
-        {
-            "finding_id": "pending",
-            "adjudication": "needs_evidence",
-            "rationale": "publication authority for this unit is not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
-            "epistemic_status": "unresolved",
-        }
-    ],
+    "adjudications": [],
     "semantic_findings": [
         {
             "finding_id": "review:ocr_run_removed",
@@ -292,6 +307,26 @@ REVIEW = {
 }
 
 
+# M5: adjudication rationale must match the finding's rule family.
+ADJUDICATION_RATIONALES = {
+    "query.side_effect_free": "probe/status callsites have not been fully enumerated by a collector (#133); current effect facts cannot prove the query is side-effect free",
+    "remote_intent": "remote follow-up execution/confirmation chain is not fully enumerated; declaration facts do not prove intent on execution",
+    "signal.": "signal producers/consumers are not fully enumerated; partial observations cannot prove all signals are consumed",
+    "publication.uses_protocol": "publication writer callsites are not fully enumerated (postprocess/rebuild/backfill/memory); helper presence does not prove every writer obeys the protocol",
+    "canonical.": "UI-writer absence cannot be proven while callsites are not fully enumerated",
+    "restore.": "display-only write scope cannot be proven while TypeScript callsites are not fully enumerated",
+    "publication.authority": "unit authority facts are not yet observed — a collector (#133) or explicit unit-authority fact is required before this edge can be judged",
+    "coverage.": "required extractor coverage is incomplete; gate cannot open",
+}
+
+
+def adjudication_rationale(rule_id: str) -> str:
+    for family, rationale in ADJUDICATION_RATIONALES.items():
+        if rule_id.startswith(family):
+            return rationale
+    return "coverage incomplete: cannot enumerate all callsites; evidence required before judgement"
+
+
 def main() -> int:
     rev, dirty = git_rev()
     SURVEY["run_metadata"]["repository_revision"] = rev
@@ -317,18 +352,28 @@ def main() -> int:
     unresolved = [f for f in audit.content.findings if f.rule_status.value == "unresolved"]
     adjudications = []
     for f in unresolved:
-        adjudications.append({**REVIEW["adjudications"][0], "finding_id": f.finding_id})
+        adjudications.append({
+            "finding_id": f.finding_id,
+            "adjudication": "needs_evidence",
+            "rationale": adjudication_rationale(f.rule_id),
+            "epistemic_status": "unresolved",
+        })
     review_payload["adjudications"] = adjudications
     review = ArchitectureReview.from_dict(review_payload)
     validate_review(review, audit)
     view = compose(audit, review)
 
+    reasons = list(audit.content.assessment.reasons)
+    gate_eligible = audit.content.assessment.gate_eligible
+    if dirty:
+        reasons.append("repository_dirty")
+        gate_eligible = False
     summary = {
         "revision": rev,
         "dirty": dirty,
         "assessment": audit.content.assessment.status.value,
-        "gate_eligible": audit.content.assessment.gate_eligible,
-        "reasons": list(audit.content.assessment.reasons),
+        "gate_eligible": gate_eligible,
+        "reasons": reasons,
         "findings": [
             {
                 "rule_id": f.rule_id, "subject": f.subject,
@@ -355,41 +400,78 @@ def main() -> int:
         },
     }
 
-    # trace manifest: every step bound to survey evidence ids
+    # M4: step-level trace manifest — every step carries its own evidence ids,
+    # null references are forbidden (a missing id makes the step unresolved),
+    # and the aggregate status is derived from the steps.
     ev_pool = {}
     for fact in survey.facts:
         for ev in ([fact.evidence] if getattr(fact, "evidence", None) else []) + list(getattr(fact, "consumer_evidence", ()) or []):
             ev_pool[ev.symbol] = ev.evidence_id
+
+    def step(step_id: str, description: str, evidence_symbols: list[str]) -> dict:
+        ids = []
+        for symbol in evidence_symbols:
+            eid = ev_pool.get(symbol)
+            if eid is None:
+                raise SystemExit(f"trace step {step_id}: evidence symbol {symbol!r} not resolvable")
+            ids.append(eid)
+        return {
+            "step_id": step_id,
+            "description": description,
+            "status": "observed" if ids else "unresolved",
+            "evidence_ids": ids,
+        }
+
     traces = [
-        {"name": "sync → memory → embed", "status": "ok", "steps": [
-            "CLI sync (direct invocation)",
-            "svc.run(): zotero sync + index",
-            "_attach_next_actions: memory.build local / embed.resume remote",
-            "terminal: local only · json: no follow-up · plugin: confirmed embed",
-        ], "evidence": [ev_pool.get("_attach_next_actions"), ev_pool.get("_run_terminal_followups")]},
-        {"name": "ocr rebuild → publication → memory", "status": "ok", "steps": [
-            "ocr rebuild (keys/--all)",
-            "START/PROGRESS/RESULT/DONE tokens per key",
-            "result-hash.pending → phases → publish + clear (commit point)",
-            "memory build on successKeys>0 · embed resume confirmed",
-        ], "evidence": [ev_pool.get("OCR_REBUILD_RESULT"), ev_pool.get("create_result_hash_pending"), ev_pool.get("publish_ocr_result_hash")]},
-        {"name": "version restore (display only)", "status": "ok", "steps": [
-            "restore 恢复展示全文文本",
-            "confirmation: display-only boundary",
-            "copy versions/<label>/fulltext.md → render/",
-            "provenance + drift override (DRIFTED if older)",
-        ], "evidence": [ev_pool.get("restoreVersion"), ev_pool.get("persistRestoreProvenance")]},
-        {"name": "redo (internal only)", "status": "ok", "steps": [
-            "CLI ocr redo (maintainers)",
-            "transaction snapshot → mutate → validate → commit/rollback",
-            "crash-orphan recovery from paperforge-redo-*",
-            "no user-facing entry (ribbon/command/probe/maintenance)",
-        ], "evidence": [ev_pool.get("recover_redo_orphans")]},
+        {
+            "name": "sync → memory → embed",
+            "steps": [
+                step("sync.1", "CLI sync (direct invocation)", []),
+                step("sync.2", "svc.run(): zotero sync + index", []),
+                step("sync.3", "terminal runner executes automatic-local memory.build", ["_run_terminal_followups"]),
+                step("sync.4", "plugin confirmation for embed.resume (remote)", []),
+            ],
+        },
+        {
+            "name": "ocr rebuild → publication → memory",
+            "steps": [
+                step("rebuild.1", "ocr rebuild (keys/--all)", []),
+                step("rebuild.2", "START/PROGRESS/RESULT/DONE tokens per key", ["OCR_REBUILD_RESULT"]),
+                step("rebuild.3", "result-hash.pending created before mutation", ["create_result_hash_pending(paper_root)"]),
+                step("rebuild.4", "publish + clear on verified success (commit point)", ["publish_ocr_result_hash(paper_root)"]),
+                step("rebuild.5", "memory build on successKeys>0 · confirmed embed resume", []),
+            ],
+        },
+        {
+            "name": "version restore (display only)",
+            "steps": [
+                step("restore.1", "restore 恢复展示全文文本 + confirmation", []),
+                step("restore.2", "copy versions/<label>/fulltext.md → render/ only", ["restoreVersion"]),
+                step("restore.3", "provenance + drift override (DRIFTED if older)", ["persistRestoreProvenance"]),
+            ],
+        },
+        {
+            "name": "redo (internal only)",
+            "steps": [
+                step("redo.1", "CLI ocr redo (maintainers)", []),
+                step("redo.2", "transaction snapshot → mutate → validate → commit/rollback", []),
+                step("redo.3", "crash-orphan recovery from paperforge-redo-*", ["recover_redo_orphans"]),
+                step("redo.4", "no user-facing entry (ribbon/command/probe/maintenance)", []),
+            ],
+        },
     ]
+    for tr in traces:
+        statuses = {s["status"] for s in tr["steps"]}
+        if "violated" in statuses:
+            tr["status"] = "violated"
+        elif "unresolved" in statuses:
+            tr["status"] = "partial"
+        else:
+            tr["status"] = "ok"
     (HERE / "traces.json").write_text(json.dumps(traces, indent=2, ensure_ascii=False), encoding="utf-8")
 
     HERE.mkdir(parents=True, exist_ok=True)
-    for name, payload in [("contract", CONTRACT), ("survey", SURVEY), ("audit", audit.to_dict()),
+    for name, payload in [("contract", CONTRACT), ("survey", survey.to_dict()), ("audit", audit.to_dict()),
                           ("review", review.to_dict()), ("view", view.to_dict()), ("summary", summary)]:
         (HERE / f"{name}.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(summary, indent=2, ensure_ascii=False))
