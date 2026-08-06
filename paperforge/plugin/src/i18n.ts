@@ -846,8 +846,18 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_tooltip_reextract:
       "Re-run OCR from scratch for this paper (deletes and regenerates all OCR data).",
     ocr_ws_detail_restore_done: "Restored backup {label}",
+    next_action_memory_started: "Memory index rebuild started",
+    next_action_done: "Follow-up completed",
+    next_action_refused: "Follow-up refused by user",
+    next_action_unknown: "Unknown follow-up action refused",
+    next_action_embed_title: "Confirm embedding",
+    next_action_embed_body:
+      "Sync finished. Embedding changed papers may call a paid API. Continue?",
+    next_action_confirm: "Run",
+    next_action_cancel: "Later",
     ocr_ws_restore_title: "Restore Backup Version",
-    ocr_ws_restore_desc: "Select a version to restore for this paper. The current fulltext will be replaced.",
+    ocr_ws_restore_desc:
+      "Select a version to restore for this paper. The current fulltext will be replaced.",
     ocr_ws_restore_current: "current",
     ocr_ws_restore_created: "Created:",
     ocr_ws_restore_source: "Source:",
@@ -1664,6 +1674,15 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_tooltip_reextract:
       "从头重新 OCR 此论文（删除并重新生成全部 OCR 数据）。",
     ocr_ws_detail_restore_done: "已恢复备份 {label}",
+    next_action_memory_started: "内存索引重建已启动",
+    next_action_done: "后续动作已完成",
+    next_action_refused: "后续动作已被拒绝",
+    next_action_unknown: "未知后续动作已拒绝",
+    next_action_embed_title: "确认向量嵌入",
+    next_action_embed_body:
+      "同步完成。为变更论文重建向量可能调用付费 API，是否继续？",
+    next_action_confirm: "运行",
+    next_action_cancel: "稍后",
     ocr_ws_close: "关闭",
     ocr_ws_fact_version: "OCR 版本",
     ocr_ws_fact_last_run: "最后处理",

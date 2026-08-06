@@ -54,6 +54,7 @@ import {
 } from "./services/python-bridge";
 import { EmbedBuildController } from "./services/embed-build-controller";
 import { deferred } from "./services/deferred";
+import { orchestrateFromSync } from "./services/next-actions-bridge";
 import {
   getVectorRuntime,
   getMemoryRuntime,
@@ -2612,9 +2613,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this.plugin._autoSyncRunning = true;
     this._libraryRunning = true;
     this.display();
-    this._callPython(["sync"], {
+    this._callPython(["sync", "--json"], {
       timeout: 120000,
-      onClose: (code: number | null) => {
+      onClose: (code: number | null, stdout: string) => {
         this.plugin._autoSyncRunning = false;
         this._libraryRunning = false;
         this._memoryStatusText = null;
@@ -2626,6 +2627,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (code === 0) {
           this._lastSyncTime = new Date().toLocaleTimeString();
           this.plugin._lastSyncTime = this._lastSyncTime;
+          // #127: consume the backend's next_actions (memory.build automatic,
+          // embed.resume confirmed) instead of hidden fire-and-forget work.
+          void orchestrateFromSync(stdout, {
+            app: this.app,
+            vaultPath: vp,
+            resolveCommand: (v) => this._resolveRuntimeCommand(v),
+          });
         }
         // Re-probe library on every terminal outcome — pass exit code for sync failure detection
         this._probeModule("library", code ?? 1);
