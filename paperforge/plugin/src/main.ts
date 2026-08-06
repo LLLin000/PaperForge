@@ -141,6 +141,8 @@ export default class PaperForgePlugin extends Plugin {
     });
 
     for (const a of ACTIONS) {
+      // #99 (owner decision): redo is internal-only — never a user command.
+      if (a.id === "paperforge-ocr-redo") continue;
       this.addCommand({
         id: a.id,
         name: a.title,

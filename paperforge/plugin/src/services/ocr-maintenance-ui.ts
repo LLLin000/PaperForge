@@ -45,11 +45,14 @@ export function maintenanceActionForRow(
   row: MaintenanceDisplayRow
 ): MaintenanceAction {
   if (row.display_action === "rebuild_result") return "rebuild";
+  // #99 (owner decision): redo is internal-only — never offered to users.
+  // retry_ocr/upgrade_legacy require the redo pipeline and are therefore
+  // not actionable from the UI; maintainers use the CLI.
   if (
     row.display_action === "retry_ocr" ||
     row.display_action === "upgrade_legacy"
   ) {
-    return "redo";
+    return null;
   }
   return null;
 }
@@ -234,7 +237,7 @@ export async function refreshMaintenanceData(
     if (same) {
       // Schema check: cache is valid only when every row has the canonical field
       const schemaFresh = Object.values(currentCache.papers).every(
-        (p) => typeof p.needs_derived_rebuild === "boolean",
+        (p) => typeof p.needs_derived_rebuild === "boolean"
       );
       if (schemaFresh) {
         const data = Object.values(currentCache.papers);
