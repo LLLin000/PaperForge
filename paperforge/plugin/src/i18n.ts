@@ -872,7 +872,7 @@ const LANG: Record<string, Record<string, string>> = {
       "This overwrites render/fulltext.md with the selected version. OCR structure, indexes, memory units, and vectors are NOT affected. Continue?",
     ocr_ws_restore_confirm_btn: "Restore displayed fulltext",
     ocr_ws_restore_stale_notice:
-      "该版本早于当前结构状态；如需结构一致请重建此论文",
+      "This version predates the current structured state; rebuild the paper to re-sync structure",
     ocr_ws_restore_title: "Restore Backup Version",
     ocr_ws_restore_desc:
       "Select a version to restore for this paper. The current fulltext will be replaced.",
