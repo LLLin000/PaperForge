@@ -310,6 +310,49 @@ class TestOcrRebuildProgressTokens:
         assert "OCR_REBUILD_PROGRESS:1:1:KEY001" in lines
         assert "OCR_REBUILD_RESULT:KEY001:ok" in lines
         assert lines[-1] == "OCR_REBUILD_DONE:1:0:0"
+    def test_explicit_dropped_keys_count_as_skipped(self, capsys, monkeypatch, tmp_path):
+        """#126 review: `ocr rebuild GOOD MISSING` must report MISSING as
+        skipped and return 1 — never claim full success."""
+        from paperforge.worker.ocr_maintenance import OCRMaintenanceRow as Row
+
+        rows = [Row(
+            key="GOOD", title="Good", title_full="Good Paper", status="done",
+            health="good", pages=5, blocks=100, version="2.0",
+            finished_at="2026-07-01", rebuild_finished_at="",
+            figures=0, tables=0, model="test",
+            structured_content_hash="hash", can_rebuild=True,
+        )]
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda _v: rows,
+        )
+
+        def _mock_rebuild(_vault, _keys, **kwargs):
+            on_progress = kwargs.get("on_progress")
+            if on_progress:
+                for k in _keys:
+                    on_progress(k, {"key": k, "status": "ok"})
+            return {
+                "success_keys": list(_keys),
+                "failed_keys": [],
+                "skipped": [],
+                "results": [{"key": k, "status": "ok"} for k in _keys],
+                "rebuild_count": len(_keys),
+            }
+
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_rebuild.run_derived_rebuild_for_keys",
+            _mock_rebuild,
+        )
+
+        from paperforge.commands.ocr import _run_ocr_rebuild
+
+        rc = _run_ocr_rebuild(tmp_path, keys=["GOOD", "MISSING"])
+        captured = capsys.readouterr().out
+        assert rc == 1
+        assert "OCR_REBUILD_DONE:1:0:1" in captured
+        assert "MISSING" in captured
+
 
     def test_rebuild_dry_run_no_tokens(self, capsys, monkeypatch, tmp_path):
         """Dry-run rebuild emits no progress tokens."""

@@ -367,6 +367,8 @@ export class OcrWorkspaceView extends ItemView {
         });
         chip.addEventListener("click", () => {
           this.versionFilter = this.versionFilter === v ? null : v;
+          this.selectedKey = null;
+          this.checkedKeys.clear();
           this._page = 1;
           this._refreshTable();
         });
@@ -938,6 +940,8 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   private _stopBuild(): void {
+    // #126: Stop must reach the real child via the shared controller.
+    this.plugin?.ocrProcessController?.stop();
     this.running = false;
     this._render();
   }

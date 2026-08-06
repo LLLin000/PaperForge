@@ -547,10 +547,34 @@ def _run_ocr_rebuild(
     rows = collect_maintenance_rows(vault)
     selected, reasons = _select_rebuild_keys(vault, rows, all_papers, status_filter, keys)
 
+    # #126: explicit keys that cannot enter rebuild must surface as skipped —
+    # never silently dropped (rc must be 1, DONE must count them).
+    dropped: list[dict] = []
+    if keys:
+        selected_set = set(selected)
+        dropped = [
+            {"key": key, "reason": reasons.get(key, "not_rebuildable")}
+            for key in keys
+            if key not in selected_set
+        ]
+
     if not selected:
         print("No papers matched for rebuild.")
+        if dropped:
+            print(
+                "Skipped requested key(s) not rebuildable: "
+                + ", ".join(item["key"] for item in dropped),
+                flush=True,
+            )
         # #126: an explicit key list that cannot enter rebuild is a failure.
         return 1 if keys else 0
+
+    if dropped:
+        print(
+            "Skipped requested key(s) not rebuildable: "
+            + ", ".join(item["key"] for item in dropped),
+            flush=True,
+        )
 
     if resume:
         print("Note: OCR rebuild resume is now version/artifact based; .done markers are ignored.")
@@ -592,6 +616,13 @@ def _run_ocr_rebuild(
             on_progress=_on_progress,
             stop_check=_stop_check,
         )
+        # #126: merge dropped explicit keys into skipped so the outcome is
+        # complete and rc is non-zero.
+        result["skipped"] = [*result["skipped"], *dropped]
+        result["results"] = [
+            *result["results"],
+            *[{"key": d["key"], "status": "skipped", "reason": d["reason"]} for d in dropped],
+        ]
         success_count = len(result["success_keys"])
         failed_count = len(result["failed_keys"])
         skipped_count = len(result["skipped"])
