@@ -35,6 +35,28 @@ interface OcrPaper {
 
 /* ── View ── */
 
+const PAGE_SIZE = 100;
+
+/** #126 PR D: deterministic pagination slice (pure, testable). */
+export function paginate<T>(
+  items: T[],
+  page: number,
+  pageSize = PAGE_SIZE
+): {
+  pageItems: T[];
+  page: number;
+  totalPages: number;
+} {
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const clamped = Math.min(Math.max(1, page), totalPages);
+  const start = (clamped - 1) * pageSize;
+  return {
+    pageItems: items.slice(start, start + pageSize),
+    page: clamped,
+    totalPages,
+  };
+}
+
 export class OcrWorkspaceView extends ItemView {
   private papers: OcrPaper[] = [];
   private filter: "all" | "unprocessed" | "review" | "processed" = "all";
@@ -45,6 +67,9 @@ export class OcrWorkspaceView extends ItemView {
   private progress = { current: 0, total: 0, paperKey: "" };
   private _searchQuery: string = "";
   private _searchTimer: ReturnType<typeof setTimeout> | undefined;
+  /** #126 PR D: pagination — selection is per visible page. */
+  private _page = 1;
+  private _enriched = false;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -83,7 +108,7 @@ export class OcrWorkspaceView extends ItemView {
     this._render();
   }
 
-  /* ── Data loading ── */
+  /* ── Data loading (#126 PR D: index-first, background enrichment) ── */
 
   private async _loadPapers(): Promise<void> {
     const vp = (this.app.vault.adapter as any).basePath as string;
@@ -96,41 +121,67 @@ export class OcrWorkspaceView extends ItemView {
     try {
       const index = JSON.parse(fs.readFileSync(indexPath, "utf-8"));
       const items: any[] = index?.items ?? [];
+      // First paint reads ONLY canonical index fields — no per-paper
+      // meta.json reads, no per-paper backups/ scans on the main thread.
       this.papers = [];
       for (const item of items) {
         const key = item.zotero_key;
         if (!key) continue;
-        const metaPath = path.join(paths.ocrDir, key, "meta.json");
-        let meta: any = {};
-        if (fs.existsSync(metaPath)) {
-          try {
-            meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
-          } catch {}
-        }
-        const backupsDir = path.join(paths.ocrDir, key, "backups");
-        let backupCount = 0;
-        if (fs.existsSync(backupsDir)) {
-          backupCount = fs
-            .readdirSync(backupsDir)
-            .filter((f: string) => f.startsWith("fulltext.pre-rebuild")).length;
-        }
         this.papers.push({
           key,
           title: item.title ?? key,
-          status: meta.ocr_status ?? meta.ocrStatus ?? "pending",
-          pipelineVersion: meta.ocr_pipeline_version ?? "",
-          lastRun: meta.ocr_finished_at ?? meta.ocrFinishedAt ?? "",
-          hasBackup: backupCount > 0,
+          status: item.ocr_status ?? "pending",
+          pipelineVersion: "",
+          lastRun: item.ocr_time ?? "",
+          hasBackup: false,
           authors: item.authors?.join?.(", ") ?? "",
           year: item.year ?? "",
-          pages: meta.page_count ? String(meta.page_count) : "",
-          backupCount,
+          pages: "",
+          backupCount: 0,
           fulltextPath: item.fulltext_path ?? "",
         });
       }
     } catch {
       this.papers = [];
     }
+    this._page = 1;
+    // Background enrichment: one `ocr list --json` call (backend-owned
+    // status semantics), preserving search/page/selection.
+    if (!this._enriched) {
+      this._enriched = true;
+      void this._enrichFromOcrList(vp);
+    }
+  }
+
+  private _enrichFromOcrList(vp: string): Promise<void> {
+    const pyCmd = this._resolvePython();
+    if (!pyCmd) return Promise.resolve();
+    return new Promise((resolve) => {
+      execFile(
+        pyCmd.path,
+        [...pyCmd.args, "-m", "paperforge", "ocr", "list", "--json"],
+        { cwd: vp, timeout: 60000, windowsHide: true },
+        (err: any, stdout: string) => {
+          if (!err) {
+            try {
+              const payload = JSON.parse(stdout);
+              const rows: any[] = payload?.data?.rows ?? payload?.rows ?? [];
+              const byKey = new Map(rows.map((r) => [r.key, r]));
+              for (const paper of this.papers) {
+                const row = byKey.get(paper.key);
+                if (!row) continue;
+                paper.status = row.status ?? paper.status;
+                paper.pipelineVersion = row.version ?? "";
+                paper.lastRun = row.finished_at ?? paper.lastRun;
+                paper.pages = row.pages ? String(row.pages) : "";
+              }
+            } catch {}
+          }
+          this._refreshTable();
+          resolve();
+        }
+      );
+    });
   }
 
   /* ── Render ── */
@@ -170,12 +221,17 @@ export class OcrWorkspaceView extends ItemView {
     if (existingTable) {
       const oldTbody = existingTable.querySelector("tbody");
       if (oldTbody) oldTbody.remove();
-      this._buildTableRows(existingTable, filtered);
+      this._buildTableRows(existingTable, this._currentPagePapers(filtered));
     } else {
       // First render — build full table
       const vp = container.createDiv({ cls: "pf-ocr-ws-viewport" });
-      this._buildTableBody(vp, filtered);
+      this._buildTableBody(vp, this._currentPagePapers(filtered));
     }
+
+    // Refresh pagination bar
+    const oldPager = container.querySelector(".pf-ocr-ws-pagination");
+    if (oldPager) oldPager.remove();
+    this._renderPagination(container, filtered);
 
     // Replace batch bar
     const existingBatchBar = container.querySelector(".pf-ocr-ws-batchbar");
@@ -263,6 +319,7 @@ export class OcrWorkspaceView extends ItemView {
       this._searchQuery = searchInput.value;
       this.selectedKey = null;
       this.checkedKeys.clear();
+      this._page = 1;
       clearTimeout(this._searchTimer);
       this._searchTimer = setTimeout(() => this._refreshTable(), 100);
     });
@@ -272,6 +329,7 @@ export class OcrWorkspaceView extends ItemView {
         this._searchQuery = "";
         this.selectedKey = null;
         this.checkedKeys.clear();
+        this._page = 1;
         clearTimeout(this._searchTimer);
         this._refreshTable();
         searchInput.blur();
@@ -296,6 +354,7 @@ export class OcrWorkspaceView extends ItemView {
       this.filter = select.value as any;
       this.selectedKey = null;
       this.checkedKeys.clear();
+      this._page = 1;
       this._refreshTable();
     });
 
@@ -308,6 +367,7 @@ export class OcrWorkspaceView extends ItemView {
         });
         chip.addEventListener("click", () => {
           this.versionFilter = this.versionFilter === v ? null : v;
+          this._page = 1;
           this._refreshTable();
         });
       }
@@ -339,14 +399,54 @@ export class OcrWorkspaceView extends ItemView {
     return list;
   }
 
+  /** #126 PR D: the slice of filtered papers rendered on the current page. */
+  private _currentPagePapers(filtered: OcrPaper[]): OcrPaper[] {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (this._page > totalPages) this._page = totalPages;
+    if (this._page < 1) this._page = 1;
+    const start = (this._page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }
+
+  private _renderPagination(
+    container: HTMLElement,
+    filtered: OcrPaper[]
+  ): void {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (totalPages <= 1) return;
+    const bar = container.createDiv({ cls: "pf-ocr-ws-pagination" });
+    const prev = bar.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: "‹",
+    });
+    prev.disabled = this._page <= 1;
+    prev.addEventListener("click", () => {
+      this._page = Math.max(1, this._page - 1);
+      this._refreshTable();
+    });
+    const info = bar.createEl("span", {
+      text: `${this._page} / ${totalPages}`,
+    });
+    const next = bar.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: "›",
+    });
+    next.disabled = this._page >= totalPages;
+    next.addEventListener("click", () => {
+      this._page = Math.min(totalPages, this._page + 1);
+      this._refreshTable();
+    });
+  }
+
   private _renderTable(container: HTMLElement): void {
     const filtered = this._filteredPapers();
     const vp = container.createDiv({ cls: "pf-ocr-ws-viewport" });
-    this._buildTableBody(vp, filtered);
+    this._buildTableBody(vp, this._currentPagePapers(filtered));
+    this._renderPagination(container, filtered);
   }
 
-  private _buildTableBody(vp: HTMLElement, filtered: OcrPaper[]): void {
-    if (filtered.length === 0) {
+  private _buildTableBody(vp: HTMLElement, page: OcrPaper[]): void {
+    if (page.length === 0) {
       vp.createDiv({
         cls: "pf-ocr-ws-empty pf-visible",
         text: t("ocr_ws_no_papers"),
@@ -355,7 +455,7 @@ export class OcrWorkspaceView extends ItemView {
     }
     const table = vp.createEl("table", { cls: "pf-ocr-ws-table" });
     this._buildTableHead(table);
-    this._buildTableRows(table, filtered);
+    this._buildTableRows(table, page);
   }
 
   private _buildTableHead(table: HTMLTableElement): void {
@@ -366,11 +466,12 @@ export class OcrWorkspaceView extends ItemView {
       { attr: { type: "checkbox" } },
       (cb: HTMLInputElement) => {
         cb.addEventListener("change", () => {
-          const current = this._filteredPapers();
+          // #126 PR D: select-all means only the VISIBLE page.
+          const current = this._currentPagePapers(this._filteredPapers());
           if (cb.checked) {
             current.forEach((p) => this.checkedKeys.add(p.key));
           } else {
-            this.checkedKeys.clear();
+            current.forEach((p) => this.checkedKeys.delete(p.key));
           }
           this._refreshTable();
         });
@@ -395,16 +496,17 @@ export class OcrWorkspaceView extends ItemView {
     hr.createEl("th", { cls: "pf-ocr-ws-col-action" });
   }
 
-  private _buildTableRows(table: HTMLTableElement, filtered: OcrPaper[]): void {
+  private _buildTableRows(table: HTMLTableElement, page: OcrPaper[]): void {
     const tbody = table.createEl("tbody");
-    for (const paper of filtered) {
+    // #126 PR D: precompute the max pipeline version once — the per-row
+    // `papers.find(...)` comparison was O(n²) on the main thread.
+    const maxVersion = this.papers.reduce(
+      (max, p) => (p.pipelineVersion > max ? p.pipelineVersion : max),
+      ""
+    );
+    for (const paper of page) {
       const versionBehind = Boolean(
-        this.papers.find(
-          (p) =>
-            p.pipelineVersion &&
-            paper.pipelineVersion &&
-            p.pipelineVersion > paper.pipelineVersion
-        )
+        paper.pipelineVersion && maxVersion > paper.pipelineVersion
       );
       const tr = tbody.createEl("tr", {
         cls: versionBehind ? "pf-update" : "",
