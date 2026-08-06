@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import fields, is_dataclass
 from enum import Enum
+from pathlib import PurePosixPath
 from typing import Any
 
 from paperforge.architecture_audit.canonical import (
@@ -49,6 +50,7 @@ from paperforge.architecture_audit.layers import (
     SignalConsumerKind,
     SignalFact,
     UnitAuthorityFact,
+    UnresolvedFact,
     _review_projection_digest,
     _rule_entity_metas,
     validate_audit,
@@ -188,6 +190,42 @@ def _role_facts(rule: Rule, survey: ArchitectureSurvey) -> list[RoleAuthorityFac
         if isinstance(fact, RoleAuthorityFact) and fact.operation_id == rule.subject and fact.role == role
     ]
 
+
+def _unresolved_facts(rule: Rule, survey: ArchitectureSurvey) -> list[UnresolvedFact]:
+    """Unresolved dynamic callsites that could affect this rule's conclusion.
+
+    #133: a static collector cannot enumerate effects of dynamic calls
+    (getattr/eval, subprocess intent, write-verbs on unresolvable receivers).
+    When such evidence overlaps a rule's effect domain, the rule must stay
+    unresolved — concluding satisfied from partial enumeration would repeat
+    the exact false-clean failure mode the audit exists to prevent.
+    """
+    relevant: set[EffectKind]
+    if rule.kind is RuleKind.QUERY_SIDE_EFFECT:
+        relevant = {
+            EffectKind.REMOTE_OPERATION,
+            EffectKind.BUSINESS_MUTATION,
+            EffectKind.MATERIALIZATION_BUILD,
+        }
+    elif rule.kind is RuleKind.REMOTE_INTENT:
+        relevant = {EffectKind.REMOTE_OPERATION}
+    elif rule.kind in (RuleKind.CANONICAL_WRITER, RuleKind.PUBLICATION_MARKER):
+        relevant = {EffectKind.BUSINESS_MUTATION, EffectKind.MATERIALIZATION_BUILD}
+    else:
+        return []
+    out: list[UnresolvedFact] = []
+    for fact in _facts_of(survey, UnresolvedFact):
+        if not (set(fact.possible_effects) & relevant):
+            continue
+        # Scope by source module: an unresolved call inside `sync.py` must
+        # not shadow a rule about `probe_status`.
+        file = (fact.evidence.file if fact.evidence else "") or ""
+        stem = PurePosixPath(file).stem
+        if rule.subject and stem != rule.subject and rule.subject not in file:
+            continue
+        out.append(fact)
+    return out
+
 def _declared_role_authority(
     contract: ArchitectureContract,
     operation_id: str,
@@ -268,6 +306,15 @@ def _evaluate_rule(
 
     if rule.kind in _ENUMERATION_KINDS and not _required_coverage_complete(contract, survey):
         return RuleStatus.UNRESOLVED, "coverage incomplete: cannot enumerate all callsites", []
+
+    unresolved = _unresolved_facts(rule, survey)
+    if unresolved:
+        first = unresolved[0]
+        return (
+            RuleStatus.UNRESOLVED,
+            f"unresolved dynamic callsites may affect this rule: {first.reason}",
+            [fact.evidence for fact in unresolved],
+        )
 
     if rule.kind is RuleKind.QUERY_SIDE_EFFECT:
         violations, effects = _forbidden_query_effects(rule, survey)
