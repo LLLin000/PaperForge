@@ -867,6 +867,12 @@ const LANG: Record<string, Record<string, string>> = {
       "Rebuilding vectors for changed papers may call a paid API. Continue?",
     ocr_ws_embed_done: "Vector embedding completed",
     ocr_rebuild_partial: "Rebuild finished with failures",
+    ocr_ws_restore_confirm_title: "Restore displayed fulltext",
+    ocr_ws_restore_confirm_body:
+      "This overwrites render/fulltext.md with the selected version. OCR structure, indexes, memory units, and vectors are NOT affected. Continue?",
+    ocr_ws_restore_confirm_btn: "Restore displayed fulltext",
+    ocr_ws_restore_stale_notice:
+      "该版本早于当前结构状态；如需结构一致请重建此论文",
     ocr_ws_restore_title: "Restore Backup Version",
     ocr_ws_restore_desc:
       "Select a version to restore for this paper. The current fulltext will be replaced.",
@@ -1706,6 +1712,12 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_embed_confirm_body: "为变更论文重建向量可能调用付费 API，是否继续？",
     ocr_ws_embed_done: "向量嵌入完成",
     ocr_rebuild_partial: "重建完成但存在失败",
+    ocr_ws_restore_confirm_title: "恢复展示全文文本",
+    ocr_ws_restore_confirm_body:
+      "将用所选版本的 fulltext.md 覆盖 render/fulltext.md。OCR 结构、索引、记忆与向量均不受影响。继续？",
+    ocr_ws_restore_confirm_btn: "恢复展示全文",
+    ocr_ws_restore_stale_notice:
+      "该版本早于当前结构状态；如需结构一致请重建此论文",
     ocr_ws_close: "关闭",
     ocr_ws_fact_version: "OCR 版本",
     ocr_ws_fact_last_run: "最后处理",

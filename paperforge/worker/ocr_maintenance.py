@@ -326,6 +326,8 @@ def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
 
         err_summary = _error_summary(meta)
         drift_state = get_fulltext_drift_state(artifacts.compat_fulltext, meta.get("machine_fulltext_hash"))
+        if drift_state != "DRIFTED" and _restore_drift_override(meta):
+            drift_state = "DRIFTED"
         err_summary_hash = hashlib.sha256(err_summary.encode("utf-8")).hexdigest() if err_summary else ""
         raw = "|".join([
             key, status, health_overall, version, rec_action,
@@ -445,6 +447,8 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         row.display_severity = df["display_severity"]
         row.visible_in_maintenance = df["visible_in_maintenance"]
         drift_state = get_fulltext_drift_state(artifacts.compat_fulltext, meta.get("machine_fulltext_hash"))
+        if drift_state != "DRIFTED" and _restore_drift_override(meta):
+            drift_state = "DRIFTED"
         row.fulltext_drift_state = drift_state
         row.fulltext_drift_reason = {
             "MATCHED": "fulltext.md matches the latest machine write.",
@@ -454,3 +458,18 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         rows.append(row)
 
     return rows
+
+
+def _restore_drift_override(meta: dict) -> bool:
+    """#129: a persisted display-restore of an older version overrides the
+    hash comparison (which watches the root compat fulltext, not the
+    restored render/fulltext.md). Returns True when the restored version
+    predates the current structured state."""
+    provenance = meta.get("restore_provenance") or {}
+    version_created = provenance.get("version_created_at", "")
+    finished = meta.get("ocr_finished_at", "")
+    if not provenance.get("label") or not provenance.get("restored_at"):
+        return False
+    if not version_created or not finished:
+        return False
+    return version_created < finished

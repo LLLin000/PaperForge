@@ -721,7 +721,8 @@ export class OcrWorkspaceView extends ItemView {
           versions.currentLabel,
           () => {
             this._loadPapers().then(() => this._render());
-          }
+          },
+          paper.lastRun
         );
         modal.open();
         return;
@@ -776,7 +777,8 @@ export class OcrWorkspaceView extends ItemView {
         "",
         () => {
           this._loadPapers().then(() => this._render());
-        }
+        },
+        paper.lastRun
       );
       modal.open();
     });
@@ -1105,7 +1107,8 @@ export class VersionRestoreModal extends Modal {
     paperKey: string,
     versions: VersionEntry[],
     currentLabel: string,
-    onRestored?: () => void
+    onRestored?: () => void,
+    private paperFinishedAt = ""
   ) {
     super(app);
     this.vaultPath = vaultPath;
@@ -1298,6 +1301,37 @@ export class VersionRestoreModal extends Modal {
   }
   private doRestore(ver: VersionEntry) {
     if (ver.label === this.currentLabel) return;
+    // #129: confirmation dialog states the display-only boundary before any
+    // copy — structure/index/retrieval are never touched.
+    const modal = new Modal(this.app);
+    modal.contentEl.addClass("paperforge-modal");
+    modal.contentEl.createEl("h2", {
+      text: t("ocr_ws_restore_confirm_title") || "恢复展示全文文本",
+    });
+    modal.contentEl.createEl("div", {
+      cls: "pf-vr-confirm-body",
+      text:
+        t("ocr_ws_restore_confirm_body") ||
+        "将用所选版本的 fulltext.md 覆盖 render/fulltext.md。OCR 结构、索引、记忆与向量均不受影响。继续？",
+    });
+    const row = modal.contentEl.createDiv({ cls: "pf-vr-confirm-actions" });
+    const cancel = row.createEl("button", {
+      cls: "btn-secondary pf-vr-btn",
+      text: t("next_action_cancel") || "Later",
+    });
+    cancel.addEventListener("click", () => modal.close());
+    const confirm = row.createEl("button", {
+      cls: "btn-primary pf-vr-btn mod-warning",
+      text: t("ocr_ws_restore_confirm_btn") || "恢复展示全文",
+    });
+    confirm.addEventListener("click", () => {
+      modal.close();
+      this._executeRestore(ver);
+    });
+    modal.open();
+  }
+
+  private _executeRestore(ver: VersionEntry) {
     let ok = false;
     if (ver.label.startsWith("backup-")) {
       const source = versionContentPath(this.ocrDir, this.paperKey, ver.label);
@@ -1314,10 +1348,24 @@ export class VersionRestoreModal extends Modal {
         console.warn("[PaperForge] Restore backup failed:", e);
       }
     } else {
-      ok = restoreVersion(this.vaultPath, this.paperKey, ver.label);
+      ok = restoreVersion(
+        this.vaultPath,
+        this.paperKey,
+        ver.label,
+        ver.created_at
+      );
     }
     if (ok) {
       new Notice(t("ocr_ws_detail_restore_done").replace("{label}", ver.label));
+      // #129: warn when the restored display version predates the current
+      // structured state — a rebuild is needed to re-sync structure.
+      if (this.paperFinishedAt && ver.created_at < this.paperFinishedAt) {
+        new Notice(
+          t("ocr_ws_restore_stale_notice") ||
+            "该版本早于当前结构状态；如需结构一致请重建此论文",
+          8000
+        );
+      }
       this.close();
       this.onRestored?.();
     } else {
