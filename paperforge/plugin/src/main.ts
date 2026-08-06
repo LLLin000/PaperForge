@@ -125,36 +125,8 @@ export default class PaperForgePlugin extends Plugin {
       OcrWorkspaceView.open(this as any)
     );
 
-    const redoAction = ACTIONS.find((a) => a.id === "paperforge-ocr-redo");
-    if (redoAction) {
-      this.addRibbonIcon("reset", "PaperForge: Redo OCR", async () => {
-        const vp = (this.app.vault.adapter as any).basePath as string;
-        new Notice(`PaperForge: Redo OCR starting...`);
-        const pyCmd = this._getPythonCommand();
-        if (!pyCmd) {
-          new Notice("Runtime not ready");
-          return;
-        }
-        const { path: py, args: ex } = pyCmd;
-        const env = await buildTargetedEnv(
-          this as unknown as PluginForSecrets,
-          "ocr"
-        );
-        execFile(
-          py,
-          [...ex, "-m", "paperforge", "ocr", "redo"],
-          { cwd: vp, timeout: 600000, env },
-          (err, stdout, stderr) => {
-            if (err) {
-              new Notice(`PaperForge: Redo OCR failed`);
-              return;
-            }
-            new Notice(`PaperForge: Redo OCR done`);
-          }
-        );
-      });
-    }
-
+    // #99 (owner decision): redo is an internal maintenance command, NOT
+    // exposed to users. No ribbon, no command — the CLI keeps it.
     this.addSettingTab(new PaperForgeSettingTab(this.app, this as any));
 
     this.addCommand({
