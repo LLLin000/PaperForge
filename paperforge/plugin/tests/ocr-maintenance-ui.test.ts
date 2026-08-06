@@ -1,4 +1,7 @@
-import type { MaintenanceDisplayRow, MaintenanceCache } from "../src/services/ocr-maintenance-ui";
+import type {
+  MaintenanceDisplayRow,
+  MaintenanceCache,
+} from "../src/services/ocr-maintenance-ui";
 import {
   buildMaintenanceCache,
   buildMaintenanceSummary,
@@ -287,9 +290,9 @@ describe("needs_derived_rebuild schema freshness", () => {
   });
 
   it("rejects entirely empty cache (no papers at all)", () => {
-    const schemaFresh = Object.values({} as Record<string, MaintenanceDisplayRow>).every(
-      (p) => typeof p.needs_derived_rebuild === "boolean",
-    );
+    const schemaFresh = Object.values(
+      {} as Record<string, MaintenanceDisplayRow>
+    ).every((p) => typeof p.needs_derived_rebuild === "boolean");
     // .every() on empty array returns true — degenerate case handled by
     // the fact that refreshMaintenanceData would refetch when cache.papers is empty
     expect(schemaFresh).toBe(true);
@@ -353,10 +356,11 @@ describe("canonical maintenance actions", () => {
     expect(maintenanceActionForRow(row("rebuild_result"))).toBe("rebuild");
   });
 
-  it("renders redo only for retry and legacy-upgrade rows", () => {
-    expect(maintenanceActionForRow(row("retry_ocr"))).toBe("redo");
-    expect(maintenanceActionForRow(row("upgrade_legacy"))).toBe("redo");
+  it("never offers redo to users (#99 owner decision)", () => {
+    expect(maintenanceActionForRow(row("retry_ocr"))).toBeNull();
+    expect(maintenanceActionForRow(row("upgrade_legacy"))).toBeNull();
     expect(maintenanceActionForRow(row("none"))).toBeNull();
+    expect(maintenanceActionForRow(row("rebuild_result"))).toBe("rebuild");
   });
 
   it("requires confirmation before redo but not derived rebuild", () => {
