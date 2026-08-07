@@ -19,7 +19,7 @@
         "description": "terminal runner executes automatic-local memory.build",
         "status": "observed",
         "evidence_ids": [
-          "evidence:34e16ba8a9fad599"
+          "evidence:cd285d205166e74e"
         ]
       },
       {
@@ -43,17 +43,15 @@
       {
         "step_id": "rebuild.2",
         "description": "START/PROGRESS/RESULT/DONE tokens per key",
-        "status": "observed",
-        "evidence_ids": [
-          "evidence:9462c4cb423cc555"
-        ]
+        "status": "unresolved",
+        "evidence_ids": []
       },
       {
         "step_id": "rebuild.3",
         "description": "result-hash.pending created before mutation",
         "status": "observed",
         "evidence_ids": [
-          "evidence:f36fd972e1f3a906"
+          "evidence:229a189b07d761f7"
         ]
       },
       {
@@ -61,7 +59,7 @@
         "description": "publish + clear on verified success (commit point)",
         "status": "observed",
         "evidence_ids": [
-          "evidence:dfac26b76b7090d1"
+          "evidence:c352744f7142c7ae"
         ]
       },
       {
@@ -85,18 +83,14 @@
       {
         "step_id": "restore.2",
         "description": "copy versions/<label>/fulltext.md → render/ only",
-        "status": "observed",
-        "evidence_ids": [
-          "evidence:9962b81d0aa5d138"
-        ]
+        "status": "unresolved",
+        "evidence_ids": []
       },
       {
         "step_id": "restore.3",
         "description": "provenance + drift override (DRIFTED if older)",
-        "status": "observed",
-        "evidence_ids": [
-          "evidence:69f1fcf046b9dcf9"
-        ]
+        "status": "unresolved",
+        "evidence_ids": []
       }
     ],
     "status": "partial"
@@ -121,7 +115,7 @@
         "description": "crash-orphan recovery from paperforge-redo-*",
         "status": "observed",
         "evidence_ids": [
-          "evidence:e5b1973ab94d241b"
+          "evidence:b7b0cbbee777bdb8"
         ]
       },
       {

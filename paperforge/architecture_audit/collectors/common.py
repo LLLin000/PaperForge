@@ -284,12 +284,43 @@ DEFAULT_PYTHON_REGISTRY: tuple[WrapperSpec, ...] = (
         confidence=Confidence.EXACT,
     ),
     WrapperSpec(
+        wrapper_id="ocr_hash.create_result_hash_pending",
+        qualified_name="ocr_hash.create_result_hash_pending",
+        facts=(
+            EffectSpec(
+                effect_kind=EffectKind.BUSINESS_MUTATION,
+            ),
+        ),
+        confidence=Confidence.EXACT,
+    ),
+    WrapperSpec(
         wrapper_id="sync.attach_next_actions",
         qualified_name="sync._attach_next_actions",
         facts=(
             EffectSpec(
                 effect_kind=EffectKind.DISPOSABLE_SNAPSHOT,
                 intent_mode=IntentMode.DIRECT_INVOCATION,
+            ),
+        ),
+        confidence=Confidence.EXACT,
+    ),
+    WrapperSpec(
+        wrapper_id="sync.run_terminal_followups",
+        qualified_name="sync._run_terminal_followups",
+        facts=(
+            EffectSpec(
+                effect_kind=EffectKind.MATERIALIZATION_BUILD,
+                intent_mode=IntentMode.DIRECT_INVOCATION,
+            ),
+        ),
+        confidence=Confidence.EXACT,
+    ),
+    WrapperSpec(
+        wrapper_id="ocr.recover_redo_orphans",
+        qualified_name="ocr.recover_redo_orphans",
+        facts=(
+            EffectSpec(
+                effect_kind=EffectKind.BUSINESS_MUTATION,
             ),
         ),
         confidence=Confidence.EXACT,

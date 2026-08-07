@@ -2,8 +2,8 @@
   "schema_version": 1,
   "reviewer_type": "maintainer_annotation",
   "contract_digest": "sha256:af09f13321648918fd2a04fa588e7c101414e4f4a85c8b47cc79c3f782f1942f",
-  "survey_digest": "sha256:c166cba37b3cafd8fbd95f222919e094bbe6a5117abebbcb8fbc95c8ecf96d0e",
-  "audit_digest": "sha256:4ff1e39ea831b219f7317b9ee87dfe61cb04743289229979bf294d28f545decd",
+  "survey_digest": "sha256:4d13c75fea4c37303ab07ea5f60c8ff76744218f7410ec72924abee430763d1b",
+  "audit_digest": "sha256:a2dd8137c4f395fa12549a279f27616b7a301cb647027c107e90d125af83f843",
   "reconciler_version": "1.0.0",
   "adjudications": [
     {
@@ -63,12 +63,12 @@
     },
     {
       "finding_id": "review:coverage_honest",
-      "message": "本报告证据为人工/测试支撑（extractor 标注 source）；python_ast/typescript_compiler 收集器在 #133 前标记 unavailable，gate 不可用是刻意保守",
+      "message": "Survey 由 #133 确定性收集器生成（python_ast + typescript_compiler 均 complete，212+ 源文件扫描）；manual_contract_trace 人工契约追踪 extractor 尚未提供，gate 不可用是刻意保守",
       "epistemic_status": "inferred"
     },
     {
       "finding_id": "review:transaction_evidence_gap",
-      "message": "事务/Stop/崩溃恢复等 blocking 性质仅有单元测试支撑（observed_static + test extractor），尚无 observed_runtime 事实；建议在 #133 阶段补充集成观测",
+      "message": "事务/Stop/崩溃恢复等 blocking 性质仅有单元测试支撑（observed_static + test extractor），尚无 observed_runtime 事实；建议后续补充集成观测/故障注入",
       "epistemic_status": "inferred"
     }
   ],
@@ -87,6 +87,6 @@
   "rationale": "维护者注解层：确定性 findings 之外的语义判断（已修复项、覆盖边界、证据缺口）全部收口在本 overlay，不进入 View 的 deterministic 投影",
   "run_metadata": {
     "model": "manual-maintainer-annotation",
-    "created_at": "2026-08-07T08:55:08.625039+00:00"
+    "created_at": "2026-08-07T13:22:50.060349+00:00"
   }
 }
