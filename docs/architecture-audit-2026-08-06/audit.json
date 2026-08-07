@@ -3,7 +3,7 @@
   "content": {
     "reconciler_version": "1.0.0",
     "bound_contract_digest": "sha256:af09f13321648918fd2a04fa588e7c101414e4f4a85c8b47cc79c3f782f1942f",
-    "bound_survey_digest": "sha256:c166cba37b3cafd8fbd95f222919e094bbe6a5117abebbcb8fbc95c8ecf96d0e",
+    "bound_survey_digest": "sha256:4d13c75fea4c37303ab07ea5f60c8ff76744218f7410ec72924abee430763d1b",
     "findings": [
       {
         "finding_id": "finding:ee33c90ba2eeb8a6",
@@ -75,7 +75,7 @@
         "subject": "",
         "rule_status": "violated",
         "severity": "blocking",
-        "message": "required coverage incomplete: python_ast=unavailable, typescript_compiler=unavailable"
+        "message": "required coverage incomplete: manual_contract_trace=unavailable"
       },
       {
         "finding_id": "finding:495bdc972b0a2204",
@@ -147,7 +147,7 @@
         "rule_id": "coverage.required_complete",
         "evaluated": true,
         "status": "violated",
-        "reason": "required coverage incomplete: python_ast=unavailable, typescript_compiler=unavailable"
+        "reason": "required coverage incomplete: manual_contract_trace=unavailable"
       },
       {
         "rule_id": "retrieval.v2",
@@ -164,32 +164,28 @@
       "status": "failed",
       "gate_eligible": false,
       "reasons": [
-        "python_ast_coverage_unavailable",
-        "repository_dirty",
-        "typescript_compiler_coverage_unavailable"
+        "manual_contract_trace_coverage_unavailable",
+        "repository_dirty"
       ]
     },
     "coverage": [
       {
         "extractor": "manual_contract_trace",
-        "status": "complete"
+        "status": "unavailable",
+        "diagnostics": [
+          "missing coverage row"
+        ]
       },
       {
         "extractor": "python_ast",
-        "status": "unavailable",
-        "diagnostics": [
-          "#133 collector not implemented; manual trace only"
-        ]
+        "status": "complete"
       },
       {
         "extractor": "typescript_compiler",
-        "status": "unavailable",
-        "diagnostics": [
-          "#133 collector not implemented; manual trace only"
-        ]
+        "status": "complete"
       }
     ]
   },
   "run_metadata": {},
-  "semantic_digest": "sha256:4ff1e39ea831b219f7317b9ee87dfe61cb04743289229979bf294d28f545decd"
+  "semantic_digest": "sha256:a2dd8137c4f395fa12549a279f27616b7a301cb647027c107e90d125af83f843"
 }

@@ -1,14 +1,13 @@
 {
   "schema_version": 1,
-  "audit_digest": "sha256:4ff1e39ea831b219f7317b9ee87dfe61cb04743289229979bf294d28f545decd",
-  "review_digest": "sha256:32e85b7d2dbfc19f0f3120bbd77f6771a8e22f620a37acfd1d64bbc999b6228b",
+  "audit_digest": "sha256:a2dd8137c4f395fa12549a279f27616b7a301cb647027c107e90d125af83f843",
+  "review_digest": "sha256:dfab56548b47137353138b80e57be2fb3e35d49df47fd10a8e1b7eed1dd29068",
   "assessment": {
     "status": "failed",
     "gate_eligible": false,
     "reasons": [
-      "python_ast_coverage_unavailable",
-      "repository_dirty",
-      "typescript_compiler_coverage_unavailable"
+      "manual_contract_trace_coverage_unavailable",
+      "repository_dirty"
     ]
   },
   "deterministic_findings": [
@@ -82,7 +81,7 @@
       "subject": "",
       "rule_status": "violated",
       "severity": "blocking",
-      "message": "required coverage incomplete: python_ast=unavailable, typescript_compiler=unavailable"
+      "message": "required coverage incomplete: manual_contract_trace=unavailable"
     },
     {
       "finding_id": "finding:495bdc972b0a2204",
@@ -159,12 +158,12 @@
     },
     {
       "finding_id": "review:coverage_honest",
-      "message": "本报告证据为人工/测试支撑（extractor 标注 source）；python_ast/typescript_compiler 收集器在 #133 前标记 unavailable，gate 不可用是刻意保守",
+      "message": "Survey 由 #133 确定性收集器生成（python_ast + typescript_compiler 均 complete，212+ 源文件扫描）；manual_contract_trace 人工契约追踪 extractor 尚未提供，gate 不可用是刻意保守",
       "epistemic_status": "inferred"
     },
     {
       "finding_id": "review:transaction_evidence_gap",
-      "message": "事务/Stop/崩溃恢复等 blocking 性质仅有单元测试支撑（observed_static + test extractor），尚无 observed_runtime 事实；建议在 #133 阶段补充集成观测",
+      "message": "事务/Stop/崩溃恢复等 blocking 性质仅有单元测试支撑（observed_static + test extractor），尚无 observed_runtime 事实；建议后续补充集成观测/故障注入",
       "epistemic_status": "inferred"
     }
   ],

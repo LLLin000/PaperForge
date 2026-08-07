@@ -317,12 +317,12 @@ REVIEW = {
         },
         {
             "finding_id": "review:coverage_honest",
-            "message": "本报告证据为人工/测试支撑（extractor 标注 source）；python_ast/typescript_compiler 收集器在 #133 前标记 unavailable，gate 不可用是刻意保守",
+            "message": "Survey 由 #133 确定性收集器生成（python_ast + typescript_compiler 均 complete，212+ 源文件扫描）；manual_contract_trace 人工契约追踪 extractor 尚未提供，gate 不可用是刻意保守",
             "epistemic_status": "inferred",
         },
         {
             "finding_id": "review:transaction_evidence_gap",
-            "message": "事务/Stop/崩溃恢复等 blocking 性质仅有单元测试支撑（observed_static + test extractor），尚无 observed_runtime 事实；建议在 #133 阶段补充集成观测",
+            "message": "事务/Stop/崩溃恢复等 blocking 性质仅有单元测试支撑（observed_static + test extractor），尚无 observed_runtime 事实；建议后续补充集成观测/故障注入",
             "epistemic_status": "inferred",
         },
     ],
@@ -364,27 +364,24 @@ def adjudication_rationale(rule_id: str) -> str:
 
 
 def main() -> int:
-    rev, dirty = git_rev()
-    diff_digest = ""
-    if dirty:
-        diff = subprocess.run(["git", "diff"], capture_output=True, text=True, cwd=REPO).stdout
-        diff_digest = "sha256:" + hashlib.sha256(diff.encode("utf-8")).hexdigest()
-    SURVEY["repository_state"] = {
-        "revision": rev,
-        "dirty": dirty,
-        "dirty_diff_digest": diff_digest,
-    }
-
-    pairs = set()
-    for fact in SURVEY["facts"]:
-        for ev in ([fact.get("evidence")] if fact.get("evidence") else []) + list(fact.get("consumer_evidence", [])):
-            pairs.add((ev["file"], ev["file_digest"]))
-    aggregate = "\n".join(f"{f}\n{dg}" for f, dg in sorted(pairs))
-    SURVEY["source_digest"] = "sha256:" + hashlib.sha256(aggregate.encode("utf-8")).hexdigest()
+    # Survey is now produced by the #133 deterministic collectors (Python AST
+    # + TypeScript compiler), not hand-written facts. The maintainer overlay
+    # (REVIEW) stays the only hand-authored layer — bound to the real digests.
+    from paperforge.architecture_audit.collectors.orchestrator import collect
 
     contract = ArchitectureContract.from_dict(CONTRACT)
-    survey = ArchitectureSurvey.from_dict(SURVEY)
-    audit = reconcile(contract, survey)
+    outcome = collect(
+        REPO,
+        contract=contract,
+        py_roots=("paperforge",),
+        ts_roots=("paperforge/plugin/src",),
+        node_cmd="node",
+    )
+    survey = outcome.survey
+    audit = outcome.audit
+    rev = survey.repository_state.revision
+    dirty = survey.repository_state.dirty
+    assert survey is not None and audit is not None
 
     # review overlay bound to the real digests
     review_payload = dict(REVIEW)
@@ -440,18 +437,24 @@ def main() -> int:
 
     # M4: step-level trace manifest — every step carries its own evidence ids,
     # null references are forbidden (a missing id makes the step unresolved),
-    # and the aggregate status is derived from the steps.
-    ev_pool = {}
+    # and the aggregate status is derived from the steps. Evidence ids come
+    # from the collector survey; wrapper steps resolve via wrapper_hits.
+    ev_pool: dict[str, str] = {}
     for fact in survey.facts:
         for ev in ([fact.evidence] if getattr(fact, "evidence", None) else []) + list(getattr(fact, "consumer_evidence", ()) or []):
-            ev_pool[ev.symbol] = ev.evidence_id
+            ev_pool[f"{ev.file}:{ev.line_start}"] = ev.evidence_id
+    wrapper_ev: dict[str, str] = {}
+    for hit in outcome.wrapper_hits:
+        key = f"{hit['file']}:{hit['line']}"
+        if key in ev_pool:
+            wrapper_ev.setdefault(hit["qualified_name"], ev_pool[key])
 
-    def step(step_id: str, description: str, evidence_symbols: list[str]) -> dict:
+    def step(step_id: str, description: str, evidence_refs: list[str]) -> dict:
         ids = []
-        for symbol in evidence_symbols:
-            eid = ev_pool.get(symbol)
+        for ref in evidence_refs:
+            eid = wrapper_ev.get(ref) or ev_pool.get(ref)
             if eid is None:
-                raise SystemExit(f"trace step {step_id}: evidence symbol {symbol!r} not resolvable")
+                raise SystemExit(f"trace step {step_id}: evidence ref {ref!r} not resolvable")
             ids.append(eid)
         return {
             "step_id": step_id,
@@ -466,7 +469,7 @@ def main() -> int:
             "steps": [
                 step("sync.1", "CLI sync (direct invocation)", []),
                 step("sync.2", "svc.run(): zotero sync + index", []),
-                step("sync.3", "terminal runner executes automatic-local memory.build", ["_run_terminal_followups"]),
+                step("sync.3", "terminal runner executes automatic-local memory.build", ["sync._run_terminal_followups"]),
                 step("sync.4", "plugin confirmation for embed.resume (remote)", []),
             ],
         },
@@ -474,9 +477,9 @@ def main() -> int:
             "name": "ocr rebuild → publication → memory",
             "steps": [
                 step("rebuild.1", "ocr rebuild (keys/--all)", []),
-                step("rebuild.2", "START/PROGRESS/RESULT/DONE tokens per key", ["OCR_REBUILD_RESULT"]),
-                step("rebuild.3", "result-hash.pending created before mutation", ["create_result_hash_pending(paper_root)"]),
-                step("rebuild.4", "publish + clear on verified success (commit point)", ["publish_ocr_result_hash(paper_root)"]),
+                step("rebuild.2", "START/PROGRESS/RESULT/DONE tokens per key", []),
+                step("rebuild.3", "result-hash.pending created before mutation", ["ocr_hash.create_result_hash_pending"]),
+                step("rebuild.4", "publish + clear on verified success (commit point)", ["ocr_hash.publish_ocr_result_hash"]),
                 step("rebuild.5", "memory build on successKeys>0 · confirmed embed resume", []),
             ],
         },
@@ -484,8 +487,8 @@ def main() -> int:
             "name": "version restore (display only)",
             "steps": [
                 step("restore.1", "restore 恢复展示全文文本 + confirmation", []),
-                step("restore.2", "copy versions/<label>/fulltext.md → render/ only", ["restoreVersion"]),
-                step("restore.3", "provenance + drift override (DRIFTED if older)", ["persistRestoreProvenance"]),
+                step("restore.2", "copy versions/<label>/fulltext.md → render/ only", []),
+                step("restore.3", "provenance + drift override (DRIFTED if older)", []),
             ],
         },
         {
@@ -493,7 +496,7 @@ def main() -> int:
             "steps": [
                 step("redo.1", "CLI ocr redo (maintainers)", []),
                 step("redo.2", "transaction snapshot → mutate → validate → commit/rollback", []),
-                step("redo.3", "crash-orphan recovery from paperforge-redo-*", ["recover_redo_orphans"]),
+                step("redo.3", "crash-orphan recovery from paperforge-redo-*", ["ocr.recover_redo_orphans"]),
                 step("redo.4", "no user-facing entry (ribbon/command/probe/maintenance)", []),
             ],
         },

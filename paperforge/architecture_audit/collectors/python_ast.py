@@ -212,20 +212,26 @@ class _SinkVisitor(ast.NodeVisitor):
             ).to_dict()
         )
 
-    def _match_wrapper(self, qualified: str) -> WrapperSpec | None:
+    def _match_wrapper(self, node: ast.Call, qualified: str | None) -> WrapperSpec | None:
         for spec in self.wrappers:
-            if qualified.endswith(spec.qualified_name) or qualified == spec.qualified_name:
+            tail = spec.qualified_name.rsplit(".", 1)[-1]
+            if qualified is not None and (
+                qualified.endswith(spec.qualified_name) or qualified == spec.qualified_name
+            ):
+                return spec
+            # local (module-level) name call: `_run_terminal_followups(...)`
+            if isinstance(node.func, ast.Name) and node.func.id == tail:
                 return spec
         return None
 
     def visit_Call(self, node: ast.Call) -> None:
         func = node.func
         qualified = self.index.resolve(func)
+        wrapper = self._match_wrapper(node, qualified)
+        if wrapper is not None:
+            self._apply_wrapper(node, wrapper)
+            return
         if qualified is not None:
-            wrapper = self._match_wrapper(qualified)
-            if wrapper is not None:
-                self._apply_wrapper(node, wrapper)
-                return
             tail = qualified.rsplit(".", 1)[-1]
             module_head = qualified.split(".")[0]
             if module_head in _SUBPROCESS_MODULES and tail in _SUBPROCESS_NAMES:
