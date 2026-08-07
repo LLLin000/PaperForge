@@ -1073,7 +1073,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
 
     # Write memory-runtime-state.json snapshot (JS-First Memory State)
     try:
-        from paperforge.memory.db import open_live_reader, get_connection, get_memory_db_path
+        from paperforge.memory.db import get_connection, get_memory_db_path, open_live_reader
         from paperforge.memory.query import get_memory_status
         from paperforge.memory.schema import get_schema_version
         ms = get_memory_status(vault)
@@ -1184,7 +1184,14 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             version=__import__("paperforge").__version__,
             data=payload,
         )
-        print(result.to_json())
+        try:
+            out = result.to_json()
+        except (TypeError, ValueError) as exc:
+            # Transport contract: a payload that cannot serialize must fail
+            # loudly (rc 1), never print nothing and return success.
+            print(f"Error: status payload not JSON-serializable: {exc}", file=sys.stderr)
+            return 1
+        print(out)
         return 0
 
     print("PaperForge status")

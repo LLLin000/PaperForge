@@ -66,9 +66,12 @@ describe("resolvePaperFulltextPath (#126 P0)", () => {
   it("handles Windows separators in the resolved path", () => {
     const winVault = "D:\\vault";
     const winOcr = "D:\\vault\\System\\PaperForge\\ocr";
-    const exists = (p: string) =>
-      p === "D:\\vault\\System\\PaperForge\\ocr\\K\\fulltext.md";
+    // The expected fallback is constructed with path.join so the assertion
+    // holds on every runner OS; the input paths are Windows-style vault
+    // values, which is what an Obsidian Windows vault provides.
+    const expected = path.join(winOcr, "K", "fulltext.md");
+    const exists = (p: string) => p === expected;
     const result = resolvePaperFulltextPath(winVault, "", "K", winOcr, exists);
-    expect(result).toBe("D:\\vault\\System\\PaperForge\\ocr\\K\\fulltext.md");
+    expect(result).toBe(expected);
   });
 });
