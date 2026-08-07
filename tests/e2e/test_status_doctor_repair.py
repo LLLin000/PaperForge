@@ -18,7 +18,13 @@ def test_status_json(e2e_cli_invoker: tuple) -> None:
         f"Status command failed:\nstdout:{result.stdout}\nstderr:{result.stderr}"
     )
 
-    envelope = json.loads(result.stdout)
+    try:
+        envelope = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise AssertionError(
+            f"status --json stdout is not JSON (rc={result.returncode}):\n"
+            f"stdout:{result.stdout!r}\nstderr:{result.stderr!r}"
+        ) from exc
     payload = envelope["data"]
     assert "formal_notes" in payload, "Status JSON missing 'formal_notes' key"
     assert envelope["version"] != ""

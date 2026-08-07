@@ -131,11 +131,24 @@ jobs:
         run: python -m pytest tests/e2e/ -m e2e -v --tb=short --timeout=120
       - name: Run audit tests
         run: python -m pytest tests/audit/ -m audit -v --tb=short --timeout=120
-      - name: Architecture deterministic gate (#134)
-        # Consumes DeterministicAudit only. Review/HTML never affect exit
-        # status. Allowlist stays empty until rules are reviewed low-FP;
-        # ineligible audits (e.g. missing TS compiler) are reported skipped
-        # with machine-readable reasons, never silently all-clear.
+
+  # ---------------------------------------------------------------------------
+  # L4b — Architecture deterministic gate (#134, review: independent job)
+  # ---------------------------------------------------------------------------
+  # Runs regardless of the E2E/audit outcome so one commit reports each
+  # contract independently: "product E2E red / architecture green" instead of
+  # the first failure hiding the rest. Consumes DeterministicAudit only;
+  # Review/HTML never affect exit status. Allowlist stays empty until rules
+  # are reviewed low-FP; ineligible audits report skipped with reasons.
+  architecture-gate:
+    name: L4b — Architecture Deterministic Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run deterministic collector + gate
         run: |
           python -m paperforge.architecture_audit.collectors.orchestrator \
             --root . \
@@ -184,6 +197,7 @@ jobs:
       - ocr-regression
       - plugin-tests
       - e2e-tests
+      - architecture-gate
     runs-on: ubuntu-latest
     steps:
       - uses: re-actors/alls-green@v1.2.2
