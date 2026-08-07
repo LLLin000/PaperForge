@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "audit_digest": "sha256:a2dd8137c4f395fa12549a279f27616b7a301cb647027c107e90d125af83f843",
-  "review_digest": "sha256:dfab56548b47137353138b80e57be2fb3e35d49df47fd10a8e1b7eed1dd29068",
+  "audit_digest": "sha256:0ac91531b00f36754aebaa5bc9392b13e43e883c3931ca79936b3c198359be85",
+  "review_digest": "sha256:b3508208d5f49ade7c263a8ef4b5e22631ea84193e9dbe4a0c2d7d6de0569bf2",
   "assessment": {
     "status": "failed",
     "gate_eligible": false,
@@ -11,6 +11,30 @@
     ]
   },
   "deterministic_findings": [
+    {
+      "finding_id": "finding:0867ae7e96cc44dd",
+      "rule_id": "role_authority.ocr_execution",
+      "subject": "ocr_run",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "coverage incomplete: cannot enumerate all callsites"
+    },
+    {
+      "finding_id": "finding:4e5d007660a2a351",
+      "rule_id": "role_authority.ocr_stop",
+      "subject": "ocr_rebuild",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "coverage incomplete: cannot enumerate all callsites"
+    },
+    {
+      "finding_id": "finding:0bc2c256e19d05bc",
+      "rule_id": "role_authority.embed_stop",
+      "subject": "embed_build_resume",
+      "rule_status": "unresolved",
+      "severity": "blocking",
+      "message": "coverage incomplete: cannot enumerate all callsites"
+    },
     {
       "finding_id": "finding:ee33c90ba2eeb8a6",
       "rule_id": "query.side_effect_free",
@@ -102,6 +126,24 @@
   ],
   "review_adjudications": [
     {
+      "finding_id": "finding:0867ae7e96cc44dd",
+      "adjudication": "needs_evidence",
+      "rationale": "coverage incomplete: cannot enumerate all callsites; evidence required before judgement",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:4e5d007660a2a351",
+      "adjudication": "needs_evidence",
+      "rationale": "coverage incomplete: cannot enumerate all callsites; evidence required before judgement",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:0bc2c256e19d05bc",
+      "adjudication": "needs_evidence",
+      "rationale": "coverage incomplete: cannot enumerate all callsites; evidence required before judgement",
+      "epistemic_status": "unresolved"
+    },
+    {
       "finding_id": "finding:ee33c90ba2eeb8a6",
       "adjudication": "needs_evidence",
       "rationale": "probe/status callsites have not been fully enumerated by a collector (#133); current effect facts cannot prove the query is side-effect free",
@@ -172,6 +214,11 @@
       "request_id": "req:unit_authority_facts",
       "subject": "publication_authority",
       "question": "为 library/ocr_raw/retrieval/vectors 各发布单元记录 unit-authority 观察事实（collector 或显式清单）"
+    },
+    {
+      "request_id": "req:operation_authority_facts",
+      "subject": "role_authority",
+      "question": "为 ocr_run/ocr_rebuild/embed_build_resume 记录 execution/lifecycle_state/stop 权威观察事实（controller 单 owner + 无第二 UI 入口的集成确认）"
     },
     {
       "request_id": "req:runtime_transaction_evidence",
