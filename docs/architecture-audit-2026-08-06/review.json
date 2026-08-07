@@ -2,8 +2,8 @@
   "schema_version": 1,
   "reviewer_type": "maintainer_annotation",
   "contract_digest": "sha256:af09f13321648918fd2a04fa588e7c101414e4f4a85c8b47cc79c3f782f1942f",
-  "survey_digest": "sha256:13654e00450fd6042e83ffef3606f90711b81831bb33c189b8448cb160411f92",
-  "audit_digest": "sha256:40c5e73abbfc27e67e626fbfceb04855cb2673564681cb21e0d66b849d55db55",
+  "survey_digest": "sha256:c166cba37b3cafd8fbd95f222919e094bbe6a5117abebbcb8fbc95c8ecf96d0e",
+  "audit_digest": "sha256:4ff1e39ea831b219f7317b9ee87dfe61cb04743289229979bf294d28f545decd",
   "reconciler_version": "1.0.0",
   "adjudications": [
     {
@@ -87,6 +87,6 @@
   "rationale": "维护者注解层：确定性 findings 之外的语义判断（已修复项、覆盖边界、证据缺口）全部收口在本 overlay，不进入 View 的 deterministic 投影",
   "run_metadata": {
     "model": "manual-maintainer-annotation",
-    "created_at": "2026-08-06T00:00:00Z"
+    "created_at": "2026-08-07T08:55:08.625039+00:00"
   }
 }

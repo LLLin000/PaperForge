@@ -18,6 +18,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -294,7 +295,7 @@ SURVEY = {
     "run_metadata": {
         "tool_version": "1.0.0",
         "extractor_versions": {"manual_contract_trace": "1", "python_ast": "unavailable", "typescript_compiler": "unavailable"},
-        "generated_at": "2026-08-06T00:00:00Z",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
     },
 }
 
@@ -338,7 +339,7 @@ REVIEW = {
         },
     ],
     "rationale": "维护者注解层：确定性 findings 之外的语义判断（已修复项、覆盖边界、证据缺口）全部收口在本 overlay，不进入 View 的 deterministic 投影",
-    "run_metadata": {"model": "manual-maintainer-annotation", "created_at": "2026-08-06T00:00:00Z"},
+    "run_metadata": {"model": "manual-maintainer-annotation", "created_at": datetime.now(timezone.utc).isoformat()},
 }
 
 
