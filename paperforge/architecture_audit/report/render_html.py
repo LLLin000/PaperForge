@@ -140,8 +140,8 @@ def meta_row(data: ReportData) -> str:
     repo_state = survey.get("repository_state", {}) if survey else {}
     out = []
     if repo_state:
-        out.append(f"<span>revision <b>{_esc(repo_state.get('revision', ''))}</b></span>")
-        out.append(f"<span>dirty <b>{_esc(repo_state.get('dirty'))}</b></span>")
+        out.append(f"<span>source revision <b>{_esc(repo_state.get('revision', ''))}</b></span>")
+        out.append(f"<span>source checkout dirty <b>{_esc(repo_state.get('dirty'))}</b></span>")
         if repo_state.get("dirty_diff_digest"):
             out.append(f"<span>diff <span class='digest'>{_esc(repo_state['dirty_diff_digest'])}</span></span>")
     for label, value in spans:

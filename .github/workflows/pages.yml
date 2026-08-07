@@ -9,9 +9,6 @@ name: Architecture Report Pages
 on:
   push:
     branches: [master]
-    paths:
-      - "docs/architecture-audit-2026-08-06/**"
-      - "paperforge/architecture_audit/**"
   workflow_dispatch:
 
 permissions:

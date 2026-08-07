@@ -224,7 +224,8 @@
     "generated_at": "2026-08-06T00:00:00Z"
   },
   "repository_state": {
-    "revision": "e7cd3eade467e3425d1f2277d883549f01ea0e6e",
-    "dirty": false
+    "revision": "ad00ac2a7fc1ad4bc68aa47c4d42419043d1e05e",
+    "dirty": true,
+    "dirty_diff_digest": "sha256:a30c390645b35e6ecde27fea65e0a51b09d6c38163dcd1dc72c5b2879817f6ed"
   }
 }

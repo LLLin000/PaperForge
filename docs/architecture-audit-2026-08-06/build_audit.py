@@ -67,6 +67,40 @@ def evidence(file: str, symbol: str, span: int = 8, extractor: str = "manual_aud
     }
 
 
+def evidence_callsite(
+    file: str,
+    exact_text: str,
+    symbol: str,
+    enclosing: str | None = None,
+    span: int = 1,
+    extractor: str = "test:test_ocr_hash_contract",
+) -> dict:
+    """Locate a writer callsite by its exact source text (never hardcoded
+    line numbers). Unique match required: missing text fails the build,
+    ambiguous matches require an enclosing symbol and still fail otherwise."""
+    lines = (REPO / file).read_text(encoding="utf-8").splitlines()
+    matches = [idx for idx, line in enumerate(lines) if exact_text in line]
+    if enclosing is not None:
+        enc_start, enc_end = find_symbol(file, enclosing, span=max(len(lines), 1))
+        matches = [idx for idx in matches if enc_start - 1 <= idx < enc_end]
+    if not matches:
+        raise SystemExit(f"callsite {exact_text!r} not found in {file}")
+    if len(matches) > 1:
+        detail = ", ".join(str(idx + 1) for idx in matches)
+        raise SystemExit(f"callsite {exact_text!r} not unique in {file}: lines {detail}")
+    start = matches[0] + 1
+    return {
+        "file": file,
+        "file_digest": sha(file),
+        "symbol": symbol,
+        "line_start": start,
+        "line_end": start + span - 1,
+        "extractor": extractor,
+        "epistemic_status": "observed_static",
+        "confidence": "exact",
+    }
+
+
 # ---------------------------------------------------------------- contract
 
 PUBLICATION_UNITS = [
@@ -207,34 +241,32 @@ SURVEY = {
         {
             "kind": "canonical_write", "unit_id": "ocr_derived.generation",
             "actor_kind": "worker", "writer_id": "ocr.rebuild", "via_publication_protocol": True,
-            "evidence": {"file": "paperforge/worker/ocr_rebuild.py",
-                         "file_digest": sha("paperforge/worker/ocr_rebuild.py"),
-                         "symbol": "create_result_hash_pending(paper_root)", "line_start": 176, "line_end": 176,
-                         "extractor": "test:test_ocr_hash_contract", "epistemic_status": "observed_static", "confidence": "exact"},
+            "evidence": evidence_callsite("paperforge/worker/ocr_rebuild.py",
+                         "create_result_hash_pending(paper_root)",
+                         "create_result_hash_pending(paper_root)"),
         },
         {
             "kind": "canonical_write", "unit_id": "ocr_derived.generation",
             "actor_kind": "worker", "writer_id": "ocr.rebuild", "via_publication_protocol": True,
-            "evidence": {"file": "paperforge/worker/ocr_rebuild.py",
-                         "file_digest": sha("paperforge/worker/ocr_rebuild.py"),
-                         "symbol": "publish_ocr_result_hash(paper_root)", "line_start": 605, "line_end": 606,
-                         "extractor": "test:test_ocr_hash_contract", "epistemic_status": "observed_static", "confidence": "exact"},
+            "evidence": evidence_callsite("paperforge/worker/ocr_rebuild.py",
+                         "publish_ocr_result_hash(paper_root)",
+                         "publish_ocr_result_hash(paper_root)",
+                         span=2),
         },
         {
             "kind": "canonical_write", "unit_id": "ocr_derived.generation",
             "actor_kind": "worker", "writer_id": "ocr.postprocess", "via_publication_protocol": True,
-            "evidence": {"file": "paperforge/worker/ocr.py",
-                         "file_digest": sha("paperforge/worker/ocr.py"),
-                         "symbol": "create_result_hash_pending(ocr_root)", "line_start": 1832, "line_end": 1832,
-                         "extractor": "test:test_ocr_hash_contract", "epistemic_status": "observed_static", "confidence": "exact"},
+            "evidence": evidence_callsite("paperforge/worker/ocr.py",
+                         "create_result_hash_pending(ocr_root)",
+                         "create_result_hash_pending(ocr_root)"),
         },
         {
             "kind": "canonical_write", "unit_id": "ocr_derived.generation",
             "actor_kind": "worker", "writer_id": "ocr.postprocess", "via_publication_protocol": True,
-            "evidence": {"file": "paperforge/worker/ocr.py",
-                         "file_digest": sha("paperforge/worker/ocr.py"),
-                         "symbol": "publish_ocr_result_hash(ocr_root)", "line_start": 2124, "line_end": 2125,
-                         "extractor": "test:test_ocr_hash_contract", "epistemic_status": "observed_static", "confidence": "exact"},
+            "evidence": evidence_callsite("paperforge/worker/ocr.py",
+                         "publish_ocr_result_hash(ocr_root)",
+                         "publish_ocr_result_hash(ocr_root)",
+                         span=2),
         },
         {
             "kind": "canonical_write", "unit_id": "ocr_display.fulltext",

@@ -3,7 +3,7 @@
   "content": {
     "reconciler_version": "1.0.0",
     "bound_contract_digest": "sha256:af09f13321648918fd2a04fa588e7c101414e4f4a85c8b47cc79c3f782f1942f",
-    "bound_survey_digest": "sha256:bf21ce3712f877686bf7a5db34c6d916f8009f2675ce23f6b3501f8bd4fdfea2",
+    "bound_survey_digest": "sha256:13654e00450fd6042e83ffef3606f90711b81831bb33c189b8448cb160411f92",
     "findings": [
       {
         "finding_id": "finding:ee33c90ba2eeb8a6",
@@ -161,10 +161,11 @@
       }
     ],
     "assessment": {
-      "status": "incomplete",
+      "status": "failed",
       "gate_eligible": false,
       "reasons": [
         "python_ast_coverage_unavailable",
+        "repository_dirty",
         "typescript_compiler_coverage_unavailable"
       ]
     },
@@ -190,5 +191,5 @@
     ]
   },
   "run_metadata": {},
-  "semantic_digest": "sha256:00a8c003b2bfc2af668fd70ff245f541e2c61f47b4dff664a5e586e8ee3bd2f7"
+  "semantic_digest": "sha256:40c5e73abbfc27e67e626fbfceb04855cb2673564681cb21e0d66b849d55db55"
 }
