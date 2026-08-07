@@ -2,8 +2,8 @@
   "schema_version": 1,
   "content": {
     "reconciler_version": "1.0.0",
-    "bound_contract_digest": "sha256:0cbe438667733121b78d02d1b9971607de74c263e3994e91b567db7385a3f204",
-    "bound_survey_digest": "sha256:cda72e491e0d5db26ddf83b060027e41d740c632bfc4e962c34b81e3c365c1f0",
+    "bound_contract_digest": "sha256:34bed5c162b852df6391c736ab5ec84e1d27880737440a6ae08984e48a218149",
+    "bound_survey_digest": "sha256:81f53953080e50ca390665de52780efaed67db7017f47dbac8b05a9ec98daadf",
     "findings": [
       {
         "finding_id": "finding:0867ae7e96cc44dd",
@@ -183,14 +183,6 @@
         "rule_status": "planned_gap",
         "severity": "informational",
         "message": "declared but not yet effective"
-      },
-      {
-        "finding_id": "finding:e99c7d822b2eaeea",
-        "rule_id": "collectors.deterministic",
-        "subject": "",
-        "rule_status": "planned_gap",
-        "severity": "informational",
-        "message": "declared but not yet effective"
       }
     ],
     "rule_coverage": [
@@ -273,8 +265,9 @@
       },
       {
         "rule_id": "collectors.deterministic",
-        "evaluated": false,
-        "reason": "planned"
+        "evaluated": true,
+        "status": "satisfied",
+        "reason": "all required extractor coverage complete"
       }
     ],
     "assessment": {
@@ -296,5 +289,5 @@
     ]
   },
   "run_metadata": {},
-  "semantic_digest": "sha256:d469d51487f57b0242bf44dc6a4f63a4a24d0333ceafaa1a4248ce48cfa1ee99"
+  "semantic_digest": "sha256:ee6d805e8a67217697c95431b0125cfd0e9cad61e0ae4cd64e3e976292c39740"
 }

@@ -234,10 +234,9 @@ CONTRACT = {
         },
         {
             "rule_id": "collectors.deterministic", "kind": "coverage_complete",
-            "subject": "", "lifecycle": "planned", "enforcement": "blocking",
-            "effective_after": {"issue": "#133"},
-            "known_gap": {"issue": "#133", "rationale": "deterministic collectors deferred until RC acceptance"},
-            "description": "deterministic collectors feed the #131 reconciler",
+            "subject": "", "lifecycle": "active", "enforcement": "blocking",
+            "effective_after": {"issue": "#133", "commit": "815dc615"},
+            "description": "deterministic collectors feed the #131 reconciler (#133 accepted 2026-08-07)",
         },
     ],
     "exceptions": [],

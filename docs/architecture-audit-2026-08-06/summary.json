@@ -1,5 +1,5 @@
 {
-  "revision": "7a01b5f2788377bf9cbc8a2ccc3bae29fddfa389",
+  "revision": "815dc61500bbc96ad20619a1b0674c2fac9fd444",
   "dirty": true,
   "assessment": "failed",
   "gate_eligible": false,
@@ -136,15 +136,6 @@
       "message": "declared but not yet effective",
       "finding_id": "finding:495bdc972b0a2204",
       "evidence": []
-    },
-    {
-      "rule_id": "collectors.deterministic",
-      "subject": "",
-      "status": "planned_gap",
-      "severity": "informational",
-      "message": "declared but not yet effective",
-      "finding_id": "finding:e99c7d822b2eaeea",
-      "evidence": []
     }
   ],
   "coverage": [
@@ -160,9 +151,9 @@
     }
   ],
   "digests": {
-    "audit": "sha256:d469d51487f57b0242bf44dc6a4f63a4a24d0333ceafaa1a4248ce48cfa1ee99",
-    "contract": "sha256:0cbe438667733121b78d02d1b9971607de74c263e3994e91b567db7385a3f204",
-    "survey": "sha256:cda72e491e0d5db26ddf83b060027e41d740c632bfc4e962c34b81e3c365c1f0",
+    "audit": "sha256:ee6d805e8a67217697c95431b0125cfd0e9cad61e0ae4cd64e3e976292c39740",
+    "contract": "sha256:34bed5c162b852df6391c736ab5ec84e1d27880737440a6ae08984e48a218149",
+    "survey": "sha256:81f53953080e50ca390665de52780efaed67db7017f47dbac8b05a9ec98daadf",
     "review": "sha256:15f9bfc70ae7f29bb542c018e1a22af713e7051fe90c5c8f9d9740f573b1e581",
     "reconciler": "1.0.0"
   },
