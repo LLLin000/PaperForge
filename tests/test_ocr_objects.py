@@ -281,15 +281,15 @@ def test_held_tables_do_not_emit_object_notes(tmp_path: Path) -> None:
 
 
 def test_crop_asset_uses_ocr_page_coordinates_when_dimensions_provided(tmp_path: Path) -> None:
-    import fitz
+    import pymupdf
     from PIL import Image
 
     from paperforge.worker.ocr_objects import _crop_asset_from_pdf
 
     pdf_path = tmp_path / "sample.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=300, height=400)
-    page.draw_rect(fitz.Rect(25, 25, 50, 50), color=(1, 0, 0), fill=(1, 0, 0))
+    page.draw_rect(pymupdf.Rect(25, 25, 50, 50), color=(1, 0, 0), fill=(1, 0, 0))
     doc.save(pdf_path)
     doc.close()
 
@@ -410,9 +410,9 @@ def test_crop_asset_uses_cached_page_without_opening_pdf(tmp_path: Path, monkeyp
 
     def _boom(*args, **kwargs):
         called["count"] += 1
-        raise AssertionError("fitz.open should not be called on cache hit")
+        raise AssertionError("pymupdf.open should not be called on cache hit")
 
-    monkeypatch.setattr("fitz.open", _boom)
+    monkeypatch.setattr("pymupdf.open", _boom)
 
     dst = tmp_path / "crop.jpg"
     ok = _crop_asset_from_pdf(
@@ -428,15 +428,15 @@ def test_crop_asset_uses_cached_page_without_opening_pdf(tmp_path: Path, monkeyp
 
 
 def test_extract_objects_opens_pdf_once_across_multiple_cache_miss_pages(tmp_path: Path, monkeypatch) -> None:
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
     pdf_path = tmp_path / "sample.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     for _ in range(3):
         page = doc.new_page(width=300, height=400)
-        page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(1, 0, 0), fill=(1, 0, 0))
+        page.draw_rect(pymupdf.Rect(25, 25, 75, 75), color=(1, 0, 0), fill=(1, 0, 0))
     doc.save(pdf_path)
     doc.close()
 
@@ -473,13 +473,13 @@ def test_extract_objects_opens_pdf_once_across_multiple_cache_miss_pages(tmp_pat
     }
 
     open_count = {"count": 0}
-    real_open = fitz.open
+    real_open = pymupdf.open
 
     def _counting_open(*args, **kwargs):
         open_count["count"] += 1
         return real_open(*args, **kwargs)
 
-    monkeypatch.setattr("fitz.open", _counting_open)
+    monkeypatch.setattr("pymupdf.open", _counting_open)
 
     extract_and_write_objects(
         pdf_path=pdf_path,
@@ -494,14 +494,14 @@ def test_extract_objects_opens_pdf_once_across_multiple_cache_miss_pages(tmp_pat
 
 
 def test_extract_objects_renders_same_page_once_for_multiple_crops(tmp_path: Path, monkeypatch) -> None:
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
     pdf_path = tmp_path / "sample.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=300, height=400)
-    page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(1, 0, 0), fill=(1, 0, 0))
+    page.draw_rect(pymupdf.Rect(25, 25, 75, 75), color=(1, 0, 0), fill=(1, 0, 0))
     doc.save(pdf_path)
     doc.close()
 
@@ -549,15 +549,15 @@ def test_extract_objects_renders_same_page_once_for_multiple_crops(tmp_path: Pat
 
 
 def test_extract_objects_cache_hit_does_not_eager_open_shared_pdf(tmp_path: Path, monkeypatch) -> None:
-    import fitz
+    import pymupdf
     from PIL import Image
 
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
     pdf_path = tmp_path / "sample.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=300, height=400)
-    page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(1, 0, 0), fill=(1, 0, 0))
+    page.draw_rect(pymupdf.Rect(25, 25, 75, 75), color=(1, 0, 0), fill=(1, 0, 0))
     doc.save(pdf_path)
     doc.close()
 
@@ -566,9 +566,9 @@ def test_extract_objects_cache_hit_does_not_eager_open_shared_pdf(tmp_path: Path
     Image.new("RGB", (600, 800), "white").save(pages_dir / "page_001.jpg")
 
     def _boom(*args, **kwargs):
-        raise AssertionError("fitz.open should not be called when page cache already exists")
+        raise AssertionError("pymupdf.open should not be called when page cache already exists")
 
-    monkeypatch.setattr("fitz.open", _boom)
+    monkeypatch.setattr("pymupdf.open", _boom)
 
     figure_inventory = {
         "matched_figures": [
@@ -627,7 +627,7 @@ def test_extract_objects_pdf_open_failure_still_writes_markdown(tmp_path: Path, 
     def _boom(*args, **kwargs):
         raise RuntimeError("cannot open pdf")
 
-    monkeypatch.setattr("fitz.open", _boom)
+    monkeypatch.setattr("pymupdf.open", _boom)
 
     extract_and_write_objects(
         pdf_path=pdf_path,
@@ -707,14 +707,14 @@ def test_extract_and_write_objects_with_held_figures_and_completeness(tmp_path: 
 
 def test_rebuild_ignores_existing_page_cache(tmp_path: Path, monkeypatch) -> None:
     """Rebuild (use_disk_page_cache=False) does not read existing pages/page_001.jpg."""
-    import fitz
+    import pymupdf
     from PIL import Image
     from paperforge.worker.ocr_objects import extract_and_write_objects, _find_cached_page_image
 
     pdf_path = tmp_path / "sample.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=300, height=400)
-    page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(0, 0, 1), fill=(0, 0, 1))
+    page.draw_rect(pymupdf.Rect(25, 25, 75, 75), color=(0, 0, 1), fill=(0, 0, 1))
     doc.save(pdf_path)
     doc.close()
 
@@ -757,13 +757,13 @@ def test_rebuild_ignores_existing_page_cache(tmp_path: Path, monkeypatch) -> Non
 
 def test_rebuild_does_not_create_page_cache(tmp_path: Path) -> None:
     """Rebuild (use_disk_page_cache=False) must not create pages/page_001.jpg."""
-    import fitz
+    import pymupdf
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
     pdf_path = tmp_path / "sample.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=300, height=400)
-    page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(0, 0, 1), fill=(0, 0, 1))
+    page.draw_rect(pymupdf.Rect(25, 25, 75, 75), color=(0, 0, 1), fill=(0, 0, 1))
     doc.save(pdf_path)
     doc.close()
 
@@ -798,16 +798,16 @@ def test_rebuild_does_not_create_page_cache(tmp_path: Path) -> None:
 def test_page_render_context_not_used_when_dimensions_missing(tmp_path: Path, monkeypatch) -> None:
     """PageRenderContext should not be used when page_width or page_height is 0."""
     from paperforge.worker.ocr_objects import _crop_asset_from_pdf, PageRenderContext
-    import fitz
+    import pymupdf
 
     pdf_path = tmp_path / "sample.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=300, height=400)
-    page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(0, 0, 1), fill=(0, 0, 1))
+    page.draw_rect(pymupdf.Rect(25, 25, 75, 75), color=(0, 0, 1), fill=(0, 0, 1))
     doc.save(pdf_path)
     doc.close()
 
-    ctx = PageRenderContext(fitz.open(str(pdf_path)))
+    ctx = PageRenderContext(pymupdf.open(str(pdf_path)))
     calls = {"count": 0}
     real_get = ctx.get_page_image
     def _counting_get(*args, **kwargs):
@@ -830,16 +830,16 @@ def test_page_render_context_not_used_when_dimensions_missing(tmp_path: Path, mo
 def test_rotated_crop_does_not_use_page_render_context(tmp_path: Path, monkeypatch) -> None:
     """Rotated crops must bypass PageRenderContext and use PDF clip fallback."""
     from paperforge.worker.ocr_objects import _crop_asset_from_pdf, PageRenderContext
-    import fitz
+    import pymupdf
 
     pdf_path = tmp_path / "sample.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=300, height=400)
-    page.draw_rect(fitz.Rect(25, 25, 50, 50), color=(0, 0, 1), fill=(0, 0, 1))
+    page.draw_rect(pymupdf.Rect(25, 25, 50, 50), color=(0, 0, 1), fill=(0, 0, 1))
     doc.save(pdf_path)
     doc.close()
 
-    ctx = PageRenderContext(fitz.open(str(pdf_path)))
+    ctx = PageRenderContext(pymupdf.open(str(pdf_path)))
     calls = {"count": 0}
     real_get = ctx.get_page_image
     def _counting_get(*args, **kwargs):
@@ -863,10 +863,10 @@ def test_rotated_crop_does_not_use_page_render_context(tmp_path: Path, monkeypat
 def test_resolve_object_crop_pdf_path_prefers_phase1_resolved_path(tmp_path: Path) -> None:
     """_resolve_object_crop_pdf_path prefers Phase 1 resolved path over stale meta."""
     from paperforge.worker.ocr_objects import _resolve_object_crop_pdf_path
-    import fitz
+    import pymupdf
 
     resolved = tmp_path / "resolved.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     doc.new_page(width=300, height=400)
     doc.save(resolved)
     doc.close()
@@ -893,13 +893,13 @@ def test_resolve_object_crop_pdf_path_prefers_phase1_resolved_path(tmp_path: Pat
 
 def test_extract_and_write_objects_with_use_disk_page_cache_false_and_valid_pdf(tmp_path: Path) -> None:
     """Verify use_disk_page_cache=False works with a valid PDF."""
-    import fitz
+    import pymupdf
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
     pdf_path = tmp_path / "sample.pdf"
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=300, height=400)
-    page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(0, 0, 1), fill=(0, 0, 1))
+    page.draw_rect(pymupdf.Rect(25, 25, 75, 75), color=(0, 0, 1), fill=(0, 0, 1))
     doc.save(pdf_path)
     doc.close()
 

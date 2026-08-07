@@ -229,7 +229,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
                     "page_pdf_lines_by_page": page_pdf_lines_by_page}
 
         from paperforge.worker.ocr_artifacts import compute_pdf_fingerprint
-        import fitz
+        import pymupdf
 
         current_fp = compute_pdf_fingerprint(source_pdf_path)
         if current_fp == "unknown":
@@ -308,7 +308,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
                         if pw and ph and pw > 0 and ph > 0:
                             rect = _map_ocr_bbox_to_pdf_rect(bbox, pw, ph, page)
                         else:
-                            rect = fitz.Rect(*bbox)
+                            rect = pymupdf.Rect(*bbox)
                     except Exception:
                         continue
                     if rect.is_empty or rect.width <= 0 or rect.height <= 0:

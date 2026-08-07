@@ -8,19 +8,18 @@ This is the single source of truth for span_metadata — NOT the OCR engine.
 
 from __future__ import annotations
 
+import os as _os
 from collections.abc import Sequence
+from contextlib import redirect_stderr as _redirect_stderr
 from pathlib import Path
 from typing import Any
 
-import fitz
-
-import os as _os
-from contextlib import redirect_stderr as _redirect_stderr
+import pymupdf
 
 
 def _fitz_quiet_open(path: str):
     with _redirect_stderr(_os.devnull):
-        return fitz.open(path)
+        return pymupdf.open(path)
 
 
 def _map_ocr_bbox_to_pdf_rect(
@@ -29,30 +28,30 @@ def _map_ocr_bbox_to_pdf_rect(
     page_height: float,
     pdf_page: Any,
 ) -> Any:
-    """Scale OCR-space bbox to PDF-space fitz.Rect.
+    """Scale OCR-space bbox to PDF-space pymupdf.Rect.
 
     OCR bboxes come from rendered page images; PDF coordinates may
     differ.  Scales by the ratio of PDF page dimensions to OCR image
     dimensions.
     """
-    import fitz
+    import pymupdf
 
     pdf_rect = pdf_page.rect
     scale_x = pdf_rect.width / page_width if page_width else 1.0
     scale_y = pdf_rect.height / page_height if page_height else 1.0
-    return fitz.Rect(
+    return pymupdf.Rect(
         bbox[0] * scale_x,
         bbox[1] * scale_y,
         bbox[2] * scale_x,
         bbox[3] * scale_y,
     )
 
-def _rect_from_bbox(bbox) -> fitz.Rect | None:
-    """Convert a 4-element bbox to fitz.Rect, returning None for invalid input."""
+def _rect_from_bbox(bbox) -> pymupdf.Rect | None:
+    """Convert a 4-element bbox to pymupdf.Rect, returning None for invalid input."""
     if not bbox or len(bbox) < 4:
         return None
     try:
-        rect = fitz.Rect(float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3]))
+        rect = pymupdf.Rect(float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3]))
     except Exception:
         return None
     if rect.is_empty or rect.width <= 0 or rect.height <= 0:
@@ -60,7 +59,7 @@ def _rect_from_bbox(bbox) -> fitz.Rect | None:
     return rect
 
 
-def _char_center_hits_rect(char: dict, rect: fitz.Rect, tol: float = 0.75) -> bool:
+def _char_center_hits_rect(char: dict, rect: pymupdf.Rect, tol: float = 0.75) -> bool:
     """Check if a character's center falls within a rect (with tolerance)."""
     cb = _rect_from_bbox(char.get("bbox"))
     if cb is None:
@@ -73,7 +72,7 @@ def _char_center_hits_rect(char: dict, rect: fitz.Rect, tol: float = 0.75) -> bo
     )
 
 
-def _span_hits_rect(span: dict, rect: fitz.Rect) -> bool:
+def _span_hits_rect(span: dict, rect: pymupdf.Rect) -> bool:
     """Check if a span's characters (or span bbox fallback) overlap a rect."""
     chars = span.get("chars") or []
     if chars:
@@ -88,7 +87,7 @@ def _span_hits_rect(span: dict, rect: fitz.Rect) -> bool:
 
 def _spans_from_rawdict(
     rawdict: dict,
-    rect: fitz.Rect | None = None,
+    rect: pymupdf.Rect | None = None,
 ) -> list[dict] | None:
     """Extract flat span metadata list from a rawdict page dict, optionally filtered by rect."""
     spans: list[dict] = []
@@ -195,7 +194,7 @@ def extract_pdf_spans_for_block(
     """Extract per-character span metadata from a PDF at a given bbox.
 
     Args:
-        pdf_doc: An open fitz.Document.
+        pdf_doc: An open pymupdf.Document.
         page_num: 0-indexed page number.
         bbox: [x1, y1, x2, y2] in OCR (or PDF) coordinates.
         page_width: OCR image width for scaling to PDF space.
@@ -205,7 +204,7 @@ def extract_pdf_spans_for_block(
         List of per-character span dicts, or None if extraction fails.
         Each span: {"size": float, "font": str, "flags": int, "color": int}
     """
-    import fitz
+    import pymupdf
 
     try:
         if page_num < 0 or page_num >= len(pdf_doc):
@@ -221,7 +220,7 @@ def extract_pdf_spans_for_block(
         if page_width and page_height and page_width > 0 and page_height > 0:
             rect = _map_ocr_bbox_to_pdf_rect(bbox, page_width, page_height, page)
         else:
-            rect = fitz.Rect(*bbox)
+            rect = pymupdf.Rect(*bbox)
     except Exception:
         return None
 
@@ -275,19 +274,19 @@ def _extract_rect_features(
     margin: float = 10.0,
 ) -> dict:
     """Extract structured features from a PyMuPDF drawing for container admission."""
-    import fitz
+    import pymupdf
 
     fill = drawing.get("fill")
     color = drawing.get("color")
     stroke_width = drawing.get("width", 0) or 0
     raw_rect = drawing.get("rect")
     if not raw_rect:
-        return {"rect": fitz.Rect(0, 0, 0, 0), "width": 0, "height": 0, "area": 0,
+        return {"rect": pymupdf.Rect(0, 0, 0, 0), "width": 0, "height": 0, "area": 0,
                 "page_area_ratio": 0, "fill_rgb": None, "stroke_rgb": None,
                 "stroke_width": 0, "is_filled": False, "has_border": False,
                 "is_low_contrast_gray_border": False, "line_like": False, "near_page_edges": False}
 
-    rect = fitz.Rect(raw_rect)
+    rect = pymupdf.Rect(raw_rect)
     w = rect.width
     h = rect.height
     area = w * h
@@ -343,7 +342,7 @@ def _component_compatible(a: dict, b: dict) -> bool:
 def _merge_vertical_components(features: list[dict], pw: float = 0, ph: float = 0) -> list[dict]:
     """Group features by x-range overlap >=0.8 and vertical gap -2..5pt.
     Returns merged feature dicts with component_grouped=True."""
-    import fitz
+    import pymupdf
 
     if not features:
         return []
@@ -354,7 +353,7 @@ def _merge_vertical_components(features: list[dict], pw: float = 0, ph: float = 
     for i, a in enumerate(sorted_feats):
         if used[i]:
             continue
-        union_rect = fitz.Rect(a["rect"])
+        union_rect = pymupdf.Rect(a["rect"])
         for j in range(i + 1, len(sorted_feats)):
             if used[j]:
                 continue
@@ -370,7 +369,7 @@ def _merge_vertical_components(features: list[dict], pw: float = 0, ph: float = 
                 continue
             if not _component_compatible(a, b):
                 continue
-            union_rect = fitz.Rect(
+            union_rect = pymupdf.Rect(
                 min(union_rect.x0, b["rect"].x0),
                 min(union_rect.y0, b["rect"].y0),
                 max(union_rect.x1, b["rect"].x1),
@@ -409,7 +408,7 @@ def _word_center_inside_rect(word_bbox, block_rect) -> bool:
 
 
 def _word_belongs_to_block(word_bbox, block_rect) -> bool:
-    word_rect = fitz.Rect(*word_bbox)
+    word_rect = pymupdf.Rect(*word_bbox)
     return (
         _word_center_inside_rect(word_bbox, block_rect)
         or _bbox_overlap_ratio(word_rect, block_rect) >= 0.30
@@ -426,12 +425,12 @@ def _has_container_text(
     """Count chars from PDF text blocks + OCR raw blocks inside rect.
     Threshold: >= 10 chars total.
     OCR raw block bbox must be mapped to PDF space."""
-    import fitz
+    import pymupdf
 
     char_count = 0
     if pdf_blocks:
         for block in pdf_blocks:
-            pdf_rect = fitz.Rect(block[:4])
+            pdf_rect = pymupdf.Rect(block[:4])
             if _bbox_overlap_ratio(rect, pdf_rect) >= 0.30:
                 char_count += len(str(block[4] or "")) if len(block) > 4 else 0
 
@@ -443,7 +442,7 @@ def _has_container_text(
             try:
                 block_rect = _map_ocr_bbox_to_pdf_rect(block_bbox, pw, ph, pdf_page)
             except Exception:
-                block_rect = fitz.Rect(*block_bbox)
+                block_rect = pymupdf.Rect(*block_bbox)
             if _bbox_overlap_ratio(rect, block_rect) >= 0.30:
                 char_count += len(str(block.get("text", "")))
 
@@ -454,7 +453,7 @@ def _extract_visual_container_rects(
     page: Any,
     raw_blocks_for_page: list[dict] | None = None,
     pdf_blocks: Sequence[Any] | None = None,
-) -> list[fitz.Rect]:
+) -> list[pymupdf.Rect]:
     """Extract visible rectangle regions (filled or bordered) from a PDF page.
 
     Args:
@@ -511,7 +510,7 @@ def _extract_visual_container_rects(
     candidates.extend(overlapping_merged)
 
     # --- Task 5: Text evidence admission ---
-    accepted: list[fitz.Rect] = []
+    accepted: list[pymupdf.Rect] = []
     for feat in candidates:
         vs = feat["is_filled"] or (feat["has_border"] and not feat["is_low_contrast_gray_border"])
         if not vs:
@@ -590,7 +589,7 @@ def backfill_span_metadata_from_pdf(
                     if pw and ph and pw > 0 and ph > 0:
                         rect = _map_ocr_bbox_to_pdf_rect(bbox, pw, ph, page)
                     else:
-                        rect = fitz.Rect(*bbox)
+                        rect = pymupdf.Rect(*bbox)
                 except Exception:
                     continue
 
@@ -644,7 +643,7 @@ def backfill_span_metadata_from_pdf(
                     except Exception:
                         continue
                 else:
-                    block_rect = fitz.Rect(*bbox)
+                    block_rect = pymupdf.Rect(*bbox)
 
                 for container_rect in containers:
                     overlap_ratio = _bbox_overlap_ratio(container_rect, block_rect)
@@ -848,7 +847,7 @@ def backfill_missing_text_from_pdf(
             # Expand rect slightly to account for OCR-PDF alignment drift
             pad_x = max(1.0, rect.width * 0.01)
             pad_y = max(1.0, rect.height * 0.05)
-            expanded = fitz.Rect(
+            expanded = pymupdf.Rect(
                 rect.x0 - pad_x,
                 rect.y0 - pad_y,
                 rect.x1 + pad_x,
