@@ -2,9 +2,33 @@
   "schema_version": 1,
   "content": {
     "reconciler_version": "1.0.0",
-    "bound_contract_digest": "sha256:af09f13321648918fd2a04fa588e7c101414e4f4a85c8b47cc79c3f782f1942f",
-    "bound_survey_digest": "sha256:4d13c75fea4c37303ab07ea5f60c8ff76744218f7410ec72924abee430763d1b",
+    "bound_contract_digest": "sha256:7cc0386631d998a443059c2b55f20b4898d70ff95d2161bff80f58bd868a362e",
+    "bound_survey_digest": "sha256:5feabc8696849d25263cf0aa21ef4bcaf45b85f3576778f41364249fdcda90a8",
     "findings": [
+      {
+        "finding_id": "finding:0867ae7e96cc44dd",
+        "rule_id": "role_authority.ocr_execution",
+        "subject": "ocr_run",
+        "rule_status": "unresolved",
+        "severity": "blocking",
+        "message": "coverage incomplete: cannot enumerate all callsites"
+      },
+      {
+        "finding_id": "finding:4e5d007660a2a351",
+        "rule_id": "role_authority.ocr_stop",
+        "subject": "ocr_rebuild",
+        "rule_status": "unresolved",
+        "severity": "blocking",
+        "message": "coverage incomplete: cannot enumerate all callsites"
+      },
+      {
+        "finding_id": "finding:0bc2c256e19d05bc",
+        "rule_id": "role_authority.embed_stop",
+        "subject": "embed_build_resume",
+        "rule_status": "unresolved",
+        "severity": "blocking",
+        "message": "coverage incomplete: cannot enumerate all callsites"
+      },
       {
         "finding_id": "finding:ee33c90ba2eeb8a6",
         "rule_id": "query.side_effect_free",
@@ -95,6 +119,24 @@
       }
     ],
     "rule_coverage": [
+      {
+        "rule_id": "role_authority.ocr_execution",
+        "evaluated": true,
+        "status": "unresolved",
+        "reason": "coverage incomplete: cannot enumerate all callsites"
+      },
+      {
+        "rule_id": "role_authority.ocr_stop",
+        "evaluated": true,
+        "status": "unresolved",
+        "reason": "coverage incomplete: cannot enumerate all callsites"
+      },
+      {
+        "rule_id": "role_authority.embed_stop",
+        "evaluated": true,
+        "status": "unresolved",
+        "reason": "coverage incomplete: cannot enumerate all callsites"
+      },
       {
         "rule_id": "query.side_effect_free",
         "evaluated": true,
@@ -187,5 +229,5 @@
     ]
   },
   "run_metadata": {},
-  "semantic_digest": "sha256:a2dd8137c4f395fa12549a279f27616b7a301cb647027c107e90d125af83f843"
+  "semantic_digest": "sha256:0ac91531b00f36754aebaa5bc9392b13e43e883c3931ca79936b3c198359be85"
 }

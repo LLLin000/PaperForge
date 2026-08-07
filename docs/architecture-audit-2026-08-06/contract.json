@@ -86,12 +86,64 @@
   "operations": [
     "sync",
     "probe_status",
-    "ocr_run",
-    "ocr_rebuild",
     "ocr_redo",
-    "embed_build_resume",
     "memory_build",
-    "restore_display"
+    "restore_display",
+    {
+      "operation_id": "ocr_run",
+      "authorities": [
+        {
+          "role": "execution",
+          "authority_id": "backend.ocr.executor",
+          "observers": [
+            "plugin.ocr_process_controller"
+          ]
+        },
+        {
+          "role": "stop",
+          "authority_id": "plugin.ocr_process_controller",
+          "delegated_executors": [
+            "cli.cooperative_stop"
+          ]
+        }
+      ]
+    },
+    {
+      "operation_id": "ocr_rebuild",
+      "authorities": [
+        {
+          "role": "execution",
+          "authority_id": "backend.ocr.executor",
+          "observers": [
+            "plugin.ocr_process_controller"
+          ]
+        },
+        {
+          "role": "stop",
+          "authority_id": "plugin.ocr_process_controller",
+          "delegated_executors": [
+            "cli.cooperative_stop"
+          ]
+        }
+      ]
+    },
+    {
+      "operation_id": "embed_build_resume",
+      "authorities": [
+        {
+          "role": "execution",
+          "authority_id": "backend.embed.executor"
+        },
+        {
+          "role": "lifecycle_state",
+          "authority_id": "plugin.embed_build_controller"
+        },
+        {
+          "role": "stop",
+          "authority_id": "plugin.embed_build_controller"
+        }
+      ]
+    }
   ],
   "required_extractors": [
     "manual_contract_trace",
@@ -99,6 +151,33 @@
     "typescript_compiler"
   ],
   "rules": [
+    {
+      "rule_id": "role_authority.ocr_execution",
+      "kind": "role_authority",
+      "subject": "ocr_run",
+      "authority_role": "execution",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "OCR run/re-build execution has exactly one authority (backend executor); the plugin controller is an observer"
+    },
+    {
+      "rule_id": "role_authority.ocr_stop",
+      "kind": "role_authority",
+      "subject": "ocr_rebuild",
+      "authority_role": "stop",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "Cooperative stop has exactly one authority (plugin controller) with a delegated backend executor"
+    },
+    {
+      "rule_id": "role_authority.embed_stop",
+      "kind": "role_authority",
+      "subject": "embed_build_resume",
+      "authority_role": "stop",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "Embed build stop has exactly one authority (plugin controller)"
+    },
     {
       "rule_id": "query.side_effect_free",
       "kind": "query_side_effect",

@@ -132,11 +132,50 @@ CONTRACT = {
     "asset_groups": ["library", "ocr_raw", "ocr_derived", "retrieval", "vectors"],
     "publication_units": PUBLICATION_UNITS,
     "operations": [
-        "sync", "probe_status", "ocr_run", "ocr_rebuild", "ocr_redo",
-        "embed_build_resume", "memory_build", "restore_display",
+        "sync", "probe_status", "ocr_redo", "memory_build", "restore_display",
+        {
+            "operation_id": "ocr_run",
+            "authorities": [
+                {"role": "execution", "authority_id": "backend.ocr.executor", "observers": ["plugin.ocr_process_controller"]},
+                {"role": "stop", "authority_id": "plugin.ocr_process_controller", "delegated_executors": ["cli.cooperative_stop"]},
+            ],
+        },
+        {
+            "operation_id": "ocr_rebuild",
+            "authorities": [
+                {"role": "execution", "authority_id": "backend.ocr.executor", "observers": ["plugin.ocr_process_controller"]},
+                {"role": "stop", "authority_id": "plugin.ocr_process_controller", "delegated_executors": ["cli.cooperative_stop"]},
+            ],
+        },
+        {
+            "operation_id": "embed_build_resume",
+            "authorities": [
+                {"role": "execution", "authority_id": "backend.embed.executor"},
+                {"role": "lifecycle_state", "authority_id": "plugin.embed_build_controller"},
+                {"role": "stop", "authority_id": "plugin.embed_build_controller"},
+            ],
+        },
     ],
     "required_extractors": ["manual_contract_trace", "python_ast", "typescript_compiler"],
     "rules": [
+        {
+            "rule_id": "role_authority.ocr_execution", "kind": "role_authority",
+            "subject": "ocr_run", "authority_role": "execution",
+            "lifecycle": "active", "enforcement": "blocking",
+            "description": "OCR run/re-build execution has exactly one authority (backend executor); the plugin controller is an observer",
+        },
+        {
+            "rule_id": "role_authority.ocr_stop", "kind": "role_authority",
+            "subject": "ocr_rebuild", "authority_role": "stop",
+            "lifecycle": "active", "enforcement": "blocking",
+            "description": "Cooperative stop has exactly one authority (plugin controller) with a delegated backend executor",
+        },
+        {
+            "rule_id": "role_authority.embed_stop", "kind": "role_authority",
+            "subject": "embed_build_resume", "authority_role": "stop",
+            "lifecycle": "active", "enforcement": "blocking",
+            "description": "Embed build stop has exactly one authority (plugin controller)",
+        },
         {
             "rule_id": "query.side_effect_free", "kind": "query_side_effect",
             "subject": "probe_status", "lifecycle": "active", "enforcement": "blocking",
@@ -331,6 +370,11 @@ REVIEW = {
             "request_id": "req:unit_authority_facts",
             "subject": "publication_authority",
             "question": "为 library/ocr_raw/retrieval/vectors 各发布单元记录 unit-authority 观察事实（collector 或显式清单）",
+        },
+        {
+            "request_id": "req:operation_authority_facts",
+            "subject": "role_authority",
+            "question": "为 ocr_run/ocr_rebuild/embed_build_resume 记录 execution/lifecycle_state/stop 权威观察事实（controller 单 owner + 无第二 UI 入口的集成确认）",
         },
         {
             "request_id": "req:runtime_transaction_evidence",

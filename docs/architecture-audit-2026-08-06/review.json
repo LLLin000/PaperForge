@@ -1,11 +1,29 @@
 {
   "schema_version": 1,
   "reviewer_type": "maintainer_annotation",
-  "contract_digest": "sha256:af09f13321648918fd2a04fa588e7c101414e4f4a85c8b47cc79c3f782f1942f",
-  "survey_digest": "sha256:4d13c75fea4c37303ab07ea5f60c8ff76744218f7410ec72924abee430763d1b",
-  "audit_digest": "sha256:a2dd8137c4f395fa12549a279f27616b7a301cb647027c107e90d125af83f843",
+  "contract_digest": "sha256:7cc0386631d998a443059c2b55f20b4898d70ff95d2161bff80f58bd868a362e",
+  "survey_digest": "sha256:5feabc8696849d25263cf0aa21ef4bcaf45b85f3576778f41364249fdcda90a8",
+  "audit_digest": "sha256:0ac91531b00f36754aebaa5bc9392b13e43e883c3931ca79936b3c198359be85",
   "reconciler_version": "1.0.0",
   "adjudications": [
+    {
+      "finding_id": "finding:0867ae7e96cc44dd",
+      "adjudication": "needs_evidence",
+      "rationale": "coverage incomplete: cannot enumerate all callsites; evidence required before judgement",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:4e5d007660a2a351",
+      "adjudication": "needs_evidence",
+      "rationale": "coverage incomplete: cannot enumerate all callsites; evidence required before judgement",
+      "epistemic_status": "unresolved"
+    },
+    {
+      "finding_id": "finding:0bc2c256e19d05bc",
+      "adjudication": "needs_evidence",
+      "rationale": "coverage incomplete: cannot enumerate all callsites; evidence required before judgement",
+      "epistemic_status": "unresolved"
+    },
     {
       "finding_id": "finding:ee33c90ba2eeb8a6",
       "adjudication": "needs_evidence",
@@ -79,6 +97,11 @@
       "question": "为 library/ocr_raw/retrieval/vectors 各发布单元记录 unit-authority 观察事实（collector 或显式清单）"
     },
     {
+      "request_id": "req:operation_authority_facts",
+      "subject": "role_authority",
+      "question": "为 ocr_run/ocr_rebuild/embed_build_resume 记录 execution/lifecycle_state/stop 权威观察事实（controller 单 owner + 无第二 UI 入口的集成确认）"
+    },
+    {
       "request_id": "req:runtime_transaction_evidence",
       "subject": "ocr_derived.generation",
       "question": "故障注入/集成测试证明：中途失败 pending 保留、memory 跳过、旧 units/vectors 不清除（observed_runtime）"
@@ -87,6 +110,6 @@
   "rationale": "维护者注解层：确定性 findings 之外的语义判断（已修复项、覆盖边界、证据缺口）全部收口在本 overlay，不进入 View 的 deterministic 投影",
   "run_metadata": {
     "model": "manual-maintainer-annotation",
-    "created_at": "2026-08-07T13:22:50.060349+00:00"
+    "created_at": "2026-08-07T13:46:32.214183+00:00"
   }
 }
