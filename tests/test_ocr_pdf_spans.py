@@ -7,13 +7,13 @@ from unittest.mock import MagicMock
 
 def test_extract_pdf_spans_for_block_returns_spans() -> None:
     """Extract spans from a known PDF block position."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import extract_pdf_spans_for_block
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
-    page.insert_text(fitz.Point(50, 100), "Hello World", fontname="helv", fontsize=14, color=(0, 0, 0))
+    page.insert_text(pymupdf.Point(50, 100), "Hello World", fontname="helv", fontsize=14, color=(0, 0, 0))
 
     spans = extract_pdf_spans_for_block(doc, 0, [40, 80, 200, 120])
     assert spans is not None
@@ -26,11 +26,11 @@ def test_extract_pdf_spans_for_block_returns_spans() -> None:
 
 def test_extract_pdf_spans_empty_bbox() -> None:
     """Empty bbox should return None."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import extract_pdf_spans_for_block
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     doc.new_page(width=612, height=792)
 
     spans = extract_pdf_spans_for_block(doc, 0, [0, 0, 0, 0])
@@ -39,11 +39,11 @@ def test_extract_pdf_spans_empty_bbox() -> None:
 
 def test_extract_pdf_spans_outside_page() -> None:
     """Outside-page bbox should return None."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import extract_pdf_spans_for_block
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     doc.new_page(width=612, height=792)
 
     spans = extract_pdf_spans_for_block(doc, 0, [-100, -100, -50, -50])
@@ -52,11 +52,11 @@ def test_extract_pdf_spans_outside_page() -> None:
 
 def test_extract_pdf_spans_invalid_page() -> None:
     """Invalid page number should return None gracefully."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import extract_pdf_spans_for_block
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     doc.new_page(width=612, height=792)
 
     spans = extract_pdf_spans_for_block(doc, 99, [0, 0, 100, 100])
@@ -65,11 +65,11 @@ def test_extract_pdf_spans_invalid_page() -> None:
 
 def test_extract_pdf_spans_invalid_doc() -> None:
     """Closed doc should return None gracefully."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import extract_pdf_spans_for_block
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     doc.new_page(width=612, height=792)
     doc.close()
 
@@ -79,13 +79,13 @@ def test_extract_pdf_spans_invalid_doc() -> None:
 
 def test_extract_pdf_spans_mapped_coordinates() -> None:
     """OCR bbox at 2x scale should be correctly mapped to PDF coords."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import extract_pdf_spans_for_block
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=595, height=842)
-    page.insert_text(fitz.Point(50, 100), "Mapped Text", fontname="helv", fontsize=14)
+    page.insert_text(pymupdf.Point(50, 100), "Mapped Text", fontname="helv", fontsize=14)
 
     # OCR bbox at 2x scale (OCR dims: 1190x1684, PDF dims: 595x842)
     ocr_bbox = [100, 200, 300, 250]
@@ -97,13 +97,13 @@ def test_extract_pdf_spans_mapped_coordinates() -> None:
 
 def test_extract_pdf_spans_mapped_coordinates_fallback() -> None:
     """Without page_width/page_height, use direct bbox (backward compat)."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import extract_pdf_spans_for_block
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=595, height=842)
-    page.insert_text(fitz.Point(50, 100), "Direct", fontname="helv", fontsize=14)
+    page.insert_text(pymupdf.Point(50, 100), "Direct", fontname="helv", fontsize=14)
 
     spans = extract_pdf_spans_for_block(doc, 0, [40, 80, 120, 120])
     assert spans is not None
@@ -129,15 +129,15 @@ def test_backfill_span_metadata_bad_path() -> None:
 
 def test_extract_visual_container_detects_filled_box() -> None:
     """A small filled blue box should be detected as a container."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
     # Draw a filled blue rectangle (simulating "Available With This Article" box)
     shape = page.new_shape()
-    shape.draw_rect(fitz.Rect(400, 600, 550, 650))
+    shape.draw_rect(pymupdf.Rect(400, 600, 550, 650))
     shape.finish(fill=(0, 0.35, 0.6), color=None, width=0)
     shape.commit()
 
@@ -152,16 +152,16 @@ def test_extract_visual_container_detects_filled_box() -> None:
 
 def test_extract_visual_container_skips_thin_large_decoration() -> None:
     """A thin 0.5pt border covering >50% of page (page decoration) should NOT be detected."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
     # Draw a thin 0.5pt border rectangle covering most of the page
     # (simulating the N6XCZD25 false positive)
     shape = page.new_shape()
-    shape.draw_rect(fitz.Rect(50, 70, 543, 738))
+    shape.draw_rect(pymupdf.Rect(50, 70, 543, 738))
     shape.finish(fill=None, color=(0.13, 0.12, 0.12), width=0.5)
     shape.commit()
 
@@ -173,15 +173,15 @@ def test_extract_visual_container_skips_thin_large_decoration() -> None:
 
 def test_extract_visual_container_detects_thick_border_box() -> None:
     """A thick-border unfilled rectangle should still be detected."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
     # Draw a thick 3pt border rectangle (real callout box)
     shape = page.new_shape()
-    shape.draw_rect(fitz.Rect(400, 600, 550, 650))
+    shape.draw_rect(pymupdf.Rect(400, 600, 550, 650))
     shape.finish(fill=None, color=(0, 0, 0), width=3.0)
     shape.commit()
 
@@ -194,14 +194,14 @@ def test_extract_visual_container_detects_thick_border_box() -> None:
 
 def test_extract_visual_container_keeps_colored_thin_border() -> None:
     """A colored (non-gray) thin-border rectangle should still be detected."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
     shape = page.new_shape()
-    shape.draw_rect(fitz.Rect(400, 600, 550, 650))  # magenta colored thin border
+    shape.draw_rect(pymupdf.Rect(400, 600, 550, 650))  # magenta colored thin border
     shape.finish(fill=None, color=(0.6, 0.2, 0.6), width=0.6)
     shape.commit()
 
@@ -214,14 +214,14 @@ def test_extract_visual_container_keeps_colored_thin_border() -> None:
 
 def test_extract_visual_container_keeps_black_thin_border() -> None:
     """A pure black thin-border rectangle should still be detected."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
     shape = page.new_shape()
-    shape.draw_rect(fitz.Rect(400, 600, 550, 650))
+    shape.draw_rect(pymupdf.Rect(400, 600, 550, 650))
     shape.finish(fill=None, color=(0, 0, 0), width=0.5)
     shape.commit()
 
@@ -234,14 +234,14 @@ def test_extract_visual_container_keeps_black_thin_border() -> None:
 
 def test_extract_visual_container_accepts_small_filled() -> None:
     """A small filled rect is a candidate (not line-like, not page-sized)."""
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
     shape = page.new_shape()
-    shape.draw_rect(fitz.Rect(100, 100, 150, 130))  # 50x30, filled red
+    shape.draw_rect(pymupdf.Rect(100, 100, 150, 130))  # 50x30, filled red
     shape.finish(fill=(1, 0, 0), color=None, width=0)
     shape.commit()
 
@@ -257,14 +257,14 @@ def test_backfill_span_metadata_with_real_pdf() -> None:
     import tempfile
     from pathlib import Path
 
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
-    page.insert_text(fitz.Point(50, 100), "Test Title", fontname="helv", fontsize=16, color=(0, 0, 0))
-    page.insert_text(fitz.Point(50, 200), "Body text here", fontname="helv", fontsize=10, color=(0, 0, 0))
+    page.insert_text(pymupdf.Point(50, 100), "Test Title", fontname="helv", fontsize=16, color=(0, 0, 0))
+    page.insert_text(pymupdf.Point(50, 200), "Body text here", fontname="helv", fontsize=10, color=(0, 0, 0))
 
     tmp = Path(tempfile.mktemp(suffix=".pdf"))
     doc.save(str(tmp))
@@ -326,7 +326,7 @@ def test_has_visible_fill() -> None:
 
 
 def test_small_sidebar_container_with_text_is_admitted() -> None:
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
 
@@ -342,7 +342,7 @@ def test_small_sidebar_container_with_text_is_admitted() -> None:
     pdf_blocks = [(100, 100, 256, 143, "sidebar content with enough text evidence", None, None)]
     rects = _extract_visual_container_rects(page, pdf_blocks=pdf_blocks)
     assert len(rects) == 1
-    assert isinstance(rects[0], fitz.Rect)
+    assert isinstance(rects[0], pymupdf.Rect)
     assert abs(rects[0].x0 - 100) < 1
     assert abs(rects[0].y0 - 100) < 1
 
@@ -463,7 +463,7 @@ def test_component_merge_requires_strong_x_overlap() -> None:
 
 
 def test_admission_maps_ocr_bbox_to_pdf_space() -> None:
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import _extract_visual_container_rects
 
@@ -486,7 +486,7 @@ def test_admission_maps_ocr_bbox_to_pdf_space() -> None:
     ]
     rects = _extract_visual_container_rects(page, raw_blocks_for_page=raw_blocks_for_page)
     assert len(rects) == 1
-    assert isinstance(rects[0], fitz.Rect)
+    assert isinstance(rects[0], pymupdf.Rect)
     assert abs(rects[0].x0 - 100) < 1
     assert abs(rects[0].y0 - 100) < 1
 
@@ -500,15 +500,15 @@ def test_backfill_span_metadata_one_rawdict_per_page() -> None:
     import tempfile
     from pathlib import Path
 
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
-    page.insert_text(fitz.Point(50, 100), "Block A", fontname="helv", fontsize=12)
-    page.insert_text(fitz.Point(50, 200), "Block B", fontname="helv", fontsize=12)
-    page.insert_text(fitz.Point(50, 300), "Block C", fontname="helv", fontsize=12)
+    page.insert_text(pymupdf.Point(50, 100), "Block A", fontname="helv", fontsize=12)
+    page.insert_text(pymupdf.Point(50, 200), "Block B", fontname="helv", fontsize=12)
+    page.insert_text(pymupdf.Point(50, 300), "Block C", fontname="helv", fontsize=12)
 
     tmp = Path(tempfile.mktemp(suffix=".pdf"))
     doc.save(str(tmp))
@@ -538,7 +538,7 @@ def test_backfill_span_metadata_fast_path_matches_single_block_api() -> None:
     import tempfile
     from pathlib import Path
 
-    import fitz
+    import pymupdf
 
     from paperforge.worker.ocr_pdf_spans import (
         _spans_from_rawdict,
@@ -546,16 +546,16 @@ def test_backfill_span_metadata_fast_path_matches_single_block_api() -> None:
         _map_ocr_bbox_to_pdf_rect,
     )
 
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=612, height=792)
-    page.insert_text(fitz.Point(50, 100), "Title Text", fontname="helv", fontsize=16, color=(0, 0, 0))
-    page.insert_text(fitz.Point(50, 200), "Body paragraph", fontname="helv", fontsize=10, color=(0.2, 0.2, 0.2))
+    page.insert_text(pymupdf.Point(50, 100), "Title Text", fontname="helv", fontsize=16, color=(0, 0, 0))
+    page.insert_text(pymupdf.Point(50, 200), "Body paragraph", fontname="helv", fontsize=10, color=(0.2, 0.2, 0.2))
 
     tmp = Path(tempfile.mktemp(suffix=".pdf"))
     doc.save(str(tmp))
     doc.close()
 
-    doc2 = fitz.open(str(tmp))
+    doc2 = pymupdf.open(str(tmp))
     page2 = doc2[0]
     full_rawdict = page2.get_text("rawdict")
 

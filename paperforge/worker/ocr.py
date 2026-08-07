@@ -12,7 +12,7 @@ from typing import Callable
 
 from pathlib import Path
 
-import fitz
+import pymupdf
 import requests
 from PIL import Image
 
@@ -460,7 +460,7 @@ def render_pdf_page_cached(
         rect = page.rect
         zoom_x = target_width / rect.width if target_width and rect.width else 2.0
         zoom_y = target_height / rect.height if target_height and rect.height else 2.0
-        pix = page.get_pixmap(matrix=fitz.Matrix(zoom_x, zoom_y), alpha=False)
+        pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom_x, zoom_y), alpha=False)
         destination.parent.mkdir(parents=True, exist_ok=True)
         pix.save(str(destination))
         return destination
@@ -1838,7 +1838,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     pdf_doc = None
     try:
         if source_pdf and source_pdf.exists():
-            pdf_doc = fitz.open(str(source_pdf))
+            pdf_doc = pymupdf.open(str(source_pdf))
         for page_payload in all_results:
             for res in page_payload.get("layoutParsingResults", []):
                 page_num += 1
@@ -2796,7 +2796,7 @@ def run_ocr(
                     try:
                         import tempfile
 
-                        doc = fitz.open(str(resolved_pdf))
+                        doc = pymupdf.open(str(resolved_pdf))
                         _sanitized_temp = Path(tempfile.mktemp(suffix=".pdf"))
                         doc.save(str(_sanitized_temp), garbage=4, deflate=True, clean=True)
                         doc.close()

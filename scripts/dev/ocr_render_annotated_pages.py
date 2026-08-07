@@ -16,7 +16,7 @@ import json
 import sys
 from pathlib import Path
 
-import fitz
+import pymupdf
 from PIL import Image
 
 
@@ -90,9 +90,9 @@ def _resolve_source_pdf(key: str) -> Path:
     raise FileNotFoundError(f"Could not resolve source PDF for {key}")
 
 
-def _parse_bbox(raw: str) -> fitz.Rect:
+def _parse_bbox(raw: str) -> pymupdf.Rect:
     bbox = json.loads(raw)
-    return fitz.Rect(float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3]))
+    return pymupdf.Rect(float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3]))
 
 
 def _ocr_page_image_path(key: str, page_number: int) -> Path:
@@ -104,12 +104,12 @@ def _ocr_page_image_path(key: str, page_number: int) -> Path:
     raise FileNotFoundError(f"Missing OCR page image for {key} page {page_number}")
 
 
-def _scale_rect_to_pdf(key: str, page_number: int, rect: fitz.Rect, pdf_rect: fitz.Rect) -> fitz.Rect:
+def _scale_rect_to_pdf(key: str, page_number: int, rect: pymupdf.Rect, pdf_rect: pymupdf.Rect) -> pymupdf.Rect:
     image_path = _ocr_page_image_path(key, page_number)
     image_width, image_height = Image.open(image_path).size
     x_scale = pdf_rect.width / image_width
     y_scale = pdf_rect.height / image_height
-    return fitz.Rect(
+    return pymupdf.Rect(
         rect.x0 * x_scale,
         rect.y0 * y_scale,
         rect.x1 * x_scale,
@@ -127,7 +127,7 @@ def render_annotated_pages(key: str, *, zoom: float = 2.0) -> Path:
     out_dir = _FIXTURE_ROOT / key / "annotated_pages"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    doc = fitz.open(str(pdf_path))
+    doc = pymupdf.open(str(pdf_path))
     rows_by_page: dict[int, list[dict[str, str]]] = {}
     for row in trace_rows:
         rows_by_page.setdefault(int(row["page"]), []).append(row)
@@ -144,14 +144,14 @@ def render_annotated_pages(key: str, *, zoom: float = 2.0) -> Path:
             shape.finish(color=color, width=0.8)
             label = f"{row.get('block_id', '')}:{role}"
             page.insert_text(
-                fitz.Point(rect.x0, max(8, rect.y0 - 2)),
+                pymupdf.Point(rect.x0, max(8, rect.y0 - 2)),
                 label,
                 fontsize=5,
                 color=color,
                 overlay=True,
             )
         shape.commit(overlay=True)
-        pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
+        pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False)
         pix.save(str(out_dir / f"page_{page_number:03d}.png"))
 
     doc.close()

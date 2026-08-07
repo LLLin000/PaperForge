@@ -158,7 +158,7 @@ class PageRenderContext:
             if self._doc is None or page_num < 1 or page_num > len(self._doc):
                 return None
             try:
-                import fitz
+                import pymupdf
             except ImportError:
                 return None
 
@@ -167,8 +167,8 @@ class PageRenderContext:
                 rect = page.rect
                 zoom_x = (page_width / rect.width) if page_width > 0 else 2.0
                 zoom_y = (page_height / rect.height) if page_height > 0 else 2.0
-                mat = fitz.Matrix(zoom_x, zoom_y)
-                pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB, alpha=False)
+                mat = pymupdf.Matrix(zoom_x, zoom_y)
+                pix = page.get_pixmap(matrix=mat, colorspace=pymupdf.csRGB, alpha=False)
                 img = PILImage.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 self._images[page_num] = img
                 return img
@@ -244,11 +244,11 @@ def _crop_asset_from_pdf(
         if pdf_path is None or not pdf_path.exists():
             return False
         try:
-            import fitz
+            import pymupdf
         except ImportError:
             return False
         try:
-            created_doc = fitz.open(str(pdf_path))
+            created_doc = pymupdf.open(str(pdf_path))
         except Exception:
             # #118: unreadable/corrupt PDF must not kill the whole redo/rebuild
             # batch — degrade to a cropless object note (was_cropped=False)
@@ -294,7 +294,7 @@ def _crop_asset_from_pdf(
                     return False
 
         try:
-            import fitz
+            import pymupdf
         except ImportError:
             return False
         try:
@@ -302,9 +302,9 @@ def _crop_asset_from_pdf(
             pdf_rect = page.rect
             sx = max(1.0, page_width / pdf_rect.width) if page_width > 0 else 2.0
             sy = max(1.0, page_height / pdf_rect.height) if page_height > 0 else 2.0
-            rect = fitz.Rect(bbox[0] / sx, bbox[1] / sy, bbox[2] / sx, bbox[3] / sy)
+            rect = pymupdf.Rect(bbox[0] / sx, bbox[1] / sy, bbox[2] / sx, bbox[3] / sy)
             zoom = 4.0
-            mat = fitz.Matrix(zoom, zoom)
+            mat = pymupdf.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat, clip=rect)
             dst.parent.mkdir(parents=True, exist_ok=True)
             if rotation_deg:
@@ -683,8 +683,8 @@ def extract_and_write_objects(
     page_render_ctx = None
     if pdf_path and pdf_path.exists():
         try:
-            import fitz
-            doc = fitz.open(str(pdf_path))
+            import pymupdf
+            doc = pymupdf.open(str(pdf_path))
             page_render_ctx = PageRenderContext(doc)
         except Exception:
             pass

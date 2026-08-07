@@ -1,7 +1,7 @@
 """Unit tests for backfill_missing_text_from_pdf."""
 from pathlib import Path
 
-import fitz
+import pymupdf
 
 from paperforge.worker.ocr_pdf_spans import (
     _words_to_text,
@@ -9,7 +9,7 @@ from paperforge.worker.ocr_pdf_spans import (
 )
 
 
-def _save_pdf(doc: fitz.Document, path: Path) -> None:
+def _save_pdf(doc: pymupdf.Document, path: Path) -> None:
     doc.save(str(path))
     doc.close()
 
@@ -35,7 +35,7 @@ def test_backfill_recovers_right_column_text(tmp_path: Path):
     """Create a synthetic single-page PDF with right-column text,
     construct a raw block with empty text and matching bbox.
     """
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=595, height=842)
 
     page.insert_text((300, 100), "The rotator cable was initially described by Clark and Harryman.", fontname="helv", fontsize=10)
@@ -99,7 +99,7 @@ def test_backfill_recovers_right_column_text(tmp_path: Path):
 
 def test_backfill_requires_page_dimensions(tmp_path: Path):
     """Blocks without page_width/page_height are marked unrecovered, not guessed."""
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page()
     page.insert_text((100, 100), "test text", fontname="helv", fontsize=10)
 
@@ -137,10 +137,10 @@ def test_local_reference_pdf_fallback_repairs_only_local_candidate_text() -> Non
 
 def test_backfill_expanded_clip_filters_words_to_original_bbox(monkeypatch, tmp_path):
     from paperforge.worker import ocr_pdf_spans
-    import fitz
+    import pymupdf
 
     class FakePage:
-        rect = fitz.Rect(0, 0, 1000, 1000)
+        rect = pymupdf.Rect(0, 0, 1000, 1000)
         def get_text(self, kind, clip=None):
             if kind == "words":
                 return [
@@ -160,7 +160,7 @@ def test_backfill_expanded_clip_filters_words_to_original_bbox(monkeypatch, tmp_
     monkeypatch.setattr(
         ocr_pdf_spans,
         "_map_ocr_bbox_to_pdf_rect",
-        lambda bbox, pw, ph, page: fitz.Rect(100, 100, 120, 110),
+        lambda bbox, pw, ph, page: pymupdf.Rect(100, 100, 120, 110),
     )
 
     pdf_path = tmp_path / "fake.pdf"
@@ -185,9 +185,9 @@ def test_backfill_expanded_clip_filters_words_to_original_bbox(monkeypatch, tmp_
 
 def test_backfill_keeps_slightly_misaligned_words_by_center_or_overlap():
     from paperforge.worker.ocr_pdf_spans import _word_belongs_to_block
-    import fitz
+    import pymupdf
 
-    block_rect = fitz.Rect(100, 100, 120, 110)
+    block_rect = pymupdf.Rect(100, 100, 120, 110)
 
     assert _word_belongs_to_block((99, 100, 109, 110), block_rect) is True
     assert _word_belongs_to_block((121, 111, 131, 121), block_rect) is False
