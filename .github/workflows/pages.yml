@@ -31,10 +31,49 @@ jobs:
       - name: Regenerate the audit report at HEAD
         # build_audit.py imports paperforge.architecture_audit via repo path
         # (stdlib only) and writes survey/audit/review/view/traces/summary;
-        # render_html.py emits the self-contained index.html.
+        # render_html.py emits the self-contained index.html. Generation is
+        # fail-fast: a missing/ambiguous callsite must not silently deploy the
+        # previous report. On failure the artifact becomes an explicit
+        # failure landing page instead (the stable URL never shows a stale
+        # audit as if it were current).
         run: |
-          python docs/architecture-audit-2026-08-06/build_audit.py
-          python docs/architecture-audit-2026-08-06/render_html.py
+          REV="$(git rev-parse HEAD)"
+          if python docs/architecture-audit-2026-08-06/build_audit.py \
+             && python docs/architecture-audit-2026-08-06/render_html.py; then
+            echo "ok ${REV}" > .pages-status.txt
+          else
+            echo "failed ${REV}" > .pages-status.txt
+            find docs/architecture-audit-2026-08-06 -name '*.json' -delete
+            cat > docs/architecture-audit-2026-08-06/index.html <<'PAGESEOF'
+          <!DOCTYPE html>
+          <html lang="zh">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>PaperForge 架构审计 — 生成失败</title>
+          <style>
+            body { margin:0; background:#0f1115; color:#e5e7eb; font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif; }
+            .wrap { max-width:720px; margin:0 auto; padding:64px 24px; }
+            h1 { font-size:22px; }
+            .fail { color:#dc2626; font-weight:700; }
+            code { background:#1e232c; padding:1px 6px; border-radius:4px; }
+            .sub { color:#9ca3af; font-size:13px; }
+          </style>
+          </head>
+          <body>
+          <div class="wrap">
+            <h1><span class="fail">Architecture audit generation failed</span></h1>
+            <p>本次 push（source revision <code>__REV__</code>）报告生成失败 ——
+            callsite / 证据定位未能满足 fail-fast 要求（缺失或多义匹配）。</p>
+            <p class="sub">稳定评审 URL 不静默展示旧报告：生成失败时本页替代旧审计页。
+            请检查 <code>docs/architecture-audit-2026-08-06/build_audit.py</code> 的
+            <code>evidence_callsite()</code> 目标，修复后重推即可恢复。</p>
+          </div>
+          </body>
+          </html>
+          PAGESEOF
+            sed -i "s/__REV__/${REV}/" docs/architecture-audit-2026-08-06/index.html
+          fi
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
