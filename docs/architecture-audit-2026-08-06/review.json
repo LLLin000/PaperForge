@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "reviewer_type": "maintainer_annotation",
-  "contract_digest": "sha256:7cc0386631d998a443059c2b55f20b4898d70ff95d2161bff80f58bd868a362e",
-  "survey_digest": "sha256:5feabc8696849d25263cf0aa21ef4bcaf45b85f3576778f41364249fdcda90a8",
-  "audit_digest": "sha256:0ac91531b00f36754aebaa5bc9392b13e43e883c3931ca79936b3c198359be85",
+  "contract_digest": "sha256:0cbe438667733121b78d02d1b9971607de74c263e3994e91b567db7385a3f204",
+  "survey_digest": "sha256:cda72e491e0d5db26ddf83b060027e41d740c632bfc4e962c34b81e3c365c1f0",
+  "audit_digest": "sha256:d469d51487f57b0242bf44dc6a4f63a4a24d0333ceafaa1a4248ce48cfa1ee99",
   "reconciler_version": "1.0.0",
   "adjudications": [
     {
@@ -25,39 +25,9 @@
       "epistemic_status": "unresolved"
     },
     {
-      "finding_id": "finding:ee33c90ba2eeb8a6",
-      "adjudication": "needs_evidence",
-      "rationale": "probe/status callsites have not been fully enumerated by a collector (#133); current effect facts cannot prove the query is side-effect free",
-      "epistemic_status": "unresolved"
-    },
-    {
-      "finding_id": "finding:a7b74c528f656249",
+      "finding_id": "finding:e9147fcc50df3bbe",
       "adjudication": "needs_evidence",
       "rationale": "remote follow-up execution/confirmation chain is not fully enumerated; declaration facts do not prove intent on execution",
-      "epistemic_status": "unresolved"
-    },
-    {
-      "finding_id": "finding:fae132c775801cab",
-      "adjudication": "needs_evidence",
-      "rationale": "signal producers/consumers are not fully enumerated; partial observations cannot prove all signals are consumed",
-      "epistemic_status": "unresolved"
-    },
-    {
-      "finding_id": "finding:b249b9c2b9384122",
-      "adjudication": "needs_evidence",
-      "rationale": "publication writer callsites are not fully enumerated (postprocess/rebuild/backfill/memory); helper presence does not prove every writer obeys the protocol",
-      "epistemic_status": "unresolved"
-    },
-    {
-      "finding_id": "finding:50159616d8796115",
-      "adjudication": "needs_evidence",
-      "rationale": "UI-writer absence cannot be proven while callsites are not fully enumerated",
-      "epistemic_status": "unresolved"
-    },
-    {
-      "finding_id": "finding:71061559412fdd9f",
-      "adjudication": "needs_evidence",
-      "rationale": "display-only write scope cannot be proven while TypeScript callsites are not fully enumerated",
       "epistemic_status": "unresolved"
     },
     {
@@ -81,7 +51,7 @@
     },
     {
       "finding_id": "review:coverage_honest",
-      "message": "Survey 由 #133 确定性收集器生成（python_ast + typescript_compiler 均 complete，212+ 源文件扫描）；manual_contract_trace 人工契约追踪 extractor 尚未提供，gate 不可用是刻意保守",
+      "message": "Survey 由 #133 确定性收集器生成（python_ast + typescript_compiler）；人工材料（golden trace、maintainer annotation）归入 ArchitectureReview overlay，不再作为 deterministic 输入",
       "epistemic_status": "inferred"
     },
     {
@@ -110,6 +80,6 @@
   "rationale": "维护者注解层：确定性 findings 之外的语义判断（已修复项、覆盖边界、证据缺口）全部收口在本 overlay，不进入 View 的 deterministic 投影",
   "run_metadata": {
     "model": "manual-maintainer-annotation",
-    "created_at": "2026-08-07T13:46:32.214183+00:00"
+    "created_at": "2026-08-07T15:01:23.112416+00:00"
   }
 }

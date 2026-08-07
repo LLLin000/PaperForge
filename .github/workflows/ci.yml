@@ -148,6 +148,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: paperforge/plugin/package-lock.json
+      - name: Install plugin dependencies (TypeScript compiler for the collector)
+        run: npm ci
+        working-directory: paperforge/plugin
       - name: Run deterministic collector + gate
         run: |
           python -m paperforge.architecture_audit.collectors.orchestrator \

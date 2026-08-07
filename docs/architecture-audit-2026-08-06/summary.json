@@ -1,10 +1,9 @@
 {
-  "revision": "79b32b152c17931b2526b4f8720685139d323e36",
+  "revision": "7a01b5f2788377bf9cbc8a2ccc3bae29fddfa389",
   "dirty": true,
   "assessment": "failed",
   "gate_eligible": false,
   "reasons": [
-    "manual_contract_trace_coverage_unavailable",
     "repository_dirty"
   ],
   "findings": [
@@ -13,7 +12,7 @@
       "subject": "ocr_run",
       "status": "unresolved",
       "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
+      "message": "no execution authority facts observed",
       "finding_id": "finding:0867ae7e96cc44dd",
       "evidence": []
     },
@@ -22,7 +21,7 @@
       "subject": "ocr_rebuild",
       "status": "unresolved",
       "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
+      "message": "no stop authority facts observed",
       "finding_id": "finding:4e5d007660a2a351",
       "evidence": []
     },
@@ -31,17 +30,8 @@
       "subject": "embed_build_resume",
       "status": "unresolved",
       "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
+      "message": "no stop authority facts observed",
       "finding_id": "finding:0bc2c256e19d05bc",
-      "evidence": []
-    },
-    {
-      "rule_id": "query.side_effect_free",
-      "subject": "probe_status",
-      "status": "unresolved",
-      "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
-      "finding_id": "finding:ee33c90ba2eeb8a6",
       "evidence": []
     },
     {
@@ -49,52 +39,83 @@
       "subject": "sync",
       "status": "unresolved",
       "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
-      "finding_id": "finding:a7b74c528f656249",
-      "evidence": []
-    },
-    {
-      "rule_id": "signal.has_consumer",
-      "subject": "OCR_REBUILD_PROGRESS",
-      "status": "unresolved",
-      "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
-      "finding_id": "finding:fae132c775801cab",
-      "evidence": []
-    },
-    {
-      "rule_id": "publication.uses_protocol",
-      "subject": "ocr_derived.generation",
-      "status": "unresolved",
-      "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
-      "finding_id": "finding:b249b9c2b9384122",
-      "evidence": []
-    },
-    {
-      "rule_id": "canonical.no_ui_writer",
-      "subject": "ocr_derived.generation",
-      "status": "unresolved",
-      "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
-      "finding_id": "finding:50159616d8796115",
-      "evidence": []
-    },
-    {
-      "rule_id": "restore.display_only",
-      "subject": "ocr_display.fulltext",
-      "status": "unresolved",
-      "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
-      "finding_id": "finding:71061559412fdd9f",
-      "evidence": []
+      "message": "unresolved dynamic callsites may affect this rule: dynamic call target getattr; cannot enumerate effects",
+      "finding_id": "finding:e9147fcc50df3bbe",
+      "evidence": [
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "16-16",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "19-19",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "21-21",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "28-28",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "29-29",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "30-30",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "31-31",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "32-32",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "33-33",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "commands/sync.py",
+          "symbol": "commands.sync",
+          "lines": "66-66",
+          "extractor": "python_ast"
+        },
+        {
+          "file": "services/sync_service.py",
+          "symbol": "services.sync_service",
+          "lines": "31-34",
+          "extractor": "python_ast"
+        }
+      ]
     },
     {
       "rule_id": "publication.authority_ocr_display",
       "subject": "ocr_display.fulltext",
       "status": "unresolved",
       "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
+      "message": "no unit authority facts observed",
       "finding_id": "finding:83faa89330b9ba9b",
       "evidence": []
     },
@@ -103,17 +124,8 @@
       "subject": "retrieval.units",
       "status": "unresolved",
       "severity": "blocking",
-      "message": "coverage incomplete: cannot enumerate all callsites",
+      "message": "no unit authority facts observed",
       "finding_id": "finding:4df2507da70902d6",
-      "evidence": []
-    },
-    {
-      "rule_id": "coverage.required_complete",
-      "subject": "",
-      "status": "violated",
-      "severity": "blocking",
-      "message": "required coverage incomplete: manual_contract_trace=unavailable",
-      "finding_id": "finding:1f3c124ad5bb8599",
       "evidence": []
     },
     {
@@ -137,11 +149,6 @@
   ],
   "coverage": [
     {
-      "extractor": "manual_contract_trace",
-      "status": "unavailable",
-      "required": true
-    },
-    {
       "extractor": "python_ast",
       "status": "complete",
       "required": true
@@ -153,10 +160,10 @@
     }
   ],
   "digests": {
-    "audit": "sha256:0ac91531b00f36754aebaa5bc9392b13e43e883c3931ca79936b3c198359be85",
-    "contract": "sha256:7cc0386631d998a443059c2b55f20b4898d70ff95d2161bff80f58bd868a362e",
-    "survey": "sha256:5feabc8696849d25263cf0aa21ef4bcaf45b85f3576778f41364249fdcda90a8",
-    "review": "sha256:b3508208d5f49ade7c263a8ef4b5e22631ea84193e9dbe4a0c2d7d6de0569bf2",
+    "audit": "sha256:d469d51487f57b0242bf44dc6a4f63a4a24d0333ceafaa1a4248ce48cfa1ee99",
+    "contract": "sha256:0cbe438667733121b78d02d1b9971607de74c263e3994e91b567db7385a3f204",
+    "survey": "sha256:cda72e491e0d5db26ddf83b060027e41d740c632bfc4e962c34b81e3c365c1f0",
+    "review": "sha256:15f9bfc70ae7f29bb542c018e1a22af713e7051fe90c5c8f9d9740f573b1e581",
     "reconciler": "1.0.0"
   },
   "review": {
@@ -181,39 +188,9 @@
         "epistemic_status": "unresolved"
       },
       {
-        "finding_id": "finding:ee33c90ba2eeb8a6",
-        "adjudication": "needs_evidence",
-        "rationale": "probe/status callsites have not been fully enumerated by a collector (#133); current effect facts cannot prove the query is side-effect free",
-        "epistemic_status": "unresolved"
-      },
-      {
-        "finding_id": "finding:a7b74c528f656249",
+        "finding_id": "finding:e9147fcc50df3bbe",
         "adjudication": "needs_evidence",
         "rationale": "remote follow-up execution/confirmation chain is not fully enumerated; declaration facts do not prove intent on execution",
-        "epistemic_status": "unresolved"
-      },
-      {
-        "finding_id": "finding:fae132c775801cab",
-        "adjudication": "needs_evidence",
-        "rationale": "signal producers/consumers are not fully enumerated; partial observations cannot prove all signals are consumed",
-        "epistemic_status": "unresolved"
-      },
-      {
-        "finding_id": "finding:b249b9c2b9384122",
-        "adjudication": "needs_evidence",
-        "rationale": "publication writer callsites are not fully enumerated (postprocess/rebuild/backfill/memory); helper presence does not prove every writer obeys the protocol",
-        "epistemic_status": "unresolved"
-      },
-      {
-        "finding_id": "finding:50159616d8796115",
-        "adjudication": "needs_evidence",
-        "rationale": "UI-writer absence cannot be proven while callsites are not fully enumerated",
-        "epistemic_status": "unresolved"
-      },
-      {
-        "finding_id": "finding:71061559412fdd9f",
-        "adjudication": "needs_evidence",
-        "rationale": "display-only write scope cannot be proven while TypeScript callsites are not fully enumerated",
         "epistemic_status": "unresolved"
       },
       {
@@ -237,7 +214,7 @@
       },
       {
         "finding_id": "review:coverage_honest",
-        "message": "Survey 由 #133 确定性收集器生成（python_ast + typescript_compiler 均 complete，212+ 源文件扫描）；manual_contract_trace 人工契约追踪 extractor 尚未提供，gate 不可用是刻意保守",
+        "message": "Survey 由 #133 确定性收集器生成（python_ast + typescript_compiler）；人工材料（golden trace、maintainer annotation）归入 ArchitectureReview overlay，不再作为 deterministic 输入",
         "epistemic_status": "inferred"
       },
       {

@@ -146,7 +146,6 @@
     }
   ],
   "required_extractors": [
-    "manual_contract_trace",
     "python_ast",
     "typescript_compiler"
   ],
