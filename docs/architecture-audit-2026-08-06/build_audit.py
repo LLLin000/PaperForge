@@ -156,7 +156,10 @@ CONTRACT = {
             ],
         },
     ],
-    "required_extractors": ["manual_contract_trace", "python_ast", "typescript_compiler"],
+    # Manual materials (maintainer annotations, golden traces) live in the
+    # ArchitectureReview overlay — they are no longer a deterministic Survey
+    # input, so they must not gate the deterministic audit.
+    "required_extractors": ["python_ast", "typescript_compiler"],
     "rules": [
         {
             "rule_id": "role_authority.ocr_execution", "kind": "role_authority",
@@ -356,7 +359,7 @@ REVIEW = {
         },
         {
             "finding_id": "review:coverage_honest",
-            "message": "Survey 由 #133 确定性收集器生成（python_ast + typescript_compiler 均 complete，212+ 源文件扫描）；manual_contract_trace 人工契约追踪 extractor 尚未提供，gate 不可用是刻意保守",
+            "message": "Survey 由 #133 确定性收集器生成（python_ast + typescript_compiler）；人工材料（golden trace、maintainer annotation）归入 ArchitectureReview overlay，不再作为 deterministic 输入",
             "epistemic_status": "inferred",
         },
         {

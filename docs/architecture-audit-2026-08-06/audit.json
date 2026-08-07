@@ -2,8 +2,8 @@
   "schema_version": 1,
   "content": {
     "reconciler_version": "1.0.0",
-    "bound_contract_digest": "sha256:7cc0386631d998a443059c2b55f20b4898d70ff95d2161bff80f58bd868a362e",
-    "bound_survey_digest": "sha256:5feabc8696849d25263cf0aa21ef4bcaf45b85f3576778f41364249fdcda90a8",
+    "bound_contract_digest": "sha256:0cbe438667733121b78d02d1b9971607de74c263e3994e91b567db7385a3f204",
+    "bound_survey_digest": "sha256:cda72e491e0d5db26ddf83b060027e41d740c632bfc4e962c34b81e3c365c1f0",
     "findings": [
       {
         "finding_id": "finding:0867ae7e96cc44dd",
@@ -11,7 +11,7 @@
         "subject": "ocr_run",
         "rule_status": "unresolved",
         "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
+        "message": "no execution authority facts observed"
       },
       {
         "finding_id": "finding:4e5d007660a2a351",
@@ -19,7 +19,7 @@
         "subject": "ocr_rebuild",
         "rule_status": "unresolved",
         "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
+        "message": "no stop authority facts observed"
       },
       {
         "finding_id": "finding:0bc2c256e19d05bc",
@@ -27,55 +27,138 @@
         "subject": "embed_build_resume",
         "rule_status": "unresolved",
         "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
+        "message": "no stop authority facts observed"
       },
       {
-        "finding_id": "finding:ee33c90ba2eeb8a6",
-        "rule_id": "query.side_effect_free",
-        "subject": "probe_status",
-        "rule_status": "unresolved",
-        "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
-      },
-      {
-        "finding_id": "finding:a7b74c528f656249",
+        "finding_id": "finding:e9147fcc50df3bbe",
         "rule_id": "remote_intent.sync_followup",
         "subject": "sync",
         "rule_status": "unresolved",
         "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
-      },
-      {
-        "finding_id": "finding:fae132c775801cab",
-        "rule_id": "signal.has_consumer",
-        "subject": "OCR_REBUILD_PROGRESS",
-        "rule_status": "unresolved",
-        "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
-      },
-      {
-        "finding_id": "finding:b249b9c2b9384122",
-        "rule_id": "publication.uses_protocol",
-        "subject": "ocr_derived.generation",
-        "rule_status": "unresolved",
-        "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
-      },
-      {
-        "finding_id": "finding:50159616d8796115",
-        "rule_id": "canonical.no_ui_writer",
-        "subject": "ocr_derived.generation",
-        "rule_status": "unresolved",
-        "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
-      },
-      {
-        "finding_id": "finding:71061559412fdd9f",
-        "rule_id": "restore.display_only",
-        "subject": "ocr_display.fulltext",
-        "rule_status": "unresolved",
-        "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
+        "message": "unresolved dynamic callsites may affect this rule: dynamic call target getattr; cannot enumerate effects",
+        "evidence": [
+          {
+            "evidence_id": "evidence:f34cb387c9c03436",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 16,
+            "line_end": 16,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:2b6f20dd98d9494b",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 19,
+            "line_end": 19,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:51f11d39f1f80c5b",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 21,
+            "line_end": 21,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:93de78005bcc5f46",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 28,
+            "line_end": 28,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:a1136e848e5d3df3",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 29,
+            "line_end": 29,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:2074c73f8e5eadfe",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 30,
+            "line_end": 30,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:e7b097c422df924b",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 31,
+            "line_end": 31,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:d126d9e866ae5f08",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 32,
+            "line_end": 32,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:7cd5f83ac61a9c10",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 33,
+            "line_end": 33,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:20b699a6d8e8ea87",
+            "file": "commands/sync.py",
+            "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+            "symbol": "commands.sync",
+            "line_start": 66,
+            "line_end": 66,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          },
+          {
+            "evidence_id": "evidence:87b97d4bfe3360ee",
+            "file": "services/sync_service.py",
+            "file_digest": "sha256:53c8ffe80b7259cea5ba629d7c10c3eb05a8bf0123e297d730ad1fd6dc24c76e",
+            "symbol": "services.sync_service",
+            "line_start": 31,
+            "line_end": 34,
+            "extractor": "python_ast",
+            "epistemic_status": "observed_static",
+            "confidence": "low"
+          }
+        ]
       },
       {
         "finding_id": "finding:83faa89330b9ba9b",
@@ -83,7 +166,7 @@
         "subject": "ocr_display.fulltext",
         "rule_status": "unresolved",
         "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
+        "message": "no unit authority facts observed"
       },
       {
         "finding_id": "finding:4df2507da70902d6",
@@ -91,15 +174,7 @@
         "subject": "retrieval.units",
         "rule_status": "unresolved",
         "severity": "blocking",
-        "message": "coverage incomplete: cannot enumerate all callsites"
-      },
-      {
-        "finding_id": "finding:1f3c124ad5bb8599",
-        "rule_id": "coverage.required_complete",
-        "subject": "",
-        "rule_status": "violated",
-        "severity": "blocking",
-        "message": "required coverage incomplete: manual_contract_trace=unavailable"
+        "message": "no unit authority facts observed"
       },
       {
         "finding_id": "finding:495bdc972b0a2204",
@@ -123,73 +198,73 @@
         "rule_id": "role_authority.ocr_execution",
         "evaluated": true,
         "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "reason": "no execution authority facts observed"
       },
       {
         "rule_id": "role_authority.ocr_stop",
         "evaluated": true,
         "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "reason": "no stop authority facts observed"
       },
       {
         "rule_id": "role_authority.embed_stop",
         "evaluated": true,
         "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "reason": "no stop authority facts observed"
       },
       {
         "rule_id": "query.side_effect_free",
         "evaluated": true,
-        "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "status": "satisfied",
+        "reason": "no observed side effects"
       },
       {
         "rule_id": "remote_intent.sync_followup",
         "evaluated": true,
         "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "reason": "unresolved dynamic callsites may affect this rule: dynamic call target getattr; cannot enumerate effects"
       },
       {
         "rule_id": "signal.has_consumer",
         "evaluated": true,
-        "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "status": "satisfied",
+        "reason": "no signals observed"
       },
       {
         "rule_id": "publication.uses_protocol",
         "evaluated": true,
-        "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "status": "satisfied",
+        "reason": "all canonical writes use the publication protocol"
       },
       {
         "rule_id": "canonical.no_ui_writer",
         "evaluated": true,
-        "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "status": "satisfied",
+        "reason": "all canonical writes use authorized protocol writers"
       },
       {
         "rule_id": "restore.display_only",
         "evaluated": true,
-        "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "status": "satisfied",
+        "reason": "no canonical writes observed"
       },
       {
         "rule_id": "publication.authority_ocr_display",
         "evaluated": true,
         "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "reason": "no unit authority facts observed"
       },
       {
         "rule_id": "publication.authority_retrieval",
         "evaluated": true,
         "status": "unresolved",
-        "reason": "coverage incomplete: cannot enumerate all callsites"
+        "reason": "no unit authority facts observed"
       },
       {
         "rule_id": "coverage.required_complete",
         "evaluated": true,
-        "status": "violated",
-        "reason": "required coverage incomplete: manual_contract_trace=unavailable"
+        "status": "satisfied",
+        "reason": "all required extractor coverage complete"
       },
       {
         "rule_id": "retrieval.v2",
@@ -206,18 +281,10 @@
       "status": "failed",
       "gate_eligible": false,
       "reasons": [
-        "manual_contract_trace_coverage_unavailable",
         "repository_dirty"
       ]
     },
     "coverage": [
-      {
-        "extractor": "manual_contract_trace",
-        "status": "unavailable",
-        "diagnostics": [
-          "missing coverage row"
-        ]
-      },
       {
         "extractor": "python_ast",
         "status": "complete"
@@ -229,5 +296,5 @@
     ]
   },
   "run_metadata": {},
-  "semantic_digest": "sha256:0ac91531b00f36754aebaa5bc9392b13e43e883c3931ca79936b3c198359be85"
+  "semantic_digest": "sha256:d469d51487f57b0242bf44dc6a4f63a4a24d0333ceafaa1a4248ce48cfa1ee99"
 }
