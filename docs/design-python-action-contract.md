@@ -7,6 +7,7 @@
 > Scope: architecture and migration design only; no production implementation.
 > Revision 2 (2026-08-09): cut `--follow prompt`, the `reversible` field, the dedupe override hook, and the legacy adapter flag; chain depth is a constant; cancellation and confirmation-mismatch behavior made explicit. Wire and decision seams unchanged.
 > Revision 3 (2026-08-09): added the scope-fidelity and dependency-by-emission invariants (P0); separated intent (why suggested) from preflight (can execute now / what happens now); preflight declared a decision gate, not a concurrency primitive; removed the `destructive = irreversible` claim and all residual `irreversible` wording; retired wire `dedupe_key`; pinned depth semantics (root = 0, children = 1); handlers must return `data` as mapping/None; added an auditability contract.
+> Status: **ACCEPTED — ARCHITECTURE FROZEN / IMPLEMENTATION-READY** (2026-08-09). Scope-fidelity uses subset semantics (`affected_keys ⊆ requested_keys`); dedupe identity normalizes paper keys. Later problems are implementation defects or domain-seam issues unless an invariant is proven wrong.
 
 ## 0. Decision
 
@@ -223,7 +224,7 @@ The registry is validated at import/test time:
 - IDs are unique and match `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`.
 - Every spec has exactly one handler and one preflight callable.
 - Every allowed scope kind is known.
-- Every declared scope kind is faithfully enforced by the handler: a `papers` scope restricts side effects to exactly those canonical paper keys and is never widened to the full library.
+- Every declared scope kind is faithfully enforced by the handler: a `papers` scope restricts side effects to a subset of those canonical paper keys — `affected_keys ⊆ requested_keys` — and never affects any key outside the scope. This holds under partial success: requesting `[A, B]` with only A succeeding must not touch B or any other key.
 - An action may declare `papers` only after its domain execution seam can restrict side effects to those keys. Registering a scope kind the handler ignores is a registration error.
 - `remote_possible` actions require confirmation and cannot be automatic.
 - `destructive` actions require confirmation and cannot be automatic.
@@ -298,7 +299,7 @@ The existing `next_actions` schema remains version 1 because its registered-ID s
 
 `reason` is the emission-time trigger reason (why the action was suggested) and is display-only; availability and effects come from preflight at execution time.
 
-Dedupe identity is not carried on the wire. The runner computes `canonical_dedupe_key(action_id, scope)` itself, so there is exactly one dedupe authority. If a legacy `dedupe_key` field is present during migration, the Python runner ignores it, and the field is removed in the cutover.
+Dedupe identity is not carried on the wire. The runner computes `canonical_dedupe_key(action_id, scope)` itself, so there is exactly one dedupe authority. The canonical form normalizes `PapersScope.keys`: each key appears once and the tuple is sorted in stable order, so `[A, B]` and `[B, A]` yield the same identity. If a legacy `dedupe_key` field is present during migration, the Python runner ignores it, and the field is removed in the cutover.
 
 `emit_next_action(intent)` performs registry hydration. Override parameters for policy fields are removed.
 
@@ -344,7 +345,7 @@ Rules:
 10. The runner builds `ActionContext` from the existing CLI context plumbing (vault path, config snapshot, resolved paths). It does not introduce a second context source.
 11. `--confirm` must name the exact requested `action_id`; any other value is an invalid request (exit 2).
 12. Registered handlers MUST return `PFResult.data` as a mapping or `None`; `follow_up_execution` (§8.3) is attached under `data` by the runner.
-13. The runner derives dedupe identity from `action_id + scope` at runtime; any `dedupe_key` on the wire is ignored.
+13. The runner derives dedupe identity from `action_id + scope` at runtime (paper keys normalized: deduped, stable-sorted); any `dedupe_key` on the wire is ignored.
 
 ## 7. Confirmation contract
 
@@ -450,7 +451,7 @@ Policy details:
 - `is_automatic_local` is implemented once in Python from the current registry spec.
 - A confirmed parent does not confirm any child.
 - Confirmation-required descendants never auto-run.
-- Dedupe is per invocation only, by the canonical JSON representation of `action_id + scope`. Producers cannot choose a weaker key, no spec-level override exists, and the wire carries no dedupe value.
+- Dedupe is per invocation only, by the canonical JSON representation of `action_id + scope`, with `PapersScope.keys` normalized (deduped, stable-sorted) before identity derivation. Producers cannot choose a weaker key, no spec-level override exists, and the wire carries no dedupe value.
 - Chain depth is bounded by the constant `MAX_FOLLOW_UP_DEPTH = 4`. The root action is depth 0, its direct children depth 1; `depth > MAX_FOLLOW_UP_DEPTH` is rejected (descendant slots 1–4). The current OCR chain needs two descendant levels.
 - Sibling actions are semantically independent (§8.1b); the runner never orders or reorders them.
 - Cancellation (SIGINT/stop) halts the chain at the next action boundary; completed actions and their results are preserved.
@@ -653,7 +654,7 @@ Acceptance: sync emits and executes the same successful memory follow-up without
 - delete OCR workspace `_runIndexRefreshChain` after parity;
 - route Obsidian through `action run ... --follow auto`.
 
-Acceptance: one real/sandboxed OCR rebuild reaches pending embedding confirmation with only Python policy decisions; a `papers`-scoped invocation touches exactly the declared keys (no widening).
+Acceptance: one real/sandboxed OCR rebuild reaches pending embedding confirmation with only Python policy decisions; a `papers`-scoped invocation touches only keys inside the declared scope (`affected_keys ⊆ requested_keys`), including under partial success.
 
 ### Slice D: probe and client cutover
 
@@ -683,7 +684,7 @@ Acceptance: all emitted action IDs resolve to handlers; no action wire contains 
 - every handler is reachable from exactly one canonical ID unless deliberate shared execution is documented;
 - risky/remote policy invariants fail closed;
 - `emit_next_action` cannot override policy fields;
-- a `papers`-scoped invocation affects exactly the declared keys — no widening (scope-fidelity parity test per handler);
+- a `papers`-scoped invocation affects only keys inside the declared scope — `affected_keys ⊆ requested_keys`, nothing outside — including under partial success (scope-fidelity parity test per handler);
 - an action declares `papers` only when its execution seam can restrict side effects to those keys;
 - descriptors and `next_actions` contain no command/argv keys or command fragments;
 - unknown IDs and metadata mismatches are rejected.
@@ -703,6 +704,7 @@ Acceptance: all emitted action IDs resolve to handlers; no action wire contains 
 - automatic local actions execute only in `--follow auto` mode;
 - remote/destructive actions remain pending in `auto` mode;
 - per-invocation duplicate keys execute once;
+- scopes `[A, B]` and `[B, A]` yield the same dedupe identity (order-invariant normalization);
 - cycles and depth overflow are reported as skipped; depth 1 is the root's direct child and `depth > MAX_FOLLOW_UP_DEPTH` is rejected;
 - separate invocations are not globally deduped;
 - sibling `next_actions` are semantically independent; dependent actions appear only in a successful prerequisite's result, and a failed prerequisite leaves no dependent action pending;
@@ -740,7 +742,7 @@ The action layer is auditable by construction:
 - `action list --json` dumps the full static registry — every ID, policy field, and scope declaration in one table; reading it requires no execution.
 - `action describe` returns the live preflight view; availability reasons and current effects are re-derivable at any time, and confirmation facts are always the freshest preflight output.
 - A parity test asserts every emitted `action_id` resolves to exactly one registered handler and no emitted or descriptor value contains command text or argv.
-- Scope-fidelity parity tests per handler prove a `papers`-scoped invocation touches exactly the declared keys.
+- Scope-fidelity parity tests per handler prove a `papers`-scoped invocation affects only declared keys (`affected_keys ⊆ requested_keys`), including under partial success.
 - Architecture-audit collector rules (Slice D) forbid command-bearing action descriptors and client action-policy tables, so regressions fail CI.
 - Every policy decision (confirmation, automatic execution, scope validity, dedupe, depth) is re-derivable from the registry at runtime; there is no second copy anywhere.
 - Migration parity tests pin the legacy tables (`ALLOWED_ACTIONS`, probe `action_primary`, constants `ACTIONS`) against the registry so the cutover is verifiable and reversible at the commit level.
@@ -778,7 +780,7 @@ Do not add in this issue:
 4. Every `remote_possible` or `destructive` action requires explicit per-action confirmation; confirmation covers the current request and scope and authorizes no other request.
 5. Only local, non-destructive, confirmation-free actions may be automatic.
 6. Every follow-up is a registered action ID plus typed scope; never a command string.
-7. Every declared scope kind is faithfully enforced; a `papers` scope is never widened.
+7. Every declared scope kind is faithfully enforced; a `papers` scope never affects keys outside it (`affected_keys ⊆ requested_keys`).
 8. Dependent actions are emitted only by their prerequisite's successful result; sibling `next_actions` are semantically independent.
 9. Preflight is a decision gate; domain locks, transactions, and publication protocols stay in domain execution.
 10. Every client invokes the same generic runner and owns no backend policy.
