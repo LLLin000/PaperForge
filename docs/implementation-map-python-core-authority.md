@@ -1,0 +1,57 @@
+# PaperForge Python Core Authority — Implementation Map
+
+> Date: 2026-08-09
+> Parent: [#135](https://github.com/LLLin000/PaperForge/issues/135) (Wayfinder map)
+> Frozen designs: [#145](https://github.com/LLLin000/PaperForge/issues/145) action contract (`docs/design-python-action-contract.md`), [#159](https://github.com/LLLin000/PaperForge/issues/159) materialization reconciliation (`docs/design-materialization-reconciliation.md`)
+> Implementation plan: `docs/plan-python-action-contract.md` (incl. §11 reconciliation amendment)
+
+## 0. Status summary
+
+The design phase is complete for the core: **#145 and #159 are frozen and consistent**. The remaining work splits into (a) implementation tickets T1–T9, and (b) five open design tickets (#158, #140, #142, #138, #143) that formalize seams the frozen designs already define — they can be resolved in parallel and do not block T1–T7.
+
+Implementation success criterion (per design review): **new Python authority lands AND old TypeScript authority is deleted** — no coexistence.
+
+## 1. Holistic review findings (all decisions considered)
+
+1. **The plan's Phase 1 is too large for one reviewable diff.** It mixes four independently verifiable units: registry+runner, memory seam, embed seam, reconcile module. Split into T2–T5 below.
+2. **Scope-registration rule makes seams verifiable by construction.** T2 registers `memory.build`/`embed.resume` with `scope_kinds=("all",)` only; `papers` registration lands only with the scope-faithful seam (T3/T4). A ticket cannot accidentally ship a non-faithful `papers` scope.
+3. **The `unknown` escape hatch is automatic (W1).** Any user-triggered rebuild writes identities: `build_paper_manifest` now always emits `retrieval_identity`; any embed build writes vector lineage rows. `unknown → rebuild → current` works without any auto-rebuild code. Slice 0 adds observation only; no `if unknown: rebuild_everything()` exists anywhere.
+4. **Lineage digests are the natural `last_attempt_input_digest`** for #158's retry rule (W2): a retry is suppressed when the current derived identity equals the identity recorded in the existing build_state/meta. No new `retry_jobs` / `reconcile_history` tables — audit-grep enforced.
+5. **#158's decision space is nearly fully determined by frozen #159**: timer = client lifecycle, semantic state = Python, retry = re-derive only on changed facts, no daemon. What remains: cadence location (UI pref vs Python config), concurrent-run/offline/failure semantics, mtime-scanner deletion. Resolve #158 before T8.
+6. **Critical path:** T1 → T2 → (T3 ∥ T4) → T5 → T6 → T7 → T8 → T9. Design tickets run in parallel. T8 is the only implementation ticket with an open design input (#158).
+7. **Reader gate (immediate correctness) lands with T7**, not later: mismatched/unknown lineage is never served, while reconcile (T5/T6) provides eventual repair.
+8. **Old-producer deletion list** (plan §11) is already pinned: `asset_state.compute_next_step`, `compute_health` fix-paths, OCR maintenance `_recommended_action`/`compute_display_fields`, remaining probe/maintenance recommendation producers, TS orchestration, mtime scanner. Net effect targeted: decision code decreases while capability increases.
+
+## 2. Implementation tickets
+
+| # | Ticket | Scope | Key files | Exit criterion | Design readiness |
+|---|---|---|---|---|---|
+| T1 | **Digest lineage publish + `probe lineage --json`** ([#160](https://github.com/LLLin000/PaperForge/issues/160), started) | OCR identity = result-hash (existing); retrieval identity in manifest; vector lineage rows in shadow candidate (atomic with swap); fail-closed probe read model | `paperforge/lineage.py` (new), `retrieval/manifest.py`, `memory/schema.py`, `commands/embed.py`, `commands/probe.py`, `cli.py` | identities written at publish; identical rebuild → identical digest; legacy → `unknown` (never `stale`); no auto-rebuild path | FROZEN (#159 §2.3, §6; plan §11 prerequisite) |
+| T2 | **Action registry + runner + CLI** | `ActionSpec` table, typed scopes, preflight, `action list/describe/run`, exit codes 0/1/2/3, wire v1 (no command strings), invariants; `memory.build`/`embed.resume` registered with `all` scope only | new `paperforge/actions/`, `core/next_actions.py`, `cli.py`, `tests/test_action_registry.py` | registry invariants; confirmation gate; unknown/version fail-closed; descriptor has no argv | FROZEN (#145 §4–§6, §11) |
+| T3 | **Memory seam** | `build_for_keys(vault, keys)` filtering to canonical keys through `_incremental_units_only`/`_rebuild_paper_units`; `memory.build` gains `papers` scope | `memory/builder.py`, registry entry | subset semantics test: `[A,B]` with only A changed → B,C untouched | FROZEN (#145 §4.2; plan §4.2) |
+| T4 | **Embed seam** | extract build core to `run_build(items, keys)`; keys filter at `done_papers`; `embed.resume` gains `papers` scope; un-scoped path behavior-identical | `commands/embed.py` | scope-fidelity parity; existing embed tests unchanged | FROZEN (#145 §4.2; plan §4.3); riskiest (large extraction) |
+| T5 | **Reconcile module** | three-layer observation (global desired → substrate → per-paper), global frontier first, minimal repair frontier, scope merging, single `next_actions` channel; consumes T1 probe read model | `paperforge/reconcile.py` (new), `tests/test_reconcile.py` | unknown fail-closed; global-first (one intent, per-paper `blocked_global`); change-prune; scope merge | FROZEN (#159 §3) |
+| T6 | **Chain runner + sync cutover** | `run_follow_up_chain` (`--follow none|auto`, depth const, normalized-key dedupe, cancellation at boundary); sync emits `memory.build` only (dependency-by-emission); O2 | `paperforge/actions/`, `commands/sync.py` | O2 green (forced memory failure → no `embed.resume` anywhere); sync parity | FROZEN (#145 §8, #159 §5) |
+| T7 | **Vertical journey + reader gate** | publish-then-reconcile wiring (OCR/memory publish → `reconcile(keys)`); O1, O3; break-recovery; reader fail-closed test | ocr/embed/memory handlers, `probe lineage` | O1/O3 green; crash between chain steps → reconcile re-derives identical intent | FROZEN (#159 §6; plan §11) |
+| T8 | **Client cutover + deletion gate** | delete `_runIndexRefreshChain`, `ALLOWED_ACTIONS`, `isAutomaticLocal`/`requiresConfirmation`, `(verb,command)` dispatch, probe `command` fields; timer → `reconcile(all)` (scope-only); O4 grep-assert | `plugin/src/*`, `commands/probe.py` | O4 green: no action-policy code in TS; old authority deleted, not coexisting | PARTIAL — needs #158 resolution (cadence, retry rule) |
+| T9 | **Legacy producers + audit + lifecycle** | migrate raw command-string producers; single-producer grep-assert; audit wrappers + golden re-pin (`golden_126/127`); contract lifecycle promotion; project records | `commands/memory.py` et al., `architecture_audit/collectors/common.py`, `PROJECT-MANAGEMENT.md` | no command text on any action wire; all IDs resolve; audit suite green; lifecycle promoted | FROZEN (plan §14 E, §11 deletion list) |
+
+## 3. Open design tickets (parallel, non-blocking for T1–T7)
+
+| Ticket | Question | Interaction | When needed |
+|---|---|---|---|
+| [#158](https://github.com/LLLin000/PaperForge/issues/158) | sync trigger ownership; retry rule | timer → `reconcile(all)` (scope-only); retry re-derives on changed facts using lineage digests as `last_attempt_input_digest`; no new tables | before T8 |
+| [#140](https://github.com/LLLin000/PaperForge/issues/140) | capability/read-model design | feeds preflight availability/facts; surfaces derived summaries; injectable seam | before T5 preflight consumption (seam already injectable) |
+| [#142](https://github.com/LLLin000/PaperForge/issues/142) | canonical config authority | global desired state source for reconcile | before T5 formalization (existing config reads suffice) |
+| [#138](https://github.com/LLLin000/PaperForge/issues/138) | credential provider | embed preflight credentials via process env passthrough | before T4 formalization |
+| [#143](https://github.com/LLLin000/PaperForge/issues/143) | runtime/setup ownership | `foundation.setup`/`update_python` enter registry only after executable handlers exist | after T9 |
+
+## 4. Implementation watch items (from design review; tracked here, not re-litigated)
+
+- **W1 — unknown must not deadlock:** probe/reconcile never auto-rebuild on `unknown`; the escape hatch is any user-triggered rebuild (writes identities). Test: legacy vault → `unknown`; after `memory build` → `current`.
+- **W2 — not-a-retry:** retry suppression reuses existing build/error metadata + lineage digests; no `retry_jobs`, `reconcile_history`, or repair-attempt registry. Audit grep-assert in T9.
+- **W3 — single producer:** after T9, materialization-repair recommendations exist only in reconcile; old recommendation code is projection or deleted.
+
+## 5. Suggested Wayfinder flow
+
+Tickets are created/activated one at a time as their predecessor's review gate passes (per the repo's one-issue-per-session rule), except T3 ∥ T4 which may run as parallel tickets after T2. Each ticket carries its exit criteria from this map; the review gate is the plan §10 six-point gate plus the frozen-design invariants.
