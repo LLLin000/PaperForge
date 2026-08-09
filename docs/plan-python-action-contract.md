@@ -186,7 +186,7 @@ Persist per-layer derived digests at the existing publish commit points: OCR ide
 - Reader fail-closed test: mismatched or `unknown` lineage is never served.
 
 **Phase 4 additions:**
-- Plugin timer becomes `reconcile(all)` — scope-only trigger, no state scanning, per #158.
+- Plugin timer becomes the sync convergence tick — fires `paperforge sync` (external source change detection + library sync + `reconcile(all)`); no mtime scanning, cadence is a `data.json` UI preference; per #158.
 - **Deletion list (old recommendation producers become projections or are deleted):**
   - `paperforge/worker/asset_state.py` — `compute_next_step` and the fix-path logic of `compute_health` retire to projections of reconcile output, or are deleted (lifecycle computation stays);
   - OCR maintenance `_recommended_action` / `compute_display_fields` — consume reconcile output instead of deciding redo/rebuild/configure;
