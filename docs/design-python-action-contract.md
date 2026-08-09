@@ -6,6 +6,7 @@
 > Research: [#154](https://github.com/LLLin000/PaperForge/issues/154)
 > Scope: architecture and migration design only; no production implementation.
 > Revision 2 (2026-08-09): cut `--follow prompt`, the `reversible` field, the dedupe override hook, and the legacy adapter flag; chain depth is a constant; cancellation and confirmation-mismatch behavior made explicit. Wire and decision seams unchanged.
+> Revision 3 (2026-08-09): added the scope-fidelity and dependency-by-emission invariants (P0); separated intent (why suggested) from preflight (can execute now / what happens now); preflight declared a decision gate, not a concurrency primitive; removed the `destructive = irreversible` claim and all residual `irreversible` wording; retired wire `dedupe_key`; pinned depth semantics (root = 0, children = 1); handlers must return `data` as mapping/None; added an auditability contract.
 
 ## 0. Decision
 
@@ -13,13 +14,13 @@ PaperForge will use one declarative Python action registry and one generic Pytho
 
 ```text
 Python capability read model
-  -> ActionIntent(action_id, scope, reason, contextual effects)
+  -> ActionIntent(action_id, scope, trigger reason)
   -> registry hydration
   -> versioned ActionDescriptor (no command or argv)
   -> CLI / Obsidian / Agent presentation
   -> paperforge action run <action_id>
-  -> Python preflight + confirmation gate + handler
-  -> PFResult + registered next_actions
+  -> Python preflight (current availability + effects) + confirmation gate + handler
+  -> PFResult + registered next_actions (dependency-by-emission)
   -> Python follow-up runner
 ```
 
@@ -29,7 +30,7 @@ Python owns:
 
 - stable action identifiers;
 - action metadata and handler bindings;
-- accepted scope shapes;
+- accepted scope shapes and faithful scope enforcement (a declared `papers` scope is never widened);
 - availability and preflight validation;
 - impact, cost, confirmation, and automatic-execution policy;
 - generic dispatch;
@@ -98,7 +99,7 @@ An `action_id` names a stable Python operation, not:
 - the reason the operation was suggested;
 - a particular warning state.
 
-Different reasons that execute the same operation use the same ID. For example, initial build, stale rebuild, and schema recovery all use `memory.build`; the reason and effect facts differ in the descriptor.
+Different reasons that execute the same operation use the same ID. For example, initial build, stale rebuild, and schema recovery all use `memory.build`; the trigger reason differs while the operation, scope, and policy stay identical.
 
 ### 3.2 UI navigation is not an action
 
@@ -127,13 +128,18 @@ Domain producers emit only an intent:
 class ActionIntent:
     action_id: str
     scope: ActionScope
-    reason_code: str
-    reason: str
-    preservation_facts: tuple[str, ...] = ()
-    replacement_facts: tuple[str, ...] = ()
+    trigger_reason_code: str
+    trigger_reason: str
 ```
 
 They cannot set cost, impact, confirmation, automatic execution, interruptibility, or handler details.
+
+Field ownership is split by question:
+
+- `ActionIntent` answers **why the action was suggested** (`trigger_reason_*`). It carries no effect facts.
+- `PreflightResult` (§4.1) answers **whether it may execute now and what it would preserve or replace**.
+
+Emission-time effect facts are never stored in the intent and never displayed later. Confirmation content always comes from the current preflight run.
 
 The registry hydrates the intent into a descriptor for the wire. This prevents a producer from accidentally or deliberately weakening policy.
 
@@ -184,15 +190,15 @@ class ActionContext:
 @dataclass(frozen=True)
 class PreflightResult:
     availability: Literal["available", "unavailable", "busy"]
-    reason_code: str
-    reason: str
+    availability_reason_code: str
+    availability_reason: str
     preservation_facts: tuple[str, ...] = ()
     replacement_facts: tuple[str, ...] = ()
 ```
 
 Action-specific arbitrary `argv` or untyped `args` are deliberately absent. An operation that cannot be identified by `action_id + scope` remains on its typed command contract until it has a real typed request. Generic action dispatch must not become an unvalidated CLI tunnelling layer.
 
-Reversibility is derived, not stored: `impact == "destructive"` means irreversible. There is no separate `reversible` field; a third axis would only duplicate the confirmation policy.
+Reversibility is not a separate `ActionSpec` dimension. PaperForge's current action policy expresses safety through `cost` + `impact` + `confirmation`; `destructive` actions require confirmation. Reversibility does not map cleanly onto either impact value: some destructive operations (database replace, artifact redo) are recoverable through backup/publication protocols, while some mutating operations have irreversible external effects (API spend). The axis is therefore omitted, not derived.
 
 ### 4.2 Registry
 
@@ -217,8 +223,10 @@ The registry is validated at import/test time:
 - IDs are unique and match `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`.
 - Every spec has exactly one handler and one preflight callable.
 - Every allowed scope kind is known.
+- Every declared scope kind is faithfully enforced by the handler: a `papers` scope restricts side effects to exactly those canonical paper keys and is never widened to the full library.
+- An action may declare `papers` only after its domain execution seam can restrict side effects to those keys. Registering a scope kind the handler ignores is a registration error.
 - `remote_possible` actions require confirmation and cannot be automatic.
-- `destructive` (irreversible) actions require confirmation and cannot be automatic.
+- `destructive` actions require confirmation and cannot be automatic.
 - automatic actions are local, non-destructive, and require no confirmation.
 - no descriptor, handler binding, or emitted wire value contains a command string or argv.
 
@@ -239,7 +247,9 @@ Preflight validates:
 
 It consumes existing capability/config/credential read models from #140/#142/#138. It does not create another persistent state source.
 
-There is no separate `plan` object or plan file. `action describe` and confirmation-required responses serialize the current descriptor generated from the same spec and preflight result.
+Preflight is a decision gate, not a concurrency primitive. Correctness-critical locks, transactions, publication guards, and atomic replacement remain owned by domain execution and are never replaced by preflight.
+
+There is no separate `plan` object or plan file. `action describe` and confirmation-required responses serialize the current descriptor generated from the same spec and preflight result. Confirmation content always reflects this current preflight; emission-time trigger facts are display-only.
 
 ## 5. Wire contract
 
@@ -253,8 +263,8 @@ There is no separate `plan` object or plan file. `action describe` and confirmat
   "description_code": "action.embed.resume.description",
   "scope": {"kind": "papers", "keys": ["ABCD1234"]},
   "availability": "available",
-  "reason_code": "vector.pending_after_memory_build",
-  "reason": "1 paper is ready for remote embedding",
+  "availability_reason_code": "vector.pending_after_memory_build",
+  "availability_reason": "1 paper is ready for remote embedding",
   "cost": "remote_possible",
   "impact": "mutating",
   "confirmation": "required",
@@ -267,7 +277,7 @@ There is no separate `plan` object or plan file. `action describe` and confirmat
 
 Forbidden keys include `command`, `cmd`, `argv`, `shell`, `executable`, and command fragments embedded in another field.
 
-The English `reason` and fact strings are safe fallbacks for CLI and Agent consumers. `label_code`, `description_code`, and `reason_code` allow Obsidian to localize presentation without owning policy.
+The English `availability_reason` and fact strings are safe fallbacks for CLI and Agent consumers. `label_code`, `description_code`, and `availability_reason_code` allow Obsidian to localize presentation without owning policy.
 
 ### 5.2 `next_actions`
 
@@ -282,10 +292,13 @@ The existing `next_actions` schema remains version 1 because its registered-ID s
   "cost": "local",
   "impact": "mutating",
   "confirmation": "none",
-  "reason": "OCR-derived content changed",
-  "dedupe_key": "memory.build:papers:ABCD1234"
+  "reason": "OCR-derived content changed"
 }
 ```
+
+`reason` is the emission-time trigger reason (why the action was suggested) and is display-only; availability and effects come from preflight at execution time.
+
+Dedupe identity is not carried on the wire. The runner computes `canonical_dedupe_key(action_id, scope)` itself, so there is exactly one dedupe authority. If a legacy `dedupe_key` field is present during migration, the Python runner ignores it, and the field is removed in the cutover.
 
 `emit_next_action(intent)` performs registry hydration. Override parameters for policy fields are removed.
 
@@ -322,7 +335,7 @@ Rules:
 1. Registry lookup is exact and fail-closed.
 2. Preflight always runs after lookup and immediately before side effects.
 3. Confirmation never bypasses availability or validation.
-4. Confirmation must name the exact action ID. A generic persisted `yes` flag is not accepted.
+4. Confirmation must name the exact action ID. A generic persisted `yes` flag is not accepted. `--confirm` confirms the current `ActionRequest`, including its current scope; it authorizes no other request.
 5. Handler exceptions become the existing structured `PFResult` error boundary.
 6. The runner performs no retries.
 7. The runner never invokes a shell.
@@ -330,6 +343,8 @@ Rules:
 9. `PFResult` remains the command result envelope. No second action-result envelope is introduced.
 10. The runner builds `ActionContext` from the existing CLI context plumbing (vault path, config snapshot, resolved paths). It does not introduce a second context source.
 11. `--confirm` must name the exact requested `action_id`; any other value is an invalid request (exit 2).
+12. Registered handlers MUST return `PFResult.data` as a mapping or `None`; `follow_up_execution` (§8.3) is attached under `data` by the runner.
+13. The runner derives dedupe identity from `action_id + scope` at runtime; any `dedupe_key` on the wire is ignored.
 
 ## 7. Confirmation contract
 
@@ -366,7 +381,7 @@ paperforge action run embed.resume \
   --confirm embed.resume --json
 ```
 
-A stale confirmation does not pin old facts. Preflight and descriptor generation run again before execution. A `--confirm` value naming a different action than the request is refused as an invalid request (exit 2); confirmation never transfers between actions.
+A stale confirmation does not pin old facts. Preflight and descriptor generation run again before execution. A `--confirm` value naming a different action than the request is refused as an invalid request (exit 2); confirmation never transfers between actions. `--confirm` confirms the current `ActionRequest`, including its current scope; it authorizes no other request.
 
 No persisted consent token, marker file, confirmation cache, signed plan, or cross-process dedupe record is added.
 
@@ -383,13 +398,25 @@ There is no interactive descendant-prompting mode. A user who wants to run a pen
 
 Legacy human-facing commands keep their current behavior until they are converted; no compatibility flag is introduced in the generic runner.
 
+### 8.1b Dependency-by-emission
+
+If action B requires the successful completion of action A, B MUST be emitted only by A's successful result. Sibling `next_actions` MUST be semantically independent.
+
+Consequences:
+
+- A failed prerequisite never leaves a dependent action pending for the user.
+- `sync` emits `memory.build`; `memory.build` emits `embed.resume` only on success. The two are never siblings of the same result.
+- The runner performs no dependency analysis. There are no dependency fields, DAG, prerequisite registry, or workflow planner; the result chain itself expresses ordering.
+- A handler that needs a dependent action after its own success emits it from its own result (§10).
+
 ### 8.2 Algorithm
 
 ```python
 MAX_FOLLOW_UP_DEPTH = 4
 
 def run_follow_up_chain(root_result, context, *, mode):
-    queue = [(0, action) for action in root_result.next_actions]
+    # Root action is depth 0; its next_actions are depth 1.
+    queue = [(1, action) for action in root_result.next_actions]
     seen = set()
 
     while queue:
@@ -423,8 +450,9 @@ Policy details:
 - `is_automatic_local` is implemented once in Python from the current registry spec.
 - A confirmed parent does not confirm any child.
 - Confirmation-required descendants never auto-run.
-- Dedupe is per invocation only, by the canonical JSON representation of `action_id + scope`. Producers cannot choose a weaker key, and no spec-level override exists.
-- Chain depth is bounded by the constant `MAX_FOLLOW_UP_DEPTH = 4`; the current OCR chain needs two descendant levels.
+- Dedupe is per invocation only, by the canonical JSON representation of `action_id + scope`. Producers cannot choose a weaker key, no spec-level override exists, and the wire carries no dedupe value.
+- Chain depth is bounded by the constant `MAX_FOLLOW_UP_DEPTH = 4`. The root action is depth 0, its direct children depth 1; `depth > MAX_FOLLOW_UP_DEPTH` is rejected (descendant slots 1–4). The current OCR chain needs two descendant levels.
+- Sibling actions are semantically independent (§8.1b); the runner never orders or reorders them.
 - Cancellation (SIGINT/stop) halts the chain at the next action boundary; completed actions and their results are preserved.
 - Duplicate or depth-limited actions are returned as skipped with reason codes, not silently discarded.
 - No daemon, queue database, lock marker, or cross-process exactly-once guarantee is implied.
@@ -451,7 +479,7 @@ The outer `next_actions` contains only pending actions after the selected follow
 
 ## 9. Partial success and failure semantics
 
-`PFResult` remains the authority for command success and error details. The action layer does not invent a generic partial-success taxonomy over domain results.
+`PFResult` remains the authority for command success and error details. The action layer does not invent a generic partial-success taxonomy over domain results. Registered handlers MUST return `PFResult.data` as a mapping or `None` (runner rule 12), which is what allows the runner to attach `follow_up_execution` under `data`.
 
 Batch handlers must expose per-item outcomes in their existing `data` model and follow these rules:
 
@@ -489,7 +517,7 @@ If OCR rebuild succeeds only for `ABCD1234`:
 4. Obsidian renders the returned confirmation facts.
 5. On acceptance, Obsidian invokes the generic runner with `--confirm embed.resume`.
 
-The current `_runIndexRefreshChain` in the OCR workspace and the sync terminal `if action.action_id == "memory.build"` branch are migration sources. They are deleted after parity is proven.
+The current `_runIndexRefreshChain` in the OCR workspace and the sync terminal `if action.action_id == "memory.build"` branch are migration sources. They are deleted after parity is proven. Sync's current sibling emission of `memory.build` + `embed.resume` is migrated to the §8.1b chain (sync emits `memory.build`; `memory.build` emits `embed.resume` on success).
 
 ## 11. CLI surface
 
@@ -602,11 +630,11 @@ No deprecated aliases or command-string fallbacks survive the clean cutover.
 - add the frozen `ActionSpec` registry;
 - add typed scope/request/preflight types;
 - add `action list/describe/run`;
-- bind `memory.build` and `embed.resume` to existing functions;
+- bind `memory.build` and `embed.resume` to existing domain functions, adding a scope-faithful seam where the current entry point ignores paper keys;
 - move registry hydration and invariant validation out of producer-owned fields;
 - keep existing `next_actions` v1 wire compatible.
 
-Acceptance: registry invariants, confirmation gate, unknown/version failure, and direct handler dispatch pass without plugin changes.
+Acceptance: registry invariants (including scope fidelity), confirmation gate, unknown/version failure, and direct handler dispatch pass without plugin changes.
 
 ### Slice B: shared follow-up execution
 
@@ -625,7 +653,7 @@ Acceptance: sync emits and executes the same successful memory follow-up without
 - delete OCR workspace `_runIndexRefreshChain` after parity;
 - route Obsidian through `action run ... --follow auto`.
 
-Acceptance: one real/sandboxed OCR rebuild reaches pending embedding confirmation with only Python policy decisions.
+Acceptance: one real/sandboxed OCR rebuild reaches pending embedding confirmation with only Python policy decisions; a `papers`-scoped invocation touches exactly the declared keys (no widening).
 
 ### Slice D: probe and client cutover
 
@@ -653,8 +681,10 @@ Acceptance: all emitted action IDs resolve to handlers; no action wire contains 
 - duplicate or malformed IDs fail registration;
 - every registered ID has one handler and preflight callable;
 - every handler is reachable from exactly one canonical ID unless deliberate shared execution is documented;
-- risky/remote/irreversible policy invariants fail closed;
+- risky/remote policy invariants fail closed;
 - `emit_next_action` cannot override policy fields;
+- a `papers`-scoped invocation affects exactly the declared keys — no widening (scope-fidelity parity test per handler);
+- an action declares `papers` only when its execution seam can restrict side effects to those keys;
 - descriptors and `next_actions` contain no command/argv keys or command fragments;
 - unknown IDs and metadata mismatches are rejected.
 
@@ -664,16 +694,18 @@ Acceptance: all emitted action IDs resolve to handlers; no action wire contains 
 - unavailable and invalid-scope actions return exit 2;
 - confirmation-required returns exit 3 and the current descriptor;
 - exact action-ID confirmation executes once;
-- confirming one action never confirms a descendant;
-- handler exceptions become one valid PFResult and exit 1.
+- confirming one action never confirms a descendant, and confirms only the current request and scope;
+- handler exceptions become one valid PFResult and exit 1;
+- handler `PFResult.data` is a mapping or `None`.
 
 ### Follow-up chain
 
 - automatic local actions execute only in `--follow auto` mode;
 - remote/destructive actions remain pending in `auto` mode;
 - per-invocation duplicate keys execute once;
-- cycles and depth overflow are reported as skipped;
+- cycles and depth overflow are reported as skipped; depth 1 is the root's direct child and `depth > MAX_FOLLOW_UP_DEPTH` is rejected;
 - separate invocations are not globally deduped;
+- sibling `next_actions` are semantically independent; dependent actions appear only in a successful prerequisite's result, and a failed prerequisite leaves no dependent action pending;
 - pending actions are the only actions left in the outer `next_actions`;
 - partial batch success scopes descendants to successful keys.
 
@@ -701,6 +733,18 @@ ocr.rebuild_derived
 
 Assertions include successful-key scope propagation, one JSON document per invocation, no shell, no TypeScript memory/embed dispatch, and correct cancellation/progress transport.
 
+### Auditability
+
+The action layer is auditable by construction:
+
+- `action list --json` dumps the full static registry — every ID, policy field, and scope declaration in one table; reading it requires no execution.
+- `action describe` returns the live preflight view; availability reasons and current effects are re-derivable at any time, and confirmation facts are always the freshest preflight output.
+- A parity test asserts every emitted `action_id` resolves to exactly one registered handler and no emitted or descriptor value contains command text or argv.
+- Scope-fidelity parity tests per handler prove a `papers`-scoped invocation touches exactly the declared keys.
+- Architecture-audit collector rules (Slice D) forbid command-bearing action descriptors and client action-policy tables, so regressions fail CI.
+- Every policy decision (confirmation, automatic execution, scope validity, dedupe, depth) is re-derivable from the registry at runtime; there is no second copy anywhere.
+- Migration parity tests pin the legacy tables (`ALLOWED_ACTIONS`, probe `action_primary`, constants `ACTIONS`) against the registry so the cutover is verifiable and reversible at the commit level.
+
 ## 16. Deliberate exclusions
 
 Do not add in this issue:
@@ -711,8 +755,12 @@ Do not add in this issue:
 - persisted confirmation tokens;
 - automatic retries;
 - generic rollback/undo framework;
+- dependency fields, DAG, prerequisite registry, or workflow planner (dependencies are expressed by emission alone);
 - interactive descendant-prompting follow-up mode;
-- a reversibility classification separate from impact;
+- reversibility as a policy axis (policy is cost + impact + confirmation);
+- wire `dedupe_key` (runner-derived; a legacy field is ignored during migration and removed);
+- emission-time effect facts in confirmation (confirmation uses the current preflight);
+- concurrency primitives in preflight (locks, transactions, publication guards stay in domain execution);
 - class-per-action hierarchy;
 - action plugin discovery;
 - command strings or argv on the wire;
@@ -727,10 +775,13 @@ Do not add in this issue:
 1. Every executable `action_id` resolves to one explicit Python handler.
 2. Every policy field comes from one Python registry.
 3. Every invocation rechecks current availability before side effects.
-4. Every remote, destructive, or irreversible action requires explicit per-action confirmation.
+4. Every `remote_possible` or `destructive` action requires explicit per-action confirmation; confirmation covers the current request and scope and authorizes no other request.
 5. Only local, non-destructive, confirmation-free actions may be automatic.
 6. Every follow-up is a registered action ID plus typed scope; never a command string.
-7. Every client invokes the same generic runner and owns no backend policy.
-8. Every chain is bounded and deduped only within its invocation.
-9. Every domain result remains a `PFResult`; the action layer does not create a second result system.
-10. No unimplemented, client-only, or navigation-only operation is registered as executable.
+7. Every declared scope kind is faithfully enforced; a `papers` scope is never widened.
+8. Dependent actions are emitted only by their prerequisite's successful result; sibling `next_actions` are semantically independent.
+9. Preflight is a decision gate; domain locks, transactions, and publication protocols stay in domain execution.
+10. Every client invokes the same generic runner and owns no backend policy.
+11. Every chain is bounded and deduped only within its invocation, with the runner as the only dedupe authority.
+12. Every domain result remains a `PFResult`; the action layer does not create a second result system.
+13. No unimplemented, client-only, or navigation-only operation is registered as executable.
