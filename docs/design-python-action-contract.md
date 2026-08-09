@@ -1,10 +1,11 @@
 # Python Action Registry and Follow-up Execution Contract
 
-> Date: 2026-08-09  
-> Decision ticket: [#145](https://github.com/LLLin000/PaperForge/issues/145)  
-> Parent map: [#135](https://github.com/LLLin000/PaperForge/issues/135)  
-> Research: [#154](https://github.com/LLLin000/PaperForge/issues/154)  
+> Date: 2026-08-09
+> Decision ticket: [#145](https://github.com/LLLin000/PaperForge/issues/145)
+> Parent map: [#135](https://github.com/LLLin000/PaperForge/issues/135)
+> Research: [#154](https://github.com/LLLin000/PaperForge/issues/154)
 > Scope: architecture and migration design only; no production implementation.
+> Revision 2 (2026-08-09): cut `--follow prompt`, the `reversible` field, the dedupe override hook, and the legacy adapter flag; chain depth is a constant; cancellation and confirmation-mismatch behavior made explicit. Wire and decision seams unchanged.
 
 ## 0. Decision
 
@@ -30,7 +31,7 @@ Python owns:
 - action metadata and handler bindings;
 - accepted scope shapes;
 - availability and preflight validation;
-- impact, cost, reversibility, confirmation, and automatic-execution policy;
+- impact, cost, confirmation, and automatic-execution policy;
 - generic dispatch;
 - per-invocation follow-up dedupe and depth limits;
 - every emitted `next_actions` descriptor.
@@ -154,7 +155,6 @@ class ActionSpec:
     scope_kinds: tuple[str, ...]
     cost: Literal["local", "remote_possible"]
     impact: Literal["read_only", "mutating", "destructive"]
-    reversible: bool
     confirmation: Literal["none", "required"]
     automatic: bool
     interruptible: bool
@@ -192,6 +192,8 @@ class PreflightResult:
 
 Action-specific arbitrary `argv` or untyped `args` are deliberately absent. An operation that cannot be identified by `action_id + scope` remains on its typed command contract until it has a real typed request. Generic action dispatch must not become an unvalidated CLI tunnelling layer.
 
+Reversibility is derived, not stored: `impact == "destructive"` means irreversible. There is no separate `reversible` field; a third axis would only duplicate the confirmation policy.
+
 ### 4.2 Registry
 
 ```python
@@ -216,8 +218,7 @@ The registry is validated at import/test time:
 - Every spec has exactly one handler and one preflight callable.
 - Every allowed scope kind is known.
 - `remote_possible` actions require confirmation and cannot be automatic.
-- `destructive` actions require confirmation and cannot be automatic.
-- irreversible actions require confirmation and cannot be automatic.
+- `destructive` (irreversible) actions require confirmation and cannot be automatic.
 - automatic actions are local, non-destructive, and require no confirmation.
 - no descriptor, handler binding, or emitted wire value contains a command string or argv.
 
@@ -256,7 +257,6 @@ There is no separate `plan` object or plan file. `action describe` and confirmat
   "reason": "1 paper is ready for remote embedding",
   "cost": "remote_possible",
   "impact": "mutating",
-  "reversible": true,
   "confirmation": "required",
   "automatic": false,
   "interruptible": true,
@@ -328,6 +328,8 @@ Rules:
 7. The runner never invokes a shell.
 8. Handlers call existing Python functions directly; they do not spawn `paperforge` recursively.
 9. `PFResult` remains the command result envelope. No second action-result envelope is introduced.
+10. The runner builds `ActionContext` from the existing CLI context plumbing (vault path, config snapshot, resolved paths). It does not introduce a second context source.
+11. `--confirm` must name the exact requested `action_id`; any other value is an invalid request (exit 2).
 
 ## 7. Confirmation contract
 
@@ -364,7 +366,7 @@ paperforge action run embed.resume \
   --confirm embed.resume --json
 ```
 
-A stale confirmation does not pin old facts. Preflight and descriptor generation run again before execution.
+A stale confirmation does not pin old facts. Preflight and descriptor generation run again before execution. A `--confirm` value naming a different action than the request is refused as an invalid request (exit 2); confirmation never transfers between actions.
 
 No persisted consent token, marker file, confirmation cache, signed plan, or cross-process dedupe record is added.
 
@@ -376,16 +378,17 @@ No persisted consent token, marker file, confirmation cache, signed plan, or cro
 
 - `--follow none` — execute only the requested root action; default.
 - `--follow auto` — execute registered automatic local descendants in the same process; return confirmation-required descendants as pending.
-- `--follow prompt` — interactive CLI only; execute automatic descendants and prompt separately for each confirmation-required descendant.
 
-`--follow prompt --json` is invalid.
+There is no interactive descendant-prompting mode. A user who wants to run a pending descendant runs it as its own explicit invocation; interactive confirmation of a root action is covered by §7.
 
-Legacy human-facing commands may select a compatibility mode explicitly while they are being converted to thin adapters. The generic runner itself has no output-mode-dependent default.
+Legacy human-facing commands keep their current behavior until they are converted; no compatibility flag is introduced in the generic runner.
 
 ### 8.2 Algorithm
 
 ```python
-def run_follow_up_chain(root_result, context, *, mode, max_depth=4):
+MAX_FOLLOW_UP_DEPTH = 4
+
+def run_follow_up_chain(root_result, context, *, mode):
     queue = [(0, action) for action in root_result.next_actions]
     seen = set()
 
@@ -397,7 +400,7 @@ def run_follow_up_chain(root_result, context, *, mode, max_depth=4):
         if key in seen:
             record_skip(descriptor, "action.duplicate")
             continue
-        if depth > max_depth:
+        if depth > MAX_FOLLOW_UP_DEPTH:
             record_skip(descriptor, "action.depth_exceeded")
             continue
 
@@ -407,13 +410,9 @@ def run_follow_up_chain(root_result, context, *, mode, max_depth=4):
             record_pending(descriptor)
             continue
         if not is_automatic_local(descriptor):
-            if mode == "prompt" and confirm_interactively(descriptor):
-                child = run_action(..., confirmed_action_id=descriptor.action_id)
-            else:
-                record_pending(descriptor)
-                continue
-        else:
-            child = run_action(...)
+            record_pending(descriptor)
+            continue
+        child = run_action(...)
 
         record_execution(child)
         queue.extend((depth + 1, item) for item in child.next_actions)
@@ -424,10 +423,9 @@ Policy details:
 - `is_automatic_local` is implemented once in Python from the current registry spec.
 - A confirmed parent does not confirm any child.
 - Confirmation-required descendants never auto-run.
-- Dedupe is per invocation only.
-- The default dedupe key is the canonical JSON representation of `action_id + scope`; producers cannot choose a weaker policy key.
-- A spec may define a stricter semantic dedupe function later only for an observed need.
-- The maximum depth is four; the current OCR chain needs two descendant levels.
+- Dedupe is per invocation only, by the canonical JSON representation of `action_id + scope`. Producers cannot choose a weaker key, and no spec-level override exists.
+- Chain depth is bounded by the constant `MAX_FOLLOW_UP_DEPTH = 4`; the current OCR chain needs two descendant levels.
+- Cancellation (SIGINT/stop) halts the chain at the next action boundary; completed actions and their results are preserved.
 - Duplicate or depth-limited actions are returned as skipped with reason codes, not silently discarded.
 - No daemon, queue database, lock marker, or cross-process exactly-once guarantee is implied.
 
@@ -499,7 +497,7 @@ The current `_runIndexRefreshChain` in the OCR workspace and the sync terminal `
 paperforge action list --json
 paperforge action describe <action_id> [--scope all|papers] [--key KEY] --json
 paperforge action run <action_id> [--scope all|papers] [--key KEY] \
-  [--confirm <action_id>] [--follow none|auto|prompt] [--json]
+  [--confirm <action_id>] [--follow none|auto] [--json]
 ```
 
 ### `list`
@@ -518,10 +516,12 @@ Exit codes:
 
 - `0`: action completed according to its domain result;
 - `1`: action/domain execution failed;
-- `2`: invalid request, unknown action, invalid scope, unavailable action, or schema/contract mismatch;
+- `2`: invalid request, unknown action, invalid scope, unavailable action, schema/contract mismatch, or `--confirm` naming a different action;
 - `3`: explicit confirmation required.
 
 These codes are stable machine contracts. Clients must not parse human text.
+
+Progress output follows the existing command progress protocol (#137/#150); the action runner defines no new progress or cancellation protocol.
 
 ## 12. Client contracts
 
@@ -612,7 +612,7 @@ Acceptance: registry invariants, confirmation gate, unknown/version failure, and
 
 - add `--follow` modes and per-invocation chain runner;
 - replace sync's terminal hard-coded dispatch;
-- preserve current sync terminal behavior through explicit adapter mode;
+- prove parity with the current sync terminal behavior before switching;
 - prove dedupe, depth, and pending confirmation behavior.
 
 Acceptance: sync emits and executes the same successful memory follow-up without a command-specific branch.
@@ -669,7 +669,7 @@ Acceptance: all emitted action IDs resolve to handlers; no action wire contains 
 
 ### Follow-up chain
 
-- automatic local actions execute only in `auto`/`prompt` modes;
+- automatic local actions execute only in `--follow auto` mode;
 - remote/destructive actions remain pending in `auto` mode;
 - per-invocation duplicate keys execute once;
 - cycles and depth overflow are reported as skipped;
@@ -711,6 +711,8 @@ Do not add in this issue:
 - persisted confirmation tokens;
 - automatic retries;
 - generic rollback/undo framework;
+- interactive descendant-prompting follow-up mode;
+- a reversibility classification separate from impact;
 - class-per-action hierarchy;
 - action plugin discovery;
 - command strings or argv on the wire;
