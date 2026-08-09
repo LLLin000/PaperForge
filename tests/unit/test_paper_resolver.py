@@ -84,6 +84,7 @@ def _write_vault_config(vault: Path):
     (vault / "paperforge.json").write_text(
         json.dumps(
             {
+                "schema_version": 2,
                 "vault_config": {
                     "system_dir": "99_System",
                     "resources_dir": "03_Resources",
