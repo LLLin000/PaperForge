@@ -536,6 +536,21 @@ class TestSyncOcrQueue:
         # done should be skipped
         assert not any(r["zotero_key"] == key for r in result), "done status should be skipped"
 
+    def test_per_paper_timeout_marks_retryable(self) -> None:
+        """A queued job older than the per-paper timeout is retryable, not a
+        batch blocker — the stuck paper releases its slot."""
+        from datetime import datetime, timedelta, timezone
+
+        from paperforge.worker.ocr import _paper_timed_out, _paper_timeout_minutes
+
+        assert _paper_timeout_minutes() >= 1
+        old_meta = {"ocr_started_at": (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()}
+        fresh_meta = {"ocr_started_at": datetime.now(timezone.utc).isoformat()}
+        no_start = {}
+        assert _paper_timed_out(old_meta) is True
+        assert _paper_timed_out(fresh_meta) is False
+        assert _paper_timed_out(no_start) is False
+
     def test_nopdf_is_settled_and_does_not_starve_pending_rows(self, tmp_path: Path) -> None:
         """#133-review fix: a nopdf row is terminal — it must not stay in the
         queue (its upload slot would otherwise be consumed forever, starving

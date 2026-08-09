@@ -60,6 +60,31 @@ def _resolve_paddleocr_token(vault: Path) -> str:
     return token
 
 
+def _paper_timeout_minutes() -> int:
+    """Per-paper OCR job timeout in minutes (default 10)."""
+    try:
+        return max(1, int(os.environ.get("PAPERFORGE_PAPER_TIMEOUT_MINUTES", "10")))
+    except ValueError:
+        return 10
+
+
+def _paper_timed_out(meta: dict) -> bool:
+    """True when a queued/running OCR job has exceeded the per-paper timeout.
+
+    A stuck provider job must not hold its upload slot forever — the whole
+    batch would stall behind it. Timeout marks the paper retryable (not fatal),
+    so the next run re-uploads it.
+    """
+    started = meta.get("ocr_started_at", "") or ""
+    if not started:
+        return False
+    try:
+        started_dt = datetime.fromisoformat(started)
+        return (datetime.now(timezone.utc) - started_dt).total_seconds() > _paper_timeout_minutes() * 60
+    except (TypeError, ValueError):
+        return False
+
+
 
 try:
     from paperforge.worker.ocr_roles import assign_block_role  # noqa: F401
@@ -2655,9 +2680,15 @@ def run_ocr(
                 active_submitted = max(0, active_submitted - 1)
                 continue
             if state in {"pending", "running"}:
-                meta["ocr_status"] = state
-                queue_row["queue_status"] = state
-                meta["error"] = ""
+                if _paper_timed_out(meta):
+                    meta["ocr_status"] = "retryable_error"
+                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes()} min)"
+                    queue_row["queue_status"] = "retryable_error"
+                    active_submitted = max(0, active_submitted - 1)
+                else:
+                    meta["ocr_status"] = state
+                    queue_row["queue_status"] = state
+                    meta["error"] = ""
             elif state == "done":
                 try:
                     result_url = payload["resultUrl"]["jsonUrl"]
@@ -2935,8 +2966,14 @@ def run_ocr(
                 _failed_count += 1
                 print(f"OCR: {key} failed: {meta['error']}", flush=True)
             else:
-                meta["ocr_status"] = state
-                queue_row["queue_status"] = state
+                if _paper_timed_out(meta):
+                    meta["ocr_status"] = "retryable_error"
+                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes()} min)"
+                    queue_row["queue_status"] = "retryable_error"
+                    active_submitted = max(0, active_submitted - 1)
+                else:
+                    meta["ocr_status"] = state
+                    queue_row["queue_status"] = state
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
         if any(r.get("queue_status") in ("queued", "running") for r in ocr_queue):
