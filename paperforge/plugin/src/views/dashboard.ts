@@ -41,7 +41,13 @@ import {
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
-import { type PaperVersionInfo, listPapersWithBackups, scanVersions, restoreVersion, compareVersions } from "../services/version-history";
+import {
+  type PaperVersionInfo,
+  listPapersWithBackups,
+  scanVersions,
+  restoreVersion,
+  compareVersions,
+} from "../services/version-history";
 import { VersionRestoreModal } from "./ocr-workspace";
 
 // ── Interface for plugin ref used by static open ──
@@ -1347,22 +1353,54 @@ export class PaperForgeStatusView extends ItemView {
       const versions = scanVersions(vp, k);
       if (versions && versions.versions.length > 0) {
         new VersionRestoreModal(
-          this.app, vp, k,
-          versions.versions.map(v => ({label:v.label,created_at:v.created_at,source:v.source,renderer_version:v.renderer_version,fulltext_size:v.fulltext_size})),
+          this.app,
+          vp,
+          k,
+          versions.versions.map((v) => ({
+            label: v.label,
+            created_at: v.created_at,
+            source: v.source,
+            renderer_version: v.renderer_version,
+            fulltext_size: v.fulltext_size,
+          })),
           versions.currentLabel
         ).open();
         return;
       }
       const backupsDir = path.join(paths.ocrDir, k, "backups");
       if (!fs.existsSync(backupsDir)) return;
-      const files = fs.readdirSync(backupsDir).filter(f => f.startsWith("fulltext.pre-rebuild")).sort();
+      const files = fs
+        .readdirSync(backupsDir)
+        .filter((f) => f.startsWith("fulltext.pre-rebuild"))
+        .sort();
       if (files.length === 0) return;
-      const entries = files.map(f => {
+      const entries = files.map((f) => {
         const ts = f.replace("fulltext.pre-rebuild.", "").replace(/\.md$/, "");
-        const iso = ts.length >= 16 ? ts.slice(0,4)+"-"+ts.slice(4,6)+"-"+ts.slice(6,8)+"T"+ts.slice(9,11)+":"+ts.slice(11,13)+":"+ts.slice(13,15)+"Z" : ts;
+        const iso =
+          ts.length >= 16
+            ? ts.slice(0, 4) +
+              "-" +
+              ts.slice(4, 6) +
+              "-" +
+              ts.slice(6, 8) +
+              "T" +
+              ts.slice(9, 11) +
+              ":" +
+              ts.slice(11, 13) +
+              ":" +
+              ts.slice(13, 15) +
+              "Z"
+            : ts;
         let size = 0;
-        try { size = fs.statSync(path.join(backupsDir, f)).size; } catch {}
-        return { label: "backup-"+ts, created_at: iso, source: "pre-rebuild", fulltext_size: size };
+        try {
+          size = fs.statSync(path.join(backupsDir, f)).size;
+        } catch {}
+        return {
+          label: "backup-" + ts,
+          created_at: iso,
+          source: "pre-rebuild",
+          fulltext_size: size,
+        };
       });
       new VersionRestoreModal(this.app, vp, k, entries, "").open();
     });
@@ -3093,7 +3131,8 @@ export class PaperForgeStatusView extends ItemView {
     if (a.needsFilter) {
       extraArgs = [...extraArgs, "--all"];
     }
-    const cmdTimeout = a.needsFilter ? 60000 : a.needsKey ? 30000 : 600000;
+    const cmdTimeout =
+      a.timeoutMs ?? (a.needsFilter ? 60000 : a.needsKey ? 30000 : 600000);
     const py = this._resolvePython();
     if (!py) {
       this._showMessage("[!!] Runtime not available", "error");

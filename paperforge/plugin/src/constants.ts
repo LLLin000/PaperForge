@@ -19,6 +19,13 @@ export interface ActionDef {
   okMsg?: string;
   disabled?: boolean;
   disabledMsg?: string;
+  /**
+   * Spawn timeout in ms. Defaults are derived from needsKey/needsFilter
+   * (30s/60s), otherwise 600s. OCR runs one full poll cycle of up to
+   * 15 minutes (60 x 15s), so it must exceed that or the child is killed
+   * mid-queue and every run only completes a couple of papers.
+   */
+  timeoutMs?: number;
 }
 
 export const ACTIONS: ActionDef[] = [
@@ -37,6 +44,10 @@ export const ACTIONS: ActionDef[] = [
     icon: "\u229E",
     cmd: "ocr",
     okMsg: "OCR started",
+    // One full poll cycle runs up to 15 minutes (60 x 15s); per-paper
+    // timeouts are enforced inside run_ocr, so the spawn timeout must cover
+    // the whole batch, not one paper.
+    timeoutMs: 1_800_000,
   },
   {
     id: "paperforge-doctor",
