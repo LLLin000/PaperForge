@@ -1,7 +1,7 @@
 # Python Action Contract — Implementation Plan
 
 > Date: 2026-08-09
-> Design: `docs/design-python-action-contract.md` (ACCEPTED / ARCHITECTURE FROZEN, `596b4dd8`)
+> Design: [Python Action Registry and Follow-up Execution Contract](https://github.com/LLLin000/PaperForge/blob/design/python-action-contract/docs/design-python-action-contract.md) (ACCEPTED / ARCHITECTURE FROZEN, `596b4dd8`)
 > Parent map: [#135](https://github.com/LLLin000/PaperForge/issues/135)
 > Design ticket: [#145](https://github.com/LLLin000/PaperForge/issues/145) (closed, frozen)
 > Status: awaiting review gate. No production implementation yet.
