@@ -2686,8 +2686,14 @@ def run_ocr(
                     queue_row["queue_status"] = "retryable_error"
                     active_submitted = max(0, active_submitted - 1)
                 else:
-                    meta["ocr_status"] = state
-                    queue_row["queue_status"] = state
+                    # Provider "pending" = job submitted, waiting in provider
+                    # queue — semantically OUR "queued", never the pre-upload
+                    # "pending". Writing the raw provider state here breaks the
+                    # poll rhythm (sleep gate skips "pending") and re-uploads
+                    # the same papers every cycle (upload gate selects
+                    # "pending"), so the batch never advances.
+                    meta["ocr_status"] = "running" if state == "running" else "queued"
+                    queue_row["queue_status"] = meta["ocr_status"]
                     meta["error"] = ""
             elif state == "done":
                 try:
@@ -2972,8 +2978,10 @@ def run_ocr(
                     queue_row["queue_status"] = "retryable_error"
                     active_submitted = max(0, active_submitted - 1)
                 else:
-                    meta["ocr_status"] = state
-                    queue_row["queue_status"] = state
+                    # Provider "pending" = job submitted — never downgrade to
+                    # our pre-upload "pending" (breaks sleep/upload gates).
+                    meta["ocr_status"] = "running" if state == "running" else "queued"
+                    queue_row["queue_status"] = meta["ocr_status"]
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
         if any(r.get("queue_status") in ("queued", "running") for r in ocr_queue):
