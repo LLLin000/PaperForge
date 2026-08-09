@@ -1,55 +1,57 @@
+"""Embedding configuration — consumed exclusively through the #142 config seam.
+
+No plugin ``data.json`` reads and no ``.env`` file reads: provider/model/base
+come from the canonical paperforge.json + process environment via
+``load_config``; API keys come from the process environment only (the #138 /
+C1 credential provider owns durable secrets).
+
+Fail-closed: a missing/invalid configuration raises ConfigError — the CLI
+already refuses to run domain commands on guessed paths.
+"""
+
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 
-
-def _read_plugin_settings(vault: Path) -> dict:
-    data_path = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
-    if data_path.exists():
-        return json.loads(data_path.read_text(encoding="utf-8"))
-    return {}
-
-
-def get_api_key(vault: Path) -> str:
-    settings = _read_plugin_settings(vault)
-    api_key = os.environ.get("VECTOR_DB_API_KEY", "")
-    if not api_key:
-        api_key = os.environ.get("OPENAI_API_KEY", "")
-    if not api_key:
-        api_key = settings.get("vector_db_api_key", "")
-    if not api_key:
-        env_file = vault / ".env"
-        if env_file.exists():
-            for line in env_file.read_text(encoding="utf-8").splitlines():
-                if line.startswith("VECTOR_DB_API_KEY=") or line.startswith("OPENAI_API_KEY="):
-                    api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
-                    break
-    return api_key
-
+from paperforge.config import ConfigError, load_config
 
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
 
 
+def _snapshot_values(vault: Path) -> dict[str, str | bool]:
+    try:
+        snapshot = load_config(vault)
+    except ConfigError:
+        raise
+    return {key: cv.value for key, cv in snapshot.values.items()}
+
+
+def get_api_key(vault: Path) -> str:
+    """Resolve the embedding API key from the process environment only.
+
+    Durable secret storage is owned by the #138 credential provider (C1);
+    legacy plugin-data.json and .env fallbacks are removed (#142).
+    """
+    return os.environ.get("VECTOR_DB_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+
+
 def get_api_base_url(vault: Path) -> str:
-    settings = _read_plugin_settings(vault)
-    return os.environ.get("VECTOR_DB_API_BASE", "") or settings.get("vector_db_api_base", "") or ""
+    values = _snapshot_values(vault)
+    return str(values.get("vector_db_api_base", "") or "")
 
 
 def get_effective_api_base_url(vault: Path) -> str:
     """The endpoint the provider ACTUALLY uses — empty config means the
-    OpenAI default.  Identity comparison must use this, not the raw value:
-    a migration from default→custom endpoint otherwise never triggers a
-    shadow rebuild and mixes old/new provider vectors (P0-1)."""
+    OpenAI default.  Identity comparison must use this, not the raw value."""
     return (get_api_base_url(vault) or DEFAULT_OPENAI_BASE_URL).rstrip("/")
 
 
 def get_api_model(vault: Path) -> str:
-    settings = _read_plugin_settings(vault)
-    return os.environ.get("VECTOR_DB_API_MODEL", "") or settings.get("vector_db_api_model", "text-embedding-3-small")
+    values = _snapshot_values(vault)
+    return str(values.get("vector_db_api_model", "") or "text-embedding-3-small")
 
 
 def get_provider_type(vault: Path) -> str:
-    settings = _read_plugin_settings(vault)
-    return os.environ.get("VECTOR_DB_PROVIDER_TYPE", "") or settings.get("vector_db_provider_type", "") or "openai_sdk"
+    values = _snapshot_values(vault)
+    return str(values.get("vector_db_provider_type", "") or "openai_sdk")

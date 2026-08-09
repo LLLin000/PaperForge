@@ -6,6 +6,17 @@ from pathlib import Path
 
 import pytest
 
+import pytest
+
+from tests.conftest import canonical_test_config
+
+
+@pytest.fixture
+def canonical_vault(tmp_path: Path):
+    canonical_test_config(tmp_path)
+    return tmp_path
+
+
 from paperforge.worker.prune import (
     _collect_orphan_candidates,
     _resolve_ocr_dir,

@@ -17,14 +17,11 @@ def seeded_vault(tmp_path: Path) -> Path:
     vault = tmp_path / "testvault"
     vault.mkdir(parents=True)
 
-    # Minimal config so paperforge paths resolve
+    # Minimal canonical config so paperforge paths resolve (#142 seam)
     (vault / "System" / "PaperForge").mkdir(parents=True)
-    cfg = {
-        "exporter_dir": "System/PaperForge/exporter",
-        "zotero_storage": "System/PaperForge/storage",
-        "memory_db": "System/PaperForge/memory/paperforge.db",
-    }
-    (vault / "paperforge.json").write_text(json.dumps(cfg), encoding="utf-8")
+    from paperforge.config import bootstrap_config
+
+    bootstrap_config(vault)
 
     # Create memory DB with vec0 schema
     db_path = get_memory_db_path(vault)

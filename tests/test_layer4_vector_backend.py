@@ -171,6 +171,7 @@ class TestChromaBackendHealth:
 
 @pytest.fixture
 def chroma_backend(tmp_path: Path) -> ChromaBackend:
+    canonical_test_config(tmp_path)
     """Return a ChromaBackend whose client and collection are fully mocked."""
     mock_client = MagicMock()
     mock_collection = MagicMock()

@@ -143,31 +143,28 @@ def build_envelope(
 # Config validation helper
 # ---------------------------------------------------------------------------
 
-def _is_recognizable_config(data: Any) -> bool:
-    if not isinstance(data, dict) or len(data) == 0:
-        return False
-    if "vault_config" in data:
-        return True
-    return any(k in data for k in LEGACY_PATH_KEYS)
-
-
 def _load_pf_config(vault: Path) -> tuple[dict[str, Any] | None, str | None]:
-    """Read paperforge.json. Returns (data, error) tuple.
-    data=None, error=None → file does not exist.
-    data=None, error='corrupt' → file exists but is invalid.
-    data=dict, error=None → valid config.
+    """Classify canonical configuration through the #142 seam (fail-closed).
+
+    Returns (data, error): (None, None) for missing, (None, 'corrupt') for
+    corrupt/future/invalid, (resolved-values, None) for current schema.
+    Legacy (migration_required) configs are reported as missing-like: migration
+    is explicit and must happen before probes interpret the vault.
     """
-    pf_json = vault / "paperforge.json"
-    if not pf_json.exists():
+    from paperforge.config import ConfigError, load_config, validate_config
+
+    validation = validate_config(vault)
+    if validation.state == "missing":
         return None, None
+    if validation.state == "migration_required":
+        return None, None
+    if validation.state in ("invalid", "future_schema"):
+        return None, "corrupt"
     try:
-        raw = pf_json.read_text(encoding="utf-8")
-        data = json.loads(raw)
-    except (json.JSONDecodeError, OSError):
+        snapshot = load_config(vault)
+    except ConfigError:
         return None, "corrupt"
-    if not _is_recognizable_config(data):
-        return None, "corrupt"
-    return data, None
+    return {key: cv.value for key, cv in snapshot.values.items()}, None
 
 
 # ---------------------------------------------------------------------------

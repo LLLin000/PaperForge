@@ -31,7 +31,7 @@ def test_get_embed_status_uses_indexes_vectors_path_from_config(tmp_path):
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        '{"vault_config":{"system_dir":"System"}}',
+        '{"schema_version": 2, "vault_config":{"system_dir":"System"}}',
         encoding="utf-8",
     )
     db_path = get_memory_db_path(vault)
