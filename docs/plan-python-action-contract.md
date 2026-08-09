@@ -166,3 +166,31 @@ The reviewer checks, in order:
 6. Phase 5: audit goldens re-pinned, contract lifecycle promoted, project records updated.
 
 Only after gate 6 is the implementation considered complete under the §15 design acceptance.
+
+## 11. Amendment — reconciliation integration (#159, accepted)
+
+The reconciliation design (`docs/design-materialization-reconciliation.md`, frozen) amends the phases above:
+
+**New prerequisite slice (before Phase 1): digest lineage publish.**
+Persist per-layer derived digests at the existing publish commit points: OCR identity = `result_hash`; retrieval identity = `hash(OCR identity + retrieval_policy_version + produced units digests)`; vector identity = `hash(retrieval identity + embedding identity)`. Add `paperforge probe lineage --json`; missing identity fails closed (`unknown`, never `stale`). Generation/run counters are diagnostics only.
+
+**Phase 1 additions:**
+- `reconcile(keys)` pure module: observe → global repair frontier → per-paper minimal repair frontier → scope merging by canonical action → emit ActionIntents.
+- Single channel: intents project onto the existing `PFResult.next_actions` wire; no second `intents` wire; the plugin never loops intents.
+- Handlers publish-then-reconcile; reconcile decides the operation only (`embed.resume` per-paper vs `embed.build` global substrate); cost/confirmation come from the registry.
+- Global-first: one global intent while the substrate is incompatible; per-paper facets `blocked_global`.
+
+**Phase 3 additions:**
+- Break-recovery journey: crash between chain steps → `reconcile` re-derives the identical intent.
+- O2 extended: forced `memory.build` failure → `reconcile` re-emits `memory.build`, never `embed.resume`.
+- Reader fail-closed test: mismatched or `unknown` lineage is never served.
+
+**Phase 4 additions:**
+- Plugin timer becomes `reconcile(all)` — scope-only trigger, no state scanning, per #158.
+- **Deletion list (old recommendation producers become projections or are deleted):**
+  - `paperforge/worker/asset_state.py` — `compute_next_step` and the fix-path logic of `compute_health` retire to projections of reconcile output, or are deleted (lifecycle computation stays);
+  - OCR maintenance `_recommended_action` / `compute_display_fields` — consume reconcile output instead of deciding redo/rebuild/configure;
+  - any remaining recommended-action computation in probe/maintenance surfaces;
+  - single-producer grep-assert: no materialization-repair recommendation outside reconcile.
+
+**New tests:** unknown-lineage fail-closed (legacy vaults get no mass rebuild); global-first (one `embed.build`, per-paper `blocked_global`); scope merge (100 keys → one `memory.build` intent); not-a-retry (failed action not re-fired on identical facts); change-prune (identical digest → no downstream rebuild).
