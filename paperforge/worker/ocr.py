@@ -125,7 +125,11 @@ OCR_QUEUE_STATUSES = {
     "nopdf",
     "blocked",
 }
-OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked"}
+# Terminal states never re-enter the poll loop. nopdf/error must be settled:
+# a missing PDF cannot be fixed by retrying the same row, and an un-settled
+# nopdf at the head of the queue starves every pending row behind it (the
+# upload slots are consumed by rows that can never succeed).
+OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked", "nopdf", "error"}
 
 
 

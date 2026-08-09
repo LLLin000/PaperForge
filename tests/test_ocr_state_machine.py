@@ -536,6 +536,54 @@ class TestSyncOcrQueue:
         # done should be skipped
         assert not any(r["zotero_key"] == key for r in result), "done status should be skipped"
 
+    def test_nopdf_is_settled_and_does_not_starve_pending_rows(self, tmp_path: Path) -> None:
+        """#133-review fix: a nopdf row is terminal — it must not stay in the
+        queue (its upload slot would otherwise be consumed forever, starving
+        every pending row behind it)."""
+        vault, ocr_root, exports, library_records = _make_vault(tmp_path)
+        paths = _mock_paths(vault, ocr_root, exports, library_records)
+
+        nopdf_key = "NOPDF01"
+        pending_key = "PEND01"
+        ocr_queue_path = ocr_root / "ocr-queue.json"
+        ocr_queue_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "zotero_key": nopdf_key,
+                        "has_pdf": True,
+                        "pdf_path": "storage:MISSING/file.pdf",
+                        "queue_status": "nopdf",
+                        "queued_at": "2024-01-01T00:00:00Z",
+                    },
+                    {
+                        "zotero_key": pending_key,
+                        "has_pdf": True,
+                        "pdf_path": "test.pdf",
+                        "queue_status": "pending",
+                        "queued_at": "2024-01-01T00:00:00Z",
+                    },
+                ]
+            ),
+            encoding="utf-8",
+        )
+        meta_path = ocr_root / nopdf_key / "meta.json"
+        meta_path.parent.mkdir()
+        meta_path.write_text(json.dumps({"zotero_key": nopdf_key, "ocr_status": "nopdf"}), encoding="utf-8")
+
+        from paperforge.worker.ocr import OCR_SETTLED_STATUSES, sync_ocr_queue
+
+        assert "nopdf" in OCR_SETTLED_STATUSES, "nopdf must be settled"
+        assert "error" in OCR_SETTLED_STATUSES, "error must be settled"
+        target_rows = [
+            {"zotero_key": nopdf_key, "has_pdf": True, "pdf_path": "storage:MISSING/file.pdf"},
+            {"zotero_key": pending_key, "has_pdf": True, "pdf_path": "test.pdf"},
+        ]
+        result = sync_ocr_queue(paths, target_rows)
+        keys = [r["zotero_key"] for r in result]
+        assert nopdf_key not in keys, "nopdf row must be skipped as settled"
+        assert pending_key in keys, "pending row must remain queued"
+
 
 # ---------------------------------------------------------------------------
 # Tests for cleanup_blocked_ocr_dirs
