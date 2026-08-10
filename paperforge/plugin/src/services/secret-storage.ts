@@ -89,10 +89,12 @@ export async function storeVectorDbCredential(
 
 export async function hasVectorDbCredential(
   plugin: PluginForSecrets,
-  profile: VectorDbCredentialProfile
+  profile: VectorDbCredentialProfile | null = null
 ): Promise<boolean> {
   return Boolean(
-    await plugin.app.secretStorage.getSecret(await vectorDbSecretId(profile))
+    await plugin.app.secretStorage.getSecret(
+      await vectorDbSecretId(profile ?? { baseUrl: "", model: "" })
+    )
   );
 }
 

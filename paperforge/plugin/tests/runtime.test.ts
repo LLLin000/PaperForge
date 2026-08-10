@@ -24,10 +24,10 @@ describe('readPathConfig', () => {
         expect(cfg._warning).toBeNull();
     });
 
-    it('falls back to defaults when the source is not yet hydrated', () => {
+    it('fails closed when the source is not yet hydrated', () => {
         const cfg = readPathConfig('/vault');
-        expect(cfg.system_dir).toBe('System');
-        expect(cfg._warning).toContain('defaults');
+        expect(cfg.system_dir).toBe('');
+        expect(cfg._warning).toContain('no semantic work');
     });
 });
 

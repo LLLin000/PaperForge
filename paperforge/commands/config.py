@@ -50,8 +50,13 @@ def _config_error_result(command: str, exc: ConfigError) -> PFResult:
 
 
 def _print_error(result: PFResult, args: Any) -> None:
-    message = result.error.message if result.error else "config error"
-    print(result.to_json() if args.json else message, file=__import__("sys").stderr)
+    """Machine mode: exactly one PFResult JSON on stdout (success or failure);
+    human mode: message on stderr. rc carries the outcome."""
+    if args.json:
+        print(result.to_json())
+    else:
+        message = result.error.message if result.error else "config error"
+        print(message, file=__import__("sys").stderr)
 
 
 def _field_payload(cv: ConfigValue) -> dict[str, Any]:
@@ -198,8 +203,9 @@ def run(args: Any) -> int:
             _print_error(result, args)
             return 1
         data = {**_snapshot_meta(mutation.snapshot), "changed": mutation.changed,
-                "dry_run": bool(getattr(args, "dry_run", False))}
-        result = _ok("config.migrate", data)
+                "dry_run": bool(getattr(args, "dry_run", False)),
+                "warnings": list(mutation.warnings)}
+        result = _ok("config.migrate", data, warnings=list(mutation.warnings))
 
     else:  # pragma: no cover - argparse prevents this
         result = PFResult(ok=False, command=f"config.{verb}", version=PF_VERSION,

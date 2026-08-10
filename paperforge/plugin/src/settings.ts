@@ -99,18 +99,6 @@ function asPluginForSecrets(
   };
 }
 
-function vectorDbProfile(
-  settings: Pick<
-    PaperForgeSettings,
-    "vector_db_api_base" | "vector_db_api_model"
-  >
-): VectorDbCredentialProfile {
-  return {
-    baseUrl: settings.vector_db_api_base,
-    model: settings.vector_db_api_model,
-  };
-}
-
 // ── Interface ──
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1305,9 +1293,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const select = editor.createEl("select", {
         attr: { "aria-label": t("md_agent_platform") },
       });
-      for (const [value, label] of Object.entries(platforms)) {
+      // #142: choices come from Python's config list when hydrated; the
+      // hardcoded map is a presentation label lookup only.
+      const editorChoices = this.plugin.agentPlatformChoices.length
+        ? this.plugin.agentPlatformChoices
+        : Object.keys(platforms);
+      for (const value of editorChoices) {
         const option = select.createEl("option", {
-          text: label,
+          text: platforms[value] ?? value,
           attr: { value },
         }) as HTMLOptionElement;
         option.selected = value === this._agentPlatformDraft;
@@ -1534,7 +1527,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     bi.value = this.plugin.settings.vector_db_api_base || "";
     bi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_base = bi.value;
-      void this.plugin.saveSettings();
+      void configSet(this._getVaultBasePath(), "vector_db_api_base", bi.value, this.plugin.settings).catch(
+        (e) => new Notice(`PaperForge: config set vector_db_api_base failed: ${String(e)}`)
+      );
       this._refreshVectorDbCredentialStatus();
     });
 
@@ -1552,7 +1547,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
     mi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_model = mi.value;
-      void this.plugin.saveSettings();
+      void configSet(this._getVaultBasePath(), "vector_db_api_model", mi.value, this.plugin.settings).catch(
+        (e) => new Notice(`PaperForge: config set vector_db_api_model failed: ${String(e)}`)
+      );
       this._refreshVectorDbCredentialStatus();
     });
 
@@ -1939,8 +1936,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           resolveEnv: () =>
             buildTargetedEnv(
               asPluginForSecrets(this.app),
-              "embed",
-              vectorDbProfile(this.plugin.settings)
+              "embed"
             ),
           runShort: (args: string[], timeoutMs: number) => {
             const { promise, resolve } = deferred<{
@@ -2408,8 +2404,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // Async: resolve SecretStorage credentials before launch
       buildTargetedEnv(
         asPluginForSecrets((this as any).app),
-        opts.credentialType,
-        vectorDbProfile(this.plugin.settings)
+        opts.credentialType
       ).then((env) => {
         if (opts && opts.stream) {
           spawnChild(env);
@@ -2706,7 +2701,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.vector_db_api_base || "")
           .onChange((value) => {
             this.plugin.settings.vector_db_api_base = value;
-            void this.plugin.saveSettings();
+            void configSet(this._getVaultBasePath(), "vector_db_api_base", value, this.plugin.settings).catch(
+              (e) => new Notice(`PaperForge: config set vector_db_api_base failed: ${String(e)}`)
+            );
             this._refreshVectorDbCredentialStatus();
           });
       });
@@ -2721,7 +2718,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           )
           .onChange((value) => {
             this.plugin.settings.vector_db_api_model = value;
-            void this.plugin.saveSettings();
+            void configSet(this._getVaultBasePath(), "vector_db_api_model", value, this.plugin.settings).catch(
+              (e) => new Notice(`PaperForge: config set vector_db_api_model failed: ${String(e)}`)
+            );
             this._refreshVectorDbCredentialStatus();
           });
       });
@@ -2895,8 +2894,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // Issue #79: resolve credentials immediately before embed build launch
         const env = await buildTargetedEnv(
           asPluginForSecrets((this as any).app),
-          "embed",
-          vectorDbProfile(this.plugin.settings)
+          "embed"
         );
         // Merge non-credential embed settings that aren't secret-managed
         env.PYTHONIOENCODING = "utf-8";
@@ -4729,8 +4727,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   private _refreshVectorDbCredentialStatus(): void {
     void hasVectorDbCredential(
-      asPluginForSecrets(this.app),
-      vectorDbProfile(this.plugin.settings)
+      asPluginForSecrets(this.app)
     ).then((configured) => {
       if (configured === this.plugin.settings._vector_db_configured) return;
       this.plugin.settings._vector_db_configured = configured;
@@ -4741,7 +4738,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private async _storeVectorDbCredential(value: string): Promise<boolean> {
     const saved = await storeVectorDbCredential(
       asPluginForSecrets(this.app),
-      vectorDbProfile(this.plugin.settings),
+      { baseUrl: "", model: "" },
       value
     );
     if (!saved) return false;
@@ -4947,7 +4944,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           text: t("feat_agent_platform_desc"),
         });
         const select = config.createEl("select") as HTMLSelectElement;
-        for (const [value, label] of Object.entries({
+        const setupPlatformLabels: Record<string, string> = {
           opencode: "OpenCode",
           claude: "Claude Code",
           codex: "Codex",
@@ -4955,9 +4952,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           windsurf: "Windsurf",
           github_copilot: "GitHub Copilot",
           gemini: "Gemini CLI",
-        })) {
+        };
+        const setupChoices = this.plugin.agentPlatformChoices.length
+          ? this.plugin.agentPlatformChoices
+          : Object.keys(setupPlatformLabels);
+        for (const value of setupChoices) {
           const option = select.createEl("option", {
-            text: label,
+            text: setupPlatformLabels[value] ?? value,
             attr: { value },
           }) as HTMLOptionElement;
           option.selected = value === this.plugin.settings.agent_platform;

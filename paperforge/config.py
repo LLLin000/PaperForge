@@ -169,6 +169,7 @@ class ConfigValidation:
 class MutationResult:
     changed: bool
     snapshot: ConfigSnapshot
+    warnings: tuple[str, ...] = ()
 
 
 # ---------------------------------------------------------------------------
@@ -395,6 +396,9 @@ def _classify_document(data: dict[str, Any], path: Path) -> ConfigValidation:
 
     if isinstance(nested, dict):
         for key in nested:
+            if _is_secret_like(key):
+                return ConfigValidation("invalid", None,
+                                        ({"code": "config.secret_field", "key": f"vault_config.{key}"},), ())
             if key not in FIELD_BY_KEY:
                 warnings.append({"code": "config.unknown_key", "key": f"vault_config.{key}"})
 
@@ -438,6 +442,8 @@ def _snapshot_from(data: dict[str, Any], revision: str, env: Mapping[str, str],
     nested = data.get("vault_config")
     if isinstance(nested, dict):
         for key in nested:
+            if _is_secret_like(key):
+                raise ConfigError("config.secret_field", {"key": f"vault_config.{key}"})
             if key not in FIELD_BY_KEY:
                 unknown.append(f"vault_config.{key}")
                 warnings.append(f"unknown field 'vault_config.{key}' preserved but not interpreted")
@@ -523,12 +529,15 @@ def load_config(vault: Path, *, env: Mapping[str, str] | None = None,
 
 
 # ---------------------------------------------------------------------------
-# Mutation transaction (the single writer)
+# Mutation transaction (the single writer — set/unset/init/migrate all route
+# through this one primitive)
 # ---------------------------------------------------------------------------
 
-def _mutate(vault: Path, mutator) -> MutationResult:
-    """One locked mutation: filelock -> re-read -> validate -> mutate ->
-    validate candidate -> atomic replace -> read-back."""
+def _transaction(vault: Path, mutator, *, allow_missing: bool = False,
+                 allow_legacy: bool = False) -> MutationResult:
+    """One locked transaction: filelock -> fresh re-read -> strict classify ->
+    mutate -> canonicalize -> full candidate validate -> atomic replace ->
+    read-back (restoring prior bytes on failure)."""
     path = vault / CONFIG_FILE
     lock_path = vault / LOCK_FILE
     lock = FileLock(str(lock_path), timeout=LOCK_TIMEOUT_SECONDS)
@@ -536,25 +545,59 @@ def _mutate(vault: Path, mutator) -> MutationResult:
         with lock:
             data, err, _revision = _read_document(path)
             if err is not None:
-                raise ConfigError(err, {"path": str(path)})
-            assert data is not None
-            state = _classify_document(data, path).state
-            if state == "future_schema":
+                if allow_missing and err == "config.not_found":
+                    data = {}
+                else:
+                    raise ConfigError(err, {"path": str(path)})
+            if data:
+                validation = _classify_document(data, path)
+                if validation.state == "future_schema":
+                    raise ConfigError("config.future_schema", {"path": str(path)})
+                if validation.state == "migration_required" and not allow_legacy:
+                    raise ConfigError("config.migration_required",
+                                      {"path": str(path), "hint": "run 'paperforge config migrate'"})
+                if validation.state == "invalid":
+                    _raise_invalid_document(validation)
+
+            changed, candidate, extras = mutator(data)
+
+            # Canonicalization: schema_version is always written as int 2 on a
+            # successful mutation (#142 — string "2" normalizes; legacy docs
+            # gain the canonical version).
+            if candidate.get("schema_version") != SCHEMA_VERSION:
+                candidate["schema_version"] = SCHEMA_VERSION
+                changed = True
+
+            # Full candidate validation before any write.
+            check = _classify_document(candidate, path)
+            if check.state == "invalid":
+                raise ConfigError("config.invalid", {"errors": list(check.errors)})
+            if check.state == "future_schema":
                 raise ConfigError("config.future_schema", {"path": str(path)})
-            if state == "migration_required":
-                raise ConfigError("config.migration_required",
-                                  {"path": str(path), "hint": "run 'paperforge config migrate'"})
-            if state == "invalid":
-                _raise_invalid_document(_classify_document(data, path))
-            changed, candidate = mutator(data)
+
+            prior = path.read_bytes() if path.exists() else None
             if changed:
-                _write_document_atomic(path, candidate)
+                try:
+                    _write_document_atomic(path, candidate)
+                except OSError as exc:
+                    raise ConfigError("config.write_failed",
+                                      {"path": str(path), "detail": str(exc)})
+
             data2, err2, revision2 = _read_document(path)
             if err2 is not None:
-                raise ConfigError("config.write_failed", {"path": str(path), "detail": err2})
+                if prior is not None:
+                    try:
+                        path.write_bytes(prior)
+                    except OSError:
+                        pass
+                raise ConfigError("config.write_failed",
+                                  {"path": str(path), "detail": err2})
             assert data2 is not None
-            return MutationResult(changed, _snapshot_from(
-                data2, revision2, os.environ, {}))
+            return MutationResult(
+                changed,
+                _snapshot_from(data2, revision2, os.environ, {}),
+                warnings=tuple(extras),
+            )
     except Timeout:
         raise ConfigError("config.locked", {"path": str(lock_path)})
 
@@ -573,14 +616,14 @@ def set_config(vault: Path, key: str, value: object) -> MutationResult:
         raise ConfigError("config.invalid", {"key": key, "reason": err})
     assert parsed is not None
 
-    def _apply(data: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    def _apply(data: dict[str, Any]) -> tuple[bool, dict[str, Any], tuple[str, ...]]:
         current = _lookup_stored(data, spec)
         if current is not None and current == parsed:
-            return False, data
+            return False, data, ()
         _store_value(data, spec, parsed)
-        return True, data
+        return True, data, ()
 
-    return _mutate(vault, _apply)
+    return _transaction(vault, _apply)
 
 
 def unset_config(vault: Path, key: str) -> MutationResult:
@@ -594,72 +637,40 @@ def unset_config(vault: Path, key: str) -> MutationResult:
     if not spec.writable:
         raise ConfigError("config.read_only_key", {"key": key})
 
-    def _apply(data: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    def _apply(data: dict[str, Any]) -> tuple[bool, dict[str, Any], tuple[str, ...]]:
         current = _lookup_stored(data, spec)
         if current is None:
-            return False, data
+            return False, data, ()
         _drop_stored(data, spec)
-        return True, data
+        return True, data, ()
 
-    return _mutate(vault, _apply)
+    return _transaction(vault, _apply)
 
 
 def bootstrap_config(vault: Path) -> MutationResult:
     """Create a complete explicit schema-2 file from current defaults when
     absent; idempotent for an existing valid file.  Legacy/corrupt/future
     files are never overwritten."""
-    path = vault / CONFIG_FILE
-    if path.exists():
-        state = validate_config(vault)
-        if state.state == "valid":
-            snapshot = load_config(vault)
-            return MutationResult(False, snapshot)
-        if state.state == "migration_required":
-            raise ConfigError("config.migration_required",
-                              {"path": str(path), "hint": "run 'paperforge config migrate'"})
-        raise ConfigError("config.future_schema" if state.state == "future_schema" else "config.corrupt",
-                          {"path": str(path)})
     if not vault.exists():
-        raise ConfigError("config.not_found", {"path": str(path), "reason": "vault does not exist"})
+        raise ConfigError("config.not_found",
+                          {"path": str(vault / CONFIG_FILE), "reason": "vault does not exist"})
 
-    document: dict[str, Any] = {"schema_version": SCHEMA_VERSION, "vault_config": {}}
-    for spec in FIELD_SPECS:
-        if spec.storage_path[0] == "vault_config":
-            document["vault_config"][spec.storage_path[1]] = spec.default
-        else:
-            document[spec.key] = spec.default
-    _write_document_atomic(path, document)
-    snapshot = load_config(vault)
-    return MutationResult(True, snapshot)
+    def _apply(data: dict[str, Any]) -> tuple[bool, dict[str, Any], tuple[str, ...]]:
+        if data:
+            return False, data, ()
+        document: dict[str, Any] = {"schema_version": SCHEMA_VERSION, "vault_config": {}}
+        for spec in FIELD_SPECS:
+            if spec.storage_path[0] == "vault_config":
+                document["vault_config"][spec.storage_path[1]] = spec.default
+            else:
+                document[spec.key] = spec.default
+        return True, document, ()
+
+    return _transaction(vault, _apply, allow_missing=True)
 
 
-# ---------------------------------------------------------------------------
-# Legacy migration (explicit only)
-# ---------------------------------------------------------------------------
-
-def migrate_config(vault: Path, *, dry_run: bool = False) -> MutationResult:
-    """Explicitly normalize legacy structure through the same writer.
-
-    Rules (#142 §9): canonical vault_config wins over legacy top-level path
-    values (mismatch reported); missing canonical values are filled from the
-    legacy source; migrated top-level path aliases are deleted; agent_key fills
-    agent_platform only when absent then is deleted; derived path fields are
-    removed; unknown non-secret fields are preserved; forbidden secret fields
-    stop migration; idempotent.
-    """
-    path = vault / CONFIG_FILE
-    data, err, _rev = _read_document(path)
-    if err is not None:
-        raise ConfigError(err, {"path": str(path)})
-    assert data is not None
-
-    for key in data:
-        if key == "vault_config":
-            continue
-        if _is_secret_like(key):
-            raise ConfigError("config.secret_field",
-                              {"key": key, "hint": "credentials migrate via #138 (auth migrate)"})
-
+def _migrate_transform(data: dict[str, Any]) -> tuple[bool, dict[str, Any], tuple[str, ...]]:
+    """Apply the #142 §9 migration rules. Returns (changed, candidate, warnings)."""
     candidate: dict[str, Any] = dict(data)
     migrated: list[str] = []
     conflicts: list[str] = []
@@ -669,8 +680,6 @@ def migrate_config(vault: Path, *, dry_run: bool = False) -> MutationResult:
         raise ConfigError("config.invalid", {"key": "vault_config", "reason": "not an object"})
     vault_config: dict[str, Any] = candidate.setdefault("vault_config", {})
 
-    # 1. canonical wins; legacy fills missing; the top-level alias is always
-    # deleted (a mismatch is reported before mutation).
     for key in LEGACY_PATH_KEYS:
         spec = FIELD_BY_KEY[key]
         canonical = vault_config.get(spec.storage_path[1])
@@ -679,49 +688,60 @@ def migrate_config(vault: Path, *, dry_run: bool = False) -> MutationResult:
             continue
         if canonical is not None:
             if str(canonical) != str(legacy):
-                conflicts.append(key)
+                conflicts.append(
+                    f"conflict.{key}: canonical '{canonical}' vs legacy '{legacy}' — canonical wins")
         else:
             vault_config[spec.storage_path[1]] = legacy
             migrated.append(key)
         del candidate[key]
 
-    # 2. agent_key alias.
     agent_key = candidate.pop("agent_key", None)
     if agent_key is not None and "agent_platform" not in candidate:
         candidate["agent_platform"] = agent_key
         migrated.append("agent_key")
 
-    # 3. Derived path fields are removed (Python resolves them).
     for derived in _DERIVED_LEGACY_FIELDS:
         if derived in candidate:
             del candidate[derived]
             migrated.append(derived)
 
-    # 4. Schema version normalization: a migrated document is always canonical
-    # schema 2 (missing/string versions are legacy and become 2).
-    raw_version = candidate.get("schema_version", "1")
-    if not isinstance(raw_version, int) or raw_version != SCHEMA_VERSION:
-        candidate["schema_version"] = SCHEMA_VERSION
-        migrated.append("schema_version")
-
-    # 5. Validate the complete candidate before any write.
-    check = _classify_document(candidate, path)
-    if check.state == "invalid":
-        raise ConfigError("config.invalid", {"errors": list(check.errors)})
-    if check.state == "future_schema":
-        raise ConfigError("config.future_schema", {"path": str(path)})
-
     changed = bool(migrated) or candidate != data
-    if not dry_run and changed:
-        _write_document_atomic(path, candidate)
+    return changed, candidate, tuple(conflicts)
 
-    if not dry_run and changed:
-        snapshot = load_config(vault)
-    else:
+
+def migrate_config(vault: Path, *, dry_run: bool = False) -> MutationResult:
+    """Explicitly normalize legacy structure through the same writer.
+
+    Dry-run reads without a lock and writes nothing; conflicts are reported in
+    ``MutationResult.warnings`` so the CLI/plugin can present them.
+    """
+    if dry_run:
+        data, err, _rev = _read_document(vault / CONFIG_FILE)
+        if err is not None:
+            raise ConfigError(err, {"path": str(vault / CONFIG_FILE)})
+        assert data is not None
+        for key in data:
+            if key == "vault_config":
+                continue
+            if _is_secret_like(key):
+                raise ConfigError("config.secret_field",
+                                  {"key": key, "hint": "credentials migrate via #138 (auth migrate)"})
+        nested = data.get("vault_config")
+        if isinstance(nested, dict):
+            for key in nested:
+                if _is_secret_like(key):
+                    raise ConfigError("config.secret_field",
+                                      {"key": f"vault_config.{key}",
+                                       "hint": "credentials migrate via #138 (auth migrate)"})
+        changed, candidate, conflicts = _migrate_transform(data)
+        if candidate.get("schema_version") != SCHEMA_VERSION:
+            candidate["schema_version"] = SCHEMA_VERSION
         stamp = "sha256:" + hashlib.sha256(
             json.dumps(candidate, sort_keys=True).encode("utf-8")).hexdigest()
-        snapshot = _snapshot_from(candidate, stamp, os.environ, {})
-    return MutationResult(changed, snapshot)
+        return MutationResult(changed, _snapshot_from(candidate, stamp, os.environ, {}),
+                              warnings=conflicts)
+
+    return _transaction(vault, _migrate_transform, allow_legacy=True)
 
 
 # ---------------------------------------------------------------------------
@@ -805,8 +825,12 @@ def load_vault_config(
 def paperforge_paths(vault: Path, cfg: dict[str, str] | None = None) -> dict[str, Path]:
     """Thin wrapper over :func:`resolve_paths`."""
     if cfg is not None:
-        document: dict[str, Any] = {"schema_version": SCHEMA_VERSION,
-                                    **{k: v for k, v in cfg.items() if k in FIELD_BY_KEY}}
+        document: dict[str, Any] = {"schema_version": SCHEMA_VERSION, "vault_config": {}}
+        for key, value in cfg.items():
+            spec = FIELD_BY_KEY.get(key)
+            if spec is None:
+                continue
+            _store_value(document, spec, value)
         snapshot = _snapshot_from(document, "override", {}, {})
         return resolve_paths(vault, snapshot)
     return resolve_paths(vault)

@@ -21,9 +21,11 @@ from pathlib import Path
 # Config / resolver
 from paperforge.config import (
     ConfigError,
+    load_config,
     load_vault_config,
     paperforge_paths,
     paths_as_strings,
+    resolve_paths,
     resolve_vault,
 )
 
@@ -612,9 +614,10 @@ def main(argv: list[str] | None = None) -> int:
     # paths.  config/setup/probe handle their own missing-config states.
     config_tolerant_commands = frozenset({"config", "setup", "probe"})
     try:
-        cfg = load_vault_config(vault)
-        args.cfg = cfg
-        args.paths = paperforge_paths(vault, cfg)
+        snapshot = load_config(vault)
+        args.cfg = {key: str(cv.value).lower() if isinstance(cv.value, bool) else str(cv.value)
+                    for key, cv in snapshot.values.items()}
+        args.paths = resolve_paths(vault, snapshot)
     except ConfigError as exc:
         if args.command in config_tolerant_commands:
             args.cfg = None

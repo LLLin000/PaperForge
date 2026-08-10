@@ -39,6 +39,7 @@ export interface ConfigMutationData {
   unknown_keys: string[];
   changed: boolean;
   field: ConfigField;
+  warnings?: string[];
 }
 
 export interface ConfigPathsData {
@@ -61,6 +62,17 @@ interface PfResult<T> {
   error: { code: string; message: string; details: Record<string, unknown> } | null;
 }
 
+export class ConfigClientError extends Error {
+  readonly configCode: string;
+  readonly details: Record<string, unknown>;
+
+  constructor(configCode: string, details: Record<string, unknown>, message?: string) {
+    super(message ?? configCode);
+    this.configCode = configCode;
+    this.details = details;
+  }
+}
+
 function invoke<T>(
   vaultPath: string,
   args: string[],
@@ -69,7 +81,7 @@ function invoke<T>(
   return new Promise<T>((resolve, reject) => {
     const py = resolvePythonExecutable(vaultPath, settings, require("fs"), require("child_process").execFileSync);
     if (!py) {
-      reject(new Error("PaperForge Python runtime not resolved"));
+      reject(new ConfigClientError("config.python_unresolved", {}));
       return;
     }
     const argv = [
@@ -86,21 +98,33 @@ function invoke<T>(
       py.path,
       argv,
       { encoding: "utf-8", timeout: 30000, windowsHide: true },
-      (err, stdout, stderr) => {
-        if (err) {
-          reject(new Error(stderr?.trim() || err.message));
-          return;
-        }
+      (err, stdout) => {
+        // #137 machine contract: --json emits exactly one PFResult JSON on
+        // stdout (success OR failure); stderr is diagnostics only.
         try {
           const parsed = JSON.parse(stdout) as PfResult<T>;
-          if (!parsed.ok || parsed.data === null) {
-            const code = parsed.error?.message || parsed.error?.code || "config.error";
-            reject(new Error(code));
+          if (parsed.ok && parsed.data !== null) {
+            resolve(parsed.data);
             return;
           }
-          resolve(parsed.data);
-        } catch (e) {
-          reject(new Error(`Invalid config response: ${String(e)}`));
+          const code = parsed.error?.message || parsed.error?.code || "config.error";
+          reject(
+            new ConfigClientError(
+              code,
+              parsed.error?.details ?? {},
+              parsed.error?.message ?? code
+            )
+          );
+          return;
+        } catch (parseError) {
+          const diag = err?.message ?? "";
+          reject(
+            new ConfigClientError(
+              "config.invalid_response",
+              { stdout: stdout?.slice(0, 200) ?? "", stderr: diag?.slice(0, 200) ?? "" },
+              `Invalid config response: ${String(parseError)}`
+            )
+          );
         }
       }
     );
@@ -151,4 +175,16 @@ export function configValidate(
   settings?: PaperForgeSettings | null
 ): Promise<ConfigValidateData> {
   return invoke<ConfigValidateData>(vaultPath, ["validate"], settings);
+}
+
+export function configMigrate(
+  vaultPath: string,
+  dryRun: boolean,
+  settings?: PaperForgeSettings | null
+): Promise<ConfigMutationData> {
+  return invoke<ConfigMutationData>(
+    vaultPath,
+    dryRun ? ["migrate", "--dry-run"] : ["migrate"],
+    settings
+  );
 }
