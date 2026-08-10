@@ -98,6 +98,7 @@ jobs:
             tests/test_read_model_cutover.py \
             tests/test_lineage.py \
             tests/test_credentials.py \
+            tests/test_action_registry.py \
             tests/cli/test_json_contracts.py \
             tests/cli/test_text_contracts.py \
             tests/cli/test_ocr_progress_contracts.py \
