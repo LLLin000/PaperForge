@@ -388,6 +388,24 @@ class TestFailLoud:
             c.set_keyring_override(_fake_keyring())
 
 
+    def test_ocr_diagnose_backend_fault_text_mode(self, monkeypatch, capsys, tmp_path: Path) -> None:
+        """`ocr --diagnose` reports a backend fault as a diagnostic finding —
+        never a crash, never a missing-key disguise."""
+        from paperforge.commands.ocr import _diagnose
+        from paperforge.credentials import CredentialError
+
+        def boom(config=None, live=False):
+            raise CredentialError("credential.backend_unavailable", "no secure backend")
+
+        monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor", boom)
+        rc = _diagnose(tmp_path)
+        out = capsys.readouterr().out
+        assert rc == 1
+        assert "OCR Doctor" in out
+        assert "backend_unavailable" in out
+        assert "auth status ocr" in out
+
+
 class TestConsumers:
     def test_ocr_token_resolver_uses_authority(self, monkeypatch, tmp_path: Path) -> None:
         from paperforge.worker.ocr import _resolve_paddleocr_token
