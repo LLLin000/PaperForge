@@ -49,9 +49,9 @@ import {
   paperforgeEnrichedEnv,
   buildTargetedEnv,
 } from "./services/python-bridge";
-import { resolveVaultPaths } from "./services/memory-state";
-import { setPathConfigSource, isConfigHydrated } from "./services/memory-state";
-import { configList, configMigrate, configValidate } from "./services/config-client";
+import { resolveVaultPaths } from "./services/runtime-paths";
+import { setPathConfigSource, isConfigHydrated } from "./services/runtime-paths";
+import { configList, configMigrate, configValidate, queryEmbedStatus } from "./services/config-client";
 import {
   ManagedRuntime,
   resolveRuntimeCommand,
@@ -64,6 +64,9 @@ import {
 export default class PaperForgePlugin extends Plugin {
   /** agent_platform choices from Python's config list (#142) — empty until hydrated. */
   agentPlatformChoices: string[] = [];
+
+  /** #161/R: embed status read model cache (embed status --json). */
+  _embedStatusCache: Record<string, unknown> = {};
 
   settings!: PaperForgeSettings;
   private _lastExportMtime = 0;
@@ -234,6 +237,12 @@ export default class PaperForgePlugin extends Plugin {
       void configValidate(vaultBase, this.settings).then((validation) => {
         if (validation.state === "migration_required") {
           this._needsConfigMigration = true;
+        }
+      }).catch(() => undefined);
+      // #161/R: embed status read model for the vector UI.
+      void queryEmbedStatus(vaultBase, this.settings).then((d) => {
+        if (d) {
+          this._embedStatusCache = d as unknown as Record<string, unknown>;
         }
       }).catch(() => undefined);
     }

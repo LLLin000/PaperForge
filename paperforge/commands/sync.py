@@ -68,6 +68,7 @@ def run(args: argparse.Namespace) -> int:
     result = svc.run(**filtered_kwargs)
 
     _write_orphan_state(vault, result)
+    _cleanup_legacy_snapshot_files(vault)
 
     if result.warnings and not json_output:
         for w in result.warnings:
@@ -148,6 +149,23 @@ def _run_memory_build(vault) -> None:
         print(f"memory: {counts.get('papers_indexed', 0)} papers{tag}")
     except Exception as e:  # noqa: BLE001 — local follow-up failure must not fail sync
         print(f"memory: deferred ({e})")
+
+
+def _cleanup_legacy_snapshot_files(vault) -> None:
+    """#148: best-effort removal of the retired snapshot contract files.
+
+    Zero readers + zero writers make these inert garbage; hygiene only —
+    failure to clean never fails the cutover and never affects the result.
+    """
+    import os
+    from pathlib import Path
+
+    for name in ("memory-runtime-state.json", "vector-runtime-state.json", "runtime-health.json"):
+        try:
+            legacy = Path(vault) / "99_System" / "PaperForge" / "indexes" / name
+            legacy.unlink(missing_ok=True)
+        except OSError:
+            logger.debug("legacy snapshot cleanup skipped for %s", name)
 
 
 def _write_orphan_state(vault, result: PFResult) -> None:

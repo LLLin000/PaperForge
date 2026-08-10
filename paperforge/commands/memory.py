@@ -209,7 +209,6 @@ def run(args: argparse.Namespace) -> int:
             status = get_memory_status(vault)
             from paperforge.memory.db import get_connection, get_memory_db_path, open_live_reader
             from paperforge.memory.schema import get_schema_version
-            from paperforge.memory.state_snapshot import write_memory_runtime
             _last_full_build = ""
             _schema_ver = None
             _fts_ok = False
@@ -226,16 +225,6 @@ def run(args: argparse.Namespace) -> int:
                         _fts_ok = True
                     except Exception:
                         _fts_ok = False
-            write_memory_runtime(
-                vault,
-                paper_count_db=status.get("paper_count_db", 0),
-                paper_count_index=status.get("paper_count_index", 0),
-                fresh=status.get("fresh", False),
-                needs_rebuild=status.get("needs_rebuild", True),
-                last_full_build_at=_last_full_build,
-                schema_version_db=_schema_ver or 0,
-                fts_ready=_fts_ok,
-            )
             data = {
                 **status,
                 "last_full_build": _last_full_build,

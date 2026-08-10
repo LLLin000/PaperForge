@@ -5,7 +5,7 @@ import * as https from "https";
 import { execFile, spawn } from "child_process";
 import { t } from "../i18n";
 import { PaperForgeSettings } from "../constants";
-import { resolveVaultPaths } from "../services/memory-state";
+import { resolveVaultPaths } from "../services/runtime-paths";
 import {
   resolveGitDir,
   paperforgeEnrichedEnv,

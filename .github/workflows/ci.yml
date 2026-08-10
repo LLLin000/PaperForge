@@ -70,6 +70,50 @@ jobs:
             -v --tb=short --timeout=60
 
   # ---------------------------------------------------------------------------
+  # L1.5 — J-matrix headless gates (#146): 3-OS machine contracts
+  # ---------------------------------------------------------------------------
+  # J1  machine contract fixtures (probe read models, PFResult/JSON/text/progress
+  #     NDJSON contracts)
+  # J2  headless sync + vault preservation (.obsidian byte-for-byte untouched)
+  # J3  deterministic OCR (state machine + progress contracts, no live API)
+  j-matrix:
+    name: J-Matrix (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package with test deps
+        run: pip install -e ".[test,vector]"
+      - name: J1 — machine contract fixtures
+        shell: bash
+        run: |
+          python -m pytest \
+            tests/test_probe.py \
+            tests/test_read_model_cutover.py \
+            tests/cli/test_json_contracts.py \
+            tests/cli/test_text_contracts.py \
+            tests/cli/test_ocr_progress_contracts.py \
+            -q --tb=short --timeout=120
+      - name: J2 — headless sync + vault preservation
+        shell: bash
+        run: |
+          python -m pytest \
+            tests/journey/test_headless_sync_preservation.py \
+            -q --tb=short --timeout=120
+      - name: J3 — deterministic OCR
+        shell: bash
+        run: |
+          python -m pytest \
+            tests/test_ocr_state_machine.py \
+            -q --tb=short --timeout=120
+
+  # ---------------------------------------------------------------------------
   # L3 — Plugin tests (Vitest)
   # ---------------------------------------------------------------------------
   plugin-tests:
@@ -201,6 +245,7 @@ jobs:
       - version-check
       - ruff
       - unit-tests
+      - j-matrix
       - protocol-tests
       - ocr-regression
       - plugin-tests

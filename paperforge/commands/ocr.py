@@ -686,6 +686,9 @@ def run(args: argparse.Namespace) -> int:
         )
         return rc
 
+    if ocr_action == "pipeline-versions":
+        return _run_ocr_pipeline_versions(vault, json_output=json_output)
+
     if ocr_action == "list":
         return _run_ocr_list(
             vault,
@@ -741,3 +744,19 @@ def run(args: argparse.Namespace) -> int:
             logger.warning("Auto-diagnose failed: %s", e)
 
     return exit_code
+
+def _run_ocr_pipeline_versions(vault: Path, *, json_output: bool) -> int:
+    """#148 detail surface: per-paper OCR pipeline versions."""
+    from paperforge.commands.probe import paper_pipeline_versions
+    from paperforge.worker.ocr_maintenance import collect_maintenance_rows
+
+    rows = collect_maintenance_rows(vault)
+    versions = paper_pipeline_versions(vault, rows)
+    result = PFResult(
+        ok=True,
+        command="ocr pipeline-versions",
+        version=__import__("paperforge", fromlist=["__version__"]).__version__,
+        data={"total": len(versions), "versions": versions},
+    )
+    print(result.to_json() if json_output else f"{len(versions)} papers")
+    return 0

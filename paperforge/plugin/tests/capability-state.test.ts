@@ -809,7 +809,7 @@ import "obsidian-test-mocks/jest-setup";
 
 import { PaperForgeSettingTab } from "../src/settings";
 import { resolveRuntimeCommand } from "../src/services/managed-runtime";
-import { getCachedPython } from "../src/services/memory-state";
+import { getCachedPython } from "../src/services/python-bridge";
 
 const { mockExecFile, mockSpawn } = vi.hoisted(() => ({
   mockExecFile: vi.fn(),
@@ -843,7 +843,7 @@ vi.mock("../src/services/managed-runtime", async (importOriginal) => ({
   resolveRuntimeCommand: mockResolveRuntimeCommand,
 }));
 
-vi.mock("../src/services/memory-state", async (importOriginal) => ({
+vi.mock("../src/services/runtime-paths", async (importOriginal) => ({
   ...(await importOriginal()),
   getCachedPython: mockGetCachedPython,
 }));

@@ -63,6 +63,7 @@ class RuleKind(str, Enum):
     PUBLICATION_AUTHORITY = "publication_authority"
     ROLE_AUTHORITY = "role_authority"
     CANONICAL_WRITER = "canonical_writer"
+    CANONICAL_READ = "canonical_read"
     PUBLICATION_MARKER = "publication_marker"
     COVERAGE_COMPLETE = "coverage_complete"
 

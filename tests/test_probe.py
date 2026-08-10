@@ -489,10 +489,19 @@ class TestOcrProbe:
         assert data['reason']['code'] == 'ocr.config_corrupt'
 
     def test_api_key_missing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Config exists but no API token anywhere -> missing_input."""
+        """#161: with no local materialization defect, a missing API token
+        -> missing_input. The credential check runs AFTER defect
+        classification and never masks existing bad output."""
         from paperforge.commands import probe as probe_mod
         tmp_path.mkdir(parents=True, exist_ok=True)
         canonical_test_config(tmp_path, system_dir="99_System")
+
+        class HealthyRow:
+            status = "done"
+            health = "green"
+            display_action = "none"
+        monkeypatch.setattr("paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda v: [HealthyRow()])
         # Mock _resolve_paddleocr_token to return empty (no token from any source)
         monkeypatch.setattr("paperforge.worker.ocr._resolve_paddleocr_token", lambda v: "")
         data = probe_mod.probe_ocr(tmp_path)
@@ -941,6 +950,13 @@ class TestOcrActivityProgress:
 class TestOcrQualityUnacceptable:
     """Dead-end red rows with no retry/rebuild path → quality_unacceptable."""
 
+    @pytest.fixture(autouse=True)
+    def _hermetic_paddle_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """#161: never inherit a dev-machine PaddleOCR token — these
+        defect-classification states must be env-invariant."""
+        monkeypatch.delenv("PADDLEOCR_API_TOKEN", raising=False)
+        monkeypatch.delenv("PADDLEOCR_API_TOKEN_USER", raising=False)
+
     def test_dead_end_red_no_redo(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """health=red, display_action=none, can_redo=False → investigate."""
         tmp_path.mkdir(parents=True, exist_ok=True)
@@ -1027,9 +1043,17 @@ class TestOcrQualityUnacceptable:
         assert data["pipeline_version_summary"]["total"] == 1
         assert data["pipeline_version_summary"]["on_current"] == 1
         assert data["pipeline_version_summary"]["stale"] == 0
-        assert len(data["per_paper_pipeline_version"]) == 1
-        assert data["per_paper_pipeline_version"][0]["key"] == "KEY1"
-        assert data["per_paper_pipeline_version"][0]["last_pipeline_version"] == OCR_PIPELINE_VERSION
+        # #148: the per-paper detail moved to `ocr pipeline-versions`.
+        assert "per_paper_pipeline_version" not in data
+        # the detail surface still resolves the per-paper version
+        from paperforge.commands.probe import paper_pipeline_versions
+
+        class _Row:
+            key = "KEY1"
+            title = "Test Paper"
+        detail = paper_pipeline_versions(tmp_path, [_Row()])
+        assert detail[0]["key"] == "KEY1"
+        assert detail[0]["last_pipeline_version"] == OCR_PIPELINE_VERSION
 
     def test_ocr_pipeline_version_in_all_states(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """pipeline_version field is present even in non-ready states (config_missing)."""
