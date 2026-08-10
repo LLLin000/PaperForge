@@ -300,7 +300,6 @@ def run(args: argparse.Namespace) -> int:
             print(f"Error: {preflight['error']}", file=sys.stderr)
             print(f"Fix: {preflight['fix']}", file=sys.stderr)
         return 1
-
     envelope = read_index(vault)
     if not envelope:
         result = PFResult(
@@ -315,13 +314,44 @@ def run(args: argparse.Namespace) -> int:
         return 1
 
     items = envelope if isinstance(envelope, list) else envelope.get("items", [])
+    # #165/T4: the build core lives in run_build (keys filter + scope fidelity);
+    # keys arrive only through the action handler Namespace (no --key on the
+    # embed subparser).
+    return run_build(
+        vault,
+        items,
+        keys=getattr(args, "keys", None),
+        force=getattr(args, "force", False),
+        resume=getattr(args, "resume", False),
+        json=bool(getattr(args, "json", False)),
+    )
+
+
+def run_build(
+    vault: Path,
+    items: list[dict],
+    keys: list[str] | None = None,
+    *,
+    force: bool = False,
+    resume: bool = False,
+    json: bool = False,
+) -> int:
+    """#165/T4: the embed build core.  keys=None -> whole-library behavior;
+    keys given -> candidates = done_papers ∩ keys (subset semantics)."""
+
     done_papers = [e for e in items if e.get("ocr_status") == "done"]
+    # #165/T4: papers-scope filter — candidates = done_papers ∩ keys.
+    candidates = (
+        [e for e in done_papers if e.get("zotero_key") in set(keys)]
+        if keys is not None
+        else done_papers
+    )
 
     # Resolve DB path unconditionally — shadow/force paths need it even when
     # resume is False (regression: was only assigned inside `if resume:`).
     _db_path = get_memory_db_path(vault)
 
-    total = len(done_papers)
+    total = len(candidates)
     print(f"EMBED_START:{total}", flush=True)
 
     import gc as _gc
@@ -332,8 +362,7 @@ def run(args: argparse.Namespace) -> int:
     papers_embedded = 0
     chunks_embedded = 0
     papers_skipped = 0
-    resume = getattr(args, "resume", False)
-
+    
     from paperforge.embedding._config import get_api_model
 
     _current_model = get_api_model(vault)
@@ -409,7 +438,7 @@ def run(args: argparse.Namespace) -> int:
                 stored_model = build_state.get("model", "")
                 if stored_model and _current_model and stored_model != _current_model:
                     msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
-                    if not getattr(args, "json", False):
+                    if not json:
                         print(msg)
                     resume = False
 
@@ -417,9 +446,9 @@ def run(args: argparse.Namespace) -> int:
         # vector tables are cleared, so a hash-skip would publish a DB
         # missing those papers' vectors.  Force wins over resume at both the
         # CLI (mutually exclusive group) and programmatic call sites.
-        if args.force:
+        if force:
             resume = False
-        _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
+        _force_rebuild = force or (resume is False and resume)
         # D5: full rebuilds (force / model change / resume reset) use shadow target.
         # P1: embedding identity is (provider endpoint, model) — a config
         # switch of EITHER must route through shadow.  A plain `embed build`
@@ -444,7 +473,7 @@ def run(args: argparse.Namespace) -> int:
         _embedding_identity_changed = bool(
             _stored_model and _current_model and _stored_model != _current_model
         ) or (_stored_endpoint_norm != _current_endpoint)
-        if _embedding_identity_changed and not getattr(args, "json", False):
+        if _embedding_identity_changed and not json:
             print(
                 f"Embedding identity changed: "
                 f"{_stored_model}@{_stored_endpoint_norm} -> "
@@ -486,6 +515,27 @@ def run(args: argparse.Namespace) -> int:
             or _vec_layout_incompatible
             or _legacy_identity
         ) and _db_path.exists()
+        # #165/T4: a papers-scoped request must never route through a shadow
+        # rebuild — the candidate's vec tables are cleared and EVERY done
+        # paper re-embedded, violating affected ⊆ requested.  Fail fast.
+        if keys is not None and (requires_shadow or _force_rebuild):
+            from paperforge.core.errors import ErrorCode as _EC
+
+            result = PFResult(
+                ok=False,
+                command="embed build",
+                version=PF_VERSION,
+                error=PFError(
+                    code=_EC.ACTION_UNAVAILABLE,
+                    message="papers-scope embed requires an in-place resume build — "
+                    "a full rebuild was triggered (run `paperforge action run embed.build` first)",
+                ),
+            )
+            if json:
+                print(result.to_json())
+            else:
+                print(result.error.message, file=sys.stderr)
+            return 1
         # P0-2: ANY full shadow rebuild clears the candidate's vector tables —
         # resume hash-skips would leave those papers' vectors missing from the
         # published DB (chunks_embedded=0, verifier passes, empty library
@@ -495,7 +545,7 @@ def run(args: argparse.Namespace) -> int:
 
         if requires_shadow:
             # Maintenance mode message (D2b).
-            if not getattr(args, "json", False):
+            if not json:
                 print(
                     "Maintenance mode: OCR syncs and memory updates are paused "
                     "until the rebuild completes."
@@ -595,6 +645,9 @@ def run(args: argparse.Namespace) -> int:
             papers_embedded = 0
             papers_skipped = 0
             chunks_embedded = 0
+            # #165/T4: papers whose vectors were genuinely regenerated this
+            # run — resume-hash-skipped papers must NOT get lineage rewrites.
+            regenerated_papers: set[str] = set()
             in_flight: dict = {}
 
             def _submit_job(job: PaperEmbeddingJob, pool):
@@ -632,6 +685,7 @@ def run(args: argparse.Namespace) -> int:
                     processed_count += 1
                     papers_embedded += 1
                     chunks_embedded += bundle.chunk_count
+                    regenerated_papers.add(bundle.paper_id)
                     # P1-1: track per-collection expected counts so the
                     # verifier can catch body/objects redistribution that a
                     # total count would miss.
@@ -654,7 +708,7 @@ def run(args: argparse.Namespace) -> int:
                 return True
 
             with ThreadPoolExecutor(max_workers=max_workers) as pool:
-                papers_iter = progress_bar(done_papers, desc="Embedding", disable=args.json)
+                papers_iter = progress_bar(candidates, desc="Embedding", disable=json)
                 for entry in papers_iter:
                     key = entry.get("zotero_key")
                     if not key:
@@ -805,7 +859,7 @@ def run(args: argparse.Namespace) -> int:
             from paperforge.commands.auth import _error_result as _cred_error_result
 
             result = _cred_error_result("embed build", exc)
-            print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+            print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
             if _shadow is not None:
                 _shadow.abort()
                 logger.info("Shadow build aborted on credential fault; live DB untouched")
@@ -833,7 +887,7 @@ def run(args: argparse.Namespace) -> int:
                 version=PF_VERSION,
                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
             )
-            print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+            print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
             # Shadow: abort candidate, live untouched. In-place: restore backup.
             if _shadow is not None:
                 _shadow.abort()
@@ -875,12 +929,16 @@ def run(args: argparse.Namespace) -> int:
         else:
             _lineage_conn = None
         try:
+            # #165/T4: incremental resume builds never recreate vec tables,
+            # so _expected_dim stays 0 — fall back to the stored dimension.
+            _lineage_dim = _expected_dim or int(_stored_dim or 0)
             write_vector_lineage(
                 _lineage_conn,
                 vault,
                 endpoint=_current_endpoint,
                 model=_current_model,
-                dimension=_expected_dim,
+                dimension=_lineage_dim,
+                paper_ids=regenerated_papers,
             )
             if _lineage_conn is not None:
                 _lineage_conn.commit()
@@ -940,8 +998,8 @@ def run(args: argparse.Namespace) -> int:
                         message=f"Candidate verification failed: {report.get('reason')}",
                     ),
                 )
-                print(result.to_json() if args.json else result.error.message,
-                      file=sys.stderr if not args.json else sys.stdout)
+                print(result.to_json() if json else result.error.message,
+                      file=sys.stderr if not json else sys.stdout)
                 return 1
             _shadow.verified()
             _shadow.publish()
@@ -992,7 +1050,7 @@ def run(args: argparse.Namespace) -> int:
             "mode": get_embed_status(vault)["mode"],
         }
         result = PFResult(ok=True, command="embed build", version=PF_VERSION, data=data)
-        if args.json:
+        if json:
             print(result.to_json())
         else:
             skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
@@ -1029,7 +1087,7 @@ def run(args: argparse.Namespace) -> int:
             )
             # P0-1: ok=True has error=None — never touch result.error.message
             # on the non-JSON path (AttributeError).
-            if args.json:
+            if json:
                 print(result.to_json())
             else:
                 print(
@@ -1057,8 +1115,8 @@ def run(args: argparse.Namespace) -> int:
             version=PF_VERSION,
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
         )
-        print(result.to_json() if args.json else result.error.message,
-              file=sys.stderr if not args.json else sys.stdout)
+        print(result.to_json() if json else result.error.message,
+              file=sys.stderr if not json else sys.stdout)
         return 1
     finally:
         if _write_lock:

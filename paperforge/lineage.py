@@ -136,6 +136,7 @@ def write_vector_lineage(
     model: str,
     dimension: int,
     updated_at: str | None = None,
+    paper_ids: set[str] | None = None,
 ) -> int:
     """Write one lineage row per embedded paper into ``conn`` (candidate or
     live).  Rows commit atomically with the shadow publish: the caller seals
@@ -147,7 +148,9 @@ def write_vector_lineage(
     identity (legacy manifests) get NO row — the probe reports them
     ``unknown``, never ``stale``.
 
-    Returns the number of rows written.
+    Returns the number of rows written.  ``paper_ids`` restricts the write
+    to exactly those papers (T4: resume-skipped papers keep their rows
+    byte-identical); None = every paper with vectors (T1 behavior).
     """
     if not dimension:
         # Dimension unknown (e.g. a mocked/detection-less build) — the
@@ -163,6 +166,8 @@ def write_vector_lineage(
     stamp = updated_at or datetime.now(timezone.utc).isoformat()
 
     paper_ids = _papers_with_vectors(conn)
+    if paper_ids is not None:
+        paper_ids = [p for p in paper_ids if p in paper_ids]
     written = 0
     for paper_id in paper_ids:
         row = conn.execute(
