@@ -229,22 +229,35 @@ def store(
         kr.set_password(SERVICE, key.keyring_username, secret)
         verified = kr.get_password(SERVICE, key.keyring_username)
     except Exception as exc:  # noqa: BLE001
+        # #173 corrective: ANY failure after the write began must restore the
+        # previous value (or delete the partial write when none existed) —
+        # the write/verify phase is one transaction.  Restoration is best
+        # effort; the primary contract is never returning success on an
+        # unverified write and never leaving an unknown durable state.
+        _restore_prior(kr, key, existing)
         raise _map_keyring_error(exc, op="write") from exc
     if verified != secret:
-        # Verification failed: restore the previous value or delete the
-        # partial write.  Best effort — the primary contract is never
-        # returning success on an unverified write.
-        try:
-            if existing is not None and existing != "":
-                kr.set_password(SERVICE, key.keyring_username, existing)
-            else:
-                kr.delete_password(SERVICE, key.keyring_username)
-        except Exception:  # noqa: BLE001
-            pass
+        _restore_prior(kr, key, existing)
         raise CredentialError(
             BACKEND_ERROR,
             f"keyring write verification failed for {key.display}",
         )
+
+
+def _restore_prior(kr, key: CredentialKey, prior: str | None) -> None:
+    """Restore the previous durable value; delete the partial write when
+    there was none.  Best effort — restoration failure is logged nowhere
+    sensitive and never masks the original error."""
+    try:
+        if prior is not None and prior != "":
+            kr.set_password(SERVICE, key.keyring_username, prior)
+        else:
+            try:
+                kr.delete_password(SERVICE, key.keyring_username)
+            except kr.errors.PasswordDeleteError:
+                pass
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def delete(key: CredentialKey) -> bool:
