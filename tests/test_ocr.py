@@ -1,11 +1,14 @@
 from pathlib import Path
 
+from tests.conftest import canonical_test_config
+
 
 def test_ocr_redo_papers_dry_run_no_changes(tmp_path):
     from paperforge.worker.ocr import ocr_redo_papers
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -41,6 +44,7 @@ def test_ocr_redo_papers_invalid_key_rejected(tmp_path):
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -63,6 +67,7 @@ def test_ocr_redo_papers_updates_frontmatter(tmp_path):
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -130,6 +135,7 @@ def test_ocr_redo_papers_keeps_flag_true_when_rerun_not_done(tmp_path):
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -175,6 +181,7 @@ def test_ocr_redo_rebuilds_phase1_artifacts(tmp_path: Path) -> None:
     key = "REDO0012"
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -582,6 +589,7 @@ def test_ocr_run_all_blocked_returns_nonzero(tmp_path, monkeypatch):
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     lit = vault / "Resources" / "Literature" / "test_domain"
     lit.mkdir(parents=True)
     ocr_root = vault / "System" / "PaperForge" / "ocr"

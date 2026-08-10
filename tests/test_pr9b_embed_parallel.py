@@ -6,6 +6,8 @@ from unittest.mock import MagicMock, patch, call
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
 import paperforge.config
 from paperforge.worker._utils import pipeline_paths as _pp
 
@@ -25,6 +27,12 @@ from paperforge.embedding.builder import (
     write_encoded_payload,
     embed_paper,
 )
+
+
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    """#142 seam: every tmp_path-rooted vault gets a canonical paperforge.json."""
+    canonical_test_config(tmp_path)
 
 
 # ---------------------------------------------------------------------------

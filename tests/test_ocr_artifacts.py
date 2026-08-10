@@ -3,12 +3,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tests.conftest import canonical_test_config
+
 
 def test_phase1_artifact_layout_is_paper_local(tmp_path: Path) -> None:
     from paperforge.worker.ocr_artifacts import artifact_paths_for_key
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     paths = artifact_paths_for_key(vault, "ABCD1234")
     assert paths.paper_root.as_posix().endswith("/ocr/ABCD1234")
     assert paths.raw_meta.as_posix().endswith("/ocr/ABCD1234/raw/raw_meta.json")

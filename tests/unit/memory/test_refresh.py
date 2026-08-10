@@ -3,18 +3,27 @@ from __future__ import annotations
 from pathlib import Path
 
 from paperforge.memory.refresh import refresh_paper
+from tests.conftest import canonical_test_config
 
 
-def test_refresh_paper_returns_false_when_no_db():
-    assert refresh_paper(Path("/nonexistent/vault"), {"zotero_key": "KEY001"}) is False
+def _empty_vault(tmp_path) -> Path:
+    """A vault with canonical config but no memory DB (no-db tests)."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+    return vault
 
 
-def test_refresh_paper_returns_false_for_empty_key():
-    assert refresh_paper(Path("/nonexistent/vault"), {}) is False
+def test_refresh_paper_returns_false_when_no_db(tmp_path):
+    assert refresh_paper(_empty_vault(tmp_path), {"zotero_key": "KEY001"}) is False
 
 
-def test_refresh_paper_returns_false_for_missing_key():
-    assert refresh_paper(Path("/nonexistent/vault"), {"title": "No Key"}) is False
+def test_refresh_paper_returns_false_for_empty_key(tmp_path):
+    assert refresh_paper(_empty_vault(tmp_path), {}) is False
+
+
+def test_refresh_paper_returns_false_for_missing_key(tmp_path):
+    assert refresh_paper(_empty_vault(tmp_path), {"title": "No Key"}) is False
 
 
 def test_refresh_paper_rebuild_from_index_removes_stale_rows(tmp_path):
@@ -24,10 +33,7 @@ def test_refresh_paper_rebuild_from_index_removes_stale_rows(tmp_path):
 
     vault = tmp_path / "vault"
     vault.mkdir()
-    (vault / "paperforge.json").write_text(
-        '{"schema_version": 2, "vault_config":{"system_dir":"System","resources_dir":"Resources","literature_dir":"Literature","base_dir":"Bases","control_dir":"LiteratureControl"}}',
-        encoding="utf-8",
-    )
+    canonical_test_config(vault)
 
     index_path = get_index_path(vault)
     index_path.parent.mkdir(parents=True, exist_ok=True)

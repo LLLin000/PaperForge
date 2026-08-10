@@ -583,7 +583,7 @@ class TestOcrListKeys:
             recommended_action="",
         )
 
-    def test_keys_flag_filters_by_key(self, monkeypatch, capsys) -> None:
+    def test_keys_flag_filters_by_key(self, monkeypatch, capsys, tmp_path) -> None:
         import json as _json
         from paperforge.commands.ocr import _run_ocr_list
 
@@ -593,14 +593,14 @@ class TestOcrListKeys:
             lambda vault: rows,
         )
 
-        result = _run_ocr_list(Path("/fake"), json_output=True, keys=["KEY1"])
+        result = _run_ocr_list(tmp_path, json_output=True, keys=["KEY1"])
         captured = capsys.readouterr()
         assert result == 0
         data = _json.loads(captured.out)
         assert len(data) == 1
         assert data[0]["key"] == "KEY1"
 
-    def test_keys_none_returns_all(self, monkeypatch, capsys) -> None:
+    def test_keys_none_returns_all(self, monkeypatch, capsys, tmp_path) -> None:
         import json as _json
         from paperforge.commands.ocr import _run_ocr_list
 
@@ -610,7 +610,7 @@ class TestOcrListKeys:
             lambda vault: rows,
         )
 
-        result = _run_ocr_list(Path("/fake"), json_output=True, keys=None)
+        result = _run_ocr_list(tmp_path, json_output=True, keys=None)
         captured = capsys.readouterr()
         assert result == 0
         data = _json.loads(captured.out)
@@ -618,7 +618,7 @@ class TestOcrListKeys:
         assert data[0]["key"] == "KEY1"
         assert data[1]["key"] == "KEY2"
 
-    def test_keys_unknown_key_ignored(self, monkeypatch, capsys) -> None:
+    def test_keys_unknown_key_ignored(self, monkeypatch, capsys, tmp_path) -> None:
         import json as _json
         from paperforge.commands.ocr import _run_ocr_list
 
@@ -628,7 +628,7 @@ class TestOcrListKeys:
             lambda vault: rows,
         )
 
-        result = _run_ocr_list(Path("/fake"), json_output=True, keys=["UNKNOWN"])
+        result = _run_ocr_list(tmp_path, json_output=True, keys=["UNKNOWN"])
         captured = capsys.readouterr()
         assert result == 0
         data = _json.loads(captured.out)
@@ -727,11 +727,13 @@ class TestOcrRedoKeyed:
             mock_redo,
         )
 
-        result = _run_ocr_redo(Path("/fake"), keys=None, verbose=True)
-        assert result == 0
-        assert call_kwargs.get("vault") == Path("/fake")
-        assert call_kwargs.get("dry_run") is False
-        assert call_kwargs.get("verbose") is True
+        # #142: fail-closed — a vault without canonical config cannot run OCR.
+        from paperforge.config import ConfigError
+
+        with pytest.raises(ConfigError) as exc:
+            _run_ocr_redo(Path("/fake"), keys=None, verbose=True)
+        assert exc.value.code == "config.not_found"
+        assert call_kwargs == {}
 
     def test_redo_skips_nopdf(self, tmp_path, monkeypatch) -> None:
         """nopdf papers are guarded and reported as failed, not reset."""

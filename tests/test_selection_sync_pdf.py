@@ -14,6 +14,8 @@ from unittest.mock import patch
 # real pipeline_paths, not to any mock that may be active during the test.
 from paperforge.worker import ocr as _preimport_ocr  # noqa: F401
 
+from tests.conftest import canonical_test_config
+
 
 class TestCanonicalIndexOcrState:
     """Tests for OCR state reporting in canonical index."""
@@ -241,6 +243,7 @@ def test_sync_reads_enriched_meta_without_breaking_ocr_status(tmp_path: Path) ->
 
     ocr_root = tmp_path / "System" / "PaperForge" / "ocr" / "TESTKEY"
     ocr_root.mkdir(parents=True)
+    canonical_test_config(tmp_path)
 
     # Write enriched meta.json with Phase 1 version fields
     meta = {
