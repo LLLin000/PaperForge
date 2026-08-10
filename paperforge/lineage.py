@@ -256,14 +256,20 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
         )
         embedding_identity = _current_embedding_identity(conn, vault)
         for key in keys:
-            ocr_state = _probe_ocr_state(
+            # #162 corrective: each layer observes (state, identity) so the
+            # NEXT layer can detect a freshly published upstream identity —
+            # enum-only propagation misses the normal publish transitions.
+            ocr_state, ocr_identity = _probe_ocr_state(
                 (ocr_root / key) if ocr_root is not None else None
             )
-            retrieval_state = _probe_retrieval_state(conn, key, ocr_state)
+            retrieval_state, retrieval_identity = _probe_retrieval_state(
+                conn, key, ocr_state, ocr_identity
+            )
             vector_state = _probe_vector_state(
                 conn,
                 key,
                 retrieval_state,
+                retrieval_identity,
                 embedding_identity,
                 has_lineage_table,
             )
@@ -326,59 +332,82 @@ def _paper_keys(vault: Path, db_path: Path) -> list[str]:
     return sorted(keys)
 
 
-def _probe_ocr_state(paper_dir: Path | None) -> str:
-    """OCR: current | stale | missing | unknown.
+def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
+    """(state, published_ocr_identity) — current | stale | missing | unknown.
 
     Pending publication marker → unknown (#126 semantics).  Published
-    result-hash equals the artifact hash → current; differs → stale.
+    result-hash equals the artifact hash → current; differs → stale.  The
+    identity is the published result hash whenever readable.
     """
     if paper_dir is None or not paper_dir.exists():
-        return "missing"
+        return "missing", None
     if not (paper_dir / "structure" / "blocks.structured.jsonl").exists():
-        return "missing"
+        return "missing", None
     if has_result_hash_pending(paper_dir):
-        return "unknown"
+        return "unknown", None
     hash_file = paper_dir / "index" / "result-hash.txt"
     if not hash_file.exists():
-        return "unknown"
+        return "unknown", None
     try:
         stored = hash_file.read_text(encoding="utf-8").strip()
     except OSError:
-        return "unknown"
+        return "unknown", None
     current = compute_ocr_result_hash(paper_dir)
     if current is None:
-        return "unknown"
-    return "current" if stored == current else "stale"
+        return "unknown", None
+    if stored != current:
+        return "stale", stored
+    return "current", stored
 
 
 def _probe_retrieval_state(
-    conn: sqlite3.Connection, key: str, ocr_state: str
-) -> str:
-    """Retrieval: current | stale | missing | unknown."""
+    conn: sqlite3.Connection,
+    key: str,
+    ocr_state: str,
+    current_ocr_identity: str | None,
+) -> tuple[str, str | None]:
+    """(state, current_retrieval_identity) — current | stale | missing | unknown.
+
+    The manifest is current only when ALL of:
+      - it embeds the CURRENT published OCR identity (a normal OCR publish
+        makes the old retrieval stale, #162 corrective P0-1);
+      - it was built under the CURRENT retrieval policy (a policy bump is a
+        global desired-state change, #159 §2.1);
+      - its stored identity equals its own recomputed identity.
+    """
     if ocr_state == "missing":
-        return "missing"
+        return "missing", None
     if ocr_state == "unknown":
-        return "unknown"
+        return "unknown", None
+    if ocr_state == "stale":
+        # Artifacts changed since the last publish — the published identity
+        # is no longer materialized; the retrieval built on it is stale too.
+        return "stale", None
     row = conn.execute(
         "SELECT value FROM meta WHERE key = ?", (f"manifest:{key}",)
     ).fetchone()
     if not row:
-        return "missing"
+        return "missing", None
     try:
         manifest = json.loads(row[0])
     except (TypeError, ValueError):
-        return "unknown"
+        return "unknown", None
     stored = manifest.get("retrieval_identity")
     recomputed = retrieval_identity_from_manifest(manifest)
     if not stored or not recomputed:
         # Legacy manifest without a retrieval identity → unknown, never stale.
-        return "unknown"
+        return "unknown", None
+    if manifest.get("ocr_result_hash") != current_ocr_identity:
+        # Fresh OCR identity published since this manifest was built.
+        return "stale", None
+    from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION
+
+    if manifest.get("retrieval_policy_version") != RETRIEVAL_POLICY_VERSION:
+        # Global retrieval policy moved; this manifest predates it.
+        return "stale", None
     if stored != recomputed:
-        return "stale"
-    if ocr_state == "stale":
-        # Upstream OCR changed; retrieval was built from the old hash.
-        return "stale"
-    return "current"
+        return "stale", None
+    return "current", recomputed
 
 
 def _current_embedding_identity(
@@ -416,6 +445,7 @@ def _probe_vector_state(
     conn: sqlite3.Connection,
     key: str,
     retrieval_state: str,
+    current_retrieval_identity: str | None,
     embedding_identity: str | None,
     has_lineage_table: bool,
 ) -> str:
@@ -449,13 +479,17 @@ def _probe_vector_state(
     stored_identity, derived_from, stored_embedding = row
     if retrieval_state != "current":
         return "unknown" if retrieval_state == "unknown" else "stale"
-    if not embedding_identity:
+    if not embedding_identity or not current_retrieval_identity:
         return "unknown"
+    if derived_from != current_retrieval_identity:
+        # A NEW retrieval identity was published since these vectors were
+        # built (memory.build) — the old vectors are stale (#162 P0-2).
+        return "stale"
     if stored_embedding != embedding_identity:
         # Substrate identity changed (model/endpoint/dimension) since build.
         return "stale"
     expected = compute_vector_identity(
-        retrieval_identity=derived_from,
+        retrieval_identity=current_retrieval_identity,
         embedding_identity=embedding_identity,
     )
     if stored_identity != expected:
