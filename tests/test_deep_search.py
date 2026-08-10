@@ -12,6 +12,8 @@ import pytest
 import paperforge.config
 from paperforge.worker._utils import pipeline_paths as _pp
 
+from tests.conftest import canonical_test_config
+
 paperforge.config.pipeline_paths = _pp
 
 from paperforge.embedding.query_rewrite import expand_query, ABBREVIATIONS, MEDICAL_SYNONYMS
@@ -67,6 +69,11 @@ def _patch_providers(mock_provider):
     """Replace OpenAICompatibleProvider with the fixed mock."""
     with patch("paperforge.embedding.search.OpenAICompatibleProvider", return_value=mock_provider):
         yield
+
+
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    canonical_test_config(tmp_path)
 
 
 # ---------------------------------------------------------------------------

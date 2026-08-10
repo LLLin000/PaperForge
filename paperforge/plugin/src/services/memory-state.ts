@@ -74,44 +74,28 @@ export interface Snapshot {
 
 let _cachedPython: PythonResult | null = null;
 
+// #142 / C0: the plugin no longer parses paperforge.json. Path display values
+// are hydrated from `paperforge config list` by main.ts; this module consumes
+// the injected source and never touches the file.
+let _pathConfigSource: PathConfig | null = null;
+
+export function setPathConfigSource(cfg: PathConfig | null): void {
+  _pathConfigSource = cfg;
+}
+
 // ── Functions ──
 
 export function readPathConfig(vaultPath: string, _fs?: any): PathConfig {
-  const f = _fs || fs;
-  const pfPath = path.join(vaultPath, "paperforge.json");
-  const defaults = {
+  if (_pathConfigSource) {
+    return { ..._pathConfigSource, _warning: _pathConfigSource._warning ?? null };
+  }
+  return {
     system_dir: "System",
     resources_dir: "Resources",
     literature_dir: "Literature",
     base_dir: "Bases",
+    _warning: "config authority not yet hydrated; using defaults",
   };
-
-  try {
-    if (!f.existsSync(pfPath)) {
-      return {
-        ...defaults,
-        _warning: "paperforge.json not found; using defaults",
-      };
-    }
-    const raw = f.readFileSync(pfPath, "utf-8");
-    const data = JSON.parse(raw);
-    const vc = data.vault_config || {};
-    return {
-      system_dir: vc.system_dir || data.system_dir || defaults.system_dir,
-      resources_dir:
-        vc.resources_dir || data.resources_dir || defaults.resources_dir,
-      literature_dir:
-        vc.literature_dir || data.literature_dir || defaults.literature_dir,
-      base_dir: vc.base_dir || data.base_dir || defaults.base_dir,
-      _warning: null,
-    };
-  } catch (e) {
-    console.warn(
-      "PaperForge: Failed to read paperforge.json, using defaults",
-      e
-    );
-    return { ...defaults, _warning: "paperforge.json invalid; using defaults" };
-  }
 }
 
 export function resolveVaultPaths(vaultPath: string, _fs?: any): ResolvedPaths {

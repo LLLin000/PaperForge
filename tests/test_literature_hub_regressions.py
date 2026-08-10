@@ -9,8 +9,22 @@ import pytest
 
 VAULT = Path(r"D:\L\OB\Literature-hub")
 
+# #142: the real vault must be on canonical config — legacy configs fail
+# closed until the explicit migration runs (`paperforge config migrate`).
+_VAULT_CONFIG_OK = False
+if VAULT.exists():
+    try:
+        from paperforge.config import validate_config
 
-pytestmark = pytest.mark.skipif(not VAULT.exists(), reason="Local Literature-hub vault not available")
+        _VAULT_CONFIG_OK = validate_config(VAULT).state == "valid"
+    except Exception:  # pragma: no cover - defensive
+        _VAULT_CONFIG_OK = False
+
+
+pytestmark = pytest.mark.skipif(
+    not VAULT.exists() or not _VAULT_CONFIG_OK,
+    reason="Local Literature-hub vault unavailable or config not migrated (#142: run 'paperforge config migrate')",
+)
 
 
 def _run_json(*args: str) -> dict:

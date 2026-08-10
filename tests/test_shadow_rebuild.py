@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
 
 # ── Fixtures ──────────────────────────────────────────────────────────────
 
@@ -21,6 +23,7 @@ import pytest
 def _make_vault(tmp_path: Path) -> Path:
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     (vault / "System" / "PaperForge" / "indexes").mkdir(parents=True)
     return vault
 

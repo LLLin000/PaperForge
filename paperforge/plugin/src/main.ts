@@ -22,6 +22,8 @@ import {
   buildTargetedEnv,
 } from "./services/python-bridge";
 import { resolveVaultPaths } from "./services/memory-state";
+import { setPathConfigSource } from "./services/memory-state";
+import { configList } from "./services/config-client";
 import {
   ManagedRuntime,
   resolveRuntimeCommand,
@@ -308,97 +310,17 @@ export default class PaperForgePlugin extends Plugin {
   }
 
   readPaperforgeJson(): Record<string, string> {
-    const vaultPath = (this.app.vault.adapter as any).basePath as string;
-    const pfPath = path.join(vaultPath, "paperforge.json");
-
-    const DEFAULTS: Record<string, string> = {
-      system_dir: "System",
-      resources_dir: "Resources",
-      literature_dir: "Literature",
-      base_dir: "Bases",
-      zotero_data_dir: "",
-    };
-
-    try {
-      if (!fs.existsSync(pfPath)) {
-        return DEFAULTS;
-      }
-      const raw = fs.readFileSync(pfPath, "utf-8");
-      const data = JSON.parse(raw);
-
-      const vc = data.vault_config || {};
-      return {
-        system_dir: vc.system_dir || data.system_dir || DEFAULTS.system_dir,
-        resources_dir:
-          vc.resources_dir || data.resources_dir || DEFAULTS.resources_dir,
-        literature_dir:
-          vc.literature_dir || data.literature_dir || DEFAULTS.literature_dir,
-        base_dir: vc.base_dir || data.base_dir || DEFAULTS.base_dir,
-        zotero_data_dir: data.zotero_data_dir || DEFAULTS.zotero_data_dir,
-      };
-    } catch (e) {
-      console.warn(
-        "PaperForge: Failed to read paperforge.json, using defaults",
-        e
-      );
-      return DEFAULTS;
-    }
+    // #142 / C0: removed — the plugin never parses paperforge.json. Values
+    // come from `paperforge config list` (hydrated into settings mirrors).
+    return {};
   }
 
-  savePaperforgeJson(pathConfig: Record<string, string | undefined>): void {
-    const vaultPath = (this.app.vault.adapter as any).basePath as string;
-    const pfPath = path.join(vaultPath, "paperforge.json");
-
-    let data: Record<string, any> = {};
-    try {
-      if (fs.existsSync(pfPath)) {
-        data = JSON.parse(fs.readFileSync(pfPath, "utf-8"));
-      }
-    } catch (e) {
-      console.warn("PaperForge: Failed to read paperforge.json for update", e);
-    }
-
-    if (!data.vault_config || typeof data.vault_config !== "object") {
-      data.vault_config = {};
-    }
-
-    const validPathKeys = [
-      "system_dir",
-      "resources_dir",
-      "literature_dir",
-      "base_dir",
-    ];
-    for (const key of validPathKeys) {
-      if (pathConfig[key] !== undefined) {
-        data.vault_config[key] = pathConfig[key];
-      }
-    }
-
-    if (pathConfig.zotero_data_dir !== undefined) {
-      data.zotero_data_dir = pathConfig.zotero_data_dir;
-    }
-
-    if (!data.schema_version) {
-      data.schema_version = "2";
-    }
-
-    for (const key of validPathKeys) {
-      delete data[key];
-    }
-
-    try {
-      fs.writeFileSync(pfPath, JSON.stringify(data, null, 2), "utf-8");
-      if (this.settings) {
-        const pfConfig = this.readPaperforgeJson();
-        this.settings.system_dir = pfConfig.system_dir;
-        this.settings.resources_dir = pfConfig.resources_dir;
-        this.settings.literature_dir = pfConfig.literature_dir;
-        this.settings.base_dir = pfConfig.base_dir;
-      }
-    } catch (e) {
-      console.error("PaperForge: Failed to write paperforge.json", e);
-      new Notice("PaperForge: Failed to save configuration to paperforge.json");
-    }
+  savePaperforgeJson(_pathConfig: Record<string, string | undefined>): void {
+    // #142 / C0: removed — the plugin never writes paperforge.json. Mutations
+    // route through `paperforge config set/unset` (config-client).
+    console.warn(
+      "PaperForge: savePaperforgeJson is retired; use paperforge config set"
+    );
   }
 
   onunload() {
@@ -439,17 +361,35 @@ export default class PaperForgePlugin extends Plugin {
       this.settings._setup_complete = true;
     }
 
-    const pfConfig = this.readPaperforgeJson();
-    this.settings.system_dir = pfConfig.system_dir;
-    this.settings.resources_dir = pfConfig.resources_dir;
-    this.settings.literature_dir = pfConfig.literature_dir;
-    this.settings.base_dir = pfConfig.base_dir;
-    if (pfConfig.zotero_data_dir) {
-      this.settings.zotero_data_dir = pfConfig.zotero_data_dir;
-    } else if (this.settings.zotero_data_dir?.trim()) {
-      this.savePaperforgeJson({
-        zotero_data_dir: this.settings.zotero_data_dir.trim(),
-      });
+    // #142 / C0: display mirrors are hydrated from the Python config
+    // authority; the plugin never parses paperforge.json.
+    const vaultPath = (this.app.vault.adapter as any).basePath as string;
+    if (vaultPath) {
+      try {
+        const list = await configList(vaultPath, this.settings);
+        const pick = (key: string) =>
+          list.fields.find((f) => f.key === key)?.value;
+        const systemDir = String(pick("system_dir") ?? "");
+        const resourcesDir = String(pick("resources_dir") ?? "");
+        const literatureDir = String(pick("literature_dir") ?? "");
+        const baseDir = String(pick("base_dir") ?? "");
+        const zoteroDir = String(pick("zotero_data_dir") ?? "");
+        if (systemDir) this.settings.system_dir = systemDir;
+        if (resourcesDir) this.settings.resources_dir = resourcesDir;
+        if (literatureDir) this.settings.literature_dir = literatureDir;
+        if (baseDir) this.settings.base_dir = baseDir;
+        if (zoteroDir) this.settings.zotero_data_dir = zoteroDir;
+        setPathConfigSource({
+          system_dir: systemDir || "System",
+          resources_dir: resourcesDir || "Resources",
+          literature_dir: literatureDir || "Literature",
+          base_dir: baseDir || "Bases",
+          _warning: null,
+        });
+      } catch {
+        // Display mirrors keep defaults until Python is reachable; actions
+        // stay disabled until a fresh probe/config response (#144).
+      }
     }
 
     if (this.settings.python_path && this.settings.python_path.trim()) {

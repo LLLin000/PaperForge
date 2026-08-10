@@ -669,7 +669,8 @@ def migrate_config(vault: Path, *, dry_run: bool = False) -> MutationResult:
         raise ConfigError("config.invalid", {"key": "vault_config", "reason": "not an object"})
     vault_config: dict[str, Any] = candidate.setdefault("vault_config", {})
 
-    # 1. canonical wins; legacy fills missing; mismatch reported.
+    # 1. canonical wins; legacy fills missing; the top-level alias is always
+    # deleted (a mismatch is reported before mutation).
     for key in LEGACY_PATH_KEYS:
         spec = FIELD_BY_KEY[key]
         canonical = vault_config.get(spec.storage_path[1])
@@ -679,9 +680,9 @@ def migrate_config(vault: Path, *, dry_run: bool = False) -> MutationResult:
         if canonical is not None:
             if str(canonical) != str(legacy):
                 conflicts.append(key)
-            continue
-        vault_config[spec.storage_path[1]] = legacy
-        migrated.append(key)
+        else:
+            vault_config[spec.storage_path[1]] = legacy
+            migrated.append(key)
         del candidate[key]
 
     # 2. agent_key alias.

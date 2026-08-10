@@ -8,6 +8,13 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
+
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    canonical_test_config(tmp_path)
+
 
 # ===========================================================================
 # _compute_display_fields — pure function tests
