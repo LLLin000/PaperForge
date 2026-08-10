@@ -1027,9 +1027,17 @@ class TestOcrQualityUnacceptable:
         assert data["pipeline_version_summary"]["total"] == 1
         assert data["pipeline_version_summary"]["on_current"] == 1
         assert data["pipeline_version_summary"]["stale"] == 0
-        assert len(data["per_paper_pipeline_version"]) == 1
-        assert data["per_paper_pipeline_version"][0]["key"] == "KEY1"
-        assert data["per_paper_pipeline_version"][0]["last_pipeline_version"] == OCR_PIPELINE_VERSION
+        # #148: the per-paper detail moved to `ocr pipeline-versions`.
+        assert "per_paper_pipeline_version" not in data
+        # the detail surface still resolves the per-paper version
+        from paperforge.commands.probe import paper_pipeline_versions
+
+        class _Row:
+            key = "KEY1"
+            title = "Test Paper"
+        detail = paper_pipeline_versions(tmp_path, [_Row()])
+        assert detail[0]["key"] == "KEY1"
+        assert detail[0]["last_pipeline_version"] == OCR_PIPELINE_VERSION
 
     def test_ocr_pipeline_version_in_all_states(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """pipeline_version field is present even in non-ready states (config_missing)."""
