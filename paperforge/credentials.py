@@ -246,8 +246,12 @@ def store(
 
 def _restore_prior(kr, key: CredentialKey, prior: str | None) -> None:
     """Restore the previous durable value; delete the partial write when
-    there was none.  Best effort — restoration failure is logged nowhere
-    sensitive and never masks the original error."""
+    there was none.
+
+    PaperForge ATTEMPTS the rollback and never reports an unverified write
+    as success.  If the keyring itself fails the rollback too, the value
+    cannot be physically restored at the application layer — the original
+    error is never masked."""
     try:
         if prior is not None and prior != "":
             kr.set_password(SERVICE, key.keyring_username, prior)
