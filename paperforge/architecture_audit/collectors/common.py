@@ -85,12 +85,23 @@ def discover_sources(root: Path, suffixes: tuple[str, ...], *, exclude_tests: bo
     return out
 
 
+def canonical_source_bytes(data: bytes) -> bytes:
+    """Canonical source bytes for content digests: CRLF → LF.
+
+    Windows checkout (CRLF) vs CI checkout (LF) must not produce different
+    fingerprints — the digest means content, not line-ending style.  This is
+    the single canonicalization the golden verifier mirrors.
+    """
+    return data.replace(b"\r\n", b"\n")
+
+
 def sha256_file(path: Path) -> str:
-    """Content digest of a source file."""
+    """Content digest of a source file (canonicalized, see
+    :func:`canonical_source_bytes`)."""
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1 << 16), b""):
-            digest.update(chunk)
+            digest.update(canonical_source_bytes(chunk))
     return "sha256:" + digest.hexdigest()
 
 

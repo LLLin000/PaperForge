@@ -380,6 +380,70 @@ class TestProbeLineage:
         # KEY2 has vectors but no lineage row → unknown, never stale.
         assert payload["papers"]["KEY2"]["vector"] == "unknown"
 
+    def test_new_published_ocr_identity_marks_retrieval_and_vector_stale(self, tmp_path: Path) -> None:
+        """#162 P0-1: a NORMAL OCR publish (artifacts + result-hash both
+        updated) must make the old retrieval and vector stale — the manifest
+        embeds the old OCR identity."""
+        vault = _make_vault(tmp_path)
+        ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "KEY1"
+        from paperforge.worker.ocr_hash import publish_ocr_result_hash
+
+        # Normal publish: rewrite the artifact AND publish the new hash.
+        (ocr_dir / "structure" / "blocks.structured.jsonl").write_text(
+            json.dumps({"blocks": ["KEY1", "new"]}), encoding="utf-8"
+        )
+        publish_ocr_result_hash(ocr_dir)
+        payload = probe_lineage(vault)
+        assert payload["papers"]["KEY1"] == {
+            "ocr": "current", "retrieval": "stale", "vector": "stale",
+        }
+
+    def test_new_retrieval_publish_marks_old_vector_stale(self, tmp_path: Path) -> None:
+        """#162 P0-2: after memory publishes a new retrieval identity, old
+        vectors (derived_from the previous identity) are stale even though
+        the retrieval layer itself is current."""
+        vault = _make_vault(tmp_path)
+        indexes = vault / "99_System" / "PaperForge" / "indexes"
+        conn = sqlite3.connect(str(indexes / "paperforge.db"))
+        try:
+            manifest = json.loads(
+                conn.execute("SELECT value FROM meta WHERE key='manifest:KEY1'").fetchone()[0]
+            )
+            # Simulate a memory publish: unit digests changed → new identity,
+            # stored consistently in the manifest (retrieval stays current).
+            manifest["body_units_hash"] = "f" * 64
+            manifest["retrieval_identity"] = compute_retrieval_identity(
+                ocr_result_hash=manifest["ocr_result_hash"],
+                retrieval_policy_version=manifest["retrieval_policy_version"],
+                structure_tree_hash=manifest["structure_tree_hash"],
+                body_units_hash=manifest["body_units_hash"],
+                object_units_hash=manifest["object_units_hash"],
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+                ("manifest:KEY1", json.dumps(manifest)),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        payload = probe_lineage(vault)
+        assert payload["papers"]["KEY1"]["ocr"] == "current"
+        assert payload["papers"]["KEY1"]["retrieval"] == "current"
+        # Vector lineage still derives from the OLD retrieval identity.
+        assert payload["papers"]["KEY1"]["vector"] == "stale"
+
+    def test_policy_bump_marks_retrieval_and_vector_stale(self, tmp_path: Path, monkeypatch) -> None:
+        """#162 P0-1: a retrieval-policy bump (global desired state) makes
+        manifests built under the old policy stale."""
+        vault = _make_vault(tmp_path)
+        import paperforge.retrieval.manifest as manifest_mod
+
+        monkeypatch.setattr(manifest_mod, "RETRIEVAL_POLICY_VERSION", "l4.body.v999")
+        payload = probe_lineage(vault)
+        assert payload["papers"]["KEY1"]["ocr"] == "current"
+        assert payload["papers"]["KEY1"]["retrieval"] == "stale"
+        assert payload["papers"]["KEY1"]["vector"] == "stale"
+
     def test_cli_output_shape_and_no_autorebuild(self, tmp_path: Path) -> None:
         vault = _make_vault(tmp_path)
         result = subprocess.run(
