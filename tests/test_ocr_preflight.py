@@ -193,7 +193,7 @@ class TestOcrPreflight:
             patch("paperforge.worker.ocr.requests.post") as mock_post,
             patch("paperforge.worker.ocr.requests.get") as mock_get,
         ):
-            with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token"}, clear=False):
+            with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}, clear=False):
                 mock_post.return_value = MagicMock()
                 mock_post.return_value.json.return_value = {"data": {"jobId": "123"}}
                 mock_post.return_value.raise_for_status = lambda: None
@@ -267,7 +267,7 @@ class TestOcrPreflight:
             patch("paperforge.worker.ocr.requests.post") as mock_post,
             patch("paperforge.worker.ocr.requests.get") as mock_get,
         ):
-            with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token"}, clear=False):
+            with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}, clear=False):
                 mock_post.return_value = MagicMock()
                 mock_post.return_value.json.return_value = {"data": {"jobId": "123"}}
                 mock_post.return_value.raise_for_status = lambda: None

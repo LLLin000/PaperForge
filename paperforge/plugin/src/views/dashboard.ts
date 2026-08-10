@@ -28,10 +28,7 @@ import {
   buildTargetedEnv,
 } from "../services/python-bridge";
 import { resolveRuntimeCommand } from "../services/managed-runtime";
-import {
-  type PluginForSecrets,
-  type VectorDbCredentialProfile,
-} from "../services/secret-storage";
+import { stripCredentialEnv } from "../services/secret-storage";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
@@ -57,22 +54,6 @@ function recordValue(value: unknown, key: string): unknown {
   return value && typeof value === "object" && key in value
     ? Reflect.get(value, key)
     : undefined;
-}
-
-function vectorDbProfileForApp(
-  app: App
-): VectorDbCredentialProfile | undefined {
-  const manager = recordValue(app, "plugins");
-  const plugins = recordValue(manager, "plugins");
-  const plugin = recordValue(plugins, "paperforge");
-  const settings = recordValue(plugin, "settings");
-  if (!settings || typeof settings !== "object") return undefined;
-  const baseUrl = recordValue(settings, "vector_db_api_base");
-  const model = recordValue(settings, "vector_db_api_model");
-  return {
-    baseUrl: typeof baseUrl === "string" ? baseUrl : "",
-    model: typeof model === "string" ? model : "",
-  };
 }
 
 export class PaperForgeStatusView extends ItemView {
@@ -2774,11 +2755,7 @@ export class PaperForgeStatusView extends ItemView {
     const { path: pythonExe, args: pyExtra = [] } = py;
     const deepFlag = mode === "retrieve" ? ["--deep"] : [];
     // Issue #79: resolve memory credentials immediately before search/retrieve spawn
-    const searchEnv = await buildTargetedEnv(
-      { app: this.app } as unknown as PluginForSecrets,
-      "memory",
-      vectorDbProfileForApp(this.app)
-    );
+    const searchEnv = await buildTargetedEnv(null, "memory");
     const child = spawn(
       pythonExe,
       [
@@ -3137,11 +3114,7 @@ export class PaperForgeStatusView extends ItemView {
     }
     const { path: pythonExe, args: pyExtra = [] } = py;
     // Issue #79: resolve credentials for allowlisted command types immediately before launch
-    const actionEnv = await buildTargetedEnv(
-      { app: this.app } as unknown as PluginForSecrets,
-      a.cmd,
-      vectorDbProfileForApp(this.app)
-    );
+    const actionEnv = await buildTargetedEnv(null, a.cmd);
     const child = spawn(
       pythonExe,
       [...pyExtra, "-m", "paperforge", a.cmd, ...extraArgs],

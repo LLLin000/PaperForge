@@ -395,7 +395,6 @@ def _merge_env_incremental(env_path: Path, values: dict[str, str]) -> str:
     """Create .env if missing, otherwise append only missing keys."""
     lines = [
         "# PaperForge configuration",
-        f"PADDLEOCR_API_TOKEN={values['PADDLEOCR_API_TOKEN']}",
         f"PADDLEOCR_JOB_URL={values['PADDLEOCR_JOB_URL']}",
         f"PADDLEOCR_MODEL={values['PADDLEOCR_MODEL']}",
     ]
@@ -712,17 +711,25 @@ def headless_setup(
     # =========================================================================
     print("[*] Phase 5: Creating config files...")
 
-    # .env
-    raw_key = paddleocr_key or os.environ.get("PADDLEOCR_API_TOKEN", "").strip()
+    # .env — non-secret OCR config only (#173/C1: secrets live in the
+    # credential authority, never in .env)
+    raw_key = paddleocr_key or ""
     env_status = _merge_env_incremental(
         vault / ".env",
         {
-            "PADDLEOCR_API_TOKEN": raw_key,
             "PADDLEOCR_JOB_URL": paddleocr_url,
             "PADDLEOCR_MODEL": "PaddleOCR-VL-1.6",
             "ZOTERO_DATA_DIR": zotero_data or "",
         },
     )
+    if raw_key:
+        from paperforge.credentials import CredentialError, CredentialKey, store
+
+        try:
+            store(CredentialKey("ocr"), raw_key)
+            print("[*] OCR credential stored in the system keyring")
+        except CredentialError as exc:
+            print(f"[!] Could not store OCR credential in keyring: {exc.code}")
     print(f"    [OK] .env ({env_status})")
 
     # Domain config (populated from whatever JSONs already exist in exports/)

@@ -223,6 +223,21 @@ export interface EmbedStatusData {
   [key: string]: unknown;
 }
 
+export function queryEmbeddingCredentialStatus(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<boolean> {
+  // #173/C1: credential presence comes from the authority (`auth status`).
+  return invokePaperForge<{ credentials?: Array<{ state?: string }> }>(
+    vaultPath,
+    ["auth", "status", "embedding", "--json"],
+    settings
+  ).then(
+    (data) =>
+      (data.credentials ?? []).some((c) => c.state === "available") ?? false
+  );
+}
+
 export function probeAll(
   vaultPath: string,
   settings?: PaperForgeSettings | null

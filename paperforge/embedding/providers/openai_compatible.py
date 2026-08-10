@@ -28,7 +28,8 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         if not api_key:
             raise ValueError(
                 "No API key configured for embedding. "
-                "Set VECTOR_DB_API_KEY or OPENAI_API_KEY in .env or plugin settings."
+                "Run `paperforge auth set embedding --stdin` or supply "
+                "PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT."
             )
         self._model = get_api_model(vault)
         from paperforge.embedding._config import get_effective_api_base_url

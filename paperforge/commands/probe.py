@@ -672,13 +672,14 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
     # ── Credential / provider readiness — LAST (#161): the API key gates
     #    whether REMOTE OCR can run; it never masks an existing canonical
     #    local materialization defect (failed/redo/pending/degraded rows). ──
-    from paperforge.worker.ocr import _resolve_paddleocr_token
-    token = _resolve_paddleocr_token(vault)
+    # #173/C1: presence comes from the credential authority's status — the
+    # probe never retrieves the value.
+    from paperforge.credentials import CredentialKey, status as credential_status
 
-    if not token:
+    if credential_status(CredentialKey("ocr")).state != "available":
         return _wrap(module="ocr", capability_state="missing_input", severity="warning",
         reason_code="ocr.api_key_missing",
-        reason_text="PADDLEOCR_API_TOKEN not found in environment — configure API key",
+        reason_text="OCR credential missing — run `paperforge auth set ocr --stdin` or set PAPERFORGE_CREDENTIAL_OCR__DEFAULT",
         user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
             action_id="ocr.configure", verb="set_config", label="Configure API key",
@@ -923,10 +924,10 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                     ),
                     ttl_seconds=TTL_MEMORY,
                 )
-            # Quick API key presence check (no API call, just config)
-            from paperforge.embedding._config import get_api_key
+            # Quick credential presence check (#173/C1: auth status, no value)
+            from paperforge.credentials import CredentialKey, status as credential_status
 
-            if not get_api_key(vault):
+            if credential_status(CredentialKey("embedding")).state != "available":
                 notices.append({
                     "kind": "warning",
                     "text": "API key not configured — search works, but the next rebuild needs one",

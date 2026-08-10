@@ -329,6 +329,44 @@ export class PaperForgeSetupModal extends Modal {
       : { path: "python", args: [] };
   }
 
+  /** #173/C1: `paperforge auth set ocr --stdin` — secret via child stdin only. */
+  private _authSetOcrSecret(value: string): Promise<boolean> {
+    const vaultPath = (this.app.vault.adapter as unknown as { basePath?: string }).basePath ?? "";
+    const run = this._resolvePython();
+    if (!run || !value || !vaultPath) return Promise.resolve(false);
+    return new Promise((resolvePromise) => {
+      const child = spawn(
+        run.path,
+        [
+          ...run.args,
+          "-m",
+          "paperforge",
+          "--vault",
+          vaultPath,
+          "auth",
+          "set",
+          "ocr",
+          "--stdin",
+          "--json",
+        ],
+        { cwd: vaultPath, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] }
+      );
+      let stdout = "";
+      child.stdout.on("data", (d) => (stdout += String(d)));
+      child.on("error", () => resolvePromise(false));
+      child.on("close", (code: number | null) => {
+        try {
+          const parsed = JSON.parse(stdout) as { ok?: boolean };
+          resolvePromise(code === 0 && parsed?.ok === true);
+        } catch {
+          resolvePromise(false);
+        }
+      });
+      child.stdin.write(value);
+      child.stdin.end();
+    });
+  }
+
   onOpen() {
     this._render();
   }
@@ -776,19 +814,14 @@ export class PaperForgeSetupModal extends Modal {
           const json = JSON.parse(body);
           if (res.statusCode === 400 && json.code === 10001) {
             // 400 code=10001 = auth passed, file missing (expected)
-            // Issue #79: store validated key in SecretStorage, never in plaintext settings
-            const ss = (this.app as any).secretStorage;
-            try {
-              await ss?.setSecret?.("paddleocr-api-key", key);
-              const readback = await ss?.getSecret?.("paddleocr-api-key");
-              if (readback === key) {
-                const s2 = this.plugin.settings;
-                s2._paddleocr_configured = true;
-                s2.paddleocr_api_key = "";
-                this.plugin.saveSettings();
-              }
-            } catch {
-              // SecretStorage write failed; key not stored, validation not persisted
+            // #173/C1: the validated key goes to the credential authority
+            // (`auth set ocr --stdin`) — never SecretStorage or settings.
+            const stored = await this._authSetOcrSecret(key);
+            if (stored) {
+              const s2 = this.plugin.settings;
+              s2._paddleocr_configured = true;
+              s2.paddleocr_api_key = "";
+              this.plugin.saveSettings();
             }
             this._apiKeyStatus.textContent = "\u2713 \u5BC6\u94A5\u6709\u6548";
             this._apiKeyStatus.className = "paperforge-apikey-status ok";
