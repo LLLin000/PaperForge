@@ -37,7 +37,8 @@ def mock_client():
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
-    monkeypatch.setenv("VECTOR_DB_API_KEY", "test-key-123")
+    # #173/C1: embedding credential comes from the canonical env name.
+    monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "test-key-123")
 
 
 class TestOpenAICompatibleProvider:
@@ -86,8 +87,7 @@ class TestOpenAICompatibleProvider:
             assert result == [[0.7, 0.8, 0.9]]
 
     def test_raises_when_no_api_key(self, monkeypatch, tmp_path: Path):
-        monkeypatch.delenv("VECTOR_DB_API_KEY", raising=False)
-        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", raising=False)
 
         with pytest.raises(ValueError, match="No API key configured"):
             OpenAICompatibleProvider(tmp_path)

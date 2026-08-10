@@ -38,26 +38,18 @@ def _read_dotenv(vault: Path, key: str) -> str:
 
 
 def _resolve_paddleocr_token(vault: Path) -> str:
-    """Resolve PaddleOCR API token from canonical sources.
+    """Resolve the OCR token from the #138 credential authority (#173/C1).
 
-    Priority: PADDLEOCR_API_TOKEN env → PADDLEOCR_API_TOKEN_USER env →
-    Windows HKCU Environment → vault/.env or System/PaperForge/.env.
-    Returns empty string when no token is found.
+    Precedence: explicit canonical env → keyring.  Legacy sources (.env,
+    HKCU, legacy env names) are migration input only and never consulted.
+    Returns empty string when the credential is missing.
     """
-    token = os.environ.get("PADDLEOCR_API_TOKEN", "").strip()
-    if not token:
-        token = os.environ.get("PADDLEOCR_API_TOKEN_USER", "").strip()
-    if not token:
-        try:
-            import winreg
+    from paperforge.credentials import CredentialError, CredentialKey, resolve
 
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as env_key:
-                token = str(winreg.QueryValueEx(env_key, "PADDLEOCR_API_TOKEN")[0]).strip()
-        except Exception:
-            token = ""
-    if not token:
-        token = _read_dotenv(vault, "PADDLEOCR_API_TOKEN")
-    return token
+    try:
+        return resolve(CredentialKey("ocr"))
+    except CredentialError:
+        return ""
 
 
 def _paper_timeout_minutes() -> int:
@@ -2829,7 +2821,7 @@ def run_ocr(
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     if not _token_warned:
-                        print("OCR: no API token configured — set PADDLEOCR_API_TOKEN in .env", flush=True)
+                        print("OCR: no API token configured — run `paperforge auth set ocr --stdin`", flush=True)
                         _token_warned = True
                     continue
                 upload_pdf = resolved_pdf

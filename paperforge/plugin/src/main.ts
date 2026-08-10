@@ -56,10 +56,6 @@ import {
   ManagedRuntime,
   resolveRuntimeCommand,
 } from "./services/managed-runtime";
-import {
-  migrateCredentials,
-  type PluginForSecrets,
-} from "./services/secret-storage";
 
 export default class PaperForgePlugin extends Plugin {
   /** agent_platform choices from Python's config list (#142) — empty until hydrated. */
@@ -100,13 +96,6 @@ export default class PaperForgePlugin extends Plugin {
   }
   async onload() {
     await this.loadSettings();
-    await migrateCredentials(
-      {
-        app: { secretStorage: (this.app as any).secretStorage },
-        saveData: async () => this.saveSettings(),
-      },
-      this.settings as unknown as Record<string, unknown>
-    );
     await this.saveSettings();
     try {
       await this.getManagedRuntime().status();
@@ -121,17 +110,10 @@ export default class PaperForgePlugin extends Plugin {
     this.ocrProcessController = new OcrProcessController({
       vaultPath: (this.app.vault.adapter as any).basePath as string,
       resolveCommand: () => this._getPythonCommand(),
+      // #173/C1: the plugin never injects credentials — Python resolves them
+      // from the credential authority; missing credentials fail closed there.
       resolveEnv: async () => {
-        const env = await buildTargetedEnv(
-          {
-            app: { secretStorage: (this.app as any).secretStorage },
-            saveData: async () => {},
-          },
-          "ocr"
-        );
-        if (!(env?.PADDLEOCR_API_KEY || env?.PADDLEOCR_API_TOKEN)) {
-          throw new Error("PaddleOCR API token is missing (SecretStorage)");
-        }
+        const env = await buildTargetedEnv(null, "ocr");
         return env;
       },
       needsCredential: (mode) => mode === "run" || mode === "redo",
@@ -195,11 +177,8 @@ export default class PaperForgePlugin extends Plugin {
           }
           const { path: cmdPythonExe, args: cmdExtra = [] } = pyCmd;
           const cmdArgs = Array.isArray(a.args) ? [...a.args] : [];
-          // Issue #79: inject credentials for allowlisted command types immediately before launch
-          const env = await buildTargetedEnv(
-            this as unknown as PluginForSecrets,
-            a.cmd
-          );
+          // #173/C1: credentials are resolved by Python; the env is redacted.
+          const env = await buildTargetedEnv(null, a.cmd);
           execFile(
             cmdPythonExe,
             [...cmdExtra, "-m", "paperforge", a.cmd, ...cmdArgs],

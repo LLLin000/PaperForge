@@ -86,11 +86,11 @@ class TestDoctorImportability:
         ), "doctor should actually exec_module ld_deep"
 
     def test_regression_doctor_env_name(self, test_vault: Path) -> None:
-        """REG-02: doctor checks PADDLEOCR_API_TOKEN (not old env name)."""
+        """REG-02: doctor checks the canonical credential authority env."""
         from paperforge.worker.status import run_doctor
 
         source = Path(run_doctor.__code__.co_filename).read_text(encoding="utf-8")
-        assert "PADDLEOCR_API_TOKEN" in source, "doctor should check PADDLEOCR_API_TOKEN"
+        assert "PAPERFORGE_CREDENTIAL_OCR__DEFAULT" in source, "doctor should check the canonical credential env"
 
     def test_regression_per_domain_json(self, test_vault: Path) -> None:
         """REG-02: doctor validates per-domain exports without false missing error."""

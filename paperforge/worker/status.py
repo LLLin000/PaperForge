@@ -578,13 +578,16 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
             "Run `paperforge config validate` and fix the reported errors",
         )
 
-    env_api_key = (
-        os.environ.get("PADDLEOCR_API_TOKEN") or os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")
-    )
-    if env_api_key:
+    from paperforge.credentials import CredentialKey, status as credential_status
+
+    ocr_state = credential_status(CredentialKey("ocr")).state
+    if ocr_state == "available":
         add_check("OCR 配置", "pass", "API Token 已配置")
     else:
-        add_check("OCR 配置", "fail", "缺少 PADDLEOCR_API_TOKEN", "在 .env 文件中设置 PADDLEOCR_API_TOKEN")
+        add_check(
+            "OCR 配置", "fail", "缺少 OCR 凭证",
+            "运行 `paperforge auth set ocr --stdin` 或设置 PAPERFORGE_CREDENTIAL_OCR__DEFAULT",
+        )
 
     # Worker module check (v1.3+: pipeline/ removed, use paperforge.worker package)
     try:
@@ -822,7 +825,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
         elif "Vault 结构" in _fail_categories or "Config Migration" in _fail_categories:
             _next_action = "Recommended: run `paperforge sync`"
         elif "OCR 配置" in _fail_categories:
-            _next_action = "Recommended: configure PADDLEOCR_API_TOKEN in .env"
+            _next_action = "Recommended: run `paperforge auth set ocr --stdin`"
         elif "BBT 导出" in _fail_categories:
             _next_action = "Recommended: configure Better BibTeX auto-export"
         elif "Zotero 链接" in _fail_categories or "Path Resolution" in _fail_categories:
@@ -900,7 +903,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
     elif "Vault 结构" in fail_categories or "Config Migration" in fail_categories:
         next_action = "Recommended: run `paperforge sync`"
     elif "OCR 配置" in fail_categories:
-        next_action = "Recommended: configure PADDLEOCR_API_TOKEN in .env"
+        next_action = "Recommended: run `paperforge auth set ocr --stdin`"
     elif "BBT 导出" in fail_categories:
         next_action = "Recommended: configure Better BibTeX auto-export"
     elif "Zotero 链接" in fail_categories or "Path Resolution" in fail_categories:

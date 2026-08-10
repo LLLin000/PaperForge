@@ -40,16 +40,17 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
     Returns:
         Dict with keys: level, passed, error, fix, raw_response (optional).
     """
-    # L1 — Token presence
-    token = os.environ.get("PADDLEOCR_API_TOKEN", "").strip()
-    if not token:
-        token = os.environ.get("PADDLEOCR_API_TOKEN_USER", "").strip()
-    if not token:
+    # L1 — Token presence (#173/C1: credential authority; no legacy fallbacks)
+    from paperforge.credentials import CredentialError, CredentialKey, resolve
+
+    try:
+        token = resolve(CredentialKey("ocr"))
+    except CredentialError:
         return {
             "level": 1,
             "passed": False,
-            "error": "PADDLEOCR_API_TOKEN not found in environment",
-            "fix": "Set PADDLEOCR_API_TOKEN in .env or environment variables and re-run `paperforge ocr --diagnose`",
+            "error": "OCR credential not found",
+            "fix": "Run `paperforge auth set ocr --stdin` or supply PAPERFORGE_CREDENTIAL_OCR__DEFAULT, then re-run `paperforge ocr --diagnose`",
         }
 
     # L2 — URL reachability (use POST since most endpoints reject GET)
@@ -69,7 +70,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 "level": 2,
                 "passed": False,
                 "error": "URL returned 401 Unauthorized",
-                "fix": "PaddleOCR API token is invalid. Check PADDLEOCR_API_TOKEN and re-run `paperforge ocr --diagnose`",
+                "fix": "PaddleOCR API token is invalid. Run `paperforge auth set ocr --stdin --replace` and re-run `paperforge ocr --diagnose`",
             }
         if resp.status_code >= 500:
             return {
@@ -233,7 +234,7 @@ def classify_error(exception: Exception, response) -> tuple[str, str]:
         if status == 401:
             return (
                 "blocked",
-                "PaddleOCR API key invalid or missing. Set PADDLEOCR_API_TOKEN and re-run `paperforge ocr`",
+                "PaddleOCR API key invalid or missing. Run `paperforge auth set ocr --stdin` and re-run `paperforge ocr`",
             )
         if status == 404:
             return (

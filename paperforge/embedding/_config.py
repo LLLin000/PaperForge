@@ -28,12 +28,16 @@ def _snapshot_values(vault: Path) -> dict[str, str | bool]:
 
 
 def get_api_key(vault: Path) -> str:
-    """Resolve the embedding API key from the process environment only.
-
-    Durable secret storage is owned by the #138 credential provider (C1);
-    legacy plugin-data.json and .env fallbacks are removed (#142).
+    """Resolve the embedding API key from the #138 credential authority
+    (#173/C1): explicit canonical env → keyring.  Legacy plugin-data.json,
+    .env and legacy env-name fallbacks are removed.
     """
-    return os.environ.get("VECTOR_DB_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+    from paperforge.credentials import CredentialError, CredentialKey, resolve
+
+    try:
+        return resolve(CredentialKey("embedding"))
+    except CredentialError:
+        return ""
 
 
 def get_api_base_url(vault: Path) -> str:
