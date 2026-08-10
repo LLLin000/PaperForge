@@ -260,26 +260,40 @@ def _delete_paper(conn: sqlite3.Connection, vault: Path, key: str) -> None:
     # 3. Papers last
     conn.execute("DELETE FROM papers WHERE zotero_key=?", (key,))
 
-def build_from_index(vault: Path) -> dict:
-    """Read formal-library.json and build/rebuild paperforge.db.
+def build_for_keys(vault: Path, keys: list[str] | None = None) -> dict:
+    """#164/T3: build paperforge.db for canonical paper keys.
 
-    Acquires the cross-process writer lock for the whole build (D2) — a
-    shadow vector rebuild must not be racing a memory build that mutates
-    the same live DB (the shadow snapshot would be stale at publish).
+    ``keys=None`` → current whole-library build (unchanged behavior).
+    ``keys`` given → a scope-faithful build: side effects are restricted to
+    the requested keys (affected_keys ⊆ requested_keys).  Unknown keys raise
+    ``ValueError`` — callers translate to exit 2.  A scoped request on a
+    fresh/destructive DB still full-rebuilds the whole library (the DB must
+    stay internally consistent); scope fidelity holds on an existing DB.
+
+    Acquires the cross-process writer lock for the whole build (D2).
     """
     from paperforge.memory.db import WriterLock
 
     with WriterLock(vault):
-        return _build_from_index_locked(vault)
+        return _build_from_index_locked(vault, keys=keys)
 
 
-def _build_from_index_locked(vault: Path) -> dict:
+def build_from_index(vault: Path) -> dict:
+    """Read formal-library.json and build/rebuild paperforge.db (all keys)."""
+    return build_for_keys(vault, None)
+
+
+def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict:
     """Build/rebuild paperforge.db (writer lock already held).
 
     Scheduling:
     1. Schema migration (destructive → full rebuild).
     2. Global hash unchanged → skip (fast path).
     3. Per-paper incremental: diff → delete → upsert → units.
+
+    ``keys``: scoped build (#164/T3) — validate against canonical index keys
+    (unknown → ValueError), filter items, never delete, and restrict the
+    correction-event rewrite to the requested keys.
     """
     envelope = read_index(vault)
     if envelope is None:
@@ -317,6 +331,15 @@ def _build_from_index_locked(vault: Path) -> dict:
             conn.close()
             return result
 
+        # ── 2.5 Scoped build: validate keys against the canonical index and
+        #      filter — everything below schedules over the filtered set ──
+        if keys is not None:
+            canonical_keys = {e["zotero_key"] for e in items if e.get("zotero_key")}
+            unknown = sorted(set(keys) - canonical_keys)
+            if unknown:
+                raise ValueError(f"unknown paper keys: {unknown}")
+            items = [e for e in items if e.get("zotero_key") in set(keys)]
+
         # ── 3. Global hash unchanged + no schema change → fast path ──────
         if migration_action == "none" and canonical_hash and db_path.exists():
             try:
@@ -338,9 +361,12 @@ def _build_from_index_locked(vault: Path) -> dict:
         # ── 4. Per-paper incremental ─────────────────────────────────────
         diff = _diff_paper_state(conn, items)
 
-        # 4a. Delete removed papers
-        for key in diff["deleted"]:
-            _delete_paper(conn, vault, key)
+        # 4a. Delete removed papers — NEVER in a scoped build: every
+        #     requested key is present in the index (validated in 2.5), so a
+        #     scoped diff would mass-delete every non-requested paper.
+        if keys is None:
+            for key in diff["deleted"]:
+                _delete_paper(conn, vault, key)
 
         # 4b. Upsert changed / added papers
         now_utc = datetime.now(timezone.utc).isoformat()
@@ -359,7 +385,15 @@ def _build_from_index_locked(vault: Path) -> dict:
         #     per-paper deletion handles their cleanup.  But newly added keys
         #     need selective hydration so their history isn't lost.
         valid_keys = {e["zotero_key"] for e in items if e.get("zotero_key")}
-        conn.execute("DELETE FROM paper_events WHERE event_type = 'correction_note';")
+        if keys is None:
+            conn.execute("DELETE FROM paper_events WHERE event_type = 'correction_note';")
+        elif valid_keys:
+            placeholders = ",".join("?" for _ in valid_keys)
+            conn.execute(
+                "DELETE FROM paper_events WHERE event_type = 'correction_note' "
+                f"AND paper_id IN ({placeholders});",
+                tuple(sorted(valid_keys)),
+            )
         correction_result = _import_correction_log(conn, vault, valid_keys)
         _hydrate_reading_log_for_keys(conn, vault, diff["added"])
         # 4d. OCR unit rebuilds (per-paper hash comparison).
@@ -393,7 +427,9 @@ def _build_from_index_locked(vault: Path) -> dict:
             "hash_match": False,
             "changed": list(diff["changed"]),
             "added": list(diff["added"]),
-            "deleted": list(diff["deleted"]),
+            # Scoped builds never delete; the diff would report every
+            # non-requested key as deleted against the filtered item set.
+            "deleted": [] if keys is not None else list(diff["deleted"]),
         }
     except Exception:
         conn.rollback()

@@ -162,7 +162,10 @@ def run(args: argparse.Namespace) -> int:
 
     if sub_cmd == "build":
         try:
-            counts = build_from_index(vault)
+            keys = getattr(args, "key", None) or None
+            from paperforge.memory.builder import build_for_keys
+
+            counts = build_for_keys(vault, keys)
             result = PFResult(
                 ok=True,
                 command="memory build",
@@ -185,6 +188,22 @@ def run(args: argparse.Namespace) -> int:
                     }
                 ],
             )
+        except ValueError as exc:
+            # #164/T3: unknown paper keys = invalid scope, exit 2.
+            result = PFResult(
+                ok=False,
+                command="memory build",
+                version=PF_VERSION,
+                error=PFError(
+                    code=ErrorCode.ACTION_SCOPE_INVALID,
+                    message=str(exc),
+                ),
+            )
+            if args.json:
+                print(result.to_json())
+            else:
+                print(str(exc), file=sys.stderr)
+            return 2
         except Exception as exc:
             result = PFResult(
                 ok=False,

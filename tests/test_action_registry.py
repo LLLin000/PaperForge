@@ -131,10 +131,11 @@ class TestRegistryInvariants:
             assert not hasattr(spec, "argv")
             assert not hasattr(spec, "cmd")
 
-    def test_papers_scope_not_registered_yet(self) -> None:
-        # T2: all-scope only; papers scope lands with T3/T4 seams.
-        for spec in ACTION_REGISTRY.values():
-            assert spec.scope_kinds == ("all",)
+    def test_papers_scope_registration_matches_seams(self) -> None:
+        # T3: memory.build gained papers scope; embed.resume still all-only
+        # until the embed seam lands (T4).
+        assert set(ACTION_REGISTRY["memory.build"].scope_kinds) == {"all", "papers"}
+        assert ACTION_REGISTRY["embed.resume"].scope_kinds == ("all",)
 
 
 # ── runner pipeline ────────────────────────────────────────────────────────
@@ -378,9 +379,16 @@ class TestCliExitCodes:
         assert rc == 2
         assert payload["error"]["code"] == "action.unknown"
 
-    def test_run_scope_invalid_is_exit_2(self, tmp_path: Path) -> None:
+    def test_run_papers_scope_unknown_key_is_exit_2(self, tmp_path: Path) -> None:
+        """T3: memory.build accepts papers scope; unknown keys are an invalid
+        scope (exit 2) rejected by preflight (index must exist first)."""
+        from tests.test_memory_build_scoped import _entry, _make_vault, _write_index
+
+        vault = _make_vault(tmp_path)
+        _write_index(vault, [_entry("A", "Paper A")])
         rc, payload = _run_cli(
-            "--vault", str(tmp_path), "action", "run", "memory.build", "--scope", "papers", "--key", "K1", "--json"
+            "--vault", str(vault), "action", "run", "memory.build",
+            "--scope", "papers", "--key", "ZZZ", "--json",
         )
         assert rc == 2
         assert payload["error"]["code"] == "action.scope_invalid"

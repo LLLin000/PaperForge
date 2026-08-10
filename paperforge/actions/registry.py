@@ -13,6 +13,7 @@ from paperforge.actions.types import (
     ActionContext,
     ActionIntent,
     ActionRequest,
+    ActionScope,
     ActionSpec,
     AllScope,
     PreflightResult,
@@ -24,7 +25,9 @@ from paperforge.core.result import PFResult
 
 
 def _memory_build_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
-    """memory.build availability: canonical config + library index present."""
+    """memory.build availability: canonical config + library index present;
+    papers scope additionally validates keys against the canonical index
+    (unknown key = invalid scope, exit 2)."""
     from paperforge.worker.asset_index import read_index
 
     if not ctx.config:
@@ -33,12 +36,26 @@ def _memory_build_preflight(ctx: ActionContext, request: ActionRequest) -> Prefl
             availability_reason_code="action.config_missing",
             availability_reason="Canonical configuration is missing — run `paperforge config init`",
         )
-    if read_index(ctx.vault) is None:
+    index = read_index(ctx.vault)
+    if index is None:
         return PreflightResult(
             availability="unavailable",
             availability_reason_code="action.library_index_missing",
             availability_reason="formal-library.json is missing — run `paperforge sync --rebuild-index`",
         )
+    if request.scope.kind == "papers":
+        items = index.get("items") if isinstance(index, dict) else index
+        canonical_keys = {e["zotero_key"] for e in items or [] if e.get("zotero_key")}
+        unknown = sorted(set(request.scope.keys) - canonical_keys)
+        if unknown:
+            from paperforge.actions.runner import ActionError
+            from paperforge.core.errors import ErrorCode
+
+            raise ActionError(
+                ErrorCode.ACTION_SCOPE_INVALID.value,
+                f"unknown paper keys: {unknown}",
+                exit_code=2,
+            )
     return PreflightResult(
         availability="available",
         availability_reason_code="action.available",
@@ -54,8 +71,11 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
     from paperforge.core.result import PFError, PFResult
     from paperforge.memory.builder import build_from_index
 
+    keys = None if request.scope.kind == "all" else list(request.scope.keys)
+    from paperforge.memory.builder import build_for_keys
+
     try:
-        counts = build_from_index(ctx.vault)
+        counts = build_for_keys(ctx.vault, keys)
     except FileNotFoundError as exc:
         return PFResult(
             ok=False,
@@ -64,12 +84,16 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
             error=PFError(code=ErrorCode.PATH_NOT_FOUND, message=str(exc)),
         )
     result = PFResult(ok=True, command="action run", version=PF_VERSION, data=counts)
-    # §8.1b dependency-by-emission: memory.build emits embed.resume on success.
+    # §8.1b dependency-by-emission: memory.build emits embed.resume on
+    # success — scoped builds carry the same keys (T6 wires the chain).
+    from paperforge.actions.types import PapersScope
+
+    follow_scope: ActionScope = PapersScope(tuple(keys)) if keys else AllScope()
     result.next_actions = [
         emit_next_action(
             ActionIntent(
                 action_id="embed.resume",
-                scope=AllScope(),
+                scope=follow_scope,
                 trigger_reason_code="vector.pending_after_memory_build",
                 trigger_reason="Memory changed — vector rows may need rebuilding",
             )
@@ -230,7 +254,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         description_code="action.memory.build.description",
         handler=_memory_build_handler,
         preflight=_memory_build_preflight,
-        scope_kinds=("all",),
+        scope_kinds=("all", "papers"),
         cost="local",
         impact="mutating",
         confirmation="none",
