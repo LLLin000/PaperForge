@@ -186,36 +186,6 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
 
 # ── the registry ───────────────────────────────────────────────────────────
 
-ACTION_REGISTRY: Mapping[str, ActionSpec] = {
-    "memory.build": ActionSpec(
-        action_id="memory.build",
-        label_code="action.memory.build",
-        description_code="action.memory.build.description",
-        handler=_memory_build_handler,
-        preflight=_memory_build_preflight,
-        scope_kinds=("all",),
-        cost="local",
-        impact="mutating",
-        confirmation="none",
-        automatic=True,
-        interruptible=True,
-    ),
-    "embed.resume": ActionSpec(
-        action_id="embed.resume",
-        label_code="action.embed.resume",
-        description_code="action.embed.resume.description",
-        handler=_embed_resume_handler,
-        preflight=_embed_resume_preflight,
-        scope_kinds=("all",),
-        cost="remote_possible",
-        impact="mutating",
-        confirmation="required",
-        automatic=False,
-        interruptible=True,
-    ),
-}
-
-
 def validate_registry(registry: Mapping[str, ActionSpec] | None = None) -> list[str]:
     """Registry invariant audit; empty list = valid."""
     problems: list[str] = []
@@ -253,6 +223,59 @@ def validate_registry(registry: Mapping[str, ActionSpec] | None = None) -> list[
     return problems
 
 
+_SPECS: tuple[ActionSpec, ...] = (
+    ActionSpec(
+        action_id="memory.build",
+        label_code="action.memory.build",
+        description_code="action.memory.build.description",
+        handler=_memory_build_handler,
+        preflight=_memory_build_preflight,
+        scope_kinds=("all",),
+        cost="local",
+        impact="mutating",
+        confirmation="none",
+        automatic=True,
+        interruptible=True,
+    ),
+    ActionSpec(
+        action_id="embed.resume",
+        label_code="action.embed.resume",
+        description_code="action.embed.resume.description",
+        handler=_embed_resume_handler,
+        preflight=_embed_resume_preflight,
+        scope_kinds=("all",),
+        cost="remote_possible",
+        impact="mutating",
+        confirmation="required",
+        automatic=False,
+        interruptible=True,
+    ),
+)
+
+
+class RegistryError(RuntimeError):
+    """Raised at import time when the frozen table violates an invariant."""
+
+
+def _build_registry(specs: tuple[ActionSpec, ...]) -> dict[str, ActionSpec]:
+    """Build the lookup dict from the literal tuple — duplicate ids are
+    detectable here (a literal dict would silently overwrite) and invariant
+    violations fail loudly instead of being recorded for later."""
+    table: dict[str, ActionSpec] = {}
+    for spec in specs:
+        if spec.action_id in table:
+            raise RegistryError(f"duplicate action id: {spec.action_id}")
+        problems = validate_registry({spec.action_id: spec})
+        if problems:
+            raise RegistryError(f"invalid action {spec.action_id}: {'; '.join(problems)}")
+        table[spec.action_id] = spec
+    return table
+
+
+ACTION_REGISTRY: Mapping[str, ActionSpec] = _build_registry(_SPECS)
+
+
+
 def emit_next_action(intent: ActionIntent) -> object:
     """#145 §5.2: registry hydration of an emission-time intent into the
     next_actions v1 wire model.  Unknown action ids fail closed.  The wire
@@ -277,8 +300,5 @@ def emit_next_action(intent: ActionIntent) -> object:
     )
 
 
-_REGISTRY_PROBLEMS = validate_registry()
 
 
-def get_registry_problems() -> list[str]:
-    return list(_REGISTRY_PROBLEMS)

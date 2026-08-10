@@ -18,7 +18,6 @@ from paperforge.actions.runner import (
     build_context,
     descriptor_for,
     run_action,
-    run_follow_up_chain,
 )
 from paperforge.actions.types import (
     ActionRequest,
@@ -105,9 +104,11 @@ def _parse_scope(args: argparse.Namespace) -> ActionScope:
 
 
 def run_dispatch(args: argparse.Namespace) -> int:
-    """`action run` — the #145 §6 pipeline with exit-code mapping."""
+    """`action run` — the #145 §6 pipeline with exit-code mapping.
+
+    T2 ships --follow none only: the root handler's next_actions are
+    returned unchanged.  The follow-up chain lands with T6 (#167)."""
     json_output = bool(getattr(args, "json", False))
-    follow = getattr(args, "follow", "none")
     action_id = args.action_id
     confirmed = getattr(args, "confirm", None)
     context = build_context(args.vault_path)
@@ -115,8 +116,6 @@ def run_dispatch(args: argparse.Namespace) -> int:
 
     try:
         result = run_action(request, context, confirmed_action_id=confirmed)
-        if follow != "none":
-            result = run_follow_up_chain(result, context, mode=follow)
     except ActionError as exc:
         result = _error_result("action run", exc.code, str(exc), data=exc.data)
         if json_output:
