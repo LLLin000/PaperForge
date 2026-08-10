@@ -333,6 +333,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_memory = sub.add_parser("memory", help="Manage the Memory Layer")
     p_memory_sp = p_memory.add_subparsers(dest="memory_subcommand", required=True)
     p_memory_build = p_memory_sp.add_parser("build", help="Build the memory database from canonical index")
+    p_memory_build.add_argument("--key", action="append", default=[], metavar="KEY",
+                               help="Paper key to build (repeatable; papers scope)")
     p_memory_build.add_argument("--json", action="store_true", help="Output as JSON")
     p_memory_status = p_memory_sp.add_parser("status", help="Check memory database status")
     p_memory_status.add_argument("--json", action="store_true", help="Output as JSON")
