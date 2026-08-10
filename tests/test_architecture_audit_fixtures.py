@@ -24,10 +24,11 @@ class TestFixtureIntegrity:
         from paperforge.architecture_audit.fixtures import load_fixture_dict
 
         # golden_126/129 still pin the #125-era observation; golden_127 was
-        # re-observed after #127 reworked commands/sync.py (7372383b).
+        # re-observed after #127 reworked commands/sync.py (7372383b) and
+        # re-pinned in C0 (#172) after sync stopped auto-migrating config.
         expected_revisions = {
             "golden_126_ocr_rebuild": "dea041db",
-            "golden_127_sync_embed": "7372383b",
+            "golden_127_sync_embed": "6ead21fc",
             "golden_129_display_restore": "1a1bb895",
         }
         for name, expected_revision in expected_revisions.items():

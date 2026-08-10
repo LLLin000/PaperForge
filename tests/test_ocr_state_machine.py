@@ -15,6 +15,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
+from tests.conftest import canonical_test_config
+
 
 @pytest.fixture(autouse=True)
 def _isolate_ocr_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -40,7 +42,7 @@ def _make_vault(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
     """Create a minimal vault with all required directories."""
     vault = tmp_path / "vault"
     vault.mkdir()
-    (vault / "paperforge.json").write_text("{}", encoding="utf-8")
+    canonical_test_config(vault)
     ocr_root = vault / "PaperForge" / "ocr"
     ocr_root.mkdir(parents=True)
     exports = vault / "PaperForge" / "exports"

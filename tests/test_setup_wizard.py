@@ -27,6 +27,8 @@ if str(REPO_ROOT) not in sys.path:
 from paperforge.services.skill_deploy import AGENT_SKILL_DIRS
 from paperforge.setup_wizard import CheckResult, EnvChecker, _find_vault
 
+from tests.conftest import canonical_test_config
+
 # ===================================================================
 # AGENT_SKILL_DIRS (imported from skill_deploy, flat dict)
 # ===================================================================
@@ -216,7 +218,7 @@ class TestFindVault:
         """Verify _find_vault detects paperforge.json in current or parent dirs."""
         vault = tmp_path / "my_vault"
         vault.mkdir(parents=True)
-        (vault / "paperforge.json").write_text("{}", encoding="utf-8")
+        canonical_test_config(vault)
 
         monkeypatch.chdir(vault)
         result = _find_vault()
@@ -233,7 +235,7 @@ class TestFindVault:
         """Verify _find_vault walks up parent directories."""
         parent = tmp_path / "parent"
         parent.mkdir()
-        (parent / "paperforge.json").write_text("{}", encoding="utf-8")
+        canonical_test_config(parent)
         child = parent / "subdir" / "deeper"
         child.mkdir(parents=True)
 

@@ -19,6 +19,13 @@ from paperforge.worker._utils import pipeline_paths as _pp
 
 paperforge.config.pipeline_paths = _pp
 
+from tests.conftest import canonical_test_config
+
+
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    canonical_test_config(tmp_path)
+
 from paperforge.embedding.builder import (
     EmbeddingPayload,
     EncodedPayload,

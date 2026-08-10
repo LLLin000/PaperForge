@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
 
 # ── Fixtures ──────────────────────────────────────────────────────────────
 
@@ -21,6 +23,7 @@ import pytest
 def _make_vault(tmp_path: Path) -> Path:
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     (vault / "System" / "PaperForge" / "indexes").mkdir(parents=True)
     return vault
 
@@ -904,6 +907,8 @@ def test_writer_lock_per_path_no_false_reentry(tmp_path: Path) -> None:
     v2 = tmp_path / "b"
     (v1 / "System" / "PaperForge" / "indexes").mkdir(parents=True, exist_ok=True)
     (v2 / "System" / "PaperForge" / "indexes").mkdir(parents=True, exist_ok=True)
+    canonical_test_config(v1)
+    canonical_test_config(v2)
 
     l1 = WriterLock(v1)
     l2 = WriterLock(v2)

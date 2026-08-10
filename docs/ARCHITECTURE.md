@@ -688,6 +688,15 @@ Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`
 
 ---
 
+## Glossary
+
+- **Canonical Fact** — a fact whose single authority is a canonical storage location (paperforge.json, formal-library.json, OCR meta/artifacts, paperforge.db, build_state). Never re-derived or duplicated as a competing truth.
+- **Semantic Read Model** — a Python-produced, versioned interpretation of canonical facts (`probe(module)`, `probe all`, typed detail commands). The only surface clients may consume for meaning; provenance/freshness-stamped projections, never competing facts.
+- **Action Contract** — the declarative Python ActionSpec registry + generic runner: stable `action_id` names an executable operation, producers emit intent only, policy lives in one registry, confirmation is exact per-action, follow-up execution is explicit, and no command string or argv appears on any wire.
+- **Bootstrap Adapter** — the pre-runtime part of the Obsidian plugin: interpreter discovery, platform gates, consent, one-time install, pointer read. It may create the first runnable Python environment; once PaperForge can execute it never owns runtime lifecycle semantics or canonical runtime publication.
+- **Client Cache** — the plugin's display-only last-known CLI responses in `data.json` (per module, `received_at`-stamped), rendered only for stale/error display; actions stay disabled until a fresh response newer than the last mutation arrives. Detail sets are in-memory only.
+- **Convergence Tick** — one invocation of `paperforge sync` (external source detection + library sync + `reconcile(all)`), fired by a dumb client timer or headless scheduler. All triggers converge on the same Python semantics.
+
 ## Cross-References
 
 - User-facing guide: [`AGENTS.md`](../AGENTS.md)

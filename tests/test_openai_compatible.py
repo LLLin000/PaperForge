@@ -9,6 +9,13 @@ import pytest
 
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
 
+from tests.conftest import canonical_test_config
+
+
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    canonical_test_config(tmp_path)
+
 
 @pytest.fixture
 def mock_client():

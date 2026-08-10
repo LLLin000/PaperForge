@@ -1,11 +1,12 @@
 # Tests for paperforge CLI worker dispatch
 # These tests prove the locked command surface without invoking real workers.
 
-import json
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
+from tests.conftest import canonical_test_config
 
 # ----------------------------------------------------------------------
 # Worker function stubs — capture calls for assertion
@@ -54,14 +55,15 @@ def clean_captured():
 @pytest.fixture
 def mock_vault(tmp_path):
     """Create a minimal mock vault with paperforge.json."""
-    pf_cfg = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-    }
-    (tmp_path / "paperforge.json").write_text(json.dumps(pf_cfg), encoding="utf-8")
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    canonical_test_config(
+        tmp_path,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+    )
     return tmp_path
 
 

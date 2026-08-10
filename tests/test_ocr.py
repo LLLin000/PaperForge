@@ -1,11 +1,14 @@
 from pathlib import Path
 
+from tests.conftest import canonical_test_config
+
 
 def test_ocr_redo_papers_dry_run_no_changes(tmp_path):
     from paperforge.worker.ocr import ocr_redo_papers
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -41,6 +44,7 @@ def test_ocr_redo_papers_invalid_key_rejected(tmp_path):
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -63,6 +67,7 @@ def test_ocr_redo_papers_updates_frontmatter(tmp_path):
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -130,6 +135,7 @@ def test_ocr_redo_papers_keeps_flag_true_when_rerun_not_done(tmp_path):
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -175,6 +181,7 @@ def test_ocr_redo_rebuilds_phase1_artifacts(tmp_path: Path) -> None:
     key = "REDO0012"
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     literature = vault / "Resources" / "Literature" / "test_domain"
     literature.mkdir(parents=True)
 
@@ -265,7 +272,7 @@ def test_postprocess_preserves_compatibility_outputs(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -292,7 +299,7 @@ def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -329,7 +336,7 @@ def test_postprocess_meta_json_preserves_original_fields(tmp_path: Path) -> None
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -360,7 +367,7 @@ def test_postprocess_writes_resolved_metadata(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -389,7 +396,7 @@ def test_postprocess_writes_figure_inventory(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -415,7 +422,7 @@ def test_postprocess_writes_table_inventory(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -442,7 +449,7 @@ def test_postprocess_creates_object_directories(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -472,7 +479,7 @@ def test_postprocess_writes_render_fulltext(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -498,7 +505,7 @@ def test_postprocess_writes_ocr_health(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -524,7 +531,7 @@ def test_version_state_classifiable_from_meta_json(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -558,7 +565,7 @@ def test_postprocess_writes_role_index(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
@@ -582,6 +589,7 @@ def test_ocr_run_all_blocked_returns_nonzero(tmp_path, monkeypatch):
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     lit = vault / "Resources" / "Literature" / "test_domain"
     lit.mkdir(parents=True)
     ocr_root = vault / "System" / "PaperForge" / "ocr"

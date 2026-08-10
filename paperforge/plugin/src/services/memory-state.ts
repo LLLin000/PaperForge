@@ -74,44 +74,33 @@ export interface Snapshot {
 
 let _cachedPython: PythonResult | null = null;
 
+// #142 / C0: the plugin no longer parses paperforge.json, and it NEVER
+// guesses canonical paths. Path display values are hydrated from
+// `paperforge config list` by main.ts; until then this module fails closed
+// (no defaults) so no semantic work can run on guessed paths.
+let _pathConfigSource: PathConfig | null = null;
+
+export function setPathConfigSource(cfg: PathConfig | null): void {
+  _pathConfigSource = cfg;
+}
+
+export function isConfigHydrated(): boolean {
+  return _pathConfigSource !== null;
+}
+
 // ── Functions ──
 
-export function readPathConfig(vaultPath: string, _fs?: any): PathConfig {
-  const f = _fs || fs;
-  const pfPath = path.join(vaultPath, "paperforge.json");
-  const defaults = {
-    system_dir: "System",
-    resources_dir: "Resources",
-    literature_dir: "Literature",
-    base_dir: "Bases",
-  };
-
-  try {
-    if (!f.existsSync(pfPath)) {
-      return {
-        ...defaults,
-        _warning: "paperforge.json not found; using defaults",
-      };
-    }
-    const raw = f.readFileSync(pfPath, "utf-8");
-    const data = JSON.parse(raw);
-    const vc = data.vault_config || {};
-    return {
-      system_dir: vc.system_dir || data.system_dir || defaults.system_dir,
-      resources_dir:
-        vc.resources_dir || data.resources_dir || defaults.resources_dir,
-      literature_dir:
-        vc.literature_dir || data.literature_dir || defaults.literature_dir,
-      base_dir: vc.base_dir || data.base_dir || defaults.base_dir,
-      _warning: null,
-    };
-  } catch (e) {
-    console.warn(
-      "PaperForge: Failed to read paperforge.json, using defaults",
-      e
-    );
-    return { ...defaults, _warning: "paperforge.json invalid; using defaults" };
+export function readPathConfig(vaultPath: string, _fs?: unknown): PathConfig {
+  if (_pathConfigSource) {
+    return { ..._pathConfigSource, _warning: _pathConfigSource._warning ?? null };
   }
+  return {
+    system_dir: "",
+    resources_dir: "",
+    literature_dir: "",
+    base_dir: "",
+    _warning: "config authority not hydrated; paths unavailable — no semantic work may run",
+  };
 }
 
 export function resolveVaultPaths(vaultPath: string, _fs?: any): ResolvedPaths {

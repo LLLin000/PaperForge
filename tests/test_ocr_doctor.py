@@ -193,7 +193,7 @@ def test_doctor_reads_structured_ocr_health(tmp_path: Path, capsys) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_dir = vault / "System" / "PaperForge" / "ocr" / "HLTH001"
@@ -234,7 +234,7 @@ def test_doctor_shows_legacy_backfilled_papers(tmp_path: Path, capsys) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_dir = vault / "System" / "PaperForge" / "ocr" / "LEGACY001"
@@ -260,7 +260,7 @@ def test_doctor_mentions_version_state(tmp_path: Path, capsys) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_dir = vault / "System" / "PaperForge" / "ocr" / "DOC001"

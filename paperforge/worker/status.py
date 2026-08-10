@@ -10,11 +10,11 @@ from json import JSONDecodeError
 from pathlib import Path
 
 from paperforge.config import (
-    CONFIG_PATH_KEYS,
-    get_paperforge_schema_version,
+    ConfigError,
+    load_config,
     load_vault_config,
     paperforge_paths,
-    read_paperforge_json,
+    validate_config,
 )
 from paperforge.core.result import PFResult
 from paperforge.memory.state_snapshot import write_memory_runtime
@@ -550,38 +550,34 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
     else:
         add_check("BBT 导出", "fail", "未找到 JSON 导出文件", "在 Zotero Better BibTeX 设置中配置导出路径")
 
-    # Config Migration check
-    pf_data = read_paperforge_json(vault)
-    if pf_data:
-        has_stale_top_level = any(k in pf_data for k in CONFIG_PATH_KEYS)
-        if has_stale_top_level:
-            backup_path = vault / "paperforge.json.bak"
-            backup_hint = f" (backup: {backup_path})" if backup_path.exists() else ""
-            add_check(
-                "Config Migration",
-                "warn",
-                f"paperforge.json has stale top-level path keys -- run `paperforge sync` to auto-migrate{backup_hint}",
-                "Run `paperforge sync` to auto-migrate to vault_config canonical format",
-            )
-        else:
-            add_check(
-                "Config Migration",
-                "pass",
-                "paperforge.json uses canonical vault_config format",
-            )
-
-        # Schema version check
-        sv = get_paperforge_schema_version(vault)
-        if sv >= 2:
-            add_check("Config Migration", "pass", f"schema_version: {sv}")
-        else:
-            add_check(
-                "Config Migration",
-                "info",
-                f"schema_version: {sv} (migration available via `paperforge sync`)",
-            )
-    else:
+    # Config state check (#142 seam; migration is explicit, sync no longer
+    # auto-migrates).
+    validation = validate_config(vault)
+    if validation.state == "missing":
         add_check("Config Migration", "info", "paperforge.json not found -- new install?")
+    elif validation.state == "migration_required":
+        add_check(
+            "Config Migration",
+            "warn",
+            "paperforge.json has legacy structure -- run `paperforge config migrate --dry-run`",
+            "Run `paperforge config migrate` (explicit migration)",
+        )
+    elif validation.state == "valid":
+        try:
+            snapshot = load_config(vault)
+            revision = snapshot.revision
+        except ConfigError:
+            revision = None
+        rev = f" (revision {revision[:16]})" if revision else ""
+        add_check("Config Migration", "pass", f"paperforge.json uses canonical schema v2{rev}")
+    else:
+        code = validation.errors[0].get("code") if validation.errors else validation.state
+        add_check(
+            "Config Migration",
+            "fail",
+            f"paperforge.json {validation.state}: {code}",
+            "Run `paperforge config validate` and fix the reported errors",
+        )
 
     env_api_key = (
         os.environ.get("PADDLEOCR_API_TOKEN") or os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")

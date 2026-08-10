@@ -21,7 +21,7 @@ def _build_vault(tmp_path: Path) -> Path:
     vault = tmp_path / "vault"
     vault.mkdir(parents=True)
     (vault / "paperforge.json").write_text(
-        '{"vault_config":{"system_dir":"System"}}', encoding="utf-8"
+        '{"schema_version": 2, "vault_config":{"system_dir":"System"}}', encoding="utf-8"
     )
     (vault / "System" / "PaperForge").mkdir(parents=True)
     return vault

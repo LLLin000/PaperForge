@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+from tests.conftest import canonical_test_config
 
 _REPO_ROOT = Path(__file__).parent.parent
 
@@ -27,23 +28,14 @@ def tmp_vault(tmp_path: Path) -> Path:
     control = resources / "LiteratureControl"
     (control / "library-records").mkdir(parents=True)
 
-    pf_json = tmp_path / "paperforge.json"
-    pf_json.write_text(
-        json.dumps(
-            {
-                "version": "1.2.0",
-                "vault_config": {
-                    "system_dir": "99_System",
-                    "resources_dir": "03_Resources",
-                    "literature_dir": "Literature",
-                    "control_dir": "LiteratureControl",
-                    "base_dir": "05_Bases",
-                    "skill_dir": ".opencode/skills",
-                },
-            },
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
+    canonical_test_config(
+        tmp_path,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+        skill_dir=".opencode/skills",
     )
     return tmp_path
 

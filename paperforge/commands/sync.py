@@ -6,7 +6,6 @@ import inspect
 import logging
 
 from paperforge import __version__
-from paperforge.config import migrate_paperforge_json
 from paperforge.core.result import PFResult
 
 logger = logging.getLogger(__name__)
@@ -19,11 +18,6 @@ def run(args: argparse.Namespace) -> int:
         vault = resolve_vault(cli_vault=getattr(args, "vault", None))
 
     verbose = getattr(args, "verbose", False)
-    migrated = migrate_paperforge_json(vault)
-    if migrated:
-        logger.info("Migrated paperforge.json to vault_config canonical format")
-        if verbose:
-            print("[INFO] paperforge.json migrated to canonical format (backup: paperforge.json.bak)")
 
     dry_run = getattr(args, "dry_run", False)
     selection_only = getattr(args, "selection", False)

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
+
+from tests.conftest import canonical_test_config
 
 # ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -14,21 +15,14 @@ def _make_minimal_vault(tmp_path: Path) -> Path:
     """Create a vault with just enough config for paperforge_paths()."""
     vault = tmp_path / "vault"
     vault.mkdir()
-    pf_json = vault / "paperforge.json"
-    pf_json.write_text(
-        json.dumps(
-            {
-                "version": "1.2.0",
-                "system_dir": "99_System",
-                "resources_dir": "03_Resources",
-                "literature_dir": "Literature",
-                "control_dir": "LiteratureControl",
-                "base_dir": "05_Bases",
-                "skill_dir": ".opencode/skills",
-            },
-            indent=2,
-        ),
-        encoding="utf-8",
+    canonical_test_config(
+        vault,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+        skill_dir=".opencode/skills",
     )
     # Ensure memory-db parent dir exists (used by get_vector_db_path)
     (vault / "99_System" / "PaperForge" / "indexes").mkdir(parents=True, exist_ok=True)

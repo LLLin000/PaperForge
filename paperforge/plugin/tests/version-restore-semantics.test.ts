@@ -2,12 +2,13 @@
  * Vitest tests for restore semantics (#129): display-only boundary,
  * provenance persistence, and the confirmation gate.
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
 import os from "os";
 
 import { restoreVersion } from "../src/services/version-history";
+import { setPathConfigSource } from "../src/services/memory-state";
 
 let root: string;
 
@@ -22,11 +23,19 @@ function write(filePath: string, content: string) {
 
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "pf-restore-"));
-  // resolveVaultPaths requires a vault layout with paperforge.json
-  write(
-    path.join(root, "paperforge.json"),
-    JSON.stringify({ system_dir: "System" })
-  );
+  // #142/C0: resolveVaultPaths consumes the injected config source (never
+  // parses paperforge.json); fail-closed without it.
+  setPathConfigSource({
+    system_dir: "System",
+    resources_dir: "Resources",
+    literature_dir: "Literature",
+    base_dir: "Bases",
+    _warning: null,
+  });
+});
+
+afterEach(() => {
+  setPathConfigSource(null);
 });
 
 describe("restoreVersion (#129)", () => {

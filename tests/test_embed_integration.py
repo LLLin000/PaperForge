@@ -11,6 +11,14 @@ from unittest.mock import patch
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
+
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    """#142 seam: every tmp_path-rooted vault gets a canonical paperforge.json."""
+    canonical_test_config(tmp_path)
+
 
 import paperforge.config
 from paperforge.worker._utils import pipeline_paths as _pp
@@ -274,9 +282,7 @@ class TestForceRebuildBackup:
 
         vault = tmp_path / "vault"
         vault.mkdir()
-        (vault / "paperforge.json").write_text(
-            '{"system_dir": "99_System"}', encoding="utf-8",
-        )
+        canonical_test_config(vault, system_dir="99_System")
         indexes_dir = vault / "99_System" / "PaperForge" / "indexes"
         indexes_dir.mkdir(parents=True, exist_ok=True)
         db_path = get_memory_db_path(vault)
@@ -513,6 +519,7 @@ def test_build_from_index_two_runs_incremental(tmp_path: Path) -> None:
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     (vault / "03_Resources" / "Literature" / "骨科").mkdir(parents=True)
     (vault / "System" / "PaperForge").mkdir(parents=True)
 

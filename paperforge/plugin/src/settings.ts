@@ -11,6 +11,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
+import { configSet } from "./services/config-client";
 import { t, setLanguage, langFromApp } from "./i18n";
 import {
   PaperForgeSettings,
@@ -95,18 +96,6 @@ function asPluginForSecrets(
   return {
     app: { secretStorage: (app as any).secretStorage },
     saveData: async () => {},
-  };
-}
-
-function vectorDbProfile(
-  settings: Pick<
-    PaperForgeSettings,
-    "vector_db_api_base" | "vector_db_api_model"
-  >
-): VectorDbCredentialProfile {
-  return {
-    baseUrl: settings.vector_db_api_base,
-    model: settings.vector_db_api_model,
   };
 }
 
@@ -215,9 +204,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  /** Reload path config from paperforge.json */
+  /** Reload path config — #142/C0: display mirrors hydrated from Python by
+   * main.ts; the plugin never parses paperforge.json. */
   _refreshPfConfig() {
-    this._pfConfig = this.plugin.readPaperforgeJson();
+    const s = this.plugin.settings;
+    this._pfConfig = {
+      system_dir: s.system_dir || "System",
+      resources_dir: s.resources_dir || "Resources",
+      literature_dir: s.literature_dir || "Literature",
+      base_dir: s.base_dir || "Bases",
+      zotero_data_dir: s.zotero_data_dir || "",
+    };
   }
 
   display() {
@@ -527,6 +524,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._setupOperation = "running";
     this._setupFeedback = null;
     const settings = this.plugin.settings;
+    const vaultPath = this._getVaultBasePath();
     const paths = {
       zotero_data_dir: settings.zotero_data_dir,
       system_dir: settings.system_dir,
@@ -534,31 +532,43 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       literature_dir: settings.literature_dir,
       base_dir: settings.base_dir,
     };
-    this.plugin.savePaperforgeJson(paths);
-    this.display();
-
-    const args = [
-      "-m",
-      "paperforge",
-      "--vault",
-      this._getVaultBasePath(),
-      "setup",
-      "--modular",
-      "--system-dir",
-      settings.system_dir?.trim() || "System",
-      "--resources-dir",
-      settings.resources_dir?.trim() || "Resources",
-      "--literature-dir",
-      settings.literature_dir?.trim() || "Literature",
-      "--base-dir",
-      settings.base_dir?.trim() || "Bases",
-      "--agent",
-      settings.agent_platform || "opencode",
-    ];
-    if (settings.zotero_data_dir?.trim()) {
-      args.push("--zotero-data", settings.zotero_data_dir.trim());
-    }
+    // #142 / C0: mutations route through the typed config commands; the
+    // plugin never writes paperforge.json.
     void (async () => {
+      const writes: Promise<unknown>[] = [];
+      for (const [key, value] of Object.entries(paths)) {
+        if (value && value.trim()) {
+          writes.push(
+            configSet(vaultPath, key, value.trim(), settings).catch((e) => {
+              console.error(`PaperForge: config set ${key} failed`, e);
+            })
+          );
+        }
+      }
+      await Promise.all(writes).catch(() => undefined);
+      this.display();
+
+      const args = [
+        "-m",
+        "paperforge",
+        "--vault",
+        vaultPath,
+        "setup",
+        "--modular",
+        "--system-dir",
+        settings.system_dir?.trim() || "System",
+        "--resources-dir",
+        settings.resources_dir?.trim() || "Resources",
+        "--literature-dir",
+        settings.literature_dir?.trim() || "Literature",
+        "--base-dir",
+        settings.base_dir?.trim() || "Bases",
+        "--agent",
+        settings.agent_platform || "opencode",
+      ];
+      if (settings.zotero_data_dir?.trim()) {
+        args.push("--zotero-data", settings.zotero_data_dir.trim());
+      }
       try {
         await this.plugin.saveSettings();
         await this._runSetupPython(args);
@@ -1283,9 +1293,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const select = editor.createEl("select", {
         attr: { "aria-label": t("md_agent_platform") },
       });
-      for (const [value, label] of Object.entries(platforms)) {
+      // #142: choices come from Python's config list when hydrated; the
+      // hardcoded map is a presentation label lookup only.
+      const editorChoices = this.plugin.agentPlatformChoices.length
+        ? this.plugin.agentPlatformChoices
+        : Object.keys(platforms);
+      for (const value of editorChoices) {
         const option = select.createEl("option", {
-          text: label,
+          text: platforms[value] ?? value,
           attr: { value },
         }) as HTMLOptionElement;
         option.selected = value === this._agentPlatformDraft;
@@ -1299,7 +1314,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         onClick: () => {
           const value = this._agentPlatformDraft ?? current;
           this.plugin.settings.agent_platform = value;
-          this.plugin.savePaperforgeJson({ agent_platform: value });
+          // #142 / C0: mutation through the typed config command.
+          void configSet(this._getVaultBasePath(), "agent_platform", value, this.plugin.settings).catch(
+            (e) => new Notice(`PaperForge: config set agent_platform failed: ${String(e)}`)
+          );
           this.plugin.saveSettings();
           this._agentPlatformDraft = null;
           this.display();
@@ -1509,7 +1527,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     bi.value = this.plugin.settings.vector_db_api_base || "";
     bi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_base = bi.value;
-      void this.plugin.saveSettings();
+      void configSet(this._getVaultBasePath(), "vector_db_api_base", bi.value, this.plugin.settings).catch(
+        (e) => new Notice(`PaperForge: config set vector_db_api_base failed: ${String(e)}`)
+      );
       this._refreshVectorDbCredentialStatus();
     });
 
@@ -1527,7 +1547,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
     mi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_model = mi.value;
-      void this.plugin.saveSettings();
+      void configSet(this._getVaultBasePath(), "vector_db_api_model", mi.value, this.plugin.settings).catch(
+        (e) => new Notice(`PaperForge: config set vector_db_api_model failed: ${String(e)}`)
+      );
       this._refreshVectorDbCredentialStatus();
     });
 
@@ -1914,8 +1936,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           resolveEnv: () =>
             buildTargetedEnv(
               asPluginForSecrets(this.app),
-              "embed",
-              vectorDbProfile(this.plugin.settings)
+              "embed"
             ),
           runShort: (args: string[], timeoutMs: number) => {
             const { promise, resolve } = deferred<{
@@ -2383,8 +2404,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // Async: resolve SecretStorage credentials before launch
       buildTargetedEnv(
         asPluginForSecrets((this as any).app),
-        opts.credentialType,
-        vectorDbProfile(this.plugin.settings)
+        opts.credentialType
       ).then((env) => {
         if (opts && opts.stream) {
           spawnChild(env);
@@ -2681,7 +2701,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.vector_db_api_base || "")
           .onChange((value) => {
             this.plugin.settings.vector_db_api_base = value;
-            void this.plugin.saveSettings();
+            void configSet(this._getVaultBasePath(), "vector_db_api_base", value, this.plugin.settings).catch(
+              (e) => new Notice(`PaperForge: config set vector_db_api_base failed: ${String(e)}`)
+            );
             this._refreshVectorDbCredentialStatus();
           });
       });
@@ -2696,7 +2718,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           )
           .onChange((value) => {
             this.plugin.settings.vector_db_api_model = value;
-            void this.plugin.saveSettings();
+            void configSet(this._getVaultBasePath(), "vector_db_api_model", value, this.plugin.settings).catch(
+              (e) => new Notice(`PaperForge: config set vector_db_api_model failed: ${String(e)}`)
+            );
             this._refreshVectorDbCredentialStatus();
           });
       });
@@ -2870,8 +2894,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // Issue #79: resolve credentials immediately before embed build launch
         const env = await buildTargetedEnv(
           asPluginForSecrets((this as any).app),
-          "embed",
-          vectorDbProfile(this.plugin.settings)
+          "embed"
         );
         // Merge non-credential embed settings that aren't secret-managed
         env.PYTHONIOENCODING = "utf-8";
@@ -4704,8 +4727,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   private _refreshVectorDbCredentialStatus(): void {
     void hasVectorDbCredential(
-      asPluginForSecrets(this.app),
-      vectorDbProfile(this.plugin.settings)
+      asPluginForSecrets(this.app)
     ).then((configured) => {
       if (configured === this.plugin.settings._vector_db_configured) return;
       this.plugin.settings._vector_db_configured = configured;
@@ -4716,7 +4738,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private async _storeVectorDbCredential(value: string): Promise<boolean> {
     const saved = await storeVectorDbCredential(
       asPluginForSecrets(this.app),
-      vectorDbProfile(this.plugin.settings),
+      { baseUrl: "", model: "" },
       value
     );
     if (!saved) return false;
@@ -4762,22 +4784,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _updateDotEnv(key: string, value: string): void {
     const vaultPath = this._getVaultBasePath();
     if (!vaultPath) return;
-    const envPath = path.join(vaultPath, ".env");
-    let lines: string[] = [];
-    try {
-      const existing = fs.readFileSync(envPath, "utf-8");
-      lines = existing.split(/\r?\n/);
-    } catch {
-      /* file doesn't exist yet */
-    }
-    // Remove any existing line for this key
-    const cleaned = lines.filter((l) => !l.startsWith(key + "="));
-    cleaned.push(`${key}=${value}`);
-    try {
-      fs.writeFileSync(envPath, cleaned.join("\n") + "\n", "utf-8");
-    } catch {
-      /* best-effort */
-    }
+    // #142 / C0: the plugin no longer writes .env — Python reads canonical
+    // config + process environment; durable secrets belong to the #138
+    // credential provider (auth commands).
+    new Notice(
+      "PaperForge: set this in your environment or use `paperforge auth set`"
+    );
   }
 
   _renderSetupStageOptionals(containerEl: HTMLElement): void {
@@ -4932,7 +4944,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           text: t("feat_agent_platform_desc"),
         });
         const select = config.createEl("select") as HTMLSelectElement;
-        for (const [value, label] of Object.entries({
+        const setupPlatformLabels: Record<string, string> = {
           opencode: "OpenCode",
           claude: "Claude Code",
           codex: "Codex",
@@ -4940,16 +4952,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           windsurf: "Windsurf",
           github_copilot: "GitHub Copilot",
           gemini: "Gemini CLI",
-        })) {
+        };
+        const setupChoices = this.plugin.agentPlatformChoices.length
+          ? this.plugin.agentPlatformChoices
+          : Object.keys(setupPlatformLabels);
+        for (const value of setupChoices) {
           const option = select.createEl("option", {
-            text: label,
+            text: setupPlatformLabels[value] ?? value,
             attr: { value },
           }) as HTMLOptionElement;
           option.selected = value === this.plugin.settings.agent_platform;
         }
         select.addEventListener("change", () => {
           this.plugin.settings.agent_platform = select.value;
-          this.plugin.savePaperforgeJson({ agent_platform: select.value });
+          // #142 / C0: mutation through the typed config command.
+          void configSet(this._getVaultBasePath(), "agent_platform", select.value, this.plugin.settings).catch(
+            (e) => new Notice(`PaperForge: config set agent_platform failed: ${String(e)}`)
+          );
           void this.plugin.saveSettings();
           status.setText(t("setup_optional_saved"));
         });

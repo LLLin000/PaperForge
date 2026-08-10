@@ -20,10 +20,12 @@ from pathlib import Path
 
 # Config / resolver
 from paperforge.config import (
-    load_simple_env,
+    ConfigError,
+    load_config,
     load_vault_config,
     paperforge_paths,
     paths_as_strings,
+    resolve_paths,
     resolve_vault,
 )
 
@@ -492,6 +494,31 @@ def build_parser() -> argparse.ArgumentParser:
     p_scoped_fetch.add_argument("--json", action="store_true", help="Output JSON")
     p_scoped_fetch.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
 
+    # config (canonical configuration authority, #142)
+    p_config = sub.add_parser("config", help="Canonical paperforge.json configuration (Python-owned)")
+    p_config_sp = p_config.add_subparsers(dest="config_verb", required=True)
+    p_config_list = p_config_sp.add_parser("list", help="List all canonical fields")
+    p_config_list.add_argument("--json", action="store_true")
+    p_config_get = p_config_sp.add_parser("get", help="Get one canonical field")
+    p_config_get.add_argument("key", help="Field key")
+    p_config_get.add_argument("--json", action="store_true")
+    p_config_set = p_config_sp.add_parser("set", help="Atomically set one canonical field")
+    p_config_set.add_argument("key", help="Field key")
+    p_config_set.add_argument("value", help="Field value (validated by the field spec)")
+    p_config_set.add_argument("--json", action="store_true")
+    p_config_unset = p_config_sp.add_parser("unset", help="Atomically remove a stored field")
+    p_config_unset.add_argument("key", help="Field key")
+    p_config_unset.add_argument("--json", action="store_true")
+    p_config_validate = p_config_sp.add_parser("validate", help="Classify configuration state")
+    p_config_validate.add_argument("--json", action="store_true")
+    p_config_paths = p_config_sp.add_parser("paths", help="Resolved path inventory")
+    p_config_paths.add_argument("--json", action="store_true")
+    p_config_init = p_config_sp.add_parser("init", help="Create canonical config from defaults (idempotent)")
+    p_config_init.add_argument("--json", action="store_true")
+    p_config_migrate = p_config_sp.add_parser("migrate", help="Explicit legacy migration")
+    p_config_migrate.add_argument("--dry-run", action="store_true", help="Preview without writing")
+    p_config_migrate.add_argument("--json", action="store_true")
+
     # probe
     p_probe = sub.add_parser("probe", help="Probe a module's capability state")
     p_probe.add_argument(
@@ -581,16 +608,44 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    # Load .env files exactly as legacy pipeline does
-    load_simple_env(vault / ".env")
-    cfg = load_vault_config(vault)
-    pf_env = vault / cfg["system_dir"] / "PaperForge" / ".env"
-    load_simple_env(pf_env)
-
-    # Attach resolved values to args for command modules
     args.vault_path = vault
-    args.cfg = cfg
-    args.paths = paperforge_paths(vault, cfg)
+
+    # Fail-closed config loading: domain commands never operate on guessed
+    # paths.  config/setup/probe handle their own missing-config states.
+    config_tolerant_commands = frozenset({"config", "setup", "probe"})
+    try:
+        snapshot = load_config(vault)
+        args.cfg = {key: str(cv.value).lower() if isinstance(cv.value, bool) else str(cv.value)
+                    for key, cv in snapshot.values.items()}
+        args.paths = resolve_paths(vault, snapshot)
+    except ConfigError as exc:
+        if args.command in config_tolerant_commands:
+            args.cfg = None
+            args.paths = None
+        else:
+            from paperforge.core.errors import ErrorCode as _EC
+            from paperforge.core.result import PFError as _PFE
+            from paperforge.core.result import PFResult as _PFR
+
+            message = exc.code
+            suggestions = []
+            if exc.code == "config.not_found":
+                suggestions.append("run 'paperforge config init' or 'paperforge setup'")
+            if exc.code == "config.migration_required":
+                suggestions.append("run 'paperforge config migrate --dry-run' to preview")
+            result = _PFR(
+                ok=False,
+                command=args.command,
+                version=__import__("paperforge", fromlist=["__version__"]).__version__,
+                error=_PFE(
+                    code=_EC.VALIDATION_ERROR,
+                    message=message,
+                    details={"config_code": exc.code, **dict(exc.details)},
+                    suggestions=suggestions,
+                ),
+            )
+            print(result.to_json() if getattr(args, "json", False) else message, file=sys.stderr)
+            return 1
 
     # Configure logging before command dispatch
     configure_logging(verbose=getattr(args, "verbose", False))
@@ -600,6 +655,11 @@ def main(argv: list[str] | None = None) -> int:
     # -----------------------------------------------------------------------
     if args.command == "paths":
         return _cmd_paths(vault, args)
+
+    if args.command == "config":
+        from paperforge.commands.config import run as run_config
+
+        return run_config(args)
 
     # New unified commands
     if args.command == "sync":

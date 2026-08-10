@@ -6,6 +6,17 @@ from pathlib import Path
 
 import pytest
 
+import pytest
+
+from tests.conftest import canonical_test_config
+
+
+@pytest.fixture(autouse=True)
+def canonical_vault(tmp_path: Path):
+    canonical_test_config(tmp_path)
+    return tmp_path
+
+
 from paperforge.worker.prune import (
     _collect_orphan_candidates,
     _resolve_ocr_dir,
@@ -139,6 +150,8 @@ class TestPruneOrphanPapers:
 
     def test_handles_missing_lit_dir(self, tmp_path: Path) -> None:
         no_lit = tmp_path / "NoLiterature"
+        no_lit.mkdir(parents=True)
+        canonical_test_config(no_lit)
         result = prune_orphan_papers(no_lit, fresh_index={"schema_version": "3", "items": []}, dry_run=False)
         assert result["deleted"] == []
 
