@@ -97,11 +97,14 @@ def canonical_source_bytes(data: bytes) -> bytes:
 
 def sha256_file(path: Path) -> str:
     """Content digest of a source file (canonicalized, see
-    :func:`canonical_source_bytes`)."""
+    :func:`canonical_source_bytes`).
+
+    The whole file is normalized at once: chunk-wise replacement could split
+    a CRLF across a buffer boundary and miss it (the collector scans source
+    files, so whole-file reads are cheap).
+    """
     digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 16), b""):
-            digest.update(canonical_source_bytes(chunk))
+    digest.update(canonical_source_bytes(path.read_bytes()))
     return "sha256:" + digest.hexdigest()
 
 
