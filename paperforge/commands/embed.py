@@ -34,7 +34,6 @@ from paperforge.embedding.builder import (
 from paperforge.embedding.preflight import _preflight_check
 from paperforge.memory.db import WriterLock, ensure_vec_extension, get_connection, get_memory_db_path, open_live_reader
 from paperforge.memory.schema import ensure_schema
-from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
 from paperforge.worker._progress import progress_bar
 from paperforge.worker.asset_index import read_index
@@ -140,7 +139,6 @@ def run(args: argparse.Namespace) -> int:
         status = get_embed_status(vault, probe=getattr(args, "probe", False))
         status["build_state"] = read_vector_build_state(vault)
 
-        # Write vector-runtime-state.json snapshot (JS-First Memory State)
         _dep_missing = []
         try:
             import openai  # noqa: F401
@@ -150,21 +148,6 @@ def run(args: argparse.Namespace) -> int:
             import sqlite_vec  # noqa: F401
         except ImportError:
             _dep_missing.append("sqlite_vec")
-        write_vector_runtime(vault,
-        enabled=bool(status.get("mode", "")),
-        mode=status.get("mode", ""),
-        model=status.get("model", ""),
-        deps_installed=len(_dep_missing) == 0,
-        deps_missing=_dep_missing if _dep_missing else None,
-        py_version=sys.version.split()[0],
-        db_exists=status.get("db_exists", False),
-        chunk_count=status.get("chunk_count", 0),
-        body_chunk_count=status.get("body_chunk_count", 0),
-        object_chunk_count=status.get("object_chunk_count", 0),
-        total_chunks=status.get("total_chunks", 0),
-        build_state=status.get("build_state"),
-        healthy=status.get("healthy", True),
-        corrupted=status.get("corrupted", False), error=status.get("error", ""), backend="vec0")
 
         result = PFResult(ok=True, command="embed status", version=PF_VERSION, data=status)
         if args.json:
@@ -829,20 +812,6 @@ def run(args: argparse.Namespace) -> int:
                 message=str(e),
                 pid=0,
             )
-            write_vector_runtime(vault,
-            enabled=bool(_mode),
-            mode=_mode,
-            model=_model,
-            deps_installed=True,
-            deps_missing=None,
-            py_version=sys.version.split()[0],
-            db_exists=get_memory_db_path(vault).exists(),
-            chunk_count=_actual,
-            body_chunk_count=0,
-            object_chunk_count=0,
-            total_chunks=_actual,
-            build_state=read_vector_build_state(vault),
-            healthy=False, error=str(e), backend="vec0")
             result = PFResult(
                 ok=False,
                 command="embed build",
@@ -970,20 +939,6 @@ def run(args: argparse.Namespace) -> int:
             _object_chunks = 0
             _total_chunks = 0
 
-        write_vector_runtime(vault,
-        enabled=bool(_mode),
-        mode=_mode,
-        model=_model,
-        deps_installed=True,
-        deps_missing=None,
-        py_version=sys.version.split()[0],
-        db_exists=True,
-        chunk_count=_real_chunks,
-        body_chunk_count=_body_chunks,
-        object_chunk_count=_object_chunks,
-        total_chunks=_total_chunks,
-        build_state=read_vector_build_state(vault),
-        healthy=True, error="", backend="vec0")
 
         print("EMBED_DONE", flush=True)
 
