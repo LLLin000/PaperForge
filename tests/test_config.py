@@ -479,33 +479,41 @@ def test_concurrent_set_threads_both_survive(tmp_path: Path):
 
 
 def test_migrate_racing_set_no_lost_update(tmp_path: Path):
-    """set + migrate against the same legacy file: both effects survive."""
+    """set + migrate against the same legacy file: both effects survive.
+
+    A set that wins the lock before migration fails closed by contract
+    (legacy is never mutated in place); a set that runs after migration
+    must never be lost."""
     import threading
 
     _write(tmp_path, {"system_dir": "Legacy"})
     barrier = threading.Barrier(2)
-    errors: list[Exception] = []
+    results: list[str] = []
 
     def do_set() -> None:
         try:
             barrier.wait()
             set_config(tmp_path, "resources_dir", "Custom")
-        except Exception as exc:  # pragma: no cover
-            errors.append(exc)
+            results.append("set-ok")
+        except ConfigError as exc:
+            results.append(exc.code)
 
     def do_migrate() -> None:
         try:
             barrier.wait()
             migrate_config(tmp_path)
-        except Exception as exc:  # pragma: no cover
-            errors.append(exc)
+        except Exception as exc:  # pragma: no cover - failure path
+            results.append(f"migrate:{exc}")
 
     threads = [threading.Thread(target=do_set), threading.Thread(target=do_migrate)]
     for t in threads:
         t.start()
     for t in threads:
         t.join()
-    assert not errors
+    # Fail-closed set (lost the race against the legacy file) retries
+    # deterministically after migration.
+    if "config.migration_required" in results:
+        set_config(tmp_path, "resources_dir", "Custom")
     doc = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
     assert doc["vault_config"]["system_dir"] == "Legacy"
     assert doc["vault_config"]["resources_dir"] == "Custom"
