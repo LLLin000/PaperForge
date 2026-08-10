@@ -10,6 +10,7 @@ import {
   stripCredentialEnv,
   isAllowlistedCommand,
   migrateLegacySecret,
+  legacyEmbeddingSecretIds,
   type SecretAccess,
   type MigrationSpawn,
 } from "../src/services/secret-storage";
@@ -152,6 +153,53 @@ describe("migrateLegacySecret (explicit bridge only)", () => {
     const r = await migrateLegacySecret("embedding", ss, depsFor(fake));
     expect(r.migrated).toEqual([]);
     expect(fake.calls.length).toBe(0);
+  });
+
+  it("migrates a profile-hashed legacy embedding secret (real upgrade path)", async () => {
+    // Old runtime stored embedding keys under vector-db-api-key-v2-<hash>.
+    const [hashedId] = await legacyEmbeddingSecretIds(
+      "https://api.openai.com/v1",
+      "text-embedding-3-small"
+    );
+    expect(hashedId).toMatch(/^vector-db-api-key-v2-[0-9a-f]{40}$/);
+    const fake = fakeSpawn({ code: 0, stdout: JSON.stringify({ ok: true }) });
+    const ss: SecretAccess = {
+      getSecret: vi.fn(async (id: string) =>
+        id === hashedId ? "old-embedding-secret" : null
+      ),
+      setSecret: vi.fn(async () => undefined),
+    };
+    const r = await migrateLegacySecret(
+      "embedding",
+      ss,
+      depsFor(fake),
+      { baseUrl: "https://api.openai.com/v1", model: "text-embedding-3-small" }
+    );
+    expect(r.migrated).toEqual([hashedId]);
+    expect(r.warnings).toEqual([]);
+    expect(fake.calls.length).toBe(1);
+    expect(fake.calls[0].args).toContain("embedding");
+    // the old hashed value is cleared after the verified keyring write
+    expect(ss.setSecret).toHaveBeenCalledWith(hashedId, "");
+  });
+
+  it("does not report 'no legacy credentials' when only the hashed id exists", async () => {
+    const [hashedId] = await legacyEmbeddingSecretIds("https://custom/v1", "m");
+    const fake = fakeSpawn({ code: 0, stdout: JSON.stringify({ ok: true }) });
+    const ss: SecretAccess = {
+      getSecret: vi.fn(async (id: string) =>
+        id === hashedId ? "secret" : null
+      ),
+      setSecret: vi.fn(async () => undefined),
+    };
+    const r = await migrateLegacySecret(
+      "embedding",
+      ss,
+      depsFor(fake),
+      { baseUrl: "https://custom/v1", model: "m" }
+    );
+    expect(r.migrated).toEqual([hashedId]); // NOT empty — the fixed global id
+    // was absent but the hashed id carried the value
   });
 
   it("runtime never reads SecretStorage — migration is the only consumer", () => {
