@@ -74,17 +74,32 @@ def build_paper_manifest(
     object_units: list[dict],
     source_paths: dict[str, str],
 ) -> dict[str, Any]:
-    """Build a provenance manifest for a paper's retrieval units."""
+    """Build a provenance manifest for a paper's retrieval units.
+
+    #162/T1: ``retrieval_identity`` is the content-addressed lineage identity
+    of the retrieval layer — identical rebuild → identical digest.
+    """
+    from paperforge.lineage import compute_retrieval_identity
+
     structure_tree_hash = sha256(structure_tree_bytes).hexdigest()
+    body_units_hash = compute_body_units_hash(body_units)
+    object_units_hash = compute_object_units_hash(object_units)
     return {
         "paper_id": paper_id,
         "ocr_result_hash": ocr_result_hash,
         "structure_tree_hash": structure_tree_hash,
         "retrieval_policy_version": retrieval_policy_version,
         "body_unit_count": len(body_units),
-        "body_units_hash": compute_body_units_hash(body_units),
+        "body_units_hash": body_units_hash,
         "object_unit_count": len(object_units),
-        "object_units_hash": compute_object_units_hash(object_units),
+        "object_units_hash": object_units_hash,
+        "retrieval_identity": compute_retrieval_identity(
+            ocr_result_hash=ocr_result_hash,
+            retrieval_policy_version=retrieval_policy_version,
+            structure_tree_hash=structure_tree_hash,
+            body_units_hash=body_units_hash,
+            object_units_hash=object_units_hash,
+        ),
         "built_at": datetime.now(timezone.utc).isoformat(),
         "source_paths": dict(source_paths),
     }

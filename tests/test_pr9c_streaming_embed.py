@@ -165,6 +165,100 @@ def test_force_rebuild_initializes_existing_vector_database(tmp_path: Path) -> N
     assert rc == 0
 # ---------------------------------------------------------------------------
 
+class TestLineagePublish:
+    """#162/T1: a forced shadow rebuild writes vector lineage rows into the
+    candidate; after the atomic publish swap the new live DB carries them."""
+
+    def test_shadow_publish_writes_vector_lineage_rows(self, tmp_path: Path) -> None:
+        import json as _json
+
+        from paperforge.lineage import compute_embedding_identity, compute_vector_identity
+        from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
+        from paperforge.memory.schema import ensure_schema
+        from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, build_paper_manifest
+        from tests.conftest import canonical_test_config
+
+        canonical_test_config(tmp_path, system_dir="System")
+        db_path = get_memory_db_path(tmp_path)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = get_connection(db_path)
+        try:
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            manifest = build_paper_manifest(
+                paper_id="k1",
+                ocr_result_hash="a" * 64,
+                structure_tree_bytes=b"{}",
+                retrieval_policy_version=RETRIEVAL_POLICY_VERSION,
+                body_units=[],
+                object_units=[],
+                source_paths={},
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+                ("manifest:k1", _json.dumps(manifest)),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_identity_version', '1')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        papers = [{"zotero_key": "k1", "ocr_status": "done", "fulltext_path": "fulltext.md"}]
+        (tmp_path / "fulltext.md").write_text(
+            "Some fulltext content for k1. " * 10, encoding="utf-8"
+        )
+
+        def _bundle_at_dim(_vault, job):
+            bundle = _make_bundle(job.paper_id)
+            # The candidate vec tables are created at the model-detected
+            # dimension (1536 for the default model) — match it.
+            return PaperEncodedBundle(
+                paper_id=bundle.paper_id,
+                payloads=[
+                    EncodedPayload(
+                        collection_name=p.collection_name,
+                        texts=p.texts,
+                        ids=p.ids,
+                        metadatas=p.metadatas,
+                        embeddings=[[0.1] * 1536 for _ in p.embeddings],
+                    )
+                    for p in bundle.payloads
+                ],
+                chunk_count=bundle.chunk_count,
+            )
+
+        rc, _refs = _call_run(
+            tmp_path,
+            papers,
+            force=True,
+            overrides={
+                "encode_paper_job": MagicMock(side_effect=_bundle_at_dim),
+            },
+        )
+        assert rc == 0, "shadow rebuild must succeed"
+
+        import sqlite3 as _sqlite3
+
+        conn = _sqlite3.connect(str(db_path))
+        try:
+            row = conn.execute(
+                "SELECT identity, derived_from, embedding_identity FROM lineage "
+                "WHERE paper_id='k1' AND layer='vector'"
+            ).fetchone()
+            assert row is not None, "lineage row missing after publish"
+            assert row[1] == manifest["retrieval_identity"]
+            # The stored identity equals the canonical composition.
+            expected = compute_vector_identity(
+                retrieval_identity=manifest["retrieval_identity"],
+                embedding_identity=row[2],
+            )
+            assert row[0] == expected
+        finally:
+            conn.close()
+
+
 class TestProcessedCount:
     """processed_count advances for both skips and embeds."""
 

@@ -527,7 +527,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_probe = sub.add_parser("probe", help="Probe a module's capability state")
     p_probe.add_argument(
         "probe_module",
-        choices=["installation", "help", "library", "ocr", "memory", "maintenance", "all"],
+        choices=["installation", "help", "library", "ocr", "memory", "maintenance", "lineage", "all"],
         help="Module to probe (installation, library, ocr, memory, help, maintenance, or all)",
     )
     p_probe.add_argument(
