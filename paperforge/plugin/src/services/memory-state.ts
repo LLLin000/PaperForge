@@ -74,27 +74,32 @@ export interface Snapshot {
 
 let _cachedPython: PythonResult | null = null;
 
-// #142 / C0: the plugin no longer parses paperforge.json. Path display values
-// are hydrated from `paperforge config list` by main.ts; this module consumes
-// the injected source and never touches the file.
+// #142 / C0: the plugin no longer parses paperforge.json, and it NEVER
+// guesses canonical paths. Path display values are hydrated from
+// `paperforge config list` by main.ts; until then this module fails closed
+// (no defaults) so no semantic work can run on guessed paths.
 let _pathConfigSource: PathConfig | null = null;
 
 export function setPathConfigSource(cfg: PathConfig | null): void {
   _pathConfigSource = cfg;
 }
 
+export function isConfigHydrated(): boolean {
+  return _pathConfigSource !== null;
+}
+
 // ── Functions ──
 
-export function readPathConfig(vaultPath: string, _fs?: any): PathConfig {
+export function readPathConfig(vaultPath: string, _fs?: unknown): PathConfig {
   if (_pathConfigSource) {
     return { ..._pathConfigSource, _warning: _pathConfigSource._warning ?? null };
   }
   return {
-    system_dir: "System",
-    resources_dir: "Resources",
-    literature_dir: "Literature",
-    base_dir: "Bases",
-    _warning: "config authority not yet hydrated; using defaults",
+    system_dir: "",
+    resources_dir: "",
+    literature_dir: "",
+    base_dir: "",
+    _warning: "config authority not hydrated; paths unavailable — no semantic work may run",
   };
 }
 

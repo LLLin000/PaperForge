@@ -408,3 +408,196 @@ def test_paperforge_paths_wrapper(tmp_path: Path):
     _canonical(tmp_path)
     paths = paperforge_paths(tmp_path)
     assert paths["vault"] == tmp_path.resolve()
+
+# ---------------------------------------------------------------------------
+# C0 correctness gaps (review 2026-08-09)
+# ---------------------------------------------------------------------------
+
+def test_custom_path_survives_cli_args_paths(tmp_path: Path):
+    """P0-1: paperforge_paths(vault, cfg) must honor custom path config."""
+    from paperforge.config import load_vault_config, paperforge_paths
+
+    _canonical(tmp_path, system_dir="99_System")
+    cfg = load_vault_config(tmp_path)
+    paths = paperforge_paths(tmp_path, cfg)
+    assert paths["system"] == tmp_path.resolve() / "99_System"
+    assert paths["paperforge"] == paths["system"] / "PaperForge"
+
+
+def test_nested_secret_rejected_on_validate(tmp_path: Path):
+    _write(tmp_path, {"schema_version": 2,
+                      "vault_config": {"system_dir": "System", "openai_api_key": "sk-x"}})
+    validation = validate_config(tmp_path)
+    assert validation.state == "invalid"
+    assert any("config.secret_field" in str(e.get("code")) for e in validation.errors)
+
+
+def test_nested_secret_rejected_on_load(tmp_path: Path):
+    _write(tmp_path, {"schema_version": 2,
+                      "vault_config": {"system_dir": "System", "vector_db_api_key": "k"}})
+    with pytest.raises(ConfigError) as exc:
+        load_config(tmp_path)
+    assert exc.value.code == "config.secret_field"
+
+
+def test_nested_secret_rejected_on_migrate(tmp_path: Path):
+    _write(tmp_path, {"schema_version": "2",
+                      "vault_config": {"system_dir": "System", "openai_api_key": "sk-x"}})
+    with pytest.raises(ConfigError) as exc:
+        migrate_config(tmp_path)
+    assert exc.value.code == "config.secret_field"
+
+
+def test_concurrent_set_threads_both_survive(tmp_path: Path):
+    """True concurrency: two threads mutate different keys against the same
+    file — the locked fresh re-read preserves both."""
+    import threading
+
+    _canonical(tmp_path)
+    barrier = threading.Barrier(2)
+    errors: list[Exception] = []
+
+    def setter(key: str, value: str) -> None:
+        try:
+            barrier.wait()
+            set_config(tmp_path, key, value)
+        except Exception as exc:  # pragma: no cover - failure path
+            errors.append(exc)
+
+    threads = [
+        threading.Thread(target=setter, args=("system_dir", "Alpha")),
+        threading.Thread(target=setter, args=("resources_dir", "Beta")),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not errors
+    snapshot = load_config(tmp_path)
+    assert snapshot.values["system_dir"].value == "Alpha"
+    assert snapshot.values["resources_dir"].value == "Beta"
+
+
+def test_migrate_racing_set_no_lost_update(tmp_path: Path):
+    """set + migrate against the same legacy file: both effects survive."""
+    import threading
+
+    _write(tmp_path, {"system_dir": "Legacy"})
+    barrier = threading.Barrier(2)
+    errors: list[Exception] = []
+
+    def do_set() -> None:
+        try:
+            barrier.wait()
+            set_config(tmp_path, "resources_dir", "Custom")
+        except Exception as exc:  # pragma: no cover
+            errors.append(exc)
+
+    def do_migrate() -> None:
+        try:
+            barrier.wait()
+            migrate_config(tmp_path)
+        except Exception as exc:  # pragma: no cover
+            errors.append(exc)
+
+    threads = [threading.Thread(target=do_set), threading.Thread(target=do_migrate)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not errors
+    doc = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
+    assert doc["vault_config"]["system_dir"] == "Legacy"
+    assert doc["vault_config"]["resources_dir"] == "Custom"
+    assert doc["schema_version"] == SCHEMA_VERSION
+
+
+def test_write_failure_preserves_old_file(tmp_path: Path, monkeypatch):
+    _canonical(tmp_path, system_dir="System")
+    before = (tmp_path / "paperforge.json").read_bytes()
+    import paperforge.config as config_module
+
+    def _boom(path, data):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(config_module, "_write_document_atomic", _boom)
+    with pytest.raises(ConfigError) as exc:
+        set_config(tmp_path, "system_dir", "NewSystem")
+    assert exc.value.code == "config.write_failed"
+    assert (tmp_path / "paperforge.json").read_bytes() == before
+
+
+def test_read_back_failure_restores_prior_bytes(tmp_path: Path, monkeypatch):
+    _canonical(tmp_path, system_dir="System")
+    before = (tmp_path / "paperforge.json").read_bytes()
+    import paperforge.config as config_module
+
+    real_read = config_module._read_document
+    calls = {"n": 0}
+
+    def _failing_read(path):
+        calls["n"] += 1
+        if calls["n"] >= 2:  # the read-back after write
+            return None, "config.corrupt", None
+        return real_read(path)
+
+    monkeypatch.setattr(config_module, "_read_document", _failing_read)
+    with pytest.raises(ConfigError) as exc:
+        set_config(tmp_path, "system_dir", "NewSystem")
+    assert exc.value.code == "config.write_failed"
+    assert (tmp_path / "paperforge.json").read_bytes() == before
+
+
+def test_string_schema_version_normalizes_on_mutation(tmp_path: Path):
+    _write(tmp_path, {"schema_version": "2", "vault_config": {"system_dir": "System"}})
+    set_config(tmp_path, "resources_dir", "Res")
+    doc = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
+    assert doc["schema_version"] == 2
+
+
+def test_migration_conflict_visible_in_dry_run(tmp_path: Path):
+    _write(tmp_path, {"schema_version": "2",
+                      "vault_config": {"system_dir": "Canonical"},
+                      "system_dir": "Legacy"})
+    mutation = migrate_config(tmp_path, dry_run=True)
+    assert any("conflict" in w and "system_dir" in w for w in mutation.warnings)
+    # canonical wins; file untouched on dry-run
+    doc = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
+    assert doc["vault_config"]["system_dir"] == "Canonical"
+    assert "system_dir" in doc  # legacy alias still present (dry-run)
+
+
+def test_json_error_is_machine_readable_on_stdout(tmp_path: Path):
+    """#137 machine contract: --json emits exactly one PFResult JSON on stdout
+    for failures too; stderr carries no JSON."""
+    import subprocess
+    import sys
+
+    _canonical(tmp_path)
+    result = subprocess.run(
+        [sys.executable, "-m", "paperforge", "--vault", str(tmp_path),
+         "config", "set", "nope", "x", "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert result.returncode == 2
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is False
+    assert payload["error"]["details"]["config_code"] == "config.unknown_key"
+
+
+def test_migrate_cli_dry_run_reports_conflicts(tmp_path: Path):
+    """Migration conflicts are visible in the dry-run CLI payload."""
+    import subprocess
+    import sys
+
+    _write(tmp_path, {"schema_version": "2",
+                      "vault_config": {"system_dir": "Canonical"},
+                      "system_dir": "Legacy"})
+    result = subprocess.run(
+        [sys.executable, "-m", "paperforge", "--vault", str(tmp_path),
+         "config", "migrate", "--dry-run", "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert any("conflict" in w and "system_dir" in w for w in payload["data"]["warnings"])
