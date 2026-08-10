@@ -240,10 +240,9 @@ export default class PaperForgePlugin extends Plugin {
         }
       }).catch(() => undefined);
       // #161/R: embed status read model for the vector UI.
-      void queryEmbedStatus(vaultBase, this.settings).then((e) => {
-        const d = (e as { data?: Record<string, unknown> }).data;
+      void queryEmbedStatus(vaultBase, this.settings).then((d) => {
         if (d) {
-          this._embedStatusCache = d;
+          this._embedStatusCache = d as unknown as Record<string, unknown>;
         }
       }).catch(() => undefined);
     }

@@ -56,7 +56,7 @@ import {
 import { EmbedBuildController } from "./services/embed-build-controller";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
-import { queryMemoryDetail, queryEmbedStatus } from "./services/config-client";
+import { queryMemoryDetail, queryEmbedStatus, probeAll, invalidateAll } from "./services/config-client";
 import {
   PaperForgeOcrPrivacyModal,
   PaperForgeConfirmModal,
@@ -1387,7 +1387,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             };
           }
           this.plugin.settings.features.vector_db = true;
-          this.plugin.saveSettings().then(() => this._probeModule("memory"));
+          this.plugin.saveSettings().then(() => this._refreshAllReadModels());
         },
       });
     } else if (
@@ -1609,20 +1609,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // #161/R: detail rows come from the typed read-model queries — the
     // plugin never reads snapshot files.
     if (vp) {
-      void queryMemoryDetail(vp, this.plugin.settings).then((m) => {
-        const d = (m as Record<string, unknown>).data as Record<string, unknown> | undefined;
+      void queryMemoryDetail(vp, this.plugin.settings).then((d) => {
         setRow("FTS5 Papers", String(d?.paper_count_db ?? "?"));
         setRow("FTS5 Fresh", d?.fresh ? "Yes" : "Stale");
         setRow("Needs Rebuild", d?.needs_rebuild ? "Yes" : "No");
       }).catch(() => undefined);
-      void queryEmbedStatus(vp, this.plugin.settings).then((e) => {
-        const d = (e as Record<string, unknown>).data as Record<string, unknown> | undefined;
+      void queryEmbedStatus(vp, this.plugin.settings).then((d) => {
         setRow("Vector Model", String(d?.model ?? "-"));
         setRow("Vector Mode", String(d?.mode ?? "-"));
         setRow("Body Chunks", String(d?.body_chunk_count ?? 0));
         setRow("Object Chunks", String(d?.object_chunk_count ?? 0));
         setRow("Total Chunks", String(d?.total_chunks ?? 0));
-        const bs = (d?.build_state as Record<string, unknown> | undefined) ?? undefined;
+        const bs = d?.build_state ?? undefined;
         setRow("Build Status", String(bs?.status ?? "-"));
         setRow("Build Progress", `${bs?.current ?? "?"}/${bs?.total ?? "?"}`);
       }).catch(() => undefined);
@@ -1743,9 +1741,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (cmd === "paperforge ocr doctor") {
           this._callPython(["ocr", "doctor"], {
             timeout: 30000,
-            onClose: (_code: number | null) => {
-              this._probeModule("ocr");
-              this.display();
+            onClose: () => {
+              this._refreshAllReadModels();
             },
           });
           return;
@@ -1753,9 +1750,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (cmd === "paperforge ocr list --json") {
           this._callPython(["ocr", "list", "--json"], {
             timeout: 30000,
-            onClose: (_code: number | null) => {
-              this._probeModule("ocr");
-              this.display();
+            onClose: () => {
+              this._refreshAllReadModels();
             },
           });
           return;
@@ -1783,9 +1779,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       ) {
         this._callPython(["memory", "restore-backup"], {
           timeout: 30000,
-          onClose: (_code: number | null) => {
-            this._probeModule("memory");
-            this.display();
+          onClose: () => {
+            this._refreshAllReadModels();
           },
         });
         return;
@@ -1871,7 +1866,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             8000
           );
         }
-        this._probeModule("ocr");
+        this._refreshAllReadModels();
         this.display();
       })
       .catch((err: Error) => {
@@ -1886,7 +1881,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             (err?.message || t("ocr_error_notice")),
           8000
         );
-        this._probeModule("ocr");
+        this._refreshAllReadModels();
         this.display();
       });
   } /** Dispatch memory build: distinct build vs embed modes, overlay activity, terminal re-probe (Issue #78). */
@@ -1920,7 +1915,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const resolved = this._resolveRuntimeCommand(vp);
       if (!resolved) {
         new Notice(t("retrieval_no_python"));
-        this._probeModule("memory");
+        this._refreshAllReadModels();
         return;
       }
       const startEmbed = () => {
@@ -2059,7 +2054,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               8000
             );
           }
-          this._probeModule("memory");
+          this._refreshAllReadModels();
           this.display();
         },
       });
@@ -2482,7 +2477,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             );
           }
           this._memoryStatusText = t("feat_memory_rebuild_done");
-          this._probeModule("memory");
+          this._refreshAllReadModels();
         },
       });
     };
@@ -2551,9 +2546,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             resolveCommand: (v) => this._resolveRuntimeCommand(v),
           });
         }
-        // Re-probe library on every terminal outcome — pass exit code for sync failure detection
-        this._probeModule("library", code ?? 1);
-        this.display();
+        // #161: completed mutation → invalidate all + probe all; the
+        // library exit code is forwarded for sync-failure detection (#78).
+        this._refreshAllReadModels(code ?? 1);
         this._refreshSnapshots(vp);
         checkOrphanState(this.app, this.plugin, vp);
       },
@@ -2666,11 +2661,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return;
     }
     if (this._vectorDepsOk === null && vp) {
-      void queryEmbedStatus(vp, this.plugin.settings).then((e) => {
-        const d = (e as Record<string, unknown>).data as Record<string, unknown> | undefined;
-        this._vectorDepsOk = d ? Boolean((d as { deps_installed?: boolean }).deps_installed) : false;
+      void queryEmbedStatus(vp, this.plugin.settings).then((d) => {
+        this._vectorDepsOk = d ? Boolean(d.deps_installed) : false;
         if (this._vectorDepsOk) {
-          this._embedStatusText = String((d as { mode?: string }).mode ?? "");
+          this._embedStatusText = String(d?.mode ?? "");
         }
         this.display();
       }).catch(() => {
@@ -3778,7 +3772,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               this._ensureManagedRuntime()
                 .ensure({ version: this.plugin.manifest.version })
                 .then(() => {
-                  this._probeModule("installation");
+                  this._refreshAllReadModels();
                 })
                 .catch(() => {
                   this._updateCapabilityEnvelope(mod, envelope);
@@ -4326,15 +4320,48 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** #85: Refresh all operational modules. */
   _refreshAllModules(): void {
-    const operationalModules: CapabilityModule[] = [
-      "installation",
-      "library",
-      "ocr",
-      "memory",
-    ];
-    for (const mod of operationalModules) {
-      this._probeModule(mod);
+    this._refreshAllReadModels();
+  }
+
+  /**
+   * #161 acceptance: any completed mutation invalidates the whole read-model
+   * cache (all six envelopes + detail cache) and re-probes via `probe all`.
+   * #144: no dependency map — invalidate everything, refresh everything.
+   * Stale actions stay disabled until fresh envelopes land (last-known kept).
+   */
+  _refreshAllReadModels(lastLibraryExitCode?: number): void {
+    invalidateAll();
+    const vp = (this.app.vault.adapter as unknown as { basePath?: string })
+      .basePath ?? "";
+    if (!vp) {
+      this._probing.clear();
+      return;
     }
+    this._probing.clear();
+    for (const mod of CAPABILITY_MODULES) {
+      this._probing.add(mod);
+    }
+    void probeAll(vp, this.plugin.settings)
+      .then((data) => {
+        this._probing.clear();
+        for (const [mod, env] of Object.entries(data.modules ?? {})) {
+          if (isValidEnvelope(env, mod as CapabilityModule)) {
+            this._updateCapabilityEnvelope(
+              mod as CapabilityModule,
+              env as ProbeEnvelope
+            );
+          }
+        }
+        // #78: the library sync-failure exit code is forwarded into the
+        // library probe (probe all carries no exit-code context).
+        if (lastLibraryExitCode != null && lastLibraryExitCode !== 0) {
+          this._probeModule("library", lastLibraryExitCode);
+        }
+      })
+      .catch(() => {
+        this._probing.clear();
+        this.display();
+      });
   }
 
   /** #85: Build and copy privacy-safe Support Diagnostic. */

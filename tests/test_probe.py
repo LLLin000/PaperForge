@@ -489,10 +489,19 @@ class TestOcrProbe:
         assert data['reason']['code'] == 'ocr.config_corrupt'
 
     def test_api_key_missing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Config exists but no API token anywhere -> missing_input."""
+        """#161: with no local materialization defect, a missing API token
+        -> missing_input. The credential check runs AFTER defect
+        classification and never masks existing bad output."""
         from paperforge.commands import probe as probe_mod
         tmp_path.mkdir(parents=True, exist_ok=True)
         canonical_test_config(tmp_path, system_dir="99_System")
+
+        class HealthyRow:
+            status = "done"
+            health = "green"
+            display_action = "none"
+        monkeypatch.setattr("paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda v: [HealthyRow()])
         # Mock _resolve_paddleocr_token to return empty (no token from any source)
         monkeypatch.setattr("paperforge.worker.ocr._resolve_paddleocr_token", lambda v: "")
         data = probe_mod.probe_ocr(tmp_path)
@@ -940,6 +949,13 @@ class TestOcrActivityProgress:
 
 class TestOcrQualityUnacceptable:
     """Dead-end red rows with no retry/rebuild path → quality_unacceptable."""
+
+    @pytest.fixture(autouse=True)
+    def _hermetic_paddle_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """#161: never inherit a dev-machine PaddleOCR token — these
+        defect-classification states must be env-invariant."""
+        monkeypatch.delenv("PADDLEOCR_API_TOKEN", raising=False)
+        monkeypatch.delenv("PADDLEOCR_API_TOKEN_USER", raising=False)
 
     def test_dead_end_red_no_redo(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """health=red, display_action=none, can_redo=False → investigate."""
