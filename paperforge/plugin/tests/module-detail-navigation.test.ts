@@ -251,7 +251,7 @@ vi.mock("../src/services/python-bridge", () => ({
   runSubprocess: () => {},
 }));
 
-vi.mock("../src/services/memory-state", () => ({
+vi.mock("../src/services/runtime-paths", () => ({
   resolveVaultPaths: () => ({}),
   getMemoryRuntime: () => ({}),
   getVectorRuntime: () => ({}),

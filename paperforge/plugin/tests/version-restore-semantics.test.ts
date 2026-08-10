@@ -8,7 +8,7 @@ import * as path from "path";
 import os from "os";
 
 import { restoreVersion } from "../src/services/version-history";
-import { setPathConfigSource } from "../src/services/memory-state";
+import { setPathConfigSource } from "../src/services/runtime-paths";
 
 let root: string;
 

@@ -188,3 +188,43 @@ export function configMigrate(
     settings
   );
 }
+
+// ── Read-model detail queries (#161 / R) ────────────────────────────────
+// Typed wrappers over existing detail commands; the plugin never parses
+// canonical files for these facts.
+
+export function queryMemoryDetail(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<Record<string, unknown>> {
+  return invoke<Record<string, unknown>>(vaultPath, ["memory", "status"], settings);
+}
+
+export function queryEmbedStatus(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<Record<string, unknown>> {
+  return invoke<Record<string, unknown>>(vaultPath, ["embed", "status"], settings);
+}
+
+export function queryOcrPapers(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<Record<string, unknown>> {
+  return invoke<Record<string, unknown>>(vaultPath, ["ocr", "list"], settings);
+}
+
+export function paperContext(
+  vaultPath: string,
+  key: string,
+  settings?: PaperForgeSettings | null
+): Promise<Record<string, unknown>> {
+  return invoke<Record<string, unknown>>(vaultPath, ["paper-context", key], settings);
+}
+
+export function probeAll(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<Record<string, unknown>> {
+  return invoke<Record<string, unknown>>(vaultPath, ["probe", "all"], settings);
+}
