@@ -279,6 +279,19 @@ CREATE TABLE IF NOT EXISTS vec_objects_meta (
 );
 """
 
+CREATE_LINEAGE = """
+CREATE TABLE IF NOT EXISTS lineage (
+    paper_id            TEXT NOT NULL,
+    layer               TEXT NOT NULL,
+    identity            TEXT NOT NULL,
+    derived_from        TEXT,
+    embedding_identity  TEXT,
+    updated_at          TEXT NOT NULL,
+    PRIMARY KEY (paper_id, layer)
+);
+"""
+
+
 CREATE_BUILD_STATE = """
 CREATE TABLE IF NOT EXISTS build_state (
   key TEXT PRIMARY KEY,
@@ -322,6 +335,9 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_VEC_BODY_META)
     conn.execute(CREATE_VEC_OBJECTS_META)
     conn.execute(CREATE_BUILD_STATE)
+    # #162/T1: lineage rows (vector layer) — created unconditionally like
+    # build_state; existing DBs pick it up on the next ensure_schema.
+    conn.execute(CREATE_LINEAGE)
 
     # Run pending migrations
     migrate_schema(conn, get_schema_version(conn), CURRENT_SCHEMA_VERSION)

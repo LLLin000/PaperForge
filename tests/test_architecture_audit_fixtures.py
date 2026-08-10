@@ -170,7 +170,12 @@ class TestGoldenEvidenceVerification:
                 for evidence in evidence_items:
                     path = root / evidence["file"]
                     assert path.is_file(), (name, evidence["file"])
-                    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                    # Digest over canonicalized bytes: the fingerprint means
+                    # CONTENT — CRLF/LF checkout variance (Windows vs CI)
+                    # must not make a pinned digest platform-dependent.
+                    digest = hashlib.sha256(
+                        path.read_bytes().replace(b"\r\n", b"\n")
+                    ).hexdigest()
                     assert digest == evidence["file_digest"].removeprefix("sha256:"), (name, evidence["file"])
                     lines = path.read_text(encoding="utf-8").splitlines()
                     selected = lines[evidence["line_start"] - 1:evidence["line_end"]]
