@@ -183,8 +183,17 @@ vi.mock("child_process", () => {
       cb?: (err: Error | null, stdout: string, stderr: string) => void
     ) => {
       execFileCalls.push({ args: [...args], cb });
-      // Defer callback so tests can inspect state before terminal cleanup
-      if (cb) setTimeout(() => cb(null, "{}", ""), 0);
+      // Defer callback so tests can inspect state before terminal cleanup.
+      // #161/R: probe all must resolve with a valid ProbeAll payload so the
+      // refresh chain (invalidateAll -> probeAll -> per-module envelopes)
+      // completes instead of rejecting on "{}".
+      if (cb) {
+        const isProbeAll = args.includes("probe") && args.includes("all");
+        const stdout = isProbeAll
+          ? JSON.stringify({ ok: true, data: { modules: {} }, error: null })
+          : "{}";
+        setTimeout(() => cb(null, stdout, ""), 0);
+      }
     },
     execFileSync: () => "Python 3.11.0",
     exec: () => {},
@@ -251,7 +260,7 @@ vi.mock("../src/services/python-bridge", () => ({
   runSubprocess: () => {},
 }));
 
-vi.mock("../src/services/memory-state", () => ({
+vi.mock("../src/services/runtime-paths", () => ({
   resolveVaultPaths: () => ({}),
   getMemoryRuntime: () => ({}),
   getVectorRuntime: () => ({}),
@@ -1148,17 +1157,19 @@ describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
     );
   });
 
-  it("clears activity and re-probes after settle", async () => {
-    const probes: string[] = [];
+  it("clears activity and re-probes all after settle", async () => {
+    // #161/R: a completed mutation invalidates the whole read-model cache
+    // and re-probes via probe all — not a single-module probe.
+    const refreshes: string[] = [];
     const tab = makeTab();
-    (tab as any)._probeModule = (mod: string) => {
-      probes.push(mod);
+    (tab as any)._refreshAllReadModels = () => {
+      refreshes.push("all");
     };
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
     (tab as any)._dispatchOcrAction("run");
     await Promise.resolve();
     await Promise.resolve();
-    expect(probes).toContain("ocr");
+    expect(refreshes).toContain("all");
     expect(((tab as any)._capabilityState as any)?.ocr?.activity_state).toBe(
       "idle"
     );
@@ -1452,7 +1463,7 @@ describe("Library sync failure probe (Issue #78)", () => {
     expect(probeCall!.args.indexOf("--last-operation-exit-code")).toBe(-1);
   });
 
-  it("failed _runManualSync onClose passes nonzero code to probe", () => {
+  it("failed _runManualSync onClose passes nonzero code to probe", async () => {
     const tab = makeTab();
     execFileCalls.length = 0;
 
@@ -1467,7 +1478,10 @@ describe("Library sync failure probe (Issue #78)", () => {
     // Simulate sync failure by invoking the onClose directly
     if (syncCall!.cb) syncCall!.cb(new Error("sync failed"), "", "error");
 
-    // After sync failure, _probeModule should append --last-operation-exit-code 1
+    // #161/R: the completion goes through refresh-all — probe all first,
+    // then the library probe with the forwarded exit code (#78).
+    await new Promise((r) => setTimeout(r, 20));
+
     const probeCall = execFileCalls.find(
       (c) =>
         c.args.includes("probe") &&
@@ -1548,7 +1562,7 @@ describe("Library sync failure probe (Issue #78)", () => {
     ).not.toBeNull();
   });
 
-  it("null _runManualSync onClose forwards sentinel 1 via code ?? 1", () => {
+  it("null _runManualSync onClose forwards sentinel 1 via code ?? 1", async () => {
     const tab = makeTab();
     execFileCalls.length = 0;
 
@@ -1566,6 +1580,10 @@ describe("Library sync failure probe (Issue #78)", () => {
     };
 
     (tab as any)._runManualSync();
+
+    // #161/R: completion goes through refresh-all — flush the probe-all
+    // chain before the library probe with the forwarded exit code runs.
+    await new Promise((r) => setTimeout(r, 20));
 
     // After _runManualSync triggers onClose(null), probe should have --last-operation-exit-code 1
     const probeCall = execFileCalls.find(

@@ -17,7 +17,6 @@ from paperforge.config import (
     validate_config,
 )
 from paperforge.core.result import PFResult
-from paperforge.memory.state_snapshot import write_memory_runtime
 from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
     pipeline_paths,
@@ -1067,7 +1066,6 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
         health_aggregate = summary["health_aggregate"]
         maturity_distribution = summary["maturity_distribution"]
 
-    # Write memory-runtime-state.json snapshot (JS-First Memory State)
     try:
         from paperforge.memory.db import get_connection, get_memory_db_path, open_live_reader
         from paperforge.memory.query import get_memory_status
@@ -1092,16 +1090,6 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
                     _fts_ok = _fts_row is not None
             except Exception:
                 pass
-        write_memory_runtime(
-            vault,
-            paper_count_db=ms["paper_count_db"],
-            paper_count_index=ms["paper_count_index"],
-            fresh=ms["fresh"],
-            needs_rebuild=ms["needs_rebuild"],
-            last_full_build_at=_last_full_build,
-            schema_version_db=_schema_ver_db,
-            fts_ready=_fts_ok,
-        )
     except Exception:
         pass
 

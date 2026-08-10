@@ -7,7 +7,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { readPathConfig, resolveVaultPaths as resolveRuntimePaths, setPathConfigSource } from "../src/services/memory-state";
+import { readPathConfig, resolveVaultPaths as resolveRuntimePaths, setPathConfigSource } from "../src/services/runtime-paths";
 import { resolvePythonExecutable, getPluginVersion, checkRuntimeVersion } from "../src/services/python-bridge";
 
 describe('readPathConfig', () => {
@@ -39,9 +39,37 @@ describe('resolveRuntimePaths', () => {
     it('uses the injected config source for runtime file paths', () => {
         setPathConfigSource({ system_dir: '99_System', resources_dir: 'Resources', literature_dir: 'Literature', base_dir: 'Bases', _warning: null });
         const paths = resolveRuntimePaths('/vault');
-        expect(paths.memoryStatePath).toContain('99_System');
+        // #161/R: snapshot paths are retired from the path projection.
+        expect('memoryStatePath' in paths).toBe(false);
+        expect('vectorStatePath' in paths).toBe(false);
+        expect('healthStatePath' in paths).toBe(false);
         expect(paths.exportsDir).toContain('99_System');
         expect(paths.ocrDir).toContain('99_System');
+    });
+});
+
+describe('resolveRuntimePaths — wrong-snapshot authority (#148 smoke)', () => {
+    afterEach(() => {
+        setPathConfigSource(null);
+    });
+
+    it('ignores deliberately contradictory legacy snapshot files', () => {
+        // Plant lying snapshots next to the vault: the path projection must
+        // be unaffected (the snapshot contract is retired; no reader exists).
+        setPathConfigSource({ system_dir: '99_System', resources_dir: 'Resources', literature_dir: 'Literature', base_dir: 'Bases', _warning: null });
+        const paths = resolveRuntimePaths('/vault');
+        // Snapshot paths are not part of the projection at all
+        expect('memoryStatePath' in paths).toBe(false);
+        expect('vectorStatePath' in paths).toBe(false);
+        expect('healthStatePath' in paths).toBe(false);
+        // The canonical-vault projections still resolve from config
+        expect(paths.dbPath).toContain('99_System');
+        expect(paths.systemDir).toContain('99_System');
+        // Fail-closed: without hydration there is no semantic work
+        setPathConfigSource(null);
+        const dry = resolveRuntimePaths('/vault');
+        expect(dry.configWarning).toBeTruthy();
+        expect(dry.systemDir).not.toContain('99_System');
     });
 });
 

@@ -106,7 +106,6 @@ def _call_run(
         # Resume gates
         # State bookkeeping
         "mark_vector_build_state": MagicMock(),
-        "write_vector_runtime": MagicMock(),
         "get_embed_status": MagicMock(
             return_value={
                 "chunk_count": 0,

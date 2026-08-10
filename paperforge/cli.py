@@ -230,6 +230,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Process specific Zotero key",
     )
     ocr_sub = p_ocr.add_subparsers(dest="ocr_action")
+    p_ocr_versions = ocr_sub.add_parser(
+        "pipeline-versions", help="Per-paper OCR pipeline versions (detail surface, #148)"
+    )
+    p_ocr_versions.add_argument("--json", action="store_true")
     run_parser = ocr_sub.add_parser("run", help="Run OCR queue")
     run_parser.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys to process (default: entire queue)")
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
@@ -523,8 +527,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_probe = sub.add_parser("probe", help="Probe a module's capability state")
     p_probe.add_argument(
         "probe_module",
-        choices=["installation", "help", "library", "ocr", "memory", "maintenance"],
-        help="Module to probe (installation, library, ocr, memory, help, or maintenance)",
+        choices=["installation", "help", "library", "ocr", "memory", "maintenance", "all"],
+        help="Module to probe (installation, library, ocr, memory, help, maintenance, or all)",
     )
     p_probe.add_argument(
         "--json",
@@ -809,7 +813,7 @@ def main(argv: list[str] | None = None) -> int:
         paths = args.paths
         logger = __import__("logging").getLogger("paperforge")
         logger.info(f"Refreshing Base views in {paths['bases']}")
-        ensure_base_views(vault, paths, cfg, force=force)
+        ensure_base_views(vault, paths, args.cfg, force=force)
         logger.info("Base refresh complete")
         return 0
 

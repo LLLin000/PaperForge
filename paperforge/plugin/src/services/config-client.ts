@@ -73,9 +73,14 @@ export class ConfigClientError extends Error {
   }
 }
 
-function invoke<T>(
+/**
+ * #161/R: generic private transport — the ONLY place argv is built and
+ * PFResult is unwrapped. Public API is typed per command; nothing else
+ * constructs a paperforge invocation or touches `.data`.
+ */
+function invokePaperForge<T>(
   vaultPath: string,
-  args: string[],
+  argvBody: string[],
   settings: PaperForgeSettings | null | undefined
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -90,8 +95,7 @@ function invoke<T>(
       "paperforge",
       "--vault",
       vaultPath,
-      "config",
-      ...args,
+      ...argvBody,
       "--json",
     ];
     execFile(
@@ -135,7 +139,7 @@ export function configList(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigListData> {
-  return invoke<ConfigListData>(vaultPath, ["list"], settings);
+  return invokePaperForge<ConfigListData>(vaultPath, ["config", "list"], settings);
 }
 
 export function configGet(
@@ -143,7 +147,7 @@ export function configGet(
   key: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigField> {
-  return invoke<{ field: ConfigField }>(vaultPath, ["get", key], settings).then((d) => d.field);
+  return invokePaperForge<{ field: ConfigField }>(vaultPath, ["config", "get", key], settings).then((d) => d.field);
 }
 
 export function configSet(
@@ -152,7 +156,7 @@ export function configSet(
   value: string | boolean,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigMutationData> {
-  return invoke<ConfigMutationData>(vaultPath, ["set", key, String(value)], settings);
+  return invokePaperForge<ConfigMutationData>(vaultPath, ["config", "set", key, String(value)], settings);
 }
 
 export function configUnset(
@@ -160,21 +164,21 @@ export function configUnset(
   key: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigMutationData> {
-  return invoke<ConfigMutationData>(vaultPath, ["unset", key], settings);
+  return invokePaperForge<ConfigMutationData>(vaultPath, ["config", "unset", key], settings);
 }
 
 export function configPaths(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigPathsData> {
-  return invoke<ConfigPathsData>(vaultPath, ["paths"], settings);
+  return invokePaperForge<ConfigPathsData>(vaultPath, ["config", "paths"], settings);
 }
 
 export function configValidate(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigValidateData> {
-  return invoke<ConfigValidateData>(vaultPath, ["validate"], settings);
+  return invokePaperForge<ConfigValidateData>(vaultPath, ["config", "validate"], settings);
 }
 
 export function configMigrate(
@@ -182,9 +186,100 @@ export function configMigrate(
   dryRun: boolean,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigMutationData> {
-  return invoke<ConfigMutationData>(
+  return invokePaperForge<ConfigMutationData>(
     vaultPath,
-    dryRun ? ["migrate", "--dry-run"] : ["migrate"],
+    dryRun ? ["config", "migrate", "--dry-run"] : ["config", "migrate"],
     settings
   );
+}
+
+// ── Read-model detail queries (#161 / R) ────────────────────────────────
+// Typed PaperForgeClient methods. Each returns the PFResult `data` payload
+// directly — callers never touch `.data` again (generic transport is private).
+
+export interface ProbeAllData {
+  schema_version: number;
+  module: "all";
+  updated_at: string;
+  modules: Record<string, Record<string, unknown>>;
+}
+
+export interface MemoryDetailData {
+  paper_count_db?: number;
+  fresh?: boolean;
+  needs_rebuild?: boolean;
+  [key: string]: unknown;
+}
+
+export interface EmbedStatusData {
+  model?: string;
+  mode?: string;
+  deps_installed?: boolean;
+  body_chunk_count?: number;
+  object_chunk_count?: number;
+  chunk_count?: number;
+  total_chunks?: number;
+  build_state?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export function probeAll(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<ProbeAllData> {
+  return invokePaperForge<ProbeAllData>(vaultPath, ["probe", "all"], settings);
+}
+
+export function queryMemoryDetail(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<MemoryDetailData> {
+  return invokePaperForge<MemoryDetailData>(vaultPath, ["memory", "status"], settings);
+}
+
+export function queryEmbedStatus(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<EmbedStatusData> {
+  return invokePaperForge<EmbedStatusData>(vaultPath, ["embed", "status"], settings);
+}
+
+export function queryOcrPapers(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<Record<string, unknown>> {
+  return invokePaperForge<Record<string, unknown>>(vaultPath, ["ocr", "list"], settings);
+}
+
+export function paperContext(
+  vaultPath: string,
+  key: string,
+  settings?: PaperForgeSettings | null
+): Promise<Record<string, unknown>> {
+  return invokePaperForge<Record<string, unknown>>(vaultPath, ["paper-context", key], settings);
+}
+
+// ── Read-model cache invalidation (#161 acceptance) ─────────────────────
+// The plugin's capability caches are all-or-nothing: any completed mutation
+// invalidates every module envelope + detail cache (#144: no dependency map).
+
+let _detailCaches: Record<string, unknown> | null = null;
+
+export function invalidateAll(): void {
+  _detailCaches = null;
+}
+
+export function refreshAll(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<ProbeAllData> {
+  invalidateAll();
+  return probeAll(vaultPath, settings).then((data) => {
+    _detailCaches = data.modules;
+    return data;
+  });
+}
+
+export function getDetailCache(): Record<string, unknown> | null {
+  return _detailCaches;
 }

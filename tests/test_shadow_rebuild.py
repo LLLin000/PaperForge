@@ -817,9 +817,9 @@ def test_checkpoint_busy_rejects_publish(tmp_path: Path) -> None:
 # ── Round 5 hardening: commit semantics, layout routing, lock scoping ──
 
 
-def test_post_publish_bookkeeping_failure_returns_success(tmp_path: Path) -> None:
-    """P0-2: once PUBLISHED, a bookkeeping failure must return rc=0 with
-    published=true — never abort/mark-failed a live new DB."""
+def test_post_publish_writes_no_legacy_snapshot(tmp_path: Path) -> None:
+    """#148: the retired snapshot bookkeeping is gone — a successful
+    publish writes NO legacy snapshot file (zero writers)."""
     from unittest.mock import patch
 
     from paperforge.commands import embed
@@ -844,18 +844,21 @@ def test_post_publish_bookkeeping_failure_returns_success(tmp_path: Path) -> Non
         "chunk_count": 0, "body_chunk_count": 0, "object_chunk_count": 0, "total_chunks": 0,
         "dimension": 3, "corrupted": False, "error": "", "vector_state": "ready",
     }
-    # make mark_vector_build_state fail AFTER publish
     with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
          patch.object(embed, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
          patch.object(embed, "_preflight_check", return_value={"ok": True}), \
-         patch.object(embed, "ensure_vec_tables", return_value=None), \
-         patch.object(embed, "write_vector_runtime", side_effect=RuntimeError("bookkeeping boom")):
+         patch.object(embed, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
-    assert rc == 0, f"published build must not report failure, rc={rc}"
+    assert rc == 0, f"published build failed, rc={rc}"
     # new live is in place
     assert not Path(str(live) + ".build").exists()
     assert Path(str(live)).exists()
+    # #148: no legacy snapshot file may be recreated by the publish path
+    indexes = live.parent
+    assert not (indexes / "vector-runtime-state.json").exists()
+    assert not (indexes / "memory-runtime-state.json").exists()
+    assert not (indexes / "runtime-health.json").exists()
 
 
 def test_incremental_write_rejects_dimension_recreate(tmp_path: Path) -> None:
@@ -1009,11 +1012,13 @@ def test_post_publish_nonjson_bookkeeping_failure(tmp_path: Path) -> None:
          patch.object(embed, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
          patch.object(embed, "_preflight_check", return_value={"ok": True}), \
-         patch.object(embed, "ensure_vec_tables", return_value=None), \
-         patch.object(embed, "write_vector_runtime", side_effect=RuntimeError("boom")):
+         patch.object(embed, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
     assert rc == 0, f"published non-json failure must return 0, rc={rc}"
     assert Path(str(live)).exists()
+    # #148: non-json publish also writes no legacy snapshot
+    indexes = live.parent
+    assert not (indexes / "vector-runtime-state.json").exists()
 
 
 def test_writer_lock_same_instance_reacquire(tmp_path: Path) -> None:

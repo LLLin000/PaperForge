@@ -19,13 +19,7 @@ import {
   patchEntryWorkflowState,
 } from "../constants";
 import { t } from "../i18n";
-import {
-  resolveVaultPaths,
-  getRuntimeHealth,
-  isHealthOk,
-  getMemoryStatusText,
-  getVectorStatusText,
-} from "../services/memory-state";
+import { resolveVaultPaths } from "../services/runtime-paths";
 import {
   buildCommandArgs,
   runSubprocess,
@@ -1083,15 +1077,16 @@ export class PaperForgeStatusView extends ItemView {
       tokenOk ? "configured" : "missing",
       tokenOk ? "Configured" : "Not set"
     );
-    let memOk = false,
-      memDetail = "";
-    const vp2 = (this.app.vault.adapter as any).basePath as string;
-    const rh = getRuntimeHealth(vp2);
-    memOk = isHealthOk(vp2);
-    memDetail =
-      (rh && (rh.summary as any)?.reason) ||
-      (rh && (rh.summary as any)?.status) ||
-      "Unknown";
+    const vp2 = (this.app.vault.adapter as unknown as { basePath?: string }).basePath ?? "";
+    // #161/R: the memory row is derived from the memory probe envelope — the
+    // snapshot health reader is retired.
+    const memEnv = (plugin?.settings?.capabilityState as
+      | Record<string, unknown>
+      | undefined)?.["memory"] as
+      | { capability_state?: string; reason?: { text?: string } }
+      | undefined;
+    const memOk = memEnv?.capability_state === "ready";
+    const memDetail = memEnv?.reason?.text ?? "Unknown";
     this._renderSystemStatusRow(
       statusGrid,
       "Memory Layer",

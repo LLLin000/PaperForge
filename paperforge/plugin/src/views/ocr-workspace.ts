@@ -16,7 +16,7 @@ import * as path from "path";
 import { execFile } from "child_process";
 import { VIEW_TYPE_OCR_WORKSPACE } from "../constants";
 import { t } from "../i18n";
-import { resolveVaultPaths } from "../services/memory-state";
+import { resolveVaultPaths } from "../services/runtime-paths";
 import { resolveRuntimeCommand } from "../services/managed-runtime";
 import type { OcrProcessOutcome } from "../services/ocr-process-controller";
 
