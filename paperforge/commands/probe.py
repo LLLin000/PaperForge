@@ -143,6 +143,11 @@ def build_envelope(
 # Config validation helper
 # ---------------------------------------------------------------------------
 
+def _config_is_recognized(data: dict[str, Any] | None) -> bool:
+    """Recognized = current schema or legacy awaiting explicit migration."""
+    return isinstance(data, dict) and len(data) > 0
+
+
 def _load_pf_config(vault: Path) -> tuple[dict[str, Any] | None, str | None]:
     """Classify canonical configuration through the #142 seam (fail-closed).
 
@@ -203,7 +208,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             ttl_seconds=TTL_INSTALLATION,
         )
 
-    if not _is_recognizable_config(data):
+    if not _config_is_recognized(data):
         return build_envelope(
             module="installation", capability_state="unavailable", severity="error",
             reason_code="installation.config_corrupt",
@@ -729,25 +734,24 @@ def probe_memory(vault: Path) -> dict[str, Any]:
        c. failed   → rebuild vector
        d. absent   → check ChromaDB → upgrade, or build vector
     """
-    # ── Gate 0: disabled module ──────────────────────────────────────────
-    settings_path = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
-    if settings_path.exists():
-        try:
-            import json
-            settings = json.loads(settings_path.read_text(encoding="utf-8"))
-            if not settings.get("features", {}).get("vector_db", False):
-                return build_envelope(
-                    module="memory", capability_state="not_configured", severity="ok",
-                    reason_code="memory.disabled", reason_text="Smart Retrieval is not enabled",
-                    user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
-                    action_primary=build_action_primary(
-                        action_id="memory.enable", verb="set_config",
-                        label="Enable Smart Retrieval", command="paperforge setup",
-                    ),
-                    ttl_seconds=TTL_MEMORY,
-                )
-        except Exception:
-            pass  # fall through to DB-based probe
+    # ── Gate 0: canonical config present (fail closed, #142) ────────────
+    from paperforge.config import ConfigError as _ConfigError
+    from paperforge.config import load_config as _load_canonical_config
+
+    try:
+        _load_canonical_config(vault)
+    except _ConfigError as exc:
+        return build_envelope(
+            module="memory", capability_state="missing_input", severity="warning",
+            reason_code="memory.config_missing",
+            reason_text=f"paperforge.json unavailable ({exc.code}) — run config init/setup",
+            user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+            action_primary=build_action_primary(
+                action_id="foundation.setup", verb="setup",
+                label="Setup PaperForge", command="paperforge setup",
+            ),
+            ttl_seconds=TTL_MEMORY,
+        )
 
     # ── Gates 1-4: DB-based checks ────────────────────────────────────
     try:

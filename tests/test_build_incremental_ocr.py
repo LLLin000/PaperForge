@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
 
 # ── Fixture helpers ───────────────────────────────────────────────────────
 
@@ -21,6 +23,7 @@ import pytest
 def _make_vault(tmp_path: Path) -> Path:
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault, system_dir="System", resources_dir="03_Resources")
     (vault / "03_Resources" / "Literature" / "骨科").mkdir(parents=True)
     (vault / "System" / "PaperForge").mkdir(parents=True)
     return vault

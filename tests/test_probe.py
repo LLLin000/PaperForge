@@ -250,15 +250,15 @@ class TestInstallationProbe:
             assert data["capability_state"] == "unavailable", f"content={content}"
             assert data["reason"]["code"] == "installation.config_corrupt"
 
-    def test_unrecognized_keys_config_corrupt(self, tmp_path: Path) -> None:
-        """Dict with keys but no vault_config or legacy path keys → config_corrupt."""
+    def test_unrecognized_keys_config_valid(self, tmp_path: Path) -> None:
+        """#142: unknown non-secret keys are preserved, not corrupt — the
+        installation probe does not gate on vault config shape."""
         (tmp_path / "paperforge.json").write_text(
-            json.dumps({"name": "Foo", "version": "1.0"}), encoding="utf-8",
+            json.dumps({"schema_version": 2, "vault_config": {}, "name": "Foo", "version": "1.0"}),
+            encoding="utf-8",
         )
         data = _run_probe("installation", tmp_path)
-        assert data["capability_state"] == "unavailable"
-        assert data["reason"]["code"] == "installation.config_corrupt"
-        assert data["action"]["primary"]["verb"] == "setup"
+        assert data["capability_state"] == "ready"
 
     def test_v2_vault_config_accepted(self, tmp_path: Path) -> None:
         """v2 format with vault_config is accepted as valid config."""
@@ -429,16 +429,15 @@ class TestLibraryProbe:
 # OCR probe states (Issue #78)
 # ---------------------------------------------------------------------------
 
-    def test_unrecognized_config_corrupt(self, tmp_path: Path) -> None:
-        """Parseable dict without recognized keys -> config_corrupt/unavailable."""
+    def test_unrecognized_config_requires_migration(self, tmp_path: Path) -> None:
+        """#142: legacy/unmigrated config reports setup-required, never
+        corrupt-interpretation."""
         (tmp_path / 'paperforge.json').write_text(
             json.dumps({"name": "Foo", "version": "1.0"}), encoding='utf-8',
         )
         data = _run_probe('library', tmp_path)
-        assert data['capability_state'] == 'unavailable'
-        assert data['severity'] == 'error'
-        assert data['reason']['code'] == 'library.config_corrupt'
-        assert data['action']['primary']['verb'] == 'setup'
+        assert data['capability_state'] == 'missing_input'
+        assert data['reason']['code'] == 'library.config_missing'
 
     def test_sync_failed_nonzero_exit_code(self, tmp_path: Path) -> None:
         """Nonzero last_operation_exit_code -> sync_failed envelope (direct call)."""
@@ -506,16 +505,13 @@ class TestOcrProbe:
         data = _run_probe('ocr', tmp_path)
         assert data['capability_state'] == 'unavailable'
         assert data['reason']['code'] == 'ocr.config_corrupt'
-    def test_unrecognized_config_corrupt(self, tmp_path: Path) -> None:
-        """Parseable dict without recognized keys -> config_corrupt/unavailable."""
+    def test_unrecognized_config_requires_migration(self, tmp_path: Path) -> None:
+        """#142: legacy/unmigrated config reports setup-required."""
         (tmp_path / 'paperforge.json').write_text(
             json.dumps({"name": "Foo", "version": "1.0"}), encoding='utf-8',
         )
         data = _run_probe('ocr', tmp_path)
-        assert data['capability_state'] == 'unavailable'
-        assert data['severity'] == 'error'
-        assert data['reason']['code'] == 'ocr.config_corrupt'
-        assert data['action']['primary']['verb'] == 'setup'
+        assert data['capability_state'] == 'missing_input'
 
 
 
@@ -526,15 +522,13 @@ class TestOcrProbe:
 class TestMemoryProbe:
     """State mapping for the memory module probe."""
 
-    def test_db_missing(self, tmp_path: Path) -> None:
-        """No paperforge.db -> needs_action + run action."""
+    def test_db_missing_without_config(self, tmp_path: Path) -> None:
+        """#142: no canonical config -> memory.config_missing (setup required)."""
         data = _run_probe("memory", tmp_path)
         assert data["module"] == "memory"
-        assert data["capability_state"] == "needs_action"
-        assert data["reason"]["code"] == "memory.db_missing"
-        assert data["action"]["primary"] is not None
-        _assert_action_primary_shape(data["action"]["primary"])
-        assert data["action"]["primary"]["verb"] == "run"
+        assert data["capability_state"] == "missing_input"
+        assert data["reason"]["code"] == "memory.config_missing"
+        assert data["action"]["primary"]["verb"] == "setup"
 
     def test_envelope_shape(self, tmp_path: Path) -> None:
         """Memory envelope has all required fields."""

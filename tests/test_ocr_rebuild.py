@@ -5,6 +5,12 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 from paperforge.worker.ocr_render import RenderOutput
+from tests.conftest import canonical_test_config
+
+
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    canonical_test_config(tmp_path)
 
 
 
