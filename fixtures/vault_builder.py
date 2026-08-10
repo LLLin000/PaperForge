@@ -51,20 +51,19 @@ class VaultBuilder:
         return vault
 
     def _create_config(self, vault: Path) -> None:
-        """Create paperforge.json with default clean directory names."""
-        config = {
-            "version": "1.0.0",
+        """Create canonical paperforge.json through the #142 seam."""
+        from paperforge.config import bootstrap_config, set_config
+
+        bootstrap_config(vault)
+        for _key, _value in {
             "system_dir": "System",
             "resources_dir": "Resources",
             "literature_dir": "Literature",
             "control_dir": "LiteratureControl",
             "base_dir": "Bases",
             "skill_dir": ".opencode/skills",
-        }
-        (vault / "paperforge.json").write_text(
-            json.dumps(config, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        }.items():
+            set_config(vault, _key, _value)
 
     def _create_dirs(self, vault: Path) -> None:
         """Create all required vault directories."""

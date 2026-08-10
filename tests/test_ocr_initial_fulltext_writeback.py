@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from tests.conftest import canonical_test_config
+
 
 def _minimal_results() -> list[dict]:
     return [{
@@ -21,6 +23,7 @@ def test_initial_ocr_persists_machine_hash_without_rebuild_fields(tmp_path: Path
     from paperforge.worker.ocr import postprocess_ocr_result
 
     vault = tmp_path
+    canonical_test_config(vault)
     key = "K1"
     paper_root = vault / "System" / "PaperForge" / "ocr" / key
     (paper_root / "meta.json").parent.mkdir(parents=True, exist_ok=True)

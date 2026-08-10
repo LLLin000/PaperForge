@@ -49,7 +49,7 @@ def _patch_run(monkeypatch, result: PFResult, builds: list[int]):
 
     monkeypatch.setattr(sync_service_module, "SyncService", FakeService)
     monkeypatch.setattr(sync_module, "_write_orphan_state", lambda vault, result: None)
-    monkeypatch.setattr(sync_module, "migrate_paperforge_json", lambda vault: False)
+    # #142: sync no longer auto-migrates config; nothing to stub.
 
     def fake_build(vault):
         builds.append(1)

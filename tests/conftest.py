@@ -20,6 +20,20 @@ OCR_FIXTURE = SANDBOX_DIR / "ocr-complete" / "TSTONE001"
 EXPORT_FIXTURE = SANDBOX_DIR / "exports" / "骨科.json"
 
 
+def canonical_test_config(vault: Path, **overrides: str) -> None:
+    """Create canonical paperforge.json through the #142 seam for a test vault.
+
+    The fail-closed config authority rejects legacy/missing configs, so every
+    test vault that reaches ``paperforge_paths`` / the seam must be bootstrapped
+    here.
+    """
+    from paperforge.config import bootstrap_config, set_config
+
+    bootstrap_config(vault)
+    for key, value in overrides.items():
+        set_config(vault, key, value)
+
+
 def create_test_vault() -> Path:
     """Create a fresh test vault with necessary structure."""
     vault = FIXTURE_VAULT
@@ -42,24 +56,19 @@ def create_test_vault() -> Path:
     for d in [exports_dir, ocr_dir, literature_dir, records_dir, base_dir, skill_dir]:
         d.mkdir(parents=True, exist_ok=True)
 
-    # Create paperforge.json
-    pf_json = vault / "paperforge.json"
-    pf_json.write_text(
-        json.dumps(
-            {
-                "version": "1.2.0",
-                "system_dir": "99_System",
-                "resources_dir": "03_Resources",
-                "literature_dir": "Literature",
-                "control_dir": "LiteratureControl",
-                "base_dir": "05_Bases",
-                "skill_dir": ".opencode/skills",
-            },
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
+    # Create canonical paperforge.json through the #142 seam (single writer)
+    from paperforge.config import bootstrap_config, set_config
+
+    bootstrap_config(vault)
+    for _key, _value in {
+        "system_dir": "99_System",
+        "resources_dir": "03_Resources",
+        "literature_dir": "Literature",
+        "control_dir": "LiteratureControl",
+        "base_dir": "05_Bases",
+        "skill_dir": ".opencode/skills",
+    }.items():
+        set_config(vault, _key, _value)
 
     # Create .env with PADDLEOCR_API_TOKEN
     env_path = pf_dir / ".env"

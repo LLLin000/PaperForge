@@ -10,6 +10,9 @@ from paperforge.embedding.build_state import (
 def test_vector_build_state_defaults_when_missing(tmp_path):
     vault = tmp_path / "vault"
     vault.mkdir()
+    from tests.conftest import canonical_test_config
+
+    canonical_test_config(vault)
     state = read_vector_build_state(vault)
     assert state["status"] == "idle"
     assert state["current"] == 0
@@ -18,6 +21,9 @@ def test_vector_build_state_defaults_when_missing(tmp_path):
 def test_vector_build_state_roundtrip(tmp_path):
     vault = tmp_path / "vault"
     vault.mkdir()
+    from tests.conftest import canonical_test_config
+
+    canonical_test_config(vault)
     original = {
         "status": "running", "current": 5, "total": 20,
         "paper_id": "ABC12345", "last_update": "now",
@@ -33,6 +39,9 @@ def test_vector_build_state_roundtrip(tmp_path):
 def test_mark_vector_build_state_updates_field(tmp_path):
     vault = tmp_path / "vault"
     vault.mkdir()
+    from tests.conftest import canonical_test_config
+
+    canonical_test_config(vault)
     write_vector_build_state(vault, {"status": "idle", "current": 0, "total": 0})
     mark_vector_build_state(vault, current=10, paper_id="XYZ")
     state = read_vector_build_state(vault)

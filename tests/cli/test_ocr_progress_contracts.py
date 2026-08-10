@@ -28,16 +28,18 @@ def _make_minimal_vault(root: Path) -> Path:
     """Create a minimal vault with paperforge.json for path resolution."""
     vault = root / "vault"
     vault.mkdir(parents=True)
-    cfg = {
+    from paperforge.config import bootstrap_config, set_config
+
+    bootstrap_config(vault)
+    for _key, _value in {
         "system_dir": "System",
         "resources_dir": "Resources",
         "literature_dir": "Literature",
         "control_dir": "LiteratureControl",
         "base_dir": "Bases",
         "skill_dir": ".opencode/skills",
-        "zotero_dir": "System/Zotero",
-    }
-    (vault / "paperforge.json").write_text(json.dumps(cfg), encoding="utf-8")
+    }.items():
+        set_config(vault, _key, _value)
     dirs = [
         "System/PaperForge/ocr",
         "System/PaperForge/exports",

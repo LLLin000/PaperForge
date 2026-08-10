@@ -52,7 +52,7 @@ def test_backfill_from_result_rebuilds_derived_artifacts(tmp_path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        '{"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
+        '{"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
         encoding="utf-8",
     )
     ocr_dir = vault / "System" / "PaperForge" / "ocr" / "LEGACY001"
@@ -75,7 +75,7 @@ def test_backfill_from_result_rebuilds_all_derived_artifacts(tmp_path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        '{"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
+        '{"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
         encoding="utf-8",
     )
     ocr_dir = vault / "System" / "PaperForge" / "ocr" / "BFL002"
@@ -110,7 +110,7 @@ def test_backfill_from_result_skips_if_no_result_json(tmp_path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        '{"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
+        '{"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
         encoding="utf-8",
     )
     ocr_dir = vault / "System" / "PaperForge" / "ocr" / "NODATA"
@@ -132,7 +132,7 @@ def test_backfill_from_result_handles_list_format(tmp_path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        '{"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
+        '{"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
         encoding="utf-8",
     )
     ocr_dir = vault / "System" / "PaperForge" / "ocr" / "LIST001"

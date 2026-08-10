@@ -1,4 +1,32 @@
-import { Plugin, addIcon, Notice, Modal, Setting } from "obsidian";
+import { Plugin, addIcon, Notice, Modal, Setting, App } from "obsidian";
+
+/** Thin confirm modal for the one-time plugin-assisted config migration. */
+class ConfirmMigrationModal extends Modal {
+  constructor(
+    app: App,
+    summary: string,
+    private readonly onConfirm: () => Promise<void>
+  ) {
+    super(app);
+    this.setTitle("Migrate PaperForge configuration");
+    this.contentEl.createEl("p", {
+      text: "Legacy configuration detected. Migration preview:",
+    });
+    const pre = this.contentEl.createEl("pre", { cls: "pf-migration-summary" });
+    pre.setText(summary);
+    this.contentEl.createEl("p", {
+      text: "Canonical values win on conflict. Credentials are never migrated through config.",
+      cls: "setting-item-description",
+    });
+    const actions = this.contentEl.createDiv({ cls: "pf-modal-actions" });
+    const cancel = actions.createEl("button", { text: "Cancel" });
+    cancel.addEventListener("click", () => this.close());
+    const go = actions.createEl("button", { text: "Migrate" });
+    go.addEventListener("click", () => {
+      void this.onConfirm().finally(() => this.close());
+    });
+  }
+}
 import * as fs from "fs";
 import * as path from "path";
 import { execFile, exec, spawn } from "child_process";
@@ -22,6 +50,8 @@ import {
   buildTargetedEnv,
 } from "./services/python-bridge";
 import { resolveVaultPaths } from "./services/memory-state";
+import { setPathConfigSource, isConfigHydrated } from "./services/memory-state";
+import { configList, configMigrate, configValidate } from "./services/config-client";
 import {
   ManagedRuntime,
   resolveRuntimeCommand,
@@ -32,6 +62,9 @@ import {
 } from "./services/secret-storage";
 
 export default class PaperForgePlugin extends Plugin {
+  /** agent_platform choices from Python's config list (#142) — empty until hydrated. */
+  agentPlatformChoices: string[] = [];
+
   settings!: PaperForgeSettings;
   private _lastExportMtime = 0;
   private _lastOcrMtimes: Record<string, number> = {};
@@ -91,11 +124,7 @@ export default class PaperForgePlugin extends Plugin {
             app: { secretStorage: (this.app as any).secretStorage },
             saveData: async () => {},
           },
-          "ocr",
-          {
-            baseUrl: this.settings.vector_db_api_base,
-            model: this.settings.vector_db_api_model,
-          }
+          "ocr"
         );
         if (!(env?.PADDLEOCR_API_KEY || env?.PADDLEOCR_API_TOKEN)) {
           throw new Error("PaddleOCR API token is missing (SecretStorage)");
@@ -189,14 +218,94 @@ export default class PaperForgePlugin extends Plugin {
       });
     }
 
+    this.addCommand({
+      id: "paperforge-migrate-config",
+      name: "Migrate PaperForge legacy configuration",
+      callback: () => this._runLegacyConfigMigration(),
+    });
+
     this._startFilePolling();
     this._checkReleaseNotes();
+
+    // #142/C0: one-time plugin-assisted config migration — detect legacy
+    // vaults and surface an explicit migrate command.
+    const vaultBase = (this.app.vault.adapter as unknown as { basePath?: string }).basePath;
+    if (vaultBase) {
+      void configValidate(vaultBase, this.settings).then((validation) => {
+        if (validation.state === "migration_required") {
+          this._needsConfigMigration = true;
+        }
+      }).catch(() => undefined);
+    }
+  }
+
+  private _needsConfigMigration = false;
+
+  /** Thin plugin-assisted migration (#142 §12): dry-run -> confirm -> migrate
+   * -> re-hydrate -> purge legacy domain values from data.json. */
+  private _runLegacyConfigMigration(): void {
+    const vaultPath = (this.app.vault.adapter as unknown as { basePath?: string }).basePath;
+    if (!vaultPath) return;
+    void (async () => {
+      const dry = await configMigrate(vaultPath, true, this.settings).catch((e) => null);
+      const summary = dry && dry.warnings?.length
+        ? dry.warnings.join("\n")
+        : "No conflicts; legacy path keys will move under vault_config.";
+      new ConfirmMigrationModal(
+        this.app,
+        summary,
+        async () => {
+          await configMigrate(vaultPath, false, this.settings).catch((e) => {
+            new Notice(`PaperForge: config migrate failed: ${String(e)}`);
+            return;
+          });
+          // Re-hydrate mirrors from the canonical config, then purge the
+          // legacy domain values from data.json (#142 §12 step 4/5).
+          try {
+            const list = await configList(vaultPath, this.settings);
+            const pick = (key: string) =>
+              list.fields.find((f) => f.key === key)?.value;
+            const systemDir = String(pick("system_dir") ?? "");
+            const resourcesDir = String(pick("resources_dir") ?? "");
+            const literatureDir = String(pick("literature_dir") ?? "");
+            const baseDir = String(pick("base_dir") ?? "");
+            const zoteroDir = String(pick("zotero_data_dir") ?? "");
+            const apiBase = String(pick("vector_db_api_base") ?? "");
+            const apiModel = String(pick("vector_db_api_model") ?? "");
+            const agentPlatform = String(pick("agent_platform") ?? "");
+            if (systemDir) this.settings.system_dir = systemDir;
+            if (resourcesDir) this.settings.resources_dir = resourcesDir;
+            if (literatureDir) this.settings.literature_dir = literatureDir;
+            if (baseDir) this.settings.base_dir = baseDir;
+            if (zoteroDir) this.settings.zotero_data_dir = zoteroDir;
+            if (apiBase) this.settings.vector_db_api_base = apiBase;
+            if (apiModel) this.settings.vector_db_api_model = apiModel;
+            if (agentPlatform) this.settings.agent_platform = agentPlatform;
+            setPathConfigSource({
+              system_dir: systemDir || "System",
+              resources_dir: resourcesDir || "Resources",
+              literature_dir: literatureDir || "Literature",
+              base_dir: baseDir || "Bases",
+              _warning: null,
+            });
+          } catch {
+            /* mirrors keep prior values; canonical file is authoritative */
+          }
+          this._needsConfigMigration = false;
+          await this.saveSettings();
+          new Notice("PaperForge: configuration migrated");
+        }
+      ).open();
+    })();
   }
 
   private _startFilePolling() {
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
 
     this._pollTimer = setInterval(() => {
+      // #142/C0: no semantic scanning on guessed paths — the config authority
+      // must be hydrated first (else actions stay disabled per #144).
+      if (!isConfigHydrated()) return;
       this._checkExports(vaultPath);
       this._checkOcr(vaultPath);
     }, 120000);
@@ -308,97 +417,17 @@ export default class PaperForgePlugin extends Plugin {
   }
 
   readPaperforgeJson(): Record<string, string> {
-    const vaultPath = (this.app.vault.adapter as any).basePath as string;
-    const pfPath = path.join(vaultPath, "paperforge.json");
-
-    const DEFAULTS: Record<string, string> = {
-      system_dir: "System",
-      resources_dir: "Resources",
-      literature_dir: "Literature",
-      base_dir: "Bases",
-      zotero_data_dir: "",
-    };
-
-    try {
-      if (!fs.existsSync(pfPath)) {
-        return DEFAULTS;
-      }
-      const raw = fs.readFileSync(pfPath, "utf-8");
-      const data = JSON.parse(raw);
-
-      const vc = data.vault_config || {};
-      return {
-        system_dir: vc.system_dir || data.system_dir || DEFAULTS.system_dir,
-        resources_dir:
-          vc.resources_dir || data.resources_dir || DEFAULTS.resources_dir,
-        literature_dir:
-          vc.literature_dir || data.literature_dir || DEFAULTS.literature_dir,
-        base_dir: vc.base_dir || data.base_dir || DEFAULTS.base_dir,
-        zotero_data_dir: data.zotero_data_dir || DEFAULTS.zotero_data_dir,
-      };
-    } catch (e) {
-      console.warn(
-        "PaperForge: Failed to read paperforge.json, using defaults",
-        e
-      );
-      return DEFAULTS;
-    }
+    // #142 / C0: removed — the plugin never parses paperforge.json. Values
+    // come from `paperforge config list` (hydrated into settings mirrors).
+    return {};
   }
 
-  savePaperforgeJson(pathConfig: Record<string, string | undefined>): void {
-    const vaultPath = (this.app.vault.adapter as any).basePath as string;
-    const pfPath = path.join(vaultPath, "paperforge.json");
-
-    let data: Record<string, any> = {};
-    try {
-      if (fs.existsSync(pfPath)) {
-        data = JSON.parse(fs.readFileSync(pfPath, "utf-8"));
-      }
-    } catch (e) {
-      console.warn("PaperForge: Failed to read paperforge.json for update", e);
-    }
-
-    if (!data.vault_config || typeof data.vault_config !== "object") {
-      data.vault_config = {};
-    }
-
-    const validPathKeys = [
-      "system_dir",
-      "resources_dir",
-      "literature_dir",
-      "base_dir",
-    ];
-    for (const key of validPathKeys) {
-      if (pathConfig[key] !== undefined) {
-        data.vault_config[key] = pathConfig[key];
-      }
-    }
-
-    if (pathConfig.zotero_data_dir !== undefined) {
-      data.zotero_data_dir = pathConfig.zotero_data_dir;
-    }
-
-    if (!data.schema_version) {
-      data.schema_version = "2";
-    }
-
-    for (const key of validPathKeys) {
-      delete data[key];
-    }
-
-    try {
-      fs.writeFileSync(pfPath, JSON.stringify(data, null, 2), "utf-8");
-      if (this.settings) {
-        const pfConfig = this.readPaperforgeJson();
-        this.settings.system_dir = pfConfig.system_dir;
-        this.settings.resources_dir = pfConfig.resources_dir;
-        this.settings.literature_dir = pfConfig.literature_dir;
-        this.settings.base_dir = pfConfig.base_dir;
-      }
-    } catch (e) {
-      console.error("PaperForge: Failed to write paperforge.json", e);
-      new Notice("PaperForge: Failed to save configuration to paperforge.json");
-    }
+  savePaperforgeJson(_pathConfig: Record<string, string | undefined>): void {
+    // #142 / C0: removed — the plugin never writes paperforge.json. Mutations
+    // route through `paperforge config set/unset` (config-client).
+    console.warn(
+      "PaperForge: savePaperforgeJson is retired; use paperforge config set"
+    );
   }
 
   onunload() {
@@ -439,17 +468,46 @@ export default class PaperForgePlugin extends Plugin {
       this.settings._setup_complete = true;
     }
 
-    const pfConfig = this.readPaperforgeJson();
-    this.settings.system_dir = pfConfig.system_dir;
-    this.settings.resources_dir = pfConfig.resources_dir;
-    this.settings.literature_dir = pfConfig.literature_dir;
-    this.settings.base_dir = pfConfig.base_dir;
-    if (pfConfig.zotero_data_dir) {
-      this.settings.zotero_data_dir = pfConfig.zotero_data_dir;
-    } else if (this.settings.zotero_data_dir?.trim()) {
-      this.savePaperforgeJson({
-        zotero_data_dir: this.settings.zotero_data_dir.trim(),
-      });
+    // #142 / C0: display mirrors are hydrated from the Python config
+    // authority; the plugin never parses paperforge.json.
+    const vaultPath = (this.app.vault.adapter as any).basePath as string;
+    if (vaultPath) {
+      try {
+        const list = await configList(vaultPath, this.settings);
+        const pick = (key: string) =>
+          list.fields.find((f) => f.key === key)?.value;
+        const systemDir = String(pick("system_dir") ?? "");
+        const resourcesDir = String(pick("resources_dir") ?? "");
+        const literatureDir = String(pick("literature_dir") ?? "");
+        const baseDir = String(pick("base_dir") ?? "");
+        const zoteroDir = String(pick("zotero_data_dir") ?? "");
+        if (systemDir) this.settings.system_dir = systemDir;
+        if (resourcesDir) this.settings.resources_dir = resourcesDir;
+        if (literatureDir) this.settings.literature_dir = literatureDir;
+        if (baseDir) this.settings.base_dir = baseDir;
+        if (zoteroDir) this.settings.zotero_data_dir = zoteroDir;
+        // Provider fields are canonical config: mirrors hydrated for display,
+        // mutations route through config set (#142).
+        const apiBase = String(pick("vector_db_api_base") ?? "");
+        const apiModel = String(pick("vector_db_api_model") ?? "");
+        const agentPlatform = String(pick("agent_platform") ?? "");
+        if (apiBase) this.settings.vector_db_api_base = apiBase;
+        if (apiModel) this.settings.vector_db_api_model = apiModel;
+        if (agentPlatform) this.settings.agent_platform = agentPlatform;
+        // agent_platform choices come from Python's config list (#142).
+        const platformField = list.fields.find((f) => f.key === "agent_platform");
+        this.agentPlatformChoices = platformField?.choices ?? [];
+        setPathConfigSource({
+          system_dir: systemDir || "System",
+          resources_dir: resourcesDir || "Resources",
+          literature_dir: literatureDir || "Literature",
+          base_dir: baseDir || "Bases",
+          _warning: null,
+        });
+      } catch {
+        // Display mirrors keep defaults until Python is reachable; actions
+        // stay disabled until a fresh probe/config response (#144).
+      }
     }
 
     if (this.settings.python_path && this.settings.python_path.trim()) {

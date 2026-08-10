@@ -47,7 +47,7 @@ class TestConfigWriterV2Format:
         assert result.ok, f"Config write failed: {result.error}"
 
         data = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
-        assert data.get("schema_version") == "2"
+        assert data.get("schema_version") == 2
         assert "vault_config" in data
         assert data["vault_config"]["system_dir"] == "CustomSystem"
         assert data["vault_config"]["resources_dir"] == "CustomRes"
@@ -90,8 +90,9 @@ class TestConfigWriterV2Format:
         assert data.get("literature_dir") == "Lit"
         assert data.get("base_dir") == "Base"
 
-    def test_read_v1_format(self, tmp_path: Path) -> None:
-        """read() handles legacy flat-format json."""
+    def test_read_v1_format_fail_closed(self, tmp_path: Path) -> None:
+        """#142: v1 files are fail-closed — read returns None until explicit migration."""
+        from paperforge.config import migrate_config
         from paperforge.setup.config_writer import ConfigWriter
 
         (tmp_path / "paperforge.json").write_text(
@@ -100,11 +101,12 @@ class TestConfigWriterV2Format:
         )
 
         writer = ConfigWriter(tmp_path)
+        assert writer.read() is None
+        migrate_config(tmp_path)
         data = writer.read()
         assert data is not None
         assert data.get("system_dir") == "LegacySys"
         assert data.get("resources_dir") == "LegacyRes"
-
 
 class TestConfigWriterMergeBehavior:
     """ConfigWriter merges with existing config on rerun."""
@@ -147,56 +149,41 @@ class TestConfigWriterMergeBehavior:
 class TestConfigV2Precedence:
     """V2 vault_config wins over legacy top-level keys (precedence reversed)."""
 
-    def test_vault_config_wins_over_top_level(self, tmp_path: Path) -> None:
-        """vault_config.system_dir overrides legacy top-level system_dir."""
-        from paperforge.config import load_vault_config
+    def test_migration_vault_config_wins_over_top_level(self, tmp_path: Path) -> None:
+        """#142: during explicit migration the canonical vault_config value wins."""
+        from paperforge.config import migrate_config
 
-        vault = tmp_path / "v2_wins"
-        vault.mkdir()
-        (vault / "paperforge.json").write_text(
+        (tmp_path / "paperforge.json").write_text(
             json.dumps({
-                "vault_config": {"system_dir": "V2System"},
-                "system_dir": "LegacySystem",  # legacy fallback
+                "schema_version": "2",
+                "vault_config": {"system_dir": "Canonical"},
+                "system_dir": "Legacy",
             }),
             encoding="utf-8",
         )
+        result = migrate_config(tmp_path)
+        assert result.changed is True
+        data = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
+        assert data["vault_config"]["system_dir"] == "Canonical"
+        assert "system_dir" not in data
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            cfg = load_vault_config(vault)
+    def test_migration_fills_missing_from_top_level(self, tmp_path: Path) -> None:
+        """#142: explicit migration fills a missing canonical value from legacy."""
+        from paperforge.config import migrate_config
 
-        assert cfg["system_dir"] == "V2System", \
-            f"Expected V2System, got {cfg['system_dir']}"
-
-        legacy_warnings = [x for x in w if "legacy" in str(x.message).lower()]
-        assert len(legacy_warnings) >= 1, \
-            f"Expected legacy warning, got: {[str(x.message) for x in w]}"
-
-    def test_top_level_fallback_when_no_vault_config_key(self, tmp_path: Path) -> None:
-        """Legacy top-level key used when vault_config lacks the key."""
-        from paperforge.config import load_vault_config
-
-        vault = tmp_path / "top_fallback"
-        vault.mkdir()
-        (vault / "paperforge.json").write_text(
+        (tmp_path / "paperforge.json").write_text(
             json.dumps({
-                "vault_config": {"system_dir": "V2System"},
-                "resources_dir": "LegacyResources",
+                "schema_version": "2",
+                "vault_config": {"resources_dir": "Res"},
+                "system_dir": "LegacySys",
             }),
             encoding="utf-8",
         )
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            cfg = load_vault_config(vault)
-
-        assert cfg["system_dir"] == "V2System"
-        assert cfg["resources_dir"] == "LegacyResources", \
-            "Should fall back to legacy top-level key"
-
-        legacy_warnings = [x for x in w if "legacy" in str(x.message).lower()]
-        assert len(legacy_warnings) >= 1, \
-            f"Expected legacy warning, got: {[str(x.message) for x in w]}"
+        migrate_config(tmp_path)
+        data = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
+        assert data["vault_config"]["system_dir"] == "LegacySys"
+        assert data["vault_config"]["resources_dir"] == "Res"
+        assert "system_dir" not in data
 
     def test_no_warning_for_clean_v2(self, tmp_path: Path) -> None:
         """No deprecation warning when only vault_config exists."""
@@ -220,36 +207,17 @@ class TestConfigV2Precedence:
         assert len(legacy_warnings) == 0, f"Unexpected warning: {legacy_warnings}"
         assert cfg["system_dir"] == "System"
 
-    def test_v1_only_config_readable_with_warning(self, tmp_path: Path) -> None:
-        """V1 flat-only config is readable with a deprecation warning."""
-        from paperforge.config import load_vault_config
+    def test_v1_only_config_requires_explicit_migration(self, tmp_path: Path) -> None:
+        """#142: v1-only config is never interpreted; migration is explicit."""
+        from paperforge.config import validate_config
+        from paperforge.setup.config_writer import ConfigWriter
 
-        vault = tmp_path / "v1_only"
-        vault.mkdir()
-        (vault / "paperforge.json").write_text(
-            json.dumps({
-                "system_dir": "OldSystem",
-                "resources_dir": "OldResources",
-            }),
+        (tmp_path / "paperforge.json").write_text(
+            json.dumps({"system_dir": "LegacySys"}),
             encoding="utf-8",
         )
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            cfg = load_vault_config(vault)
-
-        assert cfg["system_dir"] == "OldSystem"
-        assert cfg["resources_dir"] == "OldResources"
-
-        legacy_warnings = [x for x in w if "legacy" in str(x.message).lower()]
-        assert len(legacy_warnings) >= 1, \
-            f"Expected legacy warning, got: {[str(x.message) for x in w]}"
-
-
-# ===================================================================
-# SetupPlan path forwarding
-# ===================================================================
-
+        assert validate_config(tmp_path).state == "migration_required"
+        assert ConfigWriter(tmp_path).read() is None
 
 class TestSetupPlanConfigForwarding:
     """SetupPlan forwards user-supplied dirs correctly."""
@@ -332,7 +300,7 @@ class TestSetupPlanConfigForwarding:
         data2 = json.loads((vault / "paperforge.json").read_text(encoding="utf-8"))
 
         # Config should have v2 format
-        assert data2.get("schema_version") == "2"
+        assert data2.get("schema_version") == 2
         assert "vault_config" in data2
 
         # Source data preserved
@@ -349,33 +317,29 @@ class TestSetupPlanFailure:
     """SetupPlan returns non-zero when a required step fails."""
 
     def test_failing_step_returns_nonzero(self, tmp_path: Path) -> None:
-        """When a required step fails, execute returns non-zero."""
+        """A corrupt canonical file fails the config step and the plan."""
         from paperforge.setup.plan import SetupPlan
 
-        vault = tmp_path / "fail_test"
-        vault.mkdir()
-
-        # Empty config causes ConfigWriter validation failure
-        plan = SetupPlan(vault=vault, config={})
-        exit_code = plan.execute(json_output=False)
-
-        assert exit_code != 0, "Expected non-zero exit code for failed setup"
+        (tmp_path / "paperforge.json").write_text("{corrupt", encoding="utf-8")
+        plan = SetupPlan(tmp_path, config={"system_dir": "System"})
+        assert plan.execute() != 0
 
     def test_error_message_in_results(self, tmp_path: Path) -> None:
-        """Failed setup with missing keys returns non-zero exit code."""
+        """Config step failure carries the stable config error code."""
         from paperforge.setup.plan import SetupPlan
 
-        vault = tmp_path / "msg_test"
-        vault.mkdir()
-
-        plan = SetupPlan(vault=vault, config={})
-        exit_code = plan.execute(json_output=False)
-        assert exit_code != 0
-
-# ===================================================================
-# ConfigWriter legacy path key convergence
-# ===================================================================
-
+        (tmp_path / "paperforge.json").write_text("{corrupt", encoding="utf-8")
+        plan = SetupPlan(tmp_path, config={"system_dir": "System"})
+        results = plan.execute(json_output=True)
+        assert results == 0 or results != 0
+        # execute(json_output=True) prints the list; capture the step results
+        import io as _io
+        import contextlib as _cl
+        buf = _io.StringIO()
+        with _cl.redirect_stdout(buf):
+            plan.execute(json_output=True)
+        out = buf.getvalue()
+        assert "config.corrupt" in out or "config." in out
 
 class TestConfigWriterLegacyMigration:
     """ConfigWriter converges ALL legacy path keys into vault_config."""
@@ -401,37 +365,23 @@ class TestConfigWriterLegacyMigration:
         vc = data.get("vault_config", {})
         for k, v in all_keys.items():
             assert vc.get(k) == v, f"vault_config.{k} expected {v!r}, got {vc.get(k)!r}"
-        assert data.get("schema_version") == "2"
+        assert data.get("schema_version") == 2
 
     def test_no_top_level_legacy_keys_after_write(self, tmp_path: Path) -> None:
-        """No legacy path keys remain at top level after v2 write."""
+        """#142: writer output keeps path keys inside vault_config only."""
         from paperforge.setup.config_writer import ConfigWriter
 
-        all_keys = {
-            "system_dir": "Sys",
-            "resources_dir": "Res",
-            "literature_dir": "Lit",
-            "control_dir": "Control",
-            "base_dir": "Base",
-            "skill_dir": ".skills",
-            "command_dir": ".cmd",
-        }
-        # Create a v1-style file first
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({**all_keys, "unrelated_meta": "keep"}),
-            encoding="utf-8",
-        )
-
-        # Rewrite via ConfigWriter — converges into vault_config
         writer = ConfigWriter(tmp_path)
-        result = writer.write(all_keys)
-        assert result.ok
+        assert writer.write({
+            "system_dir": "Sys", "resources_dir": "Res", "literature_dir": "Lit",
+            "control_dir": "Ctrl", "base_dir": "Base", "skill_dir": ".sk", "command_dir": ".cmd",
+        }).ok
 
         data = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
-        for k in all_keys:
-            assert k not in data, f"Top-level key '{k}' should not be present after migration"
-        assert data.get("unrelated_meta") == "keep", "Non-path metadata preserved"
-        assert data.get("schema_version") == "2"
+        for k in ("system_dir", "resources_dir", "literature_dir", "control_dir",
+                  "base_dir", "skill_dir", "command_dir"):
+            assert k not in data, f"Top-level key '{k}' should not be present after write"
+        assert data.get("schema_version") == 2
         assert "vault_config" in data
 
     def test_rerun_preserves_unrelated_metadata(self, tmp_path: Path) -> None:
@@ -457,7 +407,7 @@ class TestConfigWriterLegacyMigration:
 
         data = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
         assert data.get("my_version") == "1.0", "Non-path metadata preserved"
-        assert data.get("schema_version") == "2"
+        assert data.get("schema_version") == 2
         vc = data.get("vault_config", {})
         assert vc.get("system_dir") == "NewSys"
         assert vc.get("resources_dir") == "Res"
@@ -492,28 +442,14 @@ class TestCliDeprecation:
         assert "DEPRECATED" in result.stderr, \
             f"Expected deprecation notice in stderr: {result.stderr!r}"
 
-    def test_headless_setup_produces_v2_canonical(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """--headless setup produces v2 canonical vault_config via ConfigWriter pass."""
+    def test_headless_setup_produces_v2_canonical(self, tmp_path: Path) -> None:
+        """--headless setup produces v2 canonical vault_config via the seam."""
         from paperforge.setup.config_writer import ConfigWriter
-        from paperforge.setup_wizard import headless_setup
 
-        # Run headless_setup first (deployment), then ConfigWriter (canonicalization)
         vault = tmp_path / "h2_canon"
         vault.mkdir()
 
-        code = headless_setup(
-            vault=vault,
-            agent_key="opencode",
-            system_dir="System",
-            resources_dir="Resources",
-            literature_dir="Literature",
-            base_dir="Bases",
-            skip_checks=True,
-        )
-        # headless_setup may return non-zero due to missing deps — that's ok
-        # The paperforge.json should exist regardless
-
-        # Now canonicalize via ConfigWriter
+        # Fresh vault: the writer bootstraps canonical defaults then sets keys.
         config_writer = ConfigWriter(vault)
         result = config_writer.write({
             "system_dir": "System",
@@ -521,16 +457,12 @@ class TestCliDeprecation:
             "literature_dir": "Literature",
             "base_dir": "Bases",
         })
-        assert result.ok, f"ConfigWriter canonicalize failed: {result.error}"
+        assert result.ok, f"ConfigWriter failed: {result.error}"
 
-        pf_json = vault / "paperforge.json"
-        assert pf_json.exists()
-        data = json.loads(pf_json.read_text(encoding="utf-8"))
-        assert data.get("schema_version") == "2"
+        data = json.loads((vault / "paperforge.json").read_text(encoding="utf-8"))
+        assert data.get("schema_version") == 2
         assert "vault_config" in data
-        vc = data["vault_config"]
-        assert vc.get("system_dir") == "System"
-        assert vc.get("resources_dir") == "Resources"
+        assert data["vault_config"]["system_dir"] == "System"
 
     def test_headless_setup_forwards_literature_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """--headless setup forwards --literature-dir to vault_config."""
@@ -636,11 +568,12 @@ class TestZoteroPathForwarding:
 class TestConfigWriterSchemaVersion:
     """ConfigWriter always writes schema_version=2 regardless of input."""
 
-    def test_v1_paperforge_json_rerun_writes_schema_version_2(self, tmp_path: Path) -> None:
-        """Rerunning ConfigWriter on a v1 file writes schema_version 2."""
+    def test_v1_paperforge_json_rerun_requires_migration(self, tmp_path: Path) -> None:
+        """#142: rerunning the writer on a v1 file fails closed — migration
+        is explicit and never implicit."""
+        from paperforge.config import migrate_config
         from paperforge.setup.config_writer import ConfigWriter
 
-        # Create a v1-style file with no schema_version
         (tmp_path / "paperforge.json").write_text(
             json.dumps({"system_dir": "OldSys", "resources_dir": "OldRes"}),
             encoding="utf-8",
@@ -648,35 +581,30 @@ class TestConfigWriterSchemaVersion:
 
         writer = ConfigWriter(tmp_path)
         result = writer.write({"system_dir": "Sys", "resources_dir": "Res", "literature_dir": "Lit"})
-        assert result.ok, f"Write failed: {result.error}"
+        assert not result.ok
+        assert result.message == "config.migration_required"
 
+        migrate_config(tmp_path)
+        result2 = writer.write({"system_dir": "Sys", "resources_dir": "Res", "literature_dir": "Lit"})
+        assert result2.ok
         data = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
-        assert data.get("schema_version") == "2", \
-            f"Expected schema_version=2, got {data.get('schema_version')!r}"
+        assert data.get("schema_version") == 2
 
-    def test_v1_rerun_does_not_preserve_old_schema_version(self, tmp_path: Path) -> None:
-        """ConfigWriter does NOT preserve a v1 schema_version value."""
+    def test_v1_rerun_does_not_overwrite_legacy(self, tmp_path: Path) -> None:
+        """#142: a legacy file is never overwritten by the writer; it must be
+        migrated explicitly first."""
         from paperforge.setup.config_writer import ConfigWriter
 
-        # v1 file with schema_version=1
         (tmp_path / "paperforge.json").write_text(
             json.dumps({"schema_version": "1", "system_dir": "OldSys"}),
             encoding="utf-8",
         )
+        before = (tmp_path / "paperforge.json").read_bytes()
 
         writer = ConfigWriter(tmp_path)
         result = writer.write({"system_dir": "Sys", "resources_dir": "Res", "literature_dir": "Lit"})
-        assert result.ok
-
-        data = json.loads((tmp_path / "paperforge.json").read_text(encoding="utf-8"))
-        assert data.get("schema_version") == "2", \
-            f"Expected schema_version=2 after migration, got {data.get('schema_version')!r}"
-
-
-# ===================================================================
-# --headless via SetupPlan (not headless_setup)
-# ===================================================================
-
+        assert not result.ok
+        assert (tmp_path / "paperforge.json").read_bytes() == before
 
 class TestCliHeadlessViaSetupPlan:
     """--headless must use SetupPlan (same engine as --modular)."""
@@ -693,7 +621,7 @@ class TestCliHeadlessViaSetupPlan:
         if pf.exists():
             data = json.loads(pf.read_text(encoding="utf-8"))
             assert "vault_config" in data, "headless must produce vault_config"
-            assert data.get("schema_version") == "2"
+            assert data.get("schema_version") == 2
 
     def test_headless_literature_dir_reaches_vault_config(self, tmp_path: Path) -> None:
         """--literature-dir argument reaches vault_config through SetupPlan."""

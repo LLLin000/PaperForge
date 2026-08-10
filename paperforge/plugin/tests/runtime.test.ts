@@ -7,48 +7,38 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { readPathConfig, resolveVaultPaths as resolveRuntimePaths } from "../src/services/memory-state";
+import { readPathConfig, resolveVaultPaths as resolveRuntimePaths, setPathConfigSource } from "../src/services/memory-state";
 import { resolvePythonExecutable, getPluginVersion, checkRuntimeVersion } from "../src/services/python-bridge";
 
 describe('readPathConfig', () => {
-    it('uses vault_config system_dir when present', () => {
-        const mockFs = {
-            existsSync: vi.fn(() => true),
-            readFileSync: vi.fn(() => JSON.stringify({ vault_config: { system_dir: '99_System' } })),
-        };
-        const cfg = readPathConfig('/vault', mockFs);
+    // #142 / C0: readPathConfig no longer parses paperforge.json; values come
+    // from the injected source hydrated by main.ts from `config list`.
+    afterEach(() => {
+        setPathConfigSource(null);
+    });
+
+    it('uses the injected config source when present', () => {
+        setPathConfigSource({ system_dir: '99_System', resources_dir: 'Resources', literature_dir: 'Literature', base_dir: 'Bases', _warning: null });
+        const cfg = readPathConfig('/vault');
         expect(cfg.system_dir).toBe('99_System');
         expect(cfg._warning).toBeNull();
     });
 
-    it('falls back to defaults with warning when config is missing', () => {
-        const mockFs = {
-            existsSync: vi.fn(() => false),
-            readFileSync: vi.fn(),
-        };
-        const cfg = readPathConfig('/vault', mockFs);
-        expect(cfg.system_dir).toBe('System');
-        expect(cfg._warning).toContain('using defaults');
-    });
-
-    it('falls back to defaults with warning when config is invalid', () => {
-        const mockFs = {
-            existsSync: vi.fn(() => true),
-            readFileSync: vi.fn(() => '{bad json'),
-        };
-        const cfg = readPathConfig('/vault', mockFs);
-        expect(cfg.system_dir).toBe('System');
-        expect(cfg._warning).toContain('invalid');
+    it('fails closed when the source is not yet hydrated', () => {
+        const cfg = readPathConfig('/vault');
+        expect(cfg.system_dir).toBe('');
+        expect(cfg._warning).toContain('no semantic work');
     });
 });
 
 describe('resolveRuntimePaths', () => {
-    it('uses configured system_dir for runtime file paths', () => {
-        const mockFs = {
-            existsSync: vi.fn(() => true),
-            readFileSync: vi.fn(() => JSON.stringify({ vault_config: { system_dir: '99_System' } })),
-        };
-        const paths = resolveRuntimePaths('/vault', mockFs);
+    afterEach(() => {
+        setPathConfigSource(null);
+    });
+
+    it('uses the injected config source for runtime file paths', () => {
+        setPathConfigSource({ system_dir: '99_System', resources_dir: 'Resources', literature_dir: 'Literature', base_dir: 'Bases', _warning: null });
+        const paths = resolveRuntimePaths('/vault');
         expect(paths.memoryStatePath).toContain('99_System');
         expect(paths.exportsDir).toContain('99_System');
         expect(paths.ocrDir).toContain('99_System');
