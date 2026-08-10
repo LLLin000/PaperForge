@@ -70,7 +70,7 @@
         "via_publication_protocol": false,
         "evidence": {
           "file": "paperforge/plugin/src/services/version-history.ts",
-          "file_digest": "sha256:9eb83e41a90c598524d8949b4f875ffcd4aa317e4a3029e77ff31ea771cbe36d",
+          "file_digest": "sha256:1d0078ae5e7638de6024bac9e1063cf485b6fd4c7a1cfe4cf482db57b1404693",
           "symbol": "restoreVersion",
           "line_start": 184,
           "line_end": 215,
@@ -110,7 +110,7 @@
         ]
       }
     ],
-    "source_digest": "sha256:6bac0a5b8034960d05db43e9ed51b165ec28054a7f36d31e8e671b19f92ab7a7",
+    "source_digest": "sha256:134061aa20fb660335c6b50ec2a9426bc70ac51ae0236b044cae87e9145864d4",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
