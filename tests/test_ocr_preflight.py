@@ -9,6 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from tests.conftest import canonical_test_config
+
 
 class TestOcrPreflight:
     """Tests for PDF preflight behavior in run_ocr()."""
@@ -16,7 +18,7 @@ class TestOcrPreflight:
     def _make_vault(self, tmp_path: Path) -> Path:
         vault = tmp_path / "vault"
         vault.mkdir()
-        (vault / "paperforge.json").write_text("{}", encoding="utf-8")
+        canonical_test_config(vault)
         return vault
 
     def _mock_paths(self, vault: Path) -> dict:

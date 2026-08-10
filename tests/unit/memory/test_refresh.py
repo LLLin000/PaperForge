@@ -25,7 +25,7 @@ def test_refresh_paper_rebuild_from_index_removes_stale_rows(tmp_path):
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        '{"vault_config":{"system_dir":"System","resources_dir":"Resources","literature_dir":"Literature","base_dir":"Bases","control_dir":"LiteratureControl"}}',
+        '{"schema_version": 2, "vault_config":{"system_dir":"System","resources_dir":"Resources","literature_dir":"Literature","base_dir":"Bases","control_dir":"LiteratureControl"}}',
         encoding="utf-8",
     )
 

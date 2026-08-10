@@ -19,6 +19,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
 
 def _run_memory_cmd(vault: Path, subcmd: str, extra_args: list[str] | None = None) -> subprocess.CompletedProcess:
     cmd = [sys.executable, "-m", "paperforge", "--vault", str(vault), "memory", subcmd]
@@ -29,9 +31,8 @@ def _run_memory_cmd(vault: Path, subcmd: str, extra_args: list[str] | None = Non
 
 def _setup_memory_dirs(tmp_path: Path) -> Path:
     """Create paperforge.json and indexes dir, return indexes dir."""
-    (tmp_path / "paperforge.json").write_text(
-        json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-    )
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    canonical_test_config(tmp_path, system_dir="99_System")
     indexes = tmp_path / "99_System" / "PaperForge" / "indexes"
     indexes.mkdir(parents=True, exist_ok=True)
     return indexes
@@ -187,9 +188,8 @@ class TestMemoryRestoreProbe:
         """Corrupt DB + valid backup -> restore_backup action."""
         from paperforge.commands import probe as probe_mod
 
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         indexes = tmp_path / "99_System" / "PaperForge" / "indexes"
         indexes.mkdir(parents=True, exist_ok=True)
 
@@ -210,9 +210,8 @@ class TestMemoryRestoreProbe:
         """Corrupt DB without backup -> rebuild action."""
         from paperforge.commands import probe as probe_mod
 
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         indexes = tmp_path / "99_System" / "PaperForge" / "indexes"
         indexes.mkdir(parents=True, exist_ok=True)
 

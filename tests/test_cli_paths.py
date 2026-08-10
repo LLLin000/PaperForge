@@ -7,6 +7,8 @@ from contextlib import redirect_stdout
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
 
 # ----------------------------------------------------------------------
 # Test fixtures
@@ -14,14 +16,15 @@ import pytest
 @pytest.fixture
 def mock_vault(tmp_path):
     """Create a minimal mock vault with paperforge.json."""
-    pf_cfg = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-    }
-    (tmp_path / "paperforge.json").write_text(json.dumps(pf_cfg), encoding="utf-8")
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    canonical_test_config(
+        tmp_path,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+    )
     return tmp_path
 
 

@@ -488,6 +488,15 @@ def _snapshot_from(data: dict[str, Any], revision: str, env: Mapping[str, str],
     )
 
 
+def _raise_invalid_document(validation: ConfigValidation) -> None:
+    """Raise the specific first error code (e.g. config.secret_field) so
+    clients can route credential migration to #138."""
+    if validation.errors:
+        code = str(validation.errors[0].get("code", "config.invalid"))
+        raise ConfigError(code, {"errors": list(validation.errors)})
+    raise ConfigError("config.invalid")
+
+
 def load_config(vault: Path, *, env: Mapping[str, str] | None = None,
                 overrides: Mapping[str, object] | None = None) -> ConfigSnapshot:
     """Strictly load current schema and resolve defaults < file < env < overrides.
@@ -501,14 +510,14 @@ def load_config(vault: Path, *, env: Mapping[str, str] | None = None,
     if err is not None:
         raise ConfigError(err, {"path": str(path)})
     assert data is not None
-    state = _classify_document(data, path).state
-    if state == "future_schema":
+    validation = _classify_document(data, path)
+    if validation.state == "future_schema":
         raise ConfigError("config.future_schema", {"path": str(path)})
-    if state == "migration_required":
+    if validation.state == "migration_required":
         raise ConfigError("config.migration_required",
                           {"path": str(path), "hint": "run 'paperforge config migrate'"})
-    if state == "invalid":
-        raise ConfigError("config.invalid", {"path": str(path)})
+    if validation.state == "invalid":
+        _raise_invalid_document(validation)
     return _snapshot_from(data, revision, env if env is not None else os.environ,
                           overrides if overrides is not None else {})
 
@@ -536,7 +545,7 @@ def _mutate(vault: Path, mutator) -> MutationResult:
                 raise ConfigError("config.migration_required",
                                   {"path": str(path), "hint": "run 'paperforge config migrate'"})
             if state == "invalid":
-                raise ConfigError("config.invalid", {"path": str(path)})
+                _raise_invalid_document(_classify_document(data, path))
             changed, candidate = mutator(data)
             if changed:
                 _write_document_atomic(path, candidate)
@@ -552,13 +561,13 @@ def _mutate(vault: Path, mutator) -> MutationResult:
 
 def set_config(vault: Path, key: str, value: object) -> MutationResult:
     """Validate and atomically set one canonical user field."""
+    if _is_secret_like(key):
+        raise ConfigError("config.secret_field", {"key": key})
     spec = FIELD_BY_KEY.get(key)
     if spec is None:
         raise ConfigError("config.unknown_key", {"key": key})
     if not spec.writable:
         raise ConfigError("config.read_only_key", {"key": key})
-    if _is_secret_like(key):
-        raise ConfigError("config.secret_field", {"key": key})
     parsed, err = validate_field_value(spec, value, f"value for '{key}'")
     if err:
         raise ConfigError("config.invalid", {"key": key, "reason": err})
@@ -577,6 +586,8 @@ def set_config(vault: Path, key: str, value: object) -> MutationResult:
 def unset_config(vault: Path, key: str) -> MutationResult:
     """Atomically remove the stored field; effective value falls through to
     env/default."""
+    if _is_secret_like(key):
+        raise ConfigError("config.secret_field", {"key": key})
     spec = FIELD_BY_KEY.get(key)
     if spec is None:
         raise ConfigError("config.unknown_key", {"key": key})
@@ -685,9 +696,10 @@ def migrate_config(vault: Path, *, dry_run: bool = False) -> MutationResult:
             del candidate[derived]
             migrated.append(derived)
 
-    # 4. Schema version normalization.
+    # 4. Schema version normalization: a migrated document is always canonical
+    # schema 2 (missing/string versions are legacy and become 2).
     raw_version = candidate.get("schema_version", "1")
-    if isinstance(raw_version, str) and raw_version.strip() == "2":
+    if not isinstance(raw_version, int) or raw_version != SCHEMA_VERSION:
         candidate["schema_version"] = SCHEMA_VERSION
         migrated.append("schema_version")
 

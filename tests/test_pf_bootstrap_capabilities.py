@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from tests.conftest import canonical_test_config
+
 BOOTSTRAP = (
     Path(__file__).resolve().parent.parent
     / "paperforge"
@@ -22,18 +24,12 @@ def test_bootstrap_capabilities_contract(tmp_path: Path) -> None:
     vault = tmp_path / "TestVault"
     vault.mkdir()
 
-    # Minimal paperforge.json
-    pf_json = vault / "paperforge.json"
-    pf_json.write_text(
-        json.dumps(
-            {
-                "version": "1.2.0",
-                "system_dir": "99_System",
-                "resources_dir": "03_Resources",
-                "literature_dir": "Literature",
-            }
-        ),
-        encoding="utf-8",
+    # Minimal canonical paperforge.json
+    canonical_test_config(
+        vault,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
     )
 
     # Create minimal directory structure

@@ -35,6 +35,7 @@ class TestCanonicalIndexOcrState:
         (vault / "paperforge.json").write_text(
             json.dumps(
                 {
+                    "schema_version": 2,
                     "vault_config": {
                         "system_dir": "99_System",
                         "resources_dir": "03_Resources",
@@ -198,6 +199,7 @@ def test_phase2_artifact_dirs_dont_break_index(tmp_path: Path) -> None:
     (vault / "paperforge.json").write_text(
         json.dumps(
             {
+                "schema_version": 2,
                 "vault_config": {
                     "system_dir": "99_System",
                     "resources_dir": "03_Resources",
@@ -302,7 +304,7 @@ def test_postprocess_writes_compat_fulltext_at_top_level(tmp_path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        _json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        _json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"

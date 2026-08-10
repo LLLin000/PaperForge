@@ -1,8 +1,9 @@
-import json
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
+from tests.conftest import canonical_test_config
 
 
 def stub_run_doctor(vault: Path) -> int:
@@ -48,14 +49,15 @@ def clean_captured():
 
 @pytest.fixture
 def mock_vault(tmp_path):
-    pf_cfg = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-    }
-    (tmp_path / "paperforge.json").write_text(json.dumps(pf_cfg), encoding="utf-8")
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    canonical_test_config(
+        tmp_path,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+    )
     (tmp_path / "99_System").mkdir()
     (tmp_path / "03_Resources").mkdir()
     return tmp_path
@@ -64,14 +66,15 @@ def mock_vault(tmp_path):
 def test_doctor_on_empty_vault(tmp_path, capsys):
     from paperforge.worker.status import run_doctor
 
-    pf_cfg = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-    }
-    (tmp_path / "paperforge.json").write_text(json.dumps(pf_cfg), encoding="utf-8")
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    canonical_test_config(
+        tmp_path,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+    )
     code = run_doctor(tmp_path)
     captured = capsys.readouterr().out
     assert "PaperForge Doctor" in captured

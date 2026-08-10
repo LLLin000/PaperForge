@@ -19,7 +19,7 @@ def test_artifact_paths_for_key_still_works(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        '{"vault_config":{"system_dir":"System","resources_dir":"Resources"}}',
+        '{"schema_version": 2, "vault_config":{"system_dir":"System","resources_dir":"Resources"}}',
         encoding="utf-8",
     )
 

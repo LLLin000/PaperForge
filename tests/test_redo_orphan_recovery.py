@@ -10,6 +10,8 @@ import pytest
 
 from paperforge.worker.ocr import recover_redo_orphans
 
+from tests.conftest import canonical_test_config
+
 
 @pytest.fixture(autouse=True)
 def _clean_global_snapshots():
@@ -28,9 +30,7 @@ def _clean_global_snapshots():
 def _make_vault(tmp_path: Path) -> Path:
     vault = tmp_path / "vault"
     vault.mkdir()
-    (vault / "paperforge.json").write_text(
-        json.dumps({"system_dir": "System"}), encoding="utf-8"
-    )
+    canonical_test_config(vault, system_dir="System")
     (vault / "System" / "PaperForge" / "ocr").mkdir(parents=True)
     return vault
 
