@@ -349,7 +349,13 @@ export class PaperForgeSetupModal extends Modal {
           "--stdin",
           "--json",
         ],
-        { cwd: vaultPath, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] }
+        {
+          cwd: vaultPath,
+          windowsHide: true,
+          stdio: ["pipe", "pipe", "pipe"],
+          // #173 corrective: redacted env — keyring is the desktop authority.
+          env: paperforgeEnrichedEnv(),
+        }
       );
       let stdout = "";
       child.stdout.on("data", (d) => (stdout += String(d)));

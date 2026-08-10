@@ -41,11 +41,14 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
         Dict with keys: level, passed, error, fix, raw_response (optional).
     """
     # L1 — Token presence (#173/C1: credential authority; no legacy fallbacks)
-    from paperforge.credentials import CredentialError, CredentialKey, resolve
+    from paperforge.credentials import MISSING, CredentialError, CredentialKey, resolve
 
     try:
         token = resolve(CredentialKey("ocr"))
-    except CredentialError:
+    except CredentialError as exc:
+        if exc.code != MISSING:
+            # Backend faults are NOT "missing key" — surface them.
+            raise
         return {
             "level": 1,
             "passed": False,

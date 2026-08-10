@@ -17,18 +17,31 @@ def _preflight_check(vault: Path, settings: dict | None = None) -> dict:
             "fix": 'Run: pip install "paperforge[vector]"',
         }
 
-    # 3. API key (#173/C1: credential authority; legacy settings/.env
-    #    plaintext reads are removed — migration input only)
-    from paperforge.credentials import CredentialError, CredentialKey, resolve
+    # 3. API key (#173/C1: credential authority; the preflight consumes the
+    #    STATUS read model so backend faults are distinguishable from a
+    #    genuinely missing credential)
+    from paperforge.credentials import CredentialKey, status as credential_status
 
-    try:
-        api_key = resolve(CredentialKey("embedding"))
-    except CredentialError:
+    cred_state = credential_status(CredentialKey("embedding")).state
+    if cred_state == "missing":
         return {
             "ok": False,
             "error": "API key not configured",
             "fix": "Run `paperforge auth set embedding --stdin` or supply PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT",
         }
+    if cred_state != "available":
+        return {
+            "ok": False,
+            "error": f"Embedding credential unavailable ({cred_state})",
+            "fix": "Run `paperforge auth status embedding` for remediation",
+        }
+    from paperforge.credentials import CredentialError as _CredentialError
+    from paperforge.credentials import resolve
+
+    try:
+        api_key = resolve(CredentialKey("embedding"))
+    except _CredentialError:
+        api_key = ""
 
     # 4. OCR done papers
     from paperforge.worker._utils import pipeline_paths
