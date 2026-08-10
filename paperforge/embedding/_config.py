@@ -32,12 +32,14 @@ def get_api_key(vault: Path) -> str:
     (#173/C1): explicit canonical env → keyring.  Legacy plugin-data.json,
     .env and legacy env-name fallbacks are removed.
     """
-    from paperforge.credentials import CredentialError, CredentialKey, resolve
+    from paperforge.credentials import MISSING, CredentialError, CredentialKey, resolve
 
     try:
         return resolve(CredentialKey("embedding"))
-    except CredentialError:
-        return ""
+    except CredentialError as exc:
+        if exc.code == MISSING:
+            return ""
+        raise
 
 
 def get_api_base_url(vault: Path) -> str:

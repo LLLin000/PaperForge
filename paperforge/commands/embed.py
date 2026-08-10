@@ -13,6 +13,7 @@ import sqlite3
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
+from paperforge.credentials import CredentialError
 from paperforge.embedding import (
     delete_paper_vectors,
     get_embed_status,
@@ -797,6 +798,20 @@ def run(args: argparse.Namespace) -> int:
                     if not ok:
                         raise RuntimeError("Embed worker failed; build aborted")
 
+        except CredentialError as exc:
+            # #173 corrective: backend credential faults (locked/unavailable/
+            # denied) fail loud with the credential code — never reported as
+            # a generic missing-key or INTERNAL_ERROR.
+            from paperforge.commands.auth import _error_result as _cred_error_result
+
+            result = _cred_error_result("embed build", exc)
+            print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+            if _shadow is not None:
+                _shadow.abort()
+                logger.info("Shadow build aborted on credential fault; live DB untouched")
+            if _write_lock:
+                _write_lock.__exit__(None, None, None)
+            return 1
         except Exception as e:
             try:
                 _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)

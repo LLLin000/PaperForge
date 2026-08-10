@@ -738,6 +738,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       hasOpenai ? "pf-status-ok" : "pf-status-error"
     );
 
+    // #173 corrective: explicit SecretStorage → keyring migration bridge.
+    // User-mediated, one-time; runtime never reads SecretStorage.
+    const migrateRow = checks.createDiv({ cls: "pf-config-row" });
+    migrateRow.createEl("span", {
+      cls: "pf-config-key",
+      text: t("md_foundation_legacy_migrate") ?? "Migrate legacy credentials",
+    });
+    const migrateRight = migrateRow.createDiv({ cls: "pf-config-right" });
+    const migrateBtn = migrateRight.createEl("button", {
+      cls: "paperforge-refresh-btn",
+      text: "Migrate",
+    });
+    migrateBtn.title =
+      "One-time migration of Obsidian SecretStorage values into the keyring (auth set)";
+    migrateBtn.onclick = () => this._migrateLegacyCredentials(migrateBtn);
+
     // Obsidian version check
     const minVersion = "1.11.4";
     const currentVersion = "1.11.4";
@@ -4742,6 +4758,53 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     _refreshBbtStatus();
   }
 
+  /** #173 corrective: explicit, user-mediated SecretStorage → keyring
+   *  migration.  Reads each known legacy id once, stores via `auth set
+   *  --stdin`, verifies, then clears the old value. */
+  private async _migrateLegacyCredentials(btn: HTMLButtonElement): Promise<void> {
+    const vaultPath = this._getVaultBasePath();
+    const py = this._resolveRuntimeCommand(vaultPath);
+    if (!py || !vaultPath) {
+      new Notice("Runtime not ready — cannot migrate credentials");
+      return;
+    }
+    const { migrateLegacySecret, isAllowlistedCommand: _unused } = await import(
+      "./services/secret-storage"
+    );
+    void _unused;
+    const deps = {
+      spawn: (
+        command: string,
+        args: string[],
+        opts: { cwd: string; env: Record<string, string | undefined>; windowsHide: boolean; stdio: string[] }
+      ) =>
+        spawn(command, args, opts as never),
+      pythonPath: py.path,
+      pythonArgs: py.args,
+      vaultPath,
+      env: paperforgeEnrichedEnv(),
+    };
+    btn.disabled = true;
+    const results: string[] = [];
+    for (const kind of ["ocr", "embedding"] as const) {
+      const r = await migrateLegacySecret(
+        kind,
+        (this.app as unknown as { secretStorage?: { getSecret(id: string): Promise<string | null>; setSecret(id: string, s: string): Promise<void> } }).secretStorage,
+        deps
+      );
+      if (r.migrated.length) results.push(`${kind}: migrated`);
+      for (const w of r.warnings) results.push(w);
+    }
+    btn.disabled = false;
+    if (results.length === 0) {
+      new Notice("No legacy credentials found in SecretStorage");
+    } else {
+      results.forEach((line) => new Notice(line, 6000));
+    }
+    this._refreshVectorDbCredentialStatus();
+    this._refreshAllReadModels();
+  }
+
   private _refreshVectorDbCredentialStatus(): void {
     // #173/C1: presence comes from the credential authority (`auth status`),
     // never from SecretStorage or settings flags.
@@ -4814,7 +4877,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           "--stdin",
           "--json",
         ],
-        { cwd: vp, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] }
+        {
+          cwd: vp,
+          windowsHide: true,
+          stdio: ["pipe", "pipe", "pipe"],
+          // #173 corrective: never inherit credential env from the desktop
+          // process — the child resolves through the keyring.
+          env: paperforgeEnrichedEnv(),
+        }
       );
       let stdout = "";
       child.stdout.on("data", (d) => (stdout += String(d)));
