@@ -192,7 +192,8 @@ Remaining legacy OCR issues (carried forward):
 
 ## 4. Active Queue
 
-0. ✅ **[Architecture Audit #131/#132](https://github.com/LLLin000/PaperForge/issues/131)** — **accepted and closed** (Slices A+B; commits `73a782cf`–`d6c9afb0`). Audit report hardened v1→v4 (`e94895a1`→`7567dd2c`), third external review BLOCKER fixed: `repository_state` now semantic Survey content, Audit single gate authority.
+0. 🟡 **[#135 Wayfinder — Return PaperForge product authority to Python](https://github.com/LLLin000/PaperForge/issues/135)** — map **complete** (9 frozen decisions #137/#143/#144/#145/#146/#148/#149/#158/#159; 13 ready-for-agent issues #161–#174 with verified DAG; re-closed after handoff). **C0 (#172) done + verified** (canonical `paperforge/config.py` seam, 8-verb config CLI, TS config-client, thin migration flow; Python 2931 passed, vitest 455/455, tsc clean; pushed). **R (#161) implemented + verified this session** (read-model cutover + snapshot retirement — see timeline): Python 2938 passed / 296 skipped, vitest 456/456, tsc clean, ruff clean; 5 commits `696a1712`→`9c22341a` on `arch/python-core-authority`; PR pending. **Next: merge R → T1 (#162 lineage)**.
+1. ✅ **[Architecture Audit #131/#132](https://github.com/LLLin000/PaperForge/issues/131)** — **accepted and closed** (Slices A+B; commits `73a782cf`–`d6c9afb0`). Audit report hardened v1→v4 (`e94895a1`→`7567dd2c`), third external review BLOCKER fixed: `repository_state` now semantic Survey content, Audit single gate authority.
 1. ✅ **[Product lane #127/#126/#129/#99](https://github.com/LLLin000/PaperForge/issues/127)** — all four **accepted and closed** (next_actions policy, OCR Workspace closure, restore semantics, redo internal-only). Product lane complete.
 2. ✅ **[#133 Deterministic collectors](https://github.com/LLLin000/PaperForge/issues/133)** — **ACCEPTED and closed** (owner acceptance 2026-08-07). Python AST + TS compiler collectors + orchestrator → Survey → #131 `reconcile()`; three-tier extraction, fail-closed coverage, unresolved-evidence seam. `collectors.deterministic` Contract lifecycle promoted planned→active at `3eb17ae9`.
 3. ✅ **[#134 HTML + CI gate](https://github.com/LLLin000/PaperForge/issues/134)** — **ACCEPTED and closed** (owner acceptance 2026-08-07). Self-contained HTML projection + deterministic gate (Audit-only; allowlist empty until rules reviewed low-FP); independent L4b CI job; Pages fail-safe.
@@ -239,6 +240,7 @@ Remaining legacy OCR issues (carried forward):
 - [x] Refresh Foundation and Library prerequisites on entering Setup Journey Stage 4; live-verify a configured journey reaches enabled completion after plugin reload.
 - [x] Gate Foundation readiness on the loaded plugin version and clear stale reinstallation intent; live-verify exact match has only enabled Continue and mismatch produces a forced reinstall path.
 - [x] Preserve Smart Retrieval’s stale-index rebuild action in the UI; derive Agent availability from deployed skills and suppress only migration warnings resolved by an active secure profile.
+- [x] Implement R — read-model cutover + snapshot retirement ([#161](https://github.com/LLLin000/PaperForge/issues/161)) — Python 2938 passed, vitest 456/456, tsc/ruff clean; J-matrix wired in CI (#146); contract lifecycle promoted (read models active, snapshot unit deprecated, CANONICAL_READ planned/advisory); PR on `arch/python-core-authority`.
 - [ ] Implement Wave 1 issues #97, #99, and #100; run issue-specific backend/plugin gates and real Obsidian smoke before any deployment.
 - [x] Split architecture-audit epic #130 into slices #131–#134 and enforce the execution queue (one `ready-for-agent`).
 - [ ] Implement #131 (code complete — final review passed; commit/acceptance pending), then accept it and promote #132 to `ready-for-agent`; after #132, run the mandatory open-issue triage checkpoint recorded in #130.
@@ -329,7 +331,7 @@ Remaining legacy OCR issues (carried forward):
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2026-06-08 | Adopt anchor-first OCR architecture | Early role guessing caused cascading errors; needed structural discovery first |
+| 2026-08-10 | R read-model cutover: snapshot readers/writers deleted in one vertical slice | #148 frozen: fresh read models fully determine UI; zero dual-read; wrong-snapshot authority is the key acceptance |
 | 2026-06-10 | Separate figure reader from body prose | Figure info must be reader-visible without body pollution |
 | 2026-06-11 | Install verified structural role gate | Spec was being bypassed; gate enforces seed≠final contract |
 | 2026-06-13 | Dual-gate regression + spec-contract testing | Tests protected helper behavior, not real-paper outcomes |
@@ -518,7 +520,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 
 | Date | Session | Key Results | Detailed Archive |
 |------|---------|-------------|------------------|
-| 2026-06-16 | Gold fixture expansion + 10 pipeline fixes | 98 bug annotations, 8 papers audited, 8 fixes applied (F1-F10) | §9.1 |
+| 2026-08-10 | R — read-model cutover + snapshot retirement (#161) | `probe all` aggregate + `ocr pipeline-versions` detail; probe_ocr envelope keeps summary; snapshot writers deleted (state_snapshot.py, embed/memory/runtime-health/status); TS `memory-state.ts` deleted → fail-closed `runtime-paths.ts`; Dashboard/Settings read-model driven; zero readers/writers asserted; wrong-snapshot authority smoke; J-matrix CI (3-OS J1/J2/J3); contract promoted (read-model active, snapshot deprecated, CANONICAL_READ planned/advisory); goldens re-pinned (reviewed changes); 2938 py / 456 vitest; commits `696a1712`→`9c22341a` | §9.N |
 | 2026-06-17 | OCR-v2 boundary close-out pass | Zone-boundary fixes, tail/backmatter shrink, correspondence routing. 202P/1F/43S | §9.2 |
 | 2026-06-18 | Readiness-gates implementation | Gates 1-4 complete + blind audit protocol. 249/249 figure/health/document pass | §9.3 |
 | 2026-06-19 | Blind audit (5 unseen papers) | All PASS — no new failure families. OCR-v2 declared "state healthy" | §9.3 |
