@@ -11,13 +11,10 @@ import pytest
 
 from paperforge.actions.registry import ACTION_REGISTRY, emit_next_action, validate_registry
 from paperforge.actions.runner import (
-    MAX_FOLLOW_UP_DEPTH,
     ActionError,
-    canonical_dedupe_key,
     descriptor_for,
     hydrate_from_registry,
     run_action,
-    run_follow_up_chain,
 )
 from paperforge.actions.types import (
     ActionContext,
@@ -176,6 +173,14 @@ class TestRunnerPipeline:
             run_action(ActionRequest("test.confirm", AllScope()), _ctx(tmp_path))
         assert exc.value.code == ErrorCode.ACTION_CONFIRMATION_REQUIRED.value
         assert exc.value.exit_code == 3
+        # #163 corrective: exit 3 carries the CURRENT action descriptor.
+        data = exc.value.data
+        assert isinstance(data, dict)
+        assert data["action_id"] == "test.confirm"
+        assert data["confirmation"] == "required"
+        assert data["availability"] == "available"
+        assert "preservation_facts" in data and "replacement_facts" in data
+        assert "command" not in data and "argv" not in data
 
     def test_confirm_mismatch_is_invalid_request(self, tmp_path: Path, _registry) -> None:
         _registry(_spec("test.confirm", confirmation="required", automatic=False, cost="remote_possible"))
@@ -216,104 +221,98 @@ class TestRunnerPipeline:
         result = run_action(ActionRequest("test.ok", AllScope()), _ctx(tmp_path))
         assert result.ok and called == ["test.ok"]
 
+    def test_next_actions_returned_unchanged(self, tmp_path: Path, _registry) -> None:
+        """T2 ships --follow none: the root handler's next_actions pass
+        through untouched (the follow-up chain is T6 scope)."""
+        def handler(ctx, req):
+            result = _ok_result()
+            result.next_actions = [
+                emit_next_action(
+                    ActionIntent("embed.resume", AllScope(), "vector.pending", "pending")
+                ).to_dict()
+            ]
+            return result
+
+        _registry(_spec("test.emits", handler=handler))
+        result = run_action(ActionRequest("test.emits", AllScope()), _ctx(tmp_path))
+        assert result.ok
+        assert [n["action_id"] for n in result.next_actions] == ["embed.resume"]
+        # v1 wire fields are intact (automatic/cost/impact/confirmation/reason)
+        item = result.next_actions[0]
+        assert item["automatic"] is False
+        assert item["cost"] == "remote_possible"
+        assert item["confirmation"] == "required"
+        assert item["reason"] == "pending"
+        assert "dedupe_key" not in item
+        assert "follow_up_execution" not in (result.data or {})
+
     def test_handler_exceptions_become_structured_errors(self, tmp_path: Path, _registry) -> None:
+        """#163 corrective: a dispatched action always yields exactly one
+        PFResult — handler exceptions convert at the runner boundary, never
+        a traceback."""
         def handler(ctx, req):
             raise RuntimeError("domain boom")
 
         _registry(_spec("test.boom", handler=handler))
-        # #145 §6.5: the runner boundary converts exceptions to PFResult errors.
-        with pytest.raises(RuntimeError, match="domain boom"):
-            run_action(ActionRequest("test.boom", AllScope()), _ctx(tmp_path))
+        result = run_action(ActionRequest("test.boom", AllScope()), _ctx(tmp_path))
+        assert result.ok is False
+        assert result.error is not None
+        assert result.error.code.value == "INTERNAL_ERROR"
+        assert "domain boom" in result.error.message
 
-    def test_dedupe_identity_normalizes_keys(self) -> None:
-        assert canonical_dedupe_key("memory.build", PapersScope(("B", "A", "B"))) == canonical_dedupe_key(
-            "memory.build", PapersScope(("A", "B"))
-        )
-        assert canonical_dedupe_key("memory.build", AllScope()) != canonical_dedupe_key(
-            "memory.build", PapersScope(("A",))
-        )
+    def test_handler_keyboard_interrupt_propagates_to_cancellation(self, tmp_path: Path, _registry) -> None:
+        """#137: KeyboardInterrupt is NOT folded into a structured error —
+        it propagates to the CLI's rc130 cancellation path."""
+        def handler(ctx, req):
+            raise KeyboardInterrupt("cancelled")
+
+        _registry(_spec("test.cancel", handler=handler))
+        with pytest.raises(KeyboardInterrupt):
+            run_action(ActionRequest("test.cancel", AllScope()), _ctx(tmp_path))
+
+    def test_non_mapping_handler_data_rejected(self, tmp_path: Path, _registry) -> None:
+        """#145 Rev3: PFResult.data must be a mapping or None."""
+        def handler(ctx, req):
+            return PFResult(ok=True, command="action run", version="t", data="not-a-mapping")
+
+        _registry(_spec("test.baddata", handler=handler))
+        result = run_action(ActionRequest("test.baddata", AllScope()), _ctx(tmp_path))
+        assert result.ok is False
+        assert "non-mapping data" in (result.error.message if result.error else "")
+
+    def test_non_pfresult_handler_return_rejected(self, tmp_path: Path, _registry) -> None:
+        def handler(ctx, req):
+            return {"ok": True}  # type: ignore[return-value]
+
+        _registry(_spec("test.badreturn", handler=handler))
+        result = run_action(ActionRequest("test.badreturn", AllScope()), _ctx(tmp_path))
+        assert result.ok is False
+        assert "not PFResult" in (result.error.message if result.error else "")
 
 
 # ── follow-up chain ────────────────────────────────────────────────────────
 
-class TestFollowUpChain:
-    def test_follow_none_leaves_next_actions_pending(self, tmp_path: Path) -> None:
-        root = _ok_result()
-        root.next_actions = [
-            emit_next_action(
-                ActionIntent("embed.resume", AllScope(), "vector.pending", "pending")
-            ).to_dict()
-        ]
-        result = run_follow_up_chain(root, _ctx(tmp_path), mode="none")
-        assert [n["action_id"] for n in result.next_actions] == ["embed.resume"]
-        assert "follow_up_execution" not in (result.data or {})
+class TestContext:
+    def test_build_context_from_single_snapshot(self, tmp_path: Path) -> None:
+        """#163 corrective: config values and paths derive from ONE config
+        snapshot — the context is a frozen invocation view (C0 seam)."""
+        from paperforge.actions.runner import build_context
 
-    def test_follow_auto_keeps_confirmation_required_pending(self, tmp_path: Path) -> None:
-        root = _ok_result()
-        root.next_actions = [
-            emit_next_action(
-                ActionIntent("embed.resume", AllScope(), "vector.pending", "pending")
-            ).to_dict()
-        ]
-        result = run_follow_up_chain(root, _ctx(tmp_path), mode="auto")
-        data = result.data or {}
-        assert data["follow_up_execution"]["pending"] == [
-            {"action_id": "embed.resume", "scope": {"kind": "all"}}
-        ]
-        assert data["follow_up_execution"]["executed"] == []
-        # the outer wire keeps only pending actions
-        assert [n["action_id"] for n in result.next_actions] == ["embed.resume"]
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        ctx = build_context(vault)
+        assert ctx.config.get("system_dir") == "99_System"
+        assert str(ctx.paths.get("ocr", "")) == str(vault / "99_System" / "PaperForge" / "ocr")
 
-    def test_follow_auto_executes_automatic_local_descendants(self, tmp_path: Path, _registry) -> None:
-        called: list[str] = []
+    def test_build_context_fails_closed_without_config(self, tmp_path: Path) -> None:
+        from paperforge.actions.runner import build_context
 
-        def handler(ctx, req):
-            called.append(req.action_id)
-            return _ok_result()
+        vault = tmp_path / "novault"
+        ctx = build_context(vault)
+        assert ctx.config == {}
+        assert ctx.paths == {}
 
-        _registry(_spec("test.auto", handler=handler))
-        root = _ok_result()
-        root.next_actions = [
-            emit_next_action(
-                ActionIntent("test.auto", AllScope(), "t", "why")
-            ).to_dict()
-        ]
-        result = run_follow_up_chain(root, _ctx(tmp_path), mode="auto")
-        assert called == ["test.auto"]
-        data = result.data or {}
-        assert data["follow_up_execution"]["executed"] == [{"action_id": "test.auto", "ok": True}]
-        assert [n["action_id"] for n in result.next_actions] == []
-
-    def test_depth_bounded(self, tmp_path: Path, _registry) -> None:
-        """A linear chain of distinct actions is bounded by the depth
-        constant; the overflowing descendant is skipped with depth_exceeded."""
-        chain = [f"test.d{i}" for i in range(1, MAX_FOLLOW_UP_DEPTH + 2)]
-
-        def chain_handler(next_id: str):
-            def handler(ctx, req):
-                result = _ok_result()
-                if next_id:
-                    result.next_actions = [
-                        emit_next_action(ActionIntent(next_id, AllScope(), "t", "why")).to_dict()
-                    ]
-                return result
-            return handler
-
-        for i, action_id in enumerate(chain):
-            nxt = chain[i + 1] if i + 1 < len(chain) else ""
-            _registry(_spec(action_id, handler=chain_handler(nxt)))
-
-        root = _ok_result()
-        root.next_actions = [
-            emit_next_action(ActionIntent(chain[0], AllScope(), "t", "why")).to_dict()
-        ]
-        result = run_follow_up_chain(root, _ctx(tmp_path), mode="auto")
-        data = result.data or {}
-        assert len(data["follow_up_execution"]["executed"]) == MAX_FOLLOW_UP_DEPTH
-        assert data["follow_up_execution"]["skipped"][-1]["reason_code"] == "action.depth_exceeded"
-
-
-# ── descriptors and wire ───────────────────────────────────────────────────
 
 class TestDescriptorWire:
     def test_descriptor_has_no_command_or_argv(self) -> None:
@@ -393,6 +392,35 @@ class TestCliExitCodes:
         assert rc == 1
         assert payload["error"]["code"] == "action.unavailable"
         assert payload["data"]["availability_reason_code"] == "credential.missing"
+
+    def test_confirmation_required_cli_exit_3_with_descriptor(self, tmp_path: Path, monkeypatch) -> None:
+        """#163 acceptance: without --confirm, a confirmation-required action
+        exits 3 and the payload data IS the current action descriptor."""
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "test-token")
+        rc, payload = _run_cli("--vault", str(tmp_path), "action", "run", "embed.resume", "--json")
+        assert rc == 3
+        assert payload["error"]["code"] == "action.confirmation_required"
+        data = payload["data"]
+        assert data["action_id"] == "embed.resume"
+        assert data["scope"] == {"kind": "all"}
+        assert data["availability"] == "available"
+        assert data["cost"] == "remote_possible"
+        assert data["impact"] == "mutating"
+        assert data["confirmation"] == "required"
+        assert data["preservation_facts"] and data["replacement_facts"]
+        assert "command" not in data and "argv" not in data
+
+    def test_confirmed_dispatch_executes(self, tmp_path: Path, monkeypatch) -> None:
+        """--confirm with the exact id executes; the embed handler runs to
+        its structured result (missing index -> error rc1 in this vault)."""
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "test-token")
+        rc, payload = _run_cli(
+            "--vault", str(tmp_path), "action", "run", "embed.resume",
+            "--confirm", "embed.resume", "--json",
+        )
+        # Dispatched: rc is 0 or 1 (structured result), never 2/3.
+        assert rc in (0, 1)
+        assert "error" in payload or payload["ok"] is True
 
     def test_cancelled_dispatch_is_rc130(self, tmp_path: Path) -> None:
         """#137: a cancelled dispatch reports a cancelled terminal, never rc1."""

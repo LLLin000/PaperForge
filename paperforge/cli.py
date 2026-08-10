@@ -537,7 +537,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_action_run.add_argument("--scope", choices=["all", "papers"], default="all", help="Request scope kind (papers needs --key)")
     p_action_run.add_argument("--key", action="append", default=[], metavar="KEY", help="Paper key (papers scope; repeatable)")
     p_action_run.add_argument("--confirm", default=None, help="Exact action id to confirm (confirmation-required actions)")
-    p_action_run.add_argument("--follow", choices=["none", "auto"], default="none", help="Follow-up mode (#145 §8.1)")
+    # T2: --follow none only — the follow-up chain (--follow auto) is T6 (#167) scope.
+    p_action_run.add_argument("--follow", choices=["none"], default="none", help="Follow-up mode (T6 adds auto)")
     p_action_run.add_argument("--json", action="store_true", help="Output as JSON")
 
     # ── auth family (#173 / C1) ──
