@@ -70,10 +70,34 @@ export interface LegacyMigrationResult {
 }
 
 /** Known legacy SecretStorage ids (dash format per Obsidian API). */
-const LEGACY_SECRET_IDS: Record<"ocr" | "embedding", string> = {
-  ocr: "paddleocr-api-key",
-  embedding: "vector-db-api-key",
-};
+const LEGACY_OCR_SECRET_ID = "paddleocr-api-key";
+const LEGACY_EMBEDDING_GLOBAL_ID = "vector-db-api-key";
+
+/**
+ * Legacy profile-scoped embedding id formula — MIGRATION KNOWLEDGE ONLY.
+ * The deleted runtime used `vector-db-api-key-v2-<sha256(baseUrl\0model)>`
+ * for embedding secrets; real old users hold their key under that id, not
+ * the fixed global one.  This must never become a runtime credential
+ * identity again.
+ */
+export async function legacyEmbeddingSecretIds(
+  baseUrl: string,
+  model: string
+): Promise<string[]> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(
+      `${baseUrl.trim()}\u0000${model.trim() || "text-embedding-3-small"}`
+    )
+  );
+  const digestHex = [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return [
+    `vector-db-api-key-v2-${digestHex.slice(0, 40)}`,
+    LEGACY_EMBEDDING_GLOBAL_ID,
+  ];
+}
 
 /**
  * #173 corrective: one-time migration of a legacy Obsidian SecretStorage
@@ -85,38 +109,49 @@ const LEGACY_SECRET_IDS: Record<"ocr" | "embedding", string> = {
 export async function migrateLegacySecret(
   kind: "ocr" | "embedding",
   ss: SecretAccess | undefined,
-  deps: MigrationSpawn
+  deps: MigrationSpawn,
+  embeddingProfile?: { baseUrl: string; model: string }
 ): Promise<LegacyMigrationResult> {
   if (!ss || typeof ss.getSecret !== "function") {
     return { migrated: [], warnings: ["SecretStorage unavailable"] };
   }
-  const id = LEGACY_SECRET_IDS[kind];
-  const value = await ss.getSecret(id);
-  if (!value) {
-    return { migrated: [], warnings: [] };
+  // #173 corrective: real old embedding secrets live under the
+  // profile-hashed v2 id — check it (plus the fixed global fallback)
+  // before reporting "no legacy credentials".
+  const ids =
+    kind === "embedding"
+      ? await legacyEmbeddingSecretIds(
+          embeddingProfile?.baseUrl ?? "",
+          embeddingProfile?.model ?? ""
+        )
+      : [LEGACY_OCR_SECRET_ID];
+  for (const id of ids) {
+    const value = await ss.getSecret(id);
+    if (!value) continue;
+    const ok = await _authSetViaSpawn(kind, value, deps);
+    if (!ok) {
+      return {
+        migrated: [],
+        warnings: [
+          "Keyring write failed — the legacy SecretStorage value was kept. " +
+            "Run `paperforge auth set " + kind + " --stdin` manually.",
+        ],
+      };
+    }
+    try {
+      await ss.setSecret(id, "");
+    } catch {
+      return {
+        migrated: [id],
+        warnings: [
+          "Credential migrated and verified, but the old SecretStorage value " +
+            "could not be cleared — delete it manually in Obsidian.",
+        ],
+      };
+    }
+    return { migrated: [id], warnings: [] };
   }
-  const ok = await _authSetViaSpawn(kind, value, deps);
-  if (!ok) {
-    return {
-      migrated: [],
-      warnings: [
-        "Keyring write failed — the legacy SecretStorage value was kept. " +
-          "Run `paperforge auth set " + kind + " --stdin` manually.",
-      ],
-    };
-  }
-  try {
-    await ss.setSecret(id, "");
-  } catch {
-    return {
-      migrated: [id],
-      warnings: [
-        "Credential migrated and verified, but the old SecretStorage value " +
-          "could not be cleared — delete it manually in Obsidian.",
-      ],
-    };
-  }
-  return { migrated: [id], warnings: [] };
+  return { migrated: [], warnings: [] };
 }
 
 function _authSetViaSpawn(

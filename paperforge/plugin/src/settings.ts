@@ -4790,7 +4790,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const r = await migrateLegacySecret(
         kind,
         (this.app as unknown as { secretStorage?: { getSecret(id: string): Promise<string | null>; setSecret(id: string, s: string): Promise<void> } }).secretStorage,
-        deps
+        deps,
+        // #173 corrective: real old embedding secrets live under the
+        // profile-hashed v2 id computed from the current endpoint/model.
+        {
+          baseUrl: this.plugin.settings.vector_db_api_base ?? "",
+          model: this.plugin.settings.vector_db_api_model ?? "",
+        }
       );
       if (r.migrated.length) results.push(`${kind}: migrated`);
       for (const w of r.warnings) results.push(w);

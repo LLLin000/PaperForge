@@ -35,13 +35,8 @@ def _preflight_check(vault: Path, settings: dict | None = None) -> dict:
             "error": f"Embedding credential unavailable ({cred_state})",
             "fix": "Run `paperforge auth status embedding` for remediation",
         }
-    from paperforge.credentials import CredentialError as _CredentialError
-    from paperforge.credentials import resolve
-
-    try:
-        api_key = resolve(CredentialKey("embedding"))
-    except _CredentialError:
-        api_key = ""
+    # #173 review: preflight stays a pure presence/status read model — the
+    # secret value is never retrieved here; handlers resolve it.
 
     # 4. OCR done papers
     from paperforge.worker._utils import pipeline_paths
