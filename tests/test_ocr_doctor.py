@@ -18,8 +18,8 @@ def test_l1_missing_token():
 
     assert result["level"] == 1
     assert result["passed"] is False
-    assert "PADDLEOCR_API_TOKEN" in result["error"]
-    assert "Set PADDLEOCR_API_TOKEN" in result["fix"]
+    assert "OCR credential not found" in result["error"]
+    assert "auth set ocr" in result["fix"]
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ def test_l1_missing_token():
 # ---------------------------------------------------------------------------
 def test_l2_bad_url():
     """Mock POST returning 404 → level 2 failed."""
-    env = {"PADDLEOCR_API_TOKEN": "test-token"}
+    env = {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}
     mock_resp = MagicMock()
     mock_resp.status_code = 404
 
@@ -43,7 +43,7 @@ def test_l2_bad_url():
 
 def test_l2_unauthorized():
     """Mock POST returning 401 → level 2 failed with auth message."""
-    env = {"PADDLEOCR_API_TOKEN": "bad-token"}
+    env = {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "bad-token"}
     mock_resp = MagicMock()
     mock_resp.status_code = 401
 
@@ -59,7 +59,7 @@ def test_l2_unauthorized():
 
 def test_l2_400_accepted():
     """Mock POST returning 400 → level 2 passes (reachable, incomplete request)."""
-    env = {"PADDLEOCR_API_TOKEN": "test-token"}
+    env = {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}
     mock_resp = MagicMock()
     mock_resp.status_code = 400
 
@@ -76,7 +76,7 @@ def test_l2_400_accepted():
 # ---------------------------------------------------------------------------
 def test_l3_schema_mismatch():
     """Mock POST returning JSON without data.jobId → level 3 failed."""
-    env = {"PADDLEOCR_API_TOKEN": "test-token"}
+    env = {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}
     get_resp = MagicMock()
     get_resp.status_code = 200
     post_resp = MagicMock()
@@ -97,7 +97,7 @@ def test_l3_schema_mismatch():
 
 def test_l3_success():
     """Mock POST returning valid jobId → level 3 passed."""
-    env = {"PADDLEOCR_API_TOKEN": "test-token"}
+    env = {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}
     get_resp = MagicMock()
     get_resp.status_code = 200
     post_resp = MagicMock()
@@ -123,7 +123,7 @@ def test_l3_success():
 # ---------------------------------------------------------------------------
 def test_l4_live_success():
     """Mock POST + GET poll returning done → level 4 passed."""
-    env = {"PADDLEOCR_API_TOKEN": "test-token"}
+    env = {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}
     get_resp = MagicMock()
     get_resp.status_code = 200
     post_resp = MagicMock()
@@ -155,7 +155,7 @@ def test_l4_live_success():
 
 def test_l4_live_failure():
     """Mock POST + GET poll returning error → level 4 failed."""
-    env = {"PADDLEOCR_API_TOKEN": "test-token"}
+    env = {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}
     get_resp = MagicMock()
     get_resp.status_code = 200
     post_resp = MagicMock()

@@ -44,7 +44,7 @@ class TestClassifyError:
         exc = requests.exceptions.HTTPError("401 Unauthorized", response=mock_resp)
         state, suggestion = classify_error(exc, mock_resp)
         assert state == "blocked"
-        assert "token" in suggestion.lower()
+        assert "auth set ocr" in suggestion.lower()
 
     def test_http_error_404(self):
         """HTTPError 404 → error, job not found."""
