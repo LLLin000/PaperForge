@@ -62,10 +62,10 @@
         "effect_kind": "remote_operation",
         "evidence": {
           "file": "paperforge/commands/sync.py",
-          "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+          "file_digest": "sha256:fe1f9d6d158ea97592e00e91224de0ee1c3b4e0c1ae884ca97b5fd375c34787c",
           "symbol": "_attach_next_actions",
-          "line_start": 100,
-          "line_end": 126,
+          "line_start": 94,
+          "line_end": 120,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
           "confidence": "exact"
@@ -77,21 +77,21 @@
         "effect_kind": "materialization_build",
         "evidence": {
           "file": "paperforge/commands/sync.py",
-          "file_digest": "sha256:77f5c9d76f029f03f4d5e6ffa4528970e3410abfcbd65d37ae98871f3173f312",
+          "file_digest": "sha256:fe1f9d6d158ea97592e00e91224de0ee1c3b4e0c1ae884ca97b5fd375c34787c",
           "symbol": "_run_terminal_followups",
-          "line_start": 128,
-          "line_end": 146,
+          "line_start": 122,
+          "line_end": 140,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
           "confidence": "exact"
         }
       }
     ],
-    "source_digest": "sha256:705411ac66d16a4f43cf58cf11a4bd75b3d6f7ad2b8489030b6971a9b3b21fe7",
+    "source_digest": "sha256:b1c490e8565a0f2049ed6ed982dfaf26a2e9212fbad127e91d94d51fc6ccab1e",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
-      "repository_revision": "7372383b",
+      "repository_revision": "6ead21fc",
       "repository_dirty": false,
       "tool_version": "1.0.0",
       "extractor_versions": {
