@@ -174,6 +174,47 @@ def create_test_vault() -> Path:
     return vault
 
 
+@pytest.fixture(autouse=True)
+def _hermetic_keyring(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#173/C1: every test runs against an in-memory fake keyring.
+
+    The real OS keyring is never consulted — dev machines may hold real
+    entries that would make credential tests non-hermetic.  Canonical
+    credential env vars from the dev machine are cleared too; tests that
+    need a credential set them explicitly or store into the fake.
+    """
+    from paperforge import credentials as _cred
+
+    class _FakeKeyring:
+        class errors:
+            class PasswordDeleteError(Exception):
+                pass
+
+        def __init__(self) -> None:
+            self._d: dict[tuple[str, str], str] = {}
+
+        def get_password(self, service: str, username: str) -> str | None:
+            return self._d.get((service, username))
+
+        def set_password(self, service: str, username: str, password: str) -> None:
+            self._d[(service, username)] = password
+
+        def delete_password(self, service: str, username: str) -> None:
+            if (service, username) not in self._d:
+                raise self.errors.PasswordDeleteError()
+            del self._d[(service, username)]
+
+        def get_keyring(self) -> object:
+            return "FakeKeyring"
+
+    monkeypatch.setattr(_cred, "_keyring_module", None)
+    monkeypatch.delenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", raising=False)
+    monkeypatch.delenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", raising=False)
+    _cred.set_keyring_override(_FakeKeyring())
+    yield
+    _cred.set_keyring_override(None)
+
+
 @pytest.fixture
 def test_vault() -> Generator[Path, None, None]:
     """Pytest fixture providing a fresh test vault."""

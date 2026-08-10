@@ -30,6 +30,17 @@ class ErrorCode(str, Enum):
     ZOTERO_DATA_NOT_FOUND = "ZOTERO_DATA_NOT_FOUND"
     PDF_PATH_UNRESOLVED = "PDF_PATH_UNRESOLVED"
 
+    # ── Credentials (#173 / C1) ──
+    CREDENTIAL_MISSING = "credential.missing"
+    CREDENTIAL_BACKEND_UNAVAILABLE = "credential.backend_unavailable"
+    CREDENTIAL_BACKEND_LOCKED = "credential.backend_locked"
+    CREDENTIAL_PERMISSION_DENIED = "credential.permission_denied"
+    CREDENTIAL_BACKEND_ERROR = "credential.backend_error"
+    CREDENTIAL_INPUT_REQUIRED = "credential.input_required"
+    CREDENTIAL_CONFLICT = "credential.conflict"
+    CREDENTIAL_INVALID_PROFILE = "credential.invalid_profile"
+    CREDENTIAL_CONFIRM_REQUIRED = "credential.confirm_required"
+
     # ── OCR ──
     OCR_TOKEN_MISSING = "OCR_TOKEN_MISSING"
     OCR_UPLOAD_FAILED = "OCR_UPLOAD_FAILED"

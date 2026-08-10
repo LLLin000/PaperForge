@@ -56,7 +56,13 @@ import {
 import { EmbedBuildController } from "./services/embed-build-controller";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
-import { queryMemoryDetail, queryEmbedStatus, probeAll, invalidateAll } from "./services/config-client";
+import {
+  queryMemoryDetail,
+  queryEmbedStatus,
+  queryEmbeddingCredentialStatus,
+  probeAll,
+  invalidateAll,
+} from "./services/config-client";
 import {
   PaperForgeOcrPrivacyModal,
   PaperForgeConfirmModal,
@@ -72,26 +78,9 @@ import {
   type RuntimeUiAction,
 } from "./services/managed-runtime";
 import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
-import {
-  hasVectorDbCredential,
-  storeVectorDbCredential,
-  stripCredentialEnv,
-  type PluginForSecrets,
-  type VectorDbCredentialProfile,
-} from "./services/secret-storage";
+import { stripCredentialEnv } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
 import type { OcrProcessOutcome } from "./services/ocr-process-controller";
-
-// ── SecretStorage credential adapter (Issue #79) ──
-
-function asPluginForSecrets(
-  app: any
-): import("./services/secret-storage").PluginForSecrets {
-  return {
-    app: { secretStorage: (app as any).secretStorage },
-    saveData: async () => {},
-  };
-}
 
 // ── Interface ──
 
@@ -733,9 +722,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // API keys — check SecretStorage configured flags, not raw key values
     const hasPaddle = !!this.plugin.settings._paddleocr_configured;
-    const hasOpenai =
-      !!this.plugin.settings._vector_db_configured ||
-      !!process.env.OPENAI_API_KEY;
+    // #173/C1: presence comes from the credential authority (auth status);
+    // process-env checks in the browser are gone.
+    const hasOpenai = !!this.plugin.settings._vector_db_configured;
     addCheck(
       t("foundation_paddle_key"),
       hasPaddle ? "✓" : "✗",
@@ -1935,11 +1924,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           vaultPath: vp,
           pythonPath: resolved.path,
           pythonArgs: baseCliArgs,
-          resolveEnv: () =>
-            buildTargetedEnv(
-              asPluginForSecrets(this.app),
-              "embed"
-            ),
+          resolveEnv: () => buildTargetedEnv(null, "embed"),
           runShort: (args: string[], timeoutMs: number) => {
             const { promise, resolve } = deferred<{
               code: number;
@@ -2404,10 +2389,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     if (hasCredentialType) {
       // Async: resolve SecretStorage credentials before launch
-      buildTargetedEnv(
-        asPluginForSecrets((this as any).app),
-        opts.credentialType
-      ).then((env) => {
+      buildTargetedEnv(null, opts.credentialType).then((env) => {
         if (opts && opts.stream) {
           spawnChild(env);
         } else {
@@ -2905,10 +2887,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           return;
         }
         // Issue #79: resolve credentials immediately before embed build launch
-        const env = await buildTargetedEnv(
-          asPluginForSecrets((this as any).app),
-          "embed"
-        );
+        const env = await buildTargetedEnv(null, "embed");
         // Merge non-credential embed settings that aren't secret-managed
         env.PYTHONIOENCODING = "utf-8";
         env.PYTHONUTF8 = "1";
@@ -4764,21 +4743,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   private _refreshVectorDbCredentialStatus(): void {
-    void hasVectorDbCredential(
-      asPluginForSecrets(this.app)
-    ).then((configured) => {
-      if (configured === this.plugin.settings._vector_db_configured) return;
-      this.plugin.settings._vector_db_configured = configured;
-      void this.plugin.saveSettings();
-    });
+    // #173/C1: presence comes from the credential authority (`auth status`),
+    // never from SecretStorage or settings flags.
+    const vp = this._getVaultBasePath();
+    if (!vp) return;
+    void queryEmbeddingCredentialStatus(vp, this.plugin.settings)
+      .then((available) => {
+        if (available === this.plugin.settings._vector_db_configured) return;
+        this.plugin.settings._vector_db_configured = available;
+        void this.plugin.saveSettings();
+      })
+      .catch(() => undefined);
   }
 
   private async _storeVectorDbCredential(value: string): Promise<boolean> {
-    const saved = await storeVectorDbCredential(
-      asPluginForSecrets(this.app),
-      { baseUrl: "", model: "" },
-      value
-    );
+    // #173/C1: durable secrets go to the credential authority via
+    // `auth set embedding --stdin` — never SecretStorage, .env, or data.json.
+    const saved = await this._authSetSecret("embedding", value);
     if (!saved) return false;
     this.plugin.settings._vector_db_configured = true;
     this.plugin.settings.vector_db_api_key = "";
@@ -4790,10 +4771,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         )
       : [];
     await this.plugin.saveSettings();
-
-    // Write to .env so CLI can also read the key
-    this._updateDotEnv("VECTOR_DB_API_KEY", value);
-
     this.display();
     return true;
   }
@@ -4804,30 +4781,55 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   ): Promise<boolean> {
     if (secretId === "vector-db-api-key")
       return this._storeVectorDbCredential(value);
-    const storage = asPluginForSecrets(this.app).app.secretStorage;
-    if (!value || !storage?.setSecret) return false;
-    try {
-      await storage.setSecret(secretId, value);
-      this.plugin.settings._paddleocr_configured = true;
-      this.plugin.settings.paddleocr_api_key = "";
-      await this.plugin.saveSettings();
-      this._updateDotEnv("PADDLEOCR_API_KEY", value);
-      return true;
-    } catch {
-      return false;
-    }
+    if (!value) return false;
+    const saved = await this._authSetSecret("ocr", value);
+    if (!saved) return false;
+    this.plugin.settings._paddleocr_configured = true;
+    this.plugin.settings.paddleocr_api_key = "";
+    await this.plugin.saveSettings();
+    return true;
   }
 
-  /** Write a key=value pair to the vault .env file for CLI access. */
-  private _updateDotEnv(key: string, value: string): void {
-    const vaultPath = this._getVaultBasePath();
-    if (!vaultPath) return;
-    // #142 / C0: the plugin no longer writes .env — Python reads canonical
-    // config + process environment; durable secrets belong to the #138
-    // credential provider (auth commands).
-    new Notice(
-      "PaperForge: set this in your environment or use `paperforge auth set`"
-    );
+  /** #173/C1: `paperforge auth set <kind> --stdin` — the secret travels only
+   *  via child stdin, never argv, env, files, or settings. */
+  private _authSetSecret(
+    kind: "ocr" | "embedding",
+    value: string
+  ): Promise<boolean> {
+    const vp = this._getVaultBasePath();
+    const py = this._resolveRuntimeCommand(vp);
+    if (!py || !value) return Promise.resolve(false);
+    return new Promise((resolvePromise) => {
+      const child = spawn(
+        py.path,
+        [
+          ...py.args,
+          "-m",
+          "paperforge",
+          "--vault",
+          vp,
+          "auth",
+          "set",
+          kind,
+          "--stdin",
+          "--json",
+        ],
+        { cwd: vp, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] }
+      );
+      let stdout = "";
+      child.stdout.on("data", (d) => (stdout += String(d)));
+      child.on("error", () => resolvePromise(false));
+      child.on("close", (code: number | null) => {
+        try {
+          const parsed = JSON.parse(stdout) as { ok?: boolean };
+          resolvePromise(code === 0 && parsed?.ok === true);
+        } catch {
+          resolvePromise(false);
+        }
+      });
+      child.stdin.write(value);
+      child.stdin.end();
+    });
   }
 
   _renderSetupStageOptionals(containerEl: HTMLElement): void {

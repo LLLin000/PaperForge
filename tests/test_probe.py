@@ -692,6 +692,11 @@ class TestAllProbes:
 class TestOcrConcreteFixes:
     """Concrete correctness fixes for Issue #78 OCR probe."""
 
+    @pytest.fixture(autouse=True)
+    def _credential_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """#173/C1: hermetic credential — this test reaches the ready tail."""
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", "test-token")
+
     def test_healthy_display_action_none_is_ready(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Row with display_action='none', no failures → ready."""
         from paperforge.commands import probe as probe_mod
@@ -886,6 +891,11 @@ class TestOcrRebuildResultNonDestructive:
 class TestOcrActivityProgress:
     """OCR activity progress current = terminal/completed count, not running/queued."""
 
+    @pytest.fixture(autouse=True)
+    def _credential_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """#173/C1: hermetic credential — this test exercises the activity overlay."""
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", "test-token")
+
     def test_queued_only_batch_progress_zero_of_N(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """All queued -> progress current=0, total=N."""
         from paperforge.commands import probe as probe_mod
@@ -1009,6 +1019,11 @@ class TestOcrQualityUnacceptable:
         data = probe_ocr(tmp_path)
         assert data['action']['primary']['scope'] == 'selection'
         assert data['action']['primary']['scope_count'] == 2
+
+    @pytest.fixture(autouse=True)
+    def _credential_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """#173/C1: hermetic credential — the ready tail needs the OCR credential."""
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", "test-token")
 
     def test_ocr_ready_includes_pipeline_version(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Ready OCR probe includes current_pipeline_version and per-paper versions."""

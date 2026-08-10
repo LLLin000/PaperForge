@@ -17,24 +17,17 @@ def _preflight_check(vault: Path, settings: dict | None = None) -> dict:
             "fix": 'Run: pip install "paperforge[vector]"',
         }
 
-    # 3. API key
-    api_key = None
-    if settings:
-        api_key = settings.get("vector_db_api_key")
-    if not api_key:
-        api_key = os.environ.get("VECTOR_DB_API_KEY") or os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        env_path = vault / ".env"
-        if env_path.exists():
-            for line in env_path.read_text(encoding="utf-8").splitlines():
-                if line.startswith("VECTOR_DB_API_KEY=") or line.startswith("OPENAI_API_KEY="):
-                    api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
-                    break
-    if not api_key:
+    # 3. API key (#173/C1: credential authority; legacy settings/.env
+    #    plaintext reads are removed — migration input only)
+    from paperforge.credentials import CredentialError, CredentialKey, resolve
+
+    try:
+        api_key = resolve(CredentialKey("embedding"))
+    except CredentialError:
         return {
             "ok": False,
             "error": "API key not configured",
-            "fix": "Set VECTOR_DB_API_KEY or OPENAI_API_KEY in .env or plugin settings",
+            "fix": "Run `paperforge auth set embedding --stdin` or supply PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT",
         }
 
     # 4. OCR done papers

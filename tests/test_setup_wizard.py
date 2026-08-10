@@ -455,8 +455,12 @@ def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: py
     assert docs_file.read_text(encoding="utf-8") == "user doc\n"
     assert agents_file.read_text(encoding="utf-8") == "custom agents\n"
     env_text = env_file.read_text(encoding="utf-8")
-    assert "PADDLEOCR_API_TOKEN=keep-me" in env_text
-    assert "PADDLEOCR_API_TOKEN=new-token" not in env_text
+    assert "PADDLEOCR_API_TOKEN=keep-me" in env_text  # legacy rows untouched
+    assert "PADDLEOCR_API_TOKEN=new-token" not in env_text  # #173: secrets never written to .env
+    # #173/C1: the setup token lands in the credential authority instead.
+    from paperforge.credentials import CredentialKey, resolve
+
+    assert resolve(CredentialKey("ocr")) == "new-token"
     assert plugin_main.read_text(encoding="utf-8") == "custom plugin\n"
     assert existing_note.read_text(encoding="utf-8") == "keep note\n"
 

@@ -27,8 +27,7 @@ def _isolate_ocr_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
     - Very small poll budget by default
     """
 
-    monkeypatch.delenv("PADDLEOCR_API_TOKEN", raising=False)
-    monkeypatch.delenv("PADDLEOCR_API_TOKEN_USER", raising=False)
+    monkeypatch.delenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", raising=False)
     monkeypatch.setenv("PAPERFORGE_POLL_INTERVAL", "0")
     monkeypatch.setenv("PAPERFORGE_POLL_MAX_CYCLES", "2")
     monkeypatch.setitem(
@@ -128,7 +127,7 @@ do_ocr: true
         mock_post.return_value.json.return_value = {"data": {"jobId": "job-123"}}
         mock_post.return_value.raise_for_status = MagicMock()
 
-        with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token"}):
+        with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}):
             with patch("paperforge.worker.ocr.pipeline_paths", return_value=paths):
                 with patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}):
                     with patch(
@@ -241,7 +240,7 @@ do_ocr: true
 
         # Use return_value for all calls — same mock is returned each time
         # This is sufficient since we only care about the first poll result
-        with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token"}):
+        with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}):
             with patch("paperforge.worker.ocr.pipeline_paths", return_value=paths):
                 with patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}):
                     with patch(
@@ -335,7 +334,7 @@ do_ocr: true
         error_response.json.return_value = {"data": {"state": "error", "errorMsg": "Model inference failed"}}
         error_response.raise_for_status = MagicMock()
 
-        with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token"}):
+        with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}):
             with patch("paperforge.worker.ocr.pipeline_paths", return_value=paths):
                 with patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}):
                     with patch(
@@ -441,7 +440,7 @@ do_ocr: true
         def make_meta(*args, **kwargs):
             return {"zotero_key": key, "ocr_status": "pending"}
 
-        with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token"}):
+        with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}):
             with patch("paperforge.worker.ocr.pipeline_paths", return_value=paths):
                 with patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}):
                     with patch(
@@ -841,7 +840,7 @@ do_ocr: true
         )
         (vault / "test.pdf").write_text("PDF content")
 
-        with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token"}):
+        with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}):
             with (
                 patch("paperforge.worker.ocr.pipeline_paths", return_value=paths),
                 patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}),
@@ -965,7 +964,7 @@ class TestOcrEdgeCases:
             "os.environ",
             {
                 "PADDLEOCR_MAX_ITEMS": "1",
-                "PADDLEOCR_API_TOKEN": "test-token",
+                "PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token",
                 **TestOcrEdgeCases.SHORT_RETRY,
             },
         ):
@@ -1115,7 +1114,7 @@ class TestOcrEdgeCases:
 
         mock_post = MagicMock(side_effect=requests.exceptions.Timeout("request timed out"))
 
-        with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token", **TestOcrEdgeCases.SHORT_RETRY}):
+        with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token", **TestOcrEdgeCases.SHORT_RETRY}):
             with (
                 patch("paperforge.worker.ocr.pipeline_paths", return_value=paths),
                 patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}),
@@ -1160,7 +1159,7 @@ class TestOcrEdgeCases:
         mock_get.return_value.json.return_value = {"data": {"state": "bizarre_unknown", "resultUrl": {"jsonUrl": "http://x.com"}}}
         mock_get.return_value.raise_for_status = MagicMock()
 
-        with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token"}):
+        with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}):
             with (
                 patch("paperforge.worker.ocr.pipeline_paths", return_value=paths),
                 patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}),
@@ -1235,7 +1234,7 @@ class TestOcrEdgeCases:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
-        with patch.dict("os.environ", {"PADDLEOCR_API_TOKEN": "test-token"}):
+        with patch.dict("os.environ", {"PAPERFORGE_CREDENTIAL_OCR__DEFAULT": "test-token"}):
             with (
                 patch("paperforge.worker.ocr.pipeline_paths", return_value=paths),
                 patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}),

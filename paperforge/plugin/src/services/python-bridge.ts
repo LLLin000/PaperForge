@@ -3,12 +3,7 @@ import * as path from "path";
 import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
 import type { PaperForgeSettings } from "../constants";
-import {
-  stripCredentialEnv,
-  resolveCredentialEnv,
-  type PluginForSecrets,
-  type VectorDbCredentialProfile,
-} from "./secret-storage";
+import { stripCredentialEnv } from "./secret-storage";
 
 // ── Types ──
 
@@ -499,20 +494,16 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
 }
 
 /**
- * Resolve credentials for a targeted OCR/Memory command and merge with
- * the strip-credential base environment. Non-allowlisted command types
- * return the base env unchanged.
- * Issue #79: secret resolution happens immediately before launch only.
+ * #173/C1: the plugin no longer resolves or injects credentials — Python
+ * resolves them from the canonical PAPERFORGE_CREDENTIAL_* env or the OS
+ * keyring.  This returns the redacted base environment only; the signature
+ * keeps its call sites stable while the secret seam is removed.
  */
 export async function buildTargetedEnv(
-  plugin: PluginForSecrets,
-  commandType: string,
-  vectorProfile?: VectorDbCredentialProfile
+  _plugin: unknown,
+  _commandType?: string
 ): Promise<Record<string, string | undefined>> {
-  const creds = await resolveCredentialEnv(plugin, commandType, vectorProfile);
-  const base = paperforgeEnrichedEnv();
-  if (Object.keys(creds).length === 0) return base;
-  return Object.assign({}, base, creds);
+  return paperforgeEnrichedEnv();
 }
 
 export function shellQuoteForExec(cmd: string): string {

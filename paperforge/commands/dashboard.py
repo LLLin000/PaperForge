@@ -98,10 +98,9 @@ def _check_permissions(vault: Path) -> dict:
     export_files = sorted(paths["exports"].glob("*.json")) if paths["exports"].exists() else []
     can_sync = len(export_files) > 0
 
-    paddle_token = (
-        os.environ.get("PADDLEOCR_API_TOKEN") or os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")
-    )
-    can_ocr = bool(paddle_token)
+    from paperforge.credentials import CredentialKey, status as credential_status
+
+    can_ocr = credential_status(CredentialKey("ocr")).state == "available"
 
     can_copy_context = False
     pf_dir = paths.get("paperforge", vault / cfg["system_dir"] / "PaperForge")

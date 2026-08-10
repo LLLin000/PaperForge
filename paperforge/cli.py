@@ -524,6 +524,35 @@ def build_parser() -> argparse.ArgumentParser:
     p_config_migrate.add_argument("--json", action="store_true")
 
     # probe
+    # ── auth family (#173 / C1) ──
+    p_auth = sub.add_parser("auth", help="Credential authority (keyring + canonical env)")
+    auth_sub = p_auth.add_subparsers(dest="auth_verb", required=True)
+    p_auth_status = auth_sub.add_parser("status", help="Report credential availability/source")
+    p_auth_status.add_argument("kind", nargs="?", choices=["ocr", "embedding"], help="Check one kind (default: vault profiles)")
+    p_auth_status.add_argument("--profile", default=None, help="Profile id (default)")
+    p_auth_status.add_argument("--json", action="store_true", help="Output as JSON")
+    p_auth_set = auth_sub.add_parser("set", help="Store a secret in the keyring (never argv)")
+    p_auth_set.add_argument("kind", choices=["ocr", "embedding"])
+    p_auth_set.add_argument("--profile", default=None, help="Profile id (default)")
+    p_auth_set.add_argument("--stdin", action="store_true", help="Read the secret from stdin (non-TTY)")
+    p_auth_set.add_argument("--replace", action="store_true", help="Replace an existing different value")
+    p_auth_set.add_argument("--json", action="store_true", help="Output as JSON")
+    p_auth_delete = auth_sub.add_parser("delete", help="Delete the keyring entry")
+    p_auth_delete.add_argument("kind", choices=["ocr", "embedding"])
+    p_auth_delete.add_argument("--profile", default=None, help="Profile id (default)")
+    p_auth_delete.add_argument("--yes", action="store_true", help="Confirm deletion (noninteractive)")
+    p_auth_delete.add_argument("--json", action="store_true", help="Output as JSON")
+    p_auth_migrate = auth_sub.add_parser("migrate", help="Migrate legacy credentials once (never a runtime fallback)")
+    p_auth_migrate.add_argument("--from", dest="source", required=True,
+                                choices=["dotenv", "environment", "windows-registry"],
+                                help="Legacy source to read")
+    p_auth_migrate.add_argument("--dry-run", action="store_true", help="Discover only; never store or scrub")
+    p_auth_migrate.add_argument("--replace", action="store_true", help="Replace different existing values")
+    p_auth_migrate.add_argument("--kind", choices=["ocr", "embedding"], default=None,
+                                help="Force target kind for all discovered entries")
+    p_auth_migrate.add_argument("--profile", default=None, help="Target profile (default)")
+    p_auth_migrate.add_argument("--json", action="store_true", help="Output as JSON")
+
     p_probe = sub.add_parser("probe", help="Probe a module's capability state")
     p_probe.add_argument(
         "probe_module",
@@ -616,7 +645,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Fail-closed config loading: domain commands never operate on guessed
     # paths.  config/setup/probe handle their own missing-config states.
-    config_tolerant_commands = frozenset({"config", "setup", "probe"})
+    config_tolerant_commands = frozenset({"config", "setup", "probe", "auth"})
     try:
         snapshot = load_config(vault)
         args.cfg = {key: str(cv.value).lower() if isinstance(cv.value, bool) else str(cv.value)
@@ -807,6 +836,11 @@ def main(argv: list[str] | None = None) -> int:
         from paperforge.commands.runtime_health import run
 
         return run(args)
+
+    if args.command == "auth":
+        from paperforge.commands.auth import run as run_auth
+
+        return run_auth(args)
 
     if args.command == "base-refresh":
         force = getattr(args, "force", False)
