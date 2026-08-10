@@ -90,9 +90,28 @@ def _collect_ocr_health_summary(vault: Path) -> list[dict]:
 
 def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int:
     """Run OCR diagnostics and print results."""
+    from paperforge.credentials import CredentialError as _CredentialError
     from paperforge.ocr_diagnostics import ocr_doctor
 
-    result = ocr_doctor(config=None, live=live)
+    try:
+        result = ocr_doctor(config=None, live=live)
+    except _CredentialError as exc:
+        # #173 corrective: a backend fault (locked/unavailable/denied) is a
+        # distinct diagnostic finding — never crashed and never disguised as
+        # a missing key.
+        from paperforge.commands.auth import _error_result as _cred_error_result
+
+        failed = _cred_error_result("ocr.diagnose", exc)
+        if json_output:
+            print(failed.to_json())
+        else:
+            # Text-mode diagnose keeps its diagnostic shape — the backend
+            # fault is the finding (level 1, distinct from a missing key).
+            print("OCR Doctor — Level 1 diagnostic")
+            print(f"Status: {failed.error.code if failed.error else 'error'}")
+            print(f"Reason: {failed.error.message if failed.error else str(exc)}")
+            print("Fix: run `paperforge auth status ocr` for remediation")
+        return 1
     level = result.get("level", 0)
     passed = result.get("passed", False)
 
