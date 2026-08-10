@@ -14,6 +14,12 @@ import pytest
 from tests.conftest import canonical_test_config
 
 
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    """#142 seam: every tmp_path-rooted vault gets a canonical paperforge.json."""
+    canonical_test_config(tmp_path)
+
+
 import paperforge.config
 from paperforge.worker._utils import pipeline_paths as _pp
 EMBEDDING_DIM = 1536  # must match vec0 schema
@@ -513,6 +519,7 @@ def test_build_from_index_two_runs_incremental(tmp_path: Path) -> None:
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    canonical_test_config(vault)
     (vault / "03_Resources" / "Literature" / "骨科").mkdir(parents=True)
     (vault / "System" / "PaperForge").mkdir(parents=True)
 

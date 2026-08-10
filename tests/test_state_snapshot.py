@@ -4,9 +4,11 @@ import json
 from pathlib import Path
 
 from paperforge.memory.state_snapshot import write_vector_runtime
+from tests.conftest import canonical_test_config
 
 
 def test_vector_runtime_records_object_chunks(tmp_path: Path) -> None:
+    canonical_test_config(tmp_path)
     write_vector_runtime(
         tmp_path,
         enabled=True,

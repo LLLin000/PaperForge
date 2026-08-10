@@ -3,8 +3,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from paperforge.commands import retrieve as retrieve_command
 from paperforge.commands import search as search_command
+from tests.conftest import canonical_test_config
+
+
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    """#142 seam: every tmp_path-rooted vault gets a canonical paperforge.json."""
+    canonical_test_config(tmp_path)
 
 
 class _Args:
