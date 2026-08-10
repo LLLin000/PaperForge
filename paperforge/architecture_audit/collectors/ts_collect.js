@@ -167,7 +167,7 @@ function main() {
     const rel = posix(path.relative(rootDir, file));
     let source;
     try {
-      source = fs.readFileSync(file, "utf8");
+      source = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
     } catch (err) {
       parseErrors.push(`${rel}: ${err.message}`);
       continue;
