@@ -483,21 +483,8 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
             action_id="ocr.enable", verb="set_config", label="Enable OCR", command="paperforge setup",
         ), ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
-    # ── API key / env check — canonical _resolve_paddleocr_token ──
-    from paperforge.worker.ocr import _resolve_paddleocr_token
-    token = _resolve_paddleocr_token(vault)
-
-    if not token:
-        return build_envelope(module="ocr", capability_state="missing_input", severity="warning",
-        reason_code="ocr.api_key_missing",
-        reason_text="PADDLEOCR_API_TOKEN not found in environment — configure API key",
-        user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
-        action_primary=build_action_primary(
-            action_id="ocr.configure", verb="set_config", label="Configure API key",
-            command="paperforge setup",
-        ), ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
-
-    # ── Provider reachability via ocr_doctor(config=None, live=False) ──
+    # ── Provider reachability (notices only; readiness verdict is LAST,
+    #    #161: local materialization defects outrank credential readiness) ──
     notices: list[dict[str, Any]] = []
     provider_reachable = True
     try:
@@ -681,6 +668,22 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         ),
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+
+    # ── Credential / provider readiness — LAST (#161): the API key gates
+    #    whether REMOTE OCR can run; it never masks an existing canonical
+    #    local materialization defect (failed/redo/pending/degraded rows). ──
+    from paperforge.worker.ocr import _resolve_paddleocr_token
+    token = _resolve_paddleocr_token(vault)
+
+    if not token:
+        return _wrap(module="ocr", capability_state="missing_input", severity="warning",
+        reason_code="ocr.api_key_missing",
+        reason_text="PADDLEOCR_API_TOKEN not found in environment — configure API key",
+        user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.configure", verb="set_config", label="Configure API key",
+            command="paperforge setup",
+        ), ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     if not provider_reachable:
         return _wrap(module="ocr", capability_state="limited", severity="warning",
@@ -1067,13 +1070,13 @@ def _worst_severity(severities: list[str]) -> str:
     return max(severities, key=lambda s: order.get(s, 0), default="ok")
 
 
-def probe_maintenance(vault: Path) -> dict[str, Any]:
-    """Derive a Maintenance projection from the five constituent modules (#84).
+PROBE_ORDER = ("installation", "library", "ocr", "memory", "help")
 
-    Maintenance now filters by backend-owned maintenance_eligible flag.
-    Only modules with blocking, failed, corrupt, or materially risky conditions
-    enter Maintenance. Optional not-enabled capabilities are excluded.
-    """
+
+def _probe_base_modules(vault: Path) -> dict[str, dict[str, Any]]:
+    """#140: fixed dispatcher — each base reader runs exactly once, in
+    PROBE_ORDER, sequentially. An unexpected reader exception becomes that
+    module's valid detection_failed envelope; the aggregate never aborts."""
     probes = {
         "installation": probe_installation,
         "library": probe_library,
@@ -1081,13 +1084,13 @@ def probe_maintenance(vault: Path) -> dict[str, Any]:
         "memory": probe_memory,
         "help": probe_help,
     }
-
-    items: list[dict[str, Any]] = []
-    for mod_name, probe_fn in probes.items():
+    modules: dict[str, dict[str, Any]] = {}
+    for mod_name in PROBE_ORDER:
+        probe_fn = probes[mod_name]
         try:
-            env = probe_fn(vault)
+            modules[mod_name] = probe_fn(vault)
         except Exception:
-            env = build_envelope(
+            modules[mod_name] = build_envelope(
                 module=mod_name, capability_state="unknown", severity="unknown",
                 reason_code=f"{mod_name}.probe_failed",
                 reason_text=f"{mod_name} probe failed — try again",
@@ -1098,6 +1101,16 @@ def probe_maintenance(vault: Path) -> dict[str, Any]:
                 ),
                 ttl_seconds=60,
             )
+    return modules
+
+
+def derive_maintenance(modules: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """#140: pure projection of the base envelopes — maintenance NEVER
+    re-probes canonical sources. Only backend-owned maintenance_eligible
+    envelopes enter; optional not-enabled capabilities are excluded."""
+    items: list[dict[str, Any]] = []
+    for mod_name in PROBE_ORDER:
+        env = modules[mod_name]
 
         # #84: maintenance_eligible backend-owned filter
         is_eligible = env.get("maintenance_eligible", False)
@@ -1119,6 +1132,12 @@ def probe_maintenance(vault: Path) -> dict[str, Any]:
             "maintenance_eligible": True,
         })
 
+    return _derive_maintenance_tail(items)
+
+
+def _derive_maintenance_tail(items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Envelope construction shared by the pure projection and the
+    standalone `probe maintenance` fan-out."""
     if len(items) == 0:
         envelope = build_envelope(
             module="maintenance", capability_state="ready", severity="ok",
@@ -1147,35 +1166,25 @@ def probe_maintenance(vault: Path) -> dict[str, Any]:
     return envelope
 
 
+def probe_maintenance(vault: Path) -> dict[str, Any]:
+    """Standalone maintenance probe — same fan-out and projection as
+    probe_all (#140): five base readers, then the pure projection."""
+    return derive_maintenance(_probe_base_modules(vault))
+
+
 # ---------------------------------------------------------------------------
 # CLI dispatch
 # ---------------------------------------------------------------------------
 
 def _run_probe_all(vault: Path, *, json_output: bool) -> int:
-    """#140/#148: probe all reads each base capability exactly once and
-    returns a module -> envelope map. A failing probe degrades to its own
-    unknown envelope; the aggregate never aborts."""
+    """#140/#148: probe all reads each base capability exactly once,
+    derives the maintenance projection from those exact envelopes (zero
+    re-probe), and returns the six-module envelope map. A failing probe
+    degrades to its own detection_failed envelope; never aborts."""
     import json as _json
 
-    probes = {
-        "installation": probe_installation,
-        "library": probe_library,
-        "ocr": probe_ocr,
-        "memory": probe_memory,
-        "help": probe_help,
-    }
-    modules: dict[str, dict[str, Any]] = {}
-    for mod_name, probe_fn in probes.items():
-        try:
-            modules[mod_name] = probe_fn(vault)
-        except Exception:
-            modules[mod_name] = build_envelope(
-                module=mod_name, capability_state="unknown", severity="unknown",
-                reason_code=f"{mod_name}.probe_failed",
-                reason_text=f"{mod_name} probe failed — try again",
-                user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_REQUIRED,
-                ttl_seconds=60,
-            )
+    modules = _probe_base_modules(vault)
+    modules["maintenance"] = derive_maintenance(modules)
     aggregate = {
         "schema_version": SCHEMA_VERSION,
         "module": "all",

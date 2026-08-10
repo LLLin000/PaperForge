@@ -304,14 +304,14 @@
       "rule_id": "client_read.runtime_snapshots",
       "kind": "canonical_read",
       "subject": "runtime_state.snapshot",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "enforcement": "advisory",
       "effective_after": {
         "issue": "#148"
       },
       "known_gap": {
-        "issue": "#148",
-        "rationale": "read models replace snapshot reads; CANONICAL_READ collector soaks before blocking (#149)"
+        "issue": "#149",
+        "rationale": "CANONICAL_READ collector soaks before evaluation/blocking; rule declared active+advisory this slice (#161)"
       },
       "description": "Prohibited pattern: plugin/TS reads of canonical runtime snapshot files; fresh Python read models fully determine UI (#148)"
     }

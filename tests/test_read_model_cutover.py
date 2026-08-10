@@ -99,7 +99,9 @@ def test_sync_cleanup_removes_legacy_snapshots_best_effort(tmp_path):
 
 
 
-def test_probe_all_aggregates_each_module_once(tmp_path: Path):
+def test_probe_all_aggregates_six_modules_with_derived_maintenance(tmp_path: Path):
+    """#140: probe all = five base envelopes (read exactly once) + the
+    maintenance projection derived from those exact envelopes. Six modules."""
     vault = tmp_path / "vault"
     vault.mkdir()
     canonical_test_config(vault)
@@ -111,9 +113,47 @@ def test_probe_all_aggregates_each_module_once(tmp_path: Path):
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["module"] == "all"
-    assert sorted(payload["modules"].keys()) == ["help", "installation", "library", "memory", "ocr"]
+    assert sorted(payload["modules"].keys()) == [
+        "help", "installation", "library", "maintenance", "memory", "ocr",
+    ]
     for env in payload["modules"].values():
         assert env["module"] in payload["modules"]
+    # maintenance is a projection of the base envelopes
+    maintenance = payload["modules"]["maintenance"]
+    assert "items" in maintenance
+    for item in maintenance["items"]:
+        assert item["module"] in ("installation", "library", "ocr", "memory", "help")
+
+
+def test_probe_all_derives_maintenance_with_zero_reprobe(monkeypatch, tmp_path: Path):
+    """#140: the maintenance envelope is derived from the five base results;
+    no reader is called a second time."""
+    import paperforge.commands.probe as probe_mod
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+
+    calls: dict[str, int] = {}
+    for name in ("probe_installation", "probe_library", "probe_ocr", "probe_memory", "probe_help"):
+        original = getattr(probe_mod, name)
+
+        def make_wrapper(mod_name: str, fn):
+            def wrapper(*args, **kwargs):
+                calls[mod_name] = calls.get(mod_name, 0) + 1
+                return fn(*args, **kwargs)
+            return wrapper
+
+        monkeypatch.setattr(probe_mod, name, make_wrapper(name, original))
+
+    from io import StringIO
+    import contextlib
+    out = StringIO()
+    with contextlib.redirect_stdout(out):
+        assert probe_mod._run_probe_all(vault, json_output=False) == 0
+    # each base reader exactly once; maintenance never re-probes
+    assert calls == {"probe_installation": 1, "probe_library": 1, "probe_ocr": 1,
+                     "probe_memory": 1, "probe_help": 1}, calls
 
 
 def test_ocr_pipeline_versions_detail_surface(tmp_path: Path):
