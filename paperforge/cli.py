@@ -524,6 +524,22 @@ def build_parser() -> argparse.ArgumentParser:
     p_config_migrate.add_argument("--json", action="store_true")
 
     # probe
+    # ── action family (#163 / T2) ──
+    p_action = sub.add_parser("action", help="Declarative action registry + runner (#145)")
+    action_sub = p_action.add_subparsers(dest="action_verb", required=True)
+    p_action_list = action_sub.add_parser("list", help="List registered actions")
+    p_action_list.add_argument("--json", action="store_true", help="Output as JSON")
+    p_action_describe = action_sub.add_parser("describe", help="Current descriptor for one action (includes preflight)")
+    p_action_describe.add_argument("action_id", help="Registered action id")
+    p_action_describe.add_argument("--json", action="store_true", help="Output as JSON")
+    p_action_run = action_sub.add_parser("run", help="Run one action (preflight + confirmation gate + handler)")
+    p_action_run.add_argument("action_id", help="Registered action id")
+    p_action_run.add_argument("--scope", choices=["all", "papers"], default="all", help="Request scope kind (papers needs --key)")
+    p_action_run.add_argument("--key", action="append", default=[], metavar="KEY", help="Paper key (papers scope; repeatable)")
+    p_action_run.add_argument("--confirm", default=None, help="Exact action id to confirm (confirmation-required actions)")
+    p_action_run.add_argument("--follow", choices=["none", "auto"], default="none", help="Follow-up mode (#145 §8.1)")
+    p_action_run.add_argument("--json", action="store_true", help="Output as JSON")
+
     # ── auth family (#173 / C1) ──
     p_auth = sub.add_parser("auth", help="Credential authority (keyring + canonical env)")
     auth_sub = p_auth.add_subparsers(dest="auth_verb", required=True)
@@ -645,7 +661,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Fail-closed config loading: domain commands never operate on guessed
     # paths.  config/setup/probe handle their own missing-config states.
-    config_tolerant_commands = frozenset({"config", "setup", "probe", "auth"})
+    config_tolerant_commands = frozenset({"config", "setup", "probe", "auth", "action"})
     try:
         snapshot = load_config(vault)
         args.cfg = {key: str(cv.value).lower() if isinstance(cv.value, bool) else str(cv.value)
@@ -841,6 +857,11 @@ def main(argv: list[str] | None = None) -> int:
         from paperforge.commands.auth import run as run_auth
 
         return run_auth(args)
+
+    if args.command == "action":
+        from paperforge.commands.action import run as run_action
+
+        return run_action(args)
 
     if args.command == "base-refresh":
         force = getattr(args, "force", False)
