@@ -56,13 +56,7 @@ import {
 import { EmbedBuildController } from "./services/embed-build-controller";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
-import {
-  getVectorRuntime,
-  getMemoryRuntime,
-  getRuntimeHealth,
-  getMemoryStatusText,
-  getVectorStatusText,
-} from "./services/memory-state";
+import { queryMemoryDetail, queryEmbedStatus } from "./services/config-client";
 import {
   PaperForgeOcrPrivacyModal,
   PaperForgeConfirmModal,
@@ -1586,44 +1580,57 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const diagBody = details.createDiv({ cls: "pf-sr-diagnostics-body" });
 
     const vp = this._getVaultBasePath();
-    const mem = vp ? getMemoryRuntime(vp) : null;
-    const vec = vp ? getVectorRuntime(vp) : null;
-    const bs = vec?.build_state as Record<string, unknown> | undefined;
     const baseUrl = this.plugin.settings.vector_db_api_base || "-";
 
     const tbl = diagBody.createEl("table", { cls: "pf-diag-table" });
-    const addRow = (label: string, value: string) => {
-      const tr = tbl.createEl("tr");
-      tr.createEl("td", { cls: "pf-diag-label", text: label });
-      tr.createEl("td", { cls: "pf-diag-value", text: value });
+    const diagRows = new Map<string, HTMLTableRowElement>();
+    const setRow = (label: string, value: string) => {
+      if (!diagRows.has(label)) {
+        const tr = tbl.createEl("tr");
+        tr.createEl("td", { cls: "pf-diag-label", text: label });
+        const vd = tr.createEl("td", { cls: "pf-diag-value" });
+        diagRows.set(label, tr);
+        vd.textContent = value;
+        return;
+      }
+      const vd = diagRows.get(label)!.children[1] as HTMLTableCellElement;
+      vd.textContent = value;
     };
 
-    addRow("FTS5 Papers", String(mem?.paper_count_db ?? "?"));
-    addRow("FTS5 Fresh", mem?.fresh ? "Yes" : mem ? "Stale" : "?");
-    addRow("Needs Rebuild", mem?.needs_rebuild ? "Yes" : "No");
-    addRow("", ""); // spacer
-    addRow("Vector Backend", "vec0 (sqlite-vec)");
-    addRow("Vector Model", vec?.model ?? "-");
-    addRow("Vector Mode", vec?.mode ?? "-");
-    addRow("Vector Dimension", String(vec?.dimension ?? 0));
-    addRow("Base URL", baseUrl);
-    addRow("", ""); // spacer
-    addRow("Body Chunks", String(vec?.body_chunk_count ?? 0));
-    addRow("Object Chunks", String(vec?.object_chunk_count ?? 0));
-    addRow("Legacy Chunks", String(vec?.chunk_count ?? 0));
-    addRow("Total Chunks", String(vec?.total_chunks ?? 0));
-    addRow("", ""); // spacer
-    addRow("Build Status", String(bs?.status ?? "-"));
-    addRow("Build Progress", `${bs?.current ?? "?"}/${bs?.total ?? "?"}`);
-    addRow(
-      "DB Healthy",
-      vec?.healthy ? "Yes" : vec?.healthy === false ? "No" : "?"
-    );
-    addRow("API Key", apiKeyConfigured ? "Configured" : "Missing");
-    addRow("", ""); // spacer
-    addRow("Capability State", env.capability_state);
-    addRow("Severity", env.severity);
-    addRow("Reason Code", reasonCode);
+    setRow("FTS5 Papers", "…");
+    setRow("FTS5 Fresh", "…");
+    setRow("Needs Rebuild", "…");
+    setRow("", ""); // spacer
+    setRow("Vector Backend", "vec0 (sqlite-vec)");
+    setRow("Vector Model", "…");
+    setRow("Vector Mode", "…");
+    setRow("Vector Dimension", "…");
+    setRow("Base URL", baseUrl);
+    // #161/R: detail rows come from the typed read-model queries — the
+    // plugin never reads snapshot files.
+    if (vp) {
+      void queryMemoryDetail(vp, this.plugin.settings).then((m) => {
+        const d = (m as Record<string, unknown>).data as Record<string, unknown> | undefined;
+        setRow("FTS5 Papers", String(d?.paper_count_db ?? "?"));
+        setRow("FTS5 Fresh", d?.fresh ? "Yes" : "Stale");
+        setRow("Needs Rebuild", d?.needs_rebuild ? "Yes" : "No");
+      }).catch(() => undefined);
+      void queryEmbedStatus(vp, this.plugin.settings).then((e) => {
+        const d = (e as Record<string, unknown>).data as Record<string, unknown> | undefined;
+        setRow("Vector Model", String(d?.model ?? "-"));
+        setRow("Vector Mode", String(d?.mode ?? "-"));
+        setRow("Body Chunks", String(d?.body_chunk_count ?? 0));
+        setRow("Object Chunks", String(d?.object_chunk_count ?? 0));
+        setRow("Total Chunks", String(d?.total_chunks ?? 0));
+        const bs = (d?.build_state as Record<string, unknown> | undefined) ?? undefined;
+        setRow("Build Status", String(bs?.status ?? "-"));
+        setRow("Build Progress", `${bs?.current ?? "?"}/${bs?.total ?? "?"}`);
+      }).catch(() => undefined);
+    }
+    setRow("", ""); // spacer
+    setRow("Capability State", env.capability_state);
+    setRow("Severity", env.severity);
+    setRow("Reason Code", reasonCode);
   }
   /** Dispatch a backend action command through exact (verb, command) allowlist (Issue #78). */
   _dispatchModuleAction(mod: CapabilityModule, env: ProbeEnvelope): void {
@@ -2474,8 +2481,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 (stderr ? " " + stderr.slice(0, 80) : "")
             );
           }
-          this._memoryStatusText = getMemoryStatusText(vp);
-          this._refreshSnapshots(vp);
+          this._memoryStatusText = t("feat_memory_rebuild_done");
+          this._probeModule("memory");
         },
       });
     };
@@ -2554,6 +2561,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _refreshSnapshots(vp: string) {
+    // #161/R: snapshot readers are retired; status text comes from probe
+    // envelopes. The runtime-health command remains an on-demand diagnostic.
     const py = this._resolveRuntimeCommand(vp);
     if (!py) return;
     const args = [
@@ -2572,10 +2581,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       py.path,
       args,
       { cwd: vp, timeout: 30000, windowsHide: true },
-      (err, stdout, stderr) => {
+      () => {
         this._refreshPending = false;
-        this._memoryStatusText = getMemoryStatusText(vp);
-        this._embedStatusText = getVectorStatusText(vp);
+        const memEnv = this._capabilityState?.["memory"];
+        const embedEnv = this._capabilityState?.["embed"];
+        this._memoryStatusText = memEnv ? (memEnv as { reason?: { text?: string } }).reason?.text ?? null : null;
+        this._embedStatusText = embedEnv ? (embedEnv as { reason?: { text?: string } }).reason?.text ?? null : null;
         this.display();
       }
     );
@@ -2654,13 +2665,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._renderVectorNoDeps(vecConfigContent);
       return;
     }
-    if (this._vectorDepsOk === null) {
-      const vr = getVectorRuntime(vp);
-      this._vectorDepsOk = vr ? (vr.deps_installed ?? false) : false;
-      if (this._vectorDepsOk) {
-        this._embedStatusText = getVectorStatusText(vp);
-      }
-      this.display();
+    if (this._vectorDepsOk === null && vp) {
+      void queryEmbedStatus(vp, this.plugin.settings).then((e) => {
+        const d = (e as Record<string, unknown>).data as Record<string, unknown> | undefined;
+        this._vectorDepsOk = d ? Boolean((d as { deps_installed?: boolean }).deps_installed) : false;
+        if (this._vectorDepsOk) {
+          this._embedStatusText = String((d as { mode?: string }).mode ?? "");
+        }
+        this.display();
+      }).catch(() => {
+        this._vectorDepsOk = false;
+        this.display();
+      });
+      return;
     }
   }
 
@@ -2775,7 +2792,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               notice.hide();
               new Notice(t("feat_install_done"));
               this._vectorDepsOk = true;
-              this._embedStatusText = getVectorStatusText(vp);
+              this._embedStatusText = t("feat_deps_installed") || "Dependencies installed";
               this.display();
             } catch (e: any) {
               notice.hide();
@@ -2793,7 +2810,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const statusEl = containerEl.createEl("div", {
       cls: "paperforge-desc-box",
     });
-    statusEl.setText(getVectorStatusText(vp));
+    statusEl.setText(this._embedStatusText ?? (t("feat_vector_ready") || "Vector index ready"));
 
     this._renderApiConfig(containerEl);
 
@@ -2822,8 +2839,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       embedControls.empty();
       embedStatusText.empty();
 
-      const vr = getVectorRuntime(vp);
-      const bsRaw = vr?.build_state;
+      // #161/R: embed status comes from the read model (`embed status --json`),
+      // cached on the plugin; the snapshot reader is retired.
+      const statusCache = this.plugin._embedStatusCache ?? {};
+      const bsRaw = statusCache.build_state;
       const buildState: Record<string, unknown> =
         bsRaw && typeof bsRaw === "object" && !Array.isArray(bsRaw)
           ? (bsRaw as Record<string, unknown>)
@@ -2846,23 +2865,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
       const { current, total, key } = this.plugin._embedProgress;
 
-      // Safely access fields from VectorRuntime index signature
+      // #161/R: chunk counts from the cached read model.
       const bodyChunkCount =
-        typeof vr?.body_chunk_count === "number" ? vr.body_chunk_count : 0;
+        typeof statusCache.body_chunk_count === "number" ? statusCache.body_chunk_count : 0;
       const objectChunkCount =
-        typeof vr?.object_chunk_count === "number" ? vr.object_chunk_count : 0;
+        typeof statusCache.object_chunk_count === "number" ? statusCache.object_chunk_count : 0;
       const chunkCount =
-        typeof vr?.chunk_count === "number" ? vr.chunk_count : 0;
+        typeof statusCache.chunk_count === "number" ? statusCache.chunk_count : 0;
       const totalChunks = chunkCount + bodyChunkCount + objectChunkCount;
       const hasChunks = totalChunks > 0;
       const isCorrupted =
-        vr !== null && typeof vr.corrupted === "boolean" && vr.corrupted;
+        typeof statusCache.corrupted === "boolean" && statusCache.corrupted;
       const isBuilding = !!this.plugin._embedProcess;
       const isStale =
         !this.plugin._embedProcess && buildState.status === "running";
-      // deps_installed is a defined boolean? property on VectorRuntime
+      // deps_installed from the read model (#161/R)
       const depsInstalled =
-        vr?.deps_installed !== undefined ? !!vr.deps_installed : true;
+        statusCache.deps_installed !== undefined ? !!statusCache.deps_installed : true;
 
       const status =
         typeof buildState.status === "string" ? buildState.status : "";
@@ -2952,7 +2971,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               this.plugin._embedProgress!.current =
                 this.plugin._embedProgress!.total;
               this.plugin.saveSettings();
-              this._embedStatusText = getVectorStatusText(vp);
+              this._embedStatusText = t("feat_build_complete") || "Embedding build complete";
               new Notice(t("feat_build_complete"));
             } else {
               this._embedStatusText = null;
@@ -3008,17 +3027,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this.display();
       };
 
-      // Detect runtime version mismatch from health data
-      const health = getRuntimeHealth(vp);
+      // #161/R: version-mismatch detection moved to the installation probe
+      // envelope; no snapshot health read.
       let runtimeMismatch = false;
-      if (
-        health &&
-        typeof health.summary === "object" &&
-        health.summary !== null &&
-        "status" in health.summary
-      ) {
-        runtimeMismatch = health.summary.status === "version_mismatch";
-      }
 
       // ── State determination (priority order) ──
       let uiState: string;
@@ -4583,7 +4594,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: t("setup_bbt_title") || "BBT JSON Export",
     });
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const paths = require("./services/memory-state").resolveVaultPaths(vp);
+    const paths = require("./services/runtime-paths").resolveVaultPaths(vp);
     importSection.createEl("p", {
       cls: "pf-setup-form-intro",
       text:

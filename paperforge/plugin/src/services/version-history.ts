@@ -13,7 +13,7 @@
  */
 import * as fs from "fs";
 import * as path from "path";
-import { resolveVaultPaths } from "./memory-state";
+import { resolveVaultPaths } from "./runtime-paths";
 
 // ── Types ──
 

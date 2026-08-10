@@ -117,7 +117,7 @@ vi.mock("../src/services/python-bridge", () => ({
   scanBbtDirectChildren: () => false,
   runSubprocess: () => {},
 }));
-vi.mock("../src/services/memory-state", () => ({
+vi.mock("../src/services/runtime-paths", () => ({
   resolveVaultPaths: () => ({}),
   getMemoryRuntime: () => null,
   getVectorRuntime: () => null,
