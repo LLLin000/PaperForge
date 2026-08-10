@@ -9,6 +9,10 @@ from paperforge.memory.db import get_memory_db_path
 def test_get_embed_status_reports_corruption_when_count_fails(tmp_path):
     """Count query failure (missing meta table) → healthy=False, corrupted=True."""
     vault = tmp_path / "vault"
+    vault.mkdir(parents=True, exist_ok=True)
+    from tests.conftest import canonical_test_config
+
+    canonical_test_config(vault)
     db_path = get_memory_db_path(vault)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     # DB exists but vec tables are absent — the count query raises.

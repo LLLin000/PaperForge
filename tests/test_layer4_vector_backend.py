@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from paperforge.embedding.backends import ChromaBackend
+from tests.conftest import canonical_test_config
 
 
 
@@ -168,6 +169,11 @@ class TestChromaBackendHealth:
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def _canonical_config(tmp_path: Path):
+    canonical_test_config(tmp_path)
+
 
 @pytest.fixture
 def chroma_backend(tmp_path: Path) -> ChromaBackend:

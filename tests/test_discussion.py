@@ -14,6 +14,8 @@ import filelock
 
 from paperforge.worker.discussion import record_session
 
+from tests.conftest import canonical_test_config
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -45,18 +47,14 @@ def _create_minimal_vault(tmp_path: Path, zotero_key: str = "TSTONE001",
         encoding="utf-8",
     )
 
-    pf_json = vault / "paperforge.json"
-    pf_json.write_text(
-        json.dumps({
-            "version": "1.4.15",
-            "system_dir": "99_System",
-            "resources_dir": "03_Resources",
-            "literature_dir": "Literature",
-            "control_dir": "LiteratureControl",
-            "base_dir": "05_Bases",
-            "skill_dir": ".opencode/skills",
-        }, indent=2, ensure_ascii=False),
-        encoding="utf-8",
+    canonical_test_config(
+        vault,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+        skill_dir=".opencode/skills",
     )
 
     indexes_dir = vault / "99_System" / "PaperForge" / "indexes"

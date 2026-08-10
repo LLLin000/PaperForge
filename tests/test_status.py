@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tests.conftest import canonical_test_config
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -18,23 +20,14 @@ def _minimal_vault(tmp_path: Path) -> Path:
     """Create a minimal vault with paperforge.json for path resolution."""
     vault = tmp_path / "test_vault"
     vault.mkdir(parents=True, exist_ok=True)
-    pf_json = vault / "paperforge.json"
-    pf_json.write_text(
-        json.dumps(
-            {
-                "version": "1.2.0",
-                "vault_config": {
-                    "system_dir": "99_System",
-                    "resources_dir": "03_Resources",
-                    "literature_dir": "Literature",
-                    "control_dir": "LiteratureControl",
-                    "base_dir": "05_Bases",
-                    "skill_dir": ".opencode/skills",
-                },
-            },
-            indent=2,
-        ),
-        encoding="utf-8",
+    canonical_test_config(
+        vault,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+        skill_dir=".opencode/skills",
     )
     return vault
 

@@ -11,6 +11,8 @@ from unittest.mock import patch
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
 
 import paperforge.config
 from paperforge.worker._utils import pipeline_paths as _pp
@@ -274,9 +276,7 @@ class TestForceRebuildBackup:
 
         vault = tmp_path / "vault"
         vault.mkdir()
-        (vault / "paperforge.json").write_text(
-            '{"system_dir": "99_System"}', encoding="utf-8",
-        )
+        canonical_test_config(vault, system_dir="99_System")
         indexes_dir = vault / "99_System" / "PaperForge" / "indexes"
         indexes_dir.mkdir(parents=True, exist_ok=True)
         db_path = get_memory_db_path(vault)

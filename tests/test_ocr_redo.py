@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import canonical_test_config
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -14,7 +16,7 @@ import pytest
 def _make_vault(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
     vault = tmp_path / "vault"
     vault.mkdir()
-    (vault / "paperforge.json").write_text("{}", encoding="utf-8")
+    canonical_test_config(vault)
     # v2 vault_config default layout: system_dir=System/PaperForge — this
     # must match pipeline_paths() or redo transactions operate on a
     # different tree than the fixture asserts (issue #123).
@@ -189,7 +191,7 @@ def test_ocr_redo_rebuilds_phase3_artifacts(tmp_path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        _json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        _json.dumps({"schema_version": 2, "vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
         encoding="utf-8",
     )
     ocr_root = vault / "System" / "PaperForge" / "ocr"

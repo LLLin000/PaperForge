@@ -21,6 +21,8 @@ from pathlib import Path
 import pytest
 from paperforge.commands.probe import MAINTENANCE_CONSTITUENT_MODULES
 
+from tests.conftest import canonical_test_config
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -136,17 +138,15 @@ class TestEnvelopeContract:
 
     def test_envelope_all_required_fields_present(self, tmp_path: Path) -> None:
         """Installation probe output contains all required envelope fields."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         data = _run_probe("installation", tmp_path)
         _assert_envelope_shape(data)
 
     def test_envelope_is_direct_not_pfresult_wrapped(self, tmp_path: Path) -> None:
         """Output is a direct envelope, not wrapped in PFResult ok/command/data envelope."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         data = _run_probe("installation", tmp_path)
         assert "ok" not in data, "Output is PFResult-wrapped, expected bare envelope"
         assert "command" not in data, "Output is PFResult-wrapped, expected bare envelope"
@@ -155,9 +155,8 @@ class TestEnvelopeContract:
 
     def test_schema_version_is_integer_2(self, tmp_path: Path) -> None:
         """schema_version must be the integer 2, never a string."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         data = _run_probe("installation", tmp_path)
         assert data["schema_version"] == 2
         assert isinstance(data["schema_version"], int)
@@ -165,18 +164,16 @@ class TestEnvelopeContract:
 
     def test_ready_state_action_primary_null(self, tmp_path: Path) -> None:
         """When capability_state is 'ready', action.primary must be null."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         data = _run_probe("installation", tmp_path)
         if data["capability_state"] == "ready":
             assert data["action"]["primary"] is None
 
     def test_envelope_ttl_3600_for_installation(self, tmp_path: Path) -> None:
         """Installation probe has ttl_seconds=3600."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         data = _run_probe("installation", tmp_path)
         assert data["ttl_seconds"] == 3600
 
@@ -187,9 +184,8 @@ class TestEnvelopeContract:
 
     def test_action_primary_full_fields_non_null(self, tmp_path: Path) -> None:
         """Non-null action.primary has all required fields with correct types."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         # Use the worktrees vault which has no paperforge.json → missing_input → has action
         empty_vault = tmp_path / "no_config"
         empty_vault.mkdir()
@@ -284,9 +280,8 @@ class TestInstallationProbe:
 
     def test_ready_reason_code(self, tmp_path: Path) -> None:
         """Ready state has correct reason code and null action."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         data = _run_probe("installation", tmp_path)
         assert data["capability_state"] == "ready"
         assert data["severity"] == "ok"
@@ -295,9 +290,8 @@ class TestInstallationProbe:
 
     def test_expected_version_mismatch_requires_update(self, tmp_path: Path) -> None:
         """The plugin's expected package version gates installation readiness."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         data = _run_probe(
             "installation", tmp_path, extra_args=["--expected-version", "0.0.0"],
         )
@@ -407,9 +401,8 @@ class TestLibraryProbe:
 
     def test_zotero_not_configured(self, tmp_path: Path) -> None:
         """Config exists but no zotero_data_dir -> missing_input."""
-        (tmp_path / 'paperforge.json').write_text(
-            json.dumps({'system_dir': '99_System'}), encoding='utf-8',
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         data = _run_probe('library', tmp_path)
         assert data['capability_state'] == 'missing_input'
         assert data['reason']['code'] == 'library.zotero_missing'
@@ -417,8 +410,9 @@ class TestLibraryProbe:
 
     def test_envelope_shape(self, tmp_path: Path) -> None:
         """Library envelope has all required fields."""
-        (tmp_path / 'paperforge.json').write_text(
-            json.dumps({'system_dir': '99_System', 'zotero_data_dir': str(tmp_path)}), encoding='utf-8',
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(
+            tmp_path, system_dir="99_System", zotero_data_dir=str(tmp_path),
         )
         data = _run_probe('library', tmp_path)
         _assert_envelope_shape(data)
@@ -449,8 +443,9 @@ class TestLibraryProbe:
     def test_sync_failed_nonzero_exit_code(self, tmp_path: Path) -> None:
         """Nonzero last_operation_exit_code -> sync_failed envelope (direct call)."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / 'paperforge.json').write_text(
-            json.dumps({"system_dir": "99_System", "zotero_data_dir": str(tmp_path)}), encoding='utf-8',
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(
+            tmp_path, system_dir="99_System", zotero_data_dir=str(tmp_path),
         )
         data = probe_mod.probe_library(tmp_path, last_operation_exit_code=7)
         assert data['module'] == 'library'
@@ -464,8 +459,9 @@ class TestLibraryProbe:
     def test_sync_success_zero_exit_code_normal(self, tmp_path: Path) -> None:
         """Zero last_operation_exit_code -> normal probe, not sync_failed."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / 'paperforge.json').write_text(
-            json.dumps({"system_dir": "99_System", "zotero_data_dir": str(tmp_path)}), encoding='utf-8',
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(
+            tmp_path, system_dir="99_System", zotero_data_dir=str(tmp_path),
         )
         data = probe_mod.probe_library(tmp_path, last_operation_exit_code=0)
         assert data['module'] == 'library'
@@ -496,9 +492,8 @@ class TestOcrProbe:
     def test_api_key_missing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Config exists but no API token anywhere -> missing_input."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         # Mock _resolve_paddleocr_token to return empty (no token from any source)
         monkeypatch.setattr("paperforge.worker.ocr._resolve_paddleocr_token", lambda v: "")
         data = probe_mod.probe_ocr(tmp_path)
@@ -550,9 +545,8 @@ class TestMemoryProbe:
     def test_db_corrupt(self, tmp_path: Path) -> None:
         """Corrupt database -> unavailable + run action."""
         # Create paperforge.json so canonical path resolution works
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         indexes = tmp_path / "99_System" / "PaperForge" / "indexes"
         indexes.mkdir(parents=True, exist_ok=True)
         (indexes / "paperforge.db").write_text("not a database", encoding="utf-8")
@@ -574,9 +568,9 @@ class TestLibraryProbeCanonical:
 
     def test_ready_with_canonical_index(self, tmp_path: Path) -> None:
         """Valid formal-library.json + matching export hash -> ready."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System", "zotero_data_dir": str(tmp_path)}),
-            encoding="utf-8",
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(
+            tmp_path, system_dir="99_System", zotero_data_dir=str(tmp_path),
         )
         indexes_dir = tmp_path / "99_System" / "PaperForge" / "indexes"
         indexes_dir.mkdir(parents=True, exist_ok=True)
@@ -594,9 +588,9 @@ class TestLibraryProbeCanonical:
 
     def test_malformed_index(self, tmp_path: Path) -> None:
         """Non-dict non-list formal-library.json -> needs_action."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System", "zotero_data_dir": str(tmp_path)}),
-            encoding="utf-8",
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(
+            tmp_path, system_dir="99_System", zotero_data_dir=str(tmp_path),
         )
         indexes_dir = tmp_path / "99_System" / "PaperForge" / "indexes"
         indexes_dir.mkdir(parents=True, exist_ok=True)
@@ -612,9 +606,8 @@ class TestOcrProbeCanonical:
 
     def test_credential_from_env(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """PADDLEOCR_API_TOKEN in env -> passes credential check."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token-12345")
 
         data = _run_probe("ocr", tmp_path)
@@ -637,9 +630,8 @@ class TestMemoryProbeCanonical:
         """DB with papers but old schema -> migration_needed."""
         import sqlite3
         # Create paperforge.json for canonical path resolution
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         indexes = tmp_path / "99_System" / "PaperForge" / "indexes"
         indexes.mkdir(parents=True, exist_ok=True)
         db_path = indexes / "paperforge.db"
@@ -669,9 +661,8 @@ class TestAllProbes:
     def test_probe_emits_valid_envelope(self, module: str, tmp_path: Path) -> None:
         """Every real probe emits a valid envelope."""
         if module in ('installation', 'library', 'ocr'):
-            (tmp_path / 'paperforge.json').write_text(
-                json.dumps({'system_dir': '99_System'}), encoding='utf-8',
-            )
+            tmp_path.mkdir(parents=True, exist_ok=True)
+            canonical_test_config(tmp_path, system_dir="99_System")
         data = _run_probe(module, tmp_path)
         _assert_envelope_shape(data)
         assert data['module'] == module
@@ -679,9 +670,8 @@ class TestAllProbes:
 
     def test_cli_accepts_all_modules(self, tmp_path: Path) -> None:
         """CLI accepts all five module names."""
-        (tmp_path / 'paperforge.json').write_text(
-            json.dumps({'system_dir': '99_System'}), encoding='utf-8',
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         for mod in ('installation', 'library', 'ocr', 'memory', 'help'):
             result = subprocess.run(
                 [sys.executable, '-m', 'paperforge', '--vault', str(tmp_path),
@@ -702,9 +692,8 @@ class TestOcrConcreteFixes:
     def test_healthy_display_action_none_is_ready(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Row with display_action='none', no failures → ready."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
 
         class FakeRow:
@@ -724,9 +713,8 @@ class TestOcrConcreteFixes:
     def test_running_rows_independent_from_actionable(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Running rows with display_action='retry_ocr' → needs_action with activity overlay."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
 
         class FakeRow:
@@ -750,9 +738,8 @@ class TestOcrConcreteFixes:
     def test_collect_maintenance_rows_exception_returns_unknown(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """When collect_maintenance_rows raises → unknown/probe, not empty run."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
         monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
             lambda config=None, live=False: {"passed": True})
@@ -773,9 +760,8 @@ class TestMemoryConcreteFixes:
     def test_get_memory_status_exception_returns_unknown(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """When get_memory_status raises → unknown/probe, not unavailable/rebuild."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         def _raise(*args, **kwargs):
             raise RuntimeError("db broken")
         monkeypatch.setattr("paperforge.memory.query.get_memory_status", _raise)
@@ -793,9 +779,8 @@ class TestOcrPriorityOrdering:
     def test_pending_overrides_provider_unreachable(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Pending + provider unreachable -> needs_action/run, NOT limited/investigate."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
         monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
             lambda config=None, live=False: {"passed": False, "error": "unreachable"})
@@ -816,9 +801,8 @@ class TestOcrPriorityOrdering:
     def test_degraded_overrides_unexpected(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Degraded + unexpected action -> needs_action/rebuild, NOT limited/investigate."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
         monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
             lambda config=None, live=False: {"passed": True})
@@ -847,9 +831,8 @@ class TestOcrPriorityOrdering:
     def test_redo_never_emitted_as_user_action(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """#99 owner decision: redo is internal-only — no ocr.redo primary."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
         monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
             lambda config=None, live=False: {"passed": True})
@@ -875,9 +858,8 @@ class TestOcrRebuildResultNonDestructive:
     def test_red_health_rebuild_result_is_rebuild_not_redo(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Red health + display_action='rebuild_result' -> rebuild_derived, NOT redo."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
         monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
             lambda config=None, live=False: {"passed": True})
@@ -904,9 +886,8 @@ class TestOcrActivityProgress:
     def test_queued_only_batch_progress_zero_of_N(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """All queued -> progress current=0, total=N."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
         monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
             lambda config=None, live=False: {"passed": True})
@@ -932,9 +913,8 @@ class TestOcrActivityProgress:
     def test_mixed_done_queued_progress_completed_count(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """3 done_degraded + 2 queued -> progress current=3, total=5."""
         from paperforge.commands import probe as probe_mod
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
         monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
             lambda config=None, live=False: {"passed": True})
@@ -969,7 +949,8 @@ class TestOcrQualityUnacceptable:
 
     def test_dead_end_red_no_redo(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """health=red, display_action=none, can_redo=False → investigate."""
-        (tmp_path / "paperforge.json").write_text(json.dumps({"system_dir": "99_System"}), encoding="utf-8")
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         class DeadRow:
             status = "done"
             health = "red"
@@ -989,7 +970,8 @@ class TestOcrQualityUnacceptable:
 
     def test_failed_rows_emit_no_redo_primary(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """#99: failed rows keep needs_action but never expose a redo action."""
-        (tmp_path / "paperforge.json").write_text(json.dumps({"system_dir": "99_System"}), encoding="utf-8")
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         class RedoRow:
             status = "failed"
             health = "red"
@@ -1005,7 +987,8 @@ class TestOcrQualityUnacceptable:
 
     def test_quality_unacceptable_scope_count_matches_dead_rows(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """Multiple dead rows -> scope_count matches dead_count."""
-        (tmp_path / 'paperforge.json').write_text(json.dumps({'system_dir': '99_System'}), encoding='utf-8')
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         class DeadRow1:
             status = 'done'; health = 'red'; display_action = 'none'; can_redo = False
         class DeadRow2:
@@ -1021,9 +1004,8 @@ class TestOcrQualityUnacceptable:
         """Ready OCR probe includes current_pipeline_version and per-paper versions."""
         from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
 
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System"}), encoding="utf-8",
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
 
         # Set up OCR output with meta.json containing pipeline_version
@@ -1264,9 +1246,8 @@ class TestMaintenanceProjection:
 
     def test_cli_accepts_maintenance(self, tmp_path: Path) -> None:
         """CLI accepts maintenance as a valid probe module."""
-        (tmp_path / 'paperforge.json').write_text(
-            json.dumps({'system_dir': '99_System'}), encoding='utf-8',
-        )
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
         result = subprocess.run(
             [sys.executable, '-m', 'paperforge', '--vault', str(tmp_path),
              'probe', 'maintenance', '--json'],

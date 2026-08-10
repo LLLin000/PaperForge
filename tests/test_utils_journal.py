@@ -13,20 +13,22 @@ from pathlib import Path
 
 from paperforge.worker import _utils
 
+from tests.conftest import canonical_test_config
+
 
 def _make_vault(tmp_path: Path) -> Path:
     """Create minimal vault with paperforge.json."""
     vault = tmp_path / "vault"
     vault.mkdir()
-    cfg = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-        "skill_dir": ".opencode/skills",
-    }
-    (vault / "paperforge.json").write_text(json.dumps(cfg), encoding="utf-8")
+    canonical_test_config(
+        vault,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+        skill_dir=".opencode/skills",
+    )
     return vault
 
 

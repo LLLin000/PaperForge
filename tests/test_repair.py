@@ -10,6 +10,8 @@ from unittest.mock import patch
 from paperforge.worker.repair import run_repair
 from paperforge.worker.sync import pipeline_paths
 
+from tests.conftest import canonical_test_config
+
 
 def _make_vault(tmp_path):
     vault = tmp_path / "vault"
@@ -28,14 +30,14 @@ def _make_vault(tmp_path):
     (vault / "05_Bases").mkdir(parents=True)
     (vault / ".opencode" / "skills").mkdir(parents=True)
     (vault / ".opencode" / "command").mkdir(parents=True)
-    cfg = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-    }
-    (vault / "paperforge.json").write_text(json.dumps(cfg, ensure_ascii=False), encoding="utf-8")
+    canonical_test_config(
+        vault,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+    )
     return vault
 
 

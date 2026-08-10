@@ -5,7 +5,16 @@ from contextlib import ExitStack
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from paperforge.services.sync_service import SyncService
+
+from tests.conftest import canonical_test_config
+
+
+@pytest.fixture(autouse=True)
+def _canonical_vault_config(tmp_path: Path) -> None:
+    canonical_test_config(tmp_path)
 
 
 class TestSyncServicePruneMethod:
@@ -52,8 +61,12 @@ class TestSyncServiceRunPrune:
 
     def _make_svc(self, tmp_path: Path) -> SyncService:
         vault = tmp_path
-        (vault / "paperforge.json").write_text(
-            '{"system_dir": "System", "resources_dir": "Resources", "literature_dir": "Resources/Literature"}'
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(
+            vault,
+            system_dir="System",
+            resources_dir="Resources",
+            literature_dir="Resources/Literature",
         )
         (vault / "System" / "PaperForge" / "exports").mkdir(parents=True)
         (vault / "System" / "PaperForge" / "indexes").mkdir(parents=True)
