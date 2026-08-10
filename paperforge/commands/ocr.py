@@ -675,6 +675,22 @@ def run(args: argparse.Namespace) -> int:
     if ocr_action == "doctor" or diagnose_only:
         return _diagnose(vault, live=live, json_output=json_output)
 
+    import sys as _sys
+
+    from paperforge.credentials import CredentialError as _CredentialError
+
+    try:
+        return _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
+    except _CredentialError as exc:
+        from paperforge.commands.auth import _error_result as _cred_error_result
+
+        result = _cred_error_result("ocr.run", exc)
+        print(result.to_json() if json_output else result.error.message, file=_sys.stderr if not json_output else _sys.stdout)
+        return 1
+
+
+def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only) -> int:
+
     if ocr_action == "redo":
         logger.info("OCR redo: scanning for ocr_redo: true papers...")
         rc = _run_ocr_redo(

@@ -44,12 +44,17 @@ def _resolve_paddleocr_token(vault: Path) -> str:
     HKCU, legacy env names) are migration input only and never consulted.
     Returns empty string when the credential is missing.
     """
-    from paperforge.credentials import CredentialError, CredentialKey, resolve
+    from paperforge.credentials import MISSING, CredentialError, CredentialKey, resolve
 
     try:
         return resolve(CredentialKey("ocr"))
-    except CredentialError:
-        return ""
+    except CredentialError as exc:
+        # #173 corrective: only a genuinely missing credential means
+        # "not configured"; backend faults (locked/unavailable/denied)
+        # must surface, never degrade into a missing-key report.
+        if exc.code == MISSING:
+            return ""
+        raise
 
 
 def _paper_timeout_minutes() -> int:

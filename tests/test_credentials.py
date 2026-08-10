@@ -264,6 +264,130 @@ class TestCliContract:
 
 # ── consumers ─────────────────────────────────────────────────────────────
 
+class TestStoreRollback:
+    """#173 corrective: the write/verify phase is one transaction — ANY
+    failure after the write began restores the prior value or deletes the
+    partial write."""
+
+    class _VerifyBoomKeyring:
+        class errors:
+            class PasswordDeleteError(Exception):
+                pass
+
+        def __init__(self) -> None:
+            self._d: dict[tuple[str, str], str] = {}
+            self._boom_next_get = False
+
+        def get_password(self, service: str, username: str) -> str | None:
+            if self._boom_next_get:
+                self._boom_next_get = False
+                raise RuntimeError("verify read boom")
+            return self._d.get((service, username))
+
+        def set_password(self, service: str, username: str, password: str) -> None:
+            self._boom_next_get = True  # the verification read throws
+            self._d[(service, username)] = password
+
+        def delete_password(self, service: str, username: str) -> None:
+            if (service, username) not in self._d:
+                raise self.errors.PasswordDeleteError()
+            del self._d[(service, username)]
+
+        def get_keyring(self) -> object:
+            return "VerifyBoomKeyring"
+
+    def test_verification_failure_restores_prior_value(self) -> None:
+        kr = self._VerifyBoomKeyring()
+        kr._d[("paperforge", "ocr:default")] = "old-value"
+        c.set_keyring_override(kr)
+        try:
+            with pytest.raises(CredentialError) as exc:
+                store(CredentialKey("ocr"), "new-value", replace=True)
+            assert exc.value.code == "credential.backend_error"
+            assert kr._d[("paperforge", "ocr:default")] == "old-value"
+        finally:
+            c.set_keyring_override(_fake_keyring())
+
+    def test_verification_failure_deletes_partial_write(self) -> None:
+        kr = self._VerifyBoomKeyring()
+        c.set_keyring_override(kr)
+        try:
+            with pytest.raises(CredentialError):
+                store(CredentialKey("ocr"), "brand-new")
+            assert ("paperforge", "ocr:default") not in kr._d
+        finally:
+            c.set_keyring_override(_fake_keyring())
+
+
+class TestFailLoud:
+    """#173 corrective: backend faults never degrade into missing-key."""
+
+    class _BoomKeyring:
+        class errors:
+            class PasswordDeleteError(Exception):
+                pass
+
+        def get_password(self, service: str, username: str) -> str | None:
+            raise RuntimeError("no backend available for this platform")
+
+        def set_password(self, service: str, username: str, password: str) -> None:
+            raise RuntimeError("no backend available")
+
+        def delete_password(self, service: str, username: str) -> None:
+            raise RuntimeError("no backend available")
+
+        def get_keyring(self) -> object:
+            return "BoomKeyring"
+
+    def test_ocr_resolver_raises_on_backend_fault_not_empty(self, tmp_path: Path) -> None:
+        from paperforge.worker.ocr import _resolve_paddleocr_token
+
+        c.set_keyring_override(self._BoomKeyring())
+        try:
+            with pytest.raises(CredentialError) as exc:
+                _resolve_paddleocr_token(tmp_path)
+            assert exc.value.code == BACKEND_UNAVAILABLE
+        finally:
+            c.set_keyring_override(_fake_keyring())
+
+    def test_embedding_resolver_raises_on_backend_fault_not_empty(self, tmp_path: Path) -> None:
+        from paperforge.embedding._config import get_api_key
+
+        c.set_keyring_override(self._BoomKeyring())
+        try:
+            with pytest.raises(CredentialError) as exc:
+                get_api_key(tmp_path)
+            assert exc.value.code == BACKEND_UNAVAILABLE
+        finally:
+            c.set_keyring_override(_fake_keyring())
+
+    def test_preflight_distinguishes_backend_fault_from_missing(self, tmp_path: Path) -> None:
+        from paperforge.embedding.preflight import _preflight_check
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        c.set_keyring_override(self._BoomKeyring())
+        try:
+            result = _preflight_check(vault)
+            assert result["ok"] is False
+            assert "unavailable" in result["error"]
+            assert "API key not configured" not in result["error"]
+        finally:
+            c.set_keyring_override(_fake_keyring())
+
+    def test_ocr_diagnostics_raise_on_backend_fault(self) -> None:
+        from paperforge.ocr_diagnostics import ocr_doctor
+
+        c.set_keyring_override(self._BoomKeyring())
+        try:
+            with pytest.raises(CredentialError) as exc:
+                ocr_doctor(config=None, live=False)
+            assert exc.value.code == BACKEND_UNAVAILABLE
+        finally:
+            c.set_keyring_override(_fake_keyring())
+
+
 class TestConsumers:
     def test_ocr_token_resolver_uses_authority(self, monkeypatch, tmp_path: Path) -> None:
         from paperforge.worker.ocr import _resolve_paddleocr_token
