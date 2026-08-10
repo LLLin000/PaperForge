@@ -41,6 +41,15 @@ class ErrorCode(str, Enum):
     CREDENTIAL_INVALID_PROFILE = "credential.invalid_profile"
     CREDENTIAL_CONFIRM_REQUIRED = "credential.confirm_required"
 
+    # ── Actions (#163 / T2) ──
+    ACTION_UNKNOWN = "action.unknown"
+    ACTION_INVALID_REQUEST = "action.invalid_request"
+    ACTION_SCOPE_INVALID = "action.scope_invalid"
+    ACTION_UNAVAILABLE = "action.unavailable"
+    ACTION_BUSY = "action.busy"
+    ACTION_CONFIRMATION_REQUIRED = "action.confirmation_required"
+    ACTION_CANCELLED = "action.cancelled"
+
     # ── OCR ──
     OCR_TOKEN_MISSING = "OCR_TOKEN_MISSING"
     OCR_UPLOAD_FAILED = "OCR_UPLOAD_FAILED"
