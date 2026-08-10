@@ -5,7 +5,8 @@
     "ocr_raw",
     "ocr_derived",
     "retrieval",
-    "vectors"
+    "vectors",
+    "runtime_state"
   ],
   "publication_units": [
     {
@@ -81,6 +82,15 @@
       "authorized_writers": [
         "embed.publisher"
       ]
+    },
+    {
+      "unit_id": "runtime_state.snapshot",
+      "asset_group": "runtime_state",
+      "publication_authority": "python.read_models",
+      "authorized_writers": [],
+      "meta": {
+        "lifecycle": "deprecated"
+      }
     }
   ],
   "operations": [
@@ -281,6 +291,29 @@
         "commit": "815dc615"
       },
       "description": "deterministic collectors feed the #131 reconciler (#133 accepted 2026-08-07)"
+    },
+    {
+      "rule_id": "canonical_writer.snapshot_retired",
+      "kind": "canonical_writer",
+      "subject": "runtime_state.snapshot",
+      "lifecycle": "deprecated",
+      "enforcement": "blocking",
+      "description": "Snapshot files (memory-runtime-state.json / vector-runtime-state.json / runtime-health.json) are retired with #148; no writer may recreate them"
+    },
+    {
+      "rule_id": "client_read.runtime_snapshots",
+      "kind": "canonical_read",
+      "subject": "runtime_state.snapshot",
+      "lifecycle": "planned",
+      "enforcement": "advisory",
+      "effective_after": {
+        "issue": "#148"
+      },
+      "known_gap": {
+        "issue": "#148",
+        "rationale": "read models replace snapshot reads; CANONICAL_READ collector soaks before blocking (#149)"
+      },
+      "description": "Prohibited pattern: plugin/TS reads of canonical runtime snapshot files; fresh Python read models fully determine UI (#148)"
     }
   ],
   "exceptions": []
