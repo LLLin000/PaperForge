@@ -1219,6 +1219,18 @@ def run(args: Any) -> int:
         envelope = probe_help(vault)
     elif module == "maintenance":
         envelope = probe_maintenance(vault)
+    elif module == "lineage":
+        from paperforge.lineage import probe_lineage
+
+        payload = probe_lineage(vault)
+        json_output = bool(getattr(args, "json", False))
+        if json_output:
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+        else:
+            state = payload.get("capability_state", "unknown")
+            reason = (payload.get("reason") or {}).get("text", "")
+            print(f"[lineage] {state}: {reason}")
+        return 0
     else:
         print(f"Error: unsupported probe module '{module}'", file=sys.stderr)
         return 1

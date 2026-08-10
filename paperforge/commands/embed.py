@@ -846,6 +846,33 @@ def run(args: argparse.Namespace) -> int:
             print("EMBED_DONE", flush=True)
             return 0
 
+        # #162/T1: write vector lineage rows — into the candidate BEFORE the
+        # seal/publish swap (atomic with publish), or onto the live DB for
+        # the in-place fallback.  Papers without a retrieval identity (legacy
+        # manifests) get no row → probe reports unknown, never stale.
+        from paperforge.lineage import write_vector_lineage
+
+        if _candidate_conn is not None:
+            _lineage_conn = _candidate_conn
+        elif _db_path.exists():
+            _lineage_conn = get_connection(_db_path)
+            ensure_vec_extension(_lineage_conn)
+        else:
+            _lineage_conn = None
+        try:
+            write_vector_lineage(
+                _lineage_conn,
+                vault,
+                endpoint=_current_endpoint,
+                model=_current_model,
+                dimension=_expected_dim,
+            )
+            if _lineage_conn is not None:
+                _lineage_conn.commit()
+        finally:
+            if _lineage_conn is not None and _lineage_conn is not _candidate_conn:
+                _lineage_conn.close()
+
         # Shadow: verify candidate, publish (swap), then mark completed on new live.
         if _shadow is not None:
             # P0-2: write the FINAL build metadata into the candidate BEFORE

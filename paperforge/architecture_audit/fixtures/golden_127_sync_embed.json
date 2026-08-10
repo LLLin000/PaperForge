@@ -62,7 +62,7 @@
         "effect_kind": "remote_operation",
         "evidence": {
           "file": "paperforge/commands/sync.py",
-          "file_digest": "sha256:41ba7a1e8172949195a9aef0064cf39d6c54c67bf98e7c10cb529da3df341fdd",
+          "file_digest": "sha256:04024a28f2e9c7820947907911ef8ff0907c2bd9291499e2a5b1f795ec961aaa",
           "symbol": "_attach_next_actions",
           "line_start": 94,
           "line_end": 120,
@@ -77,7 +77,7 @@
         "effect_kind": "materialization_build",
         "evidence": {
           "file": "paperforge/commands/sync.py",
-          "file_digest": "sha256:41ba7a1e8172949195a9aef0064cf39d6c54c67bf98e7c10cb529da3df341fdd",
+          "file_digest": "sha256:04024a28f2e9c7820947907911ef8ff0907c2bd9291499e2a5b1f795ec961aaa",
           "symbol": "_run_terminal_followups",
           "line_start": 122,
           "line_end": 140,
@@ -87,7 +87,7 @@
         }
       }
     ],
-    "source_digest": "sha256:25f21a76a44856e786fd2c6543e3cc9b53840868c2af972a562f5d51b690c90e",
+    "source_digest": "sha256:6c089ffc02d637be10b32de715a58d742e1d0bdc7a606a2106d2cc69fb10e3eb",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
