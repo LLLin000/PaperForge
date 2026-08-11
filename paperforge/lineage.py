@@ -165,11 +165,13 @@ def write_vector_lineage(
     )
     stamp = updated_at or datetime.now(timezone.utc).isoformat()
 
-    paper_ids = _papers_with_vectors(conn)
+    # #165 corrective: the parameter must not be shadowed — the filter is
+    # applied to the eligible set derived from the connection.
+    eligible_paper_ids = _papers_with_vectors(conn)
     if paper_ids is not None:
-        paper_ids = [p for p in paper_ids if p in paper_ids]
+        eligible_paper_ids = [p for p in eligible_paper_ids if p in paper_ids]
     written = 0
-    for paper_id in paper_ids:
+    for paper_id in eligible_paper_ids:
         row = conn.execute(
             "SELECT value FROM meta WHERE key = ?", (f"manifest:{paper_id}",)
         ).fetchone()
