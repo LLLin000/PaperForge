@@ -526,6 +526,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_config_migrate.add_argument("--json", action="store_true")
 
     # probe
+    # ── reconcile (#166 / T5) ──
+    p_reconcile = sub.add_parser("reconcile", help="Deficit read model — pure derivation + next_actions channel (#159)")
+    p_reconcile.add_argument("--scope", choices=["all", "papers"], default="all", help="Observe scope (papers needs --key)")
+    p_reconcile.add_argument("--key", action="append", default=[], metavar="KEY", help="Paper key (repeatable)")
+    p_reconcile.add_argument("--json", action="store_true", help="Output as JSON")
+
     # ── action family (#163 / T2) ──
     p_action = sub.add_parser("action", help="Declarative action registry + runner (#145)")
     action_sub = p_action.add_subparsers(dest="action_verb", required=True)
@@ -865,6 +871,11 @@ def main(argv: list[str] | None = None) -> int:
         from paperforge.commands.action import run as run_action
 
         return run_action(args)
+
+    if args.command == "reconcile":
+        from paperforge.commands.reconcile import run as run_reconcile
+
+        return run_reconcile(args)
 
     if args.command == "base-refresh":
         force = getattr(args, "force", False)

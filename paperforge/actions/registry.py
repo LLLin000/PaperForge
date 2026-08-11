@@ -69,7 +69,6 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
     from paperforge import __version__ as PF_VERSION
     from paperforge.core.errors import ErrorCode
     from paperforge.core.result import PFError, PFResult
-    from paperforge.memory.builder import build_from_index
 
     keys = None if request.scope.kind == "all" else list(request.scope.keys)
     from paperforge.memory.builder import build_for_keys
@@ -113,6 +112,139 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
         ).to_dict()
     ]
     return result
+
+
+def _ocr_run_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    """ocr.run availability: OCR credential available (C1 seam)."""
+    from paperforge.credentials import CredentialKey, status as credential_status
+
+    cred = credential_status(CredentialKey("ocr"))
+    if cred.state == "missing":
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code="credential.missing",
+            availability_reason="OCR credential is not configured — run `paperforge auth set ocr --stdin`",
+        )
+    if cred.state != "available":
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code=f"credential.{cred.state}",
+            availability_reason="OCR credential unavailable — run `paperforge auth status ocr`",
+        )
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="action.available",
+        availability_reason="OCR can run",
+        preservation_facts=("Existing OCR output remains available until replacement",),
+        replacement_facts=("OCR provider calls may incur remote cost",),
+    )
+
+
+def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError, PFResult
+    from paperforge.worker.ocr import run_ocr
+
+    keys = None if request.scope.kind == "all" else list(request.scope.keys)
+    try:
+        rc = run_ocr(ctx.vault, selected_keys=set(keys) if keys else None)
+    except Exception as exc:  # noqa: BLE001 — structured boundary
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
+        )
+    return PFResult(ok=rc == 0, command="action run", version=PF_VERSION, data={"exit_code": rc})
+
+
+def _embed_build_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    """embed.build availability: credential available and builder not
+    mid-flight (global substrate operation, #159)."""
+    from paperforge.credentials import CredentialKey, status as credential_status
+
+    cred = credential_status(CredentialKey("embedding"))
+    if cred.state == "missing":
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code="credential.missing",
+            availability_reason="Embedding credential is not configured — run `paperforge auth set embedding --stdin`",
+        )
+    if cred.state != "available":
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code=f"credential.{cred.state}",
+            availability_reason="Embedding credential unavailable — run `paperforge auth status embedding`",
+        )
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="action.available",
+        availability_reason="Vector substrate can be built",
+        preservation_facts=("Existing vector rows remain available until replacement commit",),
+        replacement_facts=("Embedding provider calls may incur remote cost",),
+    )
+
+
+def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    """embed.build: the GLOBAL substrate operation — always all-scope, full
+    rebuild over the canonical library."""
+    import argparse
+    import contextlib
+    import io
+    import json
+
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError, PFResult
+    from paperforge.worker.asset_index import read_index
+
+    read_index(ctx.vault)
+    args = argparse.Namespace(
+        vault_path=ctx.vault,
+        embed_subcommand="build",
+        json=True,
+        force=True,
+        resume=False,
+        keys=None,
+    )
+    buf = io.StringIO()
+    from paperforge.commands.embed import run as embed_run
+
+    with contextlib.redirect_stdout(buf):
+        try:
+            rc = embed_run(args)
+        except Exception as exc:  # noqa: BLE001
+            return PFResult(
+                ok=False,
+                command="action run",
+                version=PF_VERSION,
+                error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
+            )
+    for line in reversed(buf.getvalue().splitlines()):
+        stripped = line.strip()
+        if stripped.startswith("{") and stripped.endswith("}"):
+            try:
+                payload = json.loads(stripped)
+                return PFResult(
+                    ok=bool(payload.get("ok", rc == 0)),
+                    command="action run",
+                    version=PF_VERSION,
+                    data=payload.get("data"),
+                    error=(PFError(code=ErrorCode.INTERNAL_ERROR, message=str(payload["error"].get("message", "")))
+                           if payload.get("error") else None),
+                    warnings=payload.get("warnings", []),
+                    next_actions=payload.get("next_actions", []),
+                )
+            except (ValueError, KeyError):
+                break
+    return PFResult(
+        ok=rc == 0,
+        command="action run",
+        version=PF_VERSION,
+        data={"exit_code": rc},
+        error=PFError(code=ErrorCode.INTERNAL_ERROR, message="embed run produced no PFResult") if rc else None,
+    )
 
 
 def _embed_resume_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
@@ -281,6 +413,32 @@ _SPECS: tuple[ActionSpec, ...] = (
         description_code="action.embed.resume.description",
         handler=_embed_resume_handler,
         preflight=_embed_resume_preflight,
+        scope_kinds=("all", "papers"),
+        cost="remote_possible",
+        impact="mutating",
+        confirmation="required",
+        automatic=False,
+        interruptible=True,
+    ),
+    ActionSpec(
+        action_id="embed.build",
+        label_code="action.embed.build",
+        description_code="action.embed.build.description",
+        handler=_embed_build_handler,
+        preflight=_embed_build_preflight,
+        scope_kinds=("all",),
+        cost="remote_possible",
+        impact="mutating",
+        confirmation="required",
+        automatic=False,
+        interruptible=True,
+    ),
+    ActionSpec(
+        action_id="ocr.run",
+        label_code="action.ocr.run",
+        description_code="action.ocr.run.description",
+        handler=_ocr_run_handler,
+        preflight=_ocr_run_preflight,
         scope_kinds=("all", "papers"),
         cost="remote_possible",
         impact="mutating",
