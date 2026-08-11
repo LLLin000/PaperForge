@@ -157,6 +157,7 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
         json=True,
         force=False,
         resume=True,
+        keys=list(request.scope.keys) if request.scope.kind == "papers" else None,
     )
     buf = io.StringIO()
     from paperforge.commands.embed import run as embed_run
@@ -267,7 +268,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         description_code="action.embed.resume.description",
         handler=_embed_resume_handler,
         preflight=_embed_resume_preflight,
-        scope_kinds=("all",),
+        scope_kinds=("all", "papers"),
         cost="remote_possible",
         impact="mutating",
         confirmation="required",

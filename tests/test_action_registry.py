@@ -132,10 +132,9 @@ class TestRegistryInvariants:
             assert not hasattr(spec, "cmd")
 
     def test_papers_scope_registration_matches_seams(self) -> None:
-        # T3: memory.build gained papers scope; embed.resume still all-only
-        # until the embed seam lands (T4).
+        # T3/T4: both memory.build and embed.resume gained papers scope.
         assert set(ACTION_REGISTRY["memory.build"].scope_kinds) == {"all", "papers"}
-        assert ACTION_REGISTRY["embed.resume"].scope_kinds == ("all",)
+        assert set(ACTION_REGISTRY["embed.resume"].scope_kinds) == {"all", "papers"}
 
 
 # ── runner pipeline ────────────────────────────────────────────────────────
