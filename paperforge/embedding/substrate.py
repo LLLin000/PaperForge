@@ -165,9 +165,13 @@ def assess_vector_substrate(vault: Path, *, db_path: Path | None = None) -> Vect
             f"vector.identity_changed({stored_model}@{stored_endpoint_norm}->{current_model}@{current_endpoint})"
         )
 
+    # #167 P0-4: legacy requires evidence of a PUBLISHED vector
+    # materialization — a pristine substrate (no rows, no identity) is a
+    # per-paper missing deficit, never a legacy global rebuild.
     legacy_identity = bool(
         identity_version != VECTOR_IDENTITY_VERSION
         and db_exists
+        and has_any_rows
         and not layout_incompatible
     )
     if legacy_identity:

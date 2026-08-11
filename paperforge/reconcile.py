@@ -117,6 +117,7 @@ class PaperObservation:
 class ReconcileObservation:
     global_state: GlobalObservation
     papers: tuple[PaperObservation, ...] = ()
+    vault: Path | None = None
 
     def by_key(self) -> dict[str, PaperObservation]:
         return {p.key: p for p in self.papers}
@@ -204,6 +205,7 @@ def observe(vault: Path, keys: list[str] | None = None) -> ReconcileObservation:
     return ReconcileObservation(
         global_state=observe_global(vault),
         papers=observe_papers(vault, keys),
+        vault=vault,
     )
 
 
@@ -280,11 +282,33 @@ def _merge_intents(intents: list[ActionIntent]) -> list[ActionIntent]:
 
 # ── W2 input digest (semantic observation → intent) ───────────────────────
 
-def _intent_input_digest(obs: ReconcileObservation, intent: ActionIntent) -> str:
+def _library_digest(vault: Path) -> str:
+    """Canonical-library revision fingerprint for global digest material —
+    the index's keyed content, stable regardless of file mtime."""
+    from paperforge.worker.asset_index import read_index
+
+    try:
+        envelope = read_index(vault)
+        items = envelope.get("items") if isinstance(envelope, dict) else (envelope or [])
+        material = json.dumps(
+            sorted(
+                (str(it.get("zotero_key", "")), str(it.get("title", "")))
+                for it in items or []
+            ),
+            sort_keys=True, separators=(",", ":"),
+        )
+    except Exception:  # noqa: BLE001
+        return ""
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
+
+def _intent_input_digest(obs: ReconcileObservation, intent: ActionIntent, vault: Path) -> str:
     """Digest of the SEMANTIC observation that drives this intent: facet
-    states + lineage identities per paper, plus global desired-state
-    constants.  A later stale cause (R1 → R2) changes the identity material
-    and therefore the digest — the W2 gate then re-allows emission."""
+    states + lineage identities per paper, plus global desired-state /
+    published-substrate material.  A later stale cause (R1 → R2) changes
+    the identity material and therefore the digest — the W2 gate then
+    re-allows emission (#167 P0-2: an all-scope digest must also move when
+    the canonical library or the substrate changes)."""
     from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION
 
     by_key = obs.by_key()
@@ -310,9 +334,35 @@ def _intent_input_digest(obs: ReconcileObservation, intent: ActionIntent) -> str
         material["papers"] = papers_material
     else:
         material["scope"] = "all"
+        material["library_digest"] = _library_digest(vault)
+        material["facet_summary"] = _facet_summary(obs)
+        substrate = observe_global(vault)
+        material["substrate"] = {
+            "memory_substrate_ok": substrate.memory_substrate_ok,
+            "vector_substrate_ok": substrate.vector_substrate_ok,
+        }
     return hashlib.sha256(
         json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
+
+
+def semantic_attempt_digest(vault: Path, intent: dict[str, Any]) -> str:
+    """Chain settle-time digest for one wire intent (W2 writer seam): the
+    digest of the CURRENT semantic observation for the intent's scope —
+    recorded against the last attempt so a changed observation re-allows
+    emission (chain.py records it on dispatch settle, #167 P0-2)."""
+    from paperforge.actions.types import scope_from_dict
+
+    scope = scope_from_dict(intent.get("scope") or {})
+    keys = list(scope.keys) if scope.kind == "papers" else None
+    obs = observe(vault, keys)
+    intent_obj = ActionIntent(
+        action_id=str(intent.get("action_id", "")),
+        scope=scope,
+        trigger_reason_code="",
+        trigger_reason="",
+    )
+    return _intent_input_digest(obs, intent_obj, vault)
 
 
 def _w2_gate(
@@ -329,7 +379,7 @@ def _w2_gate(
         return False
     if last.get("outcome") != "failed":
         return False
-    current_digest = _intent_input_digest(obs, intent)
+    current_digest = _intent_input_digest(obs, intent, obs.vault)
     if last.get("input_digest") == current_digest:
         diagnostics.append(
             f"w2.suppressed:{intent.action_id}:{_canonical_key(intent.action_id, intent.scope)}"

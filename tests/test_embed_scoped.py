@@ -500,6 +500,53 @@ class TestResumeResetRouting:
         assert rc == 1
         enc.assert_not_called()
 
+    def test_pristine_substrate_scoped_resume_initializes(self, tmp_path: Path) -> None:
+        """#167 P0-4: pristine substrate (no rows AND no published identity
+        version) is a per-paper missing deficit — a scoped resume
+        INITIALIZES the empty substrate and embeds only the requested keys.
+        No downgrade → no shadow → no fail-fast."""
+        canonical_test_config(tmp_path, system_dir="System")
+        from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
+        from paperforge.memory.schema import ensure_schema
+
+        db_path = get_memory_db_path(tmp_path)
+        conn = get_connection(db_path)
+        try:
+            ensure_vec_extension(conn)
+            ensure_schema(conn)  # zero build_state, zero vec rows — pristine
+            conn.commit()
+        finally:
+            conn.close()
+
+        from unittest.mock import patch
+        from tests.test_pr9c_streaming_embed import EncodedPayload, PaperEncodedBundle
+
+        def encode(vault, job):
+            bundle = _make_bundle(job.paper_id, n_chunks=1)
+            return PaperEncodedBundle(
+                paper_id=bundle.paper_id,
+                payloads=[
+                    EncodedPayload(
+                        collection_name=p.collection_name,
+                        texts=p.texts,
+                        ids=p.ids,
+                        metadatas=p.metadatas,
+                        embeddings=[[0.1] * 1536 for _ in p.embeddings],
+                    )
+                    for p in bundle.payloads
+                ],
+                chunk_count=bundle.chunk_count,
+            )
+
+        with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
+             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+                   side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
+             patch("paperforge.commands.embed.ensure_vec_tables", return_value=1536), \
+             patch("paperforge.commands.embed.delete_paper_vectors"), \
+             patch("paperforge.commands.embed.write_encoded_payload"):
+            rc = run_build(tmp_path, _papers(("A",)), keys=["A"], resume=True)
+        assert rc == 0, "pristine scoped resume must initialize and succeed"
+
 
 class TestRecordingEmbeddingProvider:
     def test_provider_seam_records_requested_keys_only(self, tmp_path: Path, monkeypatch) -> None:

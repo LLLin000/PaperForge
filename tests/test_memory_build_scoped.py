@@ -328,8 +328,9 @@ class TestRegistryAndCli:
         )
         assert rc == 0, payload
         assert payload["data"]["changed"] == ["A"]
-        # scoped follow-up intent carries the same keys
-        assert payload["next_actions"][0]["scope"] == {"kind": "papers", "keys": ["A"]}
+        # #167 P0-3: handlers never hardcode follow-ups — the handler emits
+        # ZERO next_actions; reconcile (via the chain) is the single producer.
+        assert payload.get("next_actions", []) == []
 
     def test_action_papers_scope_zero_keys_is_exit_2(self, tmp_path: Path) -> None:
         vault = _three_paper_vault(tmp_path)
