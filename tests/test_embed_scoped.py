@@ -223,7 +223,8 @@ class TestLineagePreservation:
     def test_resume_skipped_papers_keep_lineage_rows_byte_identical(self, tmp_path: Path) -> None:
         canonical_test_config(tmp_path, system_dir="System")
         _seed_resume_db(tmp_path, ("A", "B", "C"))
-        _store_manifest(tmp_path, "A")
+        for key in ("A", "B", "C"):
+            _store_manifest(tmp_path, key)
         _store_lineage_row(tmp_path, "B", "2026-01-01T00:00:00+00:00")
         _store_lineage_row(tmp_path, "C", "2026-01-01T00:00:00+00:00")
         before_b = _lineage_rows(tmp_path, "B")
@@ -269,6 +270,138 @@ class TestLineagePreservation:
 
 
 # ── RecordingEmbeddingProvider (test-only, no product seam) ────────────────
+
+    def test_paper_ids_filter_restricts_lineage_writes(self, tmp_path: Path) -> None:
+        """#165 corrective: write_vector_lineage(paper_ids=...) rewrites ONLY
+        the listed papers — even when B/C carry valid manifests (the old
+        variable-shadowing bug made this filter a no-op)."""
+        from paperforge.lineage import write_vector_lineage
+        from paperforge.memory.db import get_memory_db_path
+
+        canonical_test_config(tmp_path, system_dir="System")
+        _seed_resume_db(tmp_path, ("A", "B", "C"))
+        for key in ("A", "B", "C"):
+            _store_manifest(tmp_path, key)
+        _store_lineage_row(tmp_path, "A", "2026-01-01T00:00:00+00:00")
+        _store_lineage_row(tmp_path, "B", "2026-01-01T00:00:00+00:00")
+        _store_lineage_row(tmp_path, "C", "2026-01-01T00:00:00+00:00")
+        before_b = _lineage_rows(tmp_path, "B")
+        before_c = _lineage_rows(tmp_path, "C")
+
+        conn = sqlite3.connect(str(get_memory_db_path(tmp_path)))
+        try:
+            n = write_vector_lineage(
+                conn, tmp_path,
+                endpoint="https://api.openai.com/v1",
+                model="m",
+                dimension=3,
+                paper_ids={"A"},
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        assert n == 1
+        # A's row was rewritten (fresh updated_at), B/C byte-identical.
+        assert _lineage_rows(tmp_path, "A")[0][5] != "2026-01-01T00:00:00+00:00"
+        assert _lineage_rows(tmp_path, "B") == before_b
+        assert _lineage_rows(tmp_path, "C") == before_c
+
+
+class TestResumeResetRouting:
+    """#165 corrective: a resume request downgraded by a gate (stale
+    recovery / no rows / model change) must route through shadow — the
+    extraction must be behavior-preserving; scoped requests fail before any
+    paper mutation."""
+
+    def _stale_build_state(self, tmp_path: Path) -> None:
+        from paperforge.memory.db import get_memory_db_path
+
+        conn = sqlite3.connect(str(get_memory_db_path(tmp_path)))
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('status', ?)",
+                ('"running"',),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('pid', '99999999')"
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_identity_version', '1')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_resume_reset_routes_shadow_unscoped(self, tmp_path: Path) -> None:
+        """resume=True + stale running recovery downgrades resume; the
+        unscoped build must route through the shadow rebuild path."""
+        canonical_test_config(tmp_path, system_dir="System")
+        _seed_resume_db(tmp_path, ("A",))
+        self._stale_build_state(tmp_path)
+
+        from unittest.mock import patch
+
+        shadow_prepared: list[str] = []
+
+        def encode(vault, job):
+            # Shadow vec tables are created at the model-detected dimension.
+            from tests.test_pr9c_streaming_embed import EncodedPayload, PaperEncodedBundle
+
+            bundle = _make_bundle(job.paper_id, n_chunks=1)
+            return PaperEncodedBundle(
+                paper_id=bundle.paper_id,
+                payloads=[
+                    EncodedPayload(
+                        collection_name=p.collection_name,
+                        texts=p.texts,
+                        ids=p.ids,
+                        metadatas=p.metadatas,
+                        embeddings=[[0.1] * 1536 for _ in p.embeddings],
+                    )
+                    for p in bundle.payloads
+                ],
+                chunk_count=bundle.chunk_count,
+            )
+
+        with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
+             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+                   side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
+             patch("paperforge.commands.embed.ensure_vec_tables", return_value=1536), \
+             patch("paperforge.commands.embed.delete_paper_vectors"), \
+             patch("paperforge.commands.embed.write_encoded_payload"), \
+             patch("paperforge.commands.embed._pid_alive", return_value=False):
+            from paperforge.embedding.build_target import ShadowBuild
+            orig_prepare = ShadowBuild.prepare
+
+            def spy_prepare(self):
+                shadow_prepared.append("prepare")
+                return orig_prepare(self)
+
+            ShadowBuild.prepare = spy_prepare
+            try:
+                rc = run_build(tmp_path, _papers(("A",)), keys=None, resume=True)
+            finally:
+                ShadowBuild.prepare = orig_prepare
+
+        assert rc == 0
+        assert shadow_prepared == ["prepare"], "resume-reset must route through shadow"
+
+    def test_scoped_resume_reset_fails_before_mutation(self, tmp_path: Path) -> None:
+        """Same downgrade with a papers-scoped request: fail fast before
+        any paper mutation (no encodes)."""
+        canonical_test_config(tmp_path, system_dir="System")
+        _seed_resume_db(tmp_path, ("A",))
+        self._stale_build_state(tmp_path)
+
+        from unittest.mock import patch
+
+        with patch("paperforge.commands.embed.encode_paper_job") as enc, \
+             patch("paperforge.commands.embed._pid_alive", return_value=False):
+            rc = run_build(tmp_path, _papers(("A",)), keys=["A"], resume=True)
+        assert rc == 1
+        enc.assert_not_called()
+
 
 class TestRecordingEmbeddingProvider:
     def test_provider_seam_records_requested_keys_only(self, tmp_path: Path, monkeypatch) -> None:
