@@ -217,6 +217,24 @@ class TestMinimalFrontier:
         assert [i["action_id"] for i in result.next_actions] == ["embed.resume"]
         assert result.next_actions[0]["scope"]["keys"] == ["KEY1"]
 
+    def test_pristine_vector_substrate_emits_per_paper_resume(self, tmp_path: Path) -> None:
+        """#167 P0-4: no vector rows AND no published identity version
+        (pristine) is a per-paper missing deficit — embed.resume(keys),
+        NEVER a legacy global embed.build."""
+        vault = _lineage_vault(tmp_path)
+        conn = _db(vault)
+        try:
+            for table in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
+                conn.execute(f"DELETE FROM {table}")
+            conn.execute("DELETE FROM build_state")
+            conn.commit()
+        finally:
+            conn.close()
+        result = reconcile(vault)
+        assert [i["action_id"] for i in result.next_actions] == ["embed.resume"]
+        assert result.data["global"]["vector_substrate_ok"] is True
+        assert result.data["global"]["reasons"] == []  # no substrate defect
+
 
 # ── scope merging ─────────────────────────────────────────────────────────
 
@@ -244,7 +262,7 @@ class TestW2Gate:
             "memory.build", PapersScope(("KEY1",)),
             "lineage.retrieval_defect", "stale",
         )
-        return vault, intent, _intent_input_digest(obs, intent)
+        return vault, intent, _intent_input_digest(obs, intent, vault)
 
     def test_failed_last_attempt_same_digest_suppresses(self, tmp_path: Path) -> None:
         """W2: same input digest + failed last attempt → NO re-emission."""

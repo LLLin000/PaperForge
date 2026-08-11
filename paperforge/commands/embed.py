@@ -427,8 +427,13 @@ def run_build(
                     print(msg)
                     mark_vector_build_state(vault, status="idle", current=0, pid=0)
                     resume = False
-            # 门二：no vec0 rows → fresh build（不是 error）
-            if not _substrate.has_any_rows:
+            # 门二：no vec0 rows → fresh build（不是 error）。#167 P0-4:
+            # pristine (no rows AND no published vector identity) is a
+            # per-paper missing deficit — a scoped resume may INITIALIZE the
+            # empty substrate (embed only the requested keys).  Rows lost
+            # after a published identity (identity_version > 0) is data
+            # loss → full rebuild.
+            if not _substrate.has_any_rows and _substrate.identity_version > 0:
                 resume = False
             else:
                 # 门三：过三道门后，正常 model check

@@ -1,9 +1,13 @@
-"""Follow-up chain runner tests (#167 / T6, #159 §5).
+"""Follow-up chain runner tests (#167 / T6 + closure corrective).
 
-Per-invocation dedupe (normalized keys), constant depth, auto-mode inline
-for automatic-local only, confirmed parent never confirms a child,
-cancellation at the next action boundary, O2 (failed action → no children),
-single-producer reconcile seam.
+Inline policy (automatic-local only, everything else pending); per-
+invocation dedupe by canonical (action_id, NORMALIZED scope) — [A,A,B] ≡
+[B,A]; depth 0..MAX legal, depth > MAX skipped; successful-scope seam
+(#167 P0-5) — per-key results feed post-publish reconcile, never the bare
+requested scope; W2 settle (#167 P0-2) — dispatched actions overwrite the
+last-attempt record, pending/skipped never do; strict wire scope (unknown
+kind → skipped, never widened to all); cancellation at the action
+boundary; O2 (failed action → no children).
 """
 
 from __future__ import annotations
@@ -79,14 +83,14 @@ def _vault(tmp_path: Path) -> Path:
 
 def _ok_handler_factory(recorded: list[str]):
     def handler(ctx, request):
-        recorded.append(f"{request.action_id}:{sorted(request.scope.keys) if request.scope.kind == 'papers' else 'all'}")
+        recorded.append(f"{request.action_id}:{sorted(set(request.scope.keys)) if request.scope.kind == 'papers' else 'all'}")
         return PFResult(ok=True, command="action run", version="t", data={"scope": request.scope.kind})
     return handler
 
 
-# ── auto-mode inline policy ───────────────────────────────────────────────
+# ── inline policy ─────────────────────────────────────────────────────────
 
-class TestAutoInline:
+class TestInlinePolicy:
     def test_automatic_local_inline_and_remote_pending(self, _registry, _vault, monkeypatch) -> None:
         recorded: list[str] = []
         _registry(_spec("test.local", automatic=True, confirmation="none", cost="local",
@@ -95,10 +99,7 @@ class TestAutoInline:
                         handler=_ok_handler_factory(recorded)))
         monkeypatch.setattr(chain_module, "_reconcile_producer",
                             lambda vault, keys: PFResult(ok=True, command="reconcile", version="t"))
-        chain = run_chain(
-            [_wire("test.local"), _wire("test.remote")],
-            build_context(_vault), follow="auto",
-        )
+        chain = run_chain([_wire("test.local"), _wire("test.remote")], build_context(_vault))
         assert recorded == ["test.local:all"]
         statuses = {s.action_id: s.status for s in chain.steps}
         assert statuses["test.local"] == "executed"
@@ -106,48 +107,46 @@ class TestAutoInline:
         assert [s.reason_code for s in chain.steps if s.action_id == "test.remote"] == ["chain.remote_spend"]
         assert chain.ok is True
 
-    def test_follow_none_runs_nothing_but_root(self, _registry, _vault, monkeypatch) -> None:
-        recorded: list[str] = []
-        _registry(_spec("test.local", automatic=True, confirmation="none", cost="local",
-                        handler=_ok_handler_factory(recorded)))
-        _registry(_spec("test.child", automatic=True, confirmation="none", cost="local",
-                        handler=_ok_handler_factory(recorded)))
-        monkeypatch.setattr(chain_module, "_reconcile_producer",
-                            lambda vault, keys: PFResult(
-                                ok=True, command="reconcile", version="t",
-                                next_actions=[_wire("test.child")]))
-        # root executes; the derived child with follow=none stays pending
-        chain = run_chain([_wire("test.local")], build_context(_vault), follow="none")
-        assert recorded == ["test.local:all"]
-        assert len(chain.steps) == 2
-        assert chain.steps[1].status == "pending"
-        assert chain.steps[1].reason_code == "chain.follow_disabled"
-
     def test_destructive_descendant_pending(self, _registry, _vault, monkeypatch) -> None:
         recorded: list[str] = []
         _registry(_spec("test.destructive", automatic=True, confirmation="none", cost="local",
                         impact="destructive", handler=_ok_handler_factory(recorded)))
         monkeypatch.setattr(chain_module, "_reconcile_producer",
                             lambda vault, keys: PFResult(ok=True, command="reconcile", version="t"))
-        chain = run_chain([_wire("test.destructive")], build_context(_vault), follow="auto")
+        chain = run_chain([_wire("test.destructive")], build_context(_vault))
         assert recorded == []
         assert chain.steps[0].status == "pending"
         assert chain.steps[0].reason_code == "chain.destructive"
+
+    def test_confirmation_required_descendant_pending_even_if_automatic(
+        self, _registry, _vault, monkeypatch,
+    ) -> None:
+        """confirmation=required always pends — automatic does not grant
+        inline execution for a confirmed action (frozen #145)."""
+        recorded: list[str] = []
+        _registry(_spec("test.conf", automatic=True, confirmation="required", cost="local",
+                        handler=_ok_handler_factory(recorded)))
+        monkeypatch.setattr(chain_module, "_reconcile_producer",
+                            lambda vault, keys: PFResult(ok=True, command="reconcile", version="t"))
+        chain = run_chain([_wire("test.conf")], build_context(_vault))
+        assert recorded == []
+        assert chain.steps[0].reason_code == "chain.confirmation_required"
 
 
 # ── dedupe ────────────────────────────────────────────────────────────────
 
 class TestDedupe:
-    def test_normalized_scope_dedupe(self, _registry, _vault, monkeypatch) -> None:
-        """[A,B] ≡ [B,A] — same canonical action+scope runs once."""
+    def test_normalized_scope_dedupe_including_dup_keys(self, _registry, _vault, monkeypatch) -> None:
+        """[A,A,B] ≡ [B,A] — canonical key uses NORMALIZED keys, so
+        duplicate keys inside one scope and reordered siblings collapse."""
         recorded: list[str] = []
         _registry(_spec("test.local", automatic=True, confirmation="none", cost="local",
                         handler=_ok_handler_factory(recorded)))
         monkeypatch.setattr(chain_module, "_reconcile_producer",
                             lambda vault, keys: PFResult(ok=True, command="reconcile", version="t"))
         chain = run_chain(
-            [_wire("test.local", ["A", "B"]), _wire("test.local", ["B", "A"])],
-            build_context(_vault), follow="auto",
+            [_wire("test.local", ["A", "A", "B"]), _wire("test.local", ["B", "A"])],
+            build_context(_vault),
         )
         assert recorded == ["test.local:['A', 'B']"]
         executed = [s for s in chain.steps if s.status == "executed"]
@@ -160,57 +159,125 @@ class TestDedupe:
 # ── depth ─────────────────────────────────────────────────────────────────
 
 class TestDepth:
-    def test_depth_overflow_reported_skipped(self, _registry, _vault, monkeypatch) -> None:
-        """A producer that keeps emitting children must stop at the depth
-        cap; deeper intents are skipped with chain.depth_overflow.  Each
-        layer emits a DISTINCT action so dedupe never masks the depth gate."""
+    def test_depth_4_executes_depth_5_overflows(self, _registry, _vault, monkeypatch) -> None:
+        """Frozen depth contract: 0..MAX_FOLLOW_UP_DEPTH legal; depth > MAX
+        rejected (#167 P1-1).  Each layer emits a DISTINCT action so dedupe
+        never masks the depth gate."""
         recorded: list[str] = []
-        for i in range(MAX_FOLLOW_UP_DEPTH + 1):
+        for i in range(MAX_FOLLOW_UP_DEPTH + 2):
             _registry(_spec(f"test.step{i}", automatic=True, confirmation="none", cost="local",
                             handler=_ok_handler_factory(recorded)))
         producer_calls = {"n": 0}
 
         def producer(vault, keys):
             producer_calls["n"] += 1
-            # Keep deriving one distinct child per success, forever.
-            n = producer_calls["n"]
             return PFResult(ok=True, command="reconcile", version="t",
-                            next_actions=[_wire(f"test.step{n}")])
+                            next_actions=[_wire(f"test.step{producer_calls['n']}")])
 
         monkeypatch.setattr(chain_module, "_reconcile_producer", producer)
-        chain = run_chain([_wire("test.step0")], build_context(_vault), follow="auto")
+        chain = run_chain([_wire("test.step0")], build_context(_vault))
         depths = [s.depth for s in chain.steps]
-        assert max(depths) == MAX_FOLLOW_UP_DEPTH
+        assert max(depths) == MAX_FOLLOW_UP_DEPTH + 1
         overflow = [s for s in chain.steps if s.reason_code == "chain.depth_overflow"]
         assert len(overflow) == 1
-        assert overflow[0].depth == MAX_FOLLOW_UP_DEPTH
-        # root + children up to MAX-1 executed; MAX skipped
-        assert len(recorded) == MAX_FOLLOW_UP_DEPTH
+        assert overflow[0].depth == MAX_FOLLOW_UP_DEPTH + 1
+        # depth 0..4 executed (5 actions), depth 5 skipped
+        assert len(recorded) == MAX_FOLLOW_UP_DEPTH + 1
 
 
-# ── confirmation boundary ────────────────────────────────────────────────
+# ── successful-scope seam ─────────────────────────────────────────────────
 
-class TestConfirmation:
-    def test_confirmed_parent_never_confirms_child(self, _registry, _vault, monkeypatch) -> None:
-        """Root confirmed with --confirm runs; a confirmation-required child
-        is pending and its handler is NEVER invoked."""
+class TestSuccessfulScope:
+    def test_per_key_successful_keys_feed_post_publish_reconcile(
+        self, _registry, _vault, monkeypatch,
+    ) -> None:
+        """#167 P0-5: request [A,B], only A succeeds → reconcile receives
+        [A], never the bare requested scope."""
+        seen: list[Any] = []
+
+        def partial(ctx, request):
+            return PFResult(ok=True, command="action run", version="t",
+                            successful_keys=["A"])
+
+        _registry(_spec("test.partial", automatic=True, confirmation="none", cost="local",
+                        handler=partial))
+        monkeypatch.setattr(chain_module, "_reconcile_producer",
+                            lambda vault, keys: (seen.append(keys), PFResult(ok=True, command="reconcile", version="t"))[1])
+        run_chain([_wire("test.partial", ["A", "B"])], build_context(_vault))
+        assert seen == [["A"]]
+
+    def test_all_or_nothing_falls_back_to_request_scope(self, _registry, _vault, monkeypatch) -> None:
+        seen: list[Any] = []
+        _registry(_spec("test.all", automatic=True, confirmation="none", cost="local",
+                        handler=_ok_handler_factory([])))
+        monkeypatch.setattr(chain_module, "_reconcile_producer",
+                            lambda vault, keys: (seen.append(keys), PFResult(ok=True, command="reconcile", version="t"))[1])
+        run_chain([_wire("test.all", ["B", "A"])], build_context(_vault))
+        assert seen == [["A", "B"]]
+
+
+# ── W2 settle ─────────────────────────────────────────────────────────────
+
+class TestW2Settle:
+    def test_dispatched_success_writes_succeeded_attempt(self, _registry, _vault, monkeypatch) -> None:
+        from paperforge.reconcile import read_last_attempts
+
+        _registry(_spec("test.local", automatic=True, confirmation="none", cost="local",
+                        handler=_ok_handler_factory([])))
+        monkeypatch.setattr(chain_module, "_reconcile_producer",
+                            lambda vault, keys: PFResult(ok=True, command="reconcile", version="t"))
+        run_chain([_wire("test.local")], build_context(_vault))
+        attempts = read_last_attempts(_vault)
+        assert attempts["test.local:all"]["outcome"] == "succeeded"
+
+    def test_dispatched_failure_writes_failed_attempt(self, _registry, _vault, monkeypatch) -> None:
+        """W2 (#167 P0-2): a FAILED dispatch settles a failed last-attempt —
+        the next same-digest trigger suppresses re-emission."""
+        from paperforge.core.errors import ErrorCode
+        from paperforge.core.result import PFError
+        from paperforge.reconcile import read_last_attempts
+
+        def failing(ctx, request):
+            return PFResult(ok=False, command="action run", version="t",
+                            error=PFError(code=ErrorCode.INTERNAL_ERROR, message="boom"))
+
+        _registry(_spec("test.fail", automatic=True, confirmation="none", cost="local",
+                        handler=failing))
+        monkeypatch.setattr(chain_module, "_reconcile_producer",
+                            lambda vault, keys: PFResult(ok=True, command="reconcile", version="t"))
+        chain = run_chain([_wire("test.fail")], build_context(_vault))
+        assert chain.ok is False
+        attempts = read_last_attempts(_vault)
+        assert attempts["test.fail:all"]["outcome"] == "failed"
+
+    def test_pending_intent_never_settles_an_attempt(self, _registry, _vault, monkeypatch) -> None:
+        """Pre-dispatch pending (confirmation-required) is NOT a failed
+        attempt — W2 only records dispatched actions."""
+        from paperforge.reconcile import read_last_attempts
+
+        _registry(_spec("test.remote", automatic=False, confirmation="required", cost="remote_possible",
+                        handler=_ok_handler_factory([])))
+        monkeypatch.setattr(chain_module, "_reconcile_producer",
+                            lambda vault, keys: PFResult(ok=True, command="reconcile", version="t"))
+        run_chain([_wire("test.remote")], build_context(_vault))
+        assert read_last_attempts(_vault) == {}
+
+
+# ── strict wire scope ─────────────────────────────────────────────────────
+
+class TestStrictScope:
+    def test_unknown_scope_kind_never_widens_to_all(self, _registry, _vault, monkeypatch) -> None:
+        """#167 P1-2: a garbage scope kind is skipped (chain.scope_invalid),
+        never widened to an all-scope execution."""
         recorded: list[str] = []
-        _registry(_spec("test.parent", automatic=True, confirmation="none", cost="local",
+        _registry(_spec("test.local", automatic=True, confirmation="none", cost="local",
                         handler=_ok_handler_factory(recorded)))
-        _registry(_spec("test.child", automatic=False, confirmation="required", cost="remote_possible",
-                        handler=_ok_handler_factory(recorded)))
-        monkeypatch.setattr(
-            chain_module, "_reconcile_producer",
-            lambda vault, keys: PFResult(ok=True, command="reconcile", version="t",
-                                         next_actions=[_wire("test.child")]),
-        )
-        chain = run_chain([_wire("test.parent")], build_context(_vault),
-                          follow="auto", confirmed_action_id="test.parent")
-        assert recorded == ["test.parent:all"]
-        child = [s for s in chain.steps if s.action_id == "test.child"][0]
-        assert child.status == "pending"
-        assert child.reason_code == "chain.remote_spend"
-        assert chain.pending == [_wire("test.child")]
+        bad = _wire("test.local")
+        bad["scope"] = {"kind": "garbage"}
+        chain = run_chain([bad], build_context(_vault))
+        assert recorded == []
+        assert chain.steps[0].status == "skipped"
+        assert chain.steps[0].reason_code == "chain.scope_invalid"
 
 
 # ── cancellation ──────────────────────────────────────────────────────────
@@ -238,23 +305,22 @@ class TestCancellation:
 
         monkeypatch.setattr(chain_module, "_reconcile_producer", producer)
         with pytest.raises(KeyboardInterrupt):
-            run_chain([_wire("test.boom")], build_context(_vault), follow="auto")
-        # producer never derived children after the interrupt
+            run_chain([_wire("test.boom")], build_context(_vault))
         assert producer_calls["n"] == 0
         assert recorded == ["test.boom"]
 
 
-# ── O2: failed action produces no children ────────────────────────────────
+# ── O2 ────────────────────────────────────────────────────────────────────
 
 class TestO2:
     def test_failed_action_derives_no_children(self, _registry, _vault, monkeypatch) -> None:
         """O2 (#167): a failed action must not emit anything downstream —
         no successful publish → no post-publish reconcile → no embed.resume
         in executed, pending, or next_actions."""
-        recorded: list[str] = []
-
         from paperforge.core.errors import ErrorCode
         from paperforge.core.result import PFError
+
+        recorded: list[str] = []
 
         def failing(ctx, request):
             recorded.append(request.action_id)
@@ -272,7 +338,7 @@ class TestO2:
                             next_actions=[_wire("embed.resume")])
 
         monkeypatch.setattr(chain_module, "_reconcile_producer", producer)
-        chain = run_chain([_wire("test.fail")], build_context(_vault), follow="auto")
+        chain = run_chain([_wire("test.fail")], build_context(_vault))
         assert recorded == ["test.fail"]
         assert producer_calls["n"] == 0
         assert chain.ok is False
@@ -280,19 +346,9 @@ class TestO2:
         assert "embed.resume" not in all_ids
 
 
-# ── single producer seam ──────────────────────────────────────────────────
+# ── producer seam ─────────────────────────────────────────────────────────
 
 class TestProducer:
-    def test_successful_keys_flow_to_reconcile(self, _registry, _vault, monkeypatch) -> None:
-        """The post-publish reconcile receives the successful scope keys."""
-        seen: list[Any] = []
-        _registry(_spec("test.local", automatic=True, confirmation="none", cost="local",
-                        handler=_ok_handler_factory([])))
-        monkeypatch.setattr(chain_module, "_reconcile_producer",
-                            lambda vault, keys: (seen.append(keys), PFResult(ok=True, command="reconcile", version="t"))[1])
-        run_chain([_wire("test.local", ["B", "A"])], build_context(_vault), follow="auto")
-        assert seen == [["A", "B"]]
-
     def test_producer_failure_never_fails_sync(self, _registry, _vault, monkeypatch) -> None:
         """A broken producer (exception) must not fail the chain."""
         _registry(_spec("test.local", automatic=True, confirmation="none", cost="local",
@@ -302,5 +358,5 @@ class TestProducer:
             raise RuntimeError("producer broken")
 
         monkeypatch.setattr(chain_module, "_reconcile_producer", broken)
-        chain = run_chain([_wire("test.local")], build_context(_vault), follow="auto")
+        chain = run_chain([_wire("test.local")], build_context(_vault))
         assert chain.ok is True

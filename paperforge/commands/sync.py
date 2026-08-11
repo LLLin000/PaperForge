@@ -112,7 +112,7 @@ def _reconcile_and_attach(vault, result: PFResult, *, execute: bool) -> None:
     if not execute:
         return
 
-    chain = run_chain(result.next_actions, context, follow="auto")
+    chain = run_chain(result.next_actions, context)
     data = dict(result.data or {})
     data["chain"] = chain.to_wire()
     result.data = data

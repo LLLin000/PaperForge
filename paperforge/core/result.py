@@ -24,6 +24,11 @@ class PFResult:
     error: PFError | None = None
     warnings: list[str] = field(default_factory=list)
     next_actions: list[dict] = field(default_factory=list)
+    # #167 P0-5: per-key execution metadata — WHICH papers actually
+    # succeeded, for the follow-up chain's post-publish reconcile scope.
+    # None = all-or-nothing result (request scope stands).  Never
+    # serialized to the wire; chain-internal only.
+    successful_keys: list[str] | None = None
 
     def __bool__(self) -> bool:
         return self.ok

@@ -13,9 +13,7 @@ from paperforge.actions.types import (
     ActionContext,
     ActionIntent,
     ActionRequest,
-    ActionScope,
     ActionSpec,
-    AllScope,
     PreflightResult,
     require_action_id,
 )
@@ -95,23 +93,10 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
             version=PF_VERSION,
             error=PFError(code=ErrorCode.PATH_NOT_FOUND, message=str(exc)),
         )
-    result = PFResult(ok=True, command="action run", version=PF_VERSION, data=counts)
-    # §8.1b dependency-by-emission: memory.build emits embed.resume on
-    # success — scoped builds carry the same keys (T6 wires the chain).
-    from paperforge.actions.types import PapersScope
-
-    follow_scope: ActionScope = PapersScope(tuple(keys)) if keys else AllScope()
-    result.next_actions = [
-        emit_next_action(
-            ActionIntent(
-                action_id="embed.resume",
-                scope=follow_scope,
-                trigger_reason_code="vector.pending_after_memory_build",
-                trigger_reason="Memory changed — vector rows may need rebuilding",
-            )
-        ).to_dict()
-    ]
-    return result
+    # #167 P0-3: handlers never hardcode follow-ups — reconcile is the
+    # SINGLE producer.  The follow-up chain derives the next layer via
+    # post-publish reconcile(successful_keys).
+    return PFResult(ok=True, command="action run", version=PF_VERSION, data=counts)
 
 
 def _ocr_run_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
