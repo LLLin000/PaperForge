@@ -76,6 +76,19 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
 
     try:
         counts = build_for_keys(ctx.vault, keys)
+        if counts.get("global_rebuild_required"):
+            # #164 corrective: a scoped request must never initialize the
+            # global substrate — the schema needs a full memory.build(all).
+            return PFResult(
+                ok=False,
+                command="action run",
+                version=PF_VERSION,
+                error=PFError(
+                    code=ErrorCode.ACTION_UNAVAILABLE,
+                    message="memory schema requires a full rebuild — "
+                    "run `paperforge action run memory.build` (all scope) first",
+                ),
+            )
     except FileNotFoundError as exc:
         return PFResult(
             ok=False,

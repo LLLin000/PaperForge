@@ -312,6 +312,16 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
         else ""
     )
 
+    # ── 0. Scoped request: validate keys against the canonical index BEFORE
+    #      any writable DB access — an unknown key is an invalid scope with
+    #      ZERO side effects (exit 2 upstream), even on a fresh DB. ──
+    if keys is not None:
+        canonical_keys = {e["zotero_key"] for e in items if e.get("zotero_key")}
+        unknown = sorted(set(keys) - canonical_keys)
+        if unknown:
+            raise ValueError(f"unknown paper keys: {unknown}")
+        items = [e for e in items if e.get("zotero_key") in set(keys)]
+
     db_path = get_memory_db_path(vault)
     conn = get_connection(db_path, read_only=False)
     try:
@@ -326,19 +336,22 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
 
         # ── 2. Fresh or destructive → full rebuild ────────────────────────
         if migration_action in ("fresh", "destructive"):
+            if keys is not None:
+                # A scoped request must never initialize/migrate the global
+                # substrate: every paper would be materialized (violating
+                # affected ⊆ requested).  #159 global-first: the substrate
+                # needs a memory.build(all) intent instead.
+                conn.close()
+                return {
+                    "global_rebuild_required": True,
+                    "reason": migration_action,
+                    "db_path": str(db_path),
+                    "requested_keys": list(keys),
+                }
             result = _full_rebuild(conn, vault, items, canonical_hash, generated_at, ocr_root)
             conn.commit()
             conn.close()
             return result
-
-        # ── 2.5 Scoped build: validate keys against the canonical index and
-        #      filter — everything below schedules over the filtered set ──
-        if keys is not None:
-            canonical_keys = {e["zotero_key"] for e in items if e.get("zotero_key")}
-            unknown = sorted(set(keys) - canonical_keys)
-            if unknown:
-                raise ValueError(f"unknown paper keys: {unknown}")
-            items = [e for e in items if e.get("zotero_key") in set(keys)]
 
         # ── 3. Global hash unchanged + no schema change → fast path ──────
         if migration_action == "none" and canonical_hash and db_path.exists():
@@ -400,16 +413,19 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
         #     Always run — function internally handles missing OCR artifacts.
         _incremental_units_only(conn, items, ocr_root, vault=vault)
 
-        # 4e. Advance canonical hash LAST — if anything fails before this,
-        #     the next run re-diffs and retries
-        conn.execute(
-            "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
-            ("canonical_index_hash", canonical_hash),
-        )
-        conn.execute(
-            "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
-            ("canonical_index_generated_at", generated_at),
-        )
+        # 4e. Advance the global canonical hash LAST — ALL-SCOPE builds only.
+        #     A scoped build must never publish the full-index hash: it would
+        #     let the next full build take the fast path and permanently mask
+        #     non-requested papers' stale metadata.
+        if keys is None:
+            conn.execute(
+                "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+                ("canonical_index_hash", canonical_hash),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+                ("canonical_index_generated_at", generated_at),
+            )
 
         logger.info(
             "Index built: %d changed, %d deleted, %d corrections (orphans: %d)",
