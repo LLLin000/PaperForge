@@ -7,6 +7,7 @@ import logging
 
 from paperforge import __version__
 from paperforge.core.result import PFResult
+from paperforge.reconcile import reconcile
 
 logger = logging.getLogger(__name__)
 
@@ -74,12 +75,14 @@ def run(args: argparse.Namespace) -> int:
         for w in result.warnings:
             print(f"[WARN] {w}")
 
-    # #127: the command core only produces follow-ups; it never executes
-    # remote/destructive work. JSON mode prints the final PFResult exactly
-    # once and performs no follow-up; the terminal runner may execute
-    # automatic-local actions inline (see _run_terminal_followups).
+    # T6 (#167) convergence cutover: sync completes external source
+    # detection + canonical library sync, then runs reconcile(all) — never
+    # changed_keys-only, because a broken eager chain must recover even
+    # when the source is unchanged (#159 §4).  The generic follow-up chain
+    # runner executes the emitted intents; reconcile is the SINGLE
+    # producer — no command-specific branch, no hardcoded follow-ups.
     if result.ok and not index_only and not selection_only:
-        _attach_next_actions(result)
+        _reconcile_and_attach(vault, result, execute=not json_output)
 
     if json_output:
         print(result.to_json())
@@ -88,67 +91,44 @@ def run(args: argparse.Namespace) -> int:
     if not result.ok:
         return 1
 
-    _run_terminal_followups(vault, result)
     return 0
 
 
-def _attach_next_actions(result: PFResult) -> None:
-    """Append the canonical follow-up actions for a successful full sync.
+def _reconcile_and_attach(vault, result: PFResult, *, execute: bool) -> None:
+    """T6: reconcile(all) is the single producer of follow-up intents.
 
-    - memory.build: automatic, local, mutating — executors may run it inline.
-    - embed.resume: remote-possible, mutating — never automatic, always
-      requires confirmation (the sync command must not silently spend API
-      cost on embedding).
+    JSON mode attaches the intents and never executes; terminal mode runs
+    them through the generic follow-up chain (automatic-local inline,
+    remote/destructive/confirmation-required pending) with the chain
+    transcript attached to the result data.
     """
-    from paperforge.core.next_actions import (
-        NextActionScope,
-        build_next_action,
-        next_actions_to_dicts,
-    )
+    from paperforge.actions.chain import run_chain
+    from paperforge.actions.runner import build_context
 
-    result.next_actions = next_actions_to_dicts((
-        build_next_action(
-            "memory.build",
-            reason="library index changed after sync",
-            scope=NextActionScope(kind="all"),
-        ),
-        build_next_action(
-            "embed.resume",
-            reason="changed papers need vector embeddings",
-            scope=NextActionScope(kind="all"),
-        ),
-    ))
+    context = build_context(vault)
+    initial = reconcile(vault)
+    result.next_actions = list(initial.next_actions or [])
 
+    if not execute:
+        return
 
-def _run_terminal_followups(vault, result: PFResult) -> None:
-    """Terminal runner policy: execute automatic-local actions inline, never
-    execute remote/destructive work, and surface what needs confirmation."""
-    from paperforge.core.next_actions import (
-        automatic_local_actions,
-        next_actions_from_dicts,
-        remote_or_destructive_actions,
-    )
-
-    actions = next_actions_from_dicts(result.next_actions)
-    for action in automatic_local_actions(actions):
-        if action.action_id == "memory.build":
-            _run_memory_build(vault)
-    for action in remote_or_destructive_actions(actions):
-        print(
-            f"[INFO] follow-up '{action.action_id}' needs confirmation "
-            f"({action.cost}, {action.impact}); run it explicitly or from the plugin."
-        )
+    chain = run_chain(result.next_actions, context, follow="auto")
+    data = dict(result.data or {})
+    data["chain"] = chain.to_wire()
+    result.data = data
+    result.next_actions = chain.pending
+    for step in chain.steps:
+        if step.status == "executed":
+            print(f"ok: {step.action_id}")
+        elif step.status == "pending":
+            print(f"[INFO] follow-up '{step.action_id}' needs confirmation "
+                  f"({step.reason_code}); run it explicitly or from the plugin.")
+        else:
+            print(f"[INFO] follow-up '{step.action_id}' skipped ({step.reason_code}).")
 
 
-def _run_memory_build(vault) -> None:
-    try:
-        from paperforge.memory.builder import build_from_index
-
-        counts = build_from_index(vault)
-        tag = " (fast)" if counts.get("hash_match") else ""
-        print(f"memory: {counts.get('papers_indexed', 0)} papers{tag}")
-    except Exception as e:  # noqa: BLE001 — local follow-up failure must not fail sync
-        print(f"memory: deferred ({e})")
+# T6 (#167): the shared follow-up chain runner replaces the hardcoded
+# memory.build terminal branch.
 
 
 def _cleanup_legacy_snapshot_files(vault) -> None:
@@ -157,7 +137,6 @@ def _cleanup_legacy_snapshot_files(vault) -> None:
     Zero readers + zero writers make these inert garbage; hygiene only —
     failure to clean never fails the cutover and never affects the result.
     """
-    import os
     from pathlib import Path
 
     for name in ("memory-runtime-state.json", "vector-runtime-state.json", "runtime-health.json"):

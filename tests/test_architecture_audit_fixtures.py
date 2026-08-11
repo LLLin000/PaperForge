@@ -28,7 +28,7 @@ class TestFixtureIntegrity:
         # re-pinned in C0 (#172) after sync stopped auto-migrating config.
         expected_revisions = {
             "golden_126_ocr_rebuild": "dea041db",
-            "golden_127_sync_embed": "6ead21fc",
+            "golden_127_sync_embed": "7029b9dc",
             "golden_129_display_restore": "1a1bb895",
         }
         for name, expected_revision in expected_revisions.items():
