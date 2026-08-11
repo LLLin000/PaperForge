@@ -251,6 +251,7 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
 
     keys = _paper_keys(vault, db_path)
     papers: dict[str, dict[str, str]] = {}
+    identities: dict[str, dict[str, str | None]] = {}
     summary = {"current": 0, "stale": 0, "missing": 0, "unknown": 0}
 
     conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
@@ -286,8 +287,23 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                 "vector": vector_state,
             }
             papers[key] = state
-            for layer_state in state.values():
+            for layer_state in (ocr_state, retrieval_state, vector_state):
                 summary[layer_state] = summary.get(layer_state, 0) + 1
+            # Internal digest material for reconcile's W2 gate (#166): the
+            # identities that DROVE each facet state, so a stale caused by
+            # R1 is distinguishable from one caused by R2.  Sibling of
+            # ``papers`` (public read model schema untouched).
+            identities[key] = {
+                "ocr": ocr_identity,
+                "retrieval": retrieval_identity,
+                "vector": (
+                    conn.execute(
+                        "SELECT identity FROM lineage "
+                        "WHERE paper_id = ? AND layer = ?",
+                        (key, LINEAGE_LAYER_VECTOR),
+                    ).fetchone() or (None,)
+                )[0],
+            }
     finally:
         conn.close()
 
@@ -298,6 +314,7 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
         "reason": None,
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "papers": papers,
+        "identities": identities,
         "summary": summary,
     }
 
@@ -411,7 +428,10 @@ def _probe_retrieval_state(
 
     if manifest.get("retrieval_policy_version") != RETRIEVAL_POLICY_VERSION:
         # Global retrieval policy moved; this manifest predates it.
-        return "stale", None
+        # Carry the manifest's own recomputed identity as the CAUSE
+        # fingerprint: a stale caused by R1 vs one caused by R2 must be
+        # distinguishable in reconcile's W2 digest material (#166).
+        return "stale", recomputed
     if stored != recomputed:
         return "stale", None
     return "current", recomputed

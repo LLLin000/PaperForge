@@ -1,18 +1,25 @@
-"""Reconcile module tests (#166 / T5, #159 §3).
+"""Reconcile module tests (#166 / T5 + corrective, #159 §3).
 
 Pure derivation + intent emission; global-first; minimal repair frontier;
-scope merging; unknown fails closed; operation vs policy separation.
+scope merging; unknown fails closed; operation vs policy separation;
+substrate ≠ credential availability (P0-1); W2 no-blind-retry gate (P0-2);
+single next_actions channel (P1-1); unregistered fail-closed (P1-2);
+facet_summary independent of global-first (P1-3).
 """
 
 from __future__ import annotations
 
 import json
-import sqlite3
-import sys
 from pathlib import Path
 
 from paperforge.actions.registry import ACTION_REGISTRY
-from paperforge.reconcile import reconcile
+from paperforge.actions.types import ActionIntent, PapersScope
+from paperforge.reconcile import (
+    _intent_input_digest,
+    observe,
+    reconcile,
+    record_last_attempt,
+)
 
 from tests.conftest import canonical_test_config
 from tests.test_lineage import _make_vault as _lineage_vault
@@ -23,13 +30,13 @@ def _run_cli(*argv: str) -> tuple[int, dict]:
 
     from paperforge.cli import main
 
-    old_out = sys.stdout
+    old_out = __import__("sys").stdout
     buf = _io.StringIO()
-    sys.stdout = buf
+    __import__("sys").stdout = buf
     try:
         rc = main(list(argv))
     finally:
-        sys.stdout = old_out
+        __import__("sys").stdout = old_out
     return rc, json.loads(buf.getvalue())
 
 
@@ -40,8 +47,12 @@ def _db(vault: Path):
 
 
 def _set_retrieval_stale(vault: Path, keys: tuple[str, ...]) -> None:
-    """Simulate a retrieval change: rewrite manifests with a NEW retrieval
-    identity (policy/units changed) so probe reports retrieval stale."""
+    _set_retrieval_stale_variant(vault, keys, policy="l4.body.v999")
+
+
+def _set_retrieval_stale_variant(vault: Path, keys: tuple[str, ...], policy: str) -> None:
+    """Simulate a retrieval change under a SPECIFIC policy version, so the
+    written retrieval identity differs between calls (W2 digest material)."""
     from paperforge.lineage import compute_retrieval_identity
 
     conn = _db(vault)
@@ -49,10 +60,10 @@ def _set_retrieval_stale(vault: Path, keys: tuple[str, ...]) -> None:
         for key in keys:
             row = conn.execute("SELECT value FROM meta WHERE key = ?", (f"manifest:{key}",)).fetchone()
             manifest = json.loads(row[0])
-            manifest["retrieval_policy_version"] = "l4.body.v999"
+            manifest["retrieval_policy_version"] = policy
             manifest["retrieval_identity"] = compute_retrieval_identity(
                 ocr_result_hash=manifest["ocr_result_hash"],
-                retrieval_policy_version="l4.body.v999",
+                retrieval_policy_version=policy,
                 structure_tree_hash=manifest["structure_tree_hash"],
                 body_units_hash=manifest["body_units_hash"],
                 object_units_hash=manifest["object_units_hash"],
@@ -72,32 +83,44 @@ def _set_ocr_stale(vault: Path, key: str) -> None:
     )
 
 
-def _set_vector_stale(vault: Path, key: str) -> None:
-    """Change the configured embedding model so vector identity differs."""
+def _set_vector_missing(vault: Path, key: str) -> None:
+    """Delete a paper's vector rows so probe reports vector missing while
+    the substrate stays compatible (per-paper deficit → embed.resume)."""
+    conn = _db(vault)
+    try:
+        conn.execute("DELETE FROM vec_fulltext_meta WHERE paper_id = ?", (key,))
+        conn.execute("DELETE FROM vec_body_meta WHERE paper_id = ?", (key,))
+        conn.execute("DELETE FROM vec_objects_meta WHERE paper_id = ?", (key,))
+        conn.execute("DELETE FROM lineage WHERE paper_id = ? AND layer = 'vector'", (key,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _set_model_changed(vault: Path) -> None:
+    """Change the configured embedding model — desired identity diverges
+    from the published substrate → GLOBAL embed.build (P0-1)."""
     from paperforge.config import set_config
 
     set_config(vault, "vector_db_api_model", "text-embedding-3-large")
 
 
-def _intent_ids(payload: dict) -> list[str]:
-    return [i["action_id"] for i in payload["intents"]]
+def _intent_ids(result) -> list[str]:
+    return [i["action_id"] for i in result.next_actions]
 
 
 # ── pure derivation / idempotence ─────────────────────────────────────────
 
 class TestPureDerivation:
-    def test_healthy_library_emits_nothing(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "t")
+    def test_healthy_library_emits_nothing(self, tmp_path: Path) -> None:
         vault = _lineage_vault(tmp_path)
-        payload = reconcile(vault)
-        assert payload["intents"] == []
-        assert payload["facet_summary"]["current"] == 3
+        result = reconcile(vault)
+        assert result.next_actions == []
+        assert result.data["facet_summary"]["current"] == 3
 
     def test_idempotent_same_facts_same_result(self, tmp_path: Path) -> None:
         vault = _lineage_vault(tmp_path)
-        first = reconcile(vault)
-        second = reconcile(vault)
-        assert first == second
+        assert reconcile(vault).to_json() == reconcile(vault).to_json()
 
 
 # ── global-first ──────────────────────────────────────────────────────────
@@ -107,58 +130,69 @@ class TestGlobalFirst:
         vault = tmp_path / "vault"
         vault.mkdir()
         canonical_test_config(vault, system_dir="99_System")
-        payload = reconcile(vault)
-        assert _intent_ids(payload) == ["memory.build"]
-        assert payload["global"]["memory_substrate_ok"] is False
+        result = reconcile(vault)
+        assert _intent_ids(result) == ["memory.build"]
+        assert result.data["global"]["memory_substrate_ok"] is False
 
-    def test_vector_substrate_incompatible_emits_global_embed_build(self, tmp_path: Path) -> None:
-        """Credential missing -> vector substrate incompatible -> exactly one
-        global embed.build; per-paper facets blocked_global."""
+    def test_model_change_emits_global_embed_build_and_summary_counts(
+        self, tmp_path: Path,
+    ) -> None:
+        """Desired embedding identity diverged from the published substrate
+        → exactly one global embed.build; per-paper facets blocked_global;
+        facet_summary STILL counts the observed facets (P1-3)."""
         vault = _lineage_vault(tmp_path)
-        payload = reconcile(vault)
-        assert _intent_ids(payload) == ["embed.build"]
-        assert payload["global"]["vector_substrate_ok"] is False
-        for reasons in payload["per_paper"].values():
+        _set_model_changed(vault)
+        result = reconcile(vault)
+        assert _intent_ids(result) == ["embed.build"]
+        assert result.data["global"]["vector_substrate_ok"] is False
+        # Model change flips the vector facet stale (correct observation) —
+        # the summary must count the REAL facets, never zero (P1-3).
+        assert result.data["facet_summary"] == {"current": 2, "stale": 1, "missing": 0, "unknown": 0}
+        for reasons in result.data["per_paper"].values():
             assert reasons["reasons"] == ["blocked_global:vector_substrate"]
+
+    def test_missing_credential_does_not_block_unrelated_repair(
+        self, tmp_path: Path,
+    ) -> None:
+        """P0-1: no embedding credential configured must NOT flip the
+        substrate state — OCR/retrieval repair still flows, and the vector
+        intent is emitted (availability is the registry preflight's job)."""
+        vault = _lineage_vault(tmp_path)
+        _set_ocr_stale(vault, "KEY1")
+        result = reconcile(vault)
+        assert _intent_ids(result) == ["ocr.run"]
+        assert result.data["global"]["vector_substrate_ok"] is True
 
 
 # ── minimal repair frontier + unknown fails closed ────────────────────────
 
 class TestMinimalFrontier:
-    def test_ocr_stale_emits_ocr_run(self, tmp_path: Path, monkeypatch) -> None:
+    def test_ocr_stale_emits_ocr_run(self, tmp_path: Path) -> None:
         vault = _lineage_vault(tmp_path)
         _set_ocr_stale(vault, "KEY1")
-        # ensure credential available so substrate observation passes
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", "t")
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "t")
-        payload = reconcile(vault)
-        intents = payload["intents"]
-        assert [i["action_id"] for i in intents] == ["ocr.run"]
-        assert intents[0]["scope"] == {"kind": "papers", "keys": ["KEY1"]}
+        result = reconcile(vault)
+        assert [i["action_id"] for i in result.next_actions] == ["ocr.run"]
+        assert result.next_actions[0]["scope"] == {"kind": "papers", "keys": ["KEY1"]}
 
-    def test_retrieval_stale_emits_memory_build_only_when_ocr_current(self, tmp_path: Path, monkeypatch) -> None:
+    def test_retrieval_stale_emits_memory_build_only_when_ocr_current(self, tmp_path: Path) -> None:
         vault = _lineage_vault(tmp_path)
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "t")
         _set_retrieval_stale(vault, ("KEY1",))
-        payload = reconcile(vault)
-        assert [i["action_id"] for i in payload["intents"]] == ["memory.build"]
+        result = reconcile(vault)
+        assert [i["action_id"] for i in result.next_actions] == ["memory.build"]
 
-    def test_ocr_stale_blocks_downstream_retrieval(self, tmp_path: Path, monkeypatch) -> None:
+    def test_ocr_stale_blocks_downstream_retrieval(self, tmp_path: Path) -> None:
         """Minimal frontier: with OCR stale, retrieval's prerequisite is not
         satisfied — no memory.build for the same paper."""
         vault = _lineage_vault(tmp_path)
         _set_ocr_stale(vault, "KEY1")
         _set_retrieval_stale(vault, ("KEY1",))
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", "t")
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "t")
-        payload = reconcile(vault)
-        assert [i["action_id"] for i in payload["intents"]] == ["ocr.run"]
+        result = reconcile(vault)
+        assert [i["action_id"] for i in result.next_actions] == ["ocr.run"]
 
-    def test_unknown_retrieval_emits_no_intent(self, tmp_path: Path, monkeypatch) -> None:
+    def test_unknown_retrieval_emits_no_intent(self, tmp_path: Path) -> None:
         """Unknown per-paper lineage alone -> NO per-paper repair intent
         (never stale, never mass rebuild); reasons surface."""
         vault = _lineage_vault(tmp_path)
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "t")
         conn = _db(vault)
         try:
             manifest = json.loads(conn.execute(
@@ -170,85 +204,90 @@ class TestMinimalFrontier:
             conn.commit()
         finally:
             conn.close()
-        payload = reconcile(vault)
-        assert [i["action_id"] for i in payload["intents"]] == []
-        assert "unknown:retrieval" in payload["per_paper"]["KEY1"]["reasons"]
+        result = reconcile(vault)
+        assert result.next_actions == []
+        assert "unknown:retrieval" in result.data["per_paper"]["KEY1"]["reasons"]
 
-    def test_vector_stale_emits_embed_resume(self, tmp_path: Path, monkeypatch) -> None:
+    def test_vector_missing_emits_embed_resume(self, tmp_path: Path) -> None:
+        """Per-paper vector deficit on a COMPATIBLE substrate → embed.resume
+        (keys), NOT a global build (P0-1 classification)."""
         vault = _lineage_vault(tmp_path)
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "t")
-        _set_vector_stale(vault, "KEY1")
-        payload = reconcile(vault)
-        assert [i["action_id"] for i in payload["intents"]] == ["embed.resume"]
-        assert payload["intents"][0]["scope"]["keys"] == ["KEY1"]
+        _set_vector_missing(vault, "KEY1")
+        result = reconcile(vault)
+        assert [i["action_id"] for i in result.next_actions] == ["embed.resume"]
+        assert result.next_actions[0]["scope"]["keys"] == ["KEY1"]
 
 
 # ── scope merging ─────────────────────────────────────────────────────────
 
 class TestScopeMerging:
-    def test_100_stale_papers_merge_into_one_intent(self, tmp_path: Path, monkeypatch) -> None:
+    def test_100_stale_papers_merge_into_one_intent(self, tmp_path: Path) -> None:
         """Scope merging: many stale papers -> ONE memory.build with the full
         key list (canonical action merge)."""
-        vault = tmp_path / "vault"
-        vault.mkdir()
-        canonical_test_config(vault, system_dir="99_System")
-        from tests.test_lineage import _write_ocr_paper, _manifest_for
-        from paperforge.lineage import compute_vector_identity, compute_embedding_identity
-        from paperforge.embedding._config import get_api_model, get_effective_api_base_url
-
-        keys = [f"K{i:03d}" for i in range(100)]
-        for key in keys:
-            _write_ocr_paper(vault, key)
-        indexes = vault / "99_System" / "PaperForge" / "indexes"
-        indexes.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(str(indexes / "paperforge.db"))
-        try:
-            from paperforge.memory.schema import ensure_schema
-
-            ensure_schema(conn)
-            for key in keys:
-                ocr_hash = (
-                    vault / "99_System" / "PaperForge" / "ocr" / key / "index" / "result-hash.txt"
-                ).read_text(encoding="utf-8").strip()
-                manifest = _manifest_for(key, ocr_hash)
-                conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
-                             (f"manifest:{key}", json.dumps(manifest)))
-                conn.execute(
-                    "INSERT OR REPLACE INTO vec_fulltext_meta (paper_id, chunk_index, text) VALUES (?, ?, ?)",
-                    (key, 0, f"{key}-ft"),
-                )
-                identity = compute_vector_identity(
-                    retrieval_identity=manifest["retrieval_identity"],
-                    embedding_identity=compute_embedding_identity(
-                        endpoint=get_effective_api_base_url(vault),
-                        model=get_api_model(vault),
-                        dimension=1536,
-                    ),
-                )
-                conn.execute(
-                    "INSERT OR REPLACE INTO lineage (paper_id, layer, identity, derived_from, embedding_identity, updated_at) "
-                    "VALUES (?, 'vector', ?, ?, ?, '2026-01-01T00:00:00+00:00')",
-                    (key, identity, manifest["retrieval_identity"],
-                     compute_embedding_identity(
-                         endpoint=get_effective_api_base_url(vault),
-                         model=get_api_model(vault),
-                         dimension=1536,
-                     )),
-                )
-                conn.execute(
-                    "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_dimension', '1536')"
-                )
-            conn.commit()
-        finally:
-            conn.close()
-
-        # 100 stale retrievals (policy bumped).
-        _set_retrieval_stale(vault, tuple(keys))
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "t")
-        payload = reconcile(vault)
-        memory_intents = [i for i in payload["intents"] if i["action_id"] == "memory.build"]
+        keys = tuple(f"K{i:03d}" for i in range(100))
+        vault = _lineage_vault(tmp_path, keys=keys)
+        _set_retrieval_stale(vault, keys)
+        result = reconcile(vault)
+        memory_intents = [i for i in result.next_actions if i["action_id"] == "memory.build"]
         assert len(memory_intents) == 1
         assert len(memory_intents[0]["scope"]["keys"]) == 100
+
+
+# ── W2 not-a-retry ────────────────────────────────────────────────────────
+
+class TestW2Gate:
+    def _stale_retrieval_with_digest(self, tmp_path: Path) -> tuple[Path, ActionIntent, str]:
+        vault = _lineage_vault(tmp_path)
+        _set_retrieval_stale(vault, ("KEY1",))
+        obs = observe(vault)
+        intent = ActionIntent(
+            "memory.build", PapersScope(("KEY1",)),
+            "lineage.retrieval_defect", "stale",
+        )
+        return vault, intent, _intent_input_digest(obs, intent)
+
+    def test_failed_last_attempt_same_digest_suppresses(self, tmp_path: Path) -> None:
+        """W2: same input digest + failed last attempt → NO re-emission."""
+        vault, intent, digest = self._stale_retrieval_with_digest(tmp_path)
+        record_last_attempt(vault, action_id="memory.build", scope=intent.scope,
+                            input_digest=digest, outcome="failed", error_code="memory.build_failed")
+        result = reconcile(vault)
+        assert [i["action_id"] for i in result.next_actions] == []
+        assert any("w2.suppressed:memory.build" in d for d in result.data["diagnostics"])
+
+    def test_changed_digest_reemits(self, tmp_path: Path) -> None:
+        """W2: the input digest changed (R1 → R2) since the failed attempt →
+        emission allowed again."""
+        vault, intent, digest = self._stale_retrieval_with_digest(tmp_path)
+        record_last_attempt(vault, action_id="memory.build", scope=intent.scope,
+                            input_digest=digest, outcome="failed")
+        # Cause a NEW stale with a DIFFERENT retrieval identity (R1 → R2):
+        # the semantic digest changes, so re-emission is allowed.
+        _set_retrieval_stale_variant(vault, ("KEY1",), policy="l4.body.v997")
+        result = reconcile(vault)
+        assert [i["action_id"] for i in result.next_actions] == ["memory.build"]
+
+    def test_succeeded_last_attempt_allows_emission(self, tmp_path: Path) -> None:
+        """W2: a succeeded last attempt never suppresses (only failed does)."""
+        vault, intent, digest = self._stale_retrieval_with_digest(tmp_path)
+        record_last_attempt(vault, action_id="memory.build", scope=intent.scope,
+                            input_digest=digest, outcome="succeeded")
+        result = reconcile(vault)
+        assert [i["action_id"] for i in result.next_actions] == ["memory.build"]
+
+    def test_record_is_overwrite_only(self, tmp_path: Path) -> None:
+        """The last-attempt record stays bounded: same canonical key is
+        overwritten, never appended (no history)."""
+        vault, intent, digest = self._stale_retrieval_with_digest(tmp_path)
+        record_last_attempt(vault, action_id="memory.build", scope=intent.scope,
+                            input_digest=digest, outcome="failed", error_code="e1")
+        record_last_attempt(vault, action_id="memory.build", scope=intent.scope,
+                            input_digest=digest, outcome="failed", error_code="e2")
+        from paperforge.reconcile import read_last_attempts
+
+        attempts = read_last_attempts(vault)
+        assert len(attempts) == 1
+        assert attempts["memory.build:papers:KEY1"]["error_code"] == "e2"
 
 
 # ── operation vs policy separation ────────────────────────────────────────
@@ -257,7 +296,6 @@ class TestOperationPolicySeparation:
     def test_policy_comes_from_registry(self) -> None:
         """Reconcile emits the operation; cost/confirmation come from the
         registry (T2) — embed.resume intents carry the registered policy."""
-        from paperforge.actions.types import ActionIntent, PapersScope
         from paperforge.actions.registry import emit_next_action
 
         intent = ActionIntent(
@@ -270,7 +308,29 @@ class TestOperationPolicySeparation:
         assert wire["confirmation"] == spec.confirmation == "required"
         assert wire["automatic"] == spec.automatic is False
 
+    def test_unregistered_action_fails_closed(self, tmp_path: Path, monkeypatch) -> None:
+        """P1-2: an unregistered action is NEVER emitted; a structured
+        diagnostic records the invariant break instead."""
+        from paperforge import reconcile as reconcile_mod
+
+        vault = _lineage_vault(tmp_path)
+        _set_ocr_stale(vault, "KEY1")
+
+        real_emit = reconcile_mod.emit_next_action
+
+        def broken_emit(intent):
+            if intent.action_id == "ocr.run":
+                raise KeyError(intent.action_id)
+            return real_emit(intent)
+
+        monkeypatch.setattr(reconcile_mod, "emit_next_action", broken_emit)
+        result = reconcile(vault)
+        assert result.next_actions == []
+        assert "reconcile.action_unregistered:ocr.run" in result.data["diagnostics"]
+
     def test_cli_emits_next_actions_channel(self, tmp_path: Path) -> None:
+        """P1-1: the CLI surfaces intents ONLY on next_actions; data carries
+        no separate 'intents' wire."""
         vault = tmp_path / "vault"
         vault.mkdir()
         canonical_test_config(vault, system_dir="99_System")
@@ -279,4 +339,5 @@ class TestOperationPolicySeparation:
         assert payload["ok"] is True
         assert payload["command"] == "reconcile"
         assert payload["data"]["global"]["memory_substrate_ok"] is False
+        assert "intents" not in payload["data"]
         assert [i["action_id"] for i in payload["next_actions"]] == ["memory.build"]

@@ -8,7 +8,6 @@ import shutil
 import sys
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
-import sqlite3
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
@@ -23,6 +22,7 @@ from paperforge.embedding import (
 from paperforge.embedding._chroma import delete_paper_vectors_in_conn
 from paperforge.embedding.build_target import BuildTarget, ShadowBuild, verify_candidate
 from paperforge.embedding.dim_detect import ensure_vec_tables
+from paperforge.embedding.substrate import VECTOR_IDENTITY_VERSION, assess_vector_substrate
 from paperforge.embedding.builder import (
     PaperEmbeddingJob,
     encode_paper_job,
@@ -129,7 +129,8 @@ PR9B_MAX_WORKERS = 4
 # P0-1: bumped when the persisted embedding identity gains fields — legacy
 # libraries (built before recording) are rebuilt once so endpoint/model/
 # dimension are stored and future comparisons are meaningful.
-VECTOR_IDENTITY_VERSION = 1
+# (VECTOR_IDENTITY_VERSION lives in paperforge/embedding/substrate.py — the
+# single source of truth shared by run_build, reconcile and preflight.)
 
 
 def run(args: argparse.Namespace) -> int:
@@ -388,6 +389,19 @@ def run_build(
         # P0-5: clear any stale stop request (from a previous build) that
         # does not target this process before starting.
         _clear_stop_request(vault)
+        # #166 corrective (P0-3): `requested_resume` is what the caller asked
+        # for — captured BEFORE any effective-resume gate.  The gates below
+        # downgrade `resume` (effective); a downgrade means a full rebuild is
+        # required, which must route through shadow.  The old placement after
+        # the gates saved the already-downgraded value, silently restoring
+        # the in-place degradation the #165 corrective was meant to kill.
+        requested_resume = resume
+        # Substrate observation (single source of truth, shared with
+        # reconcile T5 + embed.resume preflight): desired embedding identity
+        # (config) vs published substrate (build_state + vec0 layout).
+        _substrate = assess_vector_substrate(vault)
+        _current_endpoint = _substrate.current_endpoint
+        _stored_dim = _substrate.stored_dimension
         if resume:
             build_state = read_vector_build_state(vault)
 
@@ -414,41 +428,17 @@ def run_build(
                     mark_vector_build_state(vault, status="idle", current=0, pid=0)
                     resume = False
             # 门二：no vec0 rows → fresh build（不是 error）
-
-            _db_path = get_memory_db_path(vault)
-            _any_rows = False
-            if _db_path.exists():
-                _conn = get_connection(_db_path)
-                try:
-                    ensure_vec_extension(_conn)
-                    ensure_schema(_conn)
-                    for _mt in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
-                        _r = _conn.execute(f"SELECT COUNT(*) AS cnt FROM {_mt}").fetchone()
-                        if _r and _r["cnt"] > 0:
-                            _any_rows = True
-                            break
-                except Exception:
-                    pass
-                finally:
-                    _conn.close()
-            if not _any_rows:
+            if not _substrate.has_any_rows:
                 resume = False
             else:
                 # 门三：过三道门后，正常 model check
-                stored_model = build_state.get("model", "")
+                stored_model = _substrate.stored_model
                 if stored_model and _current_model and stored_model != _current_model:
                     msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
                     if not json:
                         print(msg)
                     resume = False
 
-        # #165 corrective: `requested_resume` is what the caller asked for;
-        # the gates above downgrade `resume` (effective) — a downgrade means
-        # a full rebuild is required, which must route through shadow.
-        # The old `_force_rebuild = force or (resume is False and resume)`
-        # was always False on the second clause (True and False) — the
-        # resume-reset path silently degraded to in-place.
-        requested_resume = resume
         # P0-2: full rebuild must never honor resume — the candidate's
         # vector tables are cleared, so a hash-skip would publish a DB
         # missing those papers' vectors.  Force wins over resume at both the
@@ -462,66 +452,29 @@ def run_build(
         # after a model/endpoint change would otherwise let ensure_vec_tables
         # resize vec0 in place on the live DB and expose an empty/partial
         # window mid-build.
-        from paperforge.embedding._config import (
-            DEFAULT_OPENAI_BASE_URL,
-            get_effective_api_base_url,
-        )
-
-        _bs = read_vector_build_state(vault)
-        _stored_model = _bs.get("model", "")
-        _stored_endpoint = _bs.get("vector_provider_endpoint", "")
-        # P0-1: compare the EFFECTIVE endpoint (empty config = OpenAI
-        # default) with NO truthiness guard — default→custom migration must
-        # trigger shadow, and an empty stored value (old build before
-        # endpoint recording) counts as "different" when a custom endpoint
-        # is now configured.
-        _current_endpoint = get_effective_api_base_url(vault)
-        _stored_endpoint_norm = (_stored_endpoint or DEFAULT_OPENAI_BASE_URL).rstrip("/")
-        _embedding_identity_changed = bool(
-            _stored_model and _current_model and _stored_model != _current_model
-        ) or (_stored_endpoint_norm != _current_endpoint)
+        _embedding_identity_changed = _substrate.identity_changed
         if _embedding_identity_changed and not json:
             print(
                 f"Embedding identity changed: "
-                f"{_stored_model}@{_stored_endpoint_norm} -> "
-                f"{_current_model}@{_current_endpoint}. Re-embedding all papers."
+                f"{_substrate.stored_model}@{_substrate.stored_endpoint} -> "
+                f"{_substrate.current_model}@{_substrate.current_endpoint}. Re-embedding all papers."
             )
         # P0-3/P1-1: a live vector-layout mismatch must route through shadow —
         # an in-place recreate would destroy live vectors + orphan meta rows.
         # Compare the live layout against the STORED build dimension via the
         # unified inspect_vector_layout contract (six tables + three dims),
         # without an API probe (that would add a network call to every build).
-        _vec_layout_incompatible = False
-        _stored_dim = _bs.get("vector_dimension", 0)
-        if _db_path.exists() and _stored_dim:
-            try:
-                from paperforge.embedding.dim_detect import inspect_vector_layout
-
-                _lc = sqlite3.connect(f"file:{_db_path.as_posix()}?mode=ro", uri=True)
-                try:
-                    _layout = inspect_vector_layout(_lc, int(_stored_dim))
-                    _vec_layout_incompatible = not _layout.compatible
-                finally:
-                    _lc.close()
-            except Exception:
-                # P0-2: fail-closed — an unreadable layout must route to
-                # shadow, never be treated as compatible.
-                _vec_layout_incompatible = True
+        _vec_layout_incompatible = _substrate.layout_incompatible
         # Legacy libraries (built before identity recording) have no
         # vector_identity_version — rebuild them once so endpoint/model are
         # persisted and future comparisons are meaningful.
-        _identity_version = _bs.get("vector_identity_version", 0)
-        _legacy_identity = bool(
-            _identity_version != VECTOR_IDENTITY_VERSION
-            and _db_path.exists()
-            and _vec_layout_incompatible is False
-        )
+        _legacy_identity = _substrate.legacy_identity
         requires_shadow = (
             _force_rebuild
             or _embedding_identity_changed
             or _vec_layout_incompatible
             or _legacy_identity
-        ) and _db_path.exists()
+        ) and _substrate.db_exists
         # #165/T4: a papers-scoped request must never route through a shadow
         # rebuild — the candidate's vec tables are cleared and EVERY done
         # paper re-embedded, violating affected ⊆ requested.  Fail fast.

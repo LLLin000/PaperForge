@@ -2,22 +2,97 @@
 
 Three-layer observation (global desired → global substrate → per-paper
 lineage) → global repair frontier first → per-paper minimal repair frontier
-→ scope merging by canonical action → single next_actions channel.
+→ scope merging by canonical action → single PFResult.next_actions channel.
 
 PURE derivation + intent emission: no side effects, idempotent (same facts
 → same result).  Reconcile decides the OPERATION; cost/confirmation come
-from the #145 registry.  No DAG engine, no retry tables, no second intents
-wire.
+from the #145 registry.  No DAG engine, no retry history tables.
+
+W2 not-a-retry (#158, #166 acceptance): re-emission is gated on a changed
+input digest + a failed last-attempt record.  The record is overwrite-only
+per canonical (action, scope) — one bounded row, no history.  The digest
+covers the SEMANTIC observation that drove the intent (facet states +
+lineage identities), so a stale caused by R1 is distinguishable from one
+caused by R2.  `record_last_attempt` is the write side; the T6 runner calls
+it when an action attempt settles.  reconcile() itself only reads.
+
+Layer discipline (owner review 2026-08-11): materialization/substrate
+≠ action availability.  Credential availability lives in ActionPreflight
+(registry); it never flips substrate state and never blocks unrelated
+OCR/retrieval repair.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from paperforge.actions.registry import emit_next_action
 from paperforge.actions.types import ActionIntent, AllScope, PapersScope
+from paperforge.core.result import PFResult
+
+# ── W2 last-attempt record (overwrite-only, bounded, no history) ──────────
+
+LAST_ATTEMPT_FILENAME = "reconcile-last-attempts.json"
+
+
+def last_attempt_path(vault: Path) -> Path:
+    from paperforge.config import paperforge_paths
+
+    return paperforge_paths(vault)["paperforge"] / "state" / LAST_ATTEMPT_FILENAME
+
+
+def _canonical_key(action_id: str, scope: AllScope | PapersScope) -> str:
+    if scope.kind == "papers":
+        return f"{action_id}:papers:{','.join(sorted(scope.keys))}"
+    return f"{action_id}:all"
+
+
+def read_last_attempts(vault: Path) -> dict[str, dict[str, Any]]:
+    """Read the overwrite-only last-attempt record (read-only, pure)."""
+    path = last_attempt_path(vault)
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        return raw if isinstance(raw, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def record_last_attempt(
+    vault: Path,
+    *,
+    action_id: str,
+    scope: AllScope | PapersScope,
+    input_digest: str,
+    outcome: str,
+    error_code: str = "",
+) -> None:
+    """Overwrite-only write of the last attempt for (action, canonical
+    scope).  Never grows history.  Called by the execution side (T6 runner)
+    when an attempt settles; reconcile() itself never writes."""
+    attempts = read_last_attempts(vault)
+    attempts[_canonical_key(action_id, scope)] = {
+        "action_id": action_id,
+        "scope_kind": scope.kind,
+        "scope_keys": sorted(scope.keys) if scope.kind == "papers" else [],
+        "input_digest": input_digest,
+        "outcome": outcome,
+        "error_code": error_code,
+        "updated_at": __import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        ).isoformat(),
+    }
+    path = last_attempt_path(vault)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(attempts, indent=2, sort_keys=True), encoding="utf-8")
+    tmp.replace(path)
+
 
 # ── observation ────────────────────────────────────────────────────────────
 
@@ -35,6 +110,7 @@ class PaperObservation:
     ocr: str  # current | stale | missing | running | unknown
     retrieval: str  # current | stale | missing | unknown
     vector: str  # current | stale | missing | not_required | unknown
+    identities: dict[str, str | None]  # internal digest material (W2)
 
 
 @dataclass(frozen=True)
@@ -42,13 +118,17 @@ class ReconcileObservation:
     global_state: GlobalObservation
     papers: tuple[PaperObservation, ...] = ()
 
+    def by_key(self) -> dict[str, PaperObservation]:
+        return {p.key: p for p in self.papers}
+
 
 def observe_global(vault: Path) -> GlobalObservation:
     """Global substrate vs desired state (#159 §2.1/§2.2).
 
     - memory substrate: memory DB present and schema current
-    - vector substrate: embedding credential available (C1 seam) and the
-      vector layout/state is healthy
+    - vector substrate: DESIRED embedding identity (config) vs PUBLISHED
+      substrate identity/layout (build_state + vec0 DDL) — NOT credential
+      availability, which belongs to ActionPreflight (#166 P0-1)
     """
     reasons: list[str] = []
     memory_ok = True
@@ -84,16 +164,12 @@ def observe_global(vault: Path) -> GlobalObservation:
         vector_ok = False
         reasons.append("vector.blocked_by_memory")
     else:
-        # Substrate = embedding IDENTITY availability (credential seam, C1).
-        # vec0 table layout is a build PRODUCT, not a substrate premise —
-        # a missing/incompatible vec0 table surfaces as per-paper vector
-        # facets (missing/stale) and is repaired by embed.resume/build.
-        from paperforge.credentials import CredentialKey, status as credential_status
+        from paperforge.embedding.substrate import assess_vector_substrate
 
-        cred = credential_status(CredentialKey("embedding"))
-        if cred.state != "available":
-            vector_ok = False
-            reasons.append(f"vector.credential_{cred.state}")
+        substrate = assess_vector_substrate(vault)
+        vector_ok = substrate.compatible
+        if not vector_ok:
+            reasons.extend(r for r in substrate.reason_codes if r.startswith("vector."))
 
     return GlobalObservation(
         memory_substrate_ok=memory_ok,
@@ -103,20 +179,23 @@ def observe_global(vault: Path) -> GlobalObservation:
 
 
 def observe_papers(vault: Path, keys: list[str] | None = None) -> tuple[PaperObservation, ...]:
-    """Per-paper lineage facets (T1 probe read model)."""
+    """Per-paper lineage facets + identities (T1 probe read model)."""
     from paperforge.lineage import probe_lineage
 
     payload = probe_lineage(vault)
     papers = payload.get("papers", {})
+    identities = payload.get("identities", {})
+    wanted = set(keys) if keys is not None else None
     out: list[PaperObservation] = []
     for key, states in papers.items():
-        if keys is not None and key not in set(keys):
+        if wanted is not None and key not in wanted:
             continue
         out.append(PaperObservation(
             key=key,
             ocr=str(states.get("ocr", "unknown")),
             retrieval=str(states.get("retrieval", "unknown")),
             vector=str(states.get("vector", "unknown")),
+            identities=dict(identities.get(key, {})),
         ))
     return tuple(sorted(out, key=lambda p: p.key))
 
@@ -126,6 +205,18 @@ def observe(vault: Path, keys: list[str] | None = None) -> ReconcileObservation:
         global_state=observe_global(vault),
         papers=observe_papers(vault, keys),
     )
+
+
+def _facet_summary(obs: ReconcileObservation) -> dict[str, int]:
+    """Derived from obs.papers FIRST — independent of global-first returns,
+    so a blocked_global payload still reports the observed facets (#166
+    P1-3)."""
+    summary = {"current": 0, "stale": 0, "missing": 0, "unknown": 0}
+    for paper in obs.papers:
+        for layer in ("ocr", "retrieval", "vector"):
+            state = getattr(paper, layer)
+            summary[state] = summary.get(state, 0) + 1
+    return summary
 
 
 # ── deficit → operation (operation decided here; policy from registry) ────
@@ -187,117 +278,161 @@ def _merge_intents(intents: list[ActionIntent]) -> list[ActionIntent]:
     return merged
 
 
+# ── W2 input digest (semantic observation → intent) ───────────────────────
+
+def _intent_input_digest(obs: ReconcileObservation, intent: ActionIntent) -> str:
+    """Digest of the SEMANTIC observation that drives this intent: facet
+    states + lineage identities per paper, plus global desired-state
+    constants.  A later stale cause (R1 → R2) changes the identity material
+    and therefore the digest — the W2 gate then re-allows emission."""
+    from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION
+
+    by_key = obs.by_key()
+    material: dict[str, Any] = {
+        "action": intent.action_id,
+        "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
+    }
+    if intent.scope.kind == "papers":
+        papers_material: dict[str, Any] = {}
+        for key in sorted(intent.scope.keys):
+            paper = by_key.get(key)
+            if paper is None:
+                papers_material[key] = {"absent": True}
+                continue
+            papers_material[key] = {
+                "ocr": paper.ocr,
+                "ocr_identity": paper.identities.get("ocr"),
+                "retrieval": paper.retrieval,
+                "retrieval_identity": paper.identities.get("retrieval"),
+                "vector": paper.vector,
+                "vector_identity": paper.identities.get("vector"),
+            }
+        material["papers"] = papers_material
+    else:
+        material["scope"] = "all"
+    return hashlib.sha256(
+        json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def _w2_gate(
+    obs: ReconcileObservation,
+    intent: ActionIntent,
+    last_attempts: dict[str, dict[str, Any]],
+    diagnostics: list[str],
+) -> bool:
+    """Re-emission gate: suppress when the input digest is UNCHANGED since a
+    FAILED last attempt for the same canonical (action, scope).  Digest
+    changed → allow.  No record / succeeded → allow."""
+    last = last_attempts.get(_canonical_key(intent.action_id, intent.scope))
+    if not last:
+        return False
+    if last.get("outcome") != "failed":
+        return False
+    current_digest = _intent_input_digest(obs, intent)
+    if last.get("input_digest") == current_digest:
+        diagnostics.append(
+            f"w2.suppressed:{intent.action_id}:{_canonical_key(intent.action_id, intent.scope)}"
+        )
+        return True
+    return False
+
+
 # ── the seam ───────────────────────────────────────────────────────────────
 
 
-def reconcile(vault: Path, keys: list[str] | None = None) -> dict[str, Any]:
-    """Pure derivation + intent emission.
+def reconcile(vault: Path, keys: list[str] | None = None) -> PFResult:
+    """Pure derivation + intent emission, returned on the SINGLE
+    PFResult.next_actions channel (#166 P1-1: no internal 'intents' wire).
 
-    Returns a machine payload with the single-channel intent projection:
-      - intents: the PFResult.next_actions wire (hydrated from the registry)
-      - global: substrate observation
-      - per_paper: facet states + blocked_global reasons
-    No side effects; idempotent.
+    Global frontier first: an incompatible substrate emits exactly one
+    global intent; affected per-paper facets are blocked_global.  Then the
+    minimal per-paper frontier with scope merging.  Unregistered actions
+    are NEVER emitted — registry parity is an invariant (test-enforced);
+    a runtime miss is a structured diagnostic.
     """
-    obs = observe(vault, keys)
-    global_intents: list[ActionIntent] = []
-    per_paper_reasons: dict[str, list[str]] = {}
-    facet_summary: dict[str, int] = {"current": 0, "stale": 0, "missing": 0, "unknown": 0}
+    from paperforge import __version__ as PF_VERSION
 
-    # Global frontier FIRST: an incompatible substrate emits exactly one
-    # global intent; affected per-paper facets are blocked_global.
+    obs = observe(vault, keys)
+    facet_summary = _facet_summary(obs)
+    diagnostics: list[str] = []
+    per_paper_reasons: dict[str, list[str]] = {}
+    intents: list[ActionIntent] = []
+
     if not obs.global_state.memory_substrate_ok:
-        global_intents.append(ActionIntent(
+        intents = [ActionIntent(
             action_id="memory.build",
             scope=AllScope(),
             trigger_reason_code="substrate.memory_incompatible",
             trigger_reason="Memory substrate requires a full build",
-        ))
+        )]
         for paper in obs.papers:
             per_paper_reasons[paper.key] = ["blocked_global:memory_substrate"]
-        return _payload(
-            vault, obs, global_intents, per_paper_reasons, facet_summary, keys,
-        )
-    if not obs.global_state.vector_substrate_ok:
-        global_intents.append(ActionIntent(
+    elif not obs.global_state.vector_substrate_ok:
+        intents = [ActionIntent(
             action_id="embed.build",
             scope=AllScope(),
             trigger_reason_code="substrate.vector_incompatible",
             trigger_reason="Vector substrate requires a global build",
-        ))
+        )]
         for paper in obs.papers:
             per_paper_reasons[paper.key] = ["blocked_global:vector_substrate"]
-        return _payload(
-            vault, obs, global_intents, per_paper_reasons, facet_summary, keys,
-        )
-
-    # Minimal repair frontier: per-paper, prerequisites-satisfied first-layer
-    # deficits as independent siblings.
-    per_paper_intents: list[ActionIntent] = []
-    for paper in obs.papers:
-        for layer in ("ocr", "retrieval", "vector"):
-            facet_summary[getattr(paper, layer)] = facet_summary.get(getattr(paper, layer), 0) + 1
-        per_paper_intents.extend(_per_paper_intents(paper))
-        # Unknown per-paper lineage alone -> NO per-paper repair intent
-        # (never stale, never mass rebuild).  Reasons surface for the report.
-        unknown_layers = [
-            layer for layer in ("ocr", "retrieval", "vector")
-            if getattr(paper, layer) == "unknown"
-        ]
-        if unknown_layers:
-            per_paper_reasons[paper.key] = [
-                f"unknown:{layer}" for layer in unknown_layers
+    else:
+        # Minimal repair frontier: per-paper, prerequisites-satisfied
+        # first-layer deficits as independent siblings.
+        per_paper_intents: list[ActionIntent] = []
+        for paper in obs.papers:
+            per_paper_intents.extend(_per_paper_intents(paper))
+            unknown_layers = [
+                layer for layer in ("ocr", "retrieval", "vector")
+                if getattr(paper, layer) == "unknown"
             ]
+            if unknown_layers:
+                per_paper_reasons[paper.key] = [
+                    f"unknown:{layer}" for layer in unknown_layers
+                ]
+        merged = _merge_intents(per_paper_intents)
+        last_attempts = read_last_attempts(vault)
+        for intent in merged:
+            if _w2_gate(obs, intent, last_attempts, diagnostics):
+                continue
+            intents.append(intent)
 
-    merged = _merge_intents(per_paper_intents)
-    return _payload(vault, obs, merged, per_paper_reasons, facet_summary, keys)
-
-
-def _payload(
-    vault: Path,
-    obs: ReconcileObservation,
-    intents: list[ActionIntent],
-    per_paper_reasons: dict[str, list[str]],
-    facet_summary: dict[str, int],
-    keys: list[str] | None,
-) -> dict[str, Any]:
-    """Project internal ActionIntents onto the PFResult.next_actions wire."""
-    from paperforge.core.next_actions import NextAction
-
+    # Project internal ActionIntents onto the single next_actions channel.
     wire: list[dict[str, Any]] = []
     for intent in intents:
         try:
-            hydrated = emit_next_action(intent)
-            wire.append(hydrated.to_dict() if isinstance(hydrated, NextAction) else {})
+            wire.append(emit_next_action(intent).to_dict())
         except KeyError:
-            # Unregistered action — never emit an unresolvable intent.
-            wire.append({
-                "schema_version": 1,
-                "action_id": intent.action_id,
-                "scope": {"kind": "papers", "keys": list(intent.scope.keys)}
-                if intent.scope.kind == "papers" else {"kind": "all"},
-                "reason_code": "reconcile.action_unregistered",
-                "reason": f"action {intent.action_id} is not registered",
-            })
-    return {
-        "schema_version": 1,
-        "command": "reconcile",
-        "vault": str(vault),
-        "scope": {"kind": "papers", "keys": sorted(set(keys))} if keys else {"kind": "all"},
-        "global": {
-            "memory_substrate_ok": obs.global_state.memory_substrate_ok,
-            "vector_substrate_ok": obs.global_state.vector_substrate_ok,
-            "reasons": list(obs.global_state.reasons),
+            # Invariant broken (registry parity is test-enforced): never
+            # emit a hand-written substitute — fail closed with a
+            # diagnostic (#166 P1-2).
+            diagnostics.append(f"reconcile.action_unregistered:{intent.action_id}")
+
+    return PFResult(
+        ok=True,
+        command="reconcile",
+        version=PF_VERSION,
+        data={
+            "schema_version": 1,
+            "vault": str(vault),
+            "scope": {"kind": "papers", "keys": sorted(set(keys))} if keys else {"kind": "all"},
+            "global": {
+                "memory_substrate_ok": obs.global_state.memory_substrate_ok,
+                "vector_substrate_ok": obs.global_state.vector_substrate_ok,
+                "reasons": list(obs.global_state.reasons),
+            },
+            "facet_summary": facet_summary,
+            "per_paper": {
+                key: {
+                    "ocr": paper.ocr,
+                    "retrieval": paper.retrieval,
+                    "vector": paper.vector,
+                    "reasons": per_paper_reasons.get(key, []),
+                }
+                for key, paper in ((p.key, p) for p in obs.papers)
+            },
+            "diagnostics": diagnostics,
         },
-        "facet_summary": facet_summary,
-        "per_paper": {
-            key: {
-                "ocr": paper.ocr,
-                "retrieval": paper.retrieval,
-                "vector": paper.vector,
-                "reasons": per_paper_reasons.get(key, []),
-            }
-            for key, paper in ((p.key, p) for p in obs.papers)
-        },
-        "intents": wire,
-    }
+        next_actions=wire,
+    )

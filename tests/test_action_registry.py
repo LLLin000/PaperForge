@@ -400,6 +400,27 @@ class TestCliExitCodes:
         assert payload["error"]["code"] == "action.unavailable"
         assert payload["data"]["availability_reason_code"] == "credential.missing"
 
+    def test_scoped_resume_incompatible_substrate_is_unavailable(
+        self, tmp_path: Path, monkeypatch,
+    ) -> None:
+        """#166 P0-1: a papers-scoped resume on a GLOBAL substrate defect
+        (model changed) must be preflight-unavailable (substrate), so the
+        runner never attempts a build that would fail fast in run_build."""
+        from tests.test_lineage import _make_vault
+
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "t")
+        vault = _make_vault(tmp_path)
+        from paperforge.config import set_config
+
+        set_config(vault, "vector_db_api_model", "text-embedding-3-large")
+        rc, payload = _run_cli(
+            "--vault", str(vault), "action", "run", "embed.resume",
+            "--scope", "papers", "--key", "KEY1", "--json",
+        )
+        assert rc == 1
+        assert payload["error"]["code"] == "action.unavailable"
+        assert payload["data"]["availability_reason_code"] == "vector.substrate_incompatible"
+
     def test_confirmation_required_cli_exit_3_with_descriptor(self, tmp_path: Path, monkeypatch) -> None:
         """#163 acceptance: without --confirm, a confirmation-required action
         exits 3 and the payload data IS the current action descriptor."""
