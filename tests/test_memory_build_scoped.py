@@ -213,6 +213,99 @@ def _run_cli(*argv: str) -> tuple[int, dict]:
     return rc, json.loads(buf.getvalue())
 
 
+class TestGlobalFreshness:
+    """#164 corrective: the global canonical_index_hash is a correctness
+    marker — only all-scope builds advance it; a scoped publish must not
+    mask non-requested papers' stale metadata."""
+
+    def _cached_hash(self, vault: Path):
+        from paperforge.memory.db import get_connection, get_memory_db_path
+
+        conn = get_connection(get_memory_db_path(vault))
+        try:
+            row = conn.execute(
+                "SELECT value FROM meta WHERE key='canonical_index_hash'"
+            ).fetchone()
+            return row[0] if row else None
+        finally:
+            conn.close()
+
+    def test_scoped_build_does_not_advance_global_hash(self, tmp_path: Path) -> None:
+        vault = _three_paper_vault(tmp_path)
+        before = self._cached_hash(vault)
+        assert before
+
+        # A + B change in the canonical index; scope only A.
+        _write_index(vault, [
+            _entry("A", "Paper A v2"), _entry("B", "Paper B v2"), _entry("C", "Paper C"),
+        ])
+        _make_ocr_artifacts(vault, "A", hash_content="v2")
+        result = build_for_keys(vault, ["A"])
+        assert set(result["changed"]) == {"A"}
+        # The global freshness marker is NOT advanced by the scoped build.
+        assert self._cached_hash(vault) == before
+
+    def test_full_build_after_scoped_still_rebuilds_stale_paper(self, tmp_path: Path) -> None:
+        """The regression: A+B changed, scope A, then full build — B must be
+        rebuilt (the scoped publish must not have fast-pathed it away)."""
+        vault = _three_paper_vault(tmp_path)
+        _write_index(vault, [
+            _entry("A", "Paper A v2"), _entry("B", "Paper B v2"), _entry("C", "Paper C"),
+        ])
+        _make_ocr_artifacts(vault, "A", hash_content="v2")
+        build_for_keys(vault, ["A"])
+
+        full = build_for_keys(vault, None)
+        assert full["hash_match"] is False
+        assert "B" in set(full["changed"]), "full build must still see B's change"
+        assert _papers(vault, "B")["title"] == "Paper B v2"
+
+    def test_full_build_still_fast_paths_after_clean_full_build(self, tmp_path: Path) -> None:
+        vault = _three_paper_vault(tmp_path)
+        full = build_for_keys(vault, None)
+        assert full["hash_match"] is True
+
+
+class TestScopedOnFreshDatabase:
+    """#164 corrective: a scoped request on a fresh/destructive DB must not
+    materialize the whole library — it reports global_rebuild_required."""
+
+    def test_scoped_fresh_db_returns_global_rebuild_required(self, tmp_path: Path) -> None:
+        vault = _make_vault(tmp_path)
+        for key in ("A", "B", "C"):
+            _make_ocr_artifacts(vault, key)
+        _write_index(vault, [_entry("A", "A"), _entry("B", "B"), _entry("C", "C")])
+        result = build_for_keys(vault, ["A"])
+        assert result["global_rebuild_required"] is True
+        # No paper rows were materialized by the scoped request.
+        assert _papers(vault, "B") is None
+        assert _papers(vault, "A") is None
+
+    def test_unknown_key_on_fresh_db_has_zero_side_effects(self, tmp_path: Path) -> None:
+        vault = _make_vault(tmp_path)
+        _write_index(vault, [_entry("A", "A")])
+        from paperforge.memory.db import get_memory_db_path
+
+        db = get_memory_db_path(vault)
+        before = db.exists()
+        with pytest.raises(ValueError, match="ZZZ"):
+            build_for_keys(vault, ["ZZZ"])
+        # Validation happened before any writable DB access.
+        assert db.exists() == before
+
+    def test_scoped_action_fresh_db_is_structured_unavailable(self, tmp_path: Path) -> None:
+        vault = _make_vault(tmp_path)
+        for key in ("A", "B"):
+            _make_ocr_artifacts(vault, key)
+        _write_index(vault, [_entry("A", "A"), _entry("B", "B")])
+        rc, payload = _run_cli(
+            "--vault", str(vault), "action", "run", "memory.build",
+            "--scope", "papers", "--key", "A", "--json",
+        )
+        assert rc == 1
+        assert payload["error"]["code"] == "action.unavailable"
+
+
 class TestRegistryAndCli:
     def test_action_unknown_key_is_exit_2(self, tmp_path: Path) -> None:
         vault = _three_paper_vault(tmp_path)
