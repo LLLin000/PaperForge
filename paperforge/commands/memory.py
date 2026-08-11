@@ -166,6 +166,22 @@ def run(args: argparse.Namespace) -> int:
             from paperforge.memory.builder import build_for_keys
 
             counts = build_for_keys(vault, keys)
+            if counts.get("global_rebuild_required"):
+                result = PFResult(
+                    ok=False,
+                    command="memory build",
+                    version=PF_VERSION,
+                    error=PFError(
+                        code=ErrorCode.ACTION_UNAVAILABLE,
+                        message="memory schema requires a full rebuild — "
+                        "run `paperforge memory build` (all keys) first",
+                    ),
+                )
+                if args.json:
+                    print(result.to_json())
+                else:
+                    print(result.error.message, file=sys.stderr)
+                return 1
             result = PFResult(
                 ok=True,
                 command="memory build",
