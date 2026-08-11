@@ -1,103 +1,88 @@
 {
-  "contract": {
-    "schema_version": 1,
-    "asset_groups": [
-      "library",
-      "ocr_raw",
-      "ocr_derived",
-      "retrieval",
-      "vectors"
+ "contract": {
+  "schema_version": 1,
+  "asset_groups": [
+   "library",
+   "ocr_raw",
+   "ocr_derived",
+   "retrieval",
+   "vectors"
+  ],
+  "publication_units": [],
+  "operations": [
+   "sync",
+   "probe_status",
+   "embed_build_resume"
+  ],
+  "required_extractors": [
+   "python_ast"
+  ],
+  "rules": [
+   {
+    "rule_id": "remote_intent.sync_followup",
+    "kind": "remote_intent",
+    "subject": "sync",
+    "lifecycle": "planned",
+    "enforcement": "blocking",
+    "effective_after": {
+     "issue": "#127"
+    },
+    "accepted_intent_modes": [
+     "direct_invocation",
+     "ui_modal",
+     "explicit_flag",
+     "interactive_prompt"
     ],
-    "publication_units": [],
-    "operations": [
-      "sync",
-      "probe_status",
-      "embed_build_resume"
-    ],
-    "required_extractors": [
-      "python_ast"
-    ],
-    "rules": [
-      {
-        "rule_id": "remote_intent.sync_followup",
-        "kind": "remote_intent",
-        "subject": "sync",
-        "lifecycle": "planned",
-        "enforcement": "blocking",
-        "effective_after": {
-          "issue": "#127"
-        },
-        "accepted_intent_modes": [
-          "direct_invocation",
-          "ui_modal",
-          "explicit_flag",
-          "interactive_prompt"
-        ],
-        "description": "sync may run local memory build automatically but must not launch remote embedding implicitly"
-      },
-      {
-        "rule_id": "query.side_effect_free",
-        "kind": "query_side_effect",
-        "subject": "probe_status",
-        "lifecycle": "active",
-        "enforcement": "blocking",
-        "description": "status queries must not mutate business facts"
-      }
-    ],
-    "exceptions": []
-  },
-  "survey": {
-    "schema_version": 1,
-    "scope": "paperforge",
-    "coverage": [
-      {
-        "extractor": "python_ast",
-        "status": "complete"
-      }
-    ],
-    "facts": [
-      {
-        "kind": "effect",
-        "operation_id": "sync",
-        "effect_kind": "remote_operation",
-        "evidence": {
-          "file": "paperforge/commands/sync.py",
-          "file_digest": "sha256:04024a28f2e9c7820947907911ef8ff0907c2bd9291499e2a5b1f795ec961aaa",
-          "symbol": "_attach_next_actions",
-          "line_start": 94,
-          "line_end": 120,
-          "extractor": "python_ast",
-          "epistemic_status": "observed_static",
-          "confidence": "exact"
-        }
-      },
-      {
-        "kind": "effect",
-        "operation_id": "sync",
-        "effect_kind": "materialization_build",
-        "evidence": {
-          "file": "paperforge/commands/sync.py",
-          "file_digest": "sha256:04024a28f2e9c7820947907911ef8ff0907c2bd9291499e2a5b1f795ec961aaa",
-          "symbol": "_run_terminal_followups",
-          "line_start": 122,
-          "line_end": 140,
-          "extractor": "python_ast",
-          "epistemic_status": "observed_static",
-          "confidence": "exact"
-        }
-      }
-    ],
-    "source_digest": "sha256:6c089ffc02d637be10b32de715a58d742e1d0bdc7a606a2106d2cc69fb10e3eb",
-    "parse_errors": [],
-    "excluded_roots": [],
-    "run_metadata": {
-      "repository_revision": "6ead21fc",
-      "repository_dirty": false,
-      "tool_version": "1.0.0",
-      "extractor_versions": {
-        "python_ast": "1"
-      },
-      "generated_at": "2026-08-05T00:00:00Z"
+    "description": "sync may run local memory build automatically but must not launch remote embedding implicitly"
+   },
+   {
+    "rule_id": "query.side_effect_free",
+    "kind": "query_side_effect",
+    "subject": "probe_status",
+    "lifecycle": "active",
+    "enforcement": "blocking",
+    "description": "status queries must not mutate business facts"
+   }
+  ],
+  "exceptions": []
+ },
+ "survey": {
+  "schema_version": 1,
+  "scope": "paperforge",
+  "coverage": [
+   {
+    "extractor": "python_ast",
+    "status": "complete"
+   }
+  ],
+  "facts": [
+   {
+    "kind": "effect",
+    "operation_id": "sync",
+    "effect_kind": "materialization_build",
+    "evidence": {
+     "file": "paperforge/commands/sync.py",
+     "file_digest": "sha256:fc35d648b0972be730c600da442d2d76e52fe8c8a87576ca4dd5c5dd4d5e2f43",
+     "symbol": "_reconcile_and_attach",
+     "line_start": 97,
+     "line_end": 133,
+     "extractor": "python_ast",
+     "epistemic_status": "observed_static",
+     "confidence": "exact"
     }
+   }
+  ],
+  "source_digest": "sha256:410ee03fd5ec40dcbe093c92a02a1553d12261b351370f1f0af84672ed6a0fc7",
+  "parse_errors": [],
+  "excluded_roots": [],
+  "run_metadata": {
+   "repository_revision": "7029b9dc",
+   "repository_dirty": false,
+   "tool_version": "1.0.0",
+   "extractor_versions": {
+    "python_ast": "1"
+   },
+   "generated_at": "2026-08-05T00:00:00Z"
   }
+ }
 }

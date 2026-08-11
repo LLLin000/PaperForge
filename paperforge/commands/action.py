@@ -106,23 +106,37 @@ def _parse_scope(args: argparse.Namespace) -> ActionScope:
 def run_dispatch(args: argparse.Namespace) -> int:
     """`action run` — the #145 §6 pipeline with exit-code mapping.
 
-    T2 ships --follow none only: the root handler's next_actions are
-    returned unchanged.  The follow-up chain lands with T6 (#167)."""
+    T2 shipped --follow none (root handler's next_actions returned
+    unchanged).  T6 (#167) adds --follow auto: the root runs through the
+    generic follow-up chain — automatic-local descendants inline,
+    remote/destructive/confirmation-required stay pending."""
     json_output = bool(getattr(args, "json", False))
     action_id = args.action_id
     confirmed = getattr(args, "confirm", None)
+    follow = getattr(args, "follow", "none")
     context = build_context(args.vault_path)
     request = ActionRequest(action_id=action_id, scope=_parse_scope(args))
 
-    try:
-        result = run_action(request, context, confirmed_action_id=confirmed)
-    except ActionError as exc:
-        result = _error_result("action run", exc.code, str(exc), data=exc.data)
-        if json_output:
-            print(result.to_json())
-        else:
-            print(result.error.message if result.error else str(exc), file=sys.stderr)
-        return exc.exit_code
+    if follow == "auto":
+        try:
+            result = _dispatch_chain(action_id, request, context, confirmed)
+        except ActionError as exc:
+            result = _error_result("action run", exc.code, str(exc), data=exc.data)
+            if json_output:
+                print(result.to_json())
+            else:
+                print(result.error.message if result.error else str(exc), file=sys.stderr)
+            return exc.exit_code
+    else:
+        try:
+            result = run_action(request, context, confirmed_action_id=confirmed)
+        except ActionError as exc:
+            result = _error_result("action run", exc.code, str(exc), data=exc.data)
+            if json_output:
+                print(result.to_json())
+            else:
+                print(result.error.message if result.error else str(exc), file=sys.stderr)
+            return exc.exit_code
 
     if json_output:
         print(result.to_json())
@@ -132,6 +146,31 @@ def run_dispatch(args: argparse.Namespace) -> int:
         else:
             print(f"error: {result.error.message if result.error else 'unknown'}", file=sys.stderr)
     return 0 if result.ok else 1
+
+
+def _dispatch_chain(action_id: str, request: ActionRequest, context, confirmed) -> PFResult:
+    """Root dispatch through the generic follow-up chain (T6 #167)."""
+    from paperforge.actions.chain import run_chain
+    from paperforge.actions.runner import hydrate_from_registry
+    from paperforge.actions.types import ActionIntent
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError
+
+    intent = hydrate_from_registry(
+        ActionIntent(action_id, request.scope, "cli.dispatch", "explicit CLI dispatch")
+    )
+    chain = run_chain([intent], context, follow="auto", confirmed_action_id=confirmed)
+    wire = chain.to_wire()
+    ok = chain.ok
+    error = None
+    if not ok:
+        failed = next((s for s in chain.steps if s.status == "executed" and not (s.result or {}).get("ok")), None)
+        error = PFError(
+            code=ErrorCode.INTERNAL_ERROR,
+            message=f"follow-up action failed: {failed.action_id}" if failed else "follow-up chain failed",
+        )
+    return PFResult(ok=ok, command="action run", version=PF_VERSION, data=wire,
+                    next_actions=chain.pending, error=error)
 
 
 def _install_sigint_handler() -> None:
