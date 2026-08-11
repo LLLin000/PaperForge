@@ -277,6 +277,21 @@ def _embed_resume_preflight(ctx: ActionContext, request: ActionRequest) -> Prefl
             )
     except Exception:
         pass
+    # #166 P0-1 (substrate ≠ availability): a GLOBAL substrate defect (model
+    # changed / layout incompatible / legacy identity) makes a papers-scoped
+    # resume fail-fast in run_build — surface it here as unavailable so the
+    # runner never attempts it.  The global embed.build intent is what
+    # reconciles it.
+    if request.scope.kind == "papers":
+        from paperforge.embedding.substrate import assess_vector_substrate
+
+        substrate = assess_vector_substrate(ctx.vault)
+        if not substrate.compatible and substrate.db_exists:
+            return PreflightResult(
+                availability="unavailable",
+                availability_reason_code="vector.substrate_incompatible",
+                availability_reason="Vector substrate requires a global rebuild — run `paperforge action run embed.build` first",
+            )
     return PreflightResult(
         availability="available",
         availability_reason_code="action.available",

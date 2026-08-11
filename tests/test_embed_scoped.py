@@ -246,7 +246,9 @@ class TestLineagePreservation:
 
         with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
              patch("paperforge.embedding.dim_detect.inspect_vector_layout",
-                   return_value=type("L", (), {"compatible": True})()), \
+                   return_value=type("L", (), {
+                       "compatible": True, "missing": (), "dimensions": {},
+                   })()), \
              patch("paperforge.commands.embed.ensure_vec_tables", return_value=3), \
              patch("paperforge.commands.embed.delete_paper_vectors"), \
              patch("paperforge.commands.embed.write_encoded_payload"), \
@@ -398,6 +400,102 @@ class TestResumeResetRouting:
 
         with patch("paperforge.commands.embed.encode_paper_job") as enc, \
              patch("paperforge.commands.embed._pid_alive", return_value=False):
+            rc = run_build(tmp_path, _papers(("A",)), keys=["A"], resume=True)
+        assert rc == 1
+        enc.assert_not_called()
+
+    def _isolated_resume_db(self, tmp_path: Path, keys: tuple[str, ...]) -> None:
+        """Compatible substrate (identity/layout/legacy all clean) with ZERO
+        vec rows — the ONLY downgrade trigger is the no-rows gate, so a
+        shadow route proves `requested_resume` captured the caller's intent
+        (#166 P0-3 isolated test)."""
+        from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
+        from paperforge.memory.schema import ensure_schema
+
+        db_path = get_memory_db_path(tmp_path)
+        conn = get_connection(db_path)
+        try:
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            # compatible substrate: current model/endpoint, dim 0 (layout
+            # check skipped), identity version current — no vec rows.
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_identity_version', '1')"
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('status', 'idle')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_requested_resume_no_rows_gate_routes_shadow_unscoped(self, tmp_path: Path) -> None:
+        """Isolated #166 P0-3: resume=True with ONLY the no-rows gate
+        downgrading — identity/layout/legacy/force all clean — the unscoped
+        build MUST route through shadow (requested_resume preserved before
+        gates)."""
+        canonical_test_config(tmp_path, system_dir="System")
+        self._isolated_resume_db(tmp_path, ("A",))
+
+        from unittest.mock import patch
+
+        shadow_prepared: list[str] = []
+        from tests.test_pr9c_streaming_embed import EncodedPayload, PaperEncodedBundle
+
+        def encode(vault, job):
+            bundle = _make_bundle(job.paper_id, n_chunks=1)
+            return PaperEncodedBundle(
+                paper_id=bundle.paper_id,
+                payloads=[
+                    EncodedPayload(
+                        collection_name=p.collection_name,
+                        texts=p.texts,
+                        ids=p.ids,
+                        metadatas=p.metadatas,
+                        embeddings=[[0.1] * 1536 for _ in p.embeddings],
+                    )
+                    for p in bundle.payloads
+                ],
+                chunk_count=bundle.chunk_count,
+            )
+
+        with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
+             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+                   side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
+             patch("paperforge.commands.embed.ensure_vec_tables", return_value=1536), \
+             patch("paperforge.commands.embed.delete_paper_vectors"), \
+             patch("paperforge.commands.embed.write_encoded_payload"):
+            from paperforge.embedding.build_target import ShadowBuild
+            orig_prepare = ShadowBuild.prepare
+
+            def spy_prepare(self):
+                shadow_prepared.append("prepare")
+                return orig_prepare(self)
+
+            ShadowBuild.prepare = spy_prepare
+            try:
+                rc = run_build(tmp_path, _papers(("A",)), keys=None, resume=True)
+            finally:
+                ShadowBuild.prepare = orig_prepare
+
+        assert rc == 0, "no-rows downgrade with requested resume must succeed via shadow"
+        assert shadow_prepared == ["prepare"], (
+            "requested_resume must be captured BEFORE the no-rows gate — "
+            "shadow route proves the caller intent survived"
+        )
+
+    def test_requested_resume_no_rows_gate_fails_scoped(self, tmp_path: Path) -> None:
+        """Isolated #166 P0-3: same downgrade, papers-scoped request must
+        fail fast before any mutation."""
+        canonical_test_config(tmp_path, system_dir="System")
+        self._isolated_resume_db(tmp_path, ("A",))
+
+        from unittest.mock import patch
+
+        with patch("paperforge.commands.embed.encode_paper_job") as enc, \
+             patch("paperforge.commands.embed.ensure_vec_tables", return_value=3), \
+             patch("paperforge.commands.embed.delete_paper_vectors"), \
+             patch("paperforge.commands.embed.write_encoded_payload"):
             rc = run_build(tmp_path, _papers(("A",)), keys=["A"], resume=True)
         assert rc == 1
         enc.assert_not_called()

@@ -144,6 +144,17 @@ def _make_vault(tmp_path: Path, keys=("KEY1",)) -> Path:
                 "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_dimension', ?)",
                 (str(DIMENSION),),
             )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('model', ?)",
+                (get_api_model(vault),),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_provider_endpoint', ?)",
+                (get_effective_api_base_url(vault),),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_identity_version', '1')"
+            )
         conn.commit()
     finally:
         conn.close()
