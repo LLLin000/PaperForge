@@ -442,13 +442,20 @@ def run_build(
                         print(msg)
                     resume = False
 
+        # #165 corrective: `requested_resume` is what the caller asked for;
+        # the gates above downgrade `resume` (effective) — a downgrade means
+        # a full rebuild is required, which must route through shadow.
+        # The old `_force_rebuild = force or (resume is False and resume)`
+        # was always False on the second clause (True and False) — the
+        # resume-reset path silently degraded to in-place.
+        requested_resume = resume
         # P0-2: full rebuild must never honor resume — the candidate's
         # vector tables are cleared, so a hash-skip would publish a DB
         # missing those papers' vectors.  Force wins over resume at both the
         # CLI (mutually exclusive group) and programmatic call sites.
         if force:
             resume = False
-        _force_rebuild = force or (resume is False and resume)
+        _force_rebuild = force or (requested_resume and not resume)
         # D5: full rebuilds (force / model change / resume reset) use shadow target.
         # P1: embedding identity is (provider endpoint, model) — a config
         # switch of EITHER must route through shadow.  A plain `embed build`
