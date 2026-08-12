@@ -159,8 +159,9 @@ def _run_paper_lookup(vault: Path, query: str, *, limit: int = 5) -> PFResult:
                     "query": query,
                     "results": limited,
                     "count": len(limited),
+                    # T9 (#170): no command strings in recommendation data.
                     "next_action": None if limited else {
-                        "command": "paperforge content-discovery",
+                        "reason_code": "gateway.content_discovery_suggested",
                         "reason": "Identity lookup exhausted. Try content discovery or narrow with author/year/title fragments.",
                     },
                     "route_explanation": {
@@ -251,12 +252,13 @@ def _run_body_unit_discovery(
                             "primary_arm": "body_units_fts",
                             "matched": False,
                         },
+                        # T9 (#170): no command strings in recommendation data.
                         "next_action": {
-                            "command": f"paperforge search {query}",
+                            "reason_code": "gateway.metadata_search_suggested",
                             "reason": (
                                 f"正文检索无匹配。正文索引覆盖 "
                                 f"{coverage['body_papers']}/{coverage['ocr_papers']} 篇 OCR 完成论文。"
-                                f"尝试 paperforge search 进行元数据全文搜索。"
+                                f"尝试元数据全文搜索。"
                             ),
                         },
                     },

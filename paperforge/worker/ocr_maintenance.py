@@ -255,7 +255,11 @@ def _can_redo(meta: dict) -> bool:
 
 
 def _recommended_action(meta: dict, has_raw: bool, has_source_meta: bool) -> str:
-    """Decide what the UI should recommend for this paper."""
+    """T9 (#170): UI PROJECTION — per-paper maintenance label for the OCR
+    Workspace.  The SINGLE producer of materialization-repair INTENTS is
+    reconcile (#159); ``"rebuild"`` here projects the derived-stale facet
+    (ocr.rebuild_derived), ``"redo"`` the raw/OCR defect (ocr.run).  Never
+    emits an action wire."""
     version = _detect_version(meta, has_raw, has_source_meta)
     status = str(meta.get("ocr_status", "") or "").lower()
 
