@@ -612,3 +612,41 @@ class TestRepositoryAcceptance:
         if audit["content"]["assessment"]["gate_eligible"] is False:
             reasons = audit["content"]["assessment"]["reasons"]
             assert not any("manual_contract_trace" in r for r in reasons)
+
+
+# ── T9 (#170) canonical filesystem-read collection ────────────────────────
+
+class TestCanonicalReadCollection:
+    def test_real_repo_collects_and_classifies_filesystem_reads(self) -> None:
+        """#149/#170: the TS collector extracts bare filesystem reads and
+        classifies canonical-materialization paths (variable-indirect
+        path.join traces included)."""
+        import subprocess
+        import sys
+        import tempfile
+        from pathlib import Path
+
+        root = Path.cwd()
+        out = Path(tempfile.mkdtemp(prefix="pf-read-collect-"))
+        proc = subprocess.run(
+            [
+                sys.executable, "-m",
+                "paperforge.architecture_audit.collectors.orchestrator",
+                "--root", str(root),
+                "--contract", "docs/architecture-audit-2026-08-06/contract.json",
+                "--out", str(out),
+            ],
+            capture_output=True, text=True, timeout=600,
+        )
+        assert proc.returncode == 0, proc.stderr[-800:]
+        survey = json.loads((out / "survey.json").read_text(encoding="utf-8"))
+        reads = [f for f in survey.get("facts", []) if f.get("kind") == "filesystem_read"]
+        assert len(reads) > 0, "TS collector must extract filesystem reads"
+        units = {f.get("unit_id") for f in reads}
+        # The dashboard/ocr-workspace readFileSync(indexPath) path.join trace
+        # must classify to the canonical formal_library unit.
+        formal = [f for f in reads if f.get("unit_id") == "formal_library"]
+        assert formal, f"expected formal_library reads from the real repo, got units={units}"
+        assert all(f.get("wrapper_id") is None for f in formal), (
+            "bare reads carry no wrapper attribution (#149 collector knowledge)"
+        )

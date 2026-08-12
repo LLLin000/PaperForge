@@ -60,8 +60,10 @@ def _infer_fact_kind(fact: dict) -> str:
         return "role_authority"
     if "unresolved_id" in fact:
         return "unresolved"
-    if "via_wrapper" in fact:
-        return "canonical_read"
+    if "via_wrapper" in fact or (
+        "operation_id" in fact and "path_expression" in fact
+    ):
+        return "filesystem_read"
     raise AssertionError(f"cannot infer fact kind from {sorted(fact)}")
 
 
@@ -1186,35 +1188,36 @@ class TestUnresolvedSemantics:
 # ── T9 (#170) CANONICAL_READ advisory rules ──────────────────────────────
 
 class TestCanonicalRead:
-    def _read_rule(self, wrappers: tuple[str, ...] = ()) -> dict:
-        rule = {
+    """#149 frozen model: FilesystemReadFact — wrapper attribution is
+    COLLECTOR knowledge (wrapper_id filled only for registered wrappers);
+    a bare read (wrapper_id None) is a determinate violation.  Rules never
+    carry a wrapper allowlist."""
+
+    def _read_rule(self) -> dict:
+        return {
             "rule_id": "client_read.formal_library",
             "kind": "canonical_read",
             "subject": "formal_library",
-            "scope": ["formal_library"],
             "lifecycle": "active",
             "enforcement": "advisory",
             "description": "reads of formal-library.json go through a registered wrapper",
         }
-        if wrappers:
-            rule["allowed_read_wrappers"] = list(wrappers)
-        return rule
 
-    def _read_fact(self, *, via_wrapper: bool, wrapper_id: str | None = None) -> dict:
+    def _read_fact(self, *, wrapper_id: str | None = None) -> dict:
         return {
-            "kind": "canonical_read",
+            "kind": "filesystem_read",
+            "operation_id": "read_formal_library",
             "unit_id": "formal_library",
-            "reader_kind": "client",
-            "via_wrapper": via_wrapper,
             "wrapper_id": wrapper_id,
-            "evidence": _evidence("read_index", 12),
+            "path_expression": 'vault + "/99_System/PaperForge/indexes/formal-library.json"',
+            "evidence": _evidence("readIndex", 12),
         }
 
     def test_bare_read_violates_advisory_rule(self) -> None:
-        """#170: a client reading formal-library.json WITHOUT a wrapper is a
-        VIOLATED canonical_read (advisory severity) — never silently ok."""
-        contract = _contract([self._read_rule(wrappers=("client_cache.read",))])
-        survey = _survey(facts=(self._read_fact(via_wrapper=False),))
+        """#170/#149: a read WITHOUT wrapper attribution is a determinate
+        VIOLATED canonical_read (advisory severity)."""
+        contract = _contract([self._read_rule()])
+        survey = _survey(facts=(self._read_fact(wrapper_id=None),))
         audit = reconcile(contract, survey)
         finding = next(f for f in audit.content.findings)
         assert finding.rule_id == "client_read.formal_library"
@@ -1222,17 +1225,11 @@ class TestCanonicalRead:
         assert finding.severity == "advisory"
         assert "without a wrapper" in finding.message
 
-    def test_unregistered_wrapper_violates(self) -> None:
-        contract = _contract([self._read_rule(wrappers=("client_cache.read",))])
-        survey = _survey(facts=(self._read_fact(via_wrapper=True, wrapper_id="raw.fs.read"),))
-        audit = reconcile(contract, survey)
-        finding = next(f for f in audit.content.findings)
-        assert finding.rule_status is RuleStatus.VIOLATED
-        assert "unregistered wrapper" in finding.message
-
-    def test_registered_wrapper_satisfies(self) -> None:
-        contract = _contract([self._read_rule(wrappers=("client_cache.read",))])
-        survey = _survey(facts=(self._read_fact(via_wrapper=True, wrapper_id="client_cache.read"),))
+    def test_wrapped_read_satisfies(self) -> None:
+        contract = _contract([self._read_rule()])
+        survey = _survey(facts=(
+            self._read_fact(wrapper_id="client_cache.read"),
+        ))
         audit = reconcile(contract, survey)
         assert len(audit.content.findings) == 0
         status = next(
@@ -1241,30 +1238,65 @@ class TestCanonicalRead:
         ).status
         assert status is RuleStatus.SATISFIED
 
-    def test_wrapper_registry_present_in_contract(self) -> None:
-        """#170: the advisory rules carry the wrapper registry
-        (bootstrap.pointer.read / client_cache.read / navigation.open /
-        workspace.context) for the canonical-read surface."""
-        rules = [
-            ("client_read.formal_library", ("bootstrap.pointer.read", "client_cache.read")),
-            ("client_read.paperforge_config", ("bootstrap.pointer.read",)),
-            ("client_read.ocr_state", ("workspace.context", "navigation.open")),
-            ("client_read.memory_db", ("client_cache.read",)),
-            ("client_read.runtime_snapshots", ("client_cache.read",)),
-        ]
-        contract = _contract([
+    def test_read_facts_scope_to_rule_unit(self) -> None:
+        """#170 corrective: a rule without scope must NOT evaluate the whole
+        repository's reads — a formal_library violation must not pollute
+        the paperforge_config rule."""
+        cfg_rule = {
+            "rule_id": "client_read.paperforge_config",
+            "kind": "canonical_read",
+            "subject": "paperforge_config",
+            "lifecycle": "active",
+            "enforcement": "advisory",
+        }
+        contract = _contract([self._read_rule(), cfg_rule])
+        survey = _survey(facts=(self._read_fact(wrapper_id=None),))
+        audit = reconcile(contract, survey)
+        formal = next(f for f in audit.content.findings if f.rule_id == "client_read.formal_library")
+        assert formal.rule_status is RuleStatus.VIOLATED
+        cfg_finding = [f for f in audit.content.findings if f.rule_id == "client_read.paperforge_config"]
+        assert cfg_finding == [], "unrelated canonical-read rule must not see the formal_library read"
+
+    def test_read_violation_wins_over_unresolved(self) -> None:
+        """#170: a bare canonical read + unresolved dynamic-path evidence →
+        VIOLATED (static violation wins over unresolved)."""
+        contract = _contract([self._read_rule()])
+        survey = _survey(facts=(
+            self._read_fact(wrapper_id=None),
             {
-                "rule_id": rule_id,
-                "kind": "canonical_read",
-                "subject": rule_id.removeprefix("client_read."),
-                "lifecycle": "active",
-                "enforcement": "advisory",
-                "allowed_read_wrappers": list(wrappers),
-            }
-            for rule_id, wrappers in rules
-        ])
-        # Contract round-trips the wrapper registry.
-        rt = ArchitectureContract.from_dict(contract.to_dict())
-        for rule in rt.rules:
-            assert rule.allowed_read_wrappers, rule.rule_id
-        assert rt.rules[0].allowed_read_wrappers == ("bootstrap.pointer.read", "client_cache.read")
+                "kind": "unresolved",
+                "unresolved_id": "u-dyn",
+                "expression": "readPath(expr)",
+                "reason": "dynamic canonical path",
+                "possible_effects": ["disposable_snapshot"],
+                "evidence": {
+                    "file": "commands/probe_status.py",
+                    "file_digest": "sha256:" + "0" * 64,
+                    "symbol": "probe_status",
+                    "line_start": 10,
+                    "line_end": 12,
+                    "extractor": "python_ast",
+                    "epistemic_status": "observed_static",
+                    "confidence": "exact",
+                },
+            },
+        ))
+        audit = reconcile(contract, survey)
+        finding = next(f for f in audit.content.findings)
+        assert finding.rule_status is RuleStatus.VIOLATED, "static violation wins"
+
+    def test_wrapper_registry_expresses_read_meaning(self) -> None:
+        """#149 authority: the collector wrapper registry carries read
+        attribution; the RULE never carries a wrapper allowlist."""
+        from paperforge.architecture_audit.collectors.common import DEFAULT_PYTHON_REGISTRY
+
+        read_wrappers = [
+            w for w in DEFAULT_PYTHON_REGISTRY
+            if any(hasattr(f, "unit_id") and f.unit_id for f in w.facts)
+        ]
+        ids = {w.wrapper_id for w in read_wrappers}
+        assert {"bootstrap.pointer.read", "client_cache.read",
+                "navigation.open", "workspace.context"} <= ids
+        # Contract rules carry no wrapper field.
+        contract = _contract([self._read_rule()])
+        assert "allowed_read_wrappers" not in contract.rules[0].to_dict()
