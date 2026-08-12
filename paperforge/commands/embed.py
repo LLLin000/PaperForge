@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import contextlib
 import logging
 import os
 import shutil
@@ -66,34 +65,10 @@ def _has_object_units_in_db(vault: Path, key: str) -> bool:
         return cnt > 0
 
 
-def _stop_control_path(vault: Path) -> Path:
-    """Control-plane sidecar: stop requests never touch the live DB (P0-5) —
-    a publish swaps the whole DB, and stop must stay usable while the build
-    holds the writer lock."""
-    return get_memory_db_path(vault).with_name("paperforge.embed-control.json")
-
-
-def _stop_requested(vault: Path, build_pid: int) -> bool:
-    """True when a stop request for THIS build process exists."""
-    import json as _json
-
-    p = _stop_control_path(vault)
-    try:
-        if not p.exists():
-            return False
-        data = _json.loads(p.read_text(encoding="utf-8"))
-        return data.get("target_pid", 0) == build_pid and bool(data.get("stop_requested"))
-    except Exception:
-        return False
-
-
-def _clear_stop_request(vault: Path) -> None:
-    p = _stop_control_path(vault)
-    try:
-        p.unlink(missing_ok=True)
-    except OSError:
-        pass
-
+# #137: the embed control sidecar (embed-control.json / `embed stop`) is
+# RETIRED — cancellation is ONE cooperative token (stdin PAPERFORGE_STOP +
+# SIGINT + SIGTERM) via paperforge.core.cancellation.  Orphaned builds are
+# hard-terminated only; no persistent control plane is invented.
 
 def _pid_alive(pid: int) -> bool:
     """Check if a process with the given PID is still running (cross-platform)."""
@@ -162,105 +137,6 @@ def run(args: argparse.Namespace) -> int:
                     print(f"  {k}: {v}")
         return 0
 
-    if sub == "stop":
-        state = read_vector_build_state(vault)
-        pid = state.get("pid", 0)
-        _st = state.get("status", "")
-        if pid and _st in ("running", "stopping"):
-            # P0-5: stop is control-plane — write a sidecar file instead of
-            # touching the live DB (the build holds the writer lock, and a
-            # publish would overwrite an in-DB signal anyway).
-            import json as _json
-            import time as _time
-
-            _ctrl = _stop_control_path(vault)
-            try:
-                # P0-5: atomic sidecar write (tmp + os.replace) so a reader
-                # never observes a half-written control file.
-                _ctrl.parent.mkdir(parents=True, exist_ok=True)
-                _tmp = _ctrl.with_name(_ctrl.name + ".tmp")
-                _tmp.write_text(
-                    _json.dumps({
-                        "stop_requested": True,
-                        "target_pid": pid,
-                        "requested_at": __import__("datetime").datetime.now(
-                            __import__("datetime").timezone.utc
-                        ).isoformat(),
-                    }),
-                    encoding="utf-8",
-                )
-                os.replace(str(_tmp), str(_ctrl))
-            except OSError:
-                pass
-            # Wait for build process to notice the sidecar and exit (8s)
-            _deadline = _time.time() + 8.0
-            while _time.time() < _deadline:
-                if not _pid_alive(pid):
-                    break
-                _time.sleep(0.2)
-            # Force-kill if still alive after timeout
-            if _pid_alive(pid):
-                import signal
-                with contextlib.suppress(Exception):
-                    os.kill(pid, signal.SIGTERM)
-            _wait_deadline = _time.time() + 3.0
-            while _time.time() < _wait_deadline:
-                if not _pid_alive(pid):
-                    break
-                _time.sleep(0.2)
-            if _pid_alive(pid):
-                # P0-5: do NOT claim stopped while the build still runs —
-                # keep the sidecar so the build stops at its next checkpoint.
-                result = PFResult(
-                    ok=False,
-                    command="embed stop",
-                    version=PF_VERSION,
-                    error=PFError(
-                        code=ErrorCode.INTERNAL_ERROR,
-                        message=f"Unable to stop embed build (pid {pid} still running)",
-                    ),
-                )
-                if args.json:
-                    print(result.to_json())
-                else:
-                    print(
-                        f"Unable to stop embed build (pid {pid} still running). "
-                        "Stop request left in place.",
-                        file=sys.stderr,
-                    )
-                return 1
-            # Build exited: settle to idle (writer lock is free now).  Narrow
-            # race: the build may have COMPLETED between the last stop-check
-            # and its exit — don't downgrade a successful build to idle.
-            try:
-                with WriterLock(vault, timeout=30):
-                    _latest = read_vector_build_state(vault)
-                    if _latest.get("status") == "completed" and _latest.get("pid") == 0:
-                        _settled = "completed_before_stop"
-                    else:
-                        _current = _latest.get("current", state.get("current", 0))
-                        mark_vector_build_state(vault, status="idle", current=_current, pid=0, message="")
-                        _settled = "stopped"
-            except Exception:
-                _settled = "stopped"
-            _clear_stop_request(vault)
-            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": _settled})
-        else:
-            _clear_stop_request(vault)
-            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "idle"})
-        if args.json:
-            print(result.to_json())
-        else:
-            if result.data["state"] == "stopped":
-                msg = "Build stopped."
-            elif result.data["state"] == "completed_before_stop":
-                msg = "Build already completed before stop request."
-            else:
-                msg = "No active build."
-            print(msg)
-        return 0
-
-
     if sub == "migrate":
         from paperforge.embedding._chroma import migrate_chroma_to_vec0
 
@@ -298,6 +174,10 @@ def run(args: argparse.Namespace) -> int:
         if args.json:
             print(result.to_json())
         else:
+            # #137: stream chosen → exactly-one terminal, then EOF.
+            from paperforge.core.ndjson import emit_terminal
+
+            emit_terminal("error", "embed.build", result)
             print(f"Error: {preflight['error']}", file=sys.stderr)
             print(f"Fix: {preflight['fix']}", file=sys.stderr)
         return 1
@@ -311,7 +191,14 @@ def run(args: argparse.Namespace) -> int:
                 code=ErrorCode.PATH_NOT_FOUND, message="Canonical index not found. Run paperforge sync first."
             ),
         )
-        print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
+        if args.json:
+            print(result.to_json())
+        else:
+            # #137: stream chosen → exactly-one terminal, then EOF.
+            from paperforge.core.ndjson import emit_terminal
+
+            emit_terminal("error", "embed.build", result)
+            print(result.error.message, file=sys.stderr)
         return 1
 
     items = envelope if isinstance(envelope, list) else envelope.get("items", [])
@@ -358,6 +245,11 @@ def run_build(
         from paperforge.core.ndjson import emit_start
 
         emit_start("embed.build", total=total)
+    # #137: ONE cooperative cancellation token (stdin PAPERFORGE_STOP +
+    # SIGINT + SIGTERM); the embed control sidecar is retired.
+    from paperforge.core.cancellation import make_cancellation_token
+
+    _is_stopped, _restore_stop = make_cancellation_token()
 
     import gc as _gc
     import os as _os
@@ -390,9 +282,6 @@ def run_build(
     _write_lock = WriterLock(vault)
     _write_lock.__enter__()
     try:
-        # P0-5: clear any stale stop request (from a previous build) that
-        # does not target this process before starting.
-        _clear_stop_request(vault)
         # #166 corrective (P0-3): `requested_resume` is what the caller asked
         # for — captured BEFORE any effective-resume gate.  The gates below
         # downgrade `resume` (effective); a downgrade means a full rebuild is
@@ -687,9 +576,9 @@ def run_build(
                     if not key:
                         continue
 
-                    # P0-5: cancellation is a control-sidecar check — never
-                    # read live DB status mid-build (it races the publish).
-                    if _stop_requested(vault, _os.getpid()):
+                    # #137: cooperative stop token — never read live DB
+                    # status mid-build (it races the publish).
+                    if _is_stopped():
                         logger.info("Build cancelled at paper %s", key)
                         break
 
@@ -875,8 +764,10 @@ def run_build(
                 _write_lock.__exit__(None, None, None)
             return 1
 
-        # Check if we stopped or were cancelled — exit cleanly without marking completed
-        if _stop_requested(vault, _os.getpid()):
+        # Check if we stopped or were cancelled — exit cleanly without
+        # marking completed.  #137: cancelled is a terminal outcome with
+        # exit code 130, never a folded rc0.
+        if _is_stopped():
             logger.info("Build stopped, exiting cleanly")
             if _shadow is not None:
                 _shadow.abort()
@@ -892,7 +783,7 @@ def run_build(
 
                 emit_terminal("cancelled", "embed.build",
                               _cr("embed build", "Build cancelled"))
-            return 0
+            return 130
 
         # #162/T1: write vector lineage rows — into the candidate BEFORE the
         # seal/publish swap (atomic with publish), or onto the live DB for
@@ -1043,9 +934,9 @@ def run_build(
         if _rebuild_backup_path and _rebuild_backup_path.exists():
             _rebuild_backup_path.unlink()
             logger.info("Deleted pre-rebuild backup after successful rebuild")
-        _clear_stop_request(vault)
         if _write_lock:
             _write_lock.__exit__(None, None, None)
+        _restore_stop()
         return 0
     except Exception as e:
         # P0-2: once PUBLISHED the swap is the commit point — abort() is a
@@ -1110,3 +1001,4 @@ def run_build(
     finally:
         if _write_lock:
             _write_lock.__exit__(None, None, None)
+        _restore_stop()

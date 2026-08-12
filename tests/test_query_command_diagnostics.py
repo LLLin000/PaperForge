@@ -80,6 +80,15 @@ def test_retrieve_low_confidence_hits_emit_warning(monkeypatch, tmp_path: Path, 
         {"paper_id": "AAA11111", "chunk_text": "### Keywords", "score": 0.57},
         {"paper_id": "AAA11111", "chunk_text": "None.", "score": 0.56},
     ])
+    # The reader gate (#159 §6) needs an observable lineage chain — the
+    # fixture paper is current, so the low-confidence warning still fires.
+    monkeypatch.setattr(
+        "paperforge.lineage.probe_lineage",
+        lambda vault: {
+            "capability_state": "ok",
+            "papers": {"AAA11111": {"ocr": "current", "retrieval": "current", "vector": "current"}},
+        },
+    )
 
     args = _Args(tmp_path)
     args.query = "unlikelynonexistenttermxyz"

@@ -411,11 +411,15 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
                     failed_keys.append(key)
                     logger.warning("paper %s build failed and was rolled back: %s", key, exc)
 
-        # 4c. Import corrections + hydrate reading log for new keys.
-        #     Reading/project logs are bulk-imported in _full_rebuild() only;
-        #     per-paper deletion handles their cleanup.  But newly added keys
-        #     need selective hydration so their history isn't lost.
-        valid_keys = {e["zotero_key"] for e in items if e.get("zotero_key")}
+        # 4c. Import corrections + hydrate reading log — ONLY for the
+        #     actually-successful keys (#168 T7 P0-2): a failed paper's
+        #     paper-owned mutations stop at its rollback boundary.
+        successful_set = set(successful_keys)
+        valid_keys = (
+            {e["zotero_key"] for e in items if e.get("zotero_key")}
+            if keys is None
+            else successful_set
+        )
         if keys is None:
             conn.execute("DELETE FROM paper_events WHERE event_type = 'correction_note';")
         elif valid_keys:
@@ -427,15 +431,21 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
             )
         correction_result = _import_correction_log(conn, vault, valid_keys)
         _hydrate_reading_log_for_keys(conn, vault, diff["added"])
-        # 4d. OCR unit rebuilds (per-paper hash comparison).
-        #     Always run — function internally handles missing OCR artifacts.
-        _incremental_units_only(conn, items, ocr_root, vault=vault)
+        # 4d. OCR unit rebuilds (per-paper hash comparison) — ONLY the
+        #     successful papers; a failed paper's units must stay untouched
+        #     (#168 T7 P0-2: "B failed → B memory/vector untouched").
+        _units_items = (
+            items
+            if keys is None
+            else [e for e in items if e.get("zotero_key") in successful_set]
+        )
+        _incremental_units_only(conn, _units_items, ocr_root, vault=vault)
 
-        # 4e. Advance the global canonical hash LAST — ALL-SCOPE builds only.
-        #     A scoped build must never publish the full-index hash: it would
-        #     let the next full build take the fast path and permanently mask
-        #     non-requested papers' stale metadata.
-        if keys is None:
+        # 4e. Advance the global canonical hash LAST — ALL-SCOPE builds only,
+        #     and NEVER on partial failure (#168 T7 P0-2): a full build with
+        #     failed papers must not publish the newest hash, or the next
+        #     build's fast path would permanently hide the failure.
+        if keys is None and not failed_keys:
             conn.execute(
                 "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
                 ("canonical_index_hash", canonical_hash),

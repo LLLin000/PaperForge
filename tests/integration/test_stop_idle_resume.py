@@ -1,7 +1,8 @@
-"""Integration tests for the build lifecycle stop → idle → resume cycle.
-
-Verifies that embed stop --json marks build as stopping, settles to idle,
-and that resume can continue a build from progress.
+"""#137 retirement contract: the cross-process `embed stop` control plane is
+RETIRED — cancellation flows through the unified token (stdin
+PAPERFORGE_STOP / SIGINT / SIGTERM).  `embed stop` now returns the
+retirement error; the stop→idle→resume lifecycle is tested through the
+unified token in unit tests.
 """
 
 from __future__ import annotations
@@ -27,9 +28,9 @@ def _build_vault(tmp_path: Path) -> Path:
     return vault
 
 
-def _run_embed_stop(vault: Path) -> dict:
-    """Run embed stop --json and return parsed data."""
-    result = subprocess.run(
+def _run_embed_stop(vault: Path) -> subprocess.CompletedProcess:
+    """Run embed stop (retired) and return the completed process."""
+    return subprocess.run(
         [
             str(PYTHON),
             "-m",
@@ -45,8 +46,6 @@ def _run_embed_stop(vault: Path) -> dict:
         cwd=str(REPO_ROOT),
         timeout=30,
     )
-    parsed = json.loads(result.stdout)
-    return parsed
 
 
 def _run_embed_status(vault: Path) -> dict:
@@ -97,58 +96,39 @@ def _read_build_state(vault: Path) -> dict:
 
 
 class TestStopIdleResume:
-    """Stop → idle → resume lifecycle."""
+    """#137 retirement contract for the embed control plane."""
 
-    def test_stop_returns_stopped_and_idle(self, tmp_path: Path):
-        """embed stop --json returns {state: stopped} when a build is running, and settles to idle."""
+    def test_stop_is_retired(self, tmp_path: Path):
+        """embed stop returns rc1 with the retirement message — no control
+        plane exists anymore."""
         vault = _build_vault(tmp_path)
-
-        # Set build to running with a dead PID (not 0 — 0 is falsy in Python)
         _mark_running(vault, pid=99999, current=5, total=100)
-
-        # Stop
         result = _run_embed_stop(vault)
-        assert result["ok"] is True, f"Stop returned error: {result}"
-        assert result["data"]["state"] == "stopped", f"Expected stopped, got {result['data']['state']}"
-
-        # Verify build state settled to idle
-        bs = _read_build_state(vault)
-        assert bs["status"] == "idle", f"Expected idle, got {bs}"
-        assert bs["pid"] == 0
+        assert result.returncode == 2  # argparse: invalid subcommand choice
+        assert "invalid choice" in result.stderr and "stop" in result.stderr
 
     def test_stop_when_idle_stays_idle(self, tmp_path: Path):
-        """embed stop --json on idle build returns {state: idle}."""
+        """embed stop --json on idle build is retired too."""
         vault = _build_vault(tmp_path)
 
         result = _run_embed_stop(vault)
-        assert result["ok"] is True
-        assert result["data"]["state"] == "idle"
-
+        assert result.returncode == 2  # argparse: invalid subcommand choice
+        assert "invalid choice" in result.stderr and "stop" in result.stderr
         bs = _read_build_state(vault)
         assert bs["status"] == "idle"
 
     def test_resume_after_stop_reads_progress(self, tmp_path: Path):
-        """After stop, status shows the idle state with progress, and resume mode continues from there."""
+        """Even with a running build, embed stop is retired; status keeps
+        reporting the live build state (no control-plane settlement)."""
         vault = _build_vault(tmp_path)
 
         _mark_running(vault, pid=99998, current=42, total=200)
 
-        # Stop
-        _run_embed_stop(vault)
+        result = _run_embed_stop(vault)
+        assert result.returncode == 2  # argparse: invalid subcommand choice
+        assert "invalid choice" in result.stderr and "stop" in result.stderr
 
-        # Status should report progress and idle state
+        # Status still reports the live build state — untouched by stop.
         status = _run_embed_status(vault)
         bs = status.get("build_state", {})
-        assert bs.get("status") == "idle"
         assert bs.get("current", 0) == 42
-        assert bs.get("total", 0) == 200
-
-        # Resume mode: verify that a subsequent --resume build picks up from idle
-        # (we can't do a full build without a real vault, so we check that
-        # the resume path isn't blocked by the idle state)
-        from paperforge.embedding.build_state import read_vector_build_state
-
-        bs_read = read_vector_build_state(vault)
-        assert bs_read["status"] == "idle"
-        # A resume build call would check this and start fresh or continue
-        # The state is correctly idle which allows resume

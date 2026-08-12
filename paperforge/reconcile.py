@@ -229,13 +229,23 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
     intents: list[ActionIntent] = []
     scope = PapersScope((paper.key,))
 
-    # OCR is the root layer — no prerequisite.
-    if paper.ocr in ("stale", "missing"):
+    # OCR is the root layer — no prerequisite.  Operation distinction
+    # (#168 T7 P0-1, frozen #159 deficit table): raw/missing OCR output
+    # needs the remote ocr.run; DERIVED-artifact staleness (raw blocks
+    # unchanged, derived rebuild pending) is the LOCAL ocr.rebuild_derived.
+    if paper.ocr == "missing":
         intents.append(ActionIntent(
             action_id="ocr.run",
             scope=scope,
-            trigger_reason_code="lineage.ocr_defect",
-            trigger_reason=f"OCR output for {paper.key} is {paper.ocr}",
+            trigger_reason_code="lineage.ocr_missing",
+            trigger_reason=f"OCR output for {paper.key} is missing",
+        ))
+    elif paper.ocr == "stale":
+        intents.append(ActionIntent(
+            action_id="ocr.rebuild_derived",
+            scope=scope,
+            trigger_reason_code="lineage.ocr_derived_stale",
+            trigger_reason=f"Derived OCR artifacts for {paper.key} are stale",
         ))
     # Retrieval depends on OCR being current.
     if paper.retrieval in ("stale", "missing") and paper.ocr == "current":

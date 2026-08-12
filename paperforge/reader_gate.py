@@ -33,11 +33,9 @@ def filter_readable(vault: Path, hits: list[dict[str, Any]], *, require_vector: 
 
     try:
         probe = probe_lineage(vault)
-    except Exception:  # noqa: BLE001 — unobservable lineage fails closed
-        return hits
-    if probe.get("capability_state") != "ok":
-        # No observable lineage chain — nothing to fail closed on.
-        return hits
+    except Exception:  # noqa: BLE001 — unobservable lineage FAILS CLOSED:
+        # never serve derived materialization we cannot prove compatible.
+        return []
     papers = probe.get("papers", {})
 
     out: list[dict[str, Any]] = []

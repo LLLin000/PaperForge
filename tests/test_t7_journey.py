@@ -305,3 +305,168 @@ def _set_retrieval_stale(vault: Path, keys: tuple[str, ...]) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+# ── O3 vertical confirmation flow (#168 P0 review) ────────────────────────
+
+class TestO3Vertical:
+    def test_confirm_flow_gates_until_exact_confirm(
+        self, tmp_path: Path, monkeypatch,
+    ) -> None:
+        """The FULL vertical O3: pending embed.resume[A] → 0 provider calls →
+        no-confirm rc3 → wrong-confirm rc2 → exact confirm → EXACTLY A
+        encoded (RecordingProvider log)."""
+        from tests.test_embed_scoped import _make_bundle, _payloads_for
+
+        calls: list[str] = []
+
+        class RecordingProvider:
+            def __init__(self, vault):
+                self.vault = vault
+
+            def encode(self, texts, **kwargs):
+                calls.extend(texts)
+                return [[0.1] * 3 for _ in texts]
+
+            def encode_single(self, text, **kwargs):
+                return [0.1] * 3
+
+        monkeypatch.setattr("paperforge.embedding.builder.OpenAICompatibleProvider", RecordingProvider)
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "t")
+        from tests.conftest import canonical_test_config as ctc
+        from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
+        from paperforge.memory.schema import ensure_schema
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        ctc(vault, system_dir="System")
+        conn = get_connection(get_memory_db_path(vault))
+        try:
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            conn.commit()
+        finally:
+            conn.close()
+        (vault / "A.pdf").write_text("fulltext of A. " * 10, encoding="utf-8")
+        (vault / "System" / "PaperForge" / "ocr" / "A").mkdir(parents=True, exist_ok=True)
+
+        from unittest.mock import patch
+
+        def body_units_for(vault, key):
+            return [{"unit_id": f"{key}-u1", "key": key}]
+
+        def _run_cli(*argv):
+            import io as _io
+            import sys as _sys
+            from paperforge.cli import main
+
+            old_out = _sys.stdout
+            buf = _io.StringIO()
+            _sys.stdout = buf
+            try:
+                rc = main(list(argv))
+            finally:
+                _sys.stdout = old_out
+            return rc, json.loads(buf.getvalue())
+
+        with patch("paperforge.commands.embed.read_index",
+                   return_value={"items": [{"zotero_key": "A", "ocr_status": "done",
+                                            "fulltext_path": "A.pdf"}]}), \
+             patch("paperforge.commands.embed.ensure_vec_tables", return_value=3), \
+             patch("paperforge.commands.embed.delete_paper_vectors"), \
+             patch("paperforge.commands.embed.write_encoded_payload"), \
+             patch("paperforge.commands.embed._has_body_units_in_db", return_value=True), \
+             patch("paperforge.commands.embed._has_object_units_in_db", return_value=False), \
+             patch("paperforge.commands.embed.get_body_units_for_embedding", side_effect=body_units_for), \
+             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+                   side_effect=lambda vault, key, *a, **k: _payloads_for(key)):
+            # Pending state: nothing dispatched → provider untouched.
+            assert calls == []
+            # No confirm → rc3 (confirmation required).
+            rc3, payload3 = _run_cli(
+                "--vault", str(vault), "action", "run", "embed.resume",
+                "--scope", "papers", "--key", "A", "--json",
+            )
+            assert rc3 == 3
+            assert payload3["error"]["code"] == "action.confirmation_required"
+            assert calls == []
+            # Wrong-action confirm → rc2, nothing dispatched.
+            rc2, payload2 = _run_cli(
+                "--vault", str(vault), "action", "run", "embed.resume",
+                "--scope", "papers", "--key", "A",
+                "--confirm", "memory.build", "--json",
+            )
+            assert rc2 == 2
+            assert payload2["error"]["code"] == "action.invalid_request"
+            assert calls == []
+            # Exact confirm → dispatched, EXACTLY the requested key encoded.
+            rc0, _ = _run_cli(
+                "--vault", str(vault), "action", "run", "embed.resume",
+                "--scope", "papers", "--key", "A",
+                "--confirm", "embed.resume", "--json",
+            )
+        assert rc0 == 0
+        assert calls, "exact confirm must encode the requested key"
+        # The body payload for A — exactly the requested key, nothing else.
+        assert calls == ["A-t"]
+
+
+class TestCancelledRc130:
+    def test_embed_cancelled_returns_130(self, tmp_path: Path, monkeypatch) -> None:
+        """#137: a cancelled embed build is a terminal outcome with rc130 and
+        a cancelled NDJSON terminal — never a folded rc0."""
+        from paperforge.core import cancellation as cancellation_module
+
+        monkeypatch.setattr(cancellation_module, "make_cancellation_token",
+                            lambda: (lambda: True, lambda: None))
+        from tests.conftest import canonical_test_config as ctc
+        from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
+        from paperforge.memory.schema import ensure_schema
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        ctc(vault, system_dir="System")
+        conn = get_connection(get_memory_db_path(vault))
+        try:
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            conn.commit()
+        finally:
+            conn.close()
+        (vault / "A.pdf").write_text("fulltext of A. " * 10, encoding="utf-8")
+        (vault / "System" / "PaperForge" / "ocr" / "A").mkdir(parents=True, exist_ok=True)
+
+        from unittest.mock import patch
+        from tests.test_embed_scoped import _make_bundle, _payloads_for
+
+        def body_units_for(vault, key):
+            return [{"unit_id": f"{key}-u1", "key": key}]
+
+        with patch("paperforge.commands.embed.encode_paper_job",
+                   side_effect=lambda vault, job: _make_bundle(job.paper_id, n_chunks=1)), \
+             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+                   side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
+             patch("paperforge.commands.embed._has_body_units_in_db", return_value=True), \
+             patch("paperforge.commands.embed._has_object_units_in_db", return_value=False), \
+             patch("paperforge.commands.embed.get_body_units_for_embedding", side_effect=body_units_for), \
+             patch("paperforge.commands.embed.ensure_vec_tables", return_value=1536), \
+             patch("paperforge.commands.embed.delete_paper_vectors"), \
+             patch("paperforge.commands.embed.write_encoded_payload"):
+            import io as _io
+            import sys as _sys
+            from paperforge.commands.embed import run_build
+
+            old_out = _sys.stdout
+            buf = _io.StringIO()
+            _sys.stdout = buf
+            try:
+                rc = run_build(vault, [{"zotero_key": "A", "ocr_status": "done",
+                                        "fulltext_path": "A.pdf"}],
+                               keys=["A"], resume=True)
+            finally:
+                _sys.stdout = old_out
+            events = [json.loads(l) for l in buf.getvalue().splitlines() if l.strip()]
+        assert rc == 130, f"cancelled build must exit 130, got {rc}"
+        terminals = [e for e in events if e["event"] in ("result", "error", "cancelled")]
+        assert len(terminals) == 1
+        assert terminals[0]["event"] == "cancelled"

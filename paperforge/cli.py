@@ -308,8 +308,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run health probe (KNN query) — slower but verifies vector DB is functional",
     )
-    p_embed_stop = p_embed_sp.add_parser("stop", help="Stop running embed build")
-    p_embed_stop.add_argument("--json", action="store_true")
+    # #137: `embed stop` control-plane retired — no parser; cancellation is
+    # the unified token (stdin PAPERFORGE_STOP / SIGINT / SIGTERM).
     p_embed_migrate = p_embed_sp.add_parser("migrate", help="Migrate vectors from ChromaDB to vec0 tables")
     p_embed_migrate.add_argument("--json", action="store_true")
 
