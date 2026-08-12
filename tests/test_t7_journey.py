@@ -493,7 +493,11 @@ class TestSingleProducer:
                 re.S,
             ):
                 command_wires.append(path)
+            # Any recommendation data (next_action dict or literal) carrying
+            # a paperforge command string — nested dicts included.
             if re.search(r'"next_action"\s*:\s*"paperforge', src):
+                command_wires.append(path)
+            if re.search(r'["\']command["\']\s*:\s*f?["\']paperforge', src):
                 command_wires.append(path)
         assert command_wires == [], f"command-string action wires: {command_wires}"
 

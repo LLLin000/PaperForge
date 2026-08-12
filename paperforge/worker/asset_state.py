@@ -164,7 +164,10 @@ def compute_maturity(entry: dict) -> dict:
 
 
 def compute_next_step(entry: dict) -> str:
-    """Recommend the next action for this literature asset.
+    """T9 (#170): UI PROJECTION — per-paper next-step labels for the
+    dashboard.  The SINGLE producer of materialization-repair INTENTS is
+    reconcile (#159); this function only projects asset-state labels for
+    display and never emits an action wire.
 
     Returns one of: ``"sync"`` | ``"ocr"`` | ``"repair"`` | ``"/pf-deep"`` |
     ``"rebuild index"`` | ``"ready"``
